@@ -252,9 +252,10 @@ def parse_deepseekocr_markdown(
 
     Args:
         content: The annotated markdown content string
-        page_image: Optional PIL Image of the page
-        page_no: Page number (default: 1)
-        filename: Source filename (default: "file")
+        original_page_size: Physical page dimensions (points).
+        page_no: Page number (1-based).
+        filename: Source filename.
+        page_image: Optional PIL image of the page.
 
     Returns:
         DoclingDocument with parsed content

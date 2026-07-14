@@ -17,13 +17,14 @@ Security Note:
     external entity fetching and preventing XXE attacks.
 """
 
+from __future__ import annotations
+
 import logging
 import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
 
-from bs4 import BeautifulSoup, NavigableString, Tag
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -35,7 +36,6 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
-from lxml import etree
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -43,6 +43,21 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+
+_BS4_AVAILABLE: bool = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, NavigableString, Tag
+    from lxml import etree
+
+    _BS4_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' and 'lxml' packages are required to process JATS files. "
+    "Install them with `pip install 'docling-slim[format-xml-jats]'`."
+)
 
 _log = logging.getLogger(__name__)
 
@@ -108,7 +123,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.path_or_stream = path_or_stream
 

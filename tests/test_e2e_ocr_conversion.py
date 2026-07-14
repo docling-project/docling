@@ -20,6 +20,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+from .groundtruth_paths import get_regular_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -111,7 +112,7 @@ def test_e2e_conversions():
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                input_path=pdf_path,
+                gt=get_regular_groundtruth_paths(pdf_path),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
                 fuzzy=True,

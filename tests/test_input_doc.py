@@ -349,6 +349,18 @@ def test_guess_format(tmp_path):
     stream = DocumentStream(name="docling_test.xml", stream=buf)
     assert dci._guess_format(stream) is None
 
+    # Valid DocLang XML with generic .xml extension
+    doclang_xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        "<doclang><heading>DocLang</heading><text>Hello</text></doclang>"
+    )
+    doc_path = temp_dir / "doclang_sample.xml"
+    doc_path.write_text(doclang_xml, encoding="utf-8")
+    assert dci._guess_format(doc_path) == InputFormat.XML_DOCLANG
+    buf = BytesIO(doc_path.read_bytes())
+    stream = DocumentStream(name="doclang_sample.xml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.XML_DOCLANG
+
     # Plain .txt file (not USPTO) should be detected as Markdown
     stream = DocumentStream(name="pftaps057006474.txt", stream=BytesIO(b"xyz"))
     assert dci._guess_format(stream) == InputFormat.MD

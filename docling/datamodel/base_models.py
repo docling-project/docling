@@ -110,6 +110,7 @@ class InputFormat(str, Enum):
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
     XML_DOCLANG = "xml_doclang"
+    DCLX = "dclx"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
@@ -117,6 +118,7 @@ class InputFormat(str, Enum):
     LATEX = "latex"
     EMAIL = "email"
     EPUB = "epub"
+    BOXNOTE = "boxnote"
 
 
 class OutputFormat(str, Enum):
@@ -130,6 +132,7 @@ class OutputFormat(str, Enum):
     VTT = "vtt"
     DOCLANG = "doclang"
     DCLX = "dclx"
+    CHUNKS = "chunks"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
@@ -141,6 +144,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
+    InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -156,6 +160,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.LATEX: ["tex", "latex"],
     InputFormat.EMAIL: ["eml"],
     InputFormat.EPUB: ["epub"],
+    InputFormat.BOXNOTE: ["boxnote"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -222,6 +227,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
     InputFormat.EMAIL: ["message/rfc822"],
     InputFormat.EPUB: ["application/epub+zip"],
+    InputFormat.BOXNOTE: ["application/vnd.box.boxnote"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import re
@@ -10,8 +12,6 @@ from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-from bs4.element import PreformattedString
 from docling_core.types.doc import (
     BoundingBox,
     CodeLanguageLabel,
@@ -58,6 +58,21 @@ from docling.utils.code_language import (
     _HINT_PREFIXES,
     detect_code_language,
     normalize_code_language,
+)
+
+_BS4_AVAILABLE: bool = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.element import PreformattedString
+
+    _BS4_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' package is required to process HTML files. "
+    "Install it with `pip install 'docling-slim[format-html]'`."
 )
 
 _log = logging.getLogger(__name__)
@@ -312,7 +327,7 @@ class AnnotatedTextList(list):
             source_tag_id=current_source_tag_id,
         )
 
-    def simplify_text_elements(self) -> "AnnotatedTextList":
+    def simplify_text_elements(self) -> AnnotatedTextList:
         simplified = AnnotatedTextList()
         if not self:
             return self
@@ -408,6 +423,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: Union[BytesIO, Path],
         options: Optional[HTMLBackendOptions] = None,
     ):
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
         super().__init__(in_doc, path_or_stream, options)

@@ -8,8 +8,10 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type
+from typing import Annotated, Type, cast
 from urllib.parse import urlparse
+
+from docling.datamodel.service.responses import ChunkedDocumentResultItem
 
 # Check for CLI dependencies
 try:
@@ -124,6 +126,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
+from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
@@ -163,6 +166,11 @@ class HtmlImageFetchMode(str, Enum):
     LOCAL = "local"
     REMOTE = "remote"
     ALL = "all"
+
+
+class ChunkerType(str, Enum):
+    HYBRID = "hybrid"
+    HIERARCHICAL = "hierarchical"
 
 
 def _is_http_url(source: str) -> bool:
@@ -293,6 +301,61 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         return super().parse_args(ctx, args)
 
 
+def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+    """Map an AsrModelType enum member to its preset InlineAsrOptions.
+
+    Shared mapping so both audio and (later) video CLI setup resolve
+    ASR presets the same way.
+    """
+    mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.WHISPER_TINY: WHISPER_TINY,
+        AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
+        AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
+        AsrModelType.WHISPER_BASE: WHISPER_BASE,
+        AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
+        AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
+        AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
+        AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
+        AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
+        AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
+        AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
+        AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
+        AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
+        AsrModelType.WHISPER_BASE_NATIVE: WHISPER_BASE_NATIVE,
+        AsrModelType.WHISPER_LARGE_NATIVE: WHISPER_LARGE_NATIVE,
+        AsrModelType.WHISPER_TURBO_NATIVE: WHISPER_TURBO_NATIVE,
+        AsrModelType.WHISPER_TINY_EN_NATIVE: WHISPER_TINY_EN_NATIVE,
+        AsrModelType.WHISPER_BASE_EN_NATIVE: WHISPER_BASE_EN_NATIVE,
+        AsrModelType.WHISPER_SMALL_EN_NATIVE: WHISPER_SMALL_EN_NATIVE,
+        AsrModelType.WHISPER_MEDIUM_EN_NATIVE: WHISPER_MEDIUM_EN_NATIVE,
+        AsrModelType.WHISPER_DISTIL_SMALL_EN_NATIVE: WHISPER_DISTIL_SMALL_EN_NATIVE,
+        AsrModelType.WHISPER_DISTIL_MEDIUM_EN_NATIVE: WHISPER_DISTIL_MEDIUM_EN_NATIVE,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_NATIVE: WHISPER_DISTIL_LARGE_V3_NATIVE,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_5_NATIVE: WHISPER_DISTIL_LARGE_V3_5_NATIVE,
+        AsrModelType.WHISPER_TINY_S2T: WHISPER_TINY_S2T,
+        AsrModelType.WHISPER_TINY_EN_S2T: WHISPER_TINY_EN_S2T,
+        AsrModelType.WHISPER_BASE_S2T: WHISPER_BASE_S2T,
+        AsrModelType.WHISPER_BASE_EN_S2T: WHISPER_BASE_EN_S2T,
+        AsrModelType.WHISPER_SMALL_S2T: WHISPER_SMALL_S2T,
+        AsrModelType.WHISPER_SMALL_EN_S2T: WHISPER_SMALL_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T: WHISPER_DISTIL_SMALL_EN_S2T,
+        AsrModelType.WHISPER_MEDIUM_S2T: WHISPER_MEDIUM_S2T,
+        AsrModelType.WHISPER_MEDIUM_EN_S2T: WHISPER_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T: WHISPER_DISTIL_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_LARGE_V3_S2T: WHISPER_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T: WHISPER_DISTIL_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T: WHISPER_DISTIL_LARGE_V3_5_S2T,
+        AsrModelType.WHISPER_LARGE_V3_TURBO_S2T: WHISPER_LARGE_V3_TURBO_S2T,
+    }
+    try:
+        return mapping[asr_model]
+    except KeyError:
+        _log.error(f"{asr_model} is not known")
+        raise ValueError(f"{asr_model} is not known")
+
+
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
@@ -358,203 +421,6 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
-def _export_json_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-    image_export_mode: ImageRefMode,
-) -> None:
-    fname = output_dir / f"{doc_filename}.json"
-    _log.info(f"writing JSON output to {fname}")
-    conv_res.document.save_as_json(filename=fname, image_mode=image_export_mode)
-
-
-def _export_yaml_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-    image_export_mode: ImageRefMode,
-) -> None:
-    fname = output_dir / f"{doc_filename}.yaml"
-    _log.info(f"writing YAML output to {fname}")
-    conv_res.document.save_as_yaml(filename=fname, image_mode=image_export_mode)
-
-
-def _export_html_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-    image_export_mode: ImageRefMode,
-) -> None:
-    fname = output_dir / f"{doc_filename}.html"
-    _log.info(f"writing HTML output to {fname}")
-    conv_res.document.save_as_html(
-        filename=fname, image_mode=image_export_mode, split_page_view=False
-    )
-
-
-def _export_html_split_page_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-    image_export_mode: ImageRefMode,
-    show_layout: bool,
-) -> None:
-    fname = output_dir / f"{doc_filename}.html"
-    _log.info(f"writing HTML output to {fname}")
-    if show_layout:
-        ser = HTMLDocSerializer(
-            doc=conv_res.document,
-            params=HTMLParams(
-                image_mode=image_export_mode,
-                output_style=HTMLOutputStyle.SPLIT_PAGE,
-            ),
-        )
-        visualizer = LayoutVisualizer()
-        visualizer.params.show_label = False
-        ser_res = ser.serialize(visualizer=visualizer)
-        with open(fname, "w") as fw:
-            fw.write(ser_res.text)
-    else:
-        conv_res.document.save_as_html(
-            filename=fname,
-            image_mode=image_export_mode,
-            split_page_view=True,
-        )
-
-
-def _export_text_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    fname = output_dir / f"{doc_filename}.txt"
-    _log.info(f"writing TXT output to {fname}")
-    conv_res.document.save_as_markdown(
-        filename=fname,
-        strict_text=True,
-        image_mode=ImageRefMode.PLACEHOLDER,
-    )
-
-
-def _export_markdown_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-    image_export_mode: ImageRefMode,
-) -> bool:
-    fname = output_dir / f"{doc_filename}.md"
-    _log.info(f"writing Markdown output to {fname}")
-    conv_res.document.save_as_markdown(filename=fname, image_mode=image_export_mode)
-    if _is_empty_output(fname):
-        error_message = (
-            f"Markdown export produced empty output for {conv_res.input.file.name}"
-        )
-        _log.error(error_message)
-        conv_res.errors.append(
-            ErrorItem(
-                component_type=DoclingComponentType.DOC_ASSEMBLER,
-                module_name="export_documents",
-                error_message=error_message,
-            )
-        )
-        conv_res.status = ConversionStatus.FAILURE
-        return True
-    return False
-
-
-def _export_doctags_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    fname = output_dir / f"{doc_filename}.doctags"
-    _log.info(f"writing Doc Tags output to {fname}")
-    conv_res.document.save_as_doctags(filename=fname)
-
-
-def _export_vtt_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    fname = output_dir / f"{doc_filename}.vtt"
-    _log.info(f"writing WebVTT output to {fname}")
-    conv_res.document.save_as_vtt(filename=fname)
-
-
-def _export_doclang_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    fname = output_dir / f"{doc_filename}.dclg.xml"
-    _log.info(f"writing DocLang output to {fname}")
-    with fname.open("w", encoding="utf-8") as fp:
-        fp.write(conv_res.document.export_to_doclang())
-
-
-def _export_dclx_format(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    fname = output_dir / f"{doc_filename}.dclx"
-    _log.info(f"writing DCLX output to {fname}")
-    conv_res.document.save_as_doclang_archive(filename=fname)
-
-
-def _print_profiling_timings(
-    conv_res: ConversionResult,
-    doc_filename: str,
-) -> None:
-    table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
-    metric_columns = [
-        "Stage",
-        "count",
-        "total",
-        "mean",
-        "median",
-        "min",
-        "max",
-        "0.1 percentile",
-        "0.9 percentile",
-    ]
-    for col in metric_columns:
-        table.add_column(col, style="bold")
-    for stage_key, item in conv_res.timings.items():
-        col_dict = {
-            "Stage": stage_key,
-            "count": item.count,
-            "total": item.total(),
-            "mean": item.avg(),
-            "median": item.percentile(0.5),
-            "min": item.percentile(0.0),
-            "max": item.percentile(1.0),
-            "0.1 percentile": item.percentile(0.1),
-            "0.9 percentile": item.percentile(0.9),
-        }
-        row_values = [str(col_dict[col]) for col in metric_columns]
-        table.add_row(*row_values)
-
-    console.print(table)
-
-
-def _export_profiling_data(
-    conv_res: ConversionResult,
-    output_dir: Path,
-    doc_filename: str,
-) -> None:
-    TimingsT = TypeAdapter(dict[str, ProfilingItem])
-    now = datetime.datetime.now()
-    timings_file = Path(
-        output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
-    )
-    with timings_file.open("wb") as fp:
-        r = TimingsT.dump_json(conv_res.timings, indent=2)
-        fp.write(r)
-
-
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -572,60 +438,244 @@ def export_documents(
     export_timings: bool,
     image_export_mode: ImageRefMode,
     export_dclx: bool = False,
+    export_chunks: bool = False,
+    chunker_type: ChunkerType = ChunkerType.HYBRID,
+    chunk_max_tokens: int | None = None,
+    chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
     success_count = 0
     failure_count = 0
+
+    # Initialize chunker once for all documents
+    chunker_obj = None
+    if export_chunks:
+        import json as _json
+
+        from docling_core.transforms.chunker.hierarchical_chunker import (
+            DocChunk,
+            HierarchicalChunker,
+        )
+        from docling_core.transforms.chunker.hybrid_chunker import (
+            HybridChunker,
+        )
+        from docling_core.transforms.chunker.tokenizer.huggingface import (
+            HuggingFaceTokenizer,
+        )
+
+        if chunker_type == ChunkerType.HIERARCHICAL:
+            chunker_obj = HierarchicalChunker()
+        else:  # default: hybrid
+            hf_tok = HuggingFaceTokenizer.from_pretrained(
+                model_name=chunk_tokenizer,
+                max_tokens=chunk_max_tokens,
+            )
+            chunker_obj = HybridChunker(tokenizer=hf_tok)
 
     for conv_res in conv_results:
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
+            # Export JSON format:
             if export_json:
-                _export_json_format(
-                    conv_res, output_dir, doc_filename, image_export_mode
+                fname = output_dir / f"{doc_filename}.json"
+                _log.info(f"writing JSON output to {fname}")
+                conv_res.document.save_as_json(
+                    filename=fname, image_mode=image_export_mode
                 )
 
+            # Export YAML format:
             if export_yaml:
-                _export_yaml_format(
-                    conv_res, output_dir, doc_filename, image_export_mode
+                fname = output_dir / f"{doc_filename}.yaml"
+                _log.info(f"writing YAML output to {fname}")
+                conv_res.document.save_as_yaml(
+                    filename=fname, image_mode=image_export_mode
                 )
 
+            # Export HTML format:
             if export_html:
-                _export_html_format(
-                    conv_res, output_dir, doc_filename, image_export_mode
+                fname = output_dir / f"{doc_filename}.html"
+                _log.info(f"writing HTML output to {fname}")
+                conv_res.document.save_as_html(
+                    filename=fname, image_mode=image_export_mode, split_page_view=False
                 )
 
+            # Export HTML format:
             if export_html_split_page:
-                _export_html_split_page_format(
-                    conv_res, output_dir, doc_filename, image_export_mode, show_layout
-                )
+                fname = output_dir / f"{doc_filename}.html"
+                _log.info(f"writing HTML output to {fname}")
+                if show_layout:
+                    ser = HTMLDocSerializer(
+                        doc=conv_res.document,
+                        params=HTMLParams(
+                            image_mode=image_export_mode,
+                            output_style=HTMLOutputStyle.SPLIT_PAGE,
+                        ),
+                    )
+                    visualizer = LayoutVisualizer()
+                    visualizer.params.show_label = False
+                    ser_res = ser.serialize(
+                        visualizer=visualizer,
+                    )
+                    with open(fname, "w") as fw:
+                        fw.write(ser_res.text)
+                else:
+                    conv_res.document.save_as_html(
+                        filename=fname,
+                        image_mode=image_export_mode,
+                        split_page_view=True,
+                    )
 
+            # Export Text format:
             if export_txt:
-                _export_text_format(conv_res, output_dir, doc_filename)
-
-            if export_md:
-                doc_failed = _export_markdown_format(
-                    conv_res, output_dir, doc_filename, image_export_mode
+                fname = output_dir / f"{doc_filename}.txt"
+                _log.info(f"writing TXT output to {fname}")
+                conv_res.document.save_as_markdown(
+                    filename=fname,
+                    strict_text=True,
+                    image_mode=ImageRefMode.PLACEHOLDER,
                 )
 
+            # Export Markdown format:
+            if export_md:
+                fname = output_dir / f"{doc_filename}.md"
+                _log.info(f"writing Markdown output to {fname}")
+                conv_res.document.save_as_markdown(
+                    filename=fname, image_mode=image_export_mode
+                )
+                if _is_empty_output(fname):
+                    error_message = (
+                        "Markdown export produced empty output for "
+                        f"{conv_res.input.file.name}"
+                    )
+                    _log.error(error_message)
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOC_ASSEMBLER,
+                            module_name="export_documents",
+                            error_message=error_message,
+                        )
+                    )
+                    conv_res.status = ConversionStatus.FAILURE
+                    doc_failed = True
+
+            # Export Document Tags format:
             if export_doctags:
-                _export_doctags_format(conv_res, output_dir, doc_filename)
+                fname = output_dir / f"{doc_filename}.doctags"
+                _log.info(f"writing Doc Tags output to {fname}")
+                conv_res.document.save_as_doctags(filename=fname)
 
+            # Export WebVTT format:
             if export_vtt:
-                _export_vtt_format(conv_res, output_dir, doc_filename)
+                fname = output_dir / f"{doc_filename}.vtt"
+                _log.info(f"writing WebVTT output to {fname}")
+                conv_res.document.save_as_vtt(filename=fname)
 
+            # Export DocLang format:
             if export_doclang:
-                _export_doclang_format(conv_res, output_dir, doc_filename)
+                fname = output_dir / f"{doc_filename}.dclg.xml"
+                _log.info(f"writing DocLang output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_doclang())
 
+            # Export DCLX format:
             if export_dclx:
-                _export_dclx_format(conv_res, output_dir, doc_filename)
+                fname = output_dir / f"{doc_filename}.dclx"
+                _log.info(f"writing DCLX output to {fname}")
+                conv_res.document.save_as_doclang_archive(filename=fname)
 
+            # Export Chunks format:
+            if export_chunks and chunker_obj is not None:
+                fname = output_dir / f"{doc_filename}.chunks.jsonl"
+                _log.info(f"writing Chunks output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    for i, chunk in enumerate(
+                        chunker_obj.chunk(dl_doc=conv_res.document)
+                    ):
+                        doc_chunk = cast(DocChunk, chunk)
+                        page_numbers = sorted(
+                            {
+                                prov.page_no
+                                for item in doc_chunk.meta.doc_items
+                                for prov in item.prov
+                            }
+                        )
+                        metadata = {}
+                        if doc_chunk.meta.origin:
+                            metadata["origin"] = doc_chunk.meta.origin.model_dump(
+                                mode="json"
+                            )
+
+                        contextualized = chunker_obj.contextualize(doc_chunk)
+                        num_tokens: int | None = None
+                        if isinstance(chunker_obj, HybridChunker):
+                            num_tokens = chunker_obj.tokenizer.count_tokens(
+                                contextualized
+                            )
+                        chunk_record = ChunkedDocumentResultItem(
+                            filename=doc_filename,
+                            chunk_index=i,
+                            text=contextualized,
+                            raw_text=doc_chunk.text,
+                            num_tokens=num_tokens,
+                            headings=doc_chunk.meta.headings,
+                            captions=doc_chunk.meta.captions,
+                            doc_items=[
+                                item.self_ref for item in doc_chunk.meta.doc_items
+                            ],
+                            page_numbers=page_numbers,
+                            metadata=metadata,
+                        )
+                        fp.write(
+                            _json.dumps(
+                                chunk_record.model_dump(mode="json"),
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
+            # Print profiling timings
             if print_timings:
-                _print_profiling_timings(conv_res, doc_filename)
+                table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
+                metric_columns = [
+                    "Stage",
+                    "count",
+                    "total",
+                    "mean",
+                    "median",
+                    "min",
+                    "max",
+                    "0.1 percentile",
+                    "0.9 percentile",
+                ]
+                for col in metric_columns:
+                    table.add_column(col, style="bold")
+                for stage_key, item in conv_res.timings.items():
+                    col_dict = {
+                        "Stage": stage_key,
+                        "count": item.count,
+                        "total": item.total(),
+                        "mean": item.avg(),
+                        "median": item.percentile(0.5),
+                        "min": item.percentile(0.0),
+                        "max": item.percentile(1.0),
+                        "0.1 percentile": item.percentile(0.1),
+                        "0.9 percentile": item.percentile(0.9),
+                    }
+                    row_values = [str(col_dict[col]) for col in metric_columns]
+                    table.add_row(*row_values)
 
+                console.print(table)
+
+            # Export profiling timings
             if export_timings:
-                _export_profiling_data(conv_res, output_dir, doc_filename)
+                TimingsT = TypeAdapter(dict[str, ProfilingItem])
+                now = datetime.datetime.now()
+                timings_file = Path(
+                    output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+                )
+                with timings_file.open("wb") as fp:
+                    r = TimingsT.dump_json(conv_res.timings, indent=2)
+                    fp.write(r)
 
         if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -661,6 +711,21 @@ def convert(  # noqa: C901
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
+    ),
+    chunker_type: ChunkerType = typer.Option(
+        ChunkerType.HYBRID,
+        "--chunks-type",
+        help="Chunker type for '--to chunks'.",
+    ),
+    chunk_max_tokens: int | None = typer.Option(
+        None,
+        "--chunks-max-tokens",
+        help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
+    ),
+    chunk_tokenizer: str = typer.Option(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "--chunks-tokenizer",
+        help="HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid.",
     ),
     show_layout: Annotated[
         bool,
@@ -1235,96 +1300,7 @@ def convert(  # noqa: C901
         )
 
         # Auto-selecting models (choose best implementation for hardware)
-        if asr_model == AsrModelType.WHISPER_TINY:
-            asr_pipeline_options.asr_options = WHISPER_TINY
-        elif asr_model == AsrModelType.WHISPER_SMALL:
-            asr_pipeline_options.asr_options = WHISPER_SMALL
-        elif asr_model == AsrModelType.WHISPER_MEDIUM:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM
-        elif asr_model == AsrModelType.WHISPER_BASE:
-            asr_pipeline_options.asr_options = WHISPER_BASE
-        elif asr_model == AsrModelType.WHISPER_LARGE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE
-        elif asr_model == AsrModelType.WHISPER_TURBO:
-            asr_pipeline_options.asr_options = WHISPER_TURBO
-
-        # Explicit MLX models (force MLX implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TINY_MLX
-        elif asr_model == AsrModelType.WHISPER_SMALL_MLX:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_MLX
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_MLX:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_MLX
-        elif asr_model == AsrModelType.WHISPER_BASE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_BASE_MLX
-        elif asr_model == AsrModelType.WHISPER_LARGE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_MLX
-        elif asr_model == AsrModelType.WHISPER_TURBO_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_MLX
-
-        # Explicit Native models (force native implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TINY_NATIVE
-        elif asr_model == AsrModelType.WHISPER_SMALL_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_NATIVE
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_NATIVE
-        elif asr_model == AsrModelType.WHISPER_BASE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_BASE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_LARGE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_TURBO_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_NATIVE
-        elif asr_model == AsrModelType.WHISPER_TINY_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TINY_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_BASE_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_BASE_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_SMALL_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_DISTIL_SMALL_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_SMALL_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_DISTIL_MEDIUM_EN_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_MEDIUM_EN_NATIVE
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_NATIVE
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_5_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_5_NATIVE
-
-        # Explicit WhisperS2T models (CTranslate2 backend - fastest)
-        elif asr_model == AsrModelType.WHISPER_TINY_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_S2T
-        elif asr_model == AsrModelType.WHISPER_TINY_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_TURBO_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_TURBO_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_5_S2T
-
-        else:
-            _log.error(f"{asr_model} is not known")
-            raise ValueError(f"{asr_model} is not known")
+        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -1360,6 +1336,9 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            chunker_type=chunker_type,
+            chunk_max_tokens=chunk_max_tokens,
+            chunk_tokenizer=chunk_tokenizer,
         )
 
         end_time = time.time() - start_time

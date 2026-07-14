@@ -234,6 +234,29 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "cells) as TextItem instead of TableItem."
         ),
     )
+
+    parse_charts: bool = Field(
+        True,
+        description=(
+            "Whether to parse native charts embedded in worksheets and chart "
+            "sheets. Each chart becomes a PictureItem classified by chart type "
+            "(bar, line, pie, scatter) and carrying the chart's underlying data "
+            "reconstructed as a table. Set to False to skip chart parsing."
+        ),
+    )
+
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart is isolated into a temporary "
+            "workbook and rasterized with LibreOffice, the same external tool "
+            "used for EMF/WMF images. Opt-in (default False) because it "
+            "requires a LibreOffice installation and inflates the output size. "
+            "Only takes effect when parse_charts is True."
+        ),
+    )
+
     gap_tolerance: int = Field(
         0,
         description=(

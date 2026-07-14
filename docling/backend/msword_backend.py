@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -26,15 +28,6 @@ from docling_core.types.doc import (
     TableItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
-from docx import Document
-from docx.document import Document as DocxDocument
-from docx.oxml.table import CT_Tc
-from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
-from docx.table import Table, _Cell
-from docx.text.hyperlink import Hyperlink
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, ValidationError
@@ -51,6 +44,28 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
+
+_DOCX_AVAILABLE: bool = False
+_DOCX_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from docx import Document
+    from docx.document import Document as DocxDocument
+    from docx.oxml.simpletypes import ST_Merge
+    from docx.oxml.xmlchemy import BaseOxmlElement
+    from docx.styles.style import ParagraphStyle
+    from docx.table import Table, _Cell
+    from docx.text.hyperlink import Hyperlink
+    from docx.text.paragraph import Paragraph
+    from docx.text.run import Run
+
+    _DOCX_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _DOCX_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'python-docx' package is required to process Word files. "
+    "Install it with `pip install 'docling-slim[format-docx]'`."
+)
 
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
@@ -82,6 +97,18 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
     r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
 )
 """Matches Strict OOXML namespace/relationship URIs."""
+
+_VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
+    {
+        "decimal",
+        "lowerRoman",
+        "upperRoman",
+        "lowerLetter",
+        "upperLetter",
+        "decimalZero",
+    }
+)
+"""OOXML numFmt values that produce visible list/heading markers."""
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
@@ -197,7 +224,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+        if not _DOCX_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
@@ -843,8 +872,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parts.append(str(counter))
         return ".".join(parts) + "."
 
-    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
-        """Check if a list is numbered based on its numFmt value."""
+    def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
+        """Return True when numbering.xml defines a visible marker for numId/ilvl."""
         try:
             lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
@@ -857,20 +886,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            numbered_formats = {
-                "decimal",
-                "lowerRoman",
-                "upperRoman",
-                "lowerLetter",
-                "upperLetter",
-                "decimalZero",
-            }
-
-            return num_fmt in numbered_formats
+            return num_fmt in _VISIBLE_NUMBERING_FORMATS
 
         except Exception as e:
-            _log.debug(f"Error determining if list is numbered: {e}")
+            _log.debug(f"Error determining visible numbering format: {e}")
             return False
+
+    def _is_numbered_heading(self, paragraph: Paragraph) -> bool:
+        """Return True when heading numbering would render a visible marker."""
+        numid, ilvl = self._get_numId_and_ilvl(paragraph)
+        return numid is not None and self._has_visible_numbering_format(
+            numid, ilvl or 0
+        )
 
     def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
         """Extract outlineLvl from paragraph's style definition.
@@ -1626,7 +1653,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(numid, ilevel)
+            is_numbered = self._has_visible_numbering_format(numid, ilevel)
 
             # If there are equations in the list item, handle them specially
             if len(equations) > 0:
@@ -1688,13 +1715,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
-            else:
-                is_numbered_style = False
+            is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 
@@ -2222,6 +2243,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         doc: DoclingDocument,
     ) -> list[RefItem]:
+        """Convert a ``w:tbl`` element into a Docling table.
+
+        Cells are emitted in a single pass over the rows. A row may start late
+        (``w:gridBefore``) or end early (``w:gridAfter``), so a cell's position
+        within its row does not identify its layout-grid column; the grid column
+        is therefore tracked explicitly while walking the row. A cell with
+        ``vMerge="continue"`` holds no content of its own and instead extends the
+        cell still open at the same grid column.
+
+        Args:
+            element: The ``w:tbl`` element to convert.
+            doc: The DoclingDocument being constructed.
+
+        Returns:
+            References to the items created for this table.
+        """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
@@ -2243,35 +2280,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         elem_ref.append(docling_table.get_ref())
 
-        cell_set: set[CT_Tc] = set()
+        open_cells: dict[int, TableCell] = {}
         for row_idx, row in enumerate(table.rows):
-            _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
-            col_idx = 0
-            while col_idx < num_cols:
-                # Handle merged cells: row may have fewer cells than num_cols
-                if col_idx >= len(row.cells):
+            grid_col = row.grid_cols_before
+            for tc in row._tr.tc_lst:
+                if grid_col >= num_cols:
                     break
-                cell: _Cell = row.cells[col_idx]
-                _log.debug(
-                    f" col {col_idx} grid_span {cell.grid_span} grid_cols_before {row.grid_cols_before}"
-                )
-                if cell is None or cell._tc in cell_set:
-                    _log.debug("  skipped since repeated content")
-                    col_idx += cell.grid_span
-                    continue
-                else:
-                    cell_set.add(cell._tc)
+                col_span = tc.grid_span
 
-                spanned_idx = row_idx
-                spanned_tc: CT_Tc | None = cell._tc
-                while spanned_tc == cell._tc:
-                    spanned_idx += 1
-                    spanned_tc = (
-                        table.rows[spanned_idx].cells[col_idx]._tc
-                        if spanned_idx < num_rows
-                        else None
+                spanned = open_cells.get(grid_col)
+                if tc.vMerge == ST_Merge.CONTINUE and spanned is not None:
+                    spanned.end_row_offset_idx = row_idx + 1
+                    spanned.row_span = (
+                        spanned.end_row_offset_idx - spanned.start_row_offset_idx
                     )
-                _log.debug(f"  spanned before row {spanned_idx}")
+                    grid_col += col_span
+                    continue
+
+                cell = _Cell(tc, table)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
@@ -2288,12 +2314,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if rich_table_cell:
                     with self._isolated_list_context():
                         _, provs_in_cell = self._walk_linear(cell._element, doc)
-                _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
+                _log.debug(f"Table cell {row_idx},{grid_col} rich? {rich_table_cell}")
 
+                new_cell: TableCell
                 if len(provs_in_cell) > 0:
                     # Cell has multiple elements, we need to group them
-                    rich_table_cell = True
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    group_name = (
+                        f"rich_cell_group_{len(doc.tables)}_{grid_col}_{row_idx}"
+                    )
                     ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
                         group_name,
                         doc,
@@ -2301,36 +2329,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         docling_table,
                         content_layer=self.content_layer,
                     )
-
-                if rich_table_cell:
-                    rich_cell = RichTableCell(
+                    new_cell = RichTableCell(
                         text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_span=1,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=grid_col,
+                        end_col_offset_idx=grid_col + col_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=rich_cell)
-                    col_idx += cell.grid_span
                 else:
-                    simple_cell = TableCell(
+                    new_cell = TableCell(
                         text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_span=1,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=grid_col,
+                        end_col_offset_idx=grid_col + col_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=simple_cell)
-                    col_idx += cell.grid_span
+
+                doc.add_table_cell(table_item=docling_table, cell=new_cell)
+                open_cells[grid_col] = new_cell
+                grid_col += col_span
         return elem_ref
 
     def _has_blip(self, element: BaseOxmlElement) -> bool:
