@@ -260,6 +260,27 @@ def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
     assert model.enabled is True
 
 
+def test_native_distil_artifacts_path_missing_checkpoint_raises(tmp_path):
+    """artifacts_path set but checkpoint absent must fail loudly, not download."""
+    from docling.pipeline.asr_transcriber import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(
+        repo_id="distil-small.en",
+        inference_framework=InferenceAsrFramework.WHISPER,
+        verbose=False,
+        timestamps=False,
+        word_timestamps=False,
+        temperature=0.0,
+        max_new_tokens=1,
+        max_time_chunk=1.0,
+        language="en",
+    )
+    with pytest.raises(FileNotFoundError, match="does not contain"):
+        _NativeWhisperModel(
+            True, tmp_path, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
+        )
+
+
 def test_native_run_success_with_bytesio_builds_document(tmp_path):
     """Cover _NativeWhisperModel.run with BytesIO input and success path."""
     from docling.pipeline.asr_pipeline import _NativeWhisperModel

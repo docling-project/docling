@@ -216,19 +216,35 @@ class _NativeWhisperModel:
             distil_checkpoint = _DISTIL_WHISPER_OPENAI_CHECKPOINTS.get(self.model_name)
             if distil_checkpoint is not None:
                 from huggingface_hub import hf_hub_download
+                from huggingface_hub.utils import LocalEntryNotFoundError
 
                 repo_id, filename = distil_checkpoint
                 _log.info(
                     f"loading {self.model_name} from OpenAI-format checkpoint "
                     f"{repo_id}/{filename}"
                 )
-                checkpoint_path = hf_hub_download(
-                    repo_id=repo_id,
-                    filename=filename,
-                    cache_dir=str(artifacts_path)
-                    if artifacts_path is not None
-                    else None,
-                )
+                if artifacts_path is not None:
+                    # artifacts_path means fully-offline operation: resolve the
+                    # checkpoint from the local cache and never download.
+                    try:
+                        checkpoint_path = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=filename,
+                            cache_dir=str(artifacts_path),
+                            local_files_only=True,
+                        )
+                    except LocalEntryNotFoundError as err:
+                        raise FileNotFoundError(
+                            f"artifacts_path ({artifacts_path}) does not contain "
+                            f"the checkpoint {repo_id}/{filename} required by ASR "
+                            f"model '{self.model_name}'. Prefetch it with: "
+                            f"hf download {repo_id} {filename} "
+                            f'--cache-dir "{artifacts_path}"'
+                        ) from err
+                else:
+                    checkpoint_path = hf_hub_download(
+                        repo_id=repo_id, filename=filename
+                    )
                 self.model = whisper.load_model(
                     name=checkpoint_path, device=self.device
                 )
