@@ -92,13 +92,13 @@ def test_ambiguous_content_stays_unknown(text):
         # A line of repeated keywords is the bait for polynomial backtracking:
         # untempered ".*" gaps around the `from` pivot would re-scan the tail
         # for every `from`. The tempered gaps keep this linear.
-        "select " + "from " * 40000,
+        pytest.param("select " + "from " * 40000, id="repeated-from-keywords"),
         # Many SELECT line-start anchors under re.MULTILINE.
-        "select x from y\n" * 40000,
+        pytest.param("select x from y\n" * 40000, id="repeated-select-lines"),
         # A literal line followed by a long blank run: a leading `\s` in a
         # line-anchored rule would swallow the blanks and go quadratic.
-        "FROM ubuntu\n" + "\n" * 40000,
-        "def f():\n" + "\n" * 40000,
+        pytest.param("FROM ubuntu\n" + "\n" * 40000, id="dockerfile-long-blank-run"),
+        pytest.param("def f():\n" + "\n" * 40000, id="python-long-blank-run"),
     ],
 )
 def test_detection_stays_linear_on_large_input(text):
@@ -142,15 +142,14 @@ def test_normalize_hint(hint, expected):
     assert normalize_code_language(hint) == expected
 
 
-def test_hint_takes_precedence_over_content():
-    assert (
-        detect_code_language(PYTHON_FUNC, hint="javascript")
-        == CodeLanguageLabel.JAVASCRIPT
-    )
-
-
-def test_unrecognized_hint_falls_back_to_content():
-    assert (
-        detect_code_language(PYTHON_FUNC, hint="not-a-language")
-        == CodeLanguageLabel.PYTHON
-    )
+@pytest.mark.parametrize(
+    "text, hint, expected",
+    [
+        # A valid hint overrides content-based detection.
+        (PYTHON_FUNC, "javascript", CodeLanguageLabel.JAVASCRIPT),
+        # An unrecognized hint falls back to content detection.
+        (PYTHON_FUNC, "not-a-language", CodeLanguageLabel.PYTHON),
+    ],
+)
+def test_detect_with_hint(text, hint, expected):
+    assert detect_code_language(text, hint=hint) == expected
