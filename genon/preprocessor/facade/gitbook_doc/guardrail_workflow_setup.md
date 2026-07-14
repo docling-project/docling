@@ -22,7 +22,7 @@
    → 전처리기가 청킹 후 quote_origin 매칭 → content_category 부착(+옵션 마스킹)
 ```
 
-운영이 준비할 것은 **가운데의 워크플로우 하나** 입니다. 나머지(호출·매칭·부착)는 전처리기가 합니다.
+GenOS에 직접 구성해야할것은 **가운데의 워크플로우 하나** 입니다. 나머지(호출·매칭·부착)는 전처리기가 합니다.
 
 ---
 
@@ -30,8 +30,8 @@
 
 ### 1.1 켜고 끄기: 요청 kwargs `guardrail_call`
 
-기능 on/off 는 config(yaml)가 아니라 **문서 업로드 요청의 kwargs** 로, 문서 건별로 제어합니다.
-전처리기 `__call__(request, file_path, **kwargs)` 의 kwargs 에 `guardrail_call` 을 넣으면 됩니다.
+- 기능 on/off 는 config(yaml)가 아니라 **문서 업로드 요청의 kwargs** 로, 문서 건별로 제어합니다.
+- 전처리기 `__call__(request, file_path, **kwargs)` 의 kwargs 에 `guardrail_call` 을 넣으면 됩니다.
 
 ```jsonc
 // 문서 업로드 요청 kwargs 예
@@ -44,25 +44,63 @@
 vectors = await processor(request, file_path, guardrail_call=True)
 ```
 
-### 1.2 스위치 2단 구조
+### 1.2 무슨 일이 일어나나 — 예시로 보기
 
-| 스위치 | 위치 | 역할 | 기본값 |
-|---|---|---|---|
-| `guardrail_call` | 요청 kwargs (문서별) | 가드레일 **호출 자체** on/off | `false` |
-| `masking_enabled` | config `guardrail:` 섹션 | `quote_masked` **치환** on/off (라벨 부착은 항상) | `false` |
+이 기능이 하는 일은 두 가지입니다.
 
-실제 동작 (실측):
+- **라벨 부착**: "이 청크에 어떤 민감정보가 들어있는지"를 청크 메타 필드 `content_category` 에
+  카테고리 문자열로 기록합니다. (본문은 안 바뀜 — 검색 시 "민감 정보 포함 청크 제외" 같은 필터링용)
+- **마스킹 치환**: 본문 텍스트에서 민감한 부분을 워크플로우가 알려준 마스킹본으로 바꿔서 적재합니다.
+  (예: `900101-1234567` → `[주민등록번호]`)
 
-| guardrail_call | masking_enabled | 결과 |
+스위치는 2개입니다 — `guardrail_call`(요청 kwargs, 가드레일 **호출 자체**)과
+`masking_enabled`(config, **치환까지 할지**). 아래 예시로 조합별 결과를 보면 빠릅니다.
+
+**입력 문서(일부)**
+
+```
+계약자 홍길동 (900101-1234567)
+서울 강남구 테헤란로 아파트를 5억에 매매하였다.
+```
+
+**케이스 A** — `guardrail_call: true` + `masking_enabled: true` → **라벨 + 마스킹**
+
+```jsonc
+// 적재되는 청크 (관련 필드만)
+{
+  "text": "계약자 홍길동 ([주민등록번호])\n서울 강남구 테헤란로 아파트를 5억에 매매하였다.",
+  "content_category": ["민감 정보", "부동산 정보"]
+}
+```
+
+**케이스 B** — `guardrail_call: true` + `masking_enabled: false` → **라벨만** (본문 원문 유지)
+
+```jsonc
+{
+  "text": "계약자 홍길동 (900101-1234567)\n서울 강남구 테헤란로 아파트를 5억에 매매하였다.",
+  "content_category": ["민감 정보", "부동산 정보"]
+}
+```
+
+**케이스 C** — `guardrail_call` 미지정(기본 `false`) → **가드레일을 아예 호출하지 않음**
+
+```jsonc
+{
+  "text": "계약자 홍길동 (900101-1234567)\n서울 강남구 테헤란로 아파트를 5억에 매매하였다.",
+  "content_category": null
+}
+```
+
+요약:
+
+| guardrail_call (요청 kwargs) | masking_enabled (config) | 결과 |
 |---|---|---|
-| `true` | `true` | `content_category` 라벨 부착 **+ 마스킹 치환** (예: `900101-1234567` → `[주민등록번호]`) |
-| `true` | `false` | `content_category` 라벨만 부착, 텍스트는 원문 유지 |
-| `false`(미지정) | 무관 | **가드레일 호출 안 함** — 라벨 없음(`None`), 원문 그대로 |
+| `true` | `true` | 라벨 부착 + 마스킹 치환 (케이스 A) |
+| `true` | `false` | 라벨만 부착, 본문 원문 (케이스 B) |
+| `false`(미지정) | 무관 | 호출 안 함 — 라벨 `null`, 본문 원문 (케이스 C) |
 
-예) `guardrail_call: true` 로 부동산 계약서를 넣으면 해당 청크에
-`content_category = ["민감 정보", "부동산 정보"]` 가 붙고, `masking_enabled: true` 면 주민번호·전화·
-이메일이 치환 토큰으로 바뀌어 적재됩니다. 라벨 값(`민감 정보` 등)은 전처리기에 하드코딩된 것이 아니라
-**워크플로우가 돌려준 `category` 문자열을 그대로 저장** 한 것입니다.
+> 라벨 값(`민감 정보`/`부동산 정보` 등)은 전처리기에 하드코딩된 것이 아니라 **워크플로우가 돌려준
+> `category` 문자열을 그대로 저장** 한 것입니다. 카테고리 목록·의미는 운영이 워크플로우에서 정합니다.
 
 ### 1.3 config: `guardrail:` 섹션 (접속 정보)
 
@@ -75,7 +113,7 @@ guardrail:
   workflow_id: 4932        # 민감정보 분류 워크플로우 ID
   api_key: "..."           # 워크플로우 호출 Bearer 인증키(AuthKeyBearer)
   timeout: 60              # 호출 타임아웃(초). 대용량 문서는 상향
-  masking_enabled: false   # quote_masked 치환 on/off. content_category 라벨 부착은 기능 켜지면 항상
+  masking_enabled: false   # 마스킹 치환 on/off (1.2절 케이스 A/B). 라벨 부착은 기능 켜지면 항상
 ```
 
 - `url` 은 **베이스까지만** — 뒤의 `/workflow/{id}/run/v2` 는 코드가 붙입니다.
