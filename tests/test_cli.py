@@ -655,10 +655,10 @@ def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
     assert ocr_options.mode is mode
 
 
-def test_cli_ocr_mode_defaults_to_default(tmp_path, monkeypatch):
+def test_cli_ocr_mode_defaults_to_pdf_cluster_ocr(tmp_path, monkeypatch):
     result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.DEFAULT
+    assert ocr_options.mode is OcrMode.PDF_AWARE_LAYOUT_REGIONS
 
 
 def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
@@ -673,7 +673,7 @@ def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch
 def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
     with pytest.warns(DeprecationWarning, match="--force-ocr"):
         result, ocr_options = _capture_cli_ocr_options(
-            monkeypatch, ["--force-ocr", "--ocr-mode", "layout_regions"], tmp_path
+            monkeypatch, ["--force-ocr", "--ocr-mode", "cluster_ocr"], tmp_path
         )
     assert result.exit_code == 0
     assert ocr_options.mode is OcrMode.FULL_PAGE

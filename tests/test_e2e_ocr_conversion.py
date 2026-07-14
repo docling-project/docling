@@ -68,6 +68,10 @@ def test_e2e_conversions():
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
+        # Layout-regions OCR
+        (TesseractOcrOptions(mode=OcrMode.LAYOUT_REGIONS), True),
+        (TesseractCliOcrOptions(mode=OcrMode.LAYOUT_REGIONS), True),
+        (EasyOcrOptions(mode=OcrMode.LAYOUT_REGIONS), False),
         # Full page OCR
         (TesseractOcrOptions(mode=OcrMode.FULL_PAGE), True),
         (TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),

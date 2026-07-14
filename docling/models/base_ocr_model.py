@@ -208,14 +208,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_cells: list[TextCell],
         page: Page,
         conv_res: ConversionResult,
-        priority: _MergeCellsPriority = _MergeCellsPriority.PDF_FIRST,
+        priority: _MergeCellsPriority | None = None,
     ) -> None:
         r"""
         Post-process the OCR cells and update the page object according to the algorithm:
 
         - If FULL_PAGE: Any existing PDF cells are ignored and only the OCR cells are used.
-        - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS: The priority parameter controls how the PDF/OCR cells
-          are merged
+        - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS and the priority parameter is None,
+          the priority is auto-selected based on the OcrMode:
+              - OCR_FIRST when LAYOUT_REGIONS
+              - PDF_FIRST when PDF_AWARE_LAYOUT_REGIONS
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
@@ -224,6 +226,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if self.options.mode == OcrMode.FULL_PAGE:
             final_cells = ocr_cells
         else:
+            if priority is None:
+                priority = (
+                    _MergeCellsPriority.OCR_FIRST
+                    if self.options.mode == OcrMode.LAYOUT_REGIONS
+                    else _MergeCellsPriority.PDF_FIRST
+                )
             final_cells = self._merge_ocr_and_pdf_cells(
                 ocr_cells, existing_cells, priority
             )

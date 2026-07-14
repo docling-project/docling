@@ -72,11 +72,7 @@ def get_regular_groundtruth_paths(
 
 
 def resolve_gt_ocr_mode(mode: OcrMode) -> OcrMode:
-    """Map an OCR mode to the mode whose ground truth it shares.
-
-    DEFAULT is wired to run the same behavior as PDF_AWARE_LAYOUT_REGIONS, so it
-    shares the same ground-truth directory and file tag.
-    """
+    """Map an OCR mode to the mode whose ground truth it shares."""
     return OcrMode.PDF_AWARE_LAYOUT_REGIONS if mode == OcrMode.DEFAULT else mode
 
 
