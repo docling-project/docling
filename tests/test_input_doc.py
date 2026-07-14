@@ -303,9 +303,7 @@ def test_guess_format(tmp_path):
     # Regression test for #2290: the DTD filename for this era is
     # "ST32-US-Grant-025xml.dtd", cased differently from the fully lowercase
     # v4.x DTD filenames, and was previously missed by a case-sensitive check.
-    buf = BytesIO(
-        Path("./tests/data/uspto/sources/pg06442728.xml").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/uspto/sources/pg06442728.xml").open("rb").read())
     stream = DocumentStream(name="pg06442728.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
     doc_path = Path("./tests/data/uspto/sources/pg06442728.xml")
