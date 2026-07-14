@@ -1,10 +1,13 @@
-# 민감정보 분류 워크플로우 구성·배포 안내
+# 민감정보 분류/마스킹 가이드 (Guardrail 연동, #315)
 
-전처리기의 `guardrail_call` 기능이 호출하는 **GenOS 가드레일 워크플로우** 를 GenOS 에서 만들고
-배포해 전처리기와 연결하는 절차입니다.
+문서 안의 민감정보(주민번호·연락처 같은 정형 PII, 부동산·인사 같은 의미 범주)를 **GenOS 가드레일
+워크플로우** 에 위임해 판별하고, 그 결과를 청크 메타(`content_category`) 라벨과 (옵션) 마스킹 치환으로
+반영하는 기능의 통합 가이드입니다.
 
-- 전처리기 쪽 사용법(config/동작)은 각 전처리기 매뉴얼의 「민감정보 분류/마스킹」 절을 참고하세요.
-- 이 문서는 그 절이 전제하는 **워크플로우 자체를 어떻게 준비하는가** 를 다룹니다.
+- **1~2절**: 전처리기를 쓰는 쪽(호출 방법, on/off 스위치, config)
+- **3~4절**: 워크플로우를 준비하는 쪽(운영 — 입출력 계약, GenOS 배포)
+- 카테고리 정의·프롬프트·정규식 필터는 모두 **GenOS(운영) 소유** 이며, 전처리기는 판단하지 않고
+  워크플로우 응답을 반영만 합니다.
 
 ---
 
@@ -23,9 +26,76 @@
 
 ---
 
-## 1. 워크플로우 입출력 계약 (전처리기와의 약속)
+## 1. 전처리기 사용법 — 호출과 스위치
 
-전처리기 코드(`_gr_classify_document`)가 기대하는 형식입니다. 반드시 지켜야 합니다.
+### 1.1 켜고 끄기: 요청 kwargs `guardrail_call`
+
+기능 on/off 는 config(yaml)가 아니라 **문서 업로드 요청의 kwargs** 로, 문서 건별로 제어합니다.
+전처리기 `__call__(request, file_path, **kwargs)` 의 kwargs 에 `guardrail_call` 을 넣으면 됩니다.
+
+```jsonc
+// 문서 업로드 요청 kwargs 예
+{ "guardrail_call": true }    // 이 문서는 가드레일 분류 수행
+{ }                           // 미지정(기본 false) → 가드레일을 아예 호출하지 않음
+```
+
+```python
+# 코드로 직접 호출하는 경우
+vectors = await processor(request, file_path, guardrail_call=True)
+```
+
+### 1.2 스위치 2단 구조
+
+| 스위치 | 위치 | 역할 | 기본값 |
+|---|---|---|---|
+| `guardrail_call` | 요청 kwargs (문서별) | 가드레일 **호출 자체** on/off | `false` |
+| `masking_enabled` | config `guardrail:` 섹션 | `quote_masked` **치환** on/off (라벨 부착은 항상) | `false` |
+
+실제 동작 (실측):
+
+| guardrail_call | masking_enabled | 결과 |
+|---|---|---|
+| `true` | `true` | `content_category` 라벨 부착 **+ 마스킹 치환** (예: `900101-1234567` → `[주민등록번호]`) |
+| `true` | `false` | `content_category` 라벨만 부착, 텍스트는 원문 유지 |
+| `false`(미지정) | 무관 | **가드레일 호출 안 함** — 라벨 없음(`None`), 원문 그대로 |
+
+예) `guardrail_call: true` 로 부동산 계약서를 넣으면 해당 청크에
+`content_category = ["민감 정보", "부동산 정보"]` 가 붙고, `masking_enabled: true` 면 주민번호·전화·
+이메일이 치환 토큰으로 바뀌어 적재됩니다. 라벨 값(`민감 정보` 등)은 전처리기에 하드코딩된 것이 아니라
+**워크플로우가 돌려준 `category` 문자열을 그대로 저장** 한 것입니다.
+
+### 1.3 config: `guardrail:` 섹션 (접속 정보)
+
+워크플로우 접속 정보는 전처리기 config yaml 의 `guardrail:` 섹션에 둡니다(환경 종속값).
+
+```yaml
+guardrail:
+  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_call)로 제어.
+  url: "https://genos.genon.ai/api/gateway"   # gateway 베이스. 코드가 /workflow/{workflow_id}/run/v2 를 붙임
+  workflow_id: 4932        # 민감정보 분류 워크플로우 ID
+  api_key: "..."           # 워크플로우 호출 Bearer 인증키(AuthKeyBearer)
+  timeout: 60              # 호출 타임아웃(초). 대용량 문서는 상향
+  masking_enabled: false   # quote_masked 치환 on/off. content_category 라벨 부착은 기능 켜지면 항상
+```
+
+- `url` 은 **베이스까지만** — 뒤의 `/workflow/{id}/run/v2` 는 코드가 붙입니다.
+- `url`/`workflow_id`/`api_key` 중 하나라도 비어 있으면 전처리기는 fail-open(원문 통과 + warning 로그)
+  으로 그 문서를 정상 처리합니다(적재가 막히지 않음).
+- 대상 전처리기: intelligent / attachment / convert / chunking. **parser 는 대상 아님**(청크가 없어
+  quote 매칭 불가 — 파스 결과를 chunking API 로 넘기면 chunking 이 분류·부착).
+
+### 1.4 출력: 청크 메타 `content_category`
+
+- 매칭된 `category` 값들이 리스트(중복 제거)로 저장됩니다. 예: `["민감 정보", "부동산 정보"]`
+- 매칭 없음/기능 off 면 `None`.
+- 한 quote 가 청크 경계에 걸치거나 여러 청크에 중복 등장하면 매칭된 청크 전부에 부착됩니다.
+- 표(table) 셀 내용도 분류 대상입니다(문서 텍스트에 표를 마크다운으로 포함해 전송).
+
+---
+
+## 2. 워크플로우 입출력 계약 (전처리기와의 약속)
+
+전처리기 코드(`_gr_classify_document`)가 기대하는 형식입니다. 워크플로우는 반드시 이 계약을 지켜야 합니다.
 
 **입력** (전처리기 → 워크플로우)
 
@@ -72,33 +142,11 @@
 
 ---
 
-## 2. 워크플로우 Python 단계 코드
+## 3. 워크플로우 Python 단계 코드
 
 `run(data)` 하나로 **[정규식=가드레일 인스턴스] + [의미=LLM]** 분류를 수행하는 스텝 코드가
 저장소에 있습니다: [`workflow_guardrail.py`](workflow_guardrail.py) (이 파일을 그대로 복사해 워크플로우
-Python 단계에 붙여 넣으세요). 핵심 구조만 발췌합니다.
-
-```python
-import os, json, difflib, requests
-
-# 정규식은 코드에 하드코딩하지 않는다. 운영이 가드레일 인스턴스(정규식 필터)에 정의한 것을 단일
-# 소스로 삼아, 그 인스턴스 dry-run 을 호출해 마스킹 결과를 받고 원문과 diff 해서 스팬을 복원한다.
-_GR_BASE = os.environ.get("GUARDRAIL_DRYRUN_BASE", "http://llmops-gateway-api-service:8080")  # 내부 게이트웨이(무인증)
-_GR_ID   = os.environ.get("GUARDRAIL_ID", "99")   # 정규식 필터가 등록된 가드레일 인스턴스 ID
-
-_LLM_URL = os.environ.get("GUARDRAIL_LLM_URL", "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions")
-_LLM_KEY = os.environ.get("GUARDRAIL_LLM_KEY", "")
-_LLM_MODEL = os.environ.get("GUARDRAIL_LLM_MODEL", "model")
-_SYSTEM_PROMPT = """... 부동산 정보 / 인사 정보 를 의미로 판별. quote_origin 은 원문 그대로 복사 ..."""
-
-async def run(data: dict) -> dict:
-    text = data.get("text") or data.get("question", "") or ""
-    if not text:
-        return {"text": "", "sensitive_infos": []}   # dict 반환 시 text 키 필수(09050003 방지)
-    infos = _run_guardrail_regex(text) + _run_llm(text)   # 정규식(인스턴스 dry-run+diff) + 의미(LLM)
-    return {"text": json.dumps({"sensitive_infos": infos}, ensure_ascii=False),
-            "sensitive_infos": infos}
-```
+Python 단계에 붙여 넣으세요).
 
 - **정규식류**(주민번호·전화·이메일 등): 가드레일 인스턴스 dry-run(`{base}/guardrail/{id}/dry-run`,
   `{"content": text}`)을 호출해 **마스킹된 전체 텍스트** 를 받고, 원문과 `difflib` diff 하여 치환된
@@ -112,22 +160,43 @@ async def run(data: dict) -> dict:
 
 ---
 
-## 3. GenOS 배포 절차
+## 4. GenOS 배포 절차
+
+> 아래 각 단계는 GenOS 화면 캡쳐와 함께 보는 것이 빠릅니다. (스크린샷 추가 예정 — 각 단계의
+> `images/guardrail_setup_*.png` 자리에 캡쳐를 넣으세요.)
 
 1. **정규식 가드레일 인스턴스 준비** — GenOS 가드레일에서 정규식 필터(주민번호·전화·이메일 등)를
    등록한 인스턴스를 만들고 그 **가드레일 ID**(예: 99)를 확인합니다. 각 필터의 "치환 규칙"은
    `[주민등록번호]` 처럼 구분되는 토큰을 권장합니다(소분류 복원에 사용). 정규식은 Python `re` 문법.
+
+   <!-- ![가드레일 인스턴스 - 정규식 필터 등록](images/guardrail_setup_01_filters.png) -->
+
 2. **모델서빙 확인** — 의미분류 LLM(예: 모델 776 qwen)의 호출 URL/키를 확인합니다.
    나중에 GPT OSS 120B 등으로 교체하려면 `GUARDRAIL_LLM_URL` 만 바꾸면 됩니다.
+
+   <!-- ![모델서빙 확인](images/guardrail_setup_02_serving.png) -->
+
 3. **워크플로우 생성** — GenOS 워크플로우에서 새 워크플로우를 만들고 **Python 단계** 에
    [`workflow_guardrail.py`](workflow_guardrail.py) 전체를 붙여 넣습니다.
+
+   <!-- ![워크플로우 Python 단계](images/guardrail_setup_03_workflow.png) -->
+
 4. **환경 변수 설정** — 워크플로우 환경 변수(코드 하드코딩 금지).
    - `GUARDRAIL_DRYRUN_BASE` = 내부 게이트웨이 베이스(예: `http://llmops-gateway-api-service:8080`)
    - `GUARDRAIL_ID` = 정규식 가드레일 인스턴스 ID(예: 99)
    - `GUARDRAIL_LLM_URL` / `GUARDRAIL_LLM_KEY` / `GUARDRAIL_LLM_MODEL` = 의미분류 LLM 접속
+
+   <!-- ![환경 변수 설정](images/guardrail_setup_04_env.png) -->
+
 5. **배포** 후 `workflow_id` 를 확인합니다(워크플로우 상세/주소에 노출되는 정수 ID).
+
 6. **인증키(AuthKeyBearer) 발급** — 워크플로우 실행 라우트(`/workflow/{id}/run`)는 Bearer 인증을
    요구합니다. 이 키가 전처리기 config 의 `api_key` 로 들어갑니다.
+
+   <!-- ![배포 및 인증키](images/guardrail_setup_05_deploy.png) -->
+
+7. **전처리기와 연결** — 배포로 얻은 `url`(gateway 베이스)/`workflow_id`/`api_key` 3개를 전처리기
+   config 의 `guardrail:` 섹션(1.3절)에 넣습니다.
 
 ### 배포 검증
 
@@ -145,34 +214,13 @@ curl -s -X POST "https://genos.genon.ai/api/gateway/workflow/{workflow_id}/run/v
 
 ---
 
-## 4. 전처리기와 연결
-
-배포로 얻은 값 3개를 전처리기 config 의 `guardrail` 에 넣습니다(전처리기별 config yaml).
-
-```yaml
-guardrail:
-  url: "https://genos.genon.ai/api/gateway"   # 코드가 /workflow/{workflow_id}/run/v2 를 붙임
-  workflow_id: <배포 워크플로우 ID>
-  api_key: "<워크플로우 Bearer 인증키>"
-  timeout: 60
-  masking_enabled: false   # 라벨 부착은 항상, quote_masked 치환만 이 스위치로 on/off
-```
-
-- `url` 은 게이트웨이 **베이스** 까지만 넣습니다(뒤의 `/workflow/{id}/run/v2` 는 코드가 붙임).
-- 기능 자체의 on/off 는 config 가 아니라 **업로드 요청 kwargs `guardrail_call`** 입니다(기본 off).
-- `masking_enabled` 는 치환만 제어합니다. 끄면 `content_category` 라벨만 붙고 텍스트는 원문 유지.
-- 대상 전처리기: intelligent / attachment / convert / chunking. parser 는 청크가 없어 대상 아님
-  (파스 결과를 chunking API 로 넘기면 chunking 이 분류·부착).
-
----
-
 ## 5. 자주 겪는 문제
 
 | 증상 | 원인 / 조치 |
 |---|---|
 | 배포 시 `09050003` (응답에 text/json 없음) | Python 단계 dict 반환에 `text` 키 누락 → 스텝 코드처럼 `text` 도 함께 반환 |
 | 워크플로우 직접 호출 401 | admin 토큰이 아니라 **워크플로우 AuthKeyBearer** 필요. config `api_key` 확인 |
-| 라벨이 하나도 안 붙음 | `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) → 프롬프트에서 원문 그대로 반환 강제 |
+| 라벨이 하나도 안 붙음 | 요청에 `guardrail_call: true` 를 안 넣음(기본 off) / `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) |
 | 정규식류(주민번호·전화 등)가 안 잡힘 | 워크플로우가 가드레일 인스턴스 dry-run 을 못 부름 → `GUARDRAIL_DRYRUN_BASE`(내부 게이트웨이)·`GUARDRAIL_ID` 확인, 인스턴스에 정규식 필터 등록됐는지 확인 |
 | 정규식은 잡히나 소분류가 토큰 그대로 | 가드레일 필터 "치환 규칙" 이 `[주민등록번호]` 같은 표준 토큰이 아님 → 토큰 표준화 or 매핑 테이블(`_TOKEN_SPEC`) 보강 |
 | 마스킹이 안 됨 | `masking_enabled: false` 이거나 요청 `guardrail_call` off. 둘 다 on 이어야 치환 |

@@ -840,7 +840,7 @@ chunking:
 > 다른 매뉴얼은 이 절을 참조합니다.
 >
 > 워크플로우 자체를 GenOS 에서 만들고 배포해 연결하는 절차(운영용)는
-> [민감정보 분류 워크플로우 구성·배포 안내](guardrail_workflow_setup.md)를 참고하세요.
+> [민감정보 분류/마스킹 가이드](guardrail_workflow_setup.md)를 참고하세요.
 
 **켜고 끄기 — 호출 kwargs (config 아님)**
 
