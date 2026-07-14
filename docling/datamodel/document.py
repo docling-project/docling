@@ -919,14 +919,8 @@ class _DocumentConversionInput(BaseModel):
             match_doctype = re.search(r"<!DOCTYPE [^>]+>", content_str)
             if match_doctype:
                 xml_doctype = match_doctype.group()
-                # Compare case-insensitively: USPTO DTD filenames are inconsistently
-                # cased across format eras (e.g. the 2002-2004 Grant v2.5 DTD is
-                # named "ST32-US-Grant-025xml.dtd", capitalized unlike the fully
-                # lowercase v4.x names such as "us-patent-grant-v42-...dtd"). A
-                # case-sensitive check silently fails to identify older files.
-                xml_doctype_lower = xml_doctype.lower()
                 if InputFormat.XML_USPTO in formats and any(
-                    item in xml_doctype_lower
+                    item in xml_doctype.lower()
                     for item in (
                         "us-patent-application-v4",
                         "us-patent-grant-v4",

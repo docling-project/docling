@@ -299,10 +299,7 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/uspto/sources/ipa20110039701.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
-    # Valid XML USPTO patent grant, Full Text Data/XML v2.5 (JAN 2002 - DEC 2004).
-    # Regression test for #2290: the DTD filename for this era is
-    # "ST32-US-Grant-025xml.dtd", cased differently from the fully lowercase
-    # v4.x DTD filenames, and was previously missed by a case-sensitive check.
+    # Valid XML USPTO patent grant, Full Text Data/XML v2.5
     buf = BytesIO(Path("./tests/data/uspto/sources/pg06442728.xml").open("rb").read())
     stream = DocumentStream(name="pg06442728.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
