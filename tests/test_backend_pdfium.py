@@ -131,20 +131,25 @@ def test_crop_page_image(test_doc_path):
     # im.show()
 
 
-def test_raster_only_page_skips_supersample():
+# The fractional page size exercises the ceil/round mismatch between pdfium
+# bitmap sizing and the requested pixel dimensions (real scans commonly have
+# non-integer media boxes, e.g. 595.2 x 841.9).
+@pytest.mark.parametrize("page_size", [(612, 792), (611.3, 791.7)])
+def test_raster_only_page_skips_supersample(page_size):
     # For image-only (scanned) pages, get_page_image must return the direct
     # render at the requested scale: the 1.5x supersample-downsample round-trip
     # resamples already-rasterized pixels and degrades OCR quality (issue #3587).
-    pdf_bytes = _make_image_only_pdf()
+    pdf_bytes = _make_image_only_pdf(*page_size)
 
     doc_backend = _get_backend(BytesIO(pdf_bytes))
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
     assert page_backend._is_raster_only()
 
     image = page_backend.get_page_image(scale=2)
-    reference = _direct_render(pdf_bytes, scale=2)
+    assert image.size == (round(page_size[0] * 2), round(page_size[1] * 2))
 
-    assert image.size == reference.size
+    # Trimming pdfium's ceil() rounding excess is allowed; resampling is not.
+    reference = _direct_render(pdf_bytes, scale=2).crop((0, 0, *image.size))
     assert image.mode == reference.mode
     assert image.tobytes() == reference.tobytes()
 

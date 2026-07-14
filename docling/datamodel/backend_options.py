@@ -187,16 +187,17 @@ class PdfBackendOptions(BaseBackendOptions):
             "diacritics that should remain in the same text cell."
         ),
     )
-    supersample_factor: Annotated[float, Field(ge=1.0)] = Field(
+    supersample_factor: float = Field(
         1.5,
+        ge=1.0,
         description=(
-            "Supersampling factor for page image rendering: pages are rendered "
-            "at scale * supersample_factor and then downsized to the requested "
-            "scale, which sharpens vector content. Set to 1.0 to render at the "
-            "requested scale directly. Pages whose content is raster-only "
-            "(e.g. scanned pages) are always rendered directly, since the "
-            "supersample round-trip resamples already-rasterized pixels and "
-            "degrades OCR quality."
+            "Supersampling factor for page image rendering in PDFium-rendering "
+            "backends: pages are rendered at scale * supersample_factor and "
+            "then downsized to the requested scale, which sharpens vector "
+            "content. Set to 1.0 to render at the requested scale directly. "
+            "Pages whose content is raster-only (e.g. scanned pages) are "
+            "always rendered directly, since the supersample round-trip "
+            "resamples already-rasterized pixels and degrades OCR quality."
         ),
     )
 
