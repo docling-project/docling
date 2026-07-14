@@ -96,6 +96,31 @@ def test_crop_page_image(test_doc_path):
     doc_backend.unload()
 
 
+def test_supersample_factor_backend_option(test_doc_path):
+    # supersample_factor=1.0 must be honored by the default PDF backend,
+    # yielding a direct pdfium render at the requested scale (issue #3587).
+    import pypdfium2 as pdfium
+
+    from docling.datamodel.backend_options import PdfBackendOptions
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=DoclingParseDocumentBackend,
+        backend_options=PdfBackendOptions(supersample_factor=1.0),
+    )
+    page_backend = in_doc._backend.load_page(0)
+
+    image = page_backend.get_page_image(scale=2)
+
+    pdf = pdfium.PdfDocument(test_doc_path)
+    reference = pdf[0].render(scale=2, rotation=0, crop=(0, 0, 0, 0)).to_pil()
+    pdf.close()
+
+    assert image.size == reference.size
+    assert image.tobytes() == reference.tobytes()
+
+
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
     assert doc_backend.page_count() == 9

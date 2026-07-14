@@ -76,8 +76,9 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         keep_chars: bool = False,
         keep_lines: bool = False,
         keep_images: bool = True,
+        supersample_factor: float = 1.5,
     ):
-        super().__init__()
+        super().__init__(supersample_factor=supersample_factor)
         self._ppage = page_obj
         self._dp_doc: Optional[PdfDocument] = dp_doc
         self._page_no = page_no
@@ -187,42 +188,6 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
 
                 yield cropbox
 
-    def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
-    ) -> Image.Image:
-        page_size = self.get_size()
-
-        if not cropbox:
-            cropbox = BoundingBox(
-                l=0,
-                r=page_size.width,
-                t=0,
-                b=page_size.height,
-                coord_origin=CoordOrigin.TOPLEFT,
-            )
-            padbox = BoundingBox(
-                l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT
-            )
-        else:
-            padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
-            padbox.r = page_size.width - padbox.r
-            padbox.t = page_size.height - padbox.t
-
-        with pypdfium2_lock:
-            bitmap = self._ppage.render(
-                scale=scale * 1.5,
-                rotation=0,  # no additional rotation
-                crop=padbox.as_tuple(),
-            )
-            image = bitmap.to_pil().copy()
-            bitmap.close()
-        # We resize the image from 1.5x the given scale to make it sharper.
-        image = image.resize(
-            size=(round(cropbox.width * scale), round(cropbox.height * scale))
-        )
-
-        return image
-
     def get_size(self) -> Size:
         with pypdfium2_lock:
             page = self._require_page()
@@ -301,6 +266,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             page_no=page_no,
             create_words=create_words,
             create_textlines=create_textlines,
+            supersample_factor=self.options.supersample_factor,
         )
 
     def is_valid(self) -> bool:

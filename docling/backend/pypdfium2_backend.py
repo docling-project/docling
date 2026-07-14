@@ -116,10 +116,8 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         page_no: int,
         supersample_factor: float = 1.5,
     ):
-        super().__init__()
+        super().__init__(supersample_factor=supersample_factor)
         self._page_no = page_no
-        self.supersample_factor = supersample_factor
-        self._raster_only: Optional[bool] = None
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
         self._ppage: pdfium.PdfPage | None = None
@@ -354,75 +352,6 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
     def get_text_cells(self) -> Iterable[TextCell]:
         return self._compute_text_cells()
-
-    def _is_raster_only(self) -> bool:
-        """Whether the page content consists solely of image objects.
-
-        This is the common case for scanned documents, where each page is a
-        single full-page image with no text or vector content.
-        """
-        if self._raster_only is None:
-            has_image = False
-            raster_only = True
-            try:
-                with pypdfium2_lock:
-                    for obj in self._require_page().get_objects(max_depth=16):
-                        if obj.type == pdfium_c.FPDF_PAGEOBJ_IMAGE:
-                            has_image = True
-                        elif obj.type != pdfium_c.FPDF_PAGEOBJ_FORM:
-                            raster_only = False
-                            break
-            except PdfiumError:
-                _log.info(
-                    f"Failed to inspect page objects of page {self.page_no}.",
-                    exc_info=True,
-                )
-                raster_only = False
-            self._raster_only = has_image and raster_only
-        return self._raster_only
-
-    def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
-    ) -> Image.Image:
-        page_size = self.get_size()
-
-        if not cropbox:
-            cropbox = BoundingBox(
-                l=0,
-                r=page_size.width,
-                t=0,
-                b=page_size.height,
-                coord_origin=CoordOrigin.TOPLEFT,
-            )
-            padbox = BoundingBox(
-                l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT
-            )
-        else:
-            padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
-            padbox.r = page_size.width - padbox.r
-            padbox.t = page_size.height - padbox.t
-
-        # Supersampling (rendering at a higher scale, then downsizing) sharpens
-        # vector content, but for raster-only (scanned) pages it is a lossy
-        # resample round-trip of already-rasterized pixels that can destroy
-        # borderline OCR text detections. Render those pages directly instead.
-        factor = 1.0 if self._is_raster_only() else self.supersample_factor
-
-        with pypdfium2_lock:
-            bitmap = self._require_page().render(
-                scale=scale * factor,
-                rotation=0,  # no additional rotation
-                crop=padbox.as_tuple(),
-            )
-            image = bitmap.to_pil().copy()
-            bitmap.close()
-        # Downsize the supersampled render to the requested scale (and align
-        # exact pixel dimensions with the requested cropbox in general).
-        target_size = (round(cropbox.width * scale), round(cropbox.height * scale))
-        if image.size != target_size:
-            image = image.resize(size=target_size)
-
-        return image
 
     def get_size(self) -> Size:
         with pypdfium2_lock:

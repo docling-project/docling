@@ -132,6 +132,24 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Control page image supersampling
+
+Backends that render PDF pages with PDFium (the default `DoclingParseDocumentBackend` and `PyPdfiumDocumentBackend`) render page images at 1.5x the requested scale and then downsize them, which sharpens vector content. Pages whose content is raster-only (e.g. scanned pages) are automatically rendered at the requested scale directly, since resampling already-rasterized pixels degrades OCR quality. The factor can be tuned — or supersampling disabled entirely with `1.0` — through the backend options:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            backend_options=PdfBackendOptions(supersample_factor=1.0)
+        )
+    }
+)
+```
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
