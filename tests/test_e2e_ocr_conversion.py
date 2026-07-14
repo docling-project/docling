@@ -69,11 +69,11 @@ def test_e2e_conversions():
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
         # Full page OCR
-        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
-        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
-        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
-        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
-        (EasyOcrOptions(mode=OcrMode.FULL_PAGE_OCR), False),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE), True),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (EasyOcrOptions(mode=OcrMode.FULL_PAGE), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
@@ -84,7 +84,7 @@ def test_e2e_conversions():
         configs.append((RapidOcrOptions(backend=rapidocr_backend), False))
         configs.append(
             (
-                RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE_OCR),
+                RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE),
                 False,
             )
         )
@@ -92,7 +92,7 @@ def test_e2e_conversions():
             (
                 RapidOcrOptions(
                     backend=rapidocr_backend,
-                    mode=OcrMode.FULL_PAGE_OCR,
+                    mode=OcrMode.FULL_PAGE,
                     rec_font_path="test",
                     rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
                 ),
@@ -103,7 +103,7 @@ def test_e2e_conversions():
     # only works on mac
     if "darwin" == sys.platform:
         configs.append((OcrMacOptions(), True))
-        configs.append((OcrMacOptions(mode=OcrMode.FULL_PAGE_OCR), True))
+        configs.append((OcrMacOptions(mode=OcrMode.FULL_PAGE), True))
 
     for ocr_options, supports_rotation in configs:
         print(

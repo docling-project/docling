@@ -29,7 +29,7 @@ except ImportError:
     CV2_INSTALLED = False
 
 
-class MergeCellsPriority(str, Enum):
+class _MergeCellsPriority(str, Enum):
     # Take the OCR cells ONLY if they do not overlap with any PDF cell
     PDF_FIRST = "pdf_cells_first"
 
@@ -62,7 +62,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Compute the OCR rects according to the mode
         ocr_rects: list[BoundingBox]
-        if self.options.mode == OcrMode.FULL_PAGE_OCR:
+
+        # Both AUTO and PDF_AWARE_REGIONS make OCR input as layout detections eliminated by PDF cells
+        if (
+            self.options.mode == OcrMode.AUTO
+            or self.options.mode == OcrMode.PDF_AWARE_REGIONS
+        ):
+            ocr_rects = self._find_pdf_eliminated_layout_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_REGIONS:
+            ocr_rects = self._find_layout_ocr_rects(page)
+        elif self.options.mode == OcrMode.FULL_PAGE:
             # A big bbox covering the entire page
             ocr_rects = [
                 BoundingBox(
@@ -73,13 +82,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     coord_origin=CoordOrigin.TOPLEFT,
                 )
             ]
-        elif self.options.mode == OcrMode.CLUSTER_OCR:
-            ocr_rects = self._find_cluster_ocr_rects(page)
-        elif self.options.mode == OcrMode.PDF_CLUSTER_OCR:
-            ocr_rects = self._find_pdf_clusters_ocr_rects(page)
         return ocr_rects
 
-    def _find_cluster_ocr_rects(self, page: Page) -> list[BoundingBox]:
+    def _find_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         1. Collect the bboxes of all layout clusters.
         2. Deduplicate the candidate ocr_rects.
@@ -95,7 +100,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return ocr_rects
 
-    def _find_pdf_clusters_ocr_rects(self, page: Page) -> list[BoundingBox]:
+    def _find_pdf_eliminated_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
@@ -109,7 +114,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if page.predictions.layout is None:
             return []
         if page._backend is None:
-            return self._find_cluster_ocr_rects(page)
+            return self._find_layout_ocr_rects(page)
 
         # Create index for the text PDF cells
         p = index.Property()
@@ -203,33 +208,20 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_cells: list[TextCell],
         page: Page,
         conv_res: ConversionResult,
-    ) -> None:
-        return self._do_post_process_cells(
-            ocr_cells, page, conv_res, MergeCellsPriority.PDF_FIRST
-        )
-        # return self._do_post_process_cells(
-        #     ocr_cells, page, conv_res, MergeCellsPriority.OCR_FIRST
-        # )
-
-    def _do_post_process_cells(
-        self,
-        ocr_cells: list[TextCell],
-        page: Page,
-        conv_res: ConversionResult,
-        priority: MergeCellsPriority = MergeCellsPriority.PDF_FIRST,
+        priority: _MergeCellsPriority = _MergeCellsPriority.PDF_FIRST,
     ) -> None:
         r"""
         Post-process the OCR cells and update the page object according to the algorithm:
 
-        - If FULL_PAGE_OCR: Any existing PDF cells are ignored and only the OCR cells are used.
-        - If CLUSTER_OCR or PDF_CLUSTER_OCR: The priority parameter controls how the PDF/OCR cells
+        - If FULL_PAGE: Any existing PDF cells are ignored and only the OCR cells are used.
+        - If LAYOUT_REGIONS or PDF_AWARE_REGIONS: The priority parameter controls how the PDF/OCR cells
           are merged
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        if self.options.mode == OcrMode.FULL_PAGE_OCR:
+        if self.options.mode == OcrMode.FULL_PAGE:
             final_cells = ocr_cells
         else:
             final_cells = self._merge_ocr_and_pdf_cells(
@@ -246,11 +238,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # In OcrMode.FULL_PAGE_OCR, PDF-extracted word/char cells are unreliable.
+        # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable.
         # Filter out cells where from_ocr=False, keeping any OCR generated cells.
         # This ensures downstream components (e.g., table structure model) fall back to
         # OCR-extracted textline cells.
-        if self.options.mode == OcrMode.FULL_PAGE_OCR:
+        if self.options.mode == OcrMode.FULL_PAGE:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
             ]
@@ -270,14 +262,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self,
         ocr_cells: list[TextCell],
         pdf_cells: list[TextCell],
-        priority: MergeCellsPriority,
+        priority: _MergeCellsPriority,
     ) -> list[TextCell]:
         r"""
         Merge PDF and OCR cells, resolving overlaps according to `priority`.
         """
         # The prioritized cells are always kept
         # the secondary cells are added only where they don't overlap a prioritized cell.
-        if priority == MergeCellsPriority.PDF_FIRST:
+        if priority == _MergeCellsPriority.PDF_FIRST:
             prioritized_cells, secondary_cells = pdf_cells, ocr_cells
         else:
             prioritized_cells, secondary_cells = ocr_cells, pdf_cells

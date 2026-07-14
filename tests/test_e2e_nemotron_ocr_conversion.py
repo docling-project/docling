@@ -23,7 +23,11 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
     resolve_nemotronocr_language,
 )
 
-from .groundtruth_paths import GroundTruthPaths, get_regular_groundtruth_paths
+from .groundtruth_paths import (
+    GroundTruthPaths,
+    get_regular_groundtruth_paths,
+    resolve_gt_ocr_mode,
+)
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -40,9 +44,10 @@ def get_nemotron_ocr_groundtruth_paths(
     """Build GT paths for nemotron OCR, organized by OCR mode.
 
     Each mode maps to a sub-directory named after ``mode.value``; files are tagged
-    ``nemotron_ocr.<mode.value>``.
+    ``nemotron_ocr.<mode.value>``. AUTO shares PDF_AWARE_REGIONS' ground truth.
     """
     model_name = "nemotron_ocr"
+    mode = resolve_gt_ocr_mode(mode)
     gt_dir = input_path.parent.parent / "groundtruth" / model_name / mode.value
     tag = f"{model_name}.{mode.value}"
     return get_regular_groundtruth_paths(input_path, gt_dir=gt_dir, tag=tag)
@@ -143,7 +148,7 @@ def test_e2e_nemotron_ocr_conversions():
     configs: list[OcrOptions] = [
         NemotronOcrOptions(),  # Default options
         NemotronOcrOptions(batch_size=3),
-        NemotronOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
+        NemotronOcrOptions(mode=OcrMode.FULL_PAGE),
     ]
 
     for ocr_options in configs:
@@ -177,7 +182,7 @@ def test_e2e_nemotron_ocr_multipage_batching():
 
     configs: list[OcrOptions] = [
         NemotronOcrOptions(batch_size=batch_size),
-        NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FULL_PAGE_OCR),
+        NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FULL_PAGE),
     ]
 
     for ocr_options in configs:

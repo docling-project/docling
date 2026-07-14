@@ -71,6 +71,15 @@ def get_regular_groundtruth_paths(
     return gt_paths
 
 
+def resolve_gt_ocr_mode(mode: OcrMode) -> OcrMode:
+    """Map an OCR mode to the mode whose ground truth it shares.
+
+    AUTO is wired to run the same behavior as PDF_AWARE_REGIONS, so it shares the
+    same ground-truth directory and file tag.
+    """
+    return OcrMode.PDF_AWARE_REGIONS if mode == OcrMode.AUTO else mode
+
+
 def get_ocr_groundtruth_paths(
     input_path: Path,
     *,
@@ -79,6 +88,7 @@ def get_ocr_groundtruth_paths(
 ) -> GroundTruthPaths:
     """Build GT paths for an OCR conversion, organized by engine and OCR mode."""
     engine_name = _OCR_ENGINE_TO_DIR[engine]
+    mode = resolve_gt_ocr_mode(mode)
     mode_dir_name = mode.value
     mode_tag = mode.value
     tag = f"{engine_name}.{mode_tag}"

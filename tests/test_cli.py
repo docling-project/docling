@@ -658,7 +658,7 @@ def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
 def test_cli_ocr_mode_defaults_to_pdf_cluster_ocr(tmp_path, monkeypatch):
     result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.PDF_CLUSTER_OCR
+    assert ocr_options.mode is OcrMode.PDF_AWARE_REGIONS
 
 
 def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
@@ -667,7 +667,7 @@ def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch
             monkeypatch, ["--force-ocr"], tmp_path
         )
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.FULL_PAGE_OCR
+    assert ocr_options.mode is OcrMode.FULL_PAGE
 
 
 def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
@@ -676,7 +676,7 @@ def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
             monkeypatch, ["--force-ocr", "--ocr-mode", "cluster_ocr"], tmp_path
         )
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.FULL_PAGE_OCR
+    assert ocr_options.mode is OcrMode.FULL_PAGE
 
 
 def test_cli_invalid_ocr_mode_is_rejected(tmp_path):

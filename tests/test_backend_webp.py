@@ -54,22 +54,22 @@ def test_e2e_webp_conversions():
         EasyOcrOptions(),
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),
-        EasyOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-        TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-        TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]),
-        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]),
+        EasyOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
+        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
     ]
 
     # rapidocr is only available for Python >=3.6,<3.14
     if sys.version_info < (3, 14):
         engines.append(RapidOcrOptions())
-        engines.append(RapidOcrOptions(mode=OcrMode.FULL_PAGE_OCR))
+        engines.append(RapidOcrOptions(mode=OcrMode.FULL_PAGE))
 
     # only works on mac
     if "darwin" == sys.platform:
         engines.append(OcrMacOptions())
-        engines.append(OcrMacOptions(mode=OcrMode.FULL_PAGE_OCR))
+        engines.append(OcrMacOptions(mode=OcrMode.FULL_PAGE))
     for ocr_options in engines:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"

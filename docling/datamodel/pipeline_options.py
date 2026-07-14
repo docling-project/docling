@@ -98,13 +98,17 @@ class OcrMode(str, Enum):
     """
 
     # Force OCR to work on the full page
-    FULL_PAGE_OCR = "full_page_ocr"
+    FULL_PAGE = "full_page"
 
     # Layout detections only. No PDF information is needed/used.
-    CLUSTER_OCR = "cluster_ocr"
+    LAYOUT_REGIONS = "layout_regions"
 
     # Eliminate those clusters that contain exclusively text PDF cells
-    PDF_CLUSTER_OCR = "pdf_cluster_ocr"
+    PDF_AWARE_REGIONS = "pdf_aware_regions"
+
+    # Auto is used as the placeholder to define the default behavior
+    # Currently AUTO is wired to run PDF_AWARE_REGIONS
+    AUTO = "auto"
 
 
 class TableFormerMode(str, Enum):
@@ -197,12 +201,13 @@ class OcrOptions(BaseOptions):
         Field(
             description="Which document regions to feed as input to the OCR",
             examples=[
-                OcrMode.FULL_PAGE_OCR,
-                OcrMode.CLUSTER_OCR,
-                OcrMode.PDF_CLUSTER_OCR,
+                OcrMode.FULL_PAGE,
+                OcrMode.LAYOUT_REGIONS,
+                OcrMode.PDF_AWARE_REGIONS,
+                OcrMode.AUTO,
             ],
         ),
-    ] = OcrMode.PDF_CLUSTER_OCR
+    ] = OcrMode.AUTO
 
     lang: Annotated[
         list[str],
@@ -212,8 +217,8 @@ class OcrOptions(BaseOptions):
         ),
     ]
 
-    # Deprecated: superseded by `OcrMode.FULL_PAGE_OCR`. Kept for backwards compatibility
-    # When set to True it forces `mode` to FULL_PAGE_OCR
+    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
+    # When set to True it forces `mode` to FULL_PAGE
     force_full_page_ocr: Annotated[
         bool,
         Field(
@@ -221,7 +226,7 @@ class OcrOptions(BaseOptions):
             examples=[False],
             deprecated=(
                 "`force_full_page_ocr` is deprecated; set "
-                "`mode=OcrMode.FULL_PAGE_OCR` instead."
+                "`mode=OcrMode.FULL_PAGE` instead."
             ),
         ),
     ] = False
@@ -230,13 +235,13 @@ class OcrOptions(BaseOptions):
     def _apply_force_full_page_ocr(self) -> "OcrOptions":
         r"""
         Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
-        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE_OCR`.
+        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE`.
         """
         with warnings.catch_warnings():  # deprecated force_full_page_ocr
             warnings.filterwarnings("ignore", category=DeprecationWarning)
             forced = self.force_full_page_ocr
         if forced:
-            self.mode = OcrMode.FULL_PAGE_OCR
+            self.mode = OcrMode.FULL_PAGE
         return self
 
 

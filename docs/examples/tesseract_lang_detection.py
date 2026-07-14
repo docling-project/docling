@@ -40,8 +40,8 @@ def main():
     input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
 
     # Set lang=["auto"] with a tesseract OCR engine: TesseractOcrOptions, TesseractCliOcrOptions
-    # ocr_options = TesseractOcrOptions(lang=["auto"], mode=OcrMode.FULL_PAGE_OCR)
-    ocr_options = TesseractCliOcrOptions(lang=["auto"], mode=OcrMode.FULL_PAGE_OCR)
+    # ocr_options = TesseractOcrOptions(lang=["auto"], mode=OcrMode.FULL_PAGE)
+    ocr_options = TesseractCliOcrOptions(lang=["auto"], mode=OcrMode.FULL_PAGE)
 
     pipeline_options = PdfPipelineOptions(do_ocr=True, ocr_options=ocr_options)
 
