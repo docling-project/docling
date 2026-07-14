@@ -42,7 +42,7 @@ from docling.pipeline.asr_transcriber import (
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.speaker_diarization import (
-    _DiarizationResult,
+    DiarizationResult,
     assign_speakers,
     diarize,
 )

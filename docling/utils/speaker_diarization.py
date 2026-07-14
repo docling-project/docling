@@ -16,12 +16,15 @@ import numpy as np
 _log = logging.getLogger(__name__)
 
 _MIN_SPEAKERS = 2
+"""Minimum number of speakers to consider in clustering."""
 _MAX_SPEAKERS = 8
+"""Maximum number of speakers to consider in clustering."""
 _WINDOW_STEP = 0.5  # seconds between embedding windows
+"""Window step in seconds; 0.5 provides fine-grained speaker boundary detection without excessive computational overhead."""
 
 
 @dataclass
-class _SpeakerSegment:
+class SpeakerSegment:
     """A time segment attributed to a single speaker."""
 
     start_time: float
@@ -30,18 +33,18 @@ class _SpeakerSegment:
 
 
 @dataclass
-class _DiarizationResult:
+class DiarizationResult:
     """Output of speaker diarization."""
 
-    segments: list[_SpeakerSegment] = field(default_factory=list)
+    segments: list[SpeakerSegment] = field(default_factory=list)
     num_speakers: int = 0
     speaker_ids: list[str] = field(default_factory=list)
 
 
 def _estimate_num_speakers(embeddings: np.ndarray) -> int:
     """Estimate optimal speaker count via silhouette score."""
-    from sklearn.cluster import AgglomerativeClustering
-    from sklearn.metrics import silhouette_score
+    from sklearn.cluster import AgglomerativeClustering  # type: ignore[import-untyped]
+    from sklearn.metrics import silhouette_score  # type: ignore[import-untyped]
 
     best_n, best_score = _MIN_SPEAKERS, -1.0
     for n in range(_MIN_SPEAKERS, min(_MAX_SPEAKERS + 1, len(embeddings))):
@@ -60,7 +63,7 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
 def diarize(
     wav_path: Path,
     num_speakers: int | None = None,
-) -> _DiarizationResult:
+) -> DiarizationResult:
     """Run speaker diarization on a WAV file.
 
     Args:
@@ -68,31 +71,32 @@ def diarize(
         num_speakers: Number of speakers. None = auto-detect.
 
     Returns:
-        DiarizationResult with per-segment speaker labels.
+        Per-segment speaker labels.
     """
     try:
+        import librosa
+        import soundfile as sf
         from resemblyzer import VoiceEncoder
+        from resemblyzer.audio import (
+            audio_norm_target_dBFS,
+            normalize_volume,
+            sampling_rate as _RESEMBLYZER_SR,
+        )
+        from sklearn.cluster import AgglomerativeClustering
     except ImportError:
         _log.warning(
-            "resemblyzer is not installed. Speaker diarization disabled. "
-            "Install with: pip install resemblyzer"
+            "Speaker diarization requires resemblyzer, soundfile, "
+            "scikit-learn, and librosa. Speaker diarization disabled. "
+            "Install with: pip install 'docling[format-video]'"
         )
-        return _DiarizationResult()
+        return DiarizationResult()
 
     _log.info("Loading audio for diarization: %s", wav_path)
-    import soundfile as sf
-    from resemblyzer.audio import (
-        audio_norm_target_dBFS,
-        normalize_volume,
-        sampling_rate as _RESEMBLYZER_SR,
-    )
 
     raw, file_sr = sf.read(str(wav_path), dtype="float32")
     if raw.ndim > 1:  # collapse stereo to mono
         raw = raw.mean(axis=1)
     if file_sr != _RESEMBLYZER_SR:
-        import librosa
-
         raw = librosa.resample(raw, orig_sr=file_sr, target_sr=_RESEMBLYZER_SR)
     # Normalize volume the way resemblyzer.preprocess_wav does, but WITHOUT its
     # silence trimming. Trimming compresses the timeline (e.g. 300s -> 253s),
@@ -102,7 +106,7 @@ def diarize(
     wav = normalize_volume(raw, audio_norm_target_dBFS, increase_only=True)
     if len(wav) == 0:
         _log.warning("Empty audio — skipping diarization")
-        return _DiarizationResult()
+        return DiarizationResult()
 
     encoder = VoiceEncoder(device="cpu")
 
@@ -122,7 +126,7 @@ def diarize(
 
     if not wav_splits:
         _log.warning("Audio too short for diarization")
-        return _DiarizationResult()
+        return DiarizationResult()
 
     _log.info("Encoding %d audio windows", len(wav_splits))
     # ASR (Whisper) earlier in the pipeline raises torch's thread count to the
@@ -143,13 +147,11 @@ def diarize(
     n = num_speakers if num_speakers is not None else _estimate_num_speakers(embeddings)
 
     # Cluster embeddings
-    from sklearn.cluster import AgglomerativeClustering
-
     labels = AgglomerativeClustering(n_clusters=n).fit_predict(embeddings)
     speaker_ids = [f"SPEAKER_{i:02d}" for i in range(n)]
 
     # Build continuous speaker segments by merging consecutive same-speaker windows
-    segments: list[_SpeakerSegment] = []
+    segments: list[SpeakerSegment] = []
     if len(timestamps) > 0:
         cur_speaker = speaker_ids[labels[0]]
         cur_start = timestamps[0]
@@ -160,15 +162,15 @@ def diarize(
             if spk == cur_speaker:
                 cur_end = ts + _WINDOW_STEP
             else:
-                segments.append(_SpeakerSegment(cur_start, cur_end, cur_speaker))
+                segments.append(SpeakerSegment(cur_start, cur_end, cur_speaker))
                 cur_speaker = spk
                 cur_start = ts
                 cur_end = ts + _WINDOW_STEP
 
         # Extend last segment to end of audio
-        segments.append(_SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
+        segments.append(SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
 
-    return _DiarizationResult(
+    return DiarizationResult(
         segments=segments,
         num_speakers=n,
         speaker_ids=speaker_ids,
@@ -177,7 +179,7 @@ def diarize(
 
 def assign_speakers(
     transcript_items: list,
-    diarization: _DiarizationResult,
+    diarization: DiarizationResult,
 ) -> list:
     """Assign speaker labels to transcript ConversationItems.
 
@@ -186,7 +188,7 @@ def assign_speakers(
 
     Args:
         transcript_items: List of ConversationItem from ASR transcriber.
-        diarization: _DiarizationResult from diarize().
+        diarization: Result from diarize().
 
     Returns:
         The same list with .speaker set on each item.
