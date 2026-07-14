@@ -1512,6 +1512,8 @@ class AsrPipelineOptions(PipelineOptions):
     ] = asr_model_specs.WHISPER_TINY
 
 
+from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
+
 class VideoPipelineOptions(PipelineOptions):
     """Configuration options for the video pipeline.
 
