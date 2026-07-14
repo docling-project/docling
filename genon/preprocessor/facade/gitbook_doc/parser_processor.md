@@ -663,31 +663,18 @@ filename: 보고서.pdf
 - `whisper.url`
   - 오디오 처리가 필요한 경우 OpenAI Whisper 호환 API 주소로 설정해야 합니다.
 
-### PII 마스킹 (개인정보 비식별화, `guardrail_masking`)
+### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_masking`)
 
-파서 결과 텍스트의 개인정보를 GenOS Guardrail 에 위임해 마스킹합니다. 파서는 **파스 전용(청킹·벡터 없음)**
-이라, 반환 직전 텍스트를 마스킹하고 결과를 출력에 반영합니다.
+파서 전처리기는 이 기능의 **대상이 아닙니다.** 민감정보 분류/마스킹은 청킹 후 각 청크에서
+`quote_origin` 을 매칭해 라벨을 붙이고 치환하는 후처리인데, 파서는 **파스 전용(청킹·벡터 없음)** 이라
+매칭할 청크가 없기 때문입니다. 따라서 파서 config 에는 `guardrail_masking` 블록이 없습니다.
 
-- **켜기**: 요청 kwargs `guardrail_masking: true` (기본 `false`).
-- **접속 정보 (yaml)**:
-  ```yaml
-  guardrail_masking:
-    url: ""           # 예: "http://<내부 gateway>/api/gateway"
-    guardrail_id:     # 가드레일 인스턴스 ID(단일)
-    timeout: 30
-  ```
-- **적용 범위 (parser)**:
-  - **docling 파싱 경로**(pdf/html/htm/docx/hwp·hwpx/ppt/xlsx-docling): 텍스트 마스킹 적용.
-    - `output.format=json`(parse-format): element 마다 `pii_status` 부착 → 후속 chunker 가 청크별로 집계.
-    - `output.format=docling`: 텍스트 마스킹은 적용되나, `pii_status` 는 docling 포맷으로 chunker 에
-      전달할 채널이 없어 **표기되지 않습니다**. `pii_status` 가 필요하면 `output.format=json` 을 쓰세요.
-  - **오디오·tabular(csv/xlsx tabular)·기타 langchain 경로(doc/txt/md/이미지 등)**: 현재 **미적용(보류)**.
-- **실패 시**: fail-open — 원문 통과 + warning.
-- **운영 주의**: 마스킹용 가드레일에는 "마스킹 처리하여 제공" 필터만 구성하세요(차단 필터가 섞이면
-  본문이 안내문구로 통째 교체됨).
+- 파서 결과(JSON/docling)를 **chunking API 로 넘기면 chunking 전처리기가 문서 전체를 1회 분류하고
+  청크별로 `content_category` 라벨을 부착**합니다(옵션으로 마스킹 치환).
+- 파서 단계에서 직접 문서를 적재(청크 생성)하려면 청크를 만드는 전처리기(intelligent/attachment/convert)를 사용하세요.
 
-> 동작·응답 형태·`pii_status` 값 정의·한계의 **상세 설명은 지능형 전처리기 매뉴얼의 "PII 마스킹" 절**을
-> 참고하세요. 4개 전처리기 공통 동작입니다.
+> 요청/응답 형식·매칭 규칙·출력 필드(`content_category`)의 **상세 설명은 지능형 전처리기 매뉴얼의
+> "민감정보 분류/마스킹" 절**을 참고하세요.
 
 ---
 
@@ -890,7 +877,6 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 | `category` | `str` | element의 의미적 분류. 아래 [category 값 목록](#category-값-목록) 참고 |
 | `content` | `str` | element의 실제 내용. category에 따라 형식이 다름 (아래 표 참고) |
 | `coordinates` | `array` | 페이지 내 위치. 정규화된 4-꼭짓점 좌표 (0.0~1.0). 좌표를 제공하지 않는 포맷은 `[]` |
-| `pii_status` | `str` | (선택) PII 마스킹 상태: `none`/`masked`/`exposed`. `guardrail_masking` on + parse-format(`json`) 출력일 때만 element 에 부착됨. chunker 가 이를 청크별 `pii_status` 로 집계 (아래 PII 마스킹 절) |
 
 #### `content` 필드의 형식 (category별)
 

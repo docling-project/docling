@@ -191,10 +191,8 @@ enrichment:
 
 output:
   format: "json" # "json" (default), "html", "markdown", "docling"
-  # 주의(#315): guardrail_masking 사용 시 format="docling" 이면 텍스트 마스킹은 적용되지만
-  #   pii_status 메타는 chunking 으로 전달할 채널이 없어 표기되지 않는다.
-  #   pii_status 표기가 필요하면 format="json"(parse-format) 을 사용한다.
   # "docling": 복원 가능한 DoclingDocument 원본 JSON 을 data.document 로 반환(Chunk API 입력용)
+  # 민감정보 분류(#315)는 parser 대상 아님 → 파싱 결과를 chunking API 로 넘기면 거기서 분류·부착한다.
   table_format: "html" # "html" (default), "markdown"  ("docling" 포맷에서는 무시)
 
 # whisper 설정, 음성인식 모델이 필요한 경우 설정.
@@ -208,11 +206,3 @@ whisper:
   timestamp_granularities: "word"
   chunk_sec: 29
   chunk_overlap_ms: 300  # 청크 간 겹침(ms). 전사 경계 품질 노브. 기본 300
-
-# PII 마스킹(#315) — GenOS Guardrail 연동.
-# on/off 는 요청별 kwargs(guardrail_masking, 기본 off)로 제어. 아래는 접속 정보(환경 종속값)만.
-# 적용: docling 파싱 경로(pdf/html/docx/hwp·hwpx/ppt/xlsx-docling). audio/tabular/기타-langchain 은 보류.
-guardrail_masking:
-  url: ""           # 예: "http://<내부 gateway>/api/gateway" (dry-run 경로는 코드가 붙임)
-  guardrail_id:     # 적용할 가드레일 인스턴스 ID(단일)
-  timeout: 30       # dry-run 호출 타임아웃(초)

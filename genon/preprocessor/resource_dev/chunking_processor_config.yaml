@@ -37,3 +37,11 @@ chunking:
 # 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.
 table_image:
   enable: false
+
+guardrail_masking:
+  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_masking)로 제어.
+  url: "https://genos.genon.ai/api/gateway"  # 코드가 /workflow/{workflow_id}/run/v2 를 붙임
+  workflow_id: 4932       # 민감정보 분류 워크플로우 ID (dev)
+  api_key: "2f234b362030401485c65146efe56271"  # 워크플로우 호출 Bearer 인증키 (dev)
+  timeout: 60             # 워크플로우 호출 타임아웃(초). 대용량 문서는 상향 필요
+  masking_enabled: false  # quote_masked 치환 on/off. content_category 메타 부착은 기능 켜지면 항상 수행
