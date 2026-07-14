@@ -31,7 +31,11 @@ _CASES: list[tuple[InputFormat, str]] = [
 
 @pytest.mark.parametrize("fmt,sources_dir", _CASES)
 def test_e2e_legacy_conversions(fmt: InputFormat, sources_dir: str):
-    """Convert every legacy file in the sources directory and compare against ground truth."""
+    """Convert every legacy file in the sources directory and compare against ground truth.
+
+    LibreOffice conversion produces slightly different image sizes across platforms, so
+    bbox comparisons use fuzzy tolerances.
+    """
     ext = fmt.value  # "doc", "xls", or "ppt"
     sources = Path(sources_dir)
     paths = sorted(sources.rglob(f"*.{ext}"))
@@ -54,6 +58,6 @@ def test_e2e_legacy_conversions(fmt: InputFormat, sources_dir: str):
             f"Indented-text mismatch for {src_path}"
         )
 
-        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE, fuzzy=True), (
             f"Document JSON mismatch for {src_path}"
         )
