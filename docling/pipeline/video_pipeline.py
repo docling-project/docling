@@ -9,7 +9,7 @@ Orchestrates three steps:
    DoclingDocument.
 """
 
-import html as _html_lib
+
 import logging
 import shutil
 import subprocess
@@ -61,6 +61,19 @@ MISSING_FFMPEG_MESSAGE = (
     "on macOS, 'apt-get install ffmpeg' on Linux, 'winget install ffmpeg' on "
     "Windows)."
 )
+
+_VIDEO_SUFFIX_TO_MIMETYPE = {
+    ".mp4": "video/mp4",
+    ".avi": "video/x-msvideo",
+    ".mov": "video/quicktime",
+    ".mkv": "video/x-matroska",
+    ".webm": "video/webm",
+}
+
+
+def _video_mimetype(filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    return _VIDEO_SUFFIX_TO_MIMETYPE.get(suffix, "video/mp4")
 
 
 def _extract_audio(video_path: Path, wav_path: Path) -> bool:
@@ -141,7 +154,18 @@ class VideoPipeline(BasePipeline):
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
-        path_or_stream = conv_res.input._backend.path_or_stream
+        # Prefer public fields: try conv_res.input.backend then conv_res.input.path_or_stream.
+        backend = getattr(conv_res.input, "backend", None)
+        if backend is None:
+            # fall back for older objects (avoid direct private access when possible)
+            backend = getattr(conv_res.input, "_backend", None)
+
+        path_or_stream = None
+        if backend is not None:
+            path_or_stream = getattr(backend, "path_or_stream", None)
+        if path_or_stream is None:
+            # finally, allow direct public path_or_stream on input
+            path_or_stream = getattr(conv_res.input, "path_or_stream", None)
         temp_video: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):
@@ -199,11 +223,7 @@ class VideoPipeline(BasePipeline):
                             )
                         except Exception as exc:
                             _log.warning("Speaker diarization failed: %s", exc)
-                            diarization = _DiarizationResult()
-                    else:
-                        diarization = _DiarizationResult()
                 else:
-                    diarization = _DiarizationResult()
                     _log.warning(
                         "Audio extraction produced no output for %s; "
                         "document will contain frames only.",
@@ -213,7 +233,7 @@ class VideoPipeline(BasePipeline):
                 if wav_path.exists():
                     wav_path.unlink()
 
-            # 5. Sample frames
+            # 4. Sample frames
             opts = self.pipeline_options
             frames: list[VideoFrame] = []
             if opts.generate_frame_images:
@@ -236,9 +256,10 @@ class VideoPipeline(BasePipeline):
                     _log.warning("Frame sampling failed: %s", exc)
 
             # 5. Build DoclingDocument
+            filename = conv_res.input.file.name or "video.mp4"
             origin = DocumentOrigin(
-                filename=conv_res.input.file.name or "video.mp4",
-                mimetype="video/mp4",
+                filename=filename,
+                mimetype=_video_mimetype(filename),
                 binary_hash=conv_res.input.document_hash,
             )
             conv_res.document = DoclingDocument(

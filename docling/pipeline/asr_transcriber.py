@@ -56,15 +56,30 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
     "Windows)."
 )
 
+_AUDIO_SUFFIX_TO_MIMETYPE = {
+    ".wav": "audio/x-wav",
+    ".mp3": "audio/mp3",
+    ".m4a": "audio/m4a",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+}
+
+
+def _audio_mimetype(filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+
 
 def _process_conversation(
     conversation: list["_ConversationItem"], conv_res: ConversionResult
 ) -> None:
     """Process the conversation items and add them to the document."""
     # Ensure we have a proper DoclingDocument
+    filename = conv_res.input.file.name or "audio.wav"
     origin = DocumentOrigin(
-        filename=conv_res.input.file.name or "audio.wav",
-        mimetype="audio/x-wav",
+        filename=filename,
+        mimetype=_audio_mimetype(filename),
         binary_hash=conv_res.input.document_hash,
     )
     conv_res.document = DoclingDocument(
