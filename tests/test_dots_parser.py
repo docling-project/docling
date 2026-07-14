@@ -3,7 +3,8 @@
 import json
 
 import pytest
-from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc.base import Size
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.utils.dots_utils import _clean_json, parse_dots_json
 

@@ -3,15 +3,15 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, List, Optional, Type, Union
 
-from docling_core.types.doc import (
-    DescriptionMetaField,
-    DoclingDocument,
-    NodeItem,
-    PictureClassificationLabel,
+from docling_core.types.doc.common.meta import DescriptionMetaField
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.meta import PictureMeta
+from docling_core.types.doc.items.picture.picture import (
+    PictureDescriptionData,
     PictureItem,
-    PictureMeta,
 )
-from docling_core.types.doc.document import PictureDescriptionData
+from docling_core.types.doc.labels import PictureClassificationLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

@@ -25,16 +25,18 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
 
-from docling_core.types.doc import (
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupItem,
-    GroupLabel,
-    NodeItem,
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
-    TextItem,
+)
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
 )
 from typing_extensions import TypedDict, override
 

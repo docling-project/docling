@@ -30,8 +30,11 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from statistics import median
 
-from docling_core.types.doc import DoclingDocument
-from docling_core.types.doc.document import ListItem, SectionHeaderItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.text import (
+    ListItem,
+    SectionHeaderItem,
+)
 from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.datamodel.document import ConversionResult

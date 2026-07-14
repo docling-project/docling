@@ -2,7 +2,10 @@ from io import BytesIO
 from unittest.mock import MagicMock
 
 import pytest
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from PIL import Image
 
 from docling.backend.image_backend import ImageDocumentBackend, _ImagePageBackend

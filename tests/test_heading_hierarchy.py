@@ -2,13 +2,13 @@
 
 from types import SimpleNamespace
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DoclingDocument,
-    ProvenanceItem,
 )
-from docling_core.types.doc.document import SectionHeaderItem
+from docling_core.types.doc.common.reference import ProvenanceItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.text import SectionHeaderItem
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfCellRenderingMode,

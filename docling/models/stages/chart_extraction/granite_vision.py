@@ -9,19 +9,20 @@ from typing import Any, List, Literal, Optional, cast
 
 import pandas as pd
 import torch
-from docling_core.types.doc import (
-    CodeLanguageLabel,
-    DescriptionMetaField,
-    DoclingDocument,
-    NodeItem,
+from docling_core.types.doc.common.meta import CodeMetaField, DescriptionMetaField
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.meta import (
     PictureClassificationMetaField,
-    PictureItem,
     PictureMeta,
-    TableCell,
-    TableData,
     TabularChartMetaField,
 )
-from docling_core.types.doc.document import CodeMetaField
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table_data import (
+    TableCell,
+    TableData,
+)
+from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor

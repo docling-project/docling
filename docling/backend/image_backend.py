@@ -3,7 +3,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+    Size,
+)
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfPageBoundaryType,

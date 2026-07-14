@@ -6,13 +6,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, Protocol
 
-from docling_core.types.doc import (
-    ContentLayer,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    TrackSource,
-)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.source import TrackSource
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 from pydantic import BaseModel, Field
 
 from docling.backend.abstract_backend import AbstractDocumentBackend

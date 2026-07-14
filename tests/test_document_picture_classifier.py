@@ -2,10 +2,10 @@ import warnings
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import (
+from docling_core.types.doc.items.picture.classification import (
     PictureClassificationData,
-    PictureClassificationMetaField,
 )
+from docling_core.types.doc.items.picture.meta import PictureClassificationMetaField
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult

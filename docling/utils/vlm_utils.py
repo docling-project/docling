@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from docling_core.types.doc import Size
+from docling_core.types.doc.base import Size
 
 
 def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:

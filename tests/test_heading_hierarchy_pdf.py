@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc.document import SectionHeaderItem
+from docling_core.types.doc.items.text import SectionHeaderItem
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice

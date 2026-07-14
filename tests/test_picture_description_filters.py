@@ -1,9 +1,9 @@
 import pytest
-from docling_core.types.doc import (
-    PictureClassificationLabel,
+from docling_core.types.doc.items.picture.meta import (
     PictureClassificationMetaField,
     PictureMeta,
 )
+from docling_core.types.doc.labels import PictureClassificationLabel
 
 from docling.models.picture_description_base_model import _passes_classification
 

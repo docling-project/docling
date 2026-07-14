@@ -8,7 +8,8 @@ from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
 from defusedxml.common import DefusedXmlException
-from docling_core.types.doc import DoclingDocument, DocumentOrigin
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend

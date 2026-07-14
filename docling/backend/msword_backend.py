@@ -11,23 +11,33 @@ from pathlib import Path
 from typing import Any, Callable, Final
 from urllib.parse import urlparse
 
-from docling_core.types.doc import (
-    ContentLayer,
-    DocItem,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupLabel,
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.formatting import (
+    Formatting,
+    Script,
+)
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
+    FineRef,
     ImageRef,
-    ListGroup,
-    NodeItem,
     RefItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.group import ListGroup
+from docling_core.types.doc.items.node import (
+    DocItem,
+    NodeItem,
+)
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.table.table_data import (
     RichTableCell,
     TableCell,
     TableData,
-    TableItem,
 )
-from docling_core.types.doc.document import FineRef, Formatting, Script
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+)
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, ValidationError

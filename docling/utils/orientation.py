@@ -1,6 +1,9 @@
 from typing import Tuple
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import BoundingRectangle
 
 CLIPPED_ORIENTATIONS = [0, 90, 180, 270]

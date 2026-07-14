@@ -4,7 +4,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.labels import DocItemLabel
 from lxml import etree
 from PIL import Image
 

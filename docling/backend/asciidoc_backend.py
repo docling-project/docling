@@ -4,16 +4,18 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, Union
 
-from docling_core.types.doc import (
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupItem,
-    GroupLabel,
-    ImageRef,
-    Size,
+from docling_core.types.doc.base import Size
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import ImageRef
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
+)
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend

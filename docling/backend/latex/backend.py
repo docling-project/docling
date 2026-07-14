@@ -5,8 +5,10 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin

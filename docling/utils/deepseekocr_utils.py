@@ -4,20 +4,24 @@ import logging
 import re
 from typing import Optional, Union
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
+    Size,
+)
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ImageRef,
     ProvenanceItem,
     RefItem,
-    Size,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
-    TextItem,
 )
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import DocItemLabel
 from lxml import etree
 from PIL import Image as PILImage
 

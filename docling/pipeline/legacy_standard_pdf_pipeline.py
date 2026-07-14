@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Optional, cast
 
 import numpy as np
-from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
+from docling_core.types.doc.common.reference import ImageRef
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend

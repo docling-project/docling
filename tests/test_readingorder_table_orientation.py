@@ -1,5 +1,6 @@
-from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
-from docling_core.types.doc.document import Orientation
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.items.table.table_data import Orientation, TableCell
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.datamodel.base_models import Cluster, Table
 from docling.models.stages.reading_order.readingorder_model import ReadingOrderModel

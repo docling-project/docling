@@ -1,6 +1,6 @@
 """Unit tests for VLM utility functions."""
 
-from docling_core.types.doc import Size
+from docling_core.types.doc.base import Size
 
 from docling.utils.vlm_utils import compute_qwen2vl_image_size, strip_stop_strings
 

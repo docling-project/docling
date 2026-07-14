@@ -14,15 +14,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import (
-    ImageRefMode,
-    PictureClassificationLabel,
-    PictureItem,
-    RichTableCell,
-    Script,
-    TableItem,
-    TextItem,
-)
+from docling_core.types.doc.base import ImageRefMode
+from docling_core.types.doc.common.formatting import Script
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.table.table_data import RichTableCell
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import PictureClassificationLabel
 from PIL import Image
 
 from docling.backend.opendocument_backend import (

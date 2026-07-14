@@ -1,4 +1,4 @@
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster

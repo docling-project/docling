@@ -11,7 +11,10 @@ from subprocess import DEVNULL, PIPE, Popen
 from typing import List, Optional, Tuple, Type
 
 import pandas as pd
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

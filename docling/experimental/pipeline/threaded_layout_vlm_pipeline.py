@@ -12,8 +12,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from docling_core.types.doc import DoclingDocument
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.doctags import DocTagsDocument
+from docling_core.types.doc.document import DoclingDocument
 from PIL import Image as PILImage
 
 if TYPE_CHECKING:
@@ -362,7 +362,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Assemble final document from VLM predictions."""
-        from docling_core.types.doc import DocItem, ImageRef, PictureItem
+        from docling_core.types.doc.common.reference import ImageRef
+        from docling_core.types.doc.items.node import DocItem
+        from docling_core.types.doc.items.picture.picture import PictureItem
 
         from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 

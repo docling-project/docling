@@ -13,13 +13,14 @@ from types import MethodType, SimpleNamespace
 
 import httpx
 import pytest
-from docling_core.types.doc import (
-    DoclingDocument,
-    ImageRef,
+from docling_core.types.doc.base import (
+    BoundingBox,
     ImageRefMode,
-    PictureItem,
+    Size,
 )
-from docling_core.types.doc.document import BoundingBox, ProvenanceItem, Size
+from docling_core.types.doc.common.reference import ImageRef, ProvenanceItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.picture.picture import PictureItem
 from PIL import Image as PILImage
 
 import docling.service_client._async_client as async_module

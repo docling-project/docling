@@ -3,7 +3,8 @@ import json
 import warnings
 from typing import Annotated, Any, Optional, Union
 
-from docling_core.types.doc import ImageRefMode, PictureClassificationLabel
+from docling_core.types.doc.base import ImageRefMode
+from docling_core.types.doc.labels import PictureClassificationLabel
 from pydantic import (
     AnyUrl,
     BaseModel,
