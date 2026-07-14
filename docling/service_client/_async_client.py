@@ -58,7 +58,6 @@ from docling.datamodel.service.responses import (
 from docling.datamodel.service.targets import (
     InBodyTarget,
     PresignedUrlTarget,
-    S3Target,
     ZipTarget,
 )
 from docling.datamodel.settings import DocumentLimits, PageRange
@@ -73,6 +72,7 @@ from docling.service_client.client import (
     StatusWatcherKind,
     SubmitTarget,
     _BaseDoclingServiceClient,
+    _is_storage_target,
     _ResolvedOptions,
     _SourceDescriptor,
 )
@@ -325,7 +325,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             request_headers=headers,
         )
 
-        if isinstance(target, S3Target):
+        if _is_storage_target(target):
 
             async def fetch_result(
                 task_id: str,
@@ -401,11 +401,16 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> AsyncGenerator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ],
         None,
     ]:
@@ -419,7 +424,11 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             _idx: int,
             item: ConversionItem,
             async_client: httpx.AsyncClient,
-        ) -> ConvertDocumentResponse | PresignedUrlConvertResponse:
+        ) -> (
+            ConvertDocumentResponse
+            | PresignedUrlConvertDocumentResponse
+            | PresignedUrlConvertResponse
+        ):
             resolved = self._resolve_options(
                 options=item.options,
                 max_num_pages=None,
@@ -484,7 +493,12 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             int,
             tuple[
                 ConversionItem,
-                ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+                (
+                    ConvertDocumentResponse
+                    | PresignedUrlConvertDocumentResponse
+                    | PresignedUrlConvertResponse
+                    | Exception
+                ),
             ],
         ] = {}
         next_ordered_index = 0
@@ -496,7 +510,10 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             max_in_flight=max_in_flight,
         ):
             normalized: (
-                ConvertDocumentResponse | PresignedUrlConvertResponse | Exception
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
             )
             if isinstance(outcome, BaseException):
                 normalized = self._normalize_exception(outcome)
@@ -518,11 +535,16 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> AsyncGenerator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ],
         None,
     ]:
@@ -572,6 +594,12 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             )
         if isinstance(target, PresignedUrlTarget):
             return lambda task_id, last_status: self._fetch_presigned_result(
+                task_id=task_id,
+                last_status=last_status,
+                async_client=async_client,
+            )
+        if _is_storage_target(target):
+            return lambda task_id, last_status: self._fetch_presigned_document_result(
                 task_id=task_id,
                 last_status=last_status,
                 async_client=async_client,

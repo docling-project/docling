@@ -1190,3 +1190,43 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
         if isinstance(item, TextItem) and item.hyperlink is not None
     ]
     assert hyperlinks == []
+
+
+def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
+    """A whitespace-only trailing run must not overwrite the paragraph's formatting.
+
+    Regression test: the final run group was flushed with the format of the last
+    run *seen* rather than the format of the run that opened the group. Word
+    routinely emits a trailing plain run holding just spaces, which silently
+    stripped bold/italic from the whole preceding text.
+    """
+    from docx import Document
+
+    doc = Document()
+
+    para = doc.add_paragraph()
+    para.add_run("All bold text").bold = True
+    para.add_run("   ")
+
+    para = doc.add_paragraph()
+    para.add_run("All italic text").italic = True
+    para.add_run(" ")
+
+    # A bold whitespace-only run must not make the plain text bold either.
+    para = doc.add_paragraph()
+    para.add_run("Plain text")
+    para.add_run("   ").bold = True
+
+    docx_path = tmp_path / "trailing_whitespace_run.docx"
+    doc.save(docx_path)
+
+    doc = _convert(docx_path)
+    formatting = {
+        item.text: item.formatting
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+    }
+
+    assert formatting["All bold text"].bold is True
+    assert formatting["All italic text"].italic is True
+    assert formatting["Plain text"].bold is False
