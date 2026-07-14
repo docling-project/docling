@@ -21,7 +21,7 @@ This is some introductory text in section 1.1.
 
 This is some text in section 2.
 
-| Header 1 | Header 2 |
-| - | - |
-| Value 1 | Value 2 |
-| Value 3 | Value 4 |
+| Header 1 | Header 2 |  |
+| - | - | - |
+| Value 1 | Value 2 |  |
+| Value 3 | Value 4 |  |
