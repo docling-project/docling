@@ -1186,12 +1186,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ] = []
         group_text = ""
         previous_format = None
-        last_format = None
 
         # Iterate over the runs of the paragraph and group them by format
         for text, format, hyperlink in self._iter_paragraph_content(paragraph):
-            last_format = format
-
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
@@ -1213,7 +1210,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), last_format, None))
+            paragraph_elements.append((group_text.strip(), previous_format, None))
 
         return paragraph_elements
 
