@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type, cast
+from typing import Annotated, Type, cast, Literal
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -777,8 +777,8 @@ def convert(  # noqa: C901
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
     video_sampling_mode: Annotated[
-        str,
-        typer.Option(..., help="Video frame sampling mode: 'fixed' or 'scene'."),
+        Literal["fixed", "scene"],
+        typer.Option(..., help="frame sampling mode."),
     ] = "fixed",
     video_frame_interval: Annotated[
         float,
@@ -1341,51 +1341,59 @@ def convert(  # noqa: C901
         format_options[InputFormat.AUDIO] = audio_format_option
 
         # Video pipeline options
-        from docling.datamodel.pipeline_options import VideoPipelineOptions
-        from docling.document_converter import VideoFormatOption
-        from docling.pipeline.video_pipeline import VideoPipeline
-        from docling.utils.video_frame_sampling import VideoFrameSamplingMode
+        # Deferred like the AsrPipeline/VlmPipeline
+        # imports above: docling.pipeline.video_pipeline transitively pulls
+        # in the ASR/diarization ML stack and video_frame_sampling pulls in
+        # scipy, so we avoid paying that cost unless video input is used.
+        if InputFormat.VIDEO in from_formats:
+            from docling.datamodel.pipeline_options import VideoPipelineOptions
+            from docling.document_converter import VideoFormatOption
+            from docling.pipeline.video_pipeline import VideoPipeline
+            from docling.utils.video_frame_sampling import VideoFrameSamplingMode
 
-        if (
-            from_formats == [InputFormat.VIDEO]
-            and video_sampling_mode == "fixed"
-            and video_frame_interval == 10.0
-            and video_cuts_per_minute == 0.0
-            and video_prominence == 0.0
-        ):
-            raise typer.BadParameter(
-                "No video config specified. Please set sampling options.\n"
-                "Examples:\n"
-                "  Meetings:  --video-sampling-mode scene --video-prominence 0.03\n"
-                "  Lectures:  --video-sampling-mode scene --video-cuts-per-minute 2\n"
-                "  General:   --video-sampling-mode fixed --video-frame-interval 10\n"
-                "Run with --help for all options.",
-                param_hint="--video-sampling-mode",
+            # Check if user has explicitly configured video sampling
+            # (i.e., set any option beyond defaults)
+            has_explicit_config = (
+                video_sampling_mode != "fixed"
+                or video_frame_interval != 10.0
+                or video_cuts_per_minute != 0.0
+                or video_prominence != 0.0
             )
+            
+            if not has_explicit_config:
+                raise typer.BadParameter(
+                    "No video config specified. Please set sampling options.\n"
+                    "Examples:\n"
+                    "  Meetings:  --video-sampling-mode scene --video-prominence 0.03\n"
+                    "  Lectures:  --video-sampling-mode scene --video-cuts-per-minute 2\n"
+                    "  General:   --video-sampling-mode fixed --video-frame-interval 10\n"
+                    "Run with --help for all options.",
+                    param_hint="--video-sampling-mode",
+                )
 
-        video_pipeline_options = VideoPipelineOptions()
-        video_pipeline_options.enable_diarization = video_diarization
-        video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
-        if video_sampling_mode == "scene":
-            video_pipeline_options.frame_sampling_mode = (
-                VideoFrameSamplingMode.SCENE_CHANGE
+            video_pipeline_options = VideoPipelineOptions()
+            video_pipeline_options.enable_diarization = video_diarization
+            video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+            if video_sampling_mode == "scene":
+                video_pipeline_options.frame_sampling_mode = (
+                    VideoFrameSamplingMode.SCENE_CHANGE
+                )
+                video_pipeline_options.cuts_per_minute = (
+                    video_cuts_per_minute if video_cuts_per_minute > 0 else None
+                )
+                video_pipeline_options.scene_change_prominence = (
+                    video_prominence if video_prominence > 0 else None
+                )
+            else:
+                video_pipeline_options.frame_sampling_mode = (
+                    VideoFrameSamplingMode.FIXED_INTERVAL
+                )
+                video_pipeline_options.frame_interval_seconds = video_frame_interval
+            video_format_option = VideoFormatOption(
+                pipeline_cls=VideoPipeline,
+                pipeline_options=video_pipeline_options,
             )
-            video_pipeline_options.cuts_per_minute = (
-                video_cuts_per_minute if video_cuts_per_minute > 0 else None
-            )
-            video_pipeline_options.scene_change_prominence = (
-                video_prominence if video_prominence > 0 else None
-            )
-        else:
-            video_pipeline_options.frame_sampling_mode = (
-                VideoFrameSamplingMode.FIXED_INTERVAL
-            )
-            video_pipeline_options.frame_interval_seconds = video_frame_interval
-        video_format_option = VideoFormatOption(
-            pipeline_cls=VideoPipeline,
-            pipeline_options=video_pipeline_options,
-        )
-        format_options[InputFormat.VIDEO] = video_format_option
+            format_options[InputFormat.VIDEO] = video_format_option
 
         # Common options for all pipelines
         if artifacts_path is not None:

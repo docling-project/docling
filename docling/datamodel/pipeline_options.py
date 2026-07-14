@@ -1565,10 +1565,53 @@ class VideoPipelineOptions(PipelineOptions):
         Field(default=None, gt=0, description="Optional cap on sampled frames."),
     ] = None
 
-    scene_change_smooth_window: int = 2
-    cuts_per_minute: float | None = None
-    generate_frame_images: bool = True
-    enable_diarization: bool = False
+    scene_change_smooth_window: Annotated[
+        int,
+        Field(
+            default=2,
+            ge=0,
+            description=(
+                "Smoothing window (in frames) applied when detecting scene-change peaks. "
+                "Higher values produce smoother detection.\n\n"
+                "Note: this option is exposed for configuration but must be wired to the "
+                "scene-change sampler (SimpleSceneChangeFrameSampler.smooth_window) in "
+                "video_pipeline.py to take effect."
+            ),
+        ),
+    ] = 2
+
+    cuts_per_minute: Annotated[
+        float | None,
+        Field(
+            default=None,
+            gt=0,
+            description=(
+                "Optional target density of cuts per minute for scene-change sampling. "
+                "If set, the sampler will aim to produce approximately this many cuts per minute."
+            ),
+        ),
+    ] = None
+
+    generate_frame_images: Annotated[
+        bool,
+        Field(
+            default=True,
+            description=(
+                "When True, extracted frames will be saved as image files for debugging or downstream "
+                "processing."
+            ),
+        ),
+    ] = True
+
+    enable_diarization: Annotated[
+        bool,
+        Field(
+            default=False,
+            description=(
+                "Enable speaker diarization on audio tracks when available."
+            ),
+        ),
+    ] = False
 
 
 class VlmExtractionPipelineOptions(PipelineOptions):
