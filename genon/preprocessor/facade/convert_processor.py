@@ -2209,6 +2209,13 @@ class DocumentProcessor:
                 _log.warning(f"[DocumentProcessor] {backend_name} 폴백도 실패: {fallback_err}")
                 raise sdk_err
 
+        # .hml(HWPML)은 GenosHwp SDK 전용 포맷 — 레거시 백엔드가 없어 빈 결과면 바로
+        # 상위(__call__)의 PDF 변환 폴백으로 위임한다 (이슈 #323).
+        if ext == '.hml' and self._hwp_sdk_text_is_empty(document):
+            raise HwpConversionError(
+                f"HML SDK 결과가 비어 있음(hml 은 레거시 백엔드 없음): {file_path}"
+            )
+
         # (2) SDK 가 예외 없이(exit 0) 끝났지만 본문 텍스트가 비어 있으면(빈 doc_items 로
         #     다운스트림 DocMeta 검증이 깨지는 케이스) 레거시 백엔드로 폴백 시도한다.
         #     폴백 결과도 비었거나 폴백이 실패하면 원 SDK 결과를 그대로 유지(무회귀).
@@ -3198,7 +3205,8 @@ class DocumentProcessor:
             )
 
         ext = Path(file_path).suffix.lower()
-        if ext in ('.hwp', '.hwpx'):
+        # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
+        if ext in ('.hwp', '.hwpx', '.hml'):
             try:
                 return await self._process_request(request, file_path, **kwargs)
             except Exception as hwp_err:

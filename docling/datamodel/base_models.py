@@ -88,7 +88,8 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.AUDIO: ["wav", "mp3"],
     # 한글 파일 추가
     InputFormat.HWP: ["hwp"],
-    InputFormat.XML_HWPX: ["hwpx"]
+    # hml(HWPML XML)은 hwp_sdk 260713+ 에서 지원 — XML_HWPX 로 묶어 GenosHwpDocumentBackend 로 라우팅 (이슈 #323)
+    InputFormat.XML_HWPX: ["hwpx", "hml"]
 }
 
 FormatToMimeType: Dict[InputFormat, List[str]] = {

@@ -1764,7 +1764,10 @@ class DocumentProcessor:
         return document
 
     def _parse_hwp_hwpx(self, file_path: str, **kwargs) -> DoclingDocument:
-        """HwpDocumentLoader.load_documents() 만 실행. 실패 시 폴백 적용."""
+        """HwpDocumentLoader.load_documents() 만 실행. 실패 시 폴백 적용.
+
+        .hml 은 레거시 백엔드가 없어 SDK 실패 시 폴백 없이 그대로 예외를 올린다 (이슈 #323).
+        """
         ext = os.path.splitext(file_path)[-1].lower()
         try:
             return self._hwp.load_documents(file_path, **kwargs)
@@ -2335,7 +2338,8 @@ class DocumentProcessor:
 
         enrichment_context: dict = {}
 
-        if ext in (".hwp", ".hwpx"):
+        # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
+        if ext in (".hwp", ".hwpx", ".hml"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
             result = self._build_docling_response(doc)
