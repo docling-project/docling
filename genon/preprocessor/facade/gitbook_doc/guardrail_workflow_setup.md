@@ -1,6 +1,6 @@
 # 민감정보 분류 워크플로우 구성·배포 안내
 
-전처리기의 `guardrail_masking` 기능이 호출하는 **GenOS 가드레일 워크플로우** 를 GenOS 에서 만들고
+전처리기의 `guardrail_call` 기능이 호출하는 **GenOS 가드레일 워크플로우** 를 GenOS 에서 만들고
 배포해 전처리기와 연결하는 절차입니다.
 
 - 전처리기 쪽 사용법(config/동작)은 각 전처리기 매뉴얼의 「민감정보 분류/마스킹」 절을 참고하세요.
@@ -11,7 +11,7 @@
 ## 0. 전체 그림
 
 ```
-문서 업로드(guardrail_masking: true)
+문서 업로드(guardrail_call: true)
    → 전처리기가 청킹 이전에, 문서를 워크플로우에 1회 POST
      POST {url}/workflow/{workflow_id}/run/v2   (Authorization: Bearer {api_key})
      body: {"question": "<문서 전체 텍스트>"}
@@ -147,10 +147,10 @@ curl -s -X POST "https://genos.genon.ai/api/gateway/workflow/{workflow_id}/run/v
 
 ## 4. 전처리기와 연결
 
-배포로 얻은 값 3개를 전처리기 config 의 `guardrail_masking` 에 넣습니다(전처리기별 config yaml).
+배포로 얻은 값 3개를 전처리기 config 의 `guardrail` 에 넣습니다(전처리기별 config yaml).
 
 ```yaml
-guardrail_masking:
+guardrail:
   url: "https://genos.genon.ai/api/gateway"   # 코드가 /workflow/{workflow_id}/run/v2 를 붙임
   workflow_id: <배포 워크플로우 ID>
   api_key: "<워크플로우 Bearer 인증키>"
@@ -159,7 +159,7 @@ guardrail_masking:
 ```
 
 - `url` 은 게이트웨이 **베이스** 까지만 넣습니다(뒤의 `/workflow/{id}/run/v2` 는 코드가 붙임).
-- 기능 자체의 on/off 는 config 가 아니라 **업로드 요청 kwargs `guardrail_masking`** 입니다(기본 off).
+- 기능 자체의 on/off 는 config 가 아니라 **업로드 요청 kwargs `guardrail_call`** 입니다(기본 off).
 - `masking_enabled` 는 치환만 제어합니다. 끄면 `content_category` 라벨만 붙고 텍스트는 원문 유지.
 - 대상 전처리기: intelligent / attachment / convert / chunking. parser 는 청크가 없어 대상 아님
   (파스 결과를 chunking API 로 넘기면 chunking 이 분류·부착).
@@ -175,5 +175,5 @@ guardrail_masking:
 | 라벨이 하나도 안 붙음 | `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) → 프롬프트에서 원문 그대로 반환 강제 |
 | 정규식류(주민번호·전화 등)가 안 잡힘 | 워크플로우가 가드레일 인스턴스 dry-run 을 못 부름 → `GUARDRAIL_DRYRUN_BASE`(내부 게이트웨이)·`GUARDRAIL_ID` 확인, 인스턴스에 정규식 필터 등록됐는지 확인 |
 | 정규식은 잡히나 소분류가 토큰 그대로 | 가드레일 필터 "치환 규칙" 이 `[주민등록번호]` 같은 표준 토큰이 아님 → 토큰 표준화 or 매핑 테이블(`_TOKEN_SPEC`) 보강 |
-| 마스킹이 안 됨 | `masking_enabled: false` 이거나 요청 `guardrail_masking` off. 둘 다 on 이어야 치환 |
+| 마스킹이 안 됨 | `masking_enabled: false` 이거나 요청 `guardrail_call` off. 둘 다 on 이어야 치환 |
 | 호출 자체가 안 감 | config `url`/`workflow_id`/`api_key` 중 빈 값 → 전처리기가 fail-open(원문 통과 + warning 로그) |

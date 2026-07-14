@@ -38,7 +38,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [3.7 청킹 설정](#37-청킹-설정)
     - [3.8 사이트 적용 시 필수 수정 항목](#38-사이트-적용-시-필수-수정-항목)
     - [3.9 자주 쓰는 튜닝 시나리오](#39-자주-쓰는-튜닝-시나리오)
-    - [3.10 민감정보 분류/마스킹 (개인정보 비식별화)](#310-민감정보-분류마스킹-개인정보-비식별화-guardrail_masking)
+    - [3.10 민감정보 분류/마스킹 (개인정보 비식별화)](#310-민감정보-분류마스킹-개인정보-비식별화-guardrail_call)
   - [4. 처리 동작 개요 (보조)](#4-처리-동작-개요-보조)
     - [단일 PDF 파이프라인](#단일-pdf-파이프라인)
     - [config → 단계 매핑](#config--단계-매핑)
@@ -828,7 +828,7 @@ chunking:
 | 토큰 초과 문서 차단 완화 | `precheck.enabled: false` 또는 `max_context_tokens` 상향 |
 | 작성일 외 추가 메타 필드 | `metadata.output_fields` 추가 + 프롬프트 JSON 키 일치 (+ 필요 시 `field_transforms`) |
 
-### 3.10 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_masking`)
+### 3.10 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
 
 문서에 담긴 민감정보(주민번호·연락처·이메일 같은 정형 PII, 부동산·인사 같은 의미 범주)를
 **GenOS 분류 워크플로우** 에 위임해 판별하고, 그 결과를 청크에 반영합니다. 전처리기는 무엇이
@@ -844,23 +844,23 @@ chunking:
 
 **켜고 끄기 — 호출 kwargs (config 아님)**
 
-on/off 는 yaml 이 아니라 **문서 업로드 요청 kwargs `guardrail_masking`** 로 제어합니다(기본 `false`).
+on/off 는 yaml 이 아니라 **문서 업로드 요청 kwargs `guardrail_call`** 로 제어합니다(기본 `false`).
 컨테이너 재배포 없이 업로드 건마다 켜고 끌 수 있습니다.
 
 ```jsonc
 // 요청 kwargs 예
-{ "guardrail_masking": true }   // 기본 false
+{ "guardrail_call": true }   // 기본 false
 ```
 
 기능이 켜지면 `content_category` 라벨 부착은 **항상** 수행되고, `quote_masked` 치환은 config
-`masking_enabled: true` 이고 요청도 `guardrail_masking: true` 일 때만 함께 수행됩니다.
+`masking_enabled: true` 이고 요청도 `guardrail_call: true` 일 때만 함께 수행됩니다.
 
 **접속 정보 — yaml**
 
 워크플로우 게이트웨이 주소·워크플로우 ID·인증키는 환경 종속값이라 yaml 에 둡니다(enrichment/ocr url 과 동일 패턴).
 
 ```yaml
-guardrail_masking:
+guardrail:
   url: ""                 # GenOS gateway 주소(코드가 /workflow/{id}/run/v2 를 붙임)
   workflow_id:            # 민감정보 분류 워크플로우 ID
   api_key: ""             # 워크플로우 호출 Bearer 인증키
@@ -870,7 +870,7 @@ guardrail_masking:
 
 **동작 — 청킹 전 1회 분류 + 청킹 후 매칭**
 
-`guardrail_masking: true` 면 **청킹 직전(문서가 한 덩어리인 상태)** 에 분류 워크플로우를 **문서당 딱 1번**
+`guardrail_call: true` 면 **청킹 직전(문서가 한 덩어리인 상태)** 에 분류 워크플로우를 **문서당 딱 1번**
 호출합니다. 청크 단위 호출이 아니므로 청크가 많아도 호출 수는 1회로 고정됩니다.
 
 - **요청**: `POST {url}/workflow/{workflow_id}/run/v2`, 헤더 `Authorization: Bearer {api_key}`,
@@ -1032,7 +1032,7 @@ class GenOSVectorMeta(BaseModel):
 | `authors` | ❌ | ✅ | ❌ | 작성자 (intelligent 미주입) |
 | **`appendix`** | ❌ | ❌ | **✅** | 매칭된 부록 파일명 (청크별) |
 | **`file_path`** | ❌ | ❌ | **✅** | 변환된 PDF 경로 (비-PDF 입력 시) |
-| **`content_category`** | ✅ | ✅ | ✅ | 민감정보 분류 라벨(청크별, `Optional[list]`). `guardrail_masking` on + quote 매칭 시 채워짐 (3.10) |
+| **`content_category`** | ✅ | ✅ | ✅ | 민감정보 분류 라벨(청크별, `Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (3.10) |
 
 > `output_fields` 등으로 추출된 그 밖의 메타데이터 키는 `field_transforms` 가 소비하지 않은 경우 `extra='allow'` 에 의해 그대로 벡터 메타에 passthrough 됩니다(중첩 객체는 JSON 문자열로 직렬화).
 

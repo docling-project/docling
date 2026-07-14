@@ -448,20 +448,20 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 | `reg_date` | str | 처리 일시 (ISO 8601) |
 | `chunk_bboxes` | str | 청크 위치 정보 (정규화된 bbox, JSON 문자열) |
 | `media_files` | str | 연관 미디어 파일 정보 (JSON 문자열) |
-| `content_category` | Optional[list] | 민감정보 분류 라벨(청크별, 예: `["인사 정보"]`). `guardrail_masking` on + quote 매칭 시 채워짐 (아래 민감정보 분류/마스킹 절) |
+| `content_category` | Optional[list] | 민감정보 분류 라벨(청크별, 예: `["인사 정보"]`). `guardrail_call` on + quote 매칭 시 채워짐 (아래 민감정보 분류/마스킹 절) |
 
 > `extra = 'allow'`로 정의되어 추가 필드도 허용됩니다. 일반 분기(PDF/TXT 등)와 CSV/오디오 경로는 bbox/media 추출을 생략(속도 우선)하며, `chunk_bboxes`/`media_files`는 빈 값/플레이스홀더로 채워집니다. HWP/DOCX 경로는 doc_items 기반으로 실제 bbox/media를 채웁니다.
 
-### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_masking`)
+### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
 
 문서 전체를 GenOS 분류 워크플로우에 위임해 민감정보를 판별하고(청킹 직전 문서당 1회 호출), 청킹 후 각
 청크에서 `quote_origin` 을 매칭해 `content_category` 라벨을 붙이고(항상) 옵션으로 `quote_masked` 로
 치환합니다. 전처리기는 판단하지 않고 워크플로우 결과를 반영만 합니다.
 
-- **켜기**: 요청 kwargs `guardrail_masking: true` (기본 `false`). yaml 아님, 업로드 건별 제어.
+- **켜기**: 요청 kwargs `guardrail_call: true` (기본 `false`). yaml 아님, 업로드 건별 제어.
 - **접속 정보 (yaml)**:
   ```yaml
-  guardrail_masking:
+  guardrail:
     url: ""                 # GenOS gateway 주소(코드가 /workflow/{id}/run/v2 를 붙임)
     workflow_id:            # 민감정보 분류 워크플로우 ID
     api_key: ""             # 워크플로우 호출 Bearer 인증키

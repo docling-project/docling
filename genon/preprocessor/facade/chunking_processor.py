@@ -1671,14 +1671,14 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
-        # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보. on/off 는 요청별 kwargs(guardrail_masking).
-        gm_cfg = _as_dict(cfg.get("guardrail_masking"))
+        # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보. on/off 는 요청별 kwargs(guardrail_call).
+        gm_cfg = _as_dict(cfg.get("guardrail"))
         self._guardrail_url = str(gm_cfg.get("url") or "").strip()
-        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail_masking.workflow_id")
+        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
         self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
-        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail_masking.timeout")
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
         self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
-        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail_masking.masking_enabled"))
+        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
 
         # parse-format(비-docling) 일반 텍스트 splitter 기본값 (attachment_processor 와 동일).
         # docling 경로(GenosSmartChunker)와 무관. _chunk_text_elements 의 폴백으로 사용된다.
@@ -2780,7 +2780,7 @@ class DocumentProcessor:
         # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
         #   실제 라벨 부착/마스킹 치환은 청킹 후 compose 에서 quote 매칭으로 수행.
         _gr_kwargs = {}
-        if kwargs.get("guardrail_masking", False):
+        if kwargs.get("guardrail_call", False):
             if kind == "parse":
                 _doc_text = _gr_elements_text(data)
             else:

@@ -198,11 +198,11 @@ models:
   artifacts_path: ""
 
 # PII 마스킹(#315) — GenOS Guardrail 연동.
-# on/off 는 여기서 하지 않고 요청별 kwargs(guardrail_masking, 기본 off)로 제어한다.
+# on/off 는 여기서 하지 않고 요청별 kwargs(guardrail_call, 기본 off)로 제어한다.
 # 아래는 접속 정보(환경 종속값)만 둔다. 클러스터 내부 gateway 주소를 사용한다.
 
-guardrail_masking:
-  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_masking)로 제어.
+guardrail:
+  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_call)로 제어.
   url: ""                 # GenOS gateway 주소(코드가 /workflow/{id}/run/v2 를 붙임). 예: "https://genos.genon.ai/api/gateway/rep"
   workflow_id:            # 민감정보 분류 워크플로우 ID
   api_key: ""             # 워크플로우 호출 Bearer 인증키(가능하면 배포 환경변수로 주입)

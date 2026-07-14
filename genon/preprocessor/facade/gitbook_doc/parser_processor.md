@@ -663,11 +663,11 @@ filename: 보고서.pdf
 - `whisper.url`
   - 오디오 처리가 필요한 경우 OpenAI Whisper 호환 API 주소로 설정해야 합니다.
 
-### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_masking`)
+### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
 
 파서 전처리기는 이 기능의 **대상이 아닙니다.** 민감정보 분류/마스킹은 청킹 후 각 청크에서
 `quote_origin` 을 매칭해 라벨을 붙이고 치환하는 후처리인데, 파서는 **파스 전용(청킹·벡터 없음)** 이라
-매칭할 청크가 없기 때문입니다. 따라서 파서 config 에는 `guardrail_masking` 블록이 없습니다.
+매칭할 청크가 없기 때문입니다. 따라서 파서 config 에는 `guardrail` 블록이 없습니다.
 
 - 파서 결과(JSON/docling)를 **chunking API 로 넘기면 chunking 전처리기가 문서 전체를 1회 분류하고
   청크별로 `content_category` 라벨을 부착**합니다(옵션으로 마스킹 치환).

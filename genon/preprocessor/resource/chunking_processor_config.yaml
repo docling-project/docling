@@ -38,8 +38,8 @@ chunking:
 table_image:
   enable: false
 
-guardrail_masking:
-  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_masking)로 제어.
+guardrail:
+  # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_call)로 제어.
   url: ""                 # GenOS gateway 주소(코드가 /workflow/{id}/run/v2 를 붙임). 예: "https://genos.genon.ai/api/gateway/rep"
   workflow_id:            # 민감정보 분류 워크플로우 ID
   api_key: ""             # 워크플로우 호출 Bearer 인증키(가능하면 배포 환경변수로 주입)

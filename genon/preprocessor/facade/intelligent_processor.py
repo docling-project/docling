@@ -1894,14 +1894,14 @@ class DocumentProcessor:
             self.ocr_endpoint = ocr_ep
 
         # 민감정보 분류/마스킹(#315): GenOS 분류 워크플로우 접속 정보.
-        # 기능 on/off 는 요청별 kwargs(guardrail_masking), 마스킹 치환은 masking_enabled(config/kwargs).
-        gm_cfg = _as_dict(cfg.get("guardrail_masking"))
+        # 기능 on/off 는 요청별 kwargs(guardrail_call), 마스킹 치환은 masking_enabled(config/kwargs).
+        gm_cfg = _as_dict(cfg.get("guardrail"))
         self._guardrail_url = str(gm_cfg.get("url") or "").strip()
-        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail_masking.workflow_id")
+        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
         self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
-        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail_masking.timeout")
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
         self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
-        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail_masking.masking_enabled"))
+        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
 
         self.page_chunk_counts = defaultdict(int)
 
@@ -3151,7 +3151,7 @@ class DocumentProcessor:
         # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
         # 실제 라벨 부착/마스킹 치환은 청킹 후 compose 에서 quote 매칭으로 수행.
         sensitive_infos: list = []
-        if kwargs.get("guardrail_masking", False):
+        if kwargs.get("guardrail_call", False):
             sensitive_infos = _gr_classify_document(
                 _gr_doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
                 self._guardrail_api_key, self._guardrail_timeout,
@@ -3202,7 +3202,7 @@ class DocumentProcessor:
                 document, chunks, file_path, request,
                 converted_pdf_path=converted_pdf_path,
                 _sensitive_infos=sensitive_infos,
-                _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled),
+                _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled),
                 **enrichment_kwargs,
             )
         else:

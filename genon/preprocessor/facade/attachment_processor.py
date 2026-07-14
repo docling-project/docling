@@ -1640,7 +1640,7 @@ class DocxProcessor:
 
         # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
         sensitive_infos: list = []
-        if kwargs.get("guardrail_masking", False):
+        if kwargs.get("guardrail_call", False):
             sensitive_infos = _gr_classify_document(
                 _gr_doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
                 self._guardrail_api_key, self._guardrail_timeout,
@@ -1650,7 +1650,7 @@ class DocxProcessor:
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
         return await self.compose_vectors(
-            document, chunks, file_path, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled), **kwargs
+            document, chunks, file_path, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled), **kwargs
         )
 
 
@@ -1882,7 +1882,7 @@ class HwpProcessor:
 
         # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
         sensitive_infos: list = []
-        if kwargs.get("guardrail_masking", False):
+        if kwargs.get("guardrail_call", False):
             sensitive_infos = _gr_classify_document(
                 _gr_doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
                 self._guardrail_api_key, self._guardrail_timeout,
@@ -1893,7 +1893,7 @@ class HwpProcessor:
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
         return await self.compose_vectors(
-            document, chunks, page_chunk_counts, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled), **kwargs
+            document, chunks, page_chunk_counts, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled), **kwargs
         )
 
 class GenosServiceException(Exception):
@@ -2073,13 +2073,13 @@ class DocumentProcessor:
         }
 
         # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보(환경 종속값). on/off 는 요청별 kwargs.
-        gm_cfg = _as_dict(cfg.get("guardrail_masking"))
+        gm_cfg = _as_dict(cfg.get("guardrail"))
         self._guardrail_url = str(gm_cfg.get("url") or "").strip()
-        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail_masking.workflow_id")
+        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
         self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
-        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail_masking.timeout")
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
         self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
-        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail_masking.masking_enabled"))
+        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
 
         self.page_chunk_counts = defaultdict(int)
         _gm = dict(
@@ -2600,10 +2600,10 @@ class DocumentProcessor:
                     sensitive_infos = (_gr_classify_document(
                         _gr_docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
                         self._guardrail_api_key, self._guardrail_timeout)
-                        if kwargs.get("guardrail_masking", False) else [])
+                        if kwargs.get("guardrail_call", False) else [])
                     chunks: list[Document] = self.split_documents(documents, **kwargs)
                     vectors: list[dict] = self.compose_vectors(
-                        converted, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled), **kwargs)
+                        converted, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled), **kwargs)
                     return vectors
                 else:
                     # 이슈 #286 — HWP SDK 도 실패하고 PDF 변환기마저 없으면, 원인을 명확히
@@ -2632,17 +2632,17 @@ class DocumentProcessor:
                 sensitive_infos = (_gr_classify_document(
                     _gr_docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
                     self._guardrail_api_key, self._guardrail_timeout)
-                    if kwargs.get("guardrail_masking", False) else [])
+                    if kwargs.get("guardrail_call", False) else [])
                 chunks: list[Document] = self.split_documents(documents, **kwargs)
             else:
                 # 민감정보 분류(#315): 페이지 결합 청킹 전 1회 호출.
                 sensitive_infos = (_gr_classify_document(
                     _gr_docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
                     self._guardrail_api_key, self._guardrail_timeout)
-                    if kwargs.get("guardrail_masking", False) else [])
+                    if kwargs.get("guardrail_call", False) else [])
                 chunks = self._chunk_ppt_pages(documents, **kwargs)
             vectors: list[dict] = self.compose_vectors(
-                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled), **kwargs)
+                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled), **kwargs)
             return vectors
 
         else:
@@ -2652,11 +2652,11 @@ class DocumentProcessor:
             sensitive_infos = (_gr_classify_document(
                 _gr_docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
                 self._guardrail_api_key, self._guardrail_timeout)
-                if kwargs.get("guardrail_masking", False) else [])
+                if kwargs.get("guardrail_call", False) else [])
 
             chunks: list[Document] = self.split_documents(documents, **kwargs)
 
             vectors: list[dict] = self.compose_vectors(
-                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_masking", False) and self._guardrail_masking_enabled), **kwargs)
+                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(kwargs.get("guardrail_call", False) and self._guardrail_masking_enabled), **kwargs)
 
             return vectors
