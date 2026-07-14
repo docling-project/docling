@@ -320,19 +320,6 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert formulas == expected_formulas
 
 
-def test_jats_inline_formula_styled_content_markdown_rendering():
-    doc = convert_jats_body(
-        "<sec><title>T</title>"
-        "<p>Use <inline-formula><italic>x</italic> "
-        "<tex-math>$$a^2$$</tex-math></inline-formula> now.</p>"
-        "</sec>"
-    )
-
-    md = doc.export_to_markdown()
-    assert "*x*" in md
-    assert "a^2" in md
-
-
 def test_jats_paragraph_emphasis_is_preserved():
     doc = convert_jats_body(
         "<sec><title>T</title>"

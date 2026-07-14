@@ -737,8 +737,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         for child in node:
             tag = child.tag
             if not isinstance(tag, str) or tag.endswith("}math"):
-                # Skip nodes with no inline content: comments / processing
-                # instructions, and MathML.
+                # Skip comments, processing instructions, and MathML.
                 pass
             elif tag == "tex-math":
                 formula = JatsDocumentBackend._extract_tex_math(child)
@@ -764,12 +763,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _append_run(
         segments: list[InlineSegment], text: str, formatting: Formatting | None
     ) -> None:
-        """Append a text run, merging into the previous run when formatting matches.
-
-        Coalescing keeps a run of equally-formatted text (the common case: plain
-        paragraphs, citation cross-references) as a single segment, so unstyled
-        content is emitted as one ``TextItem`` rather than a fragmented group.
-        """
+        """Append a text run, coalescing into the previous run when formatting matches."""
         text = text.replace("\n", " ")
         if not text:
             return
@@ -1168,8 +1162,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                # An inline formula becomes styled inline segments; its tex-math
-                # stays inline, unlike a block-level <disp-formula>.
+                # Inline formula: tex-math stays inline, unlike block <disp-formula>.
                 JatsDocumentBackend._extend_segments(
                     inline_segments,
                     JatsDocumentBackend._walk_inline_formula(child, current),
