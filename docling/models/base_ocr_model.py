@@ -63,10 +63,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Compute the OCR rects according to the mode
         ocr_rects: list[BoundingBox]
 
-        # Both AUTO and PDF_AWARE_REGIONS make OCR input as layout detections eliminated by PDF cells
+        # Both DEFAULT and PDF_AWARE_LAYOUT_REGIONS make OCR input as layout detections eliminated by PDF cells
         if (
-            self.options.mode == OcrMode.AUTO
-            or self.options.mode == OcrMode.PDF_AWARE_REGIONS
+            self.options.mode == OcrMode.DEFAULT
+            or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
         ):
             ocr_rects = self._find_pdf_eliminated_layout_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_REGIONS:
@@ -214,7 +214,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Post-process the OCR cells and update the page object according to the algorithm:
 
         - If FULL_PAGE: Any existing PDF cells are ignored and only the OCR cells are used.
-        - If LAYOUT_REGIONS or PDF_AWARE_REGIONS: The priority parameter controls how the PDF/OCR cells
+        - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS: The priority parameter controls how the PDF/OCR cells
           are merged
         """
         # Get existing cells from the read-only property

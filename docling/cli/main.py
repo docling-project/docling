@@ -781,7 +781,7 @@ def convert(  # noqa: C901
             ...,
             help="Which document regions are fed to the OCR engine.",
         ),
-    ] = OcrMode.AUTO,
+    ] = OcrMode.DEFAULT,
     tables: Annotated[
         bool,
         typer.Option(

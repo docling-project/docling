@@ -44,7 +44,7 @@ def get_nemotron_ocr_groundtruth_paths(
     """Build GT paths for nemotron OCR, organized by OCR mode.
 
     Each mode maps to a sub-directory named after ``mode.value``; files are tagged
-    ``nemotron_ocr.<mode.value>``. AUTO shares PDF_AWARE_REGIONS' ground truth.
+    ``nemotron_ocr.<mode.value>``. DEFAULT shares PDF_AWARE_LAYOUT_REGIONS' ground truth.
     """
     model_name = "nemotron_ocr"
     mode = resolve_gt_ocr_mode(mode)

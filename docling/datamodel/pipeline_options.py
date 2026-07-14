@@ -104,11 +104,10 @@ class OcrMode(str, Enum):
     LAYOUT_REGIONS = "layout_regions"
 
     # Eliminate those clusters that contain exclusively text PDF cells
-    PDF_AWARE_REGIONS = "pdf_aware_regions"
+    PDF_AWARE_LAYOUT_REGIONS = "pdf_aware_layout_regions"
 
-    # Auto is used as the placeholder to define the default behavior
-    # Currently AUTO is wired to run PDF_AWARE_REGIONS
-    AUTO = "auto"
+    # Currently DEFAULT is wired to run PDF_AWARE_LAYOUT_REGIONS
+    DEFAULT = "default"
 
 
 class TableFormerMode(str, Enum):
@@ -203,11 +202,11 @@ class OcrOptions(BaseOptions):
             examples=[
                 OcrMode.FULL_PAGE,
                 OcrMode.LAYOUT_REGIONS,
-                OcrMode.PDF_AWARE_REGIONS,
-                OcrMode.AUTO,
+                OcrMode.PDF_AWARE_LAYOUT_REGIONS,
+                OcrMode.DEFAULT,
             ],
         ),
-    ] = OcrMode.AUTO
+    ] = OcrMode.DEFAULT
 
     lang: Annotated[
         list[str],
