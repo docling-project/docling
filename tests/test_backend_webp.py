@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from pydantic.type_adapter import R
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
@@ -17,7 +16,7 @@ from docling.datamodel.pipeline_options import (
     TesseractOcrOptions,
 )
 from docling.document_converter import DocumentConverter, ImageFormatOption
-from tests.groundtruth_paths import get_regular_groundtruth_paths
+from tests.groundtruth_paths import get_ocr_groundtruth_paths
 from tests.verify_utils import verify_conversion_result_v2
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -83,7 +82,9 @@ def test_e2e_webp_conversions():
             )
 
             verify_conversion_result_v2(
-                gt=get_regular_groundtruth_paths(webp_path),
+                gt=get_ocr_groundtruth_paths(
+                    webp_path, mode=ocr_options.mode, engine=ocr_options.kind
+                ),
                 doc_result=doc_result,
                 generate=GENERATE,
                 fuzzy=True,
