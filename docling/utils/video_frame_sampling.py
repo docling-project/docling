@@ -380,11 +380,15 @@ class SimpleSceneChangeFrameSampler:
 
         if window_duration == 0.0 or n <= 1:
             img = _extract_frame(video_path, mid)
-            return VideoFrame(timestamp=mid, image=img, scene_id=scene_id) if img else None
+            return (
+                VideoFrame(timestamp=mid, image=img, scene_id=scene_id) if img else None
+            )
 
         # fps chosen so the range decode yields ~n evenly spaced frames.
         fps = (n - 1) / window_duration
-        candidates = _extract_frames_range(video_path, window_start, window_duration, fps)
+        candidates = _extract_frames_range(
+            video_path, window_start, window_duration, fps
+        )
 
         best_frame: VideoFrame | None = None
         best_score = -1.0

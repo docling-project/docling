@@ -1514,6 +1514,7 @@ class AsrPipelineOptions(PipelineOptions):
 
 from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
 
+
 class VideoPipelineOptions(PipelineOptions):
     """Configuration options for the video pipeline.
 
@@ -1607,9 +1608,7 @@ class VideoPipelineOptions(PipelineOptions):
         bool,
         Field(
             default=False,
-            description=(
-                "Enable speaker diarization on audio tracks when available."
-            ),
+            description=("Enable speaker diarization on audio tracks when available."),
         ),
     ] = False
 

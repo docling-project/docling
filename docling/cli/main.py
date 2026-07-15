@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type, cast, Literal
+from typing import Annotated, Literal, Type, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem

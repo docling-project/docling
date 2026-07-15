@@ -9,7 +9,6 @@ Orchestrates three steps:
    DoclingDocument.
 """
 
-
 import logging
 import shutil
 import subprocess
