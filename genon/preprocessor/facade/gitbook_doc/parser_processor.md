@@ -192,9 +192,9 @@ pdf_pipeline:
   table_structure_mode: "accurate"   # accurate(기본값) | fast
 
 # ───────────────────────────────────────────────
-# Enrichment (TOC 추출 / 메타데이터 추출 / 이미지 설명 / 커스텀 필드)
+# Enrichment (TOC / 메타데이터 / 문서요약 / 이미지 설명 / 표 설명 / 커스텀 필드)
 # 각 항목은 {이름: {옵션}} 형식의 list 입니다.
-#   이름 ∈ {toc, metadata, image_description, custom_fields}
+#   이름 ∈ {toc, metadata, doc_summary, image_description, table_description, custom_fields}
 #   비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
 #   모든 url 의 <ENRICHMENT_SERVING_ID> / <IMAGE_DESCRIPTION_SERVING_ID> 는
 #   Genos에 등록한 모델서빙 ID로 변경 필요. api_key 는 k8s 내부 통신 시 불필요.
@@ -246,6 +246,15 @@ enrichment:
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
 
+  # 문서 본문요약 1회 → image/table description 공용 {{doc_summary}} 컨텍스트
+  - doc_summary:
+      enable: false
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      prompt_file: prompt_doc_summary.md   # {{full_text}} 치환
+      max_chars: 6000
+
   # facade 후처리 기반 이미지 설명 생성 (문맥 포함)
   - image_description:
       enable: true
@@ -259,16 +268,26 @@ enrichment:
       max_context_chars: 1500
       # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} / {{doc_summary}} 치환
       prompt_template_file: prompt_image_description_default.md
-      # 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 로 주입)
-      doc_summary:
-        enable: false
-        prompt_file: prompt_doc_summary.md
-        max_chars: 6000
       # 차트 처리
       chart:
         enable: false          # true 면 차트 처리 수행(아니면 일반 image description)
         detection: auto         # auto=docling 자동판별(차트만 차트 프롬프트) | all=모든 이미지를 차트로
         chart_prompt_file: prompt_chart_description_default.md
+
+  # 표 설명(요약 + 선택적 refine 구조 재구성). refine/요약은 element(parse) 출력에 반영.
+  - table_description:      # 표 영역을 crop 해 VLM 에 보냄 → 이미지 서빙.
+      enable: false
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      concurrency: 8         # 표 설명 요청 병렬 수
+      before_items: 3
+      after_items: 2
+      max_context_chars: 1500
+      prompt_template_file: prompt_table_description_default.md   # 요약 전용 프롬프트
+      refine:
+        enable: false        # true 면 재구성 HTML 로 표 본체 교체
+        prompt_file: prompt_table_refine_combined.md   # 재구성 HTML + 요약 통합 프롬프트
 
   # 커스텀 필드 추출 (여러 개 지정 가능). 인라인 옵션 또는 외부 config_file 사용.
   # - custom_fields:
@@ -294,6 +313,8 @@ output:
   format: "json"
   # 테이블 표현 형식: html | markdown (json, markdown 포맷의 테이블에 적용; docling 포맷에서는 무시)
   table_format: "html"
+  # markdown 표 컬럼 정렬 패딩 제거(대형 표 축소). html/docling 포맷엔 무관. refine 표에도 적용
+  compact_tables: true
 
 # ───────────────────────────────────────────────
 # Whisper 설정 (오디오 음성인식이 필요한 경우에만 설정)
@@ -373,7 +394,7 @@ whisper:
 - `temperature`(기본 0.1)를 약간 올리면(예: 0.2~0.3) 결정성이 낮아져 반복 탈출에 도움이 되기도 하지만 OCR 정확도와 trade-off이므로, `repetition_penalty`를 우선 조정하세요.
 - 동일 항목이 여러 번 나오는 표는 과한 penalty가 실제 반복 데이터를 누락시킬 수 있으니 문서별로 결과를 검증하세요.
 
-**Enrichment (list 형식)** — 각 항목은 `{이름: {옵션}}`. 이름 ∈ `toc` / `metadata` / `image_description` / `custom_fields`. 각 항목은 `enable: true/false`(미지정 시 `true`)로 켜고 끕니다.
+**Enrichment (list 형식)** — 각 항목은 `{이름: {옵션}}`. 이름 ∈ `toc` / `metadata` / `doc_summary` / `image_description` / `table_description` / `custom_fields`. 각 항목은 `enable: true/false`(미지정 시 `true`)로 켜고 끕니다.
 
 | 항목 | 키 | 기본값 | 설명 |
 |------|----|--------|------|
@@ -409,6 +430,10 @@ whisper:
 | `metadata.field_transforms` | — | 내장 기본값 | 추출 키 → 벡터 메타 필드/타입 변환 목록(선택). 아래 [메타데이터 enricher](#메타데이터-enricher) 참고 |
 | `metadata` | `thinking` / `thinking_dialect` | `off` / `standard` | 추론(thinking) 모드 / 방언. 아래 [thinking(추론) 모드](#thinking추론-모드) 참고 |
 | `metadata.precheck` | `enabled` / `max_context_tokens` / `completion_reserved_tokens` | `/ 128000 / 12000` | TOC와 동일 의미 |
+| `doc_summary` | `enable` | `false` | 문서 본문요약 1회 생성(image·table description 공용 `{{doc_summary}}`). 런타임 `doc_summary=1` 로도 활성화 |
+| `doc_summary` | `url` / `api_key` / `model` | `""` / `""` / `"model"` | 요약 LLM API URL / 키 / 모델명 |
+| `doc_summary` | `prompt_file` | `prompt_doc_summary.md` | 요약 프롬프트 `.md`(`{{full_text}}` 치환) |
+| `doc_summary` | `max_chars` | `6000` | 요약 입력 본문 최대 문자 수 |
 | `image_description` | `url` | `""` | 이미지 설명 VLM API URL |
 | `image_description` | `api_key` | `""` | 이미지 설명 VLM API 키 |
 | `image_description` | `model` | `"model"` | 이미지 설명 모델명 |
@@ -418,13 +443,22 @@ whisper:
 | `image_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 (초과 시 절단) |
 | `image_description` | `prompt_template_file` | — | 프롬프트 템플릿 `.md` 파일 경로(권장). 미지정 시 inline `prompt_template` → 내장 기본 프롬프트 |
 | `image_description` | `prompt_template` | 내장 기본 프롬프트 | inline 프롬프트 템플릿(`*_file` 미지정 시 fallback). `{{before_context}}`, `{{caption}}`, `{{after_context}}`, `{{doc_summary}}` 치환 |
-| `image_description` | `doc_summary.enable` / `.prompt_file` / `.max_chars` | `false` / `prompt_doc_summary.md` / `6000` | 문서 본문요약 생성(공통 `{{doc_summary}}` 컨텍스트). `{{full_text}}` 치환 |
 | `image_description` | `chart.enable` | `false` | 차트 처리 활성화(false 면 일반 image description 만) |
 | `image_description` | `chart.detection` | `auto` | `auto`=docling 자동판별(차트로 분류된 이미지만) / `all`=모든 이미지를 차트로 |
 | `image_description` | `chart.chart_prompt_file` | `prompt_chart_description_default.md` | 차트 전용 프롬프트 `.md` |
+| `table_description` | `enable` | `false` | 표 요약 생성(런타임 `table_desc=1` 로도 활성화). element(parse) 출력 표 뒤에 `[표 설명]` 병기 |
+| `table_description` | `url` / `api_key` / `model` | `""` / `""` / `"model"` | 표 설명 LLM API URL / 키 / 모델명 |
+| `table_description` | `concurrency` | `8` | 표 설명 요청 병렬 처리 수 |
+| `table_description` | `before_items` / `after_items` | `3` / `2` | 표 앞/뒤 문맥 텍스트 item 수 |
+| `table_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 |
+| `table_description` | `prompt_template_file` | `prompt_table_description_default.md` | 요약 전용 프롬프트 `.md`. `{{before_context}}`/`{{after_context}}`/`{{caption}}`/`{{section_header}}`/`{{doc_summary}}` 치환 |
+| `table_description` | `refine.enable` | `false` | 표 구조 재구성(재구성 HTML 로 표 본체 교체). 런타임 `table_refine=1` 로도 활성화 |
+| `table_description` | `refine.prompt_file` | `prompt_table_refine_combined.md` | 재구성 HTML + 요약 통합 프롬프트 |
 | `custom_fields` | (인라인 옵션 또는 `config_file`) | — | 커스텀 필드 추출 enricher. 여러 개 지정 가능. 아래 [커스텀 필드 enricher](#커스텀-필드-enricher) 참고 |
 
-> `chart.enable: true` 면 변환 단계에서 docling 그림 분류가 자동 활성화됩니다. **런타임 kwargs**(호출 `params`, 0/1)로 오버라이드 가능: `img_desc`→`image_description.enable`, `chart_desc`(별칭 `chart_convert`)→`chart.enable`, `chart_detection`(1=auto/0=all), `doc_summary`→`doc_summary.enable`. `chart_detection=1`(auto) 은 `chart.enable: true` 로 분류가 켜져 있어야 하며 아니면 `all` 로 강등됩니다.
+> `chart.enable: true` 면 변환 단계에서 docling 그림 분류가 자동 활성화됩니다. **런타임 kwargs**(호출 `params`, 0/1)로 오버라이드 가능: `img_desc`→`image_description.enable`, `chart_desc`(별칭 `chart_convert`)→`chart.enable`, `chart_detection`(1=auto/0=all), `doc_summary`→`doc_summary.enable`, `table_desc`→`table_description.enable`, `table_refine`→`table_description.refine.enable`. `chart_detection=1`(auto) 은 `chart.enable: true` 로 분류가 켜져 있어야 하며 아니면 `all` 로 강등됩니다.
+
+> **표 설명(table_description)**: `enable`(또는 `table_desc=1`) 이면 각 표 뒤에 `[표 설명]` 요약을 병기하고, `refine.enable`(또는 `table_refine=1`) 이면 표 구조를 재구성 HTML 로 만들어 표 본체를 교체합니다. 재구성/요약은 **element(parse) 및 markdown 출력**에 반영되며, `output.format: docling`(원본 보존)에서는 적용되지 않습니다. refine 표를 `table_format: markdown` 으로 낼 때 `compact_tables` 설정이 반영됩니다.
 
 > 이미지 설명 enrichment는 `pdf_pipeline.generate_picture_images: false`인 경우 동작하지 않습니다 (그림 이미지가 생성되지 않으므로).
 
@@ -474,6 +508,7 @@ whisper:
 |------|----|--------|------|
 | `output` | `format` | `"json"` | 응답 포맷. `json` / `html` / `markdown` / `docling`. 유효하지 않으면 `json`으로 대체. `docling`은 docling 경로(pdf/html/htm/docx/hwp/hwpx)에서만 `data.document` 생성, 그 외 포맷은 항상 parse-format(`elements`) |
 | `output` | `table_format` | `"html"` | 표 변환 포맷. `html` / `markdown`. 유효하지 않으면 `html`로 대체 |
+| `output` | `compact_tables` | `true` | markdown 표 컬럼 정렬 패딩 제거(대형 표 축소). `html`/`docling` 포맷엔 무관. refine 표에도 적용 |
 | `whisper` | `url` | `""` | OpenAI Whisper 호환 API URL (오디오 처리 시 필수) |
 | `whisper` | `model` | `"model"` | Whisper 모델명 |
 | `whisper` | `language` | `"ko"` | 전사 언어 |
@@ -540,7 +575,8 @@ enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md
 | 키 | 대상 |
 |----|------|
 | `system_prompt_file` / `user_prompt_file` | toc / metadata / custom_fields |
-| `prompt_template_file` | image_description |
+| `prompt_template_file` | image_description / table_description(요약) |
+| `prompt_file` | doc_summary / table_description `refine`(재구성+요약 통합) |
 
 - **경로 규칙:** 상대경로는 **해당 config 파일이 위치한 디렉토리** 기준으로 해석합니다(파일명만 적으면 됨). 절대경로도 허용하지만, 상대경로가 base 디렉토리를 벗어나면(`../…`) 거부합니다.
 - **우선순위:** `*_file` > inline(`system_prompt`/`user_prompt`/`prompt_template`) > built-in default. system prompt 는 미지정 시 enricher 별 built-in default 가 채워지므로, **`user_prompt_file` 만 지정**해도 동작합니다(system 은 도메인 안에서 거의 고정이고 자주 바뀌는 것은 user prompt 이기 때문).
@@ -568,15 +604,15 @@ enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md
 | `{{picture_count}}` | 이미지 개수 | `len(document.pictures)` | `5` |
 | `{{section_headers}}` | 섹션 헤더·제목 목록(줄바꿈 구분) | `texts` 중 label ∈ {section_header, title} | `1장 총칙\n2장 정의 …` |
 
-이미지 item 단위 (image_description 프롬프트 — 이미지마다 값이 달라짐):
+이미지·표 item 단위 (image_description / table_description 프롬프트 — 아이템마다 값이 달라짐):
 
 | 변수 | 의미 | 추출 소스 |
 |------|------|-----------|
-| `{{before_context}}` | 이미지 앞 문맥 텍스트(`before_items` 개) | 이미지 직전 텍스트 아이템들 |
-| `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
-| `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
-| `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
-| `{{doc_summary}}` | 문서 본문요약(공통 컨텍스트). `doc_summary.enable: true` 일 때만 채워짐 | 문서 BODY 텍스트 LLM 1회 요약 |
+| `{{before_context}}` | 아이템 앞 문맥 텍스트(`before_items` 개) | 이미지/표 직전 텍스트 아이템들 |
+| `{{after_context}}` | 아이템 뒤 문맥 텍스트(`after_items` 개) | 이미지/표 직후 텍스트 아이템들 |
+| `{{caption}}` | 이미지/표 캡션 | `PictureItem`/`TableItem.caption_text(document)` |
+| `{{section_header}}` | 아이템 직전 섹션 헤더 | 위쪽에서 가장 가까운 section_header/title |
+| `{{doc_summary}}` | 문서 본문요약(image·table description 공용 컨텍스트). 독립 `doc_summary` enricher 가 `enable: true`(또는 `doc_summary=1`)일 때만 채워짐 | 문서 BODY 텍스트 LLM 1회 요약 |
 
 > 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
 
@@ -648,7 +684,7 @@ filename: 보고서.pdf
 ---
 ```
 
-> TOC 프롬프트는 docling 레이어에서 처리되어 `{{raw_text}}` 만 지원하며, 위 reserved 카탈로그·`variables`·`template.mode` 는 facade enricher(metadata / custom_fields / image_description)에 적용됩니다.
+> TOC 프롬프트는 docling 레이어에서 처리되어 `{{raw_text}}` 만 지원하며, 위 reserved 카탈로그·`variables`·`template.mode` 는 facade enricher(metadata / custom_fields / image_description / table_description / doc_summary)에 적용됩니다.
 
 ### 파싱용 전처리기 최초 등록시 config 수정가이드
 
@@ -658,8 +694,8 @@ filename: 보고서.pdf
 - `layout.genos_layout.endpoint`
   - `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
 - `enrichment` (list 형식)
-  - `toc.url` / `metadata.url`: `<ENRICHMENT_SERVING_ID>` 는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
-  - `image_description.url`: `<IMAGE_DESCRIPTION_SERVING_ID>` 는 별도 VLM 모델서빙 ID로 변경해야 합니다.
+  - `toc.url` / `metadata.url` / `doc_summary.url`: `<ENRICHMENT_SERVING_ID>` 는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
+  - `image_description.url` / `table_description.url`: `<IMAGE_DESCRIPTION_SERVING_ID>` 는 별도 VLM 모델서빙 ID로 변경해야 합니다(표 description 은 표 영역을 crop 해 VLM 에 전달).
 - `whisper.url`
   - 오디오 처리가 필요한 경우 OpenAI Whisper 호환 API 주소로 설정해야 합니다.
 

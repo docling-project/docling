@@ -86,14 +86,14 @@ async def parse_document(file_path: Path, kwargs: dict) -> dict:
     return await get_parser()(mock_request, str(file_path), **kwargs)
 
 
-async def chunk_payload(file_path: Path, payload: dict, chunk_size: int) -> list[dict]:
+async def chunk_payload(file_path: Path, payload: dict, chunk_size: int, chunk_mode: str) -> list[dict]:
     """청킹 실행 → GenOSVectorMeta dict 리스트.
 
     payload 는 docling({"document":...}) 또는 parse-format({"elements":...}) 어느 쪽이든 허용.
     chunker 가 형태를 스스로 판별한다(file_path 확장자 무관).
     """
     vectors = await get_chunker()(
-        mock_request, str(file_path), document=payload, chunk_size=chunk_size
+        mock_request, str(file_path), document=payload, chunk_size=chunk_size, chunk_mode=chunk_mode
     )
     return [v.model_dump() if hasattr(v, "model_dump") else v for v in vectors]
 
@@ -124,7 +124,7 @@ def collect_files(input_path: Path) -> list[Path]:
     raise SystemExit(1)
 
 
-async def process_one(file_path: Path, out_base: Path, chunk_size: int) -> None:
+async def process_one(file_path: Path, out_base: Path, chunk_size: int, chunk_mode: str) -> None:
     """파일 1개: (파싱→)청킹 수행 후 결과 저장."""
     is_json = file_path.suffix.lower() == ".json"
 
@@ -144,7 +144,7 @@ async def process_one(file_path: Path, out_base: Path, chunk_size: int) -> None:
             save_json(out_base.with_suffix(".parse.json"), payload)
             print(f"  [parse] parse-format ({n_elems} elements) → 공통 청킹")
 
-    vectors = await chunk_payload(file_path, payload, chunk_size)
+    vectors = await chunk_payload(file_path, payload, chunk_size, chunk_mode)
     save_json(out_base.with_suffix(".chunks.json"), vectors)
     print(f"  [chunk] {len(vectors)} chunks")
 
@@ -157,7 +157,13 @@ def parse_args():
              "parse-format: CSV/XLSX/TXT/MD/PPT/PPTX/이미지/오디오)",
     )
     ap.add_argument("output_dir", help="결과 저장 디렉터리")
-    ap.add_argument("--chunk-size", type=int, default=0, help="청크 최대 크기 (0=토큰/문자 분할 안 함)")
+    ap.add_argument("--chunk-size", type=int, default=0, help="청크 최대 크기 (0=토큰/문자 분할 안 함, 0 초과 시 최소 1024)")
+    ap.add_argument(
+        "--chunk-mode",
+        choices=["split_only", "resize_all"],
+        default="split_only",
+        help="split_only=chunk_size 초과 청크만 분할(기본) | resize_all=모든 청크를 chunk_size 에 맞게 병합/분할",
+    )
     return ap.parse_args()
 
 
@@ -176,7 +182,7 @@ def main():
             out_base = output_dir / file_path.relative_to(input_path)
         else:
             out_base = output_dir / file_path.name
-        asyncio.run(process_one(file_path, out_base, args.chunk_size))
+        asyncio.run(process_one(file_path, out_base, args.chunk_size, args.chunk_mode))
 
 
 if __name__ == "__main__":
