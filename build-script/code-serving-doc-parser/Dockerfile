@@ -143,7 +143,7 @@ RUN --mount=type=cache,target=${HF_HOME} \
     echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
     HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
     mkdir -p /app/hwp_sdk && \
-    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+    huggingface-cli download genon-search/hwp_sdk \
       --repo-type dataset --local-dir /app/hwp_sdk \
       --local-dir-use-symlinks False --token "${HWP_SDK_TOKEN_VAL}" && \
     chmod +x /app/hwp_sdk/convtext
@@ -155,7 +155,7 @@ FROM builder AS font_artifacts
 RUN --mount=type=cache,target=${HF_HOME} \
     echo "[INFO] Downloading extra fonts from HF (public)..." && \
     mkdir -p /app/extra_fonts && \
-    huggingface-cli download HeechanKim-Genon/additional_fonts \
+    huggingface-cli download genon-search/additional_fonts \
       --repo-type dataset --local-dir /app/extra_fonts --local-dir-use-symlinks False
 
 ############################

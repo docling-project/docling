@@ -37,10 +37,11 @@ _log = logging.getLogger(__name__)
 
 # --- [1. HWP용 MIME 타입 패치] ---
 _HWP_MIMETYPES = [
-    "application/vnd.hancom.hwp", 
+    "application/vnd.hancom.hwp",
     "application/x-hwp",
-    "application/vnd.hancom.hwpx", 
-    "application/hwp+zip"
+    "application/vnd.hancom.hwpx",
+    "application/hwp+zip",
+    "application/vnd.hancom.hwpml",  # hml (hwp_sdk 260713+ 지원, 이슈 #323)
 ]
 
 for mime in _HWP_MIMETYPES:
@@ -171,13 +172,17 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 return suffix
 
         # 2순위: 스트림 매직 바이트로 판별
-        header = stream.read(4)
+        header = stream.read(256)
         stream.seek(0)  # 반드시 되감기
+        if header[:3] == b"\xef\xbb\xbf":     # UTF-8 BOM은 매직 판별 전에 제거
+            header = header[3:]
 
         if header[:2] == b"PK":               # ZIP 시그니처 → HWPX
             return ".hwpx"
-        if header == b"\xd0\xcf\x11\xe0":     # OLE 시그니처 → HWP
+        if header[:4] == b"\xd0\xcf\x11\xe0":  # OLE 시그니처 → HWP
             return ".hwp"
+        if header[:5] == b"<?xml" and b"HWPML" in header:  # HWPML XML → HML
+            return ".hml"
 
         # 3순위: InputFormat으로 폴백
         if getattr(in_doc, "format", None) == InputFormat.XML_HWPX:
@@ -276,6 +281,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             mimetype = "application/vnd.hancom.hwpx"
         elif file_ext == ".hwp":
             mimetype = "application/x-hwp"
+        elif file_ext == ".hml":
+            mimetype = "application/vnd.hancom.hwpml"
         else:
             mimetype = "application/octet-stream" # 알 수 없는 경우 기본값
         
@@ -759,11 +766,12 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         # 5. 최종 문서 추가 (TOC -> Heading -> Paragraph 순서로 우선순위 적용)
         if is_toc:
-            # 목차로 판별된 경우
+            # 목차(TOC)로 판별된 텍스트 라인. docling_core 에서 DocItemLabel.DOCUMENT_INDEX 는
+            # TableItem 전용 라벨이라 TextItem(add_text)에는 쓸 수 없다 → 일반 TEXT 로 추가한다.
             doc.add_text(
-                label=DocItemLabel.DOCUMENT_INDEX, 
-                text=full_text, 
-                parent=parent, 
+                label=DocItemLabel.TEXT,
+                text=full_text,
+                parent=parent,
                 prov=prov
             )
         elif p_style_id == "Heading":

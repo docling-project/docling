@@ -245,7 +245,7 @@ echo "HWP_SDK_TOKEN=hf_xxx" >> build-script/hf_private_token.env
 2. 레포 최상위(`doc_parser/`) 경로에서 두 SDK 다운로드 (각 레포에 대응되는 토큰 사용)
    ```shell
    # HWP SDK
-   huggingface-cli download HeechanKim-Genon/hwp_sdk \
+   huggingface-cli download genon-search/hwp_sdk \
      --repo-type dataset \
      --local-dir ./hwp_sdk \
      --local-dir-use-symlinks False \
@@ -253,7 +253,7 @@ echo "HWP_SDK_TOKEN=hf_xxx" >> build-script/hf_private_token.env
    chmod +x ./hwp_sdk/convtext
 
    # PDF SDK
-   huggingface-cli download HeechanKim-Genon/pdf_sdk \
+   huggingface-cli download genon-search/pdf_sdk \
      --repo-type dataset \
      --local-dir ./pdf_sdk \
      --token "${PDF_SDK_TOKEN}" \

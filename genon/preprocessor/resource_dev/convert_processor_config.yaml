@@ -99,6 +99,7 @@ table_image:
 # 표 텍스트 직렬화 형식(청크 text 내 docling 표 표현). tabular 모드(행=벡터)는 무관.
 output:
   table_format: "html"   # "html"(default) | "markdown"
+  compact_tables: true    # markdown 표 컬럼 정렬 패딩 제거(대형 표 청크 축소). html 포맷엔 무관.
 
 # ── enrichment ────────────────────────────────────────────────────────────────
 # 각 항목은 {이름: {옵션}} 형식의 list.
@@ -166,6 +167,14 @@ enrichment:
 
   # NOTE: image_description / custom_fields 는 필요 시 enable:true 로 활성화해 사용한다.
   #       기본값은 기존 동작 보존을 위해 enable:false.
+  - doc_summary:
+      enable: false          # 기본 off. true 또는 런타임 doc_summary=1 로 활성화. image/table 이 공유
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
+      model: "model"
+      prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 본문요약
+      max_chars: 6000
+
   - image_description:
       enable: false
       url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
@@ -177,16 +186,26 @@ enrichment:
       after_items: 2
       max_context_chars: 1500
       prompt_template_file: prompt_image_description_default.md
-      # ── 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 변수 주입) ──
-      doc_summary:
-        enable: false
-        prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 요약 프롬프트
-        max_chars: 6000                        # 요약 입력 본문 최대 길이
       # ── 차트 처리 ──
       chart:
         enable: false          # false=일반 image description만 / true=차트 처리 수행
         detection: auto         # auto=docling 자동판별(차트 분류 이미지만 차트 프롬프트) | all=모든 이미지를 차트로 처리
         chart_prompt_file: prompt_chart_description_default.md
+
+  - table_description:
+      enable: false          # 기본 off(회귀 없음). true 또는 런타임 table_desc=1 로 활성화
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
+      model: "model"
+      concurrency: 8         # 표 설명 요청 병렬 수
+      before_items: 3
+      after_items: 2
+      max_context_chars: 1500
+      prompt_template_file: prompt_table_description_default.md   # 요약 전용 프롬프트
+      # ── 구조 재구성(refine): true(또는 런타임 table_refine=1)면 재구성 HTML 로 표 본체 교체 ──
+      refine:
+        enable: false
+        prompt_file: prompt_table_refine_combined.md   # 재구성 HTML + 요약 통합 프롬프트
 
   # ── 커스텀 LLM enricher ────────────────────────────────────────────────────
   # 복수 항목 허용: 각각 독립 LLM 호출, 결과는 metadata 병합
@@ -212,8 +231,11 @@ enrichment:
 # 청킹(GenosSmartChunker) 설정
 chunking:
   # 청크 최대 크기(max_tokens). char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
-  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함.
-  chunk_size: 0
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함. 0 초과 시 최소 1024 로 보정.
+  chunk_size: 10000
+  # 청킹 모드: split_only(기본) = chunk_size 초과 청크만 분할(구조 보존) |
+  #           resize_all = 모든 청크를 chunk_size 에 맞게 병합/분할. 우선순위: kwargs.chunk_mode > 아래.
+  chunk_mode: split_only
   # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
   tokenizer_type: "char"
   # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 가 실제 존재하면 그 경로,

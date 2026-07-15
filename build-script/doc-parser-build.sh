@@ -140,17 +140,17 @@ echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 echo "[INFO] SMOKE_TEST      = ${SMOKE_TEST} (file: ${SMOKE_TEST_FILE})"
 
 # HuggingFace 토큰 존재 여부 확인 (이슈 #199 — SDK 별 fine-grained 토큰 분리)
-# HWP_SDK_TOKEN  : HeechanKim-Genon/hwp_sdk 전용 read 토큰 (두 variant 모두 필수)
-# PDF_SDK_TOKEN  : HeechanKim-Genon/pdf_sdk 전용 read 토큰 (synap 일 때만 필수)
+# HWP_SDK_TOKEN  : genon-search/hwp_sdk 전용 read 토큰 (두 variant 모두 필수)
+# PDF_SDK_TOKEN  : genon-search/pdf_sdk 전용 read 토큰 (synap 일 때만 필수)
 if [[ -z "${HWP_SDK_TOKEN}" ]]; then
-  echo "[ERROR] HWP_SDK_TOKEN 이 설정되지 않았습니다. HeechanKim-Genon/hwp_sdk 다운로드에 필요합니다."
+  echo "[ERROR] HWP_SDK_TOKEN 이 설정되지 않았습니다. genon-search/hwp_sdk 다운로드에 필요합니다."
   echo "[ERROR] build-script/hf_private_token.env 또는 환경변수에 HWP_SDK_TOKEN 을 설정하세요."
   exit 1
 fi
 echo "[INFO] HWP_SDK_TOKEN 감지됨."
 
 if [[ "${BUILD_VARIANT}" == "synap" && -z "${PDF_SDK_TOKEN}" ]]; then
-  echo "[ERROR] synap 빌드는 PDF_SDK_TOKEN 도 필요합니다 (HeechanKim-Genon/pdf_sdk 다운로드용)."
+  echo "[ERROR] synap 빌드는 PDF_SDK_TOKEN 도 필요합니다 (genon-search/pdf_sdk 다운로드용)."
   echo "[ERROR] build-script/hf_private_token.env 또는 환경변수에 PDF_SDK_TOKEN 을 설정하세요."
   exit 1
 fi

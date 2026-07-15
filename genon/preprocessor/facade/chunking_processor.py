@@ -101,6 +101,10 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
@@ -254,6 +258,18 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         return None
 
 
+_MIN_CHUNK_SIZE = 1024
+
+
+def _clamp_chunk_size(size: Optional[int]) -> Optional[int]:
+    """chunk_size 가 0 초과이면서 _MIN_CHUNK_SIZE 미만이면 _MIN_CHUNK_SIZE 로 보정.
+    0(=분할 안 함) 과 None 은 그대로 둔다."""
+    if size is not None and 0 < size < _MIN_CHUNK_SIZE:
+        _log.info(f"[chunk_size] {size} < {_MIN_CHUNK_SIZE} → {_MIN_CHUNK_SIZE} 로 보정")
+        return _MIN_CHUNK_SIZE
+    return size
+
+
 def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
     if value is None or value == "":
         return None
@@ -328,6 +344,8 @@ class GenosSmartChunker(BaseChunker):
     merge_peers: bool = True
     # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
     tokenizer_type: str = "char"
+    # 청킹 모드. "split_only"(기본)=chunk_size 초과 청크만 분할(구조 보존) | "resize_all"=모든 청크를 chunk_size 에 맞게 병합/분할
+    chunk_mode: str = "split_only"
 
     # _inner_chunker: BaseChunker = None
     _tokenizer: PreTrainedTokenizerBase = None
@@ -601,6 +619,13 @@ class GenosSmartChunker(BaseChunker):
             export_to_html = kwargs.get('export_to_html', 1)
             if export_to_html == 1:
                 table_text = table_item.export_to_html(dl_doc)
+            elif bool(kwargs.get("compact_tables", True)):
+                # TableItem.export_to_markdown() 은 compact 옵션이 없어 직접 serializer 구성
+                # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                table_text = MarkdownDocSerializer(
+                    doc=dl_doc,
+                    params=MarkdownParams(compact_tables=True),
+                ).serialize(item=table_item).text
             else:
                 table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():
@@ -1108,8 +1133,10 @@ class GenosSmartChunker(BaseChunker):
 
         # ================================================================
         # 2.5단계: 너무 긴 청크는 분할 (인덱스 꼬임 방지를 위해 새 리스트 사용)
+        #   resize_all 전용. split_only 는 구조 그룹핑(4단계) 후 5.5단계에서 분할한다
+        #   (여기서 분할하면 같은 섹션 조각들이 4단계에서 다시 병합되어 무의미).
         # ================================================================
-        if self.max_tokens > 0:
+        if self.max_tokens > 0 and self.chunk_mode == "resize_all":
             final_sections = []  # 결과를 담을 새 리스트
             for text, items, h_infos, h_short in sections_with_text:
                 token_count = self._count_tokens(text)
@@ -1212,8 +1239,8 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성
-            if test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
+            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
                 b_new_chunk = True
             # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
             elif 0 <= section_level < merged_level:
@@ -1244,14 +1271,14 @@ class GenosSmartChunker(BaseChunker):
         #   1차 결과(구조 경계 기준 그룹)를 순서대로, 합산 크기가 chunk_size 이하인 동안
         #   인접 그룹끼리 결합한다. (크기는 HEADER 라인 포함 최종 텍스트 기준)
         # ================================================================
-        if self.max_tokens > 0 and groups:
-            def _size(g):
-                text = "\n".join(g["texts"])
-                headings = self._extract_used_headers(g["h_short"]) or []
-                header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
-                # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
-                return self._count_tokens(header_line + text)
+        def _size(g):
+            text = "\n".join(g["texts"])
+            headings = self._extract_used_headers(g["h_short"]) or []
+            header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
+            # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
+            return self._count_tokens(header_line + text)
 
+        if self.max_tokens > 0 and groups and self.chunk_mode == "resize_all":
             def _merge(a, b):
                 return {
                     "texts": a["texts"] + b["texts"],
@@ -1268,6 +1295,35 @@ class GenosSmartChunker(BaseChunker):
                 else:
                     merged_groups.append(g)
             groups = merged_groups
+
+        # ================================================================
+        # 5.5단계: split_only 전용 — chunk_size 초과 그룹만 토큰 기준 균등 분할
+        #   (구조 기반 그룹은 유지, 작은 그룹은 병합하지 않고 그대로 둔다)
+        # ================================================================
+        if self.max_tokens > 0 and groups and self.chunk_mode == "split_only":
+            new_groups = []
+            for g in groups:
+                if _size(g) <= self.max_tokens:
+                    new_groups.append(g)
+                    continue
+
+                # caption 및 table 내 그림은 같은 조각에 있도록 조정 (2.5단계와 동일 로직)
+                items_group = [[(it, inf, sh)] for it, inf, sh in zip(g["items"], g["h_infos"], g["h_short"])]
+                items_group = adjust_captions(items_group)
+                items_group = adjust_pictures_in_tables(items_group)
+
+                item_token_counts = []
+                for grp in items_group:
+                    item_token_counts.append(sum(self._count_tokens(get_text_from_item(x[0])) for x in grp))
+
+                for (a, b) in split_items_evenly_by_tokens(item_token_counts, self.max_tokens):
+                    gi, gh, gs = [], [], []
+                    for idx in range(a, b):
+                        for x in items_group[idx]:
+                            gi.append(x[0]); gh.append(x[1]); gs.append(x[2])
+                    new_text = self._generate_section_text_with_heading(gi, gs, dl_doc, **kwargs)
+                    new_groups.append({"texts": [new_text], "items": gi, "h_infos": gh, "h_short": gs})
+            groups = new_groups
 
         # ================================================================
         # 6단계: 최종 DocChunk 생성
@@ -1671,6 +1727,12 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
+        # 청킹 모드: "split_only"(기본, chunk_size 초과 청크만 분할) | "resize_all"(모든 청크를 chunk_size 에 맞게 병합/분할)
+        self._chunk_mode = str(chunking_cfg.get("chunk_mode", "split_only")).strip().lower()
+        if self._chunk_mode not in {"split_only", "resize_all"}:
+            _log.warning(f"[DocumentProcessor] Unknown chunking.chunk_mode '{self._chunk_mode}', fallback to 'split_only'.")
+            self._chunk_mode = "split_only"
+
         # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보. on/off 는 요청별 kwargs(guardrail_call).
         gm_cfg = _as_dict(cfg.get("guardrail"))
         self._guardrail_url = str(gm_cfg.get("url") or "").strip()
@@ -1760,6 +1822,10 @@ class DocumentProcessor:
         self.table_image_enabled = bool(
             _parse_optional_bool(table_image_cfg.get("enable"), "table_image.enable")
         )
+
+        # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
+        output_cfg = _as_dict(cfg.get("output"))
+        self._compact_tables = bool(output_cfg.get("compact_tables", True))
 
         table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
         table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
@@ -2108,13 +2174,20 @@ class DocumentProcessor:
         chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
         if chunk_size is None:
             chunk_size = self._chunk_size
+        chunk_size = _clamp_chunk_size(chunk_size)
+        # chunk_mode 우선순위: kwargs > yaml(chunking.chunk_mode) > "split_only"
+        chunk_mode = str(kwargs.get('chunk_mode') or self._chunk_mode).strip().lower()
+        if chunk_mode not in {"split_only", "resize_all"}:
+            chunk_mode = "split_only"
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = chunk_size if chunk_size is not None else 0,
             merge_peers = True,
             tokenizer = self._tokenizer,
             tokenizer_type = self._tokenizer_type,
+            chunk_mode = chunk_mode,
         )
 
+        kwargs.setdefault("compact_tables", self._compact_tables)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:

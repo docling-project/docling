@@ -12,8 +12,11 @@ defaults:
 # 청킹(GenosSmartChunker) 설정
 chunking:
   # 청크 최대 크기(max_tokens). char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
-  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함.
-  chunk_size: 0
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함. 0 초과 시 최소 1024 로 보정.
+  chunk_size: 10000
+  # 청킹 모드: split_only(기본) = chunk_size 초과 청크만 분할(구조 보존) |
+  #           resize_all = 모든 청크를 chunk_size 에 맞게 병합/분할. 우선순위: kwargs.chunk_mode > 아래.
+  chunk_mode: split_only
   # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
   tokenizer_type: "char"
   # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 가 실제 존재하면 그 경로,
@@ -37,6 +40,10 @@ chunking:
 # 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.
 table_image:
   enable: false
+
+# 표 텍스트 직렬화 옵션(markdown 표 표현). export_to_html=0(markdown) 경로에만 적용.
+output:
+  compact_tables: true    # markdown 표 컬럼 정렬 패딩 제거(대형 표 청크 축소). html 포맷엔 무관.
 
 guardrail:
   # GenOS 분류 워크플로우 연동(#315). 기능 on/off 는 요청별 kwargs(guardrail_call)로 제어.

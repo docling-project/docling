@@ -66,6 +66,10 @@ from docling.datamodel.document import ConversionResult
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.document_converter import DocumentConverter, HwpxFormatOption, WordFormatOption
 from docling_core.transforms.chunker import BaseChunk, BaseChunker, DocChunk, DocMeta
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc import (
     DocItem, DocItemLabel, DoclingDocument,
@@ -123,6 +127,9 @@ RECURSIVE_CHUNK_SIZE = 8192
 RECURSIVE_CHUNK_OVERLAP = 100
 RECURSIVE_TOKEN_CHUNK_SIZE_CAP = _RECURSIVE_CHUNK_SIZE_CAP
 RECURSIVE_TOKENIZER_ID = None       # 비우면 로컬 경로 우선, 없으면 HF ID fallback
+
+# --- 표 markdown ---
+CHUNK_TABLE_COMPACT_MARKDOWN = True  # 표 markdown 컬럼 정렬 패딩 제거 → 대형 표 청크 축소
 
 # --- chunking.hybrid (hwp/hwpx/docx + hybrid) ---
 HYBRID_CHUNK_SIZE = _DEFAULT_HYBRID_MAX_TOKENS
@@ -771,7 +778,18 @@ class HierarchicalChunker(BaseChunker):
                     text = item.text
 
                 elif isinstance(item, TableItem):
-                    text = item.export_to_markdown(dl_doc)
+                    if CHUNK_TABLE_COMPACT_MARKDOWN:
+                        # TableItem.export_to_markdown()은 compact 옵션이 없어 직접 serializer 구성
+                        # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                        try:
+                            text = MarkdownDocSerializer(
+                                doc=dl_doc,
+                                params=MarkdownParams(compact_tables=True),
+                            ).serialize(item=item).text
+                        except Exception:
+                            text = item.export_to_markdown(dl_doc)
+                    else:
+                        text = item.export_to_markdown(dl_doc)
                     # dataframe으로 추출할 때 사용되는 코드
                     # if table_df.shape[0] < 1 or table_df.shape[1] < 2:
                     #     # at least two cols needed, as first column contains row headers
@@ -1058,7 +1076,10 @@ def _split_with_recursive_chunker(
 
     Returns: list of dict {text, page_no, pages, doc_items}
     """
-    md_full = document.export_to_markdown(page_break_placeholder=_RECURSIVE_PAGE_BREAK)
+    md_full = document.export_to_markdown(
+        page_break_placeholder=_RECURSIVE_PAGE_BREAK,
+        compact_tables=CHUNK_TABLE_COMPACT_MARKDOWN,
+    )
     if not md_full:
         return []
 

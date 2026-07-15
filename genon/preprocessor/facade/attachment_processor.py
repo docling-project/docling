@@ -1855,6 +1855,12 @@ class HwpProcessor:
         #      그래도 본문을 못 얻으면 예외로 올려 DocumentProcessor.__call__ 의 PDF 변환 폴백에
         #      위임한다. (convert_processor 와 형평성 — convert 는 GenosSmartChunker 예외로 잡히지만
         #      attachment 는 recursive splitter 라 예외가 안 나므로 여기서 명시적으로 처리한다.)
+        # .hml(HWPML)은 GenosHwp SDK 전용 포맷 — 레거시 백엔드가 없어 빈 결과면 바로
+        # 상위(DocumentProcessor.__call__)의 PDF 변환 폴백으로 위임한다 (이슈 #323).
+        if ext == '.hml' and self._hwp_sdk_text_is_empty(document):
+            raise HwpConversionError(
+                f"HML SDK 결과가 비어 있음(hml 은 레거시 백엔드 없음): {file_path}"
+            )
         if ext in ('.hwp', '.hwpx') and self._hwp_sdk_text_is_empty(document):
             backend_name = "HwpDocumentBackend" if ext == '.hwp' else "HwpxDocumentBackend"
             _log.warning(f"[HwpProcessor] GenosHwp SDK 결과에 본문 텍스트가 없어 {backend_name} 폴백 시도: {file_path}")
@@ -2585,7 +2591,8 @@ class DocumentProcessor:
             return vectors
 
         # [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
-        elif ext in ('.hwp', '.hwpx'):
+        # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원되어 같은 프로세서로 라우팅 (이슈 #323)
+        elif ext in ('.hwp', '.hwpx', '.hml'):
             _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
             try:
                 return await self.hwp_processor(request, file_path, **kwargs)
