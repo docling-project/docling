@@ -174,8 +174,9 @@ format-audio = [
   'whisper-s2t-reborn>=1.6.3,<2 ; sys_platform != "darwin" or platform_machine != "arm64"',
 ]
 
-# Speaker diarization for video/audio pipelines
+# Video pipeline: transcription (format-audio) plus speaker diarization.
 format-video = [
+  'docling-slim[format-audio]',
   'resemblyzer>=0.1.4,<0.2.0',
   'soundfile>=0.12.1,<1.0.0',
   'scikit-learn>=1.3.0,<2.0.0',

@@ -1818,10 +1818,14 @@ format-pptx = [
 ]
 format-video = [
     { name = "librosa" },
+    { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "numba" },
+    { name = "openai-whisper" },
     { name = "resemblyzer" },
     { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scikit-learn", version = "1.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "soundfile" },
+    { name = "whisper-s2t-reborn", marker = "platform_machine != 'arm64' or sys_platform != 'darwin'" },
 ]
 format-web = [
     { name = "beautifulsoup4" },
@@ -2000,6 +2004,7 @@ requires-dist = [
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.0.0,<8.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
+    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-video'" },
     { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-email'" },
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-jats'" },
