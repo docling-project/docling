@@ -448,3 +448,20 @@ def test_handle_paragraph_ratio_based_emphasis():
     added = doc.texts[before:]
     assert len(added) == 1
     assert added[0].label == DocItemLabel.PARAGRAPH
+
+
+@pytest.mark.unit
+def test_handle_paragraph_toc_uses_text_label():
+    """TOC 패턴 단락은 ValidationError 없이 추가돼야 한다.
+
+    docling-core 2.85.0부터 DOCUMENT_INDEX가 TableItem 전용 라벨이 되어
+    add_text에 쓰면 ValidationError가 난다 → TEXT 라벨로 추가되는지 확인.
+    """
+    from docling_core.types.doc import DocItemLabel
+
+    backend = _make_backend_no_io()
+    backend.body_font_size = 10.0
+    doc = _make_doc()
+    backend.active_main_parent = doc.body
+
+    assert _para_label(backend, doc, "제1장 총칙 ......... 3") == DocItemLabel.TEXT

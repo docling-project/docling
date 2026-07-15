@@ -765,10 +765,12 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 5. 최종 문서 추가 (TOC -> Heading -> Paragraph 순서로 우선순위 적용)
         if is_toc:
             # 목차로 판별된 경우
+            # docling-core 2.85.0부터 DOCUMENT_INDEX는 TableItem 전용 라벨이라
+            # add_text에 쓰면 ValidationError가 남 → TEXT로 추가
             doc.add_text(
-                label=DocItemLabel.DOCUMENT_INDEX, 
-                text=full_text, 
-                parent=parent, 
+                label=DocItemLabel.TEXT,
+                text=full_text,
+                parent=parent,
                 prov=prov
             )
         elif p_style_id == "Heading":
