@@ -282,7 +282,12 @@ standard = [
 ]
 
 all = [
-  'docling-slim[standard,models-vlm-inline,format-audio,format-video,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  # format-video is deliberately excluded: it pulls in resemblyzer, which
+  # requires webrtcvad, which has no wheels and needs Python dev headers
+  # (Python.h) plus a C compiler to build from source. `all` must install
+  # cleanly without a compiler, so speaker diarization stays opt-in via
+  # docling-slim[format-video].
+  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]
