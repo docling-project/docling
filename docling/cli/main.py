@@ -1359,7 +1359,7 @@ def convert(  # noqa: C901
                 or video_cuts_per_minute != 0.0
                 or video_prominence != 0.0
             )
-            
+
             if not has_explicit_config:
                 raise typer.BadParameter(
                     "No video config specified. Please set sampling options.\n"
