@@ -14,11 +14,11 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-@pytest.mark.parametrize("ext", [".hwp", ".hwpx"])
+@pytest.mark.parametrize("ext", [".hwp", ".hwpx", ".hml"])
 async def test_hwp_extension_routes_to_hwp_processor(attachment_processor, ext):
     """
-    .hwp/.hwpx 확장자는 DocumentProcessor 내부에서
-    반드시 self.hwp_processor 로 위임되어야 한다.
+    .hwp/.hwpx/.hml 확장자는 DocumentProcessor 내부에서
+    반드시 self.hwp_processor 로 위임되어야 한다 (.hml 은 이슈 #323).
     """
     dp = attachment_processor()
 
@@ -142,3 +142,50 @@ def test_dump_sdk_output_disabled_when_sdk_off():
         call_kwargs = MockConverter.call_args[1]
         hwp_option = call_kwargs["format_options"][InputFormat.HWP]
         assert hwp_option.pipeline_options.dump_sdk_output is False
+
+
+# ---------------------------------------------------------------------------
+# 4. .hml(HWPML) 포맷 감지/추론 검증 (이슈 #323, hwp_sdk 260713+)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+def test_hml_extension_maps_to_xml_hwpx_format():
+    """hml 확장자는 XML_HWPX 포맷으로 매핑되어 GenosHwpDocumentBackend 로 라우팅된다."""
+    from docling.datamodel.base_models import FormatToExtensions, InputFormat
+
+    assert "hml" in FormatToExtensions[InputFormat.XML_HWPX]
+
+
+@pytest.mark.unit
+def test_hml_path_guesses_xml_hwpx_format(tmp_path):
+    """실제 .hml(HWPML XML) 파일이 _guess_format 에서 XML_HWPX 로 감지된다."""
+    from docling.datamodel.document import _DocumentConversionInput
+    from docling.datamodel.base_models import InputFormat
+
+    hml = tmp_path / "sample.hml"
+    hml.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<HWPML Version="2.8"></HWPML>',
+        encoding="utf-8",
+    )
+    conv_input = _DocumentConversionInput(path_or_stream_iterator=[])
+    assert conv_input._guess_format(hml) == InputFormat.XML_HWPX
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("header, expected", [
+    (b"PK\x03\x04....", ".hwpx"),
+    (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", ".hwp"),
+    (b'<?xml version="1.0"?><HWPML Version="2.8">', ".hml"),
+    # UTF-8 BOM 이 붙은 HWPML 도 .hml 로 판별돼야 한다 (PR #324 CodeRabbit 지적)
+    (b'\xef\xbb\xbf<?xml version="1.0"?><HWPML Version="2.8">', ".hml"),
+])
+def test_infer_suffix_from_stream_magic(header, expected):
+    """BytesIO 입력 시 매직 바이트로 확장자를 추론한다 (.hml 은 HWPML 루트 태그)."""
+    from io import BytesIO
+    from unittest.mock import MagicMock
+    from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
+
+    in_doc = MagicMock()
+    in_doc.file = None
+    in_doc.format = None
+    assert GenosHwpDocumentBackend._infer_suffix(BytesIO(header), in_doc) == expected
