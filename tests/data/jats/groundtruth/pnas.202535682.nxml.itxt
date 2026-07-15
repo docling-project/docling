@@ -1,0 +1,346 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: On the origin of PRDM9-guided recombination hotspots
+    item-2 at level 2: paragraph: Francisco Úbeda, Reinhard Bürger, Frederic Fyon
+    item-3 at level 2: paragraph: a, https://ror.org/04g2vpn86, De ...  Vienna, , , Vienna, 1090, , , Austria
+    item-4 at level 2: section_header: Significance
+      item-5 at level 3: text: Across vertebrates, meiotic reco ... sms observed across vertebrates today.
+    item-6 at level 2: section_header: Abstract
+      item-7 at level 3: text: Meiotic recombination is highly  ... ble coexistence of both hotspot types.
+    item-8 at level 2: text: Meiotic recombination—the proces ... nown as recombination hotspots (7–10).
+    item-9 at level 2: inline: group group
+      item-10 at level 3: text: In most mammals, including human ... s specific DNA sequence motifs (Fig. 1
+      item-11 at level 3: text: B
+      item-12 at level 3: text: ) (10–13). PRDM9 proteins recrui ... over evolutionary time (19–22) (Fig. 1
+      item-13 at level 3: text: B
+      item-14 at level 3: text: ). In this sense, PRDM9 recombination hotspots are self-destructive.
+    item-15 at level 2: picture
+      item-15 at level 3: caption: Fig. 1. Types of hotspots. (A) summarizes the characteristics of non-PRDM9 recombination hotspots: i. recombination machinery does not recognize specific sequences to initiate recombination; ii. recombination takes place in promoter regions; iii. the rate of recombination remains constant over time (self-preserving hotspots); iv. the location of hotspots in the genome does not change over evolutionary time. (B) summarizes the characteristics of PRDM9 recombination hotspots: i. PRDM9 recognizes and binds specific sequences recruiting the recombination machinery to initiate recombination in those sequences; ii. recombination takes place in nonfunctional genomic regions; iii. the rate of recombination decreases over time (self-destructive hotspots); iv. the location of hotspots changes rapidly over evolutionary time.
+    item-16 at level 2: inline: group group
+      item-17 at level 3: text: In contrast, in most ray-finned  ... either absent or nonfunctional (Fig. 1
+      item-18 at level 3: text: A
+      item-19 at level 3: text: ). In these species, the recombi ... ver evolutionary time (23, 24) (Fig. 1
+      item-20 at level 3: text: A
+      item-21 at level 3: text: ). In this sense, non-PRDM9 recombination hotspots are self-preserving.
+    item-22 at level 2: text: The difference in sequence speci ...  a stable landscape (23, 24) (Fig. 1).
+    item-23 at level 2: text: Evidence suggests that multiple  ... es of recombination hotspots (40, 41).
+    item-24 at level 2: picture
+      item-24 at level 3: caption: Fig. 2. Phylogenetic distribution of PRDM9 recombination hotspots. For each clade we present the number of species that have been researched and the percentage of them where there is evidence of PRDM9 recombination hotspots (adapted from ref. 13 with additional data from refs. 24 and 31–33). We use green to represent a gain of PRDM9 recombination hotspots in the ancestor of vertebrates, and red to represent some examples of the multiple losses of PRDM9 recombination hotspots, for example, in the ancestor of birds and crocodiles, the ancestor of canids, or the ancestor of platypus.
+    item-25 at level 2: text: What drives the evolution of one ...  research, we address these questions.
+    item-26 at level 2: text: To determine which type of hotsp ... mbination hotspot types across clades.
+    item-27 at level 2: section_header: Methods
+      item-28 at level 3: section_header: Model.
+        item-29 at level 4: inline: group group
+          item-30 at level 5: text: In this section we introduce the ...  A detailed derivation can be found in
+          item-31 at level 5: text: SI Appendix
+          item-32 at level 5: text: .
+        item-33 at level 4: text: We assume an infinite population ... n the other—thus inducing specificity.
+        item-34 at level 4: inline: group group
+          item-35 at level 5: text: We model two alleles at each loc ... We have shown elsewhere and discuss in
+          item-36 at level 5: text: SI Appendix
+          item-37 at level 5: text: that whether it is the same or a ... bility with little loss of generality.
+        item-38 at level 4: inline: group group
+          item-39 at level 5: text: Let  denote the frequency of gam ... fe-cycle consisting of five steps (cf.
+          item-40 at level 5: text: SI Appendix
+          item-41 at level 5: text: , Fig. S1).
+        item-42 at level 4: section_header: Random mating.
+          item-43 at level 5: text: Random union of haploid gametes  ... n a population of diploid individuals.
+        item-44 at level 4: section_header: Symmetric and asymmetric binding.
+          item-45 at level 5: text: Our model closely follows the mo ... between alleles at the modifier locus.
+          item-46 at level 5: text: Our model assumes that the genot ... cal iterations confirm this intuition.
+          item-47 at level 5: inline: group group
+            item-48 at level 6: text: Despite equal genotype-averaged  ... heterozygous genotypes are provided in
+            item-49 at level 6: text: SI Appendix
+            item-50 at level 6: text: .
+          item-51 at level 5: inline: group group
+            item-52 at level 6: text: Finally, the model assumes that  ... les at the targeting and target loci (
+            item-53 at level 6: text: SI Appendix
+            item-54 at level 6: text: ).
+        item-55 at level 4: section_header: Double-strand break, conversion, and selection.
+          item-56 at level 5: text: Binding induces a double-strand  ... qually likely to experience the break.
+          item-57 at level 5: text: The broken chromatid can be repa ... bination hotspots are self-preserving.
+          item-58 at level 5: text: Consistent with previous theoret ... bability , where  (19, 20, 26, 47–51).
+          item-59 at level 5: text: Recent studies suggest that the  ... no binding is , , and , resp., where .
+        item-60 at level 4: section_header: Recombination.
+          item-61 at level 5: text: Recombination between alleles at ...  conversion, and selection is given by
+          item-62 at level 5: text: Here,  is the frequency of the g ... ee recombination among the three loci,
+          item-63 at level 5: inline: group group
+            item-64 at level 6: text: is the population mean fitness,  ... ble-strand break occurs in motif  (see
+            item-65 at level 6: text: SI Appendix
+            item-66 at level 6: text: for details).
+        item-67 at level 4: section_header: Mutation.
+          item-68 at level 5: text: Following the segregation of hap ...  as central part of our investigation.
+          item-69 at level 5: text: The frequency of gamete  in the next generation is
+          item-70 at level 5: text: Mutation brings us back to the beginning of our life-cycle.
+          item-71 at level 5: inline: group group
+            item-72 at level 6: text: Rather than working directly wit ... ns of these quantities are provided in
+            item-73 at level 6: text: SI Appendix
+            item-74 at level 6: text: . Importantly,  is negative if t ... , i.e., if  () is associated with  ().
+          item-75 at level 5: inline: group group
+            item-76 at level 6: text: The full recursion equations for ... equilibria are algebraically complex (
+            item-77 at level 6: text: SI Appendix
+            item-78 at level 6: text: , Supplementary
+            item-79 at level 6: text: Mathematica
+            item-80 at level 6: text: notebook) (53). Representative e ... the evolutionary dynamics are shown in
+            item-81 at level 6: text: SI Appendix
+            item-82 at level 6: text: , Figs. S2–S6. Here, we focus on ... merical iteration of the recursion Eq.
+            item-83 at level 6: text: 3
+            item-84 at level 6: text: shows that the single-generation ... r frequency, , is well approximated by
+          item-85 at level 5: text: where  captures the additional c ... tion when presenting our main results.
+      item-86 at level 3: section_header: Numerical Analysis.
+        item-87 at level 4: inline: group group
+          item-88 at level 5: text: In general, because some of the  ... ion of the deterministic recursion Eq.
+          item-89 at level 5: text: 3
+          item-90 at level 5: text: for at least  generations. Our a ... er only in their underlying mechanism.
+        item-91 at level 4: inline: group group
+          item-92 at level 5: text: We first perform a set of simula ... stitutes a selectively neutral state (
+          item-93 at level 5: text: SI Appendix
+          item-94 at level 5: text: ). Accordingly, we allow the ini ... nspecific allele  is considered fixed.
+        item-95 at level 4: text: We then carry out a second set o ... ty loss due to the absence of binding:
+        item-96 at level 4: list: group list
+          item-97 at level 5: list_item: 1.When fertility loss is high,   ... the matching allele, namely  or  (26).
+          item-98 at level 5: list_item: 2.When fertility loss is low, ,  ... geting and target loci alternate (26).
+        item-99 at level 4: text: Hereafter, we focus on the param ... or replacement of the resident allele.
+        item-100 at level 4: text: For some parameter combinations  ... me to describe the long-term behavior.
+        item-101 at level 4: text: Following the classical concept  ... nce. These outcomes are the following:
+        item-102 at level 4: list: group list
+          item-103 at level 5: list_item: 1.Non-PRDM9-guided hotspots are  ...  that only non-PRDM9 hotspots persist.
+          item-104 at level 5: list_item: 2.PRDM9-guided hotspots are the  ... s case, PRDM9-guided hotspots persist.
+          item-105 at level 5: list_item: 3.Non-PRDM9-guided and PRDM9-gui ...  no transitions between hotspot types.
+          item-106 at level 5: list_item: 4.Neither non-PRDM9-guided nor P ... thout either type replacing the other.
+    item-107 at level 2: section_header: Results
+      item-108 at level 3: section_header: Equal Probabilities of Symmetric ... ric Binding to Resolve as Crossovers:.
+        item-109 at level 4: text: .
+        item-110 at level 4: section_header: Non-PRDM9 resident and PRDM9 mutant:.
+          item-111 at level 5: inline: group group
+            item-112 at level 6: text: . Numerical analyses indicate th ...  absence of binding satisfies  (Fig. 3
+            item-113 at level 6: text: C
+            item-114 at level 6: text: ). In this parameter range, tran ... ities between  and , increasing with .
+          item-115 at level 5: picture
+            item-115 at level 6: caption: Fig. 3. Transitions between types of recombination hotspots when there is no difference between symmetric and asymmetric binding. Each column corresponds to a different fitness cost of no binding (). We present only values of  for which alleles at targeting and target loci oscillate when recombination is PRDM9 (Red-queen dynamics). Each row within pairs corresponds to a different initial frequency  of the specific allele: Either the non-PRDM9 allele is initially fixed and a rare PRDM9 mutant arises with frequency  (Top row), or the PRDM9 allele is initially fixed and a rare non-PRDM9 mutant arises with frequency  (Bottom row). Figures show which modifier allele goes to fixation given initial frequencies  and  of targeting and alleles  and . Red dots indicate that the non-PRDM9 allele goes to fixation whereas blue dots indicate that the PRDM9 allele goes to fixation. For each value of , the probabilities of transition are summarized schematically under each pair of figures. Arrows represent transitions between types of recombination hotspots. A missing arrow indicates no transition. The three panels correspond to the ranges of values of  for which qualitatively different behavior is observed. Panel (A) is for  which is characterized by PRDM9 never replacing non-PRDM9, and non-PRDM9 always replacing PRDM9. Panel (B) is for  which is characterized by PRDM9 never replacing non-PRDM9 and non-PRDM9 replacing PRDM9 with a positive probability (47 to 71). These two cases correspond to non-PRDM9 being the only evolutionarily stable strategy. Panel (C) is for  which is characterized by PRDM9 replacing non-PRDM9 with probability 0.4 to 29 and non-PRDM9 replacing PRDM9 with probability between 49 to 58. This last case corresponds to transitions between both types of recombination hotspots.
+        item-116 at level 4: section_header: PRDM9 resident and non-PRDM9 mutant:.
+          item-117 at level 5: inline: group group
+            item-118 at level 6: text: . Starting from the limit cycle, ...  allele when  is small, i.e.,  (Fig. 3
+            item-119 at level 6: text: A
+            item-120 at level 6: text: ). For intermediate values, , re ... ile  can take arbitrary values (Fig. 3
+            item-121 at level 6: text: B
+            item-122 at level 6: text: and
+            item-123 at level 6: text: C
+            item-124 at level 6: text: ). Within the narrow interval ,  ... ent declines sharply from  to  (Fig. 3
+            item-125 at level 6: text: A
+            item-126 at level 6: text: and
+            item-127 at level 6: text: B
+            item-128 at level 6: text: ). For larger values of , replac ...  increase again, reaching  at  (Fig. 3
+            item-129 at level 6: text: C
+            item-130 at level 6: text: ). Except when  is large (), all ... ventual replacement of PRDM9 hotspots.
+        item-131 at level 4: section_header: Evolutionary stability of each type of hotspot.
+          item-132 at level 5: inline: group group
+            item-133 at level 6: text: Taken together, these results sh ... ic alleles are always replaced (Fig. 3
+            item-134 at level 6: text: A
+            item-135 at level 6: text: ). For intermediate values, , no ... utation at the targeting locus (Fig. 3
+            item-136 at level 6: text: B
+            item-137 at level 6: text: ). Once established, non-PRDM9 h ... DM9 hotspots is only a matter of time.
+          item-138 at level 5: inline: group group
+            item-139 at level 6: text: An exception arises near the upp ... ry of the oscillatory region,  (Fig. 3
+            item-140 at level 6: text: C
+            item-141 at level 6: text: ). In this regime, each hotspot  ...  and non-PRDM9 recombination hotspots.
+      item-142 at level 3: section_header: Increasing Difference in Crossov ... een Symmetric and Asymmetric Binding:.
+        item-143 at level 4: text: .
+        item-144 at level 4: section_header: Very small difference:.
+          item-145 at level 5: inline: group group
+            item-146 at level 6: text: . This small difference does not ... stently replace PRDM9 hotspots (Fig. 4
+            item-147 at level 6: text: A
+            item-148 at level 6: text: ). When  is larger, , neither ho ... nsitions between the two types (Fig. 4
+            item-149 at level 6: text: A
+            item-150 at level 6: text: ). Representative examples of th ... identified here and below are shown in
+            item-151 at level 6: text: SI Appendix
+            item-152 at level 6: text: , Figs. S2–S6.
+          item-153 at level 5: picture
+            item-153 at level 6: caption: Fig. 4. Transitions between types of recombination hotspots when symmetric binding is advantageous. The interpretation of each figure is the same as in Fig. 3. However, we identify a new qualitative behavior corresponding to the coexistence of both recombination hotspots due to the oscillation of allelic frequencies at the modifier locus. Because there is no replacement of one allele by the other we represent the change in frequency of allele PRDM9 over time (in thousands of generations) for the initial condition  in the last  thousand generations (from  to  thousand). Gray arrows indicate that the qualitative behavior remains the same in that range of  values. Each pair of rows corresponds to a given advantage of symmetric relative to asymmetric binding. Each panel corresponds to a different increments in crossover probability gained from symmetric binding: A. very small, B. small, C. moderate, and D. large differences.
+        item-154 at level 4: section_header: Small difference:.
+          item-155 at level 5: inline: group group
+            item-156 at level 6: text: . The qualitative regimes observ ... transitions occur between them (Fig. 4
+            item-157 at level 6: text: B
+            item-158 at level 6: text: ). At intermediate values (), th ... xist through cyclical dynamics (Fig. 4
+            item-159 at level 6: text: B
+            item-160 at level 6: text: ). Increasing the reduction in f ... nly evolutionarily stable type (Fig. 4
+            item-161 at level 6: text: B
+            item-162 at level 6: text: ). Finally, when , neither hotsp ... e favored by natural selection (Fig. 4
+            item-163 at level 6: text: B
+            item-164 at level 6: text: ).
+        item-165 at level 4: section_header: Moderate difference:.
+          item-166 at level 5: inline: group group
+            item-167 at level 6: text: . The same qualitative regimes a ... table and no transitions occur (Fig. 4
+            item-168 at level 6: text: C
+            item-169 at level 6: text: ). For , PRDM9 hotspots are the  ... rom certain initial conditions (Fig. 4
+            item-170 at level 6: text: C
+            item-171 at level 6: text: ). If , the two hotspot types co ... nly evolutionarily stable type (Fig. 4
+            item-172 at level 6: text: C
+            item-173 at level 6: text: ). If , neither hotspot type is  ... e favored by natural selection (Fig. 4
+            item-174 at level 6: text: C
+            item-175 at level 6: text: ).
+        item-176 at level 4: section_header: Large difference:.
+          item-177 at level 5: inline: group group
+            item-178 at level 6: text: . Such large differences elimina ... table and no transitions occur (Fig. 4
+            item-179 at level 6: text: D
+            item-180 at level 6: text: ). If , PRDM9 hotspots are evolu ...  although with low probability (Fig. 4
+            item-181 at level 6: text: D
+            item-182 at level 6: text: ). If , neither hotspot type is  ... in both directions are favored (Fig. 4
+            item-183 at level 6: text: D
+            item-184 at level 6: text: ).
+          item-185 at level 5: inline: group group
+            item-186 at level 6: text: To generate these results we ass ... occur for smaller differences of  (see
+            item-187 at level 6: text: SI Appendix
+            item-188 at level 6: text: for results with ).
+          item-189 at level 5: inline: group group
+            item-190 at level 6: text: Intuition for these results can be gained from Eq.
+            item-191 at level 6: text: 4
+            item-192 at level 6: text: . It shows that the per-generati ...  advantage of symmetric binding () Eq.
+            item-193 at level 6: text: 4
+            item-194 at level 6: text: reduces to
+          item-195 at level 5: text: The first term in the brackets s ...  is more often negative than positive.
+          item-196 at level 5: text: This observation is consistent w ... sults in higher overall recombination.
+          item-197 at level 5: inline: group group
+            item-198 at level 6: text: If there is a crossover-resolution advantage of symmetric binding (), Eq.
+            item-199 at level 6: text: 4
+            item-200 at level 6: text: can be used to derive an approxi ... in these regions, the approximation is
+          item-201 at level 5: text: We note that the difference in t ... specific and unspecific modifiers is .
+          item-202 at level 5: inline: group group
+            item-203 at level 6: text: Eq.
+            item-204 at level 6: text: 6a
+            item-205 at level 6: text: shows that when symmetric bindin ... ction against them near coldspots. Eq.
+            item-206 at level 6: text: 6b
+            item-207 at level 6: text: further shows that the net posit ... ic bindings than unspecific modifiers.
+          item-208 at level 5: text: Our model does not assume that s ... her than from any explicit assumption.
+          item-209 at level 5: text: In summary, the intuition derive ... n which each type is used oscillating.
+    item-210 at level 2: section_header: Discussion
+      item-211 at level 3: text: In nature, there are two types o ... e remains an open evolutionary puzzle.
+      item-212 at level 3: text: To address this question, we for ... vers may have on individual fertility.
+      item-213 at level 3: inline: group group
+        item-214 at level 4: text: Our results show that when symme ...  to lack of crossover,  (Figs. 3 and 4
+        item-215 at level 4: text: A
+        item-216 at level 4: text: ). For high values of , however, ... een the two types occur (Figs. 3 and 4
+        item-217 at level 4: text: A
+        item-218 at level 4: text: ). The fact that only non-PRDM9  ...  symmetric binding is small or absent.
+      item-219 at level 3: inline: group group
+        item-220 at level 4: text: When symmetric bindings are more ... ions in the usage of each type (Fig. 4
+        item-221 at level 4: text: B
+        item-222 at level 4: text: and
+        item-223 at level 4: text: C
+        item-224 at level 4: text: ). The greater the crossover-res ... which vanishes for very large  (Fig. 4
+        item-225 at level 4: text: D
+        item-226 at level 4: text: ). Conversely, the greater the r ...  amplitude of the oscillations (Fig. 4
+        item-227 at level 4: text: B
+        item-228 at level 4: text: and
+        item-229 at level 4: text: C
+        item-230 at level 4: text: ). When the crossover advantage  ... his occurs for low values of  (Figs. 4
+        item-231 at level 4: text: C
+        item-232 at level 4: text: and
+        item-233 at level 4: text: D
+        item-234 at level 4: text: and 5). For very low values of , ... ot types are observed (Figs. 4 and 5).
+      item-235 at level 3: picture
+        item-235 at level 4: caption: Fig. 5. Types of hotspots used in different regions of the parameter space. The horizontal axis shows the fertility reduction in the absence of crossover . The vertical axis shows the crossover-resolution advantage of symmetric binding. Each color represents a different qualitative behavior: i) non-PRDM9 is the only evolutionarily stable strategy and it is the only type of hotspot predicted to evolve in the red region; ii) PRDM9 is the only evolutionarily stable strategy and it is the only type of hotspot predicted to evolve in the blue region; iii) both types of hotspots coexist with the frequency of each hotspot oscillating over evolutionary time in the purple regions; iv) both types of hotspots can replace each other and a rapid turn-over between types of hotspots is likely to evolve in the green region; v) none of the two types of hotspots can replace the other and no transitions between types of hotspots should be observed in the black region. Silhouettes represent species with the type of recombination hotspot predicted by that region of the parameter space. Dotted lines demarcate the region where Red-queen dynamics between targeting and target site are expected. Parameters are  and .
+      item-236 at level 3: text: The intuitive reason why PRDM9 h ...  association with mismatching targets.
+      item-237 at level 3: text: To summarize, our key results an ... is of the underlying dynamical system.
+      item-238 at level 3: text: These findings are relevant beca ...  crossovers in that ancestor (Fig. 5).
+      item-239 at level 3: text: Although PRDM9 hotspots are perv ... se fluctuating over evolutionary time.
+      item-240 at level 3: text: Finally, our model generates tes ... DM9 in the evolution of recombination.
+      item-241 at level 3: text: Our model relies on a small set  ... ver formation essential for fertility.
+      item-242 at level 3: text: Studies of hybrid sterility in m ... ntire space of these parameter values.
+      item-243 at level 3: text: We provide an example of why the ... re consistent with non-PRDM9 hotspots.
+      item-244 at level 3: text: Our model assumes an infinite po ...  turnover over evolutionary time (26).
+      item-245 at level 3: inline: group group
+        item-246 at level 4: text: A key finding of our work is tha ...  of specificity is direct and strong (
+        item-247 at level 4: text: SI Appendix
+        item-248 at level 4: text: ). Moreover, the strength of sel ... ution of PRDM9 in natural populations.
+      item-249 at level 3: text: There are additional selective f ...  hypotheses can be formally evaluated.
+    item-250 at level 2: section_header: Supplementary Material
+      item-251 at level 3: text: Appendix 01 (PDF)
+    item-252 at level 2: section_header: Acknowledgments
+      item-253 at level 3: text: F.Ú. Thanks Alexander Shaw for p ...  version arising from this submission.
+      item-254 at level 3: section_header: Author contributions
+        item-255 at level 4: text: F.Ú., R.B., and F.F. designed re ... ta; and F.Ú. and R.B. wrote the paper.
+      item-256 at level 3: section_header: Competing interests
+        item-257 at level 4: text: The authors declare no competing interest.
+    item-258 at level 2: section_header: Footnotes
+      item-259 at level 3: list: group footnotes
+        item-260 at level 4: list_item: 
+          item-261 at level 5: inline: group group
+            item-262 at level 6: footnote: This article is a PNAS Direct Submission.
+    item-263 at level 2: section_header: Data, Materials, and Software Availability
+      item-264 at level 3: inline: group group
+        item-265 at level 4: text: The
+        item-266 at level 4: text: Mathematica
+        item-267 at level 4: text: (Wolfram) notebook referred to above and in
+        item-268 at level 4: text: SI Appendix
+        item-269 at level 4: text: has been deposited in GitHub (ht ... github.com/fubeda72/OriginPRDM9) (53).
+    item-270 at level 2: section_header: References
+      item-271 at level 3: list: group list
+        item-272 at level 4: list_item: T. Lenormand, J. Engelstädter, S ... Trans. R. Soc. B 371, 20160001 (2016).
+        item-273 at level 4: list_item: J. Stapley, P. Feulner, S. Johns ... Trans. R. Soc. B 372, 20170279 (2017).
+        item-274 at level 4: list_item: D. Haig, A. Grafen, Genetic scra ... ret. Biol. 153, 531–558 (1991).1806752
+        item-275 at level 4: list_item: S. P. Otto, T. Lenormand, Resolv ... n. Nat. Rev. Genet. 4, 252–261 (2002).
+        item-276 at level 4: list_item: R. K. Butlin, Recombination and  ... ation. Mol. Ecol. 9, 2621–2635 (2005).
+        item-277 at level 4: list_item: B. A. Payseur, Genetics of recom ... vol. Biol. 38, 851–860 (2025).39680417
+        item-278 at level 4: list_item: T. D. Petes, Meiotic recombinati ... at. Rev. Genet. 2, 360 (2001).11331902
+        item-279 at level 4: list_item: N. Arnheim, P. Calabrese, I. Tie ... ev. Genet. 41, 369–399 (2007).18076329
+        item-280 at level 4: list_item: K. Paigen, P. Petkov, Mammalian  ... t. Rev. Genet. 11, 221 (2010).20168297
+        item-281 at level 4: list_item: F. Baudat, Y. Imai, B. De Massy, ... t. Rev. Genet. 14, 794 (2013).24136506
+        item-282 at level 4: list_item: S. Myers , Drive against hotspot ... . Science 327, 876–879 (2010).20044541
+        item-283 at level 4: list_item: F. Baudat , PRDM9 is a major det ... . Science 327, 836–840 (2010).20044539
+        item-284 at level 4: list_item: M. I. A. Cavassim , PRDM9 losses ... .S.A. 119, e2114401119 (2022).35217607
+        item-285 at level 4: list_item: R. Padmore, L. Cao, N. Kleckner, ...  cerevisiae. Cell 6, 1239–1256 (1991).
+        item-286 at level 4: list_item: C. Goyon, M. Lichten, Timing of  ... e. Mol. Cell. Biol. 1, 373–382 (1993).
+        item-287 at level 4: list_item: K. Brick, F. Smagulova, P. Khil, ...  mice. Nature 485, 642 (2012).22660327
+        item-288 at level 4: list_item: A. J. Jeffreys, R. Neumann, Reci ... at. Genet. 31, 267–271 (2002).12089523
+        item-289 at level 4: list_item: A. J. Jeffreys, R. Neumann, Fact ... . Genet. 14, 2277–2287 (2005).15987698
+        item-290 at level 4: list_item: A. Boulton, R. S. Myers, R. J. R ... i. U.S.A. 94, 8058–8063 (1997).9223314
+        item-291 at level 4: list_item: M. Pineda-Krch, R. Redfield, Per ... enetics 169, 2319–2333 (2005).15687277
+        item-292 at level 4: list_item: C. L. Baker , PRDM9 drives evolu ... oS Genet. 11, e1004916 (2015).25568937
+        item-293 at level 4: list_item: F. Smagulova, K. Brick, Y. Pu, R ... Genes Dev. 30, 266–280 (2016).26833728
+        item-294 at level 4: list_item: S. Singhal , Stable recombinatio ... . Science 350, 928–932 (2015).26586757
+        item-295 at level 4: list_item: I. Lam, S. Keeney, Nonparadoxica ... . Science 350, 932–937 (2015).26586758
+        item-296 at level 4: list_item: F. Úbeda, J. F. Wilkins, The red ... vol. Biol. 24, 541–553 (2011).21159001
+        item-297 at level 4: list_item: F. Úbeda, F. Fyon, R. Bürger, Th ... opul. Biol. 153, 69–90 (2023).37451508
+        item-298 at level 4: list_item: S. E. Ptak , Fine-scale recombin ... s. Nat. Genet. 37, 429 (2005).15723063
+        item-299 at level 4: list_item: W. Winckler , Comparison of fine ... . Science 308, 107–111 (2005).15705809
+        item-300 at level 4: list_item: A. Auton , A fine-scale chimpanz ... . Science 336, 193–198 (2012).22422862
+        item-301 at level 4: list_item: L. S. Stevison , The time scale  ... iol. Evol. 33, 928–945 (2015).26671457
+        item-302 at level 4: list_item: K. Choi , Arabidopsis meiotic cr ...  Nat. Genet. 45, 1327+ (2013).24056716
+        item-303 at level 4: list_item: U. Hellsten , Fine-scale variati ... .S.A. 110, 19478–19482 (2013).24225854
+        item-304 at level 4: list_item: A. P. Marand , Meiotic crossover ... . Genome Biol. 18, 203 (2017).29084572
+        item-305 at level 4: list_item: N. Yelina, P. Diaz, C. Lambing,  ...  Life Sci. 58, 223–231 (2015).25651968
+        item-306 at level 4: list_item: Z. Baker , Repeated losses of PR ... rates. eLife 6, e24133 (2017).28590247
+        item-307 at level 4: list_item: V. M. Narasimhan , Health and po ... . Science 352, 474–477 (2016).26940866
+        item-308 at level 4: list_item: O. Mihola , Histone methyltransf ... ome Res. 29, 1078–1086 (2019).31186301
+        item-309 at level 4: list_item: O. Mihola , Rat prdm9 shapes rec ... lity. BMC Biol. 19, 86 (2021).33910563
+        item-310 at level 4: list_item: Z. Baker, M. Przeworski, G. Sell ... ence. eLife 12, e83769 (2023).37830496
+        item-311 at level 4: list_item: C. Hoge , Patterns of recombinat ...  Science 383, eadj7026 (2024).38386752
+        item-312 at level 4: list_item: J. Joseph, D. Prentout, A. Laver ... .S.A. 121, e2401973121 (2024).38809707
+        item-313 at level 4: list_item: F. Fyon, F. Úbeda, Why does the  ... vol. Biol. 38, 968–979 (2025).40402827
+        item-314 at level 4: list_item: F. Úbeda, T. Russell, V. Jansen, ... opul. Biol. 126, 19–32 (2019).30660607
+        item-315 at level 4: list_item: B. Davies , Re-engineering the z ... e. Nature 530, 171–176 (2016).26840484
+        item-316 at level 4: list_item: A. G. Hinch , Factors influencin ... ngle sperm. Science 363, 1300+ (2019).
+        item-317 at level 4: list_item: M. Lichten, A. S. Goldman, Meiot ... Rev. Genet. 29, 423–444 (1995).8825482
+        item-318 at level 4: list_item: A. Fledel-Alon , Broad-scale rec ... LoS Genet. 5, e1000658 (2009).19763175
+        item-319 at level 4: list_item: S. I. Nagaoka, T. J. Hassold, P. ... ev. Genet. 13, 493–504 (2012).22705668
+        item-320 at level 4: list_item: H. Ren , Altered crossover distr ...  PLoS One 11, e0156817 (2016).27273078
+        item-321 at level 4: list_item: N. R. Powers , Sexual dimorphism ...  Sci. Adv. 6, eabb6606 (2020).33097538
+        item-322 at level 4: list_item: A. Peters, A combination of cis  ... enetics 178, 1579–1593 (2008).18245829
+        item-323 at level 4: list_item: S. Gregorova , Modulation of PRD ...  mice. eLife 7, e34282 (2018).29537370
+        item-324 at level 4: list_item: F. Ubeda, R. Burger, F. Fyon. Or ... 72/OriginPRDM9. Deposited 19 May 2026.
+        item-325 at level 4: list_item: J. M. Smith, G. Price, The logic ... al conflict. Nature 246, 15–18 (1973).
+        item-326 at level 4: list_item: S. Page, R. Hawley, Chromosome c ... . Science 301, 785–789 (2003).12907787
+        item-327 at level 4: list_item: T. Hassold, S. Sherman, P. Hunt, ... l. Genet. 9, 2409–2419 (2000).11005796
+        item-328 at level 4: list_item: E. Louis, R. Borts, Meiotic reco ... r. Biol. 13, R953–R955 (2003).14680651
+        item-329 at level 4: list_item: G. Coop, M. Przeworski, An evolu ... . Rev. Genet. 8, 23–34 (2007).17146469
+        item-330 at level 4: list_item: T. Miyamoto , Two single nucleot ... od. Genet. 25, 553–557 (2008).18941885
+        item-331 at level 4: list_item: S. Irie , Single-nucleotide poly ... J. Androl. 30, 426–431 (2009).19168450
+        item-332 at level 4: list_item: W. Kobayashi , Chromatin archite ... ng. Sci. Rep. 6, 24228 (2016).27052786
+        item-333 at level 4: list_item: Y. Imai , The prdm9 krab domain  ... hromosoma 126, 681–695 (2017).28527011
+        item-334 at level 4: list_item: T. R. Gregory, Animal genome siz ... ase (2026). http://www.genomesize.com.
+    item-335 at level 2: section_header: Supporting Information
+  item-336 at level 1: caption: Fig. 1. Types of hotspots. (A) s ... hanges rapidly over evolutionary time.
+  item-337 at level 1: caption: Fig. 2. Phylogenetic distributio ... f canids, or the ancestor of platypus.
+  item-338 at level 1: caption: Fig. 3. Transitions between type ...  both types of recombination hotspots.
+  item-339 at level 1: caption: Fig. 4. Transitions between type ... C. moderate, and D. large differences.
+  item-340 at level 1: caption: Fig. 5. Types of hotspots used i ... te are expected. Parameters are  and .

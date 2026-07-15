@@ -1,3 +1,50 @@
+"""Test module for the JATS backend parser.
+
+Third-party test data notice
+-----------------------------------------------------------------------
+The JATS source files in tests/data/jats/sources/ and their derived
+groundtruth files (*.itxt, *.json, *.md) are based on the following
+open-access articles:
+
+1. pnas.202535682.nxml  —  CC BY 4.0
+   Úbeda F, Bürger R, Fyon F (2026). "On the origin of PRDM9-guided
+   recombination hotspots." Proceedings of the National Academy of
+   Sciences, 123(26), e2535682123.
+   https://doi.org/10.1073/pnas.2535682123
+   Copyright © 2026 the Author(s). Published by PNAS.
+   Originally obtained from PubMed Central (PMC13320716):
+     https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated/oa_package/1a/89/PMC13320716.tar.gz
+   License: https://creativecommons.org/licenses/by/4.0/
+   The derived groundtruth files are adaptations of the original work.
+
+2. elife-56337.nxml  —  CC0 1.0 (public domain)
+   Wolf G, de Iaco A, Sun M-A, Bruno M, Tinkham M, Hoang D, et al.
+   (2020). "KRAB-zinc finger protein gene expansion in response to
+   active retrotransposons in the murine lineage." eLife, 9, e56337.
+   https://doi.org/10.7554/eLife.56337
+   Originally obtained from PubMed Central (PMC7289599).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+
+3. pone.0234687.nxml  —  CC0 1.0 (public domain)
+   Ribeiro-Filho HMN, Civiero M, Kebreab E, Sainju UM, et al. (2020).
+   "Potential to reduce greenhouse gas emissions through different dairy
+   cattle systems in subtropical regions." PLoS ONE, 15(6), e0234687.
+   https://doi.org/10.1371/journal.pone.0234687
+   Originally obtained from PubMed Central (PMC7302504).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+
+4. pntd.0008301.nxml  —  CC0 1.0 (public domain)
+   Burgert-Brucker CR, Zoerhoff KL, Headland M, Shoemaker EA,
+   Stelmach R, Karim MJ, et al. (2020). "Risk factors associated with
+   failing pre-transmission assessment surveys (pre-TAS) in lymphatic
+   filariasis elimination programs: Results of a multi-country
+   analysis." PLoS Neglected Tropical Diseases, 14(6), e0008301.
+   https://doi.org/10.1371/journal.pntd.0008301
+   Originally obtained from PubMed Central (PMC7289444).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+-----------------------------------------------------------------------
+"""
+
 import os
 from io import BytesIO
 from pathlib import Path
