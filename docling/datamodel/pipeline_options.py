@@ -1573,10 +1573,7 @@ class VideoPipelineOptions(PipelineOptions):
             ge=0,
             description=(
                 "Smoothing window (in frames) applied when detecting scene-change peaks. "
-                "Higher values produce smoother detection.\n\n"
-                "Note: this option is exposed for configuration but must be wired to the "
-                "scene-change sampler (SimpleSceneChangeFrameSampler.smooth_window) in "
-                "video_pipeline.py to take effect."
+                "Higher values produce smoother detection."
             ),
         ),
     ] = 2

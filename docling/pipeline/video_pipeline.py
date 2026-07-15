@@ -41,7 +41,6 @@ from docling.pipeline.asr_transcriber import (
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.speaker_diarization import (
-    DiarizationResult,
     assign_speakers,
     diarize,
 )
@@ -235,6 +234,7 @@ class VideoPipeline(BasePipeline):
                         probe_fps=opts.scene_change_probe_fps,
                         min_scene_duration_seconds=opts.min_scene_duration_seconds,
                         max_frames=opts.max_sampled_frames,
+                        smooth_window=opts.scene_change_smooth_window,
                     )
                 else:
                     sampler = FixedIntervalFrameSampler(
