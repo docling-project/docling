@@ -68,7 +68,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             self.options.mode == OcrMode.DEFAULT
             or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
         ):
-            ocr_rects = self._find_pdf_eliminated_layout_ocr_rects(page)
+            ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_REGIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
         elif self.options.mode == OcrMode.FULL_PAGE:
@@ -100,7 +100,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return ocr_rects
 
-    def _find_pdf_eliminated_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
+    def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
