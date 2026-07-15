@@ -95,7 +95,7 @@ def diarize(
         _log.warning(
             "Speaker diarization requires resemblyzer, soundfile, "
             "scikit-learn, and librosa. Speaker diarization disabled. "
-            "Install with: pip install 'docling[format-video]'"
+            "Install with: pip install 'docling-slim[format-video]'"
         )
         return DiarizationResult()
 
