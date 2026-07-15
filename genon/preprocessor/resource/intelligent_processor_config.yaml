@@ -161,7 +161,7 @@ enrichment:
 
   - doc_summary:
       enable: false          # 기본 off. true 또는 런타임 doc_summary=1 로 활성화. image/table 이 공유
-      url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
       api_key: ""
       model: "model"
       prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 본문요약

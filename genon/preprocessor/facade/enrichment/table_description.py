@@ -39,6 +39,9 @@ from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
 _log = logging.getLogger(__name__)
 
 
+# 표 description enricher 가 부착하는 annotation 의 기본 provenance(무관 annotation 배제용).
+TABLE_DESCRIPTION_PROVENANCE = "facade_table_description"
+
 # refine 통합 응답 마커 규약: 프롬프트가 아래 두 마커를 정확히 출력하도록 강제한다.
 TABLE_HTML_MARKER = "[[[TABLE_HTML]]]"
 TABLE_SUMMARY_MARKER = "[[[TABLE_SUMMARY]]]"
@@ -138,7 +141,7 @@ class TableDescriptionOptions:
     include_caption: bool = True
     include_section_header: bool = True
     same_page_first: bool = True
-    provenance: str = "facade_table_description"
+    provenance: str = TABLE_DESCRIPTION_PROVENANCE
     prompt_template: str = _DEFAULT_TABLE_DESCRIPTION_PROMPT_TEMPLATE
     template_mode: str = "strict"
     variables: dict[str, Any] = field(default_factory=dict)
@@ -253,14 +256,14 @@ def resolve_runtime_table_options(
 ) -> TableDescriptionOptions:
     """런타임 kwargs(0/1)로 base 옵션을 override 한 새 옵션을 반환한다.
 
-    - enabled        = table_desc==1
+    - enabled        = table_desc==1 or table_refine==1  (refine 단독 지정도 표 enrichment 활성)
     - refine_enabled = table_refine==1
 
     doc_summary 는 별도 doc_summary 단계가 _enrichment_context 로 공유하므로 여기서 다루지 않는다.
     """
     return replace(
         base,
-        enabled=(table_desc == 1),
+        enabled=(table_desc == 1 or table_refine == 1),
         refine_enabled=(table_refine == 1),
     )
 
@@ -318,8 +321,11 @@ def _parse_refined_table_data(html: str):
 
     table_data = GenosVlmHTMLDocumentBackend.parse_table_data(table_tag)
     grid = getattr(table_data, "grid", None)
-    # grid 없음 / 데이터 행 없음(헤더만) / 첫 행 빈 경우는 유효한 표가 아님.
-    if table_data is None or not grid or len(grid) < 2 or not grid[0]:
+    # grid 없음 / 데이터 행 없음(헤더만) 은 유효한 표가 아님.
+    if table_data is None or not grid or len(grid) < 2:
+        return None
+    # 첫 행(헤더)에 내용 있는 셀이 하나도 없으면(전부 빈 셀) 유효한 표가 아님.
+    if not any(str(getattr(cell, "text", "") or "").strip() for cell in grid[0]):
         return None
     return table_data
 
@@ -378,8 +384,11 @@ class TableDescriptionExtractor:
 
     @staticmethod
     def extract_summary(item: TableItem) -> str:
+        # 표 description enricher 가 부착한 것(provenance 일치)만 대상 — docling/타 enricher annotation 배제.
         for annotation in getattr(item, "annotations", []) or []:
             if not isinstance(annotation, DescriptionAnnotation):
+                continue
+            if getattr(annotation, "provenance", "") != TABLE_DESCRIPTION_PROVENANCE:
                 continue
             text = str(getattr(annotation, "text", "") or "").strip()
             if text:
@@ -536,8 +545,10 @@ class TableDescriptionEnricher:
         use_refine: bool = False,
         doc_summary: str = "",
     ) -> str:
-        safe_before = before_context or "-"
-        safe_after = after_context or "-"
+        # 컨텍스트(앞/뒤 문맥)만 개별 절단한다. 완성 프롬프트 전체를 자르면 refine 템플릿 말미의
+        # 출력 마커/재구성 규칙이 잘려 응답 파싱이 실패하므로 프롬프트는 그대로 반환한다.
+        safe_before = self._truncate_context(before_context) if before_context else "-"
+        safe_after = self._truncate_context(after_context) if after_context else "-"
         safe_caption = caption or "-"
         safe_header = section_header or "-"
         safe_summary = doc_summary or "-"
@@ -561,7 +572,7 @@ class TableDescriptionEnricher:
                 f"[캡션]\n{safe_caption}\n\n"
                 f"[뒤 문맥]\n{safe_after}"
             )
-        return self._truncate_context(prompt)
+        return prompt
 
     @staticmethod
     def _parse_refine_output(output_text: str) -> "tuple[str, str]":

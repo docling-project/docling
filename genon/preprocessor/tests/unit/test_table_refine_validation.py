@@ -40,12 +40,30 @@ def test_valid_table_is_accepted():
         "<table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr>",
         # 여는 태그 2 / 닫는 태그 1 (불균형)
         "<table><tr><td>x</td></tr><table><tr><td>1</td><td>2</td></tr></table>",
+        # 첫 행(헤더) 셀이 전부 빈 값 → 유효한 표 아님
+        "<table><tr><th></th><th></th></tr><tr><td>1</td><td>2</td></tr></table>",
     ],
 )
 def test_invalid_refined_html_is_rejected(html):
     m = _mod()
     assert m.is_valid_refined_html(html) is False
     assert m._parse_refined_table_data(html) is None
+
+
+# ── resolve_runtime_table_options: table_refine 단독으로도 enrichment 활성 ──────
+@pytest.mark.unit
+def test_table_refine_alone_enables():
+    m = _mod()
+    base = m.TableDescriptionOptions()
+    # table_refine=1 단독이면 enabled=True, refine_enabled=True
+    r = m.resolve_runtime_table_options(base, table_desc=0, table_refine=1)
+    assert r.enabled is True and r.refine_enabled is True
+    # 둘 다 0이면 비활성
+    off = m.resolve_runtime_table_options(base, table_desc=0, table_refine=0)
+    assert off.enabled is False and off.refine_enabled is False
+    # table_desc=1, refine=0 → enabled True, refine False
+    d = m.resolve_runtime_table_options(base, table_desc=1, table_refine=0)
+    assert d.enabled is True and d.refine_enabled is False
 
 
 # ── _parse_refine_output: degenerate/잘린 응답 폐기 ────────────────────────────

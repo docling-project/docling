@@ -275,9 +275,9 @@ enrichment:
         chart_prompt_file: prompt_chart_description_default.md
 
   # 표 설명(요약 + 선택적 refine 구조 재구성). refine/요약은 element(parse) 출력에 반영.
-  - table_description:
+  - table_description:      # 표 영역을 crop 해 VLM 에 보냄 → 이미지 서빙.
       enable: false
-      url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
       api_key: ""
       model: "model"
       concurrency: 8         # 표 설명 요청 병렬 수
@@ -694,8 +694,8 @@ filename: 보고서.pdf
 - `layout.genos_layout.endpoint`
   - `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
 - `enrichment` (list 형식)
-  - `toc.url` / `metadata.url` / `doc_summary.url` / `table_description.url`: `<ENRICHMENT_SERVING_ID>` 는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
-  - `image_description.url`: `<IMAGE_DESCRIPTION_SERVING_ID>` 는 별도 VLM 모델서빙 ID로 변경해야 합니다.
+  - `toc.url` / `metadata.url` / `doc_summary.url`: `<ENRICHMENT_SERVING_ID>` 는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
+  - `image_description.url` / `table_description.url`: `<IMAGE_DESCRIPTION_SERVING_ID>` 는 별도 VLM 모델서빙 ID로 변경해야 합니다(표 description 은 표 영역을 crop 해 VLM 에 전달).
 - `whisper.url`
   - 오디오 처리가 필요한 경우 OpenAI Whisper 호환 API 주소로 설정해야 합니다.
 

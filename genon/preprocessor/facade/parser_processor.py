@@ -1324,36 +1324,35 @@ class IntelligentDocumentProcessor:
 
         순수 override 계산은 enrichment.image_description.resolve_runtime_image_options 에 위임.
         """
-        base = getattr(self, "_base_image_description_options", None)
-        if base is None:
-            return
-
-        img_desc = _as_int_flag(kwargs.get("img_desc"), 0)
-        chart_desc = _as_int_flag(kwargs.get("chart_desc"), 0)
-        chart_detection = _as_int_flag(kwargs.get("chart_detection"), 0)
         doc_summary = _as_int_flag(kwargs.get("doc_summary"), 0)
 
-        self.image_description_options = resolve_runtime_image_options(
-            base,
-            img_desc=img_desc,
-            chart_desc=chart_desc,
-            chart_detection=chart_detection,
-            classification_available=getattr(
-                self.pipe_line_options, "do_picture_classification", False
-            ),
-        )
-        self.image_description_enricher = ImageDescriptionEnricher(
-            self.image_description_options
-        )
-        _log.info(
-            "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s detection=%s",
-            self.image_description_options.enabled,
-            img_desc,
-            chart_desc,
-            self.image_description_options.chart_detection,
-        )
+        # image description 런타임 재구성 (image base 옵션이 있을 때만)
+        base = getattr(self, "_base_image_description_options", None)
+        if base is not None:
+            img_desc = _as_int_flag(kwargs.get("img_desc"), 0)
+            chart_desc = _as_int_flag(kwargs.get("chart_desc"), 0)
+            chart_detection = _as_int_flag(kwargs.get("chart_detection"), 0)
+            self.image_description_options = resolve_runtime_image_options(
+                base,
+                img_desc=img_desc,
+                chart_desc=chart_desc,
+                chart_detection=chart_detection,
+                classification_available=getattr(
+                    self.pipe_line_options, "do_picture_classification", False
+                ),
+            )
+            self.image_description_enricher = ImageDescriptionEnricher(
+                self.image_description_options
+            )
+            _log.info(
+                "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s detection=%s",
+                self.image_description_options.enabled,
+                img_desc,
+                chart_desc,
+                self.image_description_options.chart_detection,
+            )
 
-        # 표 description 런타임 재구성
+        # 표 description 런타임 재구성 (image base 유무와 무관하게 독립 실행)
         tbase = getattr(self, "_base_table_description_options", None)
         if tbase is not None:
             table_desc = _as_int_flag(kwargs.get("table_desc"), 0)
