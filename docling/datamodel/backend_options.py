@@ -294,6 +294,25 @@ class MsPowerpointBackendOptions(BaseBackendOptions):
     )
 
 
+class MsWordBackendOptions(BaseBackendOptions):
+    """Options specific to the MS Word backend."""
+
+    kind: Literal["docx"] = Field("docx", exclude=True, repr=False)
+
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart drawing is isolated into a "
+            "temporary document and rasterized with LibreOffice, the same "
+            "external tool used for EMF/WMF images. Opt-in (default False) "
+            "because it requires a LibreOffice installation and inflates the "
+            "output size. Charts always keep their classification and "
+            "reconstructed tabular data regardless of this option."
+        ),
+    )
+
+
 class OdsBackendOptions(BaseBackendOptions):
     """Options specific to the ODS (OpenDocument Spreadsheet) backend."""
 
@@ -391,6 +410,7 @@ BackendOptions = Annotated[
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
         MsPowerpointBackendOptions,
+        MsWordBackendOptions,
         OdsBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
