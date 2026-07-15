@@ -176,6 +176,8 @@ def test_hml_path_guesses_xml_hwpx_format(tmp_path):
     (b"PK\x03\x04....", ".hwpx"),
     (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", ".hwp"),
     (b'<?xml version="1.0"?><HWPML Version="2.8">', ".hml"),
+    # UTF-8 BOM 이 붙은 HWPML 도 .hml 로 판별돼야 한다 (PR #324 CodeRabbit 지적)
+    (b'\xef\xbb\xbf<?xml version="1.0"?><HWPML Version="2.8">', ".hml"),
 ])
 def test_infer_suffix_from_stream_magic(header, expected):
     """BytesIO 입력 시 매직 바이트로 확장자를 추론한다 (.hml 은 HWPML 루트 태그)."""

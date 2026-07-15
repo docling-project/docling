@@ -174,6 +174,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 2순위: 스트림 매직 바이트로 판별
         header = stream.read(256)
         stream.seek(0)  # 반드시 되감기
+        if header[:3] == b"\xef\xbb\xbf":     # UTF-8 BOM은 매직 판별 전에 제거
+            header = header[3:]
 
         if header[:2] == b"PK":               # ZIP 시그니처 → HWPX
             return ".hwpx"
