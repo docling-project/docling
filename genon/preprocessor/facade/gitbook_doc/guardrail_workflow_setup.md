@@ -241,95 +241,97 @@ Python 단계에 붙여 넣으세요).
 
 > 각 단계를 GenOS 화면 캡쳐와 함께 안내합니다.
 
-1. **정규식 가드레일 인스턴스 준비** — GenOS 가드레일에서 정규식 필터(주민번호·전화·이메일 등)를
-   등록한 인스턴스를 만들고 그 **가드레일 ID**(예: 99)를 확인합니다. 각 필터의 "치환 규칙"은
-   `[주민등록번호]` 처럼 구분되는 토큰을 권장합니다(소분류 복원에 사용). 정규식은 Python `re` 문법.
+### 1. **[정규식 탐지] 가드레일 인스턴스 구성** 
+  - GenOS 가드레일에서 정규식 필터(주민번호·전화·이메일 등)가 등록된 인스턴스를 만들고 그 **가드레일의 `ID`**(예: 99)를 확인합니다. 
+  - 각 필터의 "치환 규칙"은 `[주민등록번호]` 처럼 직관적이고 간결한 토큰을 권장합니다. 
+  - 정규식은 Python `re` 문법에 기반합니다.
 
    > 등록할 정규식 7종의 **복붙용 원본과 입력 방법**은
    > [가드레일 정규식 필터 프리셋](guardrail_regex_filters.md) 문서를 참고하세요.
 
-   좌측 메뉴 **가드레일 → 가드레일** 을 누르면 가드레일 목록이 나옵니다. 화면의
-   **"+ 가드레일 생성"** 버튼을 누릅니다.
+#### [순서1-1] 가드레일 인스턴스 생성
 
    ![가드레일 생성](images/guardrail_setup_01a_create.jpg)
+-    좌측 메뉴 **가드레일 → 가드레일** 을 누르면 가드레일 목록이 나옵니다. 이후 화면의
+   **"+ 가드레일 생성"** 버튼을 누릅니다.
 
-   생성 직후에는 필터 목록이 비어 있습니다. "필터 추가" 를 누릅니다.
+#### [순서1-2] 가드레일 필터 목록 구성
 
    ![빈 필터 목록](images/guardrail_setup_01b_empty_filters.jpg)
-
-   필터 입력 — 제목, 차단 방식 **정규식**, 정규식 본문, 응답 방식 **"마스킹 처리하여 제공"** +
-   치환 규칙(`[주민등록번호]`)을 넣습니다.
+-   생성 직후에는 필터 목록이 비어 있습니다. "필터 추가" 를 누릅니다.
 
    ![필터 입력 예시](images/guardrail_setup_01c_filter_input.jpg)
-
-   같은 방식으로 필터들을 등록하면 아래처럼 목록이 채워집니다.
+-    필터 입력 — 제목, 차단 방식 **"정규식"**, 정규식 본문, 응답 방식 **"마스킹 처리하여 제공"** +
+   치환 규칙(`[주민등록번호]`)을 넣습니다.
 
    ![필터 등록 완료](images/guardrail_setup_01d_filters_done.jpg)
+-    같은 방식으로 필터들을 등록하면 위처럼 목록이 채워집니다.
 
-2. **모델서빙 확인** — 의미분류 LLM(예: 모델 776 qwen)의 호출 URL/키를 확인합니다.
-   나중에 GPT OSS 120B 등으로 교체하려면 `GUARDRAIL_LLM_URL` 만 바꾸면 됩니다.
-
-   좌측 메뉴 **서빙 → 모델 서빙** 을 누르면 서빙 중인 모델 목록이 나옵니다. 목록에서 사용할
-   모델을 클릭해 **서빙 ID** 를 확인하고, 필요하면 인증키를 생성합니다.
-   (인증키는 외부 주소로 호출할 경우에만 필요 — 내부 주소는 무인증, 4단계 표 참고)
+### 2. **[의미 탐지] 모델서빙 확인** 
 
    ![서빙 인증키 등록 예시](images/guardrail_setup_02a_serving_key.jpg)
+-    좌측 메뉴 **서빙 → 모델 서빙** 을 누르면 서빙 중인 모델 목록이 나옵니다. 
+- 사용할 모델을 클릭해 해당 서빙의 `ID**`와 `인증키**`를 확인합니다(인증키가 아직 없다면 생성합니다).
 
-3. **워크플로우 생성** — GenOS 워크플로우에서 새 워크플로우를 만들고 **Python 단계** 에
-   [`workflow_guardrail.py`](workflow_guardrail.py) 전체를 붙여 넣습니다.
+### 3. **워크플로우 생성** 
+- GenOS 워크플로우에서 새 워크플로우를 만들고, 1,2번 과정을 통해 선택한 가드레일 인스턴스와 LLM을 이어주는 코드를 추가합니다. 
+- 해당 코드는 [`workflow_guardrail.py`](workflow_guardrail.py)으로, **Python 단계**를 통해 이를 추가합니다.
 
-   좌측 메뉴 **에이전트 → 워크플로우** 에서 새 워크플로우를 생성합니다.
+#### [순서3-1] 새 워크플로우 생성. 
 
    ![워크플로우 생성](images/guardrail_setup_03a_create.jpg)
+   -    좌측 메뉴 **에이전트 → 워크플로우** 에서 새 워크플로우를 생성합니다.
 
-   생성하면 리비전 정보 화면으로 들어갑니다.
+#### [순서3-2] 워크플로우의 리비전 정보 클릭
 
    ![리비전 정보](images/guardrail_setup_03b_revision.jpg)
+   - 생성후, '리비전 정보' 버튼을 클릭합니다.
+   - 클릭후, '리비전 상세' 부분의 '수정' 버튼을 누릅니다.
 
-   리비전을 활성화합니다.
+#### [순서3-3] 워크플로우의 리비전 수정 - (1) 기본값 구성
 
    ![리비전 활성화](images/guardrail_setup_03c_revision_active.jpg)
+   - 아래 정보로 환경 변수를 추가합니다 
+      - 변수명: `GUARDRAIL_LLM_KEY`, 값:  `2단계에서 확인한 LLM 서빙의 인증키`
+   - 워크플로우 자체에는 GPU가 필요하지 않기에, GPU 할당량은 0으로 설정합니다.
+   - 사용할 도커 이미지 및 인스턴스 타입은, 선호에 따라 자유롭게 설정합니다. 
 
-   캔버스에 **Python 단계** 를 추가합니다.
+#### [순서3-3] 워크플로우의 리비전 수정 - (2) Python 단계 추가
 
    ![Python 단계 추가](images/guardrail_setup_03d_python_added.jpg)
+   - **Python 단계 추가**버튼 클릭시, 위 화면처럼 빈 Python 템플릿이 생성됩니다.
+   - 코드 블록 우측 상단의 확장 아이콘을 클릭후, [`workflow_guardrail.py`](workflow_guardrail.py) 전체를 붙여넣습니다.
 
-   코드 설정에 [`workflow_guardrail.py`](workflow_guardrail.py) 전체를 붙여 넣고 저장합니다.
-
-   붙여 넣은 뒤, 아래 캡쳐의 **빨간 동그라미 두 곳** 을 본인 환경 값으로 맞춰야 합니다.
-   - ① `GUARDRAIL_ID` 기본값 → **1단계에서 만든 가드레일 인스턴스 ID**
-   - ② `_LLM_URL` 속 서빙 번호 → **2단계에서 확인한 LLM 서빙 ID**
-
-   (코드를 고치는 대신 4단계의 환경 변수 `GUARDRAIL_ID` / `GUARDRAIL_LLM_URL` 로 지정해도 됩니다)
+#### [순서3-3] 워크플로우의 리비전 수정 - (3) Python 단계 수정
 
    ![코드 설정](images/guardrail_setup_03e_code.jpg)
 
-4. **환경 변수 설정 (필요 시)** — 아래 값들은 전부 코드에 default 가 있어, **표준 구성이면 env 를
-   하나도 안 넣어도 동작합니다.** 구성이 다를 때만 해당 항목을 override 하세요.
+   - 붙여 넣은 뒤, 위 캡쳐의 **빨간 동그라미 두 부분**을 아래 값으로 대체합니다.
+     - ① `GUARDRAIL_ID` 기본값 → `1단계에서 만든 가드레일 인스턴스의 ID`
+     - ② `_LLM_URL` 속 서빙 번호 → `2단계에서 확인한 LLM 서빙의 ID`
+   - 이후 현재까지의 설정을 저장하고, 배포를 진행합니다. 
 
-   | env | default | 언제 바꾸나 |
-   |---|---|---|
-   | `GUARDRAIL_DRYRUN_BASE` | `http://llmops-gateway-api-service:8080` (내부 게이트웨이) | 게이트웨이 서비스명이 다른 사이트 |
-   | `GUARDRAIL_ID` | `99` | 정규식 필터 인스턴스 ID 가 다를 때 |
-   | `GUARDRAIL_LLM_URL` | `http://...:8080/rep/serving/776/v1/chat/completions` (내부) | 분류 LLM 서빙이 776 이 아닐 때 |
-   | `GUARDRAIL_LLM_KEY` | (없음) | 내부 통신은 무인증이라 **불필요**. 외부 주소를 쓸 때만 설정 |
-   | `GUARDRAIL_LLM_MODEL` | `model` | 서빙 모델명이 다를 때 |
-
-5. **배포** 후 `workflow_id` 를 확인합니다 — 워크플로우 목록의 **ID 컬럼** 값입니다
-   (배포 상태가 "배포 완료" 인지도 함께 확인).
+### 4. 워크플로우 배포 및 ID 확인
 
    ![워크플로우 ID 확인](images/guardrail_setup_05a_workflow_id.jpg)
+   - 배포후(배포 상태가 "배포 완료" 인지도 함께 확인), ID값을 확인합니다.
 
-6. **인증키(AuthKeyBearer) 발급** — 워크플로우 실행 라우트(`/workflow/{id}/run`)는 Bearer 인증을
-   요구합니다. 워크플로우 상세의 **"인증 키" 탭 → "+ 인증 키 생성"** 으로 발급하며,
-   이 키가 전처리기 config 의 `api_key` 로 들어갑니다.
+### 5. 워크플로우 인증키 발급 및 전처리기와의 연결
+
+#### [순서5-1] **인증키(AuthKeyBearer) 발급** 
 
    ![인증 키 발급](images/guardrail_setup_06a_authkey.jpg)
+   - 워크플로우 상세의 **"인증 키" 탭 → "+ 인증 키 생성"** 으로 인증키 발급을 진행합니다.
+   - 이 키가 전처리기 YAML 의 `api_key` 로 들어갑니다.
 
-7. **전처리기와 연결** — 배포로 얻은 `url`(gateway 베이스)/`workflow_id`/`api_key` 3개를 전처리기
-   config 의 `guardrail:` 섹션(1.3절)에 넣습니다.
+#### [순서5-2] **전처리기와 워크플로우 연결**
 
-### 배포 검증
+   ![config 설정](images/guardrail_setup_06b_config.jpg)
+   - 워크플로우의 ID값, 인증키를 전처리기 YAML의 `guardrail:` 부분에 넣습니다.
+     - 전처리기 YAML이란, [attachment_processor_config.yaml](../../resource_dev/attachment_processor_config.yaml) , [intelligent_processor_config.yaml](../../resource_dev/intelligent_processor_config.yaml) 등의 각 전처리기별 YAML 파일입니다.
+     - ID값과 인증키는 각각 `workflow_id`/`api_key`에 해당됩니다. 
+
+### 6. 간단한 워크플로우 검증
 
 ```bash
 # 헬스체크
@@ -345,7 +347,7 @@ curl -s -X POST "https://genos.genon.ai/api/gateway/workflow/{workflow_id}/run/v
 
 ---
 
-## 5. 자주 겪는 문제
+## (참고용) 자주 발생할수 있는 문제
 
 | 증상 | 원인 / 조치 |
 |---|---|
