@@ -573,12 +573,22 @@ class TestExportTableContent:
         item.export_to_html.assert_called_once_with(doc=doc)
         assert result == "<table></table>"
 
-    def test_markdown_format_calls_export_to_markdown(self):
+    def test_markdown_format_noncompact_calls_export_to_markdown(self):
+        # compact_tables=False 일 때만 TableItem.export_to_markdown() 경로를 탄다.
         item = _make_table_item()
         doc = MagicMock()
-        result = DocumentProcessor._export_table_content(item, doc, table_format="markdown")
+        result = DocumentProcessor._export_table_content(
+            item, doc, table_format="markdown", compact_tables=False
+        )
         item.export_to_markdown.assert_called_once_with(doc=doc)
         assert result == "| a |"
+
+    def test_markdown_format_compact_uses_serializer_not_export_to_markdown(self):
+        # compact_tables=True(기본)면 MarkdownDocSerializer 경로 → export_to_markdown 미호출.
+        item = _make_table_item()
+        doc = MagicMock()
+        DocumentProcessor._export_table_content(item, doc, table_format="markdown")
+        item.export_to_markdown.assert_not_called()
 
     def test_default_format_is_html(self):
         item = _make_table_item()

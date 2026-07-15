@@ -8,7 +8,8 @@
 - `ImageDescriptionEnricher` : 문서 순회 + 이미지별 VLM 호출(ThreadPoolExecutor)
 - `resolve_runtime_image_options`  : 런타임 kwargs(0/1) → base 옵션 override
 
-차트 판별은 `chart_detection`, 본문요약은 `body_summary` 모듈에 위임한다.
+차트 판별은 `chart_detection` 모듈에 위임한다. 문서 본문요약({{doc_summary}})은 별도
+`doc_summary` 단계가 `_enrichment_context` 에 넣어둔 값을 공유해서 사용한다.
 """
 from __future__ import annotations
 
@@ -33,7 +34,6 @@ from docling.utils.api_image_request import api_image_request
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
 from genon.preprocessor.facade.enrichment.chart_detection import is_chart
-from genon.preprocessor.facade.enrichment.body_summary import summarize_body
 
 _log = logging.getLogger(__name__)
 
@@ -132,10 +132,6 @@ class ImageDescriptionOptions:
     variables: dict[str, Any] = field(default_factory=dict)
     headers: dict[str, str] = field(default_factory=dict)
     params: dict[str, Any] = field(default_factory=dict)
-    # 문서 본문요약: 이미지·차트 description 공통으로 {{doc_summary}} 변수에 주입
-    body_summary_enabled: bool = False
-    body_summary_prompt: str = ""
-    body_summary_max_chars: int = 6000
     # 차트 처리: enabled 이면 detection 방식에 따라 chart 프롬프트로 전환
     chart_enabled: bool = False
     chart_detection: str = "auto"  # "auto"=docling 자동판별 | "all"=모든 이미지를 차트로 처리
@@ -204,20 +200,6 @@ class ImageDescriptionOptions:
         if max_context_chars is None or max_context_chars <= 0:
             max_context_chars = 1500
 
-        # ── 문서 본문요약(doc_summary) 하위 블록 ──
-        doc_summary_cfg = _as_dict(image_desc_cfg.get("doc_summary"))
-        body_summary_enabled = _parse_optional_bool(
-            doc_summary_cfg.get("enable"), "doc_summary.enable"
-        )
-        body_summary_max_chars = _parse_optional_int(
-            doc_summary_cfg.get("max_chars"), "doc_summary.max_chars"
-        )
-        if body_summary_max_chars is None or body_summary_max_chars <= 0:
-            body_summary_max_chars = 6000
-        body_summary_prompt = _read_optional_prompt(
-            base_dir, doc_summary_cfg.get("prompt_file"), default=""
-        )
-
         # ── 차트(chart) 하위 블록 ──
         chart_cfg = _as_dict(image_desc_cfg.get("chart"))
         chart_enabled = _parse_optional_bool(chart_cfg.get("enable"), "chart.enable")
@@ -253,9 +235,6 @@ class ImageDescriptionOptions:
             variables=img_variables,
             headers=_as_dict(image_desc_cfg.get("headers")),
             params=_as_dict(image_desc_cfg.get("params")),
-            body_summary_enabled=False if body_summary_enabled is None else body_summary_enabled,
-            body_summary_prompt=body_summary_prompt,
-            body_summary_max_chars=body_summary_max_chars,
             chart_enabled=False if chart_enabled is None else chart_enabled,
             chart_detection=chart_detection,
             chart_prompt_template=chart_prompt_template,
@@ -316,7 +295,6 @@ def resolve_runtime_image_options(
     img_desc: int,
     chart_desc: int,
     chart_detection: int,
-    doc_summary: int,
     classification_available: bool,
 ) -> ImageDescriptionOptions:
     """런타임 kwargs(0/1)로 base 옵션을 override 한 새 옵션을 반환한다.
@@ -325,7 +303,8 @@ def resolve_runtime_image_options(
     - chart_enabled      = chart_desc==1
     - chart_detection    = "auto" if chart_detection==1 else "all"
       (auto 지만 변환 단계 그림 분류가 꺼져 있으면 annotation 이 없으므로 all 로 강등)
-    - body_summary_enabled = doc_summary==1
+
+    doc_summary 는 별도 doc_summary 단계가 _enrichment_context 로 공유하므로 여기서 다루지 않는다.
     """
     detection = "auto" if chart_detection == 1 else "all"
     if chart_desc == 1 and detection == "auto" and not classification_available:
@@ -339,7 +318,6 @@ def resolve_runtime_image_options(
         enabled=(img_desc == 1 or chart_desc == 1),
         chart_enabled=(chart_desc == 1),
         chart_detection=detection,
-        body_summary_enabled=(doc_summary == 1),
     )
 
 
@@ -579,19 +557,8 @@ class ImageDescriptionEnricher:
         if not items:
             return document
 
-        # 문서 본문요약(이미지·차트 공통 컨텍스트) 1회 생성
-        doc_summary = ""
-        if self.options.body_summary_enabled:
-            doc_summary = summarize_body(
-                document,
-                api_url=self.options.api_url,
-                api_key=self.options.api_key,
-                model=self.options.model,
-                prompt_template=self.options.body_summary_prompt,
-                max_chars=self.options.body_summary_max_chars,
-                timeout=self.options.timeout,
-                headers=self.options.headers,
-            )
+        # 문서 본문요약은 doc_summary 단계가 _enrichment_context 에 넣어둔 값을 공유한다.
+        doc_summary = str((kwargs.get("_enrichment_context") or {}).get("doc_summary", "") or "")
 
         chart_enabled = self.options.chart_enabled
         chart_all = chart_enabled and self.options.chart_detection == "all"

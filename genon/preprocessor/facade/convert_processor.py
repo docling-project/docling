@@ -225,6 +225,10 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 
 from docling_core.types import DoclingDocument
 
@@ -307,6 +311,18 @@ from genon.preprocessor.facade.enrichment.image_description import (
     ImageDescriptionOptions,
     ImageDescriptionEnricher,
     resolve_runtime_image_options,
+)
+from genon.preprocessor.facade.enrichment.table_description import (
+    TableDescriptionOptions,
+    TableDescriptionEnricher,
+    TableDescriptionExtractor,
+    refined_html_to_format,
+    resolve_runtime_table_options,
+)
+from genon.preprocessor.facade.enrichment.doc_summary import (
+    DocSummaryOptions,
+    DocSummaryEnricher,
+    resolve_runtime_doc_summary_options,
 )
 
 
@@ -400,6 +416,18 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         if key:
             _log.warning(f"[DocumentProcessor] Invalid int value for '{key}': {value!r}. Fallback to default.")
         return None
+
+
+_MIN_CHUNK_SIZE = 1024
+
+
+def _clamp_chunk_size(size: Optional[int]) -> Optional[int]:
+    """chunk_size 가 0 초과이면서 _MIN_CHUNK_SIZE 미만이면 _MIN_CHUNK_SIZE 로 보정.
+    0(=분할 안 함) 과 None 은 그대로 둔다."""
+    if size is not None and 0 < size < _MIN_CHUNK_SIZE:
+        _log.info(f"[chunk_size] {size} < {_MIN_CHUNK_SIZE} → {_MIN_CHUNK_SIZE} 로 보정")
+        return _MIN_CHUNK_SIZE
+    return size
 
 
 def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
@@ -554,6 +582,8 @@ class GenosSmartChunker(BaseChunker):
     merge_peers: bool = True
     # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
     tokenizer_type: str = "char"
+    # 청킹 모드. "split_only"(기본)=chunk_size 초과 청크만 분할(구조 보존) | "resize_all"=모든 청크를 chunk_size 에 맞게 병합/분할
+    chunk_mode: str = "split_only"
 
     # _inner_chunker: BaseChunker = None
     _tokenizer: PreTrainedTokenizerBase = None
@@ -814,11 +844,45 @@ class GenosSmartChunker(BaseChunker):
         fmt = str(fmt).strip().lower()
         return "markdown" if fmt == "markdown" else "html"
 
+    @staticmethod
+    def _resolve_compact_tables(kwargs: dict) -> bool:
+        """markdown 표를 compact(컬럼 정렬 패딩 제거)로 낼지 결정. 기본 True."""
+        return bool(kwargs.get("compact_tables", True))
+
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
+        """테이블 청크 텍스트를 만든다.
+
+        표 description(refine/요약) annotation 이 있으면 반영한다:
+        - refine ON: 재구성 HTML 로 표 본체 교체
+        - 요약 존재: '\\n---\\n[표 설명]\\n<요약>' 을 항상 병기
+        annotation 이 없으면(기본) 기존 export 결과를 그대로 반환(회귀 없음).
+        """
+        refined_html = TableDescriptionExtractor.extract_refined_html(table_item)
+        table_summary = TableDescriptionExtractor.extract_summary(table_item)
+
+        # refine 은 항상 HTML 로 재구성 → output table_format 에 맞춰 변환(markdown 등).
+        refined = refined_html_to_format(
+            refined_html, self._resolve_table_format(kwargs), self._resolve_compact_tables(kwargs))
+        base_text = refined or self._compute_table_base_text(table_item, dl_doc, **kwargs)
+        if table_summary:
+            if base_text:
+                return base_text + "\n---\n[표 설명]\n" + table_summary
+            return "[표 설명]\n" + table_summary
+        return base_text
+
+    def _compute_table_base_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
             if self._resolve_table_format(kwargs) == "markdown":
-                table_text = table_item.export_to_markdown(dl_doc)
+                if self._resolve_compact_tables(kwargs):
+                    # TableItem.export_to_markdown() 은 compact 옵션이 없어 직접 serializer 구성
+                    # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                    table_text = MarkdownDocSerializer(
+                        doc=dl_doc,
+                        params=MarkdownParams(compact_tables=True),
+                    ).serialize(item=table_item).text
+                else:
+                    table_text = table_item.export_to_markdown(dl_doc)
             else:
                 table_text = table_item.export_to_html(dl_doc)
             if table_text and table_text.strip():
@@ -916,6 +980,13 @@ class GenosSmartChunker(BaseChunker):
         sheet_prefix = self._sheet_prefix(table_item, dl_doc)
         single = sheet_prefix + self._generate_section_text_with_heading([table_item], [h_short], dl_doc, **kwargs)
 
+        # 재구성 HTML(refine)이 있으면 grid/구조가 달라 row 분할이 무의미 → 단일 청크로 둔다.
+        if TableDescriptionExtractor.extract_refined_html(table_item):
+            return [single]
+        # 요약(summary)만 있는 경우: chunk_size 초과 표는 정상적으로 row 분할하고,
+        # 요약은 마지막 분할 청크에만 1회 덧붙인다(중복 방지). single 경로는 이미 요약 포함.
+        table_summary = TableDescriptionExtractor.extract_summary(table_item)
+
         if self.max_tokens is None or self.max_tokens <= 0:
             return [single]
         if self._count_tokens(single) <= self.max_tokens:
@@ -980,7 +1051,11 @@ class GenosSmartChunker(BaseChunker):
                 cur.append(rr)
         if cur:
             texts.append(wrap(cur))
-        return texts or [single]
+        if not texts:
+            return [single]
+        if table_summary:
+            texts[-1] = texts[-1] + "\n---\n[표 설명]\n" + table_summary
+        return texts
 
     def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
         """헤더 정보 리스트에서 실제 사용되는 모든 헤더들을 level 순서대로 추출하고 ', '로 연결"""
@@ -1334,8 +1409,10 @@ class GenosSmartChunker(BaseChunker):
 
         # ================================================================
         # 2.5단계: 너무 긴 청크는 분할 (인덱스 꼬임 방지를 위해 새 리스트 사용)
+        #   resize_all 전용. split_only 는 구조 그룹핑(4단계) 후 5.5단계에서 분할한다
+        #   (여기서 분할하면 같은 섹션 조각들이 4단계에서 다시 병합되어 무의미).
         # ================================================================
-        if self.max_tokens > 0:
+        if self.max_tokens > 0 and self.chunk_mode == "resize_all":
             final_sections = []  # 결과를 담을 새 리스트
             for text, items, h_infos, h_short in sections_with_text:
                 token_count = self._count_tokens(text)
@@ -1438,8 +1515,8 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성
-            if test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
+            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
                 b_new_chunk = True
             # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
             elif 0 <= section_level < merged_level:
@@ -1470,14 +1547,14 @@ class GenosSmartChunker(BaseChunker):
         #   1차 결과(구조 경계 기준 그룹)를 순서대로, 합산 크기가 chunk_size 이하인 동안
         #   인접 그룹끼리 결합한다. (크기는 HEADER 라인 포함 최종 텍스트 기준)
         # ================================================================
-        if self.max_tokens > 0 and groups:
-            def _size(g):
-                text = "\n".join(g["texts"])
-                headings = self._extract_used_headers(g["h_short"]) or []
-                header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
-                # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
-                return self._count_tokens(header_line + text)
+        def _size(g):
+            text = "\n".join(g["texts"])
+            headings = self._extract_used_headers(g["h_short"]) or []
+            header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
+            # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
+            return self._count_tokens(header_line + text)
 
+        if self.max_tokens > 0 and groups and self.chunk_mode == "resize_all":
             def _merge(a, b):
                 return {
                     "texts": a["texts"] + b["texts"],
@@ -1494,6 +1571,35 @@ class GenosSmartChunker(BaseChunker):
                 else:
                     merged_groups.append(g)
             groups = merged_groups
+
+        # ================================================================
+        # 5.5단계: split_only 전용 — chunk_size 초과 그룹만 토큰 기준 균등 분할
+        #   (구조 기반 그룹은 유지, 작은 그룹은 병합하지 않고 그대로 둔다)
+        # ================================================================
+        if self.max_tokens > 0 and groups and self.chunk_mode == "split_only":
+            new_groups = []
+            for g in groups:
+                if _size(g) <= self.max_tokens:
+                    new_groups.append(g)
+                    continue
+
+                # caption 및 table 내 그림은 같은 조각에 있도록 조정 (2.5단계와 동일 로직)
+                items_group = [[(it, inf, sh)] for it, inf, sh in zip(g["items"], g["h_infos"], g["h_short"])]
+                items_group = adjust_captions(items_group)
+                items_group = adjust_pictures_in_tables(items_group)
+
+                item_token_counts = []
+                for grp in items_group:
+                    item_token_counts.append(sum(self._count_tokens(get_text_from_item(x[0])) for x in grp))
+
+                for (a, b) in split_items_evenly_by_tokens(item_token_counts, self.max_tokens):
+                    gi, gh, gs = [], [], []
+                    for idx in range(a, b):
+                        for x in items_group[idx]:
+                            gi.append(x[0]); gh.append(x[1]); gs.append(x[2])
+                    new_text = self._generate_section_text_with_heading(gi, gs, dl_doc, **kwargs)
+                    new_groups.append({"texts": [new_text], "items": gi, "h_infos": gh, "h_short": gs})
+            groups = new_groups
 
         # ================================================================
         # 6단계: 최종 DocChunk 생성
@@ -1706,6 +1812,12 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
+        # 청킹 모드: "split_only"(기본, chunk_size 초과 청크만 분할) | "resize_all"(모든 청크를 chunk_size 에 맞게 병합/분할)
+        self._chunk_mode = str(chunking_cfg.get("chunk_mode", "split_only")).strip().lower()
+        if self._chunk_mode not in {"split_only", "resize_all"}:
+            _log.warning(f"[DocumentProcessor] Unknown chunking.chunk_mode '{self._chunk_mode}', fallback to 'split_only'.")
+            self._chunk_mode = "split_only"
+
         # xlsx(엑셀) 처리 설정(이슈 #288). formats.xlsx 아래에 둔다(포맷별 옵션 컨테이너).
         #   docling(기본): xlsx 를 docling MsExcel 백엔드로 처리(현행) → 기존 청킹/벡터 파이프라인.
         #   tabular: 데이터 행마다 1벡터 + 컬럼 헤더→메타(병합셀 unmerge+forward-fill).
@@ -1734,6 +1846,8 @@ class DocumentProcessor:
             )
             table_format = "html"
         self._table_format = table_format
+        # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
+        self._compact_tables = bool(output_cfg.get("compact_tables", True))
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
@@ -1948,6 +2062,29 @@ class DocumentProcessor:
                     f"[DocumentProcessor] do_picture_classification 설정 실패: {exc}"
                 )
 
+        # 표 description 옵션. VLM 이 표 영역을 crop 하려면 페이지 이미지가 필요하므로
+        # base 옵션이 켜져 있으면 컨버터 생성 전에 generate_page_images 를 강제한다.
+        self.table_description_options = TableDescriptionOptions.from_config(
+            table_desc_cfg=ec.table_description_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
+            config_dir=self._config_dir,
+        )
+        self._base_table_description_options = self.table_description_options
+        if self.table_description_options.enabled:
+            self.pipe_line_options.generate_page_images = True
+
+        # 문서 본문요약(doc_summary) 옵션. image/table 이 공유하는 {{doc_summary}} 를 1회 계산.
+        self.doc_summary_options = DocSummaryOptions.from_config(
+            doc_summary_cfg=ec.doc_summary_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
+            config_dir=self._config_dir,
+        )
+        self._base_doc_summary_options = self.doc_summary_options
+
         # ocr 파이프라인 옵션
         self.ocr_pipe_line_options = PdfPipelineOptions()
         self.ocr_pipe_line_options = self.pipe_line_options.model_copy(deep=True)
@@ -1961,6 +2098,10 @@ class DocumentProcessor:
         self.image_description_enricher = ImageDescriptionEnricher(
             self.image_description_options
         )
+        self.table_description_enricher = TableDescriptionEnricher(
+            self.table_description_options
+        )
+        self.doc_summary_enricher = DocSummaryEnricher(self.doc_summary_options)
         self.custom_fields_enrichers: list = (
             [CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
             if CustomFieldsEnricher is not None
@@ -2288,15 +2429,22 @@ class DocumentProcessor:
         chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
         if chunk_size is None:
             chunk_size = self._chunk_size
+        chunk_size = _clamp_chunk_size(chunk_size)
+        # chunk_mode 우선순위: kwargs > yaml(chunking.chunk_mode) > "split_only"
+        chunk_mode = str(kwargs.get('chunk_mode') or self._chunk_mode).strip().lower()
+        if chunk_mode not in {"split_only", "resize_all"}:
+            chunk_mode = "split_only"
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = chunk_size if chunk_size is not None else 0,
             merge_peers = True,
             tokenizer = self._tokenizer,
             tokenizer_type = self._tokenizer_type,
+            chunk_mode = chunk_mode,
         )
 
         # 표 직렬화 형식(html|markdown)을 청커로 전달(런타임 kwarg 가 있으면 우선).
         kwargs.setdefault("table_format", self._table_format)
+        kwargs.setdefault("compact_tables", self._compact_tables)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
@@ -2313,13 +2461,19 @@ class DocumentProcessor:
         chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
         if chunk_size is None:
             chunk_size = self._chunk_size
+        chunk_size = _clamp_chunk_size(chunk_size)
+        chunk_mode = str(kwargs.get('chunk_mode') or self._chunk_mode).strip().lower()
+        if chunk_mode not in {"split_only", "resize_all"}:
+            chunk_mode = "split_only"
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens=chunk_size if chunk_size is not None else 0,
             merge_peers=True,
             tokenizer=self._tokenizer,
             tokenizer_type=self._tokenizer_type,
+            chunk_mode=chunk_mode,
         )
         kwargs.setdefault("table_format", self._table_format)
+        kwargs.setdefault("compact_tables", self._compact_tables)
 
         # 전체 아이템 base chunk(정상 경로와 동일한 아이템 수집/헤더/누락표 복구 재사용)
         base = next(iter(chunker.preprocess(dl_doc=documents, **kwargs)), None)
@@ -2354,8 +2508,8 @@ class DocumentProcessor:
                     meta=DocMeta(doc_items=its, headings=None, captions=None, origin=documents.origin),
                 ))
 
-        # chunk_size>0 이면 연속 페이지 greedy 병합
-        if chunk_size and chunk_size > 0 and page_chunks:
+        # chunk_size>0 이면 연속 페이지 greedy 병합 (split_only 는 1 page = 1 chunk 유지)
+        if chunk_mode == "resize_all" and chunk_size and chunk_size > 0 and page_chunks:
             merged: List[DocChunk] = [page_chunks[0]]
             for ch in page_chunks[1:]:
                 cand_text = merged[-1].text + "\n" + ch.text
@@ -2420,8 +2574,9 @@ class DocumentProcessor:
         detection_default = _as_int_flag(
             runtime.get("chart_detection"), 1 if (base and base.chart_detection == "auto") else 0
         )
+        dbase = getattr(self, "_base_doc_summary_options", None)
         summary_default = _as_int_flag(
-            runtime.get("doc_summary"), 1 if (base and base.body_summary_enabled) else 0
+            runtime.get("doc_summary"), 1 if (dbase and dbase.enabled) else 0
         )
 
         normalized["img_desc"] = _as_int_flag(normalized.get("img_desc"), img_default)
@@ -2432,6 +2587,17 @@ class DocumentProcessor:
             normalized.get("chart_detection"), detection_default
         )
         normalized["doc_summary"] = _as_int_flag(normalized.get("doc_summary"), summary_default)
+
+        # 표 description 런타임 토글(table_desc→enable, table_refine→refine.enable)
+        tbase = getattr(self, "_base_table_description_options", None)
+        table_default = _as_int_flag(
+            runtime.get("table_desc"), 1 if (tbase and tbase.enabled) else 0
+        )
+        refine_default = _as_int_flag(
+            runtime.get("table_refine"), 1 if (tbase and tbase.refine_enabled) else 0
+        )
+        normalized["table_desc"] = _as_int_flag(normalized.get("table_desc"), table_default)
+        normalized["table_refine"] = _as_int_flag(normalized.get("table_refine"), refine_default)
         return normalized
 
     def _configure_runtime_image_mode(self, kwargs: dict):
@@ -2439,37 +2605,66 @@ class DocumentProcessor:
 
         순수 override 계산은 enrichment.image_description.resolve_runtime_image_options 에 위임.
         """
-        base = getattr(self, "_base_image_description_options", None)
-        if base is None:
-            return
-
-        img_desc = _as_int_flag(kwargs.get("img_desc"), 0)
-        chart_desc = _as_int_flag(kwargs.get("chart_desc"), 0)
-        chart_detection = _as_int_flag(kwargs.get("chart_detection"), 0)
         doc_summary = _as_int_flag(kwargs.get("doc_summary"), 0)
 
-        self.image_description_options = resolve_runtime_image_options(
-            base,
-            img_desc=img_desc,
-            chart_desc=chart_desc,
-            chart_detection=chart_detection,
-            doc_summary=doc_summary,
-            classification_available=getattr(
-                self.pipe_line_options, "do_picture_classification", False
-            ),
-        )
-        self.image_description_enricher = ImageDescriptionEnricher(
-            self.image_description_options
-        )
-        _log.info(
-            "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s "
-            "detection=%s doc_summary=%s",
-            self.image_description_options.enabled,
-            img_desc,
-            chart_desc,
-            self.image_description_options.chart_detection,
-            doc_summary,
-        )
+        # image description 런타임 재구성 (image base 옵션이 있을 때만)
+        base = getattr(self, "_base_image_description_options", None)
+        if base is not None:
+            img_desc = _as_int_flag(kwargs.get("img_desc"), 0)
+            chart_desc = _as_int_flag(kwargs.get("chart_desc"), 0)
+            chart_detection = _as_int_flag(kwargs.get("chart_detection"), 0)
+            self.image_description_options = resolve_runtime_image_options(
+                base,
+                img_desc=img_desc,
+                chart_desc=chart_desc,
+                chart_detection=chart_detection,
+                classification_available=getattr(
+                    self.pipe_line_options, "do_picture_classification", False
+                ),
+            )
+            self.image_description_enricher = ImageDescriptionEnricher(
+                self.image_description_options
+            )
+            _log.info(
+                "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s detection=%s",
+                self.image_description_options.enabled,
+                img_desc,
+                chart_desc,
+                self.image_description_options.chart_detection,
+            )
+
+        # 표 description 런타임 재구성 (image base 유무와 무관하게 독립 실행)
+        tbase = getattr(self, "_base_table_description_options", None)
+        if tbase is not None:
+            table_desc = _as_int_flag(kwargs.get("table_desc"), 0)
+            table_refine = _as_int_flag(kwargs.get("table_refine"), 0)
+            self.table_description_options = resolve_runtime_table_options(
+                tbase,
+                table_desc=table_desc,
+                table_refine=table_refine,
+            )
+            self.table_description_enricher = TableDescriptionEnricher(
+                self.table_description_options
+            )
+            _log.info(
+                "[runtime_feature] table mode enabled=%s table_desc=%s table_refine=%s",
+                self.table_description_options.enabled,
+                table_desc,
+                table_refine,
+            )
+
+        # doc_summary 런타임 재구성(image/table 공통 컨텍스트 제공)
+        dbase = getattr(self, "_base_doc_summary_options", None)
+        if dbase is not None:
+            self.doc_summary_options = resolve_runtime_doc_summary_options(
+                dbase, doc_summary=doc_summary
+            )
+            self.doc_summary_enricher = DocSummaryEnricher(self.doc_summary_options)
+            _log.info(
+                "[runtime_feature] doc_summary mode enabled=%s doc_summary=%s",
+                self.doc_summary_options.enabled,
+                doc_summary,
+            )
 
     def _get_or_create_image_description_enricher(self):
         enricher = getattr(self, "image_description_enricher", None)
@@ -2482,6 +2677,34 @@ class DocumentProcessor:
 
     def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         enricher = self._get_or_create_image_description_enricher()
+        if enricher is None:
+            return document
+        return enricher.enrich(document, **kwargs)
+
+    def _get_or_create_doc_summary_enricher(self):
+        enricher = getattr(self, "doc_summary_enricher", None)
+        if enricher is None:
+            base = getattr(self, "_base_doc_summary_options", None)
+            enricher = DocSummaryEnricher(base or DocSummaryOptions())
+            self.doc_summary_enricher = enricher
+        return enricher
+
+    def enrich_doc_summary(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_doc_summary_enricher()
+        if enricher is None:
+            return document
+        return enricher.enrich(document, **kwargs)
+
+    def _get_or_create_table_description_enricher(self):
+        enricher = getattr(self, "table_description_enricher", None)
+        if enricher is None:
+            base = getattr(self, "_base_table_description_options", None)
+            enricher = TableDescriptionEnricher(base or TableDescriptionOptions())
+            self.table_description_enricher = enricher
+        return enricher
+
+    def enrich_table_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_table_description_enricher()
         if enricher is None:
             return document
         return enricher.enrich(document, **kwargs)
@@ -3145,9 +3368,17 @@ class DocumentProcessor:
         enrichment_kwargs = dict(kwargs)
         enrichment_kwargs["_enrichment_context"] = {}
         try:
+            document = self.enrich_doc_summary(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade doc_summary enrichment skipped: {exc}")
+        try:
             document = self.enrich_image_descriptions(document, **enrichment_kwargs)
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        try:
+            document = self.enrich_table_descriptions(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade table enrichment skipped: {exc}")
         # 페이지 단위 image description 은 PPT(.pptx) 원본에만 적용.
         if is_ppt:
             try:
