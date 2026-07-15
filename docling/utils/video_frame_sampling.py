@@ -162,6 +162,60 @@ def _extract_frame(video_path: Path, timestamp: float) -> Image.Image | None:
         return None
 
 
+def _extract_frames_range(
+    video_path: Path, start: float, duration: float, fps: float
+) -> list[tuple[float, Image.Image]]:
+    """Decode ``[start, start + duration]`` once at ``fps``, full resolution.
+
+    Single ffmpeg spawn per call, seeking to ``start`` before decoding
+    (fast input seek) rather than spawning one process per timestamp.
+    """
+    proc = subprocess.run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-ss",
+            f"{start:.3f}",
+            "-i",
+            str(video_path),
+            "-t",
+            f"{duration:.3f}",
+            "-vf",
+            f"fps={fps}",
+            "-f",
+            "image2pipe",
+            "-vcodec",
+            "png",
+            "-",
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0 or not proc.stdout:
+        _log.debug(
+            "Range frame probe at %.3fs produced no output (rc=%s): %s",
+            start,
+            proc.returncode,
+            proc.stderr.decode("utf-8", "replace")[-200:],
+        )
+        return []
+
+    frames: list[tuple[float, Image.Image]] = []
+    buf = proc.stdout
+    # PNGs concatenated in the image2pipe stream; split on the PNG signature.
+    sig = b"\x89PNG\r\n\x1a\n"
+    offsets = [i for i in range(len(buf)) if buf.startswith(sig, i)]
+    for idx, off in enumerate(offsets):
+        end = offsets[idx + 1] if idx + 1 < len(offsets) else len(buf)
+        try:
+            img = Image.open(BytesIO(buf[off:end])).convert("RGB")
+        except Exception as exc:  # pragma: no cover - defensive
+            _log.debug("Failed to decode frame %d in range probe: %s", idx, exc)
+            continue
+        frames.append((start + idx / fps, img))
+    return frames
+
+
 def _extract_frames_grid(
     video_path: Path, fps: float, size: int
 ) -> list[tuple[float, Image.Image]]:
@@ -311,20 +365,30 @@ class SimpleSceneChangeFrameSampler:
     def _best_frame(
         self, video_path: Path, start: float, end: float, scene_id: int
     ) -> VideoFrame | None:
-        """Pick the sharpest frame in a window centred on the scene midpoint."""
+        """Pick the sharpest frame in a window centred on the scene midpoint.
+
+        Decodes the whole candidate window in a single ffmpeg spawn (full
+        resolution, sampled at ``sharpness_candidates`` evenly spaced points)
+        instead of spawning one ffmpeg process per candidate timestamp.
+        """
         mid = (start + end) / 2.0
         half = (end - start) / 2.0 * 0.4
+        window_start = max(start, mid - half)
+        window_end = min(end, mid + half)
+        window_duration = max(window_end - window_start, 0.0)
         n = self.sharpness_candidates
-        candidates = [
-            max(start, min(end, mid + half * (i - n // 2) / max(n // 2, 1)))
-            for i in range(n)
-        ]
+
+        if window_duration == 0.0 or n <= 1:
+            img = _extract_frame(video_path, mid)
+            return VideoFrame(timestamp=mid, image=img, scene_id=scene_id) if img else None
+
+        # fps chosen so the range decode yields ~n evenly spaced frames.
+        fps = (n - 1) / window_duration
+        candidates = _extract_frames_range(video_path, window_start, window_duration, fps)
+
         best_frame: VideoFrame | None = None
         best_score = -1.0
-        for t in candidates:
-            img = _extract_frame(video_path, t)
-            if img is None:
-                continue
+        for t, img in candidates:
             score = self._sharpness(img)
             if score > best_score:
                 best_score = score
@@ -386,6 +450,7 @@ class SimpleSceneChangeFrameSampler:
 
     def sample(self, video_path: Path) -> list[VideoFrame]:
         """Sample one sharp representative frame per detected scene."""
+        _require_ffmpeg()
         scenes = self.detect_scenes(video_path)
         frames: list[VideoFrame] = []
         for scene in scenes:

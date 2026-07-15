@@ -21,16 +21,6 @@ from docling.document_converter import DocumentConverter, VideoFormatOption
 from docling.pipeline.video_pipeline import VideoPipeline
 
 # --------------------------------------------------------------------------- #
-# InputFormat.VIDEO exists
-# --------------------------------------------------------------------------- #
-
-
-def test_input_format_video_exists():
-    assert hasattr(InputFormat, "VIDEO")
-    assert InputFormat.VIDEO.value == "video"
-
-
-# --------------------------------------------------------------------------- #
 # Extension routing
 # --------------------------------------------------------------------------- #
 

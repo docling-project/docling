@@ -154,18 +154,7 @@ class VideoPipeline(BasePipeline):
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
-        # Prefer public fields: try conv_res.input.backend then conv_res.input.path_or_stream.
-        backend = getattr(conv_res.input, "backend", None)
-        if backend is None:
-            # fall back for older objects (avoid direct private access when possible)
-            backend = getattr(conv_res.input, "_backend", None)
-
-        path_or_stream = None
-        if backend is not None:
-            path_or_stream = getattr(backend, "path_or_stream", None)
-        if path_or_stream is None:
-            # finally, allow direct public path_or_stream on input
-            path_or_stream = getattr(conv_res.input, "path_or_stream", None)
+        path_or_stream = conv_res.input._backend.path_or_stream
         temp_video: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):
@@ -213,7 +202,10 @@ class VideoPipeline(BasePipeline):
                     # Run diarization while WAV is still available
                     if self.pipeline_options.enable_diarization:
                         try:
-                            diarization = diarize(wav_path)
+                            diarization = diarize(
+                                wav_path,
+                                accelerator_device=self.pipeline_options.accelerator_options.device,
+                            )
                             transcript_items = assign_speakers(
                                 transcript_items, diarization
                             )

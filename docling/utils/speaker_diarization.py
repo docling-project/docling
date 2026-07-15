@@ -19,7 +19,7 @@ _MIN_SPEAKERS = 2
 """Minimum number of speakers to consider in clustering."""
 _MAX_SPEAKERS = 8
 """Maximum number of speakers to consider in clustering."""
-_WINDOW_STEP = 0.5  # seconds between embedding windows
+_WINDOW_STEP = 0.5
 """Window step in seconds; 0.5 provides fine-grained speaker boundary detection without excessive computational overhead."""
 
 
@@ -63,12 +63,20 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
 def diarize(
     wav_path: Path,
     num_speakers: int | None = None,
+    accelerator_device: str = "auto",
 ) -> DiarizationResult:
     """Run speaker diarization on a WAV file.
+
+    Loads and resamples the audio to the rate Resemblyzer expects, encodes
+    fixed-size sliding windows into speaker embeddings, clusters the
+    embeddings by speaker, then merges consecutive same-speaker windows into
+    contiguous segments.
 
     Args:
         wav_path: Path to a 16kHz mono WAV file.
         num_speakers: Number of speakers. None = auto-detect.
+        accelerator_device: Device selector passed to decide_device(), e.g.
+            "auto", "cpu", "cuda", "cuda:0", "mps".
 
     Returns:
         Per-segment speaker labels.
@@ -108,11 +116,13 @@ def diarize(
         _log.warning("Empty audio — skipping diarization")
         return DiarizationResult()
 
-    encoder = VoiceEncoder(device="cpu")
+    from docling.utils.accelerator_utils import decide_device
 
-    # Build per-window timestamps and embeddings
-    sr = 16000
-    window_samples = int(sr * 1.5)  # ~1.5s windows at 16kHz
+    device = decide_device(accelerator_device)
+    encoder = VoiceEncoder(device=device)
+
+    sr = _RESEMBLYZER_SR
+    window_samples = int(sr * 1.5)  # ~1.5s windows
     step_samples = int(_WINDOW_STEP * sr)
 
     timestamps: list[float] = []
@@ -143,14 +153,11 @@ def diarize(
     finally:
         torch.set_num_threads(prev_threads)
 
-    # Determine number of speakers
     n = num_speakers if num_speakers is not None else _estimate_num_speakers(embeddings)
 
-    # Cluster embeddings
     labels = AgglomerativeClustering(n_clusters=n).fit_predict(embeddings)
     speaker_ids = [f"SPEAKER_{i:02d}" for i in range(n)]
 
-    # Build continuous speaker segments by merging consecutive same-speaker windows
     segments: list[SpeakerSegment] = []
     if len(timestamps) > 0:
         cur_speaker = speaker_ids[labels[0]]
