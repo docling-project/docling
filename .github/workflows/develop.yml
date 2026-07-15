@@ -62,7 +62,7 @@ jobs:
         run: |
           HWP_SDK_DIR="${{ github.workspace }}/hwp_sdk"
           mkdir -p "$HWP_SDK_DIR"
-          uv run huggingface-cli download HeechanKim-Genon/hwp_sdk \
+          uv run huggingface-cli download genon-search/hwp_sdk \
             --repo-type dataset \
             --local-dir "$HWP_SDK_DIR" \
             --local-dir-use-symlinks False \
