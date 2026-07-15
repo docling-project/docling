@@ -43,9 +43,11 @@ _TOKEN_SPEC = {
 }
 
 # ── LLM 의미분류(부동산/인사) 접속 ────────────────────────────────────────────
+# default 는 내부 게이트웨이(무인증) — 워크플로우는 클러스터 안에서 실행되므로 내부 주소 사용.
+# 외부(genos.genon.ai) 주소를 쓰려면 GUARDRAIL_LLM_URL + GUARDRAIL_LLM_KEY 를 함께 설정.
 _LLM_URL = os.environ.get(
     "GUARDRAIL_LLM_URL",
-    "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions",
+    "http://llmops-gateway-api-service:8080/rep/serving/776/v1/chat/completions",
 )
 _LLM_KEY = os.environ.get("GUARDRAIL_LLM_KEY", "")
 _LLM_MODEL = os.environ.get("GUARDRAIL_LLM_MODEL", "model")
@@ -112,13 +114,15 @@ def _run_guardrail_regex(text: str) -> list:
 
 
 def _run_llm(text: str) -> list:
-    """LLM 의미분류(부동산/인사) → sensitive_info 리스트. 실패 시 [](fail-open)."""
-    if not _LLM_KEY:
-        return []
+    """LLM 의미분류(부동산/인사) → sensitive_info 리스트. 실패 시 [](fail-open).
+    키는 optional — 내부 게이트웨이는 무인증이라 없어도 됨. 있으면 Bearer 로 첨부."""
+    headers = {"Content-Type": "application/json"}
+    if _LLM_KEY:
+        headers["Authorization"] = f"Bearer {_LLM_KEY}"
     try:
         resp = requests.post(
             _LLM_URL,
-            headers={"Authorization": f"Bearer {_LLM_KEY}", "Content-Type": "application/json"},
+            headers=headers,
             json={
                 "model": _LLM_MODEL,
                 "messages": [
@@ -147,7 +151,7 @@ def _run_llm(text: str) -> list:
             "category": cat,
             "specific_category": "",       # 의미 카테고리는 소분류_h2 없음
             "quote_origin": q,
-            "quote_masked": q,             # 의미 카테고리는 치환 안 함 → 원문 그대로
+            "quote_masked": f"[{cat}]",    # 의미 카테고리도 마스킹 on 시 치환되도록 토큰 제공(정규식류와 동일 스타일)
         })
     return out
 
