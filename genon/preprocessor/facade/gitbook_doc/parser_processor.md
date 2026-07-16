@@ -701,16 +701,30 @@ filename: 보고서.pdf
 
 ### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
 
-파서 전처리기는 이 기능의 **대상이 아닙니다.** 민감정보 분류/마스킹은 청킹 후 각 청크에서
-`quote_origin` 을 매칭해 라벨을 붙이고 치환하는 후처리인데, 파서는 **파스 전용(청킹·벡터 없음)** 이라
-매칭할 청크가 없기 때문입니다. 따라서 파서 config 에는 `guardrail` 블록이 없습니다.
+파서는 **파스 전용(청킹·벡터 없음)** 이라 라벨/마스킹을 직접 하지는 않지만, parser→chunking(Chunk API)
+분리 경로에서 **분류 워크플로우를 호출하는 주체**입니다.
 
-- 파서 결과(JSON/docling)를 **chunking API 로 넘기면 chunking 전처리기가 문서 전체를 1회 분류하고
-  청크별로 `content_category` 라벨을 부착**합니다(옵션으로 마스킹 치환).
-- 파서 단계에서 직접 문서를 적재(청크 생성)하려면 청크를 만드는 전처리기(intelligent/attachment/convert)를 사용하세요.
+- `guardrail_call: 1` 요청이면 파서가 **파싱한 문서 전체를 워크플로우로 1회 분류**해, 결과
+  `sensitive_infos` 를 파스 응답(JSON/docling)에 함께 실어 보냅니다.
+- 그 응답을 **chunking API 로 넘기면 chunking 전처리기가 청크별로 `quote_origin` 을 매칭**해
+  `guardrail_categories` 라벨을 부착(항상)하고, 옵션(`masking_enabled`)으로 마스킹 치환합니다.
+  chunking 은 워크플로우를 다시 호출하지 않습니다(파서가 넘긴 결과만 사용).
+- 따라서 접속 정보(`url`/`workflow_id`/`api_key`/`timeout`)는 **파서 config 의 `guardrail:` 섹션**에,
+  마스킹 스위치(`masking_enabled`)는 **chunking config** 에 둡니다.
 
-> 요청/응답 형식·매칭 규칙·출력 필드(`content_category`)의 **상세 설명은 지능형 전처리기 매뉴얼의
-> "민감정보 분류/마스킹" 절**을 참고하세요.
+```yaml
+# parser_processor_config.yaml
+guardrail:
+  url: "https://genos.genon.ai/api/gateway"  # 코드가 /workflow/{workflow_id}/run/v2 를 붙임
+  workflow_id: 4932        # 민감정보 분류 워크플로우 ID
+  api_key: "..."           # 워크플로우 호출 Bearer 인증키
+  timeout: 60
+```
+
+- 파서 단계에서 곧바로 문서를 적재(청크 생성)하려면 청크를 만드는 전처리기(intelligent/attachment/convert)를 사용하세요. 이들은 파싱+청킹을 한 번에 하므로 스스로 호출·부착합니다.
+
+> 요청/응답 형식·매칭 규칙·출력 필드(`guardrail_categories`)의 **상세 설명은 지능형 전처리기 매뉴얼의
+> "민감정보 분류/마스킹" 절**과 [민감정보 분류/마스킹 가이드](guardrail_workflow_setup.md)를 참고하세요.
 
 ---
 

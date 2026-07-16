@@ -43,11 +43,11 @@ _TOKEN_SPEC = {
 }
 
 # ── LLM 의미분류(부동산/인사) 접속 ────────────────────────────────────────────
-# default 는 내부 게이트웨이(무인증) — 워크플로우는 클러스터 안에서 실행되므로 내부 주소 사용.
-# 외부(genos.genon.ai) 주소를 쓰려면 GUARDRAIL_LLM_URL + GUARDRAIL_LLM_KEY 를 함께 설정.
+# LLM 서빙은 내부 경로에서도 인증을 요구하므로(실측) GUARDRAIL_LLM_KEY 설정 필수.
+# 기본 URL 은 외부 게이트웨이. 서빙 번호/주소가 다르면 GUARDRAIL_LLM_URL 로 교체.
 _LLM_URL = os.environ.get(
     "GUARDRAIL_LLM_URL",
-    "http://llmops-gateway-api-service:8080/rep/serving/776/v1/chat/completions",
+    "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions",
 )
 _LLM_KEY = os.environ.get("GUARDRAIL_LLM_KEY", "")
 _LLM_MODEL = os.environ.get("GUARDRAIL_LLM_MODEL", "model")
@@ -114,15 +114,14 @@ def _run_guardrail_regex(text: str) -> list:
 
 
 def _run_llm(text: str) -> list:
-    """LLM 의미분류(부동산/인사) → sensitive_info 리스트. 실패 시 [](fail-open).
-    키는 optional — 내부 게이트웨이는 무인증이라 없어도 됨. 있으면 Bearer 로 첨부."""
-    headers = {"Content-Type": "application/json"}
-    if _LLM_KEY:
-        headers["Authorization"] = f"Bearer {_LLM_KEY}"
+    """LLM 의미분류(부동산/인사) → sensitive_info 리스트. 실패/키미설정 시 [](fail-open).
+    LLM 서빙은 인증 필요 — GUARDRAIL_LLM_KEY 없으면 의미분류 skip(정규식 결과만 반환)."""
+    if not _LLM_KEY:
+        return []
     try:
         resp = requests.post(
             _LLM_URL,
-            headers=headers,
+            headers={"Authorization": f"Bearer {_LLM_KEY}", "Content-Type": "application/json"},
             json={
                 "model": _LLM_MODEL,
                 "messages": [

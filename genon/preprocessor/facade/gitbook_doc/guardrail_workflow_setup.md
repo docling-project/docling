@@ -1,7 +1,7 @@
 # 민감정보 분류/마스킹 가이드 (Guardrail 연동, #315)
 
 문서 안의 민감정보(주민번호·연락처 같은 정형 PII, 부동산·인사정보 등)를 **GenOS 가드레일
-워크플로우** 에 위임해 판별하고, 그 결과를 청크 메타(`content_category`) 라벨과 (옵션) 마스킹 치환으로
+워크플로우** 에 위임해 판별하고, 그 결과를 청크 메타(`guardrail_categories`) 라벨과 (옵션) 마스킹 치환으로
 반영하는 기능의 통합 가이드입니다.
 
 - **1~2절**: 전처리기를 쓰는 쪽(호출 방법, on/off 스위치, config 설정)
@@ -13,14 +13,14 @@
 ## 0. 전체 그림
 
 ```
-① 문서 업로드 (요청에 guardrail_call: true)
+① 문서 업로드 (요청에 guardrail_call: 1)
 ② 전처리기: 청킹 전에, 파싱한 문서의 텍스트를 GenOS 워크플로우로 보냄 (문서당 1번 호출)
 ③ 워크플로우: 민감정보를 찾아낸 후, 전처리기에 전달
    a. 정규식으로 잡히는 것(주민번호·전화·이메일 등)   → 가드레일 인스턴스가 탐지
    b. 의미로 판단해야 하는 것(부동산·인사정보 등)     → LLM이 탐지
    → "어떤 문장이 / 어떤 카테고리인지 / 마스킹하면 어떻게 되는지" 등의 정보를 response로 전달
 ④ 전처리기: 청킹 후, response 속 문장을 각 청크에서 찾아서
-   - 그 청크에 카테고리 라벨(content_category)을 붙이고                  [항상]
+   - 그 청크에 카테고리 라벨(guardrail_categories)을 붙이고                  [항상]
    - 마스킹 스위치(masking_enabled)가 켜져 있으면, 본문도 마스킹본으로 교체   [옵션]
 ⑤ 라벨/마스킹이 반영된 청크가 벡터로 적재됨
 ```
@@ -40,20 +40,20 @@ GenOS에 직접 구성해야할것은 **'③ 워크플로우' 하나** 입니다
 
 ```jsonc
 // 문서 업로드 요청 kwargs 예
-{ "guardrail_call": true }    // 이 문서는 가드레일 분류 수행
-{ }                           // 미지정(기본 false) → 가드레일을 아예 호출하지 않음
+{ "guardrail_call": 1 }    // 이 문서는 가드레일 분류 수행
+{ }                           // 미지정(기본 0) → 가드레일을 아예 호출하지 않음
 ```
 
 ```python
 # 코드로 직접 호출하는 경우
-vectors = await processor(request, file_path, guardrail_call=True)
+vectors = await processor(request, file_path, guardrail_call=1)
 ```
 
 ### 1.2 실제 호출시 입출력 예시
 
 이 기능이 하는 일은 두 가지입니다.
 
-- **라벨 부착**: "이 청크에 어떤 민감정보가 들어있는지"를 청크 메타 필드 `content_category` 에
+- **라벨 부착**: "이 청크에 어떤 민감정보가 들어있는지"를 청크 메타 필드 `guardrail_categories` 에
   카테고리 문자열로 기록합니다. (본문은 안 바뀜 — 검색 시 "민감 정보 포함 청크 제외" 같은 필터링용)
 - **마스킹 값으로 치환**: 본문 텍스트에서 민감한 부분을 워크플로우가 알려준 마스킹본으로 바꿔서 적재합니다.
   (예: `900101-1234567` → `[주민등록번호]`)
@@ -73,44 +73,44 @@ vectors = await processor(request, file_path, guardrail_call=True)
 서울 강남구 테헤란로 아파트를 5억에 매매하였다.
 ```
 
-**케이스 A** — `guardrail_call: true` + `masking_enabled: true` → **라벨 + 마스킹**
+**케이스 A** — `guardrail_call: 1` + `masking_enabled: true` → **라벨 + 마스킹**
 
 ```jsonc
 // 적재되는 청크 (관련 필드만)
 {
   "text": "계약자 홍길동 ([주민등록번호])\n[부동산 정보]",
-  "content_category": ["민감 정보", "부동산 정보"]
+  "guardrail_categories": ["민감 정보", "부동산 정보"]
 }
 ```
 
 - 정규식류(주민번호)는 해당 **단어만** 토큰으로, 의미류(부동산)는 탐지된 **문장 구간 전체** 가
   카테고리 토큰으로 치환됩니다.
 
-**케이스 B** — `guardrail_call: true` + `masking_enabled: false` → **라벨만** (본문 원문 유지)
+**케이스 B** — `guardrail_call: 1` + `masking_enabled: false` → **라벨만** (본문 원문 유지)
 
 ```jsonc
 {
   "text": "계약자 홍길동 (900101-1234567)\n서울 강남구 테헤란로 아파트를 5억에 매매하였다.",
-  "content_category": ["민감 정보", "부동산 정보"]
+  "guardrail_categories": ["민감 정보", "부동산 정보"]
 }
 ```
 
-**케이스 C** — `guardrail_call` 미지정(기본 `false`) → **가드레일을 아예 호출하지 않음**
+**케이스 C** — `guardrail_call` 미지정(기본 `0`) → **가드레일을 아예 호출하지 않음**
 
 ```jsonc
 {
   "text": "계약자 홍길동 (900101-1234567)\n서울 강남구 테헤란로 아파트를 5억에 매매하였다.",
-  "content_category": null
+  "guardrail_categories": null
 }
 ```
 
 요약:
 
-| guardrail_call (요청 kwargs) | masking_enabled (config) | 결과 |
+| guardrail_call (요청 kwargs, 0/1) | masking_enabled (config) | 결과 |
 |---|---|---|
-| `true` | `true` | 라벨 부착 + 마스킹 치환 (케이스 A) |
-| `true` | `false` | 라벨만 부착, 본문 원문 (케이스 B) |
-| `false`(미지정) | 무관 | 호출 안 함 — 라벨 `null`, 본문 원문 (케이스 C) |
+| `1` | `true` | 라벨 부착 + 마스킹 치환 (케이스 A) |
+| `1` | `false` | 라벨만 부착, 본문 원문 (케이스 B) |
+| `0`(미지정) | 무관 | 호출 안 함 — 라벨 `null`, 본문 원문 (케이스 C) |
 
 > **현재 워크플로우 기준 라벨 값은 3종입니다.**
 >
@@ -140,10 +140,16 @@ guardrail:
 - `url` 은 **베이스까지만** — 뒤의 `/workflow/{id}/run/v2` 는 코드가 붙입니다.
 - `url`/`workflow_id`/`api_key` 중 하나라도 비어 있으면 전처리기는 fail-open(원문 통과 + warning 로그)
   으로 그 문서를 정상 처리합니다(적재가 막히지 않음).
-- 대상 전처리기: intelligent / attachment / convert / chunking. **parser 는 대상 아님**(청크가 없어
-  quote 매칭 불가 — 파스 결과를 chunking API 로 넘기면 chunking 이 분류·부착).
+- 위 예시는 intelligent/attachment/convert(단일 호출)용 — 한 config 에 접속·마스킹이 모두 있습니다.
+  parser→chunking 분리 경로에서는 **호출 주체인 parser config 에 `url`/`workflow_id`/`api_key`** 를,
+  **마스킹 주체인 chunking config 에 `masking_enabled`** 를 둡니다(chunking 은 접속값 불필요).
+- 대상 전처리기: intelligent / attachment / convert (파싱+청킹 한 번에 — 스스로 호출·부착),
+  그리고 parser → chunking(Chunk API) 분리 경로.
+- **parser** 는 청크가 없어 라벨/마스킹을 직접 못 하지만, `guardrail_call` 시 **문서 전체를 1회 분류해
+  `sensitive_infos` 를 파스 결과에 실어** chunking API 로 넘깁니다. **chunking** 은 워크플로우를 직접
+  호출하지 않고 parser 가 넘긴 `sensitive_infos` 로 청크별 라벨/마스킹만 수행합니다.
 
-### 1.4 출력: 청크 메타 `content_category`
+### 1.4 출력: 청크 메타 `guardrail_categories`
 
 - 매칭된 `category` 값들이 리스트(중복 제거)로 저장됩니다. 예: `["민감 정보", "부동산 정보"]`
 - 매칭 없음/기능 off 면 `None`.
@@ -191,7 +197,7 @@ guardrail:
 
 | 필드 | 의미 | 전처리기 사용 |
 |---|---|---|
-| `category` | 소분류_h1 (부동산 정보 / 인사 정보 / 민감 정보 …) | `content_category` 라벨로 부착. **비어있으면 그 항목 skip** |
+| `category` | 소분류_h1 (부동산 정보 / 인사 정보 / 민감 정보 …) | `guardrail_categories` 라벨로 부착. **비어있으면 그 항목 skip** |
 | `specific_category` | 소분류_h2 (주민번호 / 휴대전화 …) | 사용 안 함(버림) |
 | `quote_origin` | 원문 그대로의 발췌 | 청크 매칭 키 |
 | `quote_masked` | 마스킹본 | `masking_enabled` on 일 때 치환값. 정규식류는 `[주민등록번호]` 등 토큰, 의미류는 `[부동산 정보]` 등 카테고리 토큰. (`quote_origin` 과 동일하게 보내면 그 항목은 치환 생략 — 라벨만) |
@@ -353,7 +359,7 @@ curl -s -X POST "https://genos.genon.ai/api/gateway/workflow/{workflow_id}/run/v
 |---|---|
 | 배포 시 `09050003` (응답에 text/json 없음) | Python 단계 dict 반환에 `text` 키 누락 → 스텝 코드처럼 `text` 도 함께 반환 |
 | 워크플로우 직접 호출 401 | admin 토큰이 아니라 **워크플로우 AuthKeyBearer** 필요. config `api_key` 확인 |
-| 라벨이 하나도 안 붙음 | 요청에 `guardrail_call: true` 를 안 넣음(기본 off) / `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) |
+| 라벨이 하나도 안 붙음 | 요청에 `guardrail_call: 1` 를 안 넣음(기본 off) / `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) |
 | 정규식류(주민번호·전화 등)가 안 잡힘 | 워크플로우가 가드레일 인스턴스 dry-run 을 못 부름 → `GUARDRAIL_DRYRUN_BASE`(내부 게이트웨이)·`GUARDRAIL_ID` 확인, 인스턴스에 정규식 필터 등록됐는지 확인 |
 | 정규식은 잡히나 소분류가 토큰 그대로 | 가드레일 필터 "치환 규칙" 이 `[주민등록번호]` 같은 표준 토큰이 아님 → 토큰 표준화 or 매핑 테이블(`_TOKEN_SPEC`) 보강 |
 | 마스킹이 안 됨 | `masking_enabled: false` 이거나 요청 `guardrail_call` off. 둘 다 on 이어야 치환 |

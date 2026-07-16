@@ -938,9 +938,9 @@ filename: 보고서.pdf
 
 문서 전체를 GenOS 분류 워크플로우에 위임해 민감정보를 판별합니다. convert 는 docling 기반이라
 intelligent 와 동일하게 동작합니다 — **청킹 직전 문서당 1회 분류 호출**, 청킹 후 각 청크에서
-`quote_origin` 을 매칭해 `content_category` 라벨 부착(항상) + 옵션 `quote_masked` 치환.
+`quote_origin` 을 매칭해 `guardrail_categories` 라벨 부착(항상) + 옵션 `quote_masked` 치환.
 
-- **켜기**: 요청 kwargs `guardrail_call: true` (기본 `false`). yaml 이 아니라 업로드 건별 제어.
+- **켜기**: 요청 kwargs `guardrail_call: 1` (기본 `0`). yaml 이 아니라 업로드 건별 제어.
 - **접속 정보 (yaml)**:
   ```yaml
   guardrail:
@@ -948,9 +948,9 @@ intelligent 와 동일하게 동작합니다 — **청킹 직전 문서당 1회 
     workflow_id:            # 민감정보 분류 워크플로우 ID
     api_key: ""             # 워크플로우 호출 Bearer 인증키
     timeout: 60             # 대용량 문서는 상향
-    masking_enabled: false  # quote_masked 치환 on/off. content_category 부착은 기능 켜지면 항상
+    masking_enabled: false  # quote_masked 치환 on/off. guardrail_categories 부착은 기능 켜지면 항상
   ```
-- **출력**: 청크별 `content_category` = 매칭된 `category` 라벨 리스트(중복 제거). 매칭 없음/기능 off 면 필드 없음(None).
+- **출력**: 청크별 `guardrail_categories` = 매칭된 `category` 라벨 리스트(중복 제거). 매칭 없음/기능 off 면 필드 없음(None).
 - **실패 시**: fail-open — 호출 실패·매칭 실패 항목은 원문 통과 + warning 로그 후 skip.
 - **운영 주의**: 워크플로우 프롬프트가 원문 그대로의 quote 를 반환해야 청크 매칭이 됩니다. `category` 정의·필터 구성은 운영 담당 몫입니다.
 
@@ -1063,7 +1063,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None     # 확장 필드: 작성일 YYYYMMDD 정수 (예: 20250115)
     authors: str = None          # 확장 필드: 작성자 (JSON 문자열)
     title: str = None            # 확장 필드: 문서 제목
-    content_category: Optional[list] = None  # 민감정보 분류 라벨 (예: ["인사 정보"]; 매칭 없음/기능 off 면 None). 민감정보 분류/마스킹 절 참고
+    guardrail_categories: Optional[list] = None  # 민감정보 분류 라벨 (예: ["인사 정보"]; 매칭 없음/기능 off 면 None). 민감정보 분류/마스킹 절 참고
 ```
 
 **확장 필드 (attachment 대비 추가)**:
@@ -1073,7 +1073,7 @@ class GenOSVectorMeta(BaseModel):
 | `created_date` | `enrichment.metadata` + `field_transforms(date_int)` | 작성일 `YYYYMMDD` 정수. 추출 실패 시 본문 휴리스틱(`doc_text_scan`), 그래도 실패 시 0 |
 | `authors` | `enrichment.metadata` (passthrough) | 작성자 정보 (JSON 문자열) |
 | `title` | 문서 첫 `TITLE` 아이템 | 문서 제목 |
-| `content_category` | 민감정보 분류/마스킹 (`guardrail_call`) | 청크별 민감정보 분류 라벨(`Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (민감정보 분류/마스킹 절 참고) |
+| `guardrail_categories` | 민감정보 분류/마스킹 (`guardrail_call`) | 청크별 민감정보 분류 라벨(`Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (민감정보 분류/마스킹 절 참고) |
 | `HEADER:` (text 선두) | `GenosSmartChunker` 헤더 경로 | 청크가 속한 섹션 헤더 경로 접두어 (예: `HEADER: 제1장 총칙, 제1절 목적`) |
 
 > `extra='allow'` 이므로 `custom_fields` enricher 가 추출한 임의 키도 예약 필드와 충돌하지 않는 한 그대로 벡터에 passthrough 됩니다(중첩 값은 JSON 문자열로 직렬화).

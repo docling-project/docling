@@ -902,16 +902,16 @@ chunking:
 
 **켜고 끄기 — 호출 kwargs (config 아님)**
 
-on/off 는 yaml 이 아니라 **문서 업로드 요청 kwargs `guardrail_call`** 로 제어합니다(기본 `false`).
+on/off 는 yaml 이 아니라 **문서 업로드 요청 kwargs `guardrail_call`** 로 제어합니다(기본 `0`).
 컨테이너 재배포 없이 업로드 건마다 켜고 끌 수 있습니다.
 
 ```jsonc
 // 요청 kwargs 예
-{ "guardrail_call": true }   // 기본 false
+{ "guardrail_call": 1 }   // 기본 0
 ```
 
-기능이 켜지면 `content_category` 라벨 부착은 **항상** 수행되고, `quote_masked` 치환은 config
-`masking_enabled: true` 이고 요청도 `guardrail_call: true` 일 때만 함께 수행됩니다.
+기능이 켜지면 `guardrail_categories` 라벨 부착은 **항상** 수행되고, `quote_masked` 치환은 config
+`masking_enabled: true` 이고 요청도 `guardrail_call: 1` 일 때만 함께 수행됩니다.
 
 **접속 정보 — yaml**
 
@@ -923,12 +923,12 @@ guardrail:
   workflow_id:            # 민감정보 분류 워크플로우 ID
   api_key: ""             # 워크플로우 호출 Bearer 인증키
   timeout: 60             # 워크플로우 호출 타임아웃(초). 대용량 문서는 상향
-  masking_enabled: false  # quote_masked 치환 on/off. content_category 부착은 기능 켜지면 항상
+  masking_enabled: false  # quote_masked 치환 on/off. guardrail_categories 부착은 기능 켜지면 항상
 ```
 
 **동작 — 청킹 전 1회 분류 + 청킹 후 매칭**
 
-`guardrail_call: true` 면 **청킹 직전(문서가 한 덩어리인 상태)** 에 분류 워크플로우를 **문서당 딱 1번**
+`guardrail_call: 1` 면 **청킹 직전(문서가 한 덩어리인 상태)** 에 분류 워크플로우를 **문서당 딱 1번**
 호출합니다. 청크 단위 호출이 아니므로 청크가 많아도 호출 수는 1회로 고정됩니다.
 
 - **요청**: `POST {url}/workflow/{workflow_id}/run/v2`, 헤더 `Authorization: Bearer {api_key}`,
@@ -940,7 +940,7 @@ guardrail:
 ```jsonc
 // sensitive_infos 항목 예
 {
-  "category": "인사 정보",                 // content_category 로 부착됨
+  "category": "인사 정보",                 // guardrail_categories 로 부착됨
   "specific_category": "주민번호",          // 전처리기는 사용 안 함(버림)
   "quote_origin": "홍길동 900101-1234567",  // 청크 매칭용 원문
   "quote_masked": "홍길동 [주민등록번호]"     // masking on 일 때 치환값
@@ -950,7 +950,7 @@ guardrail:
 청킹이 끝나면 각 청크 텍스트에서 `quote_origin` 을 찾습니다(1차 정확 부분문자열 매칭, 실패 시 공백을
 무시하는 fuzzy 매칭). 매칭된 청크마다:
 
-- **`content_category` 라벨 부착 — 항상.** `category` 값을 청크 메타에 추가합니다.
+- **`guardrail_categories` 라벨 부착 — 항상.** `category` 값을 청크 메타에 추가합니다.
 - **`quote_masked` 로 치환 — `masking_enabled: true` + 요청 on 일 때만.** `quote_origin` 이 있던 자리를
   `quote_masked` 로 바꿔 적재합니다.
 
@@ -970,9 +970,9 @@ guardrail:
 (마스킹 off 면 둘 다 라벨만 부착. 워크플로우가 `quote_masked` 를 `quote_origin` 과 동일하게 보내면
 그 항목은 마스킹 on 이어도 치환이 생략됩니다 — 치환 여부는 워크플로우가 정하는 구조.)
 
-**출력 — 청크별 `content_category` 메타**
+**출력 — 청크별 `guardrail_categories` 메타**
 
-각 청크의 벡터 메타 `content_category` 에 매칭된 `category` 값들이 리스트로 기록됩니다(쿼리 필터에 활용).
+각 청크의 벡터 메타 `guardrail_categories` 에 매칭된 `category` 값들이 리스트로 기록됩니다(쿼리 필터에 활용).
 
 - 여러 건이 매칭되면 **리스트(중복 제거)** 로 담깁니다(예: `["인사 정보", "부동산 정보"]`).
 - 매칭된 항목이 없거나 기능이 off 이면 값은 `None` 입니다.
@@ -1082,7 +1082,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None       # 작성일 (YYYYMMDD 정수, field_transforms 결과)
     appendix: str = None           # 매칭된 부록 파일명 (없으면 "")
     file_path: str = None          # 비-PDF 자동 변환 시 변환된 PDF 로컬 경로
-    content_category: Optional[list] = None  # 민감정보 분류 라벨(예: ["인사 정보"]; 매칭 없음/기능 off 면 None). 3.10 참고
+    guardrail_categories: Optional[list] = None  # 민감정보 분류 라벨(예: ["인사 정보"]; 매칭 없음/기능 off 면 None). 3.10 참고
 ```
 
 | 필드 | attachment | convert | intelligent | 설명 |
@@ -1093,7 +1093,7 @@ class GenOSVectorMeta(BaseModel):
 | `authors` | ❌ | ✅ | ❌ | 작성자 (intelligent 미주입) |
 | **`appendix`** | ❌ | ❌ | **✅** | 매칭된 부록 파일명 (청크별) |
 | **`file_path`** | ❌ | ❌ | **✅** | 변환된 PDF 경로 (비-PDF 입력 시) |
-| **`content_category`** | ✅ | ✅ | ✅ | 민감정보 분류 라벨(청크별, `Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (3.10) |
+| **`guardrail_categories`** | ✅ | ✅ | ✅ | 민감정보 분류 라벨(청크별, `Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (3.10) |
 
 > `output_fields` 등으로 추출된 그 밖의 메타데이터 키는 `field_transforms` 가 소비하지 않은 경우 `extra='allow'` 에 의해 그대로 벡터 메타에 passthrough 됩니다(중첩 객체는 JSON 문자열로 직렬화).
 

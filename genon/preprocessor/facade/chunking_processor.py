@@ -1355,141 +1355,9 @@ class GenosSmartChunker(BaseChunker):
         final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc, **kwargs)
 
         return iter(final_chunks)
-
-
-# ============================================================================
-# 민감정보 분류 (이슈 #315) — GenOS 분류 워크플로우 연동
-# 청킹 전 문서 전체를 워크플로우(run/v2)에 1회 보내 sensitive_infos[] 를 받고,
-# 청킹 후 각 청크에서 quote_origin 을 매칭해 content_category 라벨을 붙이고(항상),
-# 옵션으로 quote_masked 로 치환한다(masking on/off).
-# 단일 파일 배포 특성상 이 블록은 각 facade(intelligent/attachment/convert/chunking)에
-# 동일하게 복제되어야 한다. 수정 시 함께 동기화한다.
-# ----------------------------------------------------------------------------
-import re as _gr_re
-_GR_WS = _gr_re.compile(r"\s+")
-
-
-def _gr_classify_document(text: str, url: str, workflow_id, api_key: str, timeout: int = 60) -> list:
-    """분류 워크플로우(run/v2)를 문서당 1회 호출 → sensitive_infos[] 반환.
-    입력 {"question": <문서 전체>} → 응답 data.sensitive_infos. 실패/미설정 시 [](fail-open)."""
-    import requests
-    if not url or workflow_id is None or not api_key or not text:
-        if not text:
-            return []
-        _log.warning("[guardrail] url/workflow_id/api_key 미설정 — 분류 skip(fail-open)")
-        return []
-    try:
-        endpoint = f"{url.rstrip('/')}/workflow/{workflow_id}/run/v2"
-        resp = requests.post(
-            endpoint,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"question": text},
-            timeout=timeout,
-        )
-        resp.raise_for_status()
-        body = resp.json()
-        if body.get("code") != 0:
-            raise RuntimeError(f"workflow code={body.get('code')} {body.get('errMsg')}")
-        data = body.get("data") or {}
-        infos = data.get("sensitive_infos")
-        if infos is None:  # text 필드에 JSON 문자열로 실려온 경우 파싱 시도
-            try:
-                infos = (json.loads(data.get("text") or "{}")).get("sensitive_infos")
-            except Exception:
-                infos = None
-        return infos if isinstance(infos, list) else []
-    except Exception as exc:
-        _log.warning(f"[guardrail] 분류 워크플로우 호출 실패 — skip(fail-open): {exc}")
-        return []
-
-
-def _gr_find_spans(text: str, quote: str) -> list:
-    """청크 text 에서 quote 가 나타나는 모든 (start,end). 1차 정확, 실패 시 공백 무시(fuzzy).
-    (LLM quote 의 '5 억에' vs 원문 '5억에' 불일치 대응)"""
-    if not quote or not text:
-        return []
-    spans, start = [], 0
-    while True:
-        i = text.find(quote, start)
-        if i == -1:
-            break
-        spans.append((i, i + len(quote)))
-        start = i + len(quote)
-    if spans:
-        return spans
-    kept = [(j, ch) for j, ch in enumerate(text) if not ch.isspace()]
-    if not kept:
-        return []
-    stripped = "".join(ch for _, ch in kept)
-    idx_map = [j for j, _ in kept]
-    q = _GR_WS.sub("", quote)
-    if not q:
-        return []
-    s = 0
-    while True:
-        k = stripped.find(q, s)
-        if k == -1:
-            break
-        spans.append((idx_map[k], idx_map[k + len(q) - 1] + 1))
-        s = k + len(q)
-    return spans
-
-
-def _gr_apply_to_text(text: str, sensitive_infos: list, masking: bool):
-    """청크 text 에 sensitive_infos 적용 → (새 text, 부착할 category 집합).
-    category 부착은 항상, quote_masked 치환은 masking=True 일 때만. 매칭 실패는 skip."""
-    cats = set()
-    repl = []  # (start, end, masked)
-    for info in sensitive_infos or []:
-        cat = (info or {}).get("category")
-        q = (info or {}).get("quote_origin")
-        m = (info or {}).get("quote_masked")
-        if not cat or not q:
-            continue
-        spans = _gr_find_spans(text, q)
-        if not spans:
-            continue
-        cats.add(cat)
-        if masking and isinstance(m, str) and m != q:
-            for st, en in spans:
-                repl.append((st, en, m))
-    if repl:
-        applied = []  # 이미 치환한 구간(겹침 방지)
-        for st, en, m in sorted(repl, key=lambda x: -x[0]):
-            if any(not (en <= a or st >= b) for a, b in applied):
-                continue  # 겹치는 구간은 건너뜀
-            text = text[:st] + m + text[en:]
-            applied.append((st, en))
-    return text, cats
-
-
-def _gr_doc_text(document: DoclingDocument) -> str:
-    """분류 워크플로우로 보낼 문서 전체 텍스트. 그림만 제외. 표는 마크다운으로 포함한다
-    (표 셀 PII 도 분류/마스킹 대상 — 청크도 표를 마크다운으로 담으므로 quote 매칭 가능)."""
-    parts = []
-    for it, _ in document.iterate_items():
-        if isinstance(it, PictureItem):
-            continue
-        if isinstance(it, TableItem):
-            try:
-                t = it.export_to_markdown(document)
-            except Exception:
-                cells = getattr(getattr(it, "data", None), "table_cells", None) or []
-                t = " ".join((getattr(c, "text", "") or "") for c in cells)
-        else:
-            t = getattr(it, "text", None)
-        if isinstance(t, str) and t.strip():
-            parts.append(t)
-    return "\n".join(parts)
-
-
-def _gr_elements_text(elements: list) -> str:
-    """parse-format element 리스트(content)에서 문서 전체 텍스트 결합(#315)."""
-    return "\n".join(
-        str((el or {}).get("content", "") or "")
-        for el in (elements or [])
-        if str((el or {}).get("content", "") or "").strip()
-    )
+# 민감정보 분류/마스킹(#315)은 facade/guardrail 모듈로 분리 — gr.* 로 사용.
+# chunking 은 워크플로우를 직접 호출하지 않고, parser 가 넘긴 sensitive_infos 를 청크에 적용만 한다.
+from genon.preprocessor.facade import guardrail as gr
 
 
 class GenOSVectorMeta(BaseModel):
@@ -1514,7 +1382,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None
     appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
     file_path: Optional[str] = None
-    content_category: Optional[list] = None  # #315 민감정보 분류 라벨(부동산/인사/민감 등). 미적용 시 None
+    guardrail_categories: Optional[list] = None  # #315 민감정보 분류 라벨(부동산/인사/민감 등). 미적용 시 None
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -1537,12 +1405,12 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
         self.file_path: Optional[str] = None
-        self.content_category: Optional[list] = None  # #315 민감정보 분류 라벨
+        self.guardrail_categories: Optional[list] = None  # #315 민감정보 분류 라벨
         self.extra_metadata: dict[str, Any] = {}
 
-    def set_content_category(self, content_category: Optional[list]) -> "GenOSVectorMetaBuilder":
+    def set_guardrail_categories(self, guardrail_categories: Optional[list]) -> "GenOSVectorMetaBuilder":
         """#315 청크 민감정보 분류 라벨 설정 (부동산/인사/민감 등의 list, 미적용 시 None)"""
-        self.content_category = content_category or None
+        self.guardrail_categories = guardrail_categories or None
         return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
@@ -1632,10 +1500,23 @@ class GenOSVectorMetaBuilder:
             "created_date": self.created_date,
             "appendix": self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
             "file_path": self.file_path,
-            "content_category": self.content_category,  # #315 민감정보 분류 라벨
+            "guardrail_categories": self.guardrail_categories,  # #315 민감정보 분류 라벨
             **self.extra_metadata,
         }
         return GenOSVectorMeta.model_validate(payload)
+
+
+def _extract_sensitive_infos(raw_payload) -> list:
+    """parser 가 파스 출력에 실어 보낸 sensitive_infos 를 꺼낸다(#315).
+    봉투 {"code":0,"data":{...}} 또는 평평한 dict 어느 쪽이든 sensitive_infos 를 찾는다."""
+    if not isinstance(raw_payload, dict):
+        return []
+    for container in (raw_payload, raw_payload.get("data")):
+        if isinstance(container, dict):
+            si = container.get("sensitive_infos")
+            if isinstance(si, list):
+                return si
+    return []
 
 
 def _classify_payload(obj) -> Tuple[str, Any]:
@@ -1733,14 +1614,9 @@ class DocumentProcessor:
             _log.warning(f"[DocumentProcessor] Unknown chunking.chunk_mode '{self._chunk_mode}', fallback to 'split_only'.")
             self._chunk_mode = "split_only"
 
-        # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보. on/off 는 요청별 kwargs(guardrail_call).
-        gm_cfg = _as_dict(cfg.get("guardrail"))
-        self._guardrail_url = str(gm_cfg.get("url") or "").strip()
-        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
-        self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
-        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
-        self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
-        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
+        # 민감정보 분류(#315): chunking 은 워크플로우를 직접 호출하지 않는다(parser 가 호출).
+        # parser 가 넘긴 sensitive_infos 를 청크에 적용만 하며, 치환 여부는 masking_enabled 로 결정.
+        self._gr_cfg = gr.GuardrailConfig.from_cfg(cfg)
 
         # parse-format(비-docling) 일반 텍스트 splitter 기본값 (attachment_processor 와 동일).
         # docling 경로(GenosSmartChunker)와 무관. _chunk_text_elements 의 폴백으로 사용된다.
@@ -2286,7 +2162,7 @@ class DocumentProcessor:
             "text", "n_char", "n_word", "n_line", "e_page", "i_page",
             "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
             "n_page", "reg_date", "chunk_bboxes", "media_files", "title",
-            "created_date", "appendix", "file_path", "metadata", "content_category",
+            "created_date", "appendix", "file_path", "metadata", "guardrail_categories",
         } | consumed_keys
         for reserved_key in reserved_keys:
             passthrough_metadata.pop(reserved_key, None)
@@ -2328,8 +2204,8 @@ class DocumentProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
-            # #315 가드레일 분류 후처리: quote 매칭 → content_category 부착(항상) + 마스킹 치환(옵션)
-            content, chunk_cats = _gr_apply_to_text(content, _sensitive_infos, _gr_masking)
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            content, chunk_cats = gr.apply_to_text(content, _sensitive_infos, _gr_masking)
 
             vector = (GenOSVectorMetaBuilder()
                       .set_text(content)
@@ -2338,7 +2214,7 @@ class DocumentProcessor:
                       .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items, include_tables=self.table_image_enabled)
-                      .set_content_category(sorted(chunk_cats) if chunk_cats else None)
+                      .set_guardrail_categories(sorted(chunk_cats) if chunk_cats else None)
                       ).build()
             vectors.append(vector)
 
@@ -2759,8 +2635,8 @@ class DocumentProcessor:
             if page != current_page:
                 current_page = page
                 chunk_index_on_page = 0
-            # #315 가드레일 분류 후처리: quote 매칭 → content_category 부착(항상) + 마스킹 치환(옵션)
-            text, chunk_cats = _gr_apply_to_text(text, _sensitive_infos, _gr_masking)
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            text, chunk_cats = gr.apply_to_text(text, _sensitive_infos, _gr_masking)
             vectors.append(GenOSVectorMeta.model_validate({
                 'text': text,
                 'n_char': len(text),
@@ -2771,7 +2647,7 @@ class DocumentProcessor:
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': page_chunk_counts[page],
                 'i_chunk_on_doc': idx,
-                'content_category': sorted(chunk_cats) if chunk_cats else None,  # #315 민감정보 분류 라벨
+                'guardrail_categories': sorted(chunk_cats) if chunk_cats else None,  # #315 민감정보 분류 라벨
                 **global_metadata,
             }))
             chunk_index_on_page += 1
@@ -2850,22 +2726,12 @@ class DocumentProcessor:
         else:
             kind, data = _classify_payload(raw_payload)
 
-        # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
-        #   실제 라벨 부착/마스킹 치환은 청킹 후 compose 에서 quote 매칭으로 수행.
-        _gr_kwargs = {}
-        if kwargs.get("guardrail_call", False):
-            if kind == "parse":
-                _doc_text = _gr_elements_text(data)
-            else:
-                _gr_doc = data if isinstance(data, DoclingDocument) else DoclingDocument.model_validate(data)
-                _doc_text = _gr_doc_text(_gr_doc)
-            _gr_kwargs = dict(
-                _sensitive_infos=_gr_classify_document(
-                    _doc_text, self._guardrail_url, self._guardrail_workflow_id,
-                    self._guardrail_api_key, self._guardrail_timeout,
-                ),
-                _guardrail_masking=(self._guardrail_masking_enabled),
-            )
+        # 민감정보 분류(#315): chunking 은 워크플로우를 호출하지 않는다. parser 가 분류해 파스 출력에
+        #   실어 보낸 sensitive_infos 를 받아 청크에 quote 매칭·라벨·마스킹만 적용(병합).
+        _gr_kwargs = dict(
+            _sensitive_infos=_extract_sensitive_infos(raw_payload),
+            _guardrail_masking=self._gr_cfg.masking_enabled,
+        )
 
         if kind == "parse":
             # parse-format(비-docling): legacy(attachment) 와 동일하게 공통 청킹.

@@ -182,7 +182,8 @@ enrichment:
 output:
   format: "json" # "json" (default), "html", "markdown", "docling"
   # "docling": 복원 가능한 DoclingDocument 원본 JSON 을 data.document 로 반환(Chunk API 입력용)
-  # 민감정보 분류(#315)는 parser 대상 아님 → 파싱 결과를 chunking API 로 넘기면 거기서 분류·부착한다.
+  # 민감정보 분류(#315): parser 가 guardrail 워크플로우를 호출해 sensitive_infos 를 출력에 실어 보내고,
+  # chunking API 가 그 결과로 청크별 라벨/마스킹을 적용한다(아래 guardrail 섹션 참고).
   table_format: "html" # "html" (default), "markdown"  ("docling" 포맷에서는 무시)
 
 # whisper 설정. 음성(.wav/.mp3/.m4a) 처리 시에만 필요(선택).
@@ -197,3 +198,11 @@ whisper:
   timestamp_granularities: "word"
   chunk_sec: 29
   chunk_overlap_ms: 300  # 청크 간 겹침(ms)
+
+guardrail:
+  # 민감정보 분류(#315) — parser 가 호출 주체. 요청 kwargs guardrail_call(0/1) 이면 문서 전체를 1회
+  # 분류해 sensitive_infos 를 파스 출력에 실어 chunking 으로 전달(청크 라벨·마스킹 적용은 chunking).
+  url: ""                 # GenOS gateway 베이스(코드가 /workflow/{workflow_id}/run/v2 를 붙임)
+  workflow_id:            # 민감정보 분류 워크플로우 ID
+  api_key: ""             # 워크플로우 호출 Bearer 인증키(배포 환경변수/시크릿 권장)
+  timeout: 60             # 호출 타임아웃(초). 대용량 문서는 상향
