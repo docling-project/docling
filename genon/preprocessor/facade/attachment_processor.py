@@ -1461,6 +1461,7 @@ class DocxProcessor:
         chunk_index_on_page = 0
         vectors = []
         upload_tasks = []
+        scheduled_upload_paths = set()  # 청크 간 동일 이미지(헤더 그림 등) 중복 업로드 방지
         for chunk_idx, chunk in enumerate(chunks):
             if chunker_type == "recursive":
                 chunk_page = chunk["page_no"]
@@ -1491,10 +1492,18 @@ class DocxProcessor:
 
             chunk_index_on_page += 1
             if upload_files:
-                file_list = self.get_media_files(doc_items)
-                upload_tasks.append(asyncio.create_task(
-                    upload_files(file_list, request=request)
-                ))
+                # 동일 이미지(#56 docx 헤더 그림 등)가 여러 청크에 반복 참조되면 upload_files 가
+                # 같은 파일을 중복 업로드·삭제해 FileNotFoundError 로 전체 요청이 실패한다.
+                # 경로 기준으로 최초 1회만 업로드하도록 dedupe.
+                file_list = []
+                for f in self.get_media_files(doc_items):
+                    if f['path'] not in scheduled_upload_paths:
+                        scheduled_upload_paths.add(f['path'])
+                        file_list.append(f)
+                if file_list:
+                    upload_tasks.append(asyncio.create_task(
+                        upload_files(file_list, request=request)
+                    ))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
