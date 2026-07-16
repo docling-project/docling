@@ -637,6 +637,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
         math_text = node.text
+        if not math_text:
+            return
         math_parts = math_text.split("$$")
         if len(math_parts) == 3:
             math_formula = math_parts[1]

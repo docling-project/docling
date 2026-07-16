@@ -170,6 +170,26 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert formulas == expected_formulas
 
 
+def test_jats_empty_display_formula_does_not_drop_following_content():
+    # A display equation whose <tex-math> is empty must be skipped, not crash the
+    # walk. _add_equation used to call node.text.split("$$") unconditionally, so an
+    # empty <tex-math/> raised AttributeError; convert() swallows it and returns a
+    # truncated document, silently losing everything after the equation.
+    doc = convert_jats_body(
+        "<sec><title>T</title>"
+        "<p>Before the equation.</p>"
+        "<disp-formula><tex-math/></disp-formula>"
+        "<p>After the equation.</p>"
+        "</sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "Before the equation." in md
+    assert "After the equation." in md
+    # The empty display formula produced no FORMULA item.
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
+
+
 def test_jats_footnotes_are_preserved():
     doc = convert_jats_body(
         """
