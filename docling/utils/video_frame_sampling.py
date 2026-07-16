@@ -92,6 +92,12 @@ def _auto_prominence(diffs: np.ndarray) -> float:
     movement — and drops toward the floor for static screens, catching subtle
     cuts. Robust statistics are used so the cut spikes themselves do not inflate
     the estimate (unlike a plain standard deviation).
+
+    Args:
+        diffs: Frame-to-frame difference signal.
+
+    Returns:
+        The calibrated prominence threshold for peak detection.
     """
     median = float(np.median(diffs))
     mad = float(np.median(np.abs(diffs - median))) * 1.4826  # ~= std for normal noise
@@ -225,6 +231,14 @@ def _extract_frames_grid(
     cheaper than spawning one ffmpeg process per timestamp (each spawn re-opens
     and re-seeks the file). Frames are square ``size`` x ``size`` thumbnails;
     the timestamp of frame ``i`` is ``i / fps``.
+
+    Args:
+        video_path: Path to the source video.
+        fps: Sampling rate for the decode pass.
+        size: Width and height, in pixels, of the square thumbnails.
+
+    Returns:
+        ``(timestamp, image)`` pairs in chronological order.
     """
     proc = subprocess.run(
         [
@@ -370,6 +384,15 @@ class SimpleSceneChangeFrameSampler:
         Decodes the whole candidate window in a single ffmpeg spawn (full
         resolution, sampled at ``sharpness_candidates`` evenly spaced points)
         instead of spawning one ffmpeg process per candidate timestamp.
+
+        Args:
+            video_path: Path to the source video.
+            start: Scene start time, in seconds.
+            end: Scene end time, in seconds.
+            scene_id: Index of the scene this frame represents.
+
+        Returns:
+            The sharpest candidate frame, or None if none could be decoded.
         """
         mid = (start + end) / 2.0
         half = (end - start) / 2.0 * 0.4

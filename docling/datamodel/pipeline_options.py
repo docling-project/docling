@@ -1595,8 +1595,8 @@ class VideoPipelineOptions(PipelineOptions):
         Field(
             default=True,
             description=(
-                "When True, extracted frames will be saved as image files for debugging or downstream "
-                "processing."
+                "When True, representative frames are sampled and embedded in the "
+                "output DoclingDocument as picture items."
             ),
         ),
     ] = True

@@ -229,6 +229,8 @@ class AudioFormatOption(FormatOption):
 
 
 class VideoFormatOption(FormatOption):
+    """Format option for video input, processed via VideoPipeline."""
+
     pipeline_cls: Type = VideoPipeline
     backend: Type[AbstractDocumentBackend] = NoOpBackend
 

@@ -150,6 +150,11 @@ class InputDocument(BaseModel):
     # Reason this input was flagged invalid, if any (transient, not serialized).
     _rejection: Optional[InputRejection] = PrivateAttr(default=None)
 
+    @property
+    def backend(self) -> AbstractDocumentBackend:
+        """The document backend responsible for parsing this input."""
+        return self._backend
+
     def __init__(
         self,
         path_or_stream: Union[BytesIO, Path],

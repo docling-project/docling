@@ -10,6 +10,7 @@ Assigns speaker labels to transcript segments by:
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -42,7 +43,14 @@ class DiarizationResult:
 
 
 def _estimate_num_speakers(embeddings: np.ndarray) -> int:
-    """Estimate optimal speaker count via silhouette score."""
+    """Estimate optimal speaker count via silhouette score.
+
+    Args:
+        embeddings: Per-window speaker embeddings.
+
+    Returns:
+        The speaker count with the highest silhouette score.
+    """
     from sklearn.cluster import AgglomerativeClustering  # type: ignore[import-untyped]
     from sklearn.metrics import silhouette_score  # type: ignore[import-untyped]
 
@@ -185,9 +193,9 @@ def diarize(
 
 
 def assign_speakers(
-    transcript_items: list,
+    transcript_items: list[Any],
     diarization: DiarizationResult,
-) -> list:
+) -> list[Any]:
     """Assign speaker labels to transcript ConversationItems.
 
     For each transcript segment, find the diarization segment with the

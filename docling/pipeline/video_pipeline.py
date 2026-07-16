@@ -152,7 +152,7 @@ class VideoPipeline(BasePipeline):
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
-        path_or_stream = conv_res.input._backend.path_or_stream
+        path_or_stream = conv_res.input.backend.path_or_stream
         temp_video: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):

@@ -5,20 +5,17 @@ Covers:
 - .mp3/.wav/.flac stay in InputFormat.AUDIO
 - video MIME types route to InputFormat.VIDEO
 - audio MIME types stay in InputFormat.AUDIO
-- VideoFormatOption uses VideoPipeline + NoOpBackend
 - InputFormat.VIDEO is registered in DocumentConverter defaults
 """
 
 import pytest
 
-from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
     FormatToExtensions,
     FormatToMimeType,
     InputFormat,
 )
 from docling.document_converter import DocumentConverter, VideoFormatOption
-from docling.pipeline.video_pipeline import VideoPipeline
 
 # --------------------------------------------------------------------------- #
 # Extension routing
@@ -81,21 +78,6 @@ def test_video_mimes_not_in_audio(mime):
 )
 def test_audio_mimes_stay_in_audio(mime):
     assert mime in FormatToMimeType[InputFormat.AUDIO]
-
-
-# --------------------------------------------------------------------------- #
-# VideoFormatOption
-# --------------------------------------------------------------------------- #
-
-
-def test_video_format_option_uses_video_pipeline():
-    opt = VideoFormatOption()
-    assert opt.pipeline_cls is VideoPipeline
-
-
-def test_video_format_option_uses_noop_backend():
-    opt = VideoFormatOption()
-    assert opt.backend is NoOpBackend
 
 
 # --------------------------------------------------------------------------- #

@@ -1354,26 +1354,10 @@ def convert(  # noqa: C901
             from docling.pipeline.video_pipeline import VideoPipeline
             from docling.utils.video_frame_sampling import VideoFrameSamplingMode
 
-            # Check if user has explicitly configured video sampling
-            # (i.e., set any option beyond defaults)
-            has_explicit_config = (
-                video_sampling_mode != "fixed"
-                or video_frame_interval != 10.0
-                or video_cuts_per_minute != 0.0
-                or video_prominence != 0.0
-            )
-
-            if not has_explicit_config:
-                raise typer.BadParameter(
-                    "No video config specified. Please set sampling options.\n"
-                    "Examples:\n"
-                    "  Meetings:  --video-sampling-mode scene --video-prominence 0.03\n"
-                    "  Lectures:  --video-sampling-mode scene --video-cuts-per-minute 2\n"
-                    "  General:   --video-sampling-mode fixed --video-frame-interval 10\n"
-                    "Run with --help for all options.",
-                    param_hint="--video-sampling-mode",
-                )
-
+            # Both sampling modes are usable with their defaults: fixed-interval
+            # uses video_frame_interval, and scene-change auto-calibrates its
+            # prominence threshold when neither --video-prominence nor
+            # --video-cuts-per-minute is given (see _auto_prominence).
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
             video_pipeline_options.asr_options = _resolve_asr_options(asr_model)

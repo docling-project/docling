@@ -692,6 +692,12 @@ def _merge_into_sentences(
 
     This produces one block per sentence, which maps cleanly to one
     speaker per block for diarization.
+
+    Args:
+        items: ASR segments in chronological order.
+
+    Returns:
+        One merged item per sentence.
     """
     if not items:
         return []
