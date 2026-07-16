@@ -1643,6 +1643,30 @@ class HeadingHierarchyOptions(BaseModel):
     ] = 0.8
 
 
+class ListNormalizationOptions(BaseModel):
+    """Options for inferring ordered vs. unordered list items in the PDF/image pipeline.
+
+    The layout model labels regions as ``LIST_ITEM`` without recording whether they belong to a
+    numbered or a bulleted list. At item-creation time the reading-order stage strips simple
+    leading markers (``1.``, ``a)``, ``•`` ...) and sets ``ListItem.enumerated`` accordingly, but
+    compound/hierarchical markers (``9a.``, ``3.a.``, ``1.2.1``) are missed and leak into the
+    Markdown output as doubled or wrong list markers. When ``enabled``,
+    :class:`ListNormalizationModel` runs right after the reading-order model and recovers those
+    markers. It never adds, removes or reorders items.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable ordered/unordered inference for list items in the PDF/image pipeline. "
+                "When disabled (default), only the simple per-item marker inference applies "
+                "(unchanged behavior)."
+            )
+        ),
+    ] = False
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -1803,6 +1827,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    list_normalization_options: Annotated[
+        ListNormalizationOptions,
+        Field(
+            description=(
+                "Configuration for inferring ordered vs. unordered list items. Disabled by "
+                "default; when enabled, the reading-order stage recovers compound list markers "
+                "(9a., 3.a., 1.2.1) that would otherwise render as doubled Markdown markers."
+            )
+        ),
+    ] = ListNormalizationOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 

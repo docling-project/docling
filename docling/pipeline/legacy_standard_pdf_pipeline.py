@@ -26,6 +26,9 @@ from docling.models.stages.code_formula.code_formula_model import (
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
+from docling.models.stages.list_normalization.list_normalization_model import (
+    ListNormalizationModel,
+)
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -61,6 +64,9 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
+        )
+        self.list_normalization_model = ListNormalizationModel(
+            options=self.pipeline_options.list_normalization_options
         )
 
         ocr_model = self.get_ocr_model(artifacts_path=self.artifacts_path)
@@ -190,6 +196,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
 
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
+            conv_res.document = self.list_normalization_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
