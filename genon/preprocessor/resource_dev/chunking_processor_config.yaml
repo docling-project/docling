@@ -44,3 +44,8 @@ table_image:
 # 표 텍스트 직렬화 옵션(markdown 표 표현). export_to_html=0(markdown) 경로에만 적용.
 output:
   compact_tables: true    # markdown 표 컬럼 정렬 패딩 제거(대형 표 청크 축소). html 포맷엔 무관.
+
+guardrail:
+  # 민감정보 분류(#315) — chunking 은 워크플로우를 직접 호출하지 않는다(parser 가 호출).
+  # parser 가 넘긴 sensitive_infos 를 청크에 적용하며, 여기선 마스킹 치환 여부만 결정한다.
+  masking_enabled: false  # quote_masked 치환 on/off. guardrail_categories 라벨 부착은 항상 수행

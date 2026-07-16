@@ -40,3 +40,8 @@ chunking:
 # 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.
 table_image:
   enable: false
+
+guardrail:
+  # 민감정보 분류(#315) — chunking 은 워크플로우를 직접 호출하지 않는다(parser 가 호출).
+  # parser 가 넘긴 sensitive_infos 를 청크에 적용하며, 여기선 마스킹 치환 여부만 결정한다.
+  masking_enabled: false  # quote_masked 치환 on/off. guardrail_categories 라벨 부착은 항상 수행

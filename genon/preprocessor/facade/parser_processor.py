@@ -103,6 +103,7 @@ try:
 except ImportError:
     MetadataEnricher = None  # type: ignore[assignment,misc]
 
+from genon.preprocessor.facade import guardrail as gr
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
 from genon.preprocessor.facade.enrichment.page_description import (
     PageDescriptionOptions,
@@ -543,6 +544,11 @@ def install_packages(packages):
         except ImportError:
             _log.warning(f"{package} 패키지가 없습니다. 설치를 시도합니다.")
             subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
+
+
+# 민감정보 분류(#315): parser 는 청크가 없어 직접 라벨/마스킹은 못 하지만, guardrail_call 시
+# 문서 전체를 워크플로우로 1회 분류해 sensitive_infos 를 파스 출력에 실어 chunking API 로 넘긴다.
+# 청크별 quote 매칭·라벨·마스킹은 chunking(및 intelligent/attachment/convert)이 수행한다.
 
 
 # ============================================================
@@ -1820,6 +1826,10 @@ class DocumentProcessor:
         # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
         self._compact_tables = bool(output_cfg.get("compact_tables", True))
 
+        # 민감정보 분류(#315): parser 가 호출 주체. guardrail_call 요청 시 문서 전체를 1회 분류해
+        # sensitive_infos 를 파스 출력에 실어 chunking 으로 전달(chunking 은 청크에 적용만 = 병합).
+        self._gr_cfg = gr.GuardrailConfig.from_cfg(cfg)
+
         # PPT 페이지 단위 image description(page-level). config: formats.ppt.page_description.
         # 파서는 PPT 를 (레거시 langchain 대신) PDF→docling 으로 재라우팅해 페이지 설명을 주입한다.
         formats_cfg = _as_dict(cfg.get("formats"))
@@ -2319,8 +2329,10 @@ class DocumentProcessor:
             "content": content,
         }
 
-    def _build_docling_response(self, doc: DoclingDocument, clear_coordinates: bool = False) -> dict:
-        """Docling 경로의 최종 응답 생성."""
+    def _build_docling_response(self, doc: DoclingDocument, clear_coordinates: bool = False, **kwargs) -> dict:
+        """Docling 경로의 최종 응답 생성.
+        민감정보 분류(#315): 요청 guardrail_call 시 문서 전체를 1회 분류해 sensitive_infos 를 응답에
+        실어 chunking 으로 넘긴다(청크 단위 quote 매칭·적용은 chunking 담당)."""
         output_format = getattr(self, "_output_format", "json")
         table_format = getattr(self, "_table_format", "html")
         compact_tables = bool(getattr(self, "_compact_tables", True))
@@ -2329,26 +2341,35 @@ class DocumentProcessor:
             # 복원 가능한 DoclingDocument 원본 JSON(model_dump)을 그대로 반환.
             # DoclingDocument.model_validate(data["document"]) 로 무손실 복원 가능 → Chunk API 입력.
             # clear_coordinates / table_format 은 원본 보존을 위해 docling 포맷에서는 무시한다.
-            return {
+            resp = {
                 "document": self._serialize_docling_document(doc),
                 "usage": {"pages": doc.num_pages()},
             }
-
-        if output_format == "json":
+        elif output_format == "json":
             result = self._docling_to_parse_format(doc, table_format=table_format,
                                                    compact_tables=compact_tables)
             if clear_coordinates:
                 for element in result.get("elements", []):
                     element["coordinates"] = []
-            return result
+            resp = result
+        else:
+            try:
+                pages = max(1, int(doc.num_pages()))
+            except Exception:
+                pages = 0
+            content = self._docling_to_content(doc)
+            resp = self._content_response(content, pages=pages)
 
-        try:
-            pages = max(1, int(doc.num_pages()))
-        except Exception:
-            pages = 0
-
-        content = self._docling_to_content(doc)
-        return self._content_response(content, pages=pages)
+        # 민감정보 분류(#315): guardrail_call(0/1) 이면 문서 전체 1회 분류 → sensitive_infos 를 응답에 부착.
+        # chunking 이 이 값을 받아 청크별 quote 매칭·라벨·마스킹을 수행한다(#315 parser→chunking 구조).
+        if gr.call_enabled(kwargs) and self._gr_cfg.configured:
+            infos = gr.classify_document(
+                gr.doc_text(doc), self._gr_cfg.url, self._gr_cfg.workflow_id,
+                self._gr_cfg.api_key, self._gr_cfg.timeout,
+            )
+            if infos:
+                resp["sensitive_infos"] = infos
+        return resp
 
     @staticmethod
     def _audio_to_parse_format(text: str) -> dict:
@@ -2469,6 +2490,7 @@ class DocumentProcessor:
             )
 
         if ext in (".wav", ".mp3", ".m4a"):
+            # TODO(#315): PII 마스킹 미적용(보류) — 오디오 전사 텍스트는 별도 논의 후 적용.
             text = self._parse_audio(file_path, **kwargs)
             return self._normalize_response(self._audio_to_parse_format(text))
 
@@ -2477,8 +2499,9 @@ class DocumentProcessor:
             if self._xlsx_cfg["processing_mode"] == "docling":
                 from genon.preprocessor.converters.xlsx_processor import build_docling_document
                 doc = build_docling_document(file_path)
-                return self._normalize_response(self._build_docling_response(doc))
+                return self._normalize_response(self._build_docling_response(doc, **kwargs))
             # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
+            # TODO(#315): PII 마스킹 미적용(보류) — tabular 산출은 별도 논의 후 적용.
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 
@@ -2488,7 +2511,7 @@ class DocumentProcessor:
         if ext in (".hwp", ".hwpx", ".hml"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc)
+            result = self._build_docling_response(doc, **kwargs)
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2496,7 +2519,7 @@ class DocumentProcessor:
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc, clear_coordinates=True)
+            result = self._build_docling_response(doc, clear_coordinates=True, **kwargs)
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2504,7 +2527,7 @@ class DocumentProcessor:
         if ext in (".pdf", ".html", ".htm"):
             doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc)
+            result = self._build_docling_response(doc, **kwargs)
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2517,14 +2540,16 @@ class DocumentProcessor:
                 doc = await self._apply_docling_post_enrichment(
                     doc, _enrichment_context=enrichment_context, **kwargs
                 )
-                result = self._build_docling_response(doc)
+                result = self._build_docling_response(doc, **kwargs)
                 if enrichment_context.get("metadata"):
                     result["metadata"] = enrichment_context["metadata"]
                 return self._normalize_response(result)
             # PDF 변환 실패 폴백
+            # TODO(#315): PII 마스킹 미적용(보류) — langchain 폴백 경로. docling 아닌 파서 산출은 별도 논의.
             docs = self._parse_other(file_path, **kwargs)
             return self._normalize_response(self._langchain_to_parse_format(docs))
 
         # 기타 포맷: doc, txt, json, md, jpg, jpeg, png 등
+        # TODO(#315): PII 마스킹 미적용(보류) — langchain 경로(doc/txt/md/이미지 등)는 별도 논의 후 적용.
         docs = self._parse_other(file_path, **kwargs)
         return self._normalize_response(self._langchain_to_parse_format(docs))

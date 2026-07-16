@@ -371,6 +371,7 @@ graph TD
 | reg_date | str | 현재시간 | 등록 일시 |
 | chunk_bboxes | str | "[]" | 바운딩 박스 (JSON) |
 | media_files | str | "[]" | 미디어 파일 (JSON) |
+| guardrail_categories | list \| None | None | 민감정보 분류 라벨 (#315). `guardrail_call` on + quote 매칭 시 채워짐 (예: `["인사 정보"]`). 분류 호출은 청크 생성 전처리기(intelligent/attachment/convert) 또는 parser 가, 청크 부착은 chunking 이 수행. gitbook "민감정보 분류/마스킹" 절 참고 |
 
 ## 🚨 주의사항
 

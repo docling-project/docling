@@ -1355,6 +1355,9 @@ class GenosSmartChunker(BaseChunker):
         final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc, **kwargs)
 
         return iter(final_chunks)
+# 민감정보 분류/마스킹(#315)은 facade/guardrail 모듈로 분리 — gr.* 로 사용.
+# chunking 은 워크플로우를 직접 호출하지 않고, parser 가 넘긴 sensitive_infos 를 청크에 적용만 한다.
+from genon.preprocessor.facade import guardrail as gr
 
 
 class GenOSVectorMeta(BaseModel):
@@ -1379,7 +1382,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None
     appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
     file_path: Optional[str] = None
-
+    guardrail_categories: Optional[list] = None  # #315 민감정보 분류 라벨(부동산/인사/민감 등). 미적용 시 None
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -1402,7 +1405,13 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
         self.file_path: Optional[str] = None
+        self.guardrail_categories: Optional[list] = None  # #315 민감정보 분류 라벨
         self.extra_metadata: dict[str, Any] = {}
+
+    def set_guardrail_categories(self, guardrail_categories: Optional[list]) -> "GenOSVectorMetaBuilder":
+        """#315 청크 민감정보 분류 라벨 설정 (부동산/인사/민감 등의 list, 미적용 시 None)"""
+        self.guardrail_categories = guardrail_categories or None
+        return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1491,9 +1500,23 @@ class GenOSVectorMetaBuilder:
             "created_date": self.created_date,
             "appendix": self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
             "file_path": self.file_path,
+            "guardrail_categories": self.guardrail_categories,  # #315 민감정보 분류 라벨
             **self.extra_metadata,
         }
         return GenOSVectorMeta.model_validate(payload)
+
+
+def _extract_sensitive_infos(raw_payload) -> list:
+    """parser 가 파스 출력에 실어 보낸 sensitive_infos 를 꺼낸다(#315).
+    봉투 {"code":0,"data":{...}} 또는 평평한 dict 어느 쪽이든 sensitive_infos 를 찾는다."""
+    if not isinstance(raw_payload, dict):
+        return []
+    for container in (raw_payload, raw_payload.get("data")):
+        if isinstance(container, dict):
+            si = container.get("sensitive_infos")
+            if isinstance(si, list):
+                return si
+    return []
 
 
 def _classify_payload(obj) -> Tuple[str, Any]:
@@ -1590,6 +1613,10 @@ class DocumentProcessor:
         if self._chunk_mode not in {"split_only", "resize_all"}:
             _log.warning(f"[DocumentProcessor] Unknown chunking.chunk_mode '{self._chunk_mode}', fallback to 'split_only'.")
             self._chunk_mode = "split_only"
+
+        # 민감정보 분류(#315): chunking 은 워크플로우를 직접 호출하지 않는다(parser 가 호출).
+        # parser 가 넘긴 sensitive_infos 를 청크에 적용만 하며, 치환 여부는 masking_enabled 로 결정.
+        self._gr_cfg = gr.GuardrailConfig.from_cfg(cfg)
 
         # parse-format(비-docling) 일반 텍스트 splitter 기본값 (attachment_processor 와 동일).
         # docling 경로(GenosSmartChunker)와 무관. _chunk_text_elements 의 폴백으로 사용된다.
@@ -2086,6 +2113,8 @@ class DocumentProcessor:
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, converted_pdf_path: Optional[str] = None, **kwargs: dict) -> \
             list[dict]:
         title = ""
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []      # #315 분류 결과
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))   # #315 마스킹 치환 on/off
         enrichment_context = kwargs.get("_enrichment_context")
         context_metadata = (
             dict(enrichment_context.get("metadata", {}))
@@ -2133,7 +2162,7 @@ class DocumentProcessor:
             "text", "n_char", "n_word", "n_line", "e_page", "i_page",
             "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
             "n_page", "reg_date", "chunk_bboxes", "media_files", "title",
-            "created_date", "appendix", "file_path", "metadata",
+            "created_date", "appendix", "file_path", "metadata", "guardrail_categories",
         } | consumed_keys
         for reserved_key in reserved_keys:
             passthrough_metadata.pop(reserved_key, None)
@@ -2175,6 +2204,9 @@ class DocumentProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            content, chunk_cats = gr.apply_to_text(content, _sensitive_infos, _gr_masking)
+
             vector = (GenOSVectorMetaBuilder()
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
@@ -2182,6 +2214,7 @@ class DocumentProcessor:
                       .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items, include_tables=self.table_image_enabled)
+                      .set_guardrail_categories(sorted(chunk_cats) if chunk_cats else None)
                       ).build()
             vectors.append(vector)
 
@@ -2555,6 +2588,10 @@ class DocumentProcessor:
         chunk_size = max(int(chunk_size), 1)
         chunk_overlap = max(int(chunk_overlap), 0)
 
+        # #315 민감정보 분류: __call__ 에서 문서 전체 1회 분류한 결과를 청크별 quote 매칭에 사용.
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))
+
         # element → page 단위 Document 재구성 (빈 내용 제외)
         docs: list = []
         for el in elements:
@@ -2598,6 +2635,8 @@ class DocumentProcessor:
             if page != current_page:
                 current_page = page
                 chunk_index_on_page = 0
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            text, chunk_cats = gr.apply_to_text(text, _sensitive_infos, _gr_masking)
             vectors.append(GenOSVectorMeta.model_validate({
                 'text': text,
                 'n_char': len(text),
@@ -2608,6 +2647,7 @@ class DocumentProcessor:
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': page_chunk_counts[page],
                 'i_chunk_on_doc': idx,
+                'guardrail_categories': sorted(chunk_cats) if chunk_cats else None,  # #315 민감정보 분류 라벨
                 **global_metadata,
             }))
             chunk_index_on_page += 1
@@ -2686,9 +2726,16 @@ class DocumentProcessor:
         else:
             kind, data = _classify_payload(raw_payload)
 
+        # 민감정보 분류(#315): chunking 은 워크플로우를 호출하지 않는다. parser 가 분류해 파스 출력에
+        #   실어 보낸 sensitive_infos 를 받아 청크에 quote 매칭·라벨·마스킹만 적용(병합).
+        _gr_kwargs = dict(
+            _sensitive_infos=_extract_sensitive_infos(raw_payload),
+            _guardrail_masking=self._gr_cfg.masking_enabled,
+        )
+
         if kind == "parse":
             # parse-format(비-docling): legacy(attachment) 와 동일하게 공통 청킹.
-            vectors = self._chunk_parse_format(data, **kwargs)
+            vectors = self._chunk_parse_format(data, **_gr_kwargs, **kwargs)
             if not vectors:
                 raise GenosServiceException(1, "chunk length is 0")
         else:
@@ -2724,7 +2771,7 @@ class DocumentProcessor:
                 raise GenosServiceException(1, "chunk length is 0")
 
             vectors: list[dict] = await self.compose_vectors(
-                document, chunks, file_path, request, **kwargs,
+                document, chunks, file_path, request, **_gr_kwargs, **kwargs,
             )
 
         # 벡터 file_path 메타를 입력 file_path 로 채운다(compose_vectors 는 변환 PDF 경우에만

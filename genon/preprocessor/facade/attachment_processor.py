@@ -455,6 +455,8 @@ def install_packages(packages):
         except ImportError:
             _log.warning(f"{package} 패키지가 없습니다. 설치를 시도합니다.")
             subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
+# 민감정보 분류/마스킹(#315)은 facade/guardrail 모듈로 분리 — gr.* 로 사용.
+from genon.preprocessor.facade import guardrail as gr
 
 
 class GenOSVectorMeta(BaseModel):
@@ -475,6 +477,7 @@ class GenOSVectorMeta(BaseModel):
     reg_date: str | None = None
     chunk_bboxes: str | None = None
     media_files: str | None = None
+    guardrail_categories: Optional[list] = None    # #315 민감정보 분류 라벨(부동산/인사/민감 등). 미적용 시 None
 
 
 class GenOSVectorMetaBuilder:
@@ -494,8 +497,14 @@ class GenOSVectorMetaBuilder:
         self.reg_date: Optional[str] = None
         self.chunk_bboxes: Optional[str] = None
         self.media_files: Optional[str] = None
+        self.guardrail_categories: Optional[list] = None   # #315 민감정보 분류 라벨
         # self.title: Optional[str] = None
         # self.created_date: Optional[int] = None
+
+    def set_guardrail_categories(self, guardrail_categories: Optional[list]) -> "GenOSVectorMetaBuilder":
+        """#315 청크 민감정보 분류 라벨 설정 (부동산/인사/민감 등의 list, 미적용 시 None)"""
+        self.guardrail_categories = guardrail_categories or None
+        return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -580,6 +589,7 @@ class GenOSVectorMetaBuilder:
             reg_date=self.reg_date,
             chunk_bboxes=self.chunk_bboxes,
             media_files=self.media_files,
+            guardrail_categories=self.guardrail_categories,  # #315 민감정보 분류 라벨
         )
 
 class TextLoader:
@@ -1342,9 +1352,15 @@ def _split_with_recursive_chunker(
 
 
 class DocxProcessor:
-    def __init__(self, tokenizer=None):
+    def __init__(self, tokenizer=None, guardrail_url="", guardrail_workflow_id=None, guardrail_api_key="", guardrail_timeout=30, guardrail_masking_enabled=False):
         # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
         self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
+        # PII 마스킹(#315) 접속 정보 — DocumentProcessor 가 config 에서 읽어 주입.
+        self._guardrail_url = guardrail_url
+        self._guardrail_workflow_id = guardrail_workflow_id
+        self._guardrail_api_key = guardrail_api_key
+        self._guardrail_timeout = guardrail_timeout
+        self._guardrail_masking_enabled = guardrail_masking_enabled
         self.page_chunk_counts = defaultdict(int)
         self.pipeline_options = PipelineOptions()
         self.converter = DocumentConverter(
@@ -1432,6 +1448,8 @@ class DocxProcessor:
     async def compose_vectors(self, document: DoclingDocument, chunks, file_path: str, request: Request,
                               **kwargs: dict) -> list[dict]:
         chunker_type = kwargs.get("chunker_type", "recursive")
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []      # #315 분류 결과
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))   # #315 마스킹 치환 on/off
 
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
@@ -1457,6 +1475,9 @@ class DocxProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            content, chunk_cats = gr.apply_to_text(content, _sensitive_infos, _gr_masking)
+
             vector = (GenOSVectorMetaBuilder()
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
@@ -1464,6 +1485,7 @@ class DocxProcessor:
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(doc_items, document)
                       .set_media_files(doc_items)
+                      .set_guardrail_categories(sorted(chunk_cats) if chunk_cats else None)
                       ).build()
             vectors.append(vector)
 
@@ -1484,16 +1506,32 @@ class DocxProcessor:
         artifacts_dir, reference_path = self.get_paths(file_path)
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
+        # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
+        sensitive_infos: list = []
+        if gr.call_enabled(kwargs):
+            sensitive_infos = gr.classify_document(
+                gr.doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
+                self._guardrail_api_key, self._guardrail_timeout,
+            )
+
         chunks = self.split_documents(document, **kwargs)
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
-        return await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+        return await self.compose_vectors(
+            document, chunks, file_path, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled), **kwargs
+        )
 
 
 class HwpProcessor:
-    def __init__(self, tokenizer=None):
+    def __init__(self, tokenizer=None, guardrail_url="", guardrail_workflow_id=None, guardrail_api_key="", guardrail_timeout=30, guardrail_masking_enabled=False):
         # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
         self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
+        # PII 마스킹(#315) 접속 정보 — DocumentProcessor 가 config 에서 읽어 주입.
+        self._guardrail_url = guardrail_url
+        self._guardrail_workflow_id = guardrail_workflow_id
+        self._guardrail_api_key = guardrail_api_key
+        self._guardrail_timeout = guardrail_timeout
+        self._guardrail_masking_enabled = guardrail_masking_enabled
 
     def get_paths(self, file_path: str):
         """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
@@ -1607,6 +1645,8 @@ class HwpProcessor:
                               request: Any, **kwargs: dict) -> list[dict]:
         """빌더를 사용하여 최종 GenOSVectorMeta 리스트 생성"""
         chunker_type = kwargs.get("chunker_type", "recursive")
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []      # #315 분류 결과
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))   # #315 마스킹 치환 on/off
 
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
@@ -1633,6 +1673,9 @@ class HwpProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            content, chunk_cats = gr.apply_to_text(content, _sensitive_infos, _gr_masking)
+
             builder = GenOSVectorMetaBuilder()
             vector_obj = (builder
                       .set_text(content)
@@ -1641,6 +1684,7 @@ class HwpProcessor:
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(doc_items, document)
                       .set_media_files(doc_items)
+                      .set_guardrail_categories(sorted(chunk_cats) if chunk_cats else None)
                       ).build()
             vectors.append(vector_obj)
             chunk_index_on_page += 1
@@ -1710,11 +1754,21 @@ class HwpProcessor:
             reference_path=reference_path
         )
 
+        # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
+        sensitive_infos: list = []
+        if gr.call_enabled(kwargs):
+            sensitive_infos = gr.classify_document(
+                gr.doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
+                self._guardrail_api_key, self._guardrail_timeout,
+            )
+
         # 3. 청킹 + 4. 벡터화
         chunks, page_chunk_counts = self.split_documents(document, **kwargs)
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
-        return await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
+        return await self.compose_vectors(
+            document, chunks, page_chunk_counts, request, _sensitive_infos=sensitive_infos, _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled), **kwargs
+        )
 
 class GenosServiceException(Exception):
     """GenOS 와의 의존성 부분 제거를 위해 추가"""
@@ -1892,9 +1946,25 @@ class DocumentProcessor:
             "whisper_tmp_dir_prefix": whisper_tmp_dir_prefix,
         }
 
+        # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보(환경 종속값). on/off 는 요청별 kwargs.
+        gm_cfg = _as_dict(cfg.get("guardrail"))
+        self._guardrail_url = str(gm_cfg.get("url") or "").strip()
+        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
+        self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
+        self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
+        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
+
         self.page_chunk_counts = defaultdict(int)
-        self.hwp_processor = HwpProcessor(tokenizer=self._tokenizer)
-        self.docx_processor = DocxProcessor(tokenizer=self._tokenizer)
+        _gm = dict(
+            guardrail_url=self._guardrail_url,
+            guardrail_workflow_id=self._guardrail_workflow_id,
+            guardrail_api_key=self._guardrail_api_key,
+            guardrail_timeout=self._guardrail_timeout,
+            guardrail_masking_enabled=self._guardrail_masking_enabled,
+        )
+        self.hwp_processor = HwpProcessor(tokenizer=self._tokenizer, **_gm)
+        self.docx_processor = DocxProcessor(tokenizer=self._tokenizer, **_gm)
 
     def _merge_runtime_kwargs(self, kwargs: dict) -> dict:
         merged = dict(self._default_kwargs)
@@ -2205,6 +2275,8 @@ class DocumentProcessor:
         return chunks
 
     def compose_vectors(self, file_path: str, chunks: list[Document], **kwargs: dict) -> list[dict]:
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []      # #315 분류 결과
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))   # #315 마스킹 치환 on/off
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
 
@@ -2244,6 +2316,8 @@ class DocumentProcessor:
                 page += 1
                 end_page += 1
             text = chunk.page_content
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            text, chunk_cats = gr.apply_to_text(text, _sensitive_infos, _gr_masking)
 
             if page != current_page:
                 current_page = page
@@ -2274,6 +2348,7 @@ class DocumentProcessor:
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': self.page_chunk_counts[page],
                 'i_chunk_on_doc': chunk_idx,
+                'guardrail_categories': sorted(chunk_cats) if chunk_cats else None,  # #315 민감정보 분류 라벨
                 **global_metadata
             }))
             chunk_index_on_page += 1
@@ -2332,6 +2407,7 @@ class DocumentProcessor:
 
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ('.wav', '.mp3', '.m4a'):
+            # TODO(#315): PII 마스킹 미적용(보류) — AudioLoader 는 자체 vector 포맷이라 별도 논의 후 적용.
             # Generate a temporal path saving audio chunks: the audio file is supposed to be splited to several chunks due to limitted length by the model
             file_stem = os.path.basename(file_path).split('.')[0]
             tmp_prefix = str(kwargs.get("whisper_tmp_dir_prefix", "./tmp_audios_"))
@@ -2371,6 +2447,7 @@ class DocumentProcessor:
             return vectors
 
         elif ext in ('.csv', '.xlsx'):
+            # TODO(#315): PII 마스킹 미적용(보류) — TabularLoader 는 자체 vector 포맷이라 별도 논의 후 적용.
             loader = TabularLoader(
                 file_path,
                 ext,
@@ -2394,8 +2471,14 @@ class DocumentProcessor:
                 if converted:
                     _log.info(f"[DocumentProcessor] PDF 변환 성공: {converted}")
                     documents: list[Document] = self.load_documents(converted, **kwargs)
+                    # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출.
+                    sensitive_infos = (gr.classify_document(
+                        gr.docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
+                        self._guardrail_api_key, self._guardrail_timeout)
+                        if gr.call_enabled(kwargs) else [])
                     chunks: list[Document] = self.split_documents(documents, **kwargs)
-                    vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
+                    vectors: list[dict] = self.compose_vectors(
+                        converted, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled), **kwargs)
                     return vectors
                 else:
                     # 이슈 #286 — HWP SDK 도 실패하고 PDF 변환기마저 없으면, 원인을 명확히
@@ -2420,17 +2503,35 @@ class DocumentProcessor:
             documents: Optional[list[Document]] = self._load_ppt_page_documents(file_path, **kwargs)
             if documents is None:
                 documents = self.load_documents(file_path, **kwargs)
+                # 민감정보 분류(#315): 청킹 전 1회 호출.
+                sensitive_infos = (gr.classify_document(
+                    gr.docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
+                    self._guardrail_api_key, self._guardrail_timeout)
+                    if gr.call_enabled(kwargs) else [])
                 chunks: list[Document] = self.split_documents(documents, **kwargs)
             else:
+                # 민감정보 분류(#315): 페이지 결합 청킹 전 1회 호출.
+                sensitive_infos = (gr.classify_document(
+                    gr.docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
+                    self._guardrail_api_key, self._guardrail_timeout)
+                    if gr.call_enabled(kwargs) else [])
                 chunks = self._chunk_ppt_pages(documents, **kwargs)
-            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+            vectors: list[dict] = self.compose_vectors(
+                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled), **kwargs)
             return vectors
 
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
 
+            # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출.
+            sensitive_infos = (gr.classify_document(
+                gr.docs_text(documents), self._guardrail_url, self._guardrail_workflow_id,
+                self._guardrail_api_key, self._guardrail_timeout)
+                if gr.call_enabled(kwargs) else [])
+
             chunks: list[Document] = self.split_documents(documents, **kwargs)
 
-            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+            vectors: list[dict] = self.compose_vectors(
+                file_path, chunks, _sensitive_infos=sensitive_infos, _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled), **kwargs)
 
             return vectors

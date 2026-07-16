@@ -38,6 +38,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [3.7 청킹 설정](#37-청킹-설정)
     - [3.8 사이트 적용 시 필수 수정 항목](#38-사이트-적용-시-필수-수정-항목)
     - [3.9 자주 쓰는 튜닝 시나리오](#39-자주-쓰는-튜닝-시나리오)
+    - [3.10 민감정보 분류/마스킹 (개인정보 비식별화)](#310-민감정보-분류마스킹-개인정보-비식별화-guardrail_call)
   - [4. 처리 동작 개요 (보조)](#4-처리-동작-개요-보조)
     - [단일 PDF 파이프라인](#단일-pdf-파이프라인)
     - [config → 단계 매핑](#config--단계-매핑)
@@ -885,6 +886,115 @@ chunking:
 | 토큰 초과 문서 차단 완화 | `precheck.enabled: false` 또는 `max_context_tokens` 상향 |
 | 작성일 외 추가 메타 필드 | `metadata.output_fields` 추가 + 프롬프트 JSON 키 일치 (+ 필요 시 `field_transforms`) |
 
+### 3.10 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
+
+문서에 담긴 민감정보(주민번호·연락처·이메일 같은 정형 PII, 부동산·인사 같은 의미 범주)를
+**GenOS 분류 워크플로우** 에 위임해 판별하고, 그 결과를 청크에 반영합니다. 전처리기는 무엇이
+민감정보인지 **판단하지 않습니다.** 워크플로우가 돌려준 결과를 청크에 매칭해 라벨을 붙이고(항상),
+옵션으로 마스킹 치환만 수행합니다. 필터 구성·프롬프트 품질·범주(`category`) 정의는 운영 담당 몫입니다.
+
+> 이 절은 4개 전처리기 중 청크를 생성하는 3개(intelligent/attachment/convert) 공통 동작의 **상세
+> 설명**입니다. parser 는 청크를 만들지 않아 이 후처리 대상이 아닙니다(parser 매뉴얼 참고).
+> 다른 매뉴얼은 이 절을 참조합니다.
+>
+> 워크플로우 자체를 GenOS 에서 만들고 배포해 연결하는 절차(운영용)는
+> [민감정보 분류/마스킹 가이드](guardrail_workflow_setup.md)를 참고하세요.
+
+**켜고 끄기 — 호출 kwargs (config 아님)**
+
+on/off 는 yaml 이 아니라 **문서 업로드 요청 kwargs `guardrail_call`** 로 제어합니다(기본 `0`).
+컨테이너 재배포 없이 업로드 건마다 켜고 끌 수 있습니다.
+
+```jsonc
+// 요청 kwargs 예
+{ "guardrail_call": 1 }   // 기본 0
+```
+
+기능이 켜지면 `guardrail_categories` 라벨 부착은 **항상** 수행되고, `quote_masked` 치환은 config
+`masking_enabled: true` 이고 요청도 `guardrail_call: 1` 일 때만 함께 수행됩니다.
+
+**접속 정보 — yaml**
+
+워크플로우 게이트웨이 주소·워크플로우 ID·인증키는 환경 종속값이라 yaml 에 둡니다(enrichment/ocr url 과 동일 패턴).
+
+```yaml
+guardrail:
+  url: ""                 # GenOS gateway 주소(코드가 /workflow/{id}/run/v2 를 붙임)
+  workflow_id:            # 민감정보 분류 워크플로우 ID
+  api_key: ""             # 워크플로우 호출 Bearer 인증키
+  timeout: 60             # 워크플로우 호출 타임아웃(초). 대용량 문서는 상향
+  masking_enabled: false  # quote_masked 치환 on/off. guardrail_categories 부착은 기능 켜지면 항상
+```
+
+**동작 — 청킹 전 1회 분류 + 청킹 후 매칭**
+
+`guardrail_call: 1` 면 **청킹 직전(문서가 한 덩어리인 상태)** 에 분류 워크플로우를 **문서당 딱 1번**
+호출합니다. 청크 단위 호출이 아니므로 청크가 많아도 호출 수는 1회로 고정됩니다.
+
+- **요청**: `POST {url}/workflow/{workflow_id}/run/v2`, 헤더 `Authorization: Bearer {api_key}`,
+  body `{"question": "<문서 전체 텍스트>"}`.
+- **응답**: `{"code": 0, "data": {"sensitive_infos": [...]}}`. 각 항목은
+  `{category, specific_category, quote_origin, quote_masked}` 형태입니다.
+  (`sensitive_infos` 가 `data.text` 에 JSON 문자열로 실려오면 코드가 파싱 fallback 을 시도합니다.)
+
+```jsonc
+// sensitive_infos 항목 예
+{
+  "category": "인사 정보",                 // guardrail_categories 로 부착됨
+  "specific_category": "주민번호",          // 전처리기는 사용 안 함(버림)
+  "quote_origin": "홍길동 900101-1234567",  // 청크 매칭용 원문
+  "quote_masked": "홍길동 [주민등록번호]"     // masking on 일 때 치환값
+}
+```
+
+청킹이 끝나면 각 청크 텍스트에서 `quote_origin` 을 찾습니다(1차 정확 부분문자열 매칭, 실패 시 공백을
+무시하는 fuzzy 매칭). 매칭된 청크마다:
+
+- **`guardrail_categories` 라벨 부착 — 항상.** `category` 값을 청크 메타에 추가합니다.
+- **`quote_masked` 로 치환 — `masking_enabled: true` + 요청 on 일 때만.** `quote_origin` 이 있던 자리를
+  `quote_masked` 로 바꿔 적재합니다.
+
+`specific_category` 는 전처리기가 사용하지 않습니다(버림).
+
+> **표(table) 셀 포함**: 워크플로우로 보내는 문서 텍스트에 표를 마크다운으로 포함하므로, 표 셀 안의
+> PII(주민번호·연락처 등)도 분류·라벨·마스킹 대상입니다. 청크도 표를 마크다운으로 담으므로 quote 매칭이
+> 성립합니다. (그림은 제외.)
+
+**두 축 구분(참고)** — 워크플로우가 돌려주는 항목은 크게 두 종류입니다.
+
+| 유형 | 마스킹본(`quote_masked`) | 마스킹 on 시 동작 |
+|---|---|---|
+| **단어 범위** (주민번호·전화·이메일 등) | `[주민등록번호]` 등 토큰 | 해당 **단어만** 토큰으로 치환 + 라벨 부착 |
+| **의미 범위** (부동산·인사 등 LLM 판별) | `[부동산 정보]` 등 카테고리 토큰 | 탐지된 **문장 구간** 이 토큰으로 치환 + 라벨 부착 |
+
+(마스킹 off 면 둘 다 라벨만 부착. 워크플로우가 `quote_masked` 를 `quote_origin` 과 동일하게 보내면
+그 항목은 마스킹 on 이어도 치환이 생략됩니다 — 치환 여부는 워크플로우가 정하는 구조.)
+
+**출력 — 청크별 `guardrail_categories` 메타**
+
+각 청크의 벡터 메타 `guardrail_categories` 에 매칭된 `category` 값들이 리스트로 기록됩니다(쿼리 필터에 활용).
+
+- 여러 건이 매칭되면 **리스트(중복 제거)** 로 담깁니다(예: `["인사 정보", "부동산 정보"]`).
+- 매칭된 항목이 없거나 기능이 off 이면 값은 `None` 입니다.
+- 한 quote 가 청크 경계에 걸치거나 여러 청크에 중복 등장하면 **매칭된 청크 전부** 에 부착합니다.
+
+**실패 시 동작 — fail-open**
+
+워크플로우 호출이 실패하거나(네트워크·타임아웃·미설정) 특정 항목이 매칭되지 않으면(원문 불일치,
+`category` 없음 등) 전처리를 멈추지 않고 **원문을 그대로 통과**시키며 warning 로그를 남기고 그 항목만
+skip 합니다. 문서 적재 자체가 막히는 것보다 낫다는 판단입니다.
+
+**운영 시 주의**
+
+- 라벨·치환은 워크플로우가 반환한 `quote_origin` 이 청크 텍스트와 매칭돼야 적용됩니다. 따라서
+  워크플로우 프롬프트가 **원문 그대로** 의 quote 를 반환하도록 구성하는 것이 품질의 핵심입니다.
+- `category` 목록·의미 정의, 필터 구성은 운영 담당이 정합니다. 전처리기는 문자열로 저장만 합니다.
+
+**알려진 한계**
+
+- quote 가 두 청크로 쪼개지면 부분문자열 매칭이 양쪽 다 실패해 라벨/치환이 누락될 수 있습니다(경계 걸침).
+  이 경우 warning 로그만 남고 전처리기는 정상 진행합니다.
+
 ---
 
 ## 4. 처리 동작 개요 (보조)
@@ -972,6 +1082,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None       # 작성일 (YYYYMMDD 정수, field_transforms 결과)
     appendix: str = None           # 매칭된 부록 파일명 (없으면 "")
     file_path: str = None          # 비-PDF 자동 변환 시 변환된 PDF 로컬 경로
+    guardrail_categories: Optional[list] = None  # 민감정보 분류 라벨(예: ["인사 정보"]; 매칭 없음/기능 off 면 None). 3.10 참고
 ```
 
 | 필드 | attachment | convert | intelligent | 설명 |
@@ -982,6 +1093,7 @@ class GenOSVectorMeta(BaseModel):
 | `authors` | ❌ | ✅ | ❌ | 작성자 (intelligent 미주입) |
 | **`appendix`** | ❌ | ❌ | **✅** | 매칭된 부록 파일명 (청크별) |
 | **`file_path`** | ❌ | ❌ | **✅** | 변환된 PDF 경로 (비-PDF 입력 시) |
+| **`guardrail_categories`** | ✅ | ✅ | ✅ | 민감정보 분류 라벨(청크별, `Optional[list]`). `guardrail_call` on + quote 매칭 시 채워짐 (3.10) |
 
 > `output_fields` 등으로 추출된 그 밖의 메타데이터 키는 `field_transforms` 가 소비하지 않은 경우 `extra='allow'` 에 의해 그대로 벡터 메타에 passthrough 됩니다(중첩 객체는 JSON 문자열로 직렬화).
 

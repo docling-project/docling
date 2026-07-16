@@ -1631,6 +1631,9 @@ class GenosSmartChunker(BaseChunker):
         final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc, **kwargs)
 
         return iter(final_chunks)
+# 민감정보 분류/마스킹(#315)은 facade/guardrail 모듈로 분리 — gr.* 로 사용.
+from genon.preprocessor.facade import guardrail as gr
+
 
 class GenOSVectorMeta(BaseModel):
     class Config:
@@ -1653,6 +1656,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: Optional[int] = None  # YYYYMMDD 형식의 정수
     authors: Optional[str] = None      # 팀 리스트
     title: Optional[str] = None         # 문서 제목
+    guardrail_categories: Optional[list] = None    # #315 민감정보 분류 라벨(부동산/인사/민감 등). 미적용 시 None
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -1674,7 +1678,13 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.authors: Optional[str] = None      # 팀 리스트
         self.title: Optional[str] = None
+        self.guardrail_categories: Optional[list] = None   # #315 민감정보 분류 라벨
         self.extra_metadata: dict[str, Any] = {}
+
+    def set_guardrail_categories(self, guardrail_categories: Optional[list]) -> "GenOSVectorMetaBuilder":
+        """#315 청크 민감정보 분류 라벨 설정 (부동산/인사/민감 등의 list, 미적용 시 None)"""
+        self.guardrail_categories = guardrail_categories or None
+        return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1762,6 +1772,7 @@ class GenOSVectorMetaBuilder:
             "created_date": self.created_date,
             "authors": self.authors,      # 팀 리스트
             "title": self.title,
+            "guardrail_categories": self.guardrail_categories,  # #315 민감정보 분류 라벨
             **self.extra_metadata,
         }
         return GenOSVectorMeta.model_validate(payload)
@@ -1890,6 +1901,15 @@ class DocumentProcessor:
             self.ocr_endpoint = ocr_options.api_endpoint
         else:
             self.ocr_endpoint = ocr_ep
+
+        # 민감정보 분류(#315): GenOS 분류 워크플로우 접속 정보. on/off 는 요청별 kwargs(guardrail_call).
+        gm_cfg = _as_dict(cfg.get("guardrail"))
+        self._guardrail_url = str(gm_cfg.get("url") or "").strip()
+        self._guardrail_workflow_id = _parse_optional_int(gm_cfg.get("workflow_id"), "guardrail.workflow_id")
+        self._guardrail_api_key = str(gm_cfg.get("api_key") or "").strip()
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail.timeout")
+        self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 60
+        self._guardrail_masking_enabled = bool(_parse_optional_bool(gm_cfg.get("masking_enabled"), "guardrail.masking_enabled"))
 
         self.page_chunk_counts = defaultdict(int)
 
@@ -2756,6 +2776,8 @@ class DocumentProcessor:
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
             list[dict]:
         title = ""
+        _sensitive_infos: list = kwargs.get("_sensitive_infos") or []      # #315 분류 결과
+        _gr_masking: bool = bool(kwargs.get("_guardrail_masking", False))   # #315 마스킹 치환 on/off
         enrichment_context = kwargs.get("_enrichment_context")
         context_metadata = (
             dict(enrichment_context.get("metadata", {}))
@@ -2781,7 +2803,7 @@ class DocumentProcessor:
             "text", "n_char", "n_word", "n_line", "e_page", "i_page",
             "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
             "n_page", "reg_date", "chunk_bboxes", "media_files", "title",
-            "created_date",
+            "created_date", "guardrail_categories",
         } | consumed_keys
         for reserved_key in reserved_keys:
             passthrough_metadata.pop(reserved_key, None)
@@ -2813,6 +2835,9 @@ class DocumentProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 가드레일 분류 후처리: quote 매칭 → guardrail_categories 부착(항상) + 마스킹 치환(옵션)
+            content, chunk_cats = gr.apply_to_text(content, _sensitive_infos, _gr_masking)
+
             vector = (GenOSVectorMetaBuilder()
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
@@ -2820,6 +2845,7 @@ class DocumentProcessor:
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items, include_tables=self.table_image_enabled)
+                      .set_guardrail_categories(sorted(chunk_cats) if chunk_cats else None)
                       ).build()
             vectors.append(vector)
 
@@ -3401,6 +3427,14 @@ class DocumentProcessor:
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
 
+        # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
+        sensitive_infos: list = []
+        if gr.call_enabled(kwargs):
+            sensitive_infos = gr.classify_document(
+                gr.doc_text(document), self._guardrail_url, self._guardrail_workflow_id,
+                self._guardrail_api_key, self._guardrail_timeout,
+            )
+
         # Extract Chunk from DoclingDocument. PPT 는 페이지 기반 청킹(1 page 1 chunk).
         if is_ppt:
             chunks: List[DocChunk] = self.split_documents_by_page(document, **kwargs)
@@ -3413,6 +3447,8 @@ class DocumentProcessor:
                 chunks,
                 file_path,
                 request,
+                _sensitive_infos=sensitive_infos,
+                _guardrail_masking=(gr.call_enabled(kwargs) and self._guardrail_masking_enabled),
                 **enrichment_kwargs,
             )
         else:

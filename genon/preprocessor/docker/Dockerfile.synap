@@ -404,6 +404,9 @@ COPY ./genon/preprocessor/converters /app/genon/preprocessor/converters
 # `from genon.preprocessor.facade.enrichment.* import ...` (intelligent_processor.py:151-152)
 # 가 /app 기준 namespace package 로 풀리도록. (converters 와 동일 패턴)
 COPY ./genon/preprocessor/facade/enrichment /app/genon/preprocessor/facade/enrichment
+# guardrail 패키지를 namespace tree 로 복사 — facade 의
+# `from genon.preprocessor.facade import guardrail as gr` (#315) 가 /app 기준으로 풀리도록.
+COPY ./genon/preprocessor/facade/guardrail /app/genon/preprocessor/facade/guardrail
 
 # 🔴 HWP sdk
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
