@@ -285,13 +285,9 @@ class NemotronOcrModel(BaseOcrModel):
 
         image_arrays = [entry.image for entry in buffer]
 
-        # Run the model to get the raw predictions. `self.reader` accepts a
-        # list of images and returns one prediction list per image. The
-        # inference time is measured once and split evenly across the buffered
-        # rectangles; since each entry is one rectangle, this weights the
-        # attribution by how many rectangles each page contributed and keeps the
-        # per-page shares summing to the real inference time.
-        infer_start = time.monotonic()
+        # Measure the inference time and amortize it across the pages
+        profile_inference = settings.debug.profile_pipeline_timings
+        infer_start = time.monotonic() if profile_inference else 0.0
         batch_predictions = cast(
             Sequence[Sequence[NemotronOcrPrediction]],
             self.reader(
@@ -299,13 +295,13 @@ class NemotronOcrModel(BaseOcrModel):
                 merge_level=self.options.merge_level,
             ),
         )
-        per_rect_seconds = (time.monotonic() - infer_start) / len(buffer)
-        for entry in buffer:
-            if entry.state.recorder is not None:
-                entry.state.recorder.add(per_rect_seconds)
+        if profile_inference:
+            per_rect_seconds = (time.monotonic() - infer_start) / len(buffer)
+            for entry in buffer:
+                if entry.state.recorder is not None:
+                    entry.state.recorder.add(per_rect_seconds)
 
-        # Convert the raw predictions to docling's OCR cells and route them to
-        # the page they belong to.
+        # Convert the raw predictions to docling's OCR cells and route them to their page
         for entry, raw_predictions in zip(buffer, batch_predictions):
             image_width, image_height = entry.image_size
             cells = [
