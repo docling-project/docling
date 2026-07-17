@@ -25,6 +25,7 @@ def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.XML_JATS])
     return converter
 
+
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">

@@ -507,7 +507,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
-    def _handle_inline_formula(self,
+    def _handle_inline_formula(
+        self,
         child: etree._Element,
         node: etree._Element,
         node_text: str,
