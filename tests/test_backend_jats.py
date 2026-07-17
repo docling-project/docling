@@ -233,6 +233,30 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
+def test_jats_table_header_rowspan_past_table_end_is_not_dropped():
+    # A table whose only row is header <th> cells with rowspan>1 (the span runs
+    # past the last row) made parse_table_data count num_rows=0, index an empty
+    # grid, and raise IndexError; convert() swallows it as "unsupported table" and
+    # silently drops the whole table. The table must render with both cells.
+    doc = convert_jats_body(
+        "<table-wrap><label>Table 1</label>"
+        "<table><tr><th rowspan='2'>A</th><th rowspan='2'>B</th></tr></table>"
+        "</table-wrap>"
+    )
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert table.num_rows == 1
+    assert table.num_cols == 2
+    cells = {
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in table.table_cells
+    }
+    assert cells == {("A", 0, 0), ("B", 0, 1)}
+    md = doc.export_to_markdown()
+    assert "A" in md and "B" in md
+
+
 def test_jats_footnotes_are_preserved():
     doc = convert_jats_body(
         """
