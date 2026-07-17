@@ -310,6 +310,41 @@ def test_nested_table_in_description_list_item():
     assert len(doc.tables) == 1
 
 
+def test_table_header_rowspan_past_table_end_does_not_crash():
+    """Regression: a table whose only row is header cells with rowspan>1 (the
+    rowspan runs past the table's last row) made get_html_table_row_col count
+    num_rows=0, so parse_table_data indexed an empty grid and raised IndexError,
+    failing the whole conversion. The header row must still produce a 1-row table
+    with both cells rather than crash or drop the data.
+    """
+    html = (
+        b"<html><body><table>"
+        b"<tr><th rowspan='2'>A</th><th rowspan='2'>B</th></tr>"
+        b"</table></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert table.num_rows == 1
+    assert table.num_cols == 2
+    cells = {
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in table.table_cells
+    }
+    assert cells == {("A", 0, 0), ("B", 0, 1)}
+    # both cells survive to export instead of being silently dropped
+    md = doc.export_to_markdown()
+    assert "A" in md and "B" in md
+
+
 def test_description_lists():
     """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
     test_set: list[tuple[bytes, str]] = []

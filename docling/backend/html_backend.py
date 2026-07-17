@@ -2566,8 +2566,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
             t.unwrap()
         # Find the number of rows and columns (taking into account spans)
-        num_rows: int = 0
         num_cols: int = 0
+        # num_rows tracks the last grid row a cell lands on (as parse_table_data
+        # places them), so a spanning-header row with no row below still gets one.
+        row_idx = -1
+        start_row_span = 0
+        max_row = -1
         for row in tag("tr", recursive=False):
             col_count = 0
             is_row_header = True
@@ -2583,7 +2587,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     is_row_header = False
             num_cols = max(num_cols, col_count)
             if not is_row_header:
-                num_rows += 1
+                row_idx += 1
+                start_row_span = 0
+            else:
+                start_row_span += 1
+            max_row = max(max_row, row_idx + start_row_span)
+        num_rows = max_row + 1
         return num_rows, num_cols
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
