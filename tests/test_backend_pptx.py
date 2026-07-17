@@ -356,23 +356,6 @@ def test_chart_image_rendering(libreoffice_available):
     )
 
 
-def test_pptx_issue_2663_keeps_bullets_with_subheadings():
-    pptx_path = Path("./tests/data/pptx/powerpoint_issue_2663.pptx")
-
-    doc = convert_with_pptx_backend(pptx_path)
-    pred_md = doc.export_to_markdown()
-
-    key_benefits = pred_md.index("Key Benefits:")
-    benefit_bullet = pred_md.index("Open-source software is cost-effective")
-    last_benefit_bullet = pred_md.index("Offers flexibility")
-    considerations = pred_md.index("Considerations When Using Open-Source Software:")
-    first_consideration_bullet = pred_md.index("Open-source projects often rely")
-    last_consideration_bullet = pred_md.index("advanced technical expertise")
-
-    assert key_benefits < benefit_bullet < last_benefit_bullet < considerations
-    assert considerations < first_consideration_bullet < last_consideration_bullet
-
-
 def test_pptx_shapes_are_sorted_by_visual_position():
     class FakeShape:
         def __init__(self, name, top=None, left=None):

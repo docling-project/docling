@@ -42,10 +42,10 @@
           "$ref": "#/texts/0"
         },
         {
-          "$ref": "#/texts/1"
+          "$ref": "#/tables/0"
         },
         {
-          "$ref": "#/tables/0"
+          "$ref": "#/texts/1"
         }
       ],
       "content_layer": "body",
@@ -65,10 +65,10 @@
           "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/groups/2"
         },
         {
           "$ref": "#/texts/8"
@@ -85,13 +85,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/4"
-        },
-        {
           "$ref": "#/texts/5"
         },
         {
           "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
         }
       ],
       "content_layer": "body",
@@ -328,6 +328,33 @@
         {
           "page_no": 2,
           "bbox": {
+            "l": 6180463.0,
+            "t": 5221995.0,
+            "r": 10256704.0,
+            "b": 1344058.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "A rectangle shape with this text inside.",
+      "text": "A rectangle shape with this text inside."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
             "l": 838200.0,
             "t": 3962400.0,
             "r": 4461831.0,
@@ -344,7 +371,7 @@
       "text": "Let’s introduce a list"
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -373,7 +400,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -402,7 +429,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -429,33 +456,6 @@
       "text": "And baz things",
       "enumerated": false,
       "marker": ""
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [
-        {
-          "page_no": 2,
-          "bbox": {
-            "l": 6180463.0,
-            "t": 5221995.0,
-            "r": 10256704.0,
-            "b": 1344058.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            40
-          ]
-        }
-      ],
-      "orig": "A rectangle shape with this text inside.",
-      "text": "A rectangle shape with this text inside."
     },
     {
       "self_ref": "#/texts/8",

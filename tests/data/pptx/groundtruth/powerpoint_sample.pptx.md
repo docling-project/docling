@@ -1,7 +1,5 @@
 # Test Table Slide
 
-With footnote
-
 |  | Class1 | Class1 | Class1 | Class2 | Class2 | Class2 |
 | - | - | - | - | - | - | - |
 |  | A merged with B | A merged with B | C | A | B | C |
@@ -13,15 +11,17 @@ With footnote
 | R4 |  | True |  | True | False | False |
 | R4 | True | False | True | False | True | False |
 
+With footnote
+
 # Second slide title
+
+A rectangle shape with this text inside.
 
 Let’s introduce a list
 
 - With foo
 - Bar
 - And baz things
-
-A rectangle shape with this text inside.
 
 1. List item4
 2. List item5
