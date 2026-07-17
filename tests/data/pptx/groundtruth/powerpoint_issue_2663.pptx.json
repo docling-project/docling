@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
-  "name": "powerpoint_visual_order",
+  "name": "powerpoint_issue_2663",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
-    "binary_hash": 6396520284812992156,
-    "filename": "powerpoint_visual_order.pptx"
+    "binary_hash": 4058147445965489257,
+    "filename": "powerpoint_issue_2663.pptx"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -19,9 +19,6 @@
     "children": [
       {
         "$ref": "#/groups/0"
-      },
-      {
-        "$ref": "#/groups/3"
       }
     ],
     "content_layer": "body",
@@ -45,7 +42,7 @@
           "$ref": "#/groups/1"
         },
         {
-          "$ref": "#/texts/4"
+          "$ref": "#/texts/7"
         },
         {
           "$ref": "#/groups/2"
@@ -66,6 +63,15 @@
         },
         {
           "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -79,32 +85,15 @@
       },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/8"
         },
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/texts/9"
         }
       ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
-        }
-      ],
-      "content_layer": "body",
-      "name": "slide-1",
-      "label": "chapter"
     }
   ],
   "texts": [
@@ -115,15 +104,15 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "title",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 457200.0,
-            "t": 731520.0,
-            "r": 8686800.0,
-            "b": 182880.0,
+            "l": 838200.0,
+            "t": 1690688.0,
+            "r": 11353800.0,
+            "b": 365125.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -147,15 +136,15 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 457200.0,
-            "t": 1371600.0,
-            "r": 4114800.0,
-            "b": 1005840.0,
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            13
+            594
           ]
         }
       ],
@@ -174,20 +163,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 457200.0,
-            "t": 2651760.0,
-            "r": 8686800.0,
-            "b": 1554480.0,
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            36
+            594
           ]
         }
       ],
-      "orig": "Cost effective",
-      "text": "Cost effective",
+      "orig": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
+      "text": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
       "enumerated": false,
       "marker": ""
     },
@@ -203,25 +192,112 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 457200.0,
-            "t": 2651760.0,
-            "r": 8686800.0,
-            "b": 1554480.0,
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            36
+            594
           ]
         }
       ],
-      "orig": "Transparent community",
-      "text": "Transparent community",
+      "orig": "Ehnhances security and transparency by allowing public access to source code",
+      "text": "Ehnhances security and transparency by allowing public access to source code",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Strong global community improves and maintains open-source projects.",
+      "text": "Strong global community improves and maintains open-source projects.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Offers flexibility, allowing users to customize and adapt the software",
+      "text": "Offers flexibility, allowing users to customize and adapt the software",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -232,132 +308,78 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 457200.0,
-            "t": 3931920.0,
-            "r": 5029200.0,
-            "b": 3566160.0,
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            15
+            594
           ]
         }
       ],
-      "orig": "Considerations:",
-      "text": "Considerations:"
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 457200.0,
-            "t": 5029200.0,
-            "r": 8686800.0,
-            "b": 4114800.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            57
-          ]
-        }
-      ],
-      "orig": "Community support can vary",
-      "text": "Community support can vary",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 457200.0,
-            "t": 5029200.0,
-            "r": 8686800.0,
-            "b": 4114800.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            57
-          ]
-        }
-      ],
-      "orig": "Maintenance requires expertise",
-      "text": "Maintenance requires expertise",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [
-        {
-          "page_no": 2,
-          "bbox": {
-            "l": 914400.0,
-            "t": 1371600.0,
-            "r": 4572000.0,
-            "b": 914400.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            21
-          ]
-        }
-      ],
-      "orig": "Upper grouped textbox",
-      "text": "Upper grouped textbox"
+      "orig": "Considerations When Using Open-Source Software:",
+      "text": "Considerations When Using Open-Source Software:"
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "list_item",
       "prov": [
         {
-          "page_no": 2,
+          "page_no": 1,
           "bbox": {
-            "l": 914400.0,
-            "t": 2286000.0,
-            "r": 4572000.0,
-            "b": 1828800.0,
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            21
+            594
           ]
         }
       ],
-      "orig": "Lower grouped textbox",
-      "text": "Lower grouped textbox"
+      "orig": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
+      "text": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
+      "text": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
+      "enumerated": false,
+      "marker": ""
     }
   ],
   "pictures": [],
@@ -367,17 +389,10 @@
   "pages": {
     "1": {
       "size": {
-        "width": 9144000.0,
+        "width": 12192000.0,
         "height": 6858000.0
       },
       "page_no": 1
-    },
-    "2": {
-      "size": {
-        "width": 9144000.0,
-        "height": 6858000.0
-      },
-      "page_no": 2
     }
   }
 }
