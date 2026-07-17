@@ -6,7 +6,7 @@ import warnings
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Callable, Final, Optional, Union
+from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -566,8 +566,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "level": lvl,
         }
 
-    def _get_shape_position(self, shape, attr: str) -> Optional[int]:
-        """Return a shape position attribute as an integer for ordering."""
+    def _get_shape_position(self, shape: object, attr: str) -> Optional[int]:
+        """Return a shape position attribute as an integer for ordering.
+
+        Args:
+            shape: A python-pptx shape object. Position attributes such as
+                ``top`` and ``left`` are accessed via ``getattr``; property
+                getters that raise are silently treated as absent.
+            attr: Name of the position attribute to read, typically ``"top"``
+                or ``"left"``.
+
+        Returns:
+            The attribute value cast to ``int``, or ``None`` if the attribute
+            is missing, ``None``-valued, or its getter raises
+            ``AttributeError``, ``ValueError``, or ``TypeError``.
+        """
         try:
             value = getattr(shape, attr)
         except (AttributeError, ValueError, TypeError):
@@ -578,13 +591,28 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return int(value)
 
-    def _iter_shapes_by_position(self, shapes):
+    def _iter_shapes_by_position(self, shapes: Iterable[object]) -> Iterator[object]:
         """Iterate shapes in visual top-to-bottom, left-to-right order.
 
-        PowerPoint stores shapes in creation/z-order, which can differ from the way
-        content is visually read on a slide. Sorting by position keeps split text
-        boxes, such as a subheading followed by its bullet textbox, adjacent in the
-        extracted document.
+        PowerPoint stores shapes in creation/z-order, which can differ from the
+        way content is visually read on a slide. Sorting by position keeps split
+        text boxes, such as a subheading followed by its bullet text box, adjacent
+        in the extracted document.
+
+        Shapes that share a top-edge within ``row_tolerance`` EMUs are placed in
+        the same row and then sorted left-to-right within that row. The row anchor
+        is the ``top`` value of the first shape in the row. Shapes whose position
+        attributes are unavailable or raise an exception are placed at the end in
+        their original relative order.
+
+        Args:
+            shapes: Iterable of python-pptx shape objects to sort. May be a
+                slide's top-level shape collection or the children of a group
+                shape.
+
+        Yields:
+            Shapes from ``shapes`` in visual reading order (top-to-bottom,
+            left-to-right).
         """
         row_tolerance = 45720  # 0.05 inch in EMUs
         fallback_position = 2**63 - 1
