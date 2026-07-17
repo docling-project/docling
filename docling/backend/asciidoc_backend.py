@@ -209,9 +209,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_picture(line)
 
                 size: Size
-                if "width" in item and "height" in item:
+                try:
                     size = Size(width=int(item["width"]), height=int(item["height"]))
-                else:
+                except (KeyError, ValueError):
+                    # width/height may be absent or non-numeric (e.g. "50%", "auto")
                     size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
 
                 uri = None

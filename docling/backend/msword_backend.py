@@ -21,11 +21,16 @@ from docling_core.types.doc import (
     ImageRef,
     ListGroup,
     NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     RefItem,
     RichTableCell,
     TableCell,
     TableData,
     TableItem,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from lxml import etree
@@ -39,6 +44,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
@@ -66,6 +72,39 @@ _INSTALL_HINT = (
     "The 'python-docx' package is required to process Word files. "
     "Install it with `pip install 'docling-slim[format-docx]'`."
 )
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Word charts as images "
+    "(render_chart_images=True). Install LibreOffice and make sure `soffice` is "
+    "on PATH. Charts still keep their classification and reconstructed tabular "
+    "data without it."
+)
+
+# Safe XML parser for chart parts — prevents XXE, DTD-over-network, and
+# entity-expansion attacks when parsing untrusted ``chartN.xml`` payloads.
+_SAFE_XML_PARSER: Final = etree.XMLParser(
+    resolve_entities=False,
+    load_dtd=False,
+    no_network=True,
+    dtd_validation=False,
+)
+
+# Maps a DrawingML chart plot element name (e.g. "barChart", the child of
+# ``c:plotArea``) to the docling picture-classification label the emitted chart
+# PictureItem is tagged with. These tagnames are shared across the OOXML Office
+# formats; chart types not listed fall back to OTHER_CHART.
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
 
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
@@ -209,6 +248,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     _BLIP_NAMESPACES: Final = {
         "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
         "w": _W_NS,
         "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
@@ -224,10 +264,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: MsWordBackendOptions | None = None,
+    ) -> None:
         if not _DOCX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        if options is None:
+            options = MsWordBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
@@ -622,23 +669,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(te2)
             # Check for DrawingML elements
             elif drawingml_els:
-                if (
-                    self.docx_to_pdf_converter is None
-                    and self.docx_to_pdf_converter_init is False
-                ):
-                    self.docx_to_pdf_converter = get_docx_to_pdf_converter()
-                    self.docx_to_pdf_converter_init = True
+                # Native charts (graphicFrames referencing word/charts/chartN.xml)
+                # are parsed into classified pictures carrying their reconstructed
+                # data, without LibreOffice. Any remaining DrawingML (shapes,
+                # SmartArt, ...) still needs LibreOffice to be rasterized.
+                chart_els: list[Any] = []
+                other_els: list[Any] = []
+                for el in drawingml_els:
+                    (chart_els if self._is_chart_drawing(el) else other_els).append(el)
 
-                if self.docx_to_pdf_converter is None:
-                    if self.display_drawingml_warning:
-                        _log.warning(
-                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                            "If you want these exported, make sure you have "
-                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
-                        )
-                        self.display_drawingml_warning = False
-                else:
-                    self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
+                for chart_el in chart_els:
+                    chart_ref = self._handle_chart(doc=doc, chart_el=chart_el)
+                    if chart_ref is not None:
+                        added_elements.append(chart_ref)
+
+                if other_els:
+                    if (
+                        self.docx_to_pdf_converter is None
+                        and self.docx_to_pdf_converter_init is False
+                    ):
+                        self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+                        self.docx_to_pdf_converter_init = True
+
+                    if self.docx_to_pdf_converter is None:
+                        if self.display_drawingml_warning:
+                            _log.warning(
+                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                                "If you want these exported, make sure you have "
+                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                            )
+                            self.display_drawingml_warning = False
+                    else:
+                        self._handle_drawingml(doc=doc, drawingml_els=other_els)
 
                 # Always process text in paragraph
                 if (
@@ -2696,8 +2758,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
         """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.
 
-        DrawingML elements without blips (e.g., charts, SmartArt) need to be
-        rendered through LibreOffice to extract as images.
+        Blip-less DrawingML shapes (e.g., SmartArt, WordprocessingML shapes) need
+        to be rendered through LibreOffice to extract as images. Native charts are
+        handled separately by the _handle_chart method.
 
         Args:
             doc: The DoclingDocument being constructed
@@ -2719,6 +2782,323 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_picture_to_doc(doc, parent, None)
 
         return
+
+    def _is_chart_drawing(self, drawing_el: Any) -> bool:
+        """Return True when a ``w:drawing`` embeds a native chart.
+
+        A charted drawing holds a graphic frame whose ``c:chart`` element
+        references a ``word/charts/chartN.xml`` part (rather than an ``a:blip``
+        image or a shape).
+        """
+        return (
+            drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES) is not None
+        )
+
+    def _resolve_chart_root(self, drawing_el: Any) -> Any | None:
+        """Resolve a charted ``w:drawing`` to the root of its chart part.
+
+        The drawing's ``c:chart@r:id`` is a relationship into the main document
+        part; we follow it to the ``chartN.xml`` payload and parse it with the
+        hardened XML parser. Returns None when the relationship or payload is
+        missing or malformed.
+        """
+        chart_ref = drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES)
+        if chart_ref is None:
+            return None
+        rid = chart_ref.get(f"{{{self._BLIP_NAMESPACES['r']}}}id")
+        if not rid:
+            return None
+        try:
+            part = self.docx_obj.part.related_parts[rid]
+        except KeyError:
+            _log.debug("chart relationship %r not found in document part", rid)
+            return None
+        try:
+            return etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
+        except etree.XMLSyntaxError:
+            _log.debug("could not parse chart part for relationship %r", rid)
+            return None
+
+    def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
+        """Classify a chart from the first plot element under ``c:plotArea``.
+
+        The plot element name (``barChart``, ``lineChart``, ``pieChart``, ...) is
+        mapped to a docling classification label; unknown or combination charts
+        fall back to OTHER_CHART.
+        """
+        plot_area = chart_root.find(".//c:plotArea", namespaces=self._BLIP_NAMESPACES)
+        if plot_area is not None:
+            for child in plot_area:
+                label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                    etree.QName(child).localname
+                )
+                if label is not None:
+                    return label
+        return PictureClassificationLabel.OTHER_CHART
+
+    @staticmethod
+    def _chart_cell_text(value: str | None) -> str:
+        """Format a cached chart value as cell text.
+
+        Numeric cache values (``c:numCache``) round-trip through float so they
+        read like the source data (``"4.4000000000000004"`` -> ``"4.4"``,
+        ``"2"`` -> ``"2"``). Non-numeric labels are returned unchanged; None
+        becomes an empty string.
+        """
+        if value is None:
+            return ""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return value
+        if number.is_integer():
+            return str(int(number))
+        return str(number)
+
+    def _read_chart_cache(self, node: Any | None) -> list[str]:
+        """Read the cached ``c:pt`` values under a chart data source.
+
+        Handles both cached references (``c:numCache``/``c:strCache``) and inline
+        literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
+        gaps are filled with empty strings so every series aligns to the same rows.
+        """
+        if node is None:
+            return []
+        ns = self._BLIP_NAMESPACES
+        cache = None
+        for tag in ("numCache", "strCache", "numLit", "strLit"):
+            cache = node.find(f".//c:{tag}", namespaces=ns)
+            if cache is not None:
+                break
+        if cache is None:
+            return []
+
+        points: dict[int, str] = {}
+        for pt in cache.findall("c:pt", namespaces=ns):
+            try:
+                idx = int(pt.get("idx", "0"))
+            except ValueError:
+                continue
+            value = pt.find("c:v", namespaces=ns)
+            points[idx] = self._chart_cell_text(
+                value.text if value is not None else None
+            )
+        if not points:
+            return []
+
+        count = 0
+        count_el = cache.find("c:ptCount", namespaces=ns)
+        if count_el is not None and count_el.get("val"):
+            try:
+                count = int(count_el.get("val"))
+            except ValueError:
+                count = 0
+        length = max([count] + [idx + 1 for idx in points])
+        return [points.get(idx, "") for idx in range(length)]
+
+    def _chart_series_name(self, series: Any) -> str:
+        """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
+        tx = series.find("c:tx", namespaces=self._BLIP_NAMESPACES)
+        if tx is None:
+            return ""
+        cached = self._read_chart_cache(tx)
+        if cached:
+            return cached[0]
+        literal = tx.find("c:v", namespaces=self._BLIP_NAMESPACES)
+        return self._chart_cell_text(literal.text) if literal is not None else ""
+
+    def _chart_title_text(self, chart_root: Any) -> str | None:
+        """Extract the chart's title text, or None when it has no title.
+
+        A chart title is DrawingML rich text (``a:t`` runs) under ``c:chart/
+        c:title``; some charts instead reference a cell, cached in a ``c:strRef``.
+        """
+        ns = self._BLIP_NAMESPACES
+        chart = chart_root.find("c:chart", namespaces=ns)
+        if chart is None:
+            return None
+        title = chart.find("c:title", namespaces=ns)
+        if title is None:
+            return None
+        runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
+        text = "".join(runs).strip()
+        if not text:
+            cached = self._read_chart_cache(title)
+            text = cached[0].strip() if cached else ""
+        return text or None
+
+    def _chart_to_table_data(self, chart_root: Any) -> TableData | None:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Layout produced (categories down the first column, one column per series):
+
+            | <blank> | <series 0 name> | <series 1 name> | ...
+            | cat_0   | val_0,0         | val_1,0         | ...
+            | cat_1   | val_0,1         | val_1,1         | ...
+
+        The plotted numbers and labels come from each series' inline cache
+        (``c:numCache``/``c:strCache``), so no workbook reference resolution is
+        needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
+        ``c:val``.
+
+        Args:
+            chart_root: The parsed root of a ``chartN.xml`` part.
+
+        Returns:
+            A TableData, or None if the chart exposes no usable series.
+        """
+        ns = self._BLIP_NAMESPACES
+        series_list = chart_root.findall(".//c:ser", namespaces=ns)
+        if not series_list:
+            return None
+
+        categories: list[str] = []
+        for series in series_list:
+            cat = series.find("c:cat", namespaces=ns)
+            if cat is None:
+                cat = series.find("c:xVal", namespaces=ns)
+            resolved = self._read_chart_cache(cat)
+            if resolved:
+                categories = resolved
+                break
+
+        columns: list[tuple[str, list[str]]] = []
+        for series in series_list:
+            val = series.find("c:val", namespaces=ns)
+            if val is None:
+                val = series.find("c:yVal", namespaces=ns)
+            values = self._read_chart_cache(val)
+            columns.append((self._chart_series_name(series), values))
+
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+        if num_data_rows == 0:
+            return None
+
+        num_rows = num_data_rows + 1
+        num_cols = 1 + len(columns)
+        cells: list[TableCell] = []
+
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
+                )
+            )
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),
+                    )
+                )
+
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    def _render_chart_image(self, drawing_el: Any) -> Image.Image | None:
+        """Render a charted drawing to an image via LibreOffice.
+
+        Reuses the shared DOCX->PDF->PNG path, isolating just the chart drawing.
+        Returns None (and warns once) when LibreOffice is unavailable or the
+        render fails, so the chart still keeps its classification and data.
+        """
+        image = self._convert_elements_via_docx([drawing_el], element_tag=None)
+        if image is None and self.display_drawingml_warning:
+            _log.warning(_CHART_RENDER_HINT)
+            self.display_drawingml_warning = False
+        return image
+
+    def _handle_chart(self, doc: DoclingDocument, chart_el: Any) -> RefItem | None:
+        """Add a native chart drawing as a classified PictureItem with its data.
+
+        The chart becomes a PictureItem whose meta carries (a) the chart-type
+        classification and (b) the chart's plotted numbers reconstructed as a
+        TableData — both derived from the chart part without LibreOffice. The
+        chart title, if any, becomes the picture caption. When
+        ``render_chart_images`` is enabled and LibreOffice is available, a
+        rendered image is attached; on any failure the picture keeps its
+        classification and data without an image.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            chart_el: The ``w:drawing`` element embedding the chart.
+
+        Returns:
+            A reference to the added picture, or None if it could not be added.
+        """
+        level = self._get_level()
+        parent = self.parents[level - 1]
+
+        chart_root = self._resolve_chart_root(chart_el)
+        classification: PictureClassificationLabel | None = None
+        table_data: TableData | None = None
+        caption_text: str | None = None
+        if chart_root is not None:
+            classification = self._classify_chart(chart_root)
+            table_data = self._chart_to_table_data(chart_root)
+            caption_text = self._chart_title_text(chart_root)
+
+        render_charts = (
+            isinstance(self.options, MsWordBackendOptions)
+            and self.options.render_chart_images
+        )
+        image_ref = None
+        if render_charts:
+            chart_image = self._render_chart_image(chart_el)
+            if chart_image is not None:
+                image_ref = ImageRef.from_pil(image=chart_image, dpi=72)
+
+        caption_item = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=caption_text,
+                content_layer=self.content_layer,
+            )
+            if caption_text
+            else None
+        )
+        picture = doc.add_picture(
+            parent=parent,
+            image=image_ref,
+            caption=caption_item,
+            content_layer=self.content_layer,
+        )
+        if classification is not None:
+            picture.meta = PictureMeta(
+                classification=PictureClassificationMetaField(
+                    predictions=[
+                        PictureClassificationPrediction(class_name=classification)
+                    ]
+                ),
+                tabular_chart=(
+                    TabularChartMetaField(chart_data=table_data)
+                    if table_data is not None
+                    else None
+                ),
+            )
+        return picture.get_ref()
 
     def _add_header_footer(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add section headers and footers.
