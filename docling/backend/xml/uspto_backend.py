@@ -1525,6 +1525,14 @@ class XmlTable:
         self.empty_text = ""
         self._soup = BeautifulSoup(input, features="xml")
 
+    @staticmethod
+    def _parse_colwidth(colwidth: str | None) -> float:
+        # CALS colwidth may be fixed ("36pt"), proportional ("2*"), or absent; take the leading magnitude.
+        if not colwidth:
+            return 1.0
+        match = re.match(r"\s*([0-9]*\.?[0-9]+)", colwidth)
+        return float(match.group(1)) if match else 1.0
+
     def _create_tg_range(self, tgs: list[ColInfo]) -> dict[int, ColInfoType]:
         """Create a unified range along the table groups.
 
@@ -1548,13 +1556,7 @@ class XmlTable:
             }
             offst = 0
             for info in tg["colinfo"]:
-                cw = info["colwidth"]
-                cw = re.sub("pt", "", cw, flags=re.I)
-                cw = re.sub("mm", "", cw, flags=re.I)
-                try:
-                    cw = int(cw)
-                except BaseException:
-                    cw = float(cw)
+                cw = self._parse_colwidth(info["colwidth"])
                 colinfo[itg]["colwidth"].append(cw)
                 colinfo[itg]["offset"].append(offst)
                 offst += cw
