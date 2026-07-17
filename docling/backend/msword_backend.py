@@ -80,17 +80,6 @@ _CHART_RENDER_HINT = (
     "data without it."
 )
 
-_C_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/chart"
-"""DrawingML chart namespace; native Word charts live in ``word/charts/chartN.xml``."""
-
-_A_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/main"
-"""DrawingML main namespace, used for chart title rich-text runs (``a:t``)."""
-
-_R_NS: Final[str] = (
-    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-)
-"""OPC relationships namespace; ``c:chart/@r:id`` points at the chart part."""
-
 # Safe XML parser for chart parts — prevents XXE, DTD-over-network, and
 # entity-expansion attacks when parsing untrusted ``chartN.xml`` payloads.
 _SAFE_XML_PARSER: Final = etree.XMLParser(
@@ -259,6 +248,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     _BLIP_NAMESPACES: Final = {
         "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
         "w": _W_NS,
         "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
@@ -2770,7 +2760,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         Blip-less DrawingML shapes (e.g., SmartArt, WordprocessingML shapes) need
         to be rendered through LibreOffice to extract as images. Native charts are
-        handled separately by :meth:`_handle_chart`.
+        handled separately by the _handle_chart method.
 
         Args:
             doc: The DoclingDocument being constructed
@@ -2793,15 +2783,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
-    @staticmethod
-    def _is_chart_drawing(drawing_el: Any) -> bool:
+    def _is_chart_drawing(self, drawing_el: Any) -> bool:
         """Return True when a ``w:drawing`` embeds a native chart.
 
         A charted drawing holds a graphic frame whose ``c:chart`` element
         references a ``word/charts/chartN.xml`` part (rather than an ``a:blip``
         image or a shape).
         """
-        return drawing_el.find(f".//{{{_C_NS}}}chart") is not None
+        return (
+            drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES) is not None
+        )
 
     def _resolve_chart_root(self, drawing_el: Any) -> Any | None:
         """Resolve a charted ``w:drawing`` to the root of its chart part.
@@ -2811,10 +2802,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         hardened XML parser. Returns None when the relationship or payload is
         missing or malformed.
         """
-        chart_ref = drawing_el.find(f".//{{{_C_NS}}}chart")
+        chart_ref = drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES)
         if chart_ref is None:
             return None
-        rid = chart_ref.get(f"{{{_R_NS}}}id")
+        rid = chart_ref.get(f"{{{self._BLIP_NAMESPACES['r']}}}id")
         if not rid:
             return None
         try:
@@ -2828,15 +2819,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug("could not parse chart part for relationship %r", rid)
             return None
 
-    @staticmethod
-    def _classify_chart(chart_root: Any) -> PictureClassificationLabel:
+    def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
         """Classify a chart from the first plot element under ``c:plotArea``.
 
         The plot element name (``barChart``, ``lineChart``, ``pieChart``, ...) is
         mapped to a docling classification label; unknown or combination charts
         fall back to OTHER_CHART.
         """
-        plot_area = chart_root.find(f".//{{{_C_NS}}}plotArea")
+        plot_area = chart_root.find(".//c:plotArea", namespaces=self._BLIP_NAMESPACES)
         if plot_area is not None:
             for child in plot_area:
                 label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
@@ -2874,21 +2864,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         if node is None:
             return []
+        ns = self._BLIP_NAMESPACES
         cache = None
         for tag in ("numCache", "strCache", "numLit", "strLit"):
-            cache = node.find(f".//{{{_C_NS}}}{tag}")
+            cache = node.find(f".//c:{tag}", namespaces=ns)
             if cache is not None:
                 break
         if cache is None:
             return []
 
         points: dict[int, str] = {}
-        for pt in cache.findall(f"{{{_C_NS}}}pt"):
+        for pt in cache.findall("c:pt", namespaces=ns):
             try:
                 idx = int(pt.get("idx", "0"))
             except ValueError:
                 continue
-            value = pt.find(f"{{{_C_NS}}}v")
+            value = pt.find("c:v", namespaces=ns)
             points[idx] = self._chart_cell_text(
                 value.text if value is not None else None
             )
@@ -2896,7 +2887,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return []
 
         count = 0
-        count_el = cache.find(f"{{{_C_NS}}}ptCount")
+        count_el = cache.find("c:ptCount", namespaces=ns)
         if count_el is not None and count_el.get("val"):
             try:
                 count = int(count_el.get("val"))
@@ -2907,13 +2898,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
-        tx = series.find(f"{{{_C_NS}}}tx")
+        tx = series.find("c:tx", namespaces=self._BLIP_NAMESPACES)
         if tx is None:
             return ""
         cached = self._read_chart_cache(tx)
         if cached:
             return cached[0]
-        literal = tx.find(f"{{{_C_NS}}}v")
+        literal = tx.find("c:v", namespaces=self._BLIP_NAMESPACES)
         return self._chart_cell_text(literal.text) if literal is not None else ""
 
     def _chart_title_text(self, chart_root: Any) -> str | None:
@@ -2922,13 +2913,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         A chart title is DrawingML rich text (``a:t`` runs) under ``c:chart/
         c:title``; some charts instead reference a cell, cached in a ``c:strRef``.
         """
-        chart = chart_root.find(f"{{{_C_NS}}}chart")
+        ns = self._BLIP_NAMESPACES
+        chart = chart_root.find("c:chart", namespaces=ns)
         if chart is None:
             return None
-        title = chart.find(f"{{{_C_NS}}}title")
+        title = chart.find("c:title", namespaces=ns)
         if title is None:
             return None
-        runs = [t.text for t in title.findall(f".//{{{_A_NS}}}t") if t.text]
+        runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
         text = "".join(runs).strip()
         if not text:
             cached = self._read_chart_cache(title)
@@ -2955,15 +2947,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             A TableData, or None if the chart exposes no usable series.
         """
-        series_list = chart_root.findall(f".//{{{_C_NS}}}ser")
+        ns = self._BLIP_NAMESPACES
+        series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
 
         categories: list[str] = []
         for series in series_list:
-            cat = series.find(f"{{{_C_NS}}}cat")
+            cat = series.find("c:cat", namespaces=ns)
             if cat is None:
-                cat = series.find(f"{{{_C_NS}}}xVal")
+                cat = series.find("c:xVal", namespaces=ns)
             resolved = self._read_chart_cache(cat)
             if resolved:
                 categories = resolved
@@ -2971,9 +2964,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         columns: list[tuple[str, list[str]]] = []
         for series in series_list:
-            val = series.find(f"{{{_C_NS}}}val")
+            val = series.find("c:val", namespaces=ns)
             if val is None:
-                val = series.find(f"{{{_C_NS}}}yVal")
+                val = series.find("c:yVal", namespaces=ns)
             values = self._read_chart_cache(val)
             columns.append((self._chart_series_name(series), values))
 
