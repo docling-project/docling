@@ -2,4 +2,4 @@ package
 
 JSON and Markdown in an easy self contained
 
-Jocting punales rur aocument conversion to
+Docling bundles PDF document conversion to

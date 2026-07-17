@@ -53,7 +53,7 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 133.0,
+            "l": 131.67,
             "t": 150.53,
             "r": 150.33,
             "b": 73.87,
@@ -65,8 +65,8 @@
           ]
         }
       ],
-      "orig": "Docling bundles PUF document conversion to JSON and Markdown In an easy self contained asey0ed",
-      "text": "Docling bundles PUF document conversion to JSON and Markdown In an easy self contained asey0ed"
+      "orig": "Docling bundles PUF document conversion to JSON and Markdown In an easy self contained package",
+      "text": "Docling bundles PUF document conversion to JSON and Markdown In an easy self contained package"
     }
   ],
   "pictures": [],

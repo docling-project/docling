@@ -1,4 +1,4 @@
-<doctag><text><loc_296><loc_2><loc_362><loc_14>package</text>
-<text><loc_0><loc_19><loc_362><loc_30>JSON and Markdown in an easy self contained</text>
-<text><loc_0><loc_35><loc_361><loc_43>Jocting punales rur aocument conversion to</text>
+<doctag><text><loc_303><loc_8><loc_369><loc_19>package</text>
+<text><loc_5><loc_23><loc_373><loc_37>JSON and Markdown in an easy self contained</text>
+<text><loc_7><loc_40><loc_369><loc_51>Docling bundles PDF document conversion to</text>
 </doctag>

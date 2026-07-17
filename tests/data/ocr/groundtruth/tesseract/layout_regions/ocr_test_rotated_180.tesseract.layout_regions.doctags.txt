@@ -1,2 +1,2 @@
-<doctag><text><loc_77><loc_411><loc_439><loc_451>VOCUNS DUNQLES FUF QOCUMENl CONVEFSION tO JSON and Markdown in an easy self contained package</text>
+<doctag><text><loc_77><loc_411><loc_439><loc_454>Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package</text>
 </doctag>

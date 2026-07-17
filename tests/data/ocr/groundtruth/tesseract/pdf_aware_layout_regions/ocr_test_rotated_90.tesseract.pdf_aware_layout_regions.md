@@ -1,1 +1,1 @@
-Docling bundles PUF document conversion to JSON and Markdown In an easy self contained asey0ed
+Docling bundles PUF document conversion to JSON and Markdown In an easy self contained package

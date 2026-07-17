@@ -42,17 +42,17 @@
             "l": 92.0,
             "t": 150.26,
             "r": 522.67,
-            "b": 81.92,
+            "b": 77.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            93
+            94
           ]
         }
       ],
-      "orig": "VOCUNS DUNQLES FUF QOCUMENl CONVEFSION tO JSON and Markdown in an easy self contained package",
-      "text": "VOCUNS DUNQLES FUF QOCUMENl CONVEFSION tO JSON and Markdown in an easy self contained package"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

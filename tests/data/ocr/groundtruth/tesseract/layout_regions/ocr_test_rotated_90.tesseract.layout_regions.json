@@ -53,7 +53,7 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 133.0,
+            "l": 131.67,
             "t": 150.53,
             "r": 150.33,
             "b": 73.87,
@@ -61,12 +61,12 @@
           },
           "charspan": [
             87,
-            95
+            94
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained oesenoed",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained oesenoed"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

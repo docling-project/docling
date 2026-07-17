@@ -45,10 +45,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 351.95,
-            "t": 838.15,
-            "r": 431.38,
-            "b": 818.48,
+            "l": 361.07,
+            "t": 827.92,
+            "r": 439.68,
+            "b": 809.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -72,10 +72,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 810.07,
-            "r": 431.33,
-            "b": 791.49,
+            "l": 5.64,
+            "t": 802.49,
+            "r": 443.48,
+            "b": 779.96,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -99,10 +99,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 783.52,
-            "r": 430.0,
-            "b": 769.59,
+            "l": 8.66,
+            "t": 774.59,
+            "r": 439.01,
+            "b": 755.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -111,8 +111,8 @@
           ]
         }
       ],
-      "orig": "Jocting punales rur aocument conversion to",
-      "text": "Jocting punales rur aocument conversion to"
+      "orig": "Docling bundles PDF document conversion to",
+      "text": "Docling bundles PDF document conversion to"
     }
   ],
   "pictures": [],
