@@ -1,1 +1,1 @@
-Docling bundles PDF document conversion to USON and Markdown in an easy self contained package
+Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package

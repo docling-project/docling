@@ -1,1 +1,1 @@
-package USON and Markdown in an easy self contained Docling bundles PDF document conversion to
+package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to

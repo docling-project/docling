@@ -39,34 +39,34 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 73.73,
-            "t": 504.2,
-            "r": 123.04,
-            "b": 73.95,
+            "l": 74.69,
+            "t": 505.12,
+            "r": 122.76,
+            "b": 71.63,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            85
+            86
           ]
         },
         {
           "page_no": 1,
           "bbox": {
-            "l": 132.38,
-            "t": 143.68,
-            "r": 150.4,
-            "b": 84.95,
+            "l": 130.47,
+            "t": 153.05,
+            "r": 149.35,
+            "b": 70.38,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            86,
-            93
+            87,
+            94
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to SON and Markdown in an easy self contained Backaag",
-      "text": "Docling bundles PDF document conversion to SON and Markdown in an easy self contained Backaag"
+      "orig": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

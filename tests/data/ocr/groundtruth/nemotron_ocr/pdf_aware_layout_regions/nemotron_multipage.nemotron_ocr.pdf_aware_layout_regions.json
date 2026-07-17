@@ -19,9 +19,6 @@
     "children": [
       {
         "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -42,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.24,
-            "t": 766.28,
-            "r": 504.29,
-            "b": 693.4,
+            "l": 71.12,
+            "t": 766.0,
+            "r": 505.17,
+            "b": 689.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -56,75 +53,62 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 90.44,
-            "t": 178.3,
-            "r": 522.11,
-            "b": 42.2,
+            "l": 90.98,
+            "t": 166.92,
+            "r": 525.94,
+            "b": 15.09,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             95,
-            199
+            227
           ]
-        }
-      ],
-      "orig": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package Sackags Moraeae USON and oertcoonn in an easy self contained of aocument Ceeeeaenn to Cecunn Menaues FUE",
-      "text": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package Sackags Moraeae USON and oertcoonn in an easy self contained of aocument Ceeeeaenn to Cecunn Menaues FUE"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 3,
           "bbox": {
-            "l": 693.83,
-            "t": 526.43,
-            "r": 766.04,
-            "b": 87.26,
+            "l": 692.02,
+            "t": 595.2,
+            "r": 765.99,
+            "b": 331.97,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            94
+            228,
+            322
           ]
         },
         {
           "page_no": 4,
           "bbox": {
-            "l": 73.74,
-            "t": 504.2,
-            "r": 123.04,
-            "b": 73.96,
+            "l": 74.67,
+            "t": 595.2,
+            "r": 122.76,
+            "b": 318.35,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            95,
-            180
+            323,
+            409
           ]
         },
         {
           "page_no": 4,
           "bbox": {
-            "l": 132.43,
-            "t": 143.46,
-            "r": 150.3,
-            "b": 84.38,
+            "l": 130.47,
+            "t": 399.77,
+            "r": 149.35,
+            "b": 317.13,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            181,
-            188
+            410,
+            417
           ]
         }
       ],
-      "orig": "package USON and Markdown in an easy self contained Docling bundles PDF document conversion to Docling bundles PDF document conversion to SON and Markdown in an easy self contained Backage",
-      "text": "package USON and Markdown in an easy self contained Docling bundles PDF document conversion to Docling bundles PDF document conversion to SON and Markdown in an easy self contained Backage"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package Sasddoooo packagg Coonteiin coccinn oundles PDE Coeumne Sooeeeeeee to JSON and Markdown in an easy self contained Connnre connvvrior package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to Docling bundles PDF document conversion to USON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package Sasddoooo packagg Coonteiin coccinn oundles PDE Coeumne Sooeeeeeee to JSON and Markdown in an easy self contained Connnre connvvrior package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to Docling bundles PDF document conversion to USON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

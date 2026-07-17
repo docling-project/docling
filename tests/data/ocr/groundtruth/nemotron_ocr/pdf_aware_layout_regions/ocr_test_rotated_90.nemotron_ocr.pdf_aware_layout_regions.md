@@ -1,1 +1,1 @@
-Docling bundles PDF document conversion to SON and Markdown in an easy self contained Backaag
+Docling bundles PDF document conversion to USON and Markdown in an easy self contained package
