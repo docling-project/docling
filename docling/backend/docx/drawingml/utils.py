@@ -5,13 +5,18 @@ import shutil
 import subprocess
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Final, Optional
 
 import pypdfium2
 from PIL import Image, ImageChops
 
 if TYPE_CHECKING:
     from docx.document import Document
+
+# Maximum seconds to wait for a single LibreOffice conversion. Without this,
+# a hung soffice process (e.g. a modal dialog it can't show in headless mode)
+# blocks the calling thread forever.
+LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 
 
 def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
@@ -58,20 +63,30 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     if libreoffice_cmd:
 
         def convert_with_libreoffice(input_path, output_path):
-            subprocess.run(
-                [
-                    libreoffice_cmd,
-                    "--headless",
-                    "--convert-to",
-                    "pdf",
-                    "--outdir",
-                    os.path.dirname(output_path),
-                    input_path,
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-            )
+            # Give this call its own LibreOffice user profile. Without
+            # -env:UserInstallation, concurrent conversions (parallel
+            # workers, docling-serve) share the default profile and collide
+            # on its lock file, causing conversions to fail intermittently.
+            profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
+            try:
+                subprocess.run(
+                    [
+                        libreoffice_cmd,
+                        f"-env:UserInstallation={profile_dir.as_uri()}",
+                        "--headless",
+                        "--convert-to",
+                        "pdf",
+                        "--outdir",
+                        os.path.dirname(output_path),
+                        input_path,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                    timeout=LIBREOFFICE_TIMEOUT_S,
+                )
+            finally:
+                shutil.rmtree(profile_dir, ignore_errors=True)
 
             expected_output = os.path.join(
                 os.path.dirname(output_path),

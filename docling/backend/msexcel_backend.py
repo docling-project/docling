@@ -4,7 +4,6 @@ import collections
 import logging
 import posixpath
 import shutil
-import subprocess
 import warnings
 from copy import deepcopy
 from datetime import datetime
@@ -48,7 +47,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
-    get_libreoffice_cmd,
+    get_docx_to_pdf_converter,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -204,10 +203,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
           extracted because the stream is consumed by openpyxl during initialization.
           Old-style cell comments (notes) are always extracted regardless of input type.
     """
-
-    # Maximum seconds to wait for a single LibreOffice EMF/WMF conversion.
-    # Raise this value if conversions time out on unusually large or complex files.
-    LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 
     # Maximum uncompressed byte sizes accepted when reading members from the XLSX zip.
     # These caps guard against decompression-bomb payloads in drawing XML / image files.
@@ -1083,36 +1078,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return self.xlsx_to_pdf_converter
 
         self.xlsx_to_pdf_converter_init = True
-        libreoffice_cmd = get_libreoffice_cmd()
-        if libreoffice_cmd is None:
+        self.xlsx_to_pdf_converter = get_docx_to_pdf_converter()
+        if self.xlsx_to_pdf_converter is None:
             _log.debug(
                 "LibreOffice not found — EMF/WMF images in XLSX will be skipped."
             )
-            self.xlsx_to_pdf_converter = None
-            return None
-
-        def _convert(input_path: Path, output_path: Path) -> None:
-            subprocess.run(
-                [
-                    libreoffice_cmd,
-                    "--headless",
-                    "--convert-to",
-                    "pdf",
-                    "--outdir",
-                    str(output_path.parent),
-                    str(input_path),
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-                timeout=self.LIBREOFFICE_TIMEOUT_S,
-            )
-            # LibreOffice names the output after the input stem
-            expected = output_path.parent / (input_path.stem + ".pdf")
-            if expected != output_path:
-                expected.rename(output_path)
-
-        self.xlsx_to_pdf_converter = _convert
         return self.xlsx_to_pdf_converter
 
     def _convert_emf_to_pil(self, image_bytes: bytes) -> PILImage.Image | None:
