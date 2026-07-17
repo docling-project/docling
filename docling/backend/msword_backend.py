@@ -46,7 +46,6 @@ from docling.backend.docx.drawingml.utils import (
 )
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.backend_options import MsWordBackendOptions
-from docling.datamodel.base_models import InputFormat
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
