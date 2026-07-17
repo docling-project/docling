@@ -962,11 +962,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "list-item":
                 # TODO: address any type of content (another list, formula,...)
                 # TODO: address list type and item label
-                text_parts = []
+                text_parts: list[str] = []
+                nested_lists: list[etree._Element] = []
 
                 for elem in child:
                     if elem.tag == "p":
                         text_parts.append(JatsDocumentBackend._get_text(elem).strip())
+                    elif elem.tag == "list":
+                        nested_lists.append(elem)
 
                 text = " ".join(part for part in text_parts if part)
 
@@ -975,9 +978,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     parent=parent,
                 )
 
-                for elem in child:
-                    if elem.tag == "list":
-                        self._walk_linear(doc, new_parent, elem)
+                for nested in nested_lists:
+                    self._walk_linear(doc, new_parent, nested)
 
                 stop_walk = True
 
