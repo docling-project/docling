@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel
+from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -115,14 +115,25 @@ def test_jats_nested_lists_are_preserved():
         """
     )
 
+    # Both items must appear in the rendered output.
     md = doc.export_to_markdown()
-
     assert "- Item 1" in md
     assert "Subitem A" in md
-    # Nested item should not be flattened into the parent item
-    assert (
-        "Item 1                                                   Subitem A" not in md
-    )
+
+    # Verify document structure
+    list_items = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(list_items) == 2
+
+    outer_item = next(item for item in list_items if item.text == "Item 1")
+    sub_item = next(item for item in list_items if item.text == "Subitem A")
+
+    sub_item_parent = sub_item.parent.resolve(doc)
+    assert sub_item_parent.label == GroupLabel.LIST
+    assert sub_item_parent.parent == outer_item.get_ref()
 
 
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
