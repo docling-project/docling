@@ -43,6 +43,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     It offers common OCR functionalities
     """
 
+    DEFAULT_DILATION_SIZE = 20
+
     def __init__(
         self,
         *,
@@ -96,8 +98,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_rects = [c.bbox for c in page.predictions.layout.clusters]
 
         # Deduplicate the ocr_rects
-        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
-
+        _, ocr_rects = self._deduplicate_rects(
+            page.size, ocr_rects, dilation_size=BaseOcrModel.DEFAULT_DILATION_SIZE
+        )
         return ocr_rects
 
     def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
@@ -143,7 +146,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 ocr_rects.append(cluster.bbox)
 
         # Deduplicate the surviving cluster bboxes.
-        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
+        _, ocr_rects = self._deduplicate_rects(
+            page.size, ocr_rects, dilation_size=BaseOcrModel.DEFAULT_DILATION_SIZE
+        )
 
         return ocr_rects
 
