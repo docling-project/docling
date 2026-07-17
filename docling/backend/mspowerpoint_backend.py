@@ -103,6 +103,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
         "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     }
+    _SHAPE_ROW_TOLERANCE_EMU: Final[int] = 45720
+    """Row-grouping tolerance used by ``_iter_shapes_by_position``, in EMUs.
+
+    0.05 inch expressed in EMUs (1 inch = 914400 EMUs). This threshold is
+    intentionally small — roughly half a typical title line-height — so that
+    icon-label pairs and other tightly aligned objects on the same visual row
+    are grouped together, while shapes in separate rows (which are normally at
+    least one line-height apart) are not.
+    """
+
     # XML relationship types
     COMMENT_REL = (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
@@ -616,7 +626,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             Shapes from ``shapes`` in visual reading order (top-to-bottom,
             left-to-right).
         """
-        row_tolerance = 45720  # 0.05 inch in EMUs
+        row_tolerance = self._SHAPE_ROW_TOLERANCE_EMU
         fallback_position = 2**63 - 1
         shape_infos = []
 
