@@ -626,46 +626,51 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             Shapes from ``shapes`` in visual reading order (top-to-bottom,
             left-to-right).
         """
+        from typing import NamedTuple
+
+        class _ShapeInfo(NamedTuple):
+            index: int
+            shape: object
+            top: int
+            left: int
+
         row_tolerance = self._SHAPE_ROW_TOLERANCE_EMU
         fallback_position = 2**63 - 1
-        shape_infos = []
 
+        entries: list[_ShapeInfo] = []
         for index, shape in enumerate(shapes):
             top = self._get_shape_position(shape, "top")
             left = self._get_shape_position(shape, "left")
-            shape_infos.append(
-                (
-                    index,
-                    shape,
-                    top if top is not None else fallback_position,
-                    left if left is not None else fallback_position,
+            entries.append(
+                _ShapeInfo(
+                    index=index,
+                    shape=shape,
+                    top=top if top is not None else fallback_position,
+                    left=left if left is not None else fallback_position,
                 )
             )
 
-        shape_infos.sort(key=lambda shape_info: (shape_info[2], shape_info[0]))
+        entries.sort(key=lambda si: (si.top, si.index))
 
-        rows = []
-        current_row = []
+        rows: list[list[_ShapeInfo]] = []
+        current_row: list[_ShapeInfo] = []
         prev_top = None
 
-        for shape_info in shape_infos:
-            top = shape_info[2]
-            if prev_top is None or top - prev_top <= row_tolerance:
-                current_row.append(shape_info)
-                prev_top = top
+        for entry in entries:
+            if prev_top is None or entry.top - prev_top <= row_tolerance:
+                current_row.append(entry)
+                prev_top = entry.top
             else:
                 rows.append(current_row)
-                current_row = [shape_info]
-                prev_top = top
+                current_row = [entry]
+                prev_top = entry.top
 
         if current_row:
             rows.append(current_row)
 
         for row in rows:
-            for _, shape, _, _ in sorted(
-                row, key=lambda shape_info: (shape_info[3], shape_info[0])
-            ):
-                yield shape
+            for si in sorted(row, key=lambda si: (si.left, si.index)):
+                yield si.shape
 
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
