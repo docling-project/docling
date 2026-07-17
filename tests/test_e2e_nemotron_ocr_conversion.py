@@ -1,8 +1,10 @@
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
 import pytest
+import torch
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import (
@@ -34,6 +36,18 @@ from .verify_utils import verify_conversion_result_v2
 _log = logging.getLogger(__name__)
 
 GENERATE_V2 = GEN_TEST_DATA
+
+# cuBLAS reads this only at handle-creation time (first inference, during test
+# execution), so setting it at module import is early enough. Required by
+# use_deterministic_algorithms() for deterministic cuBLAS GEMMs. Test-only: the
+# library/CLI never import this file.
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _deterministic_kernels():
+    """Force deterministic OCR so the fuzzy GT bbox check is stable"""
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 def get_nemotron_ocr_groundtruth_paths(
