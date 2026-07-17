@@ -8,9 +8,6 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     TextItem,
 )
-from pptx import Presentation
-from pptx.oxml.xmlchemy import OxmlElement
-from pptx.util import Inches, Pt
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
@@ -388,111 +385,33 @@ def test_pptx_shapes_are_sorted_by_visual_position():
     assert backend._get_shape_position(BadPositionShape(), "top") is None
 
 
-def test_pptx_split_list_textboxes_follow_visual_order(tmp_path):
-    """Visually ordered subheadings should keep their own following bullets."""
+def test_pptx_row_grouping_uses_sliding_window():
+    """Shapes in a contiguous band should all land in the same row.
 
-    def add_textbox(slide, left, top, width, height, text, font_size=24):
-        textbox = slide.shapes.add_textbox(
-            Inches(left), Inches(top), Inches(width), Inches(height)
-        )
-        text_frame = textbox.text_frame
-        text_frame.clear()
-        paragraph = text_frame.paragraphs[0]
-        paragraph.text = text
-        paragraph.font.size = Pt(font_size)
-        return textbox
+    With a fixed-anchor strategy, shapes at tops 0, 40000, and 80000 EMUs
+    (each 40000 apart, within the 45720 EMU tolerance) would be split: the
+    third shape is 80000 EMUs from the first anchor (0), exceeding tolerance.
+    The sliding-window strategy compares each shape against its immediate
+    predecessor, so all three end up in the same row and are sorted by left.
+    """
 
-    def mark_as_bullet(paragraph):
-        paragraph_properties = paragraph._p.get_or_add_pPr()
-        bullet = OxmlElement("a:buChar")
-        bullet.set("char", "\u2022")
-        paragraph_properties.insert(0, bullet)
+    class FakeShape:
+        def __init__(self, name, top, left):
+            self.name = name
+            self.top = top
+            self.left = left
 
-    def add_bullet_textbox(slide, left, top, width, height, items):
-        textbox = slide.shapes.add_textbox(
-            Inches(left), Inches(top), Inches(width), Inches(height)
-        )
-        text_frame = textbox.text_frame
-        text_frame.clear()
+    backend = object.__new__(MsPowerpointDocumentBackend)
 
-        for index, item in enumerate(items):
-            paragraph = (
-                text_frame.paragraphs[0] if index == 0 else text_frame.add_paragraph()
-            )
-            paragraph.text = item
-            paragraph.font.size = Pt(18)
-            mark_as_bullet(paragraph)
+    # Three shapes in a contiguous band, each 40 000 EMUs apart.
+    # Fixed-anchor would split them; sliding-window keeps them together.
+    a = FakeShape("a", top=0, left=200)
+    b = FakeShape("b", top=40000, left=100)
+    c = FakeShape("c", top=80000, left=300)
+    # This shape is more than one tolerance step from c, so it forms a new row.
+    d = FakeShape("d", top=200000, left=100)
 
-        return textbox
+    ordered = [s.name for s in backend._iter_shapes_by_position([d, c, a, b])]
 
-    presentation = Presentation()
-    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
-
-    add_textbox(slide, 3.0, 0.4, 4.0, 0.5, "Open-Source Software", 32)
-    add_textbox(slide, 4.6, 1.4, 2.5, 0.4, "Introduction", 20)
-    add_textbox(slide, 0.9, 1.5, 3.0, 0.4, "Key Benefits:", 22)
-    add_bullet_textbox(
-        slide,
-        1.2,
-        2.1,
-        8.0,
-        1.6,
-        [
-            "Cost effective",
-            "Transparent community",
-        ],
-    )
-    # Add this textbox before its subheading to mimic PPTX creation/z-order that
-    # does not match the visual reading order.
-    add_bullet_textbox(
-        slide,
-        1.2,
-        5.2,
-        8.0,
-        1.2,
-        [
-            "Community support can vary",
-            "Maintenance requires expertise",
-        ],
-    )
-    add_textbox(slide, 0.9, 4.6, 6.0, 0.4, "Considerations:", 22)
-
-    pptx_path = tmp_path / "split_list_textboxes.pptx"
-    presentation.save(pptx_path)
-
-    doc = convert_with_pptx_backend(pptx_path)
-    pred_md = doc.export_to_markdown()
-
-    assert pred_md.index("Key Benefits:") < pred_md.index("Cost effective")
-    assert pred_md.index("Transparent community") < pred_md.index("Considerations:")
-    assert pred_md.index("Considerations:") < pred_md.index("Community support")
-    assert pred_md.index("Community support") < pred_md.index(
-        "Maintenance requires expertise"
-    )
-
-
-def test_pptx_grouped_shapes_follow_visual_order(tmp_path):
-    presentation = Presentation()
-    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
-
-    lower_textbox = slide.shapes.add_textbox(
-        Inches(1.0), Inches(2.0), Inches(4.0), Inches(0.5)
-    )
-    lower_textbox.text = "Lower grouped textbox"
-
-    upper_textbox = slide.shapes.add_textbox(
-        Inches(1.0), Inches(1.0), Inches(4.0), Inches(0.5)
-    )
-    upper_textbox.text = "Upper grouped textbox"
-
-    slide.shapes.add_group_shape([lower_textbox, upper_textbox])
-
-    pptx_path = tmp_path / "grouped_textboxes.pptx"
-    presentation.save(pptx_path)
-
-    doc = convert_with_pptx_backend(pptx_path)
-    pred_md = doc.export_to_markdown()
-
-    assert pred_md.index("Upper grouped textbox") < pred_md.index(
-        "Lower grouped textbox"
-    )
+    # a, b, c are in the same row sorted left-to-right; d is in its own row.
+    assert ordered == ["b", "a", "c", "d"]

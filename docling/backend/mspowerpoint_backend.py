@@ -599,11 +599,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         text boxes, such as a subheading followed by its bullet text box, adjacent
         in the extracted document.
 
-        Shapes that share a top-edge within ``row_tolerance`` EMUs are placed in
-        the same row and then sorted left-to-right within that row. The row anchor
-        is the ``top`` value of the first shape in the row. Shapes whose position
-        attributes are unavailable or raise an exception are placed at the end in
-        their original relative order.
+        Shapes that share a top-edge within ``row_tolerance`` EMUs of their
+        immediate predecessor (after sorting by ``top``) are placed in the same
+        row and then sorted left-to-right within that row. Adjacency is evaluated
+        against the previous shape's ``top``, not the row's first anchor, so that
+        a row can span more than one tolerance step when shapes form a contiguous
+        band. Shapes whose position attributes are unavailable or raise an
+        exception are placed at the end in their original relative order.
 
         Args:
             shapes: Iterable of python-pptx shape objects to sort. May be a
@@ -634,17 +636,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         rows = []
         current_row = []
-        current_row_top = None
+        prev_top = None
 
         for shape_info in shape_infos:
             top = shape_info[2]
-            if current_row_top is None or top - current_row_top <= row_tolerance:
+            if prev_top is None or top - prev_top <= row_tolerance:
                 current_row.append(shape_info)
-                current_row_top = top if current_row_top is None else current_row_top
+                prev_top = top
             else:
                 rows.append(current_row)
                 current_row = [shape_info]
-                current_row_top = top
+                prev_top = top
 
         if current_row:
             rows.append(current_row)
