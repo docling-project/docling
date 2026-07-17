@@ -960,7 +960,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     label=GroupLabel.LIST, name="list", parent=parent
                 )
             elif child.tag == "list-item":
-                # TODO: address any type of content (another list, formula,...)
+                # TODO: address non-paragraph, non-list content inside list-item
+                #       (e.g. disp-formula, fig, table-wrap)
                 # TODO: address list type and item label
                 text_parts: list[str] = []
                 nested_lists: list[etree._Element] = []
