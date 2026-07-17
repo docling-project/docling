@@ -301,3 +301,28 @@ def test_convert_table_has_no_duplicate_cells():
         for cell in table_data.table_cells
     ]
     assert len(positions) == len(set(positions))
+
+
+def test_convert_table_body_row_wider_than_header():
+    """
+    Regression test:
+    num_cols was taken from the header row, so a body row with more cells than
+    the header produced a table whose num_cols under-counted the real width. The
+    extra cell stayed in table_cells but was dropped by every exporter (its
+    column index fell outside num_cols), silently losing data.
+    """
+    markdown = """| A | B |
+| --- | --- |
+| 1 | 2 | 3 |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0]
+    table_data = table.data
+    assert table_data.num_rows == 2
+    assert table_data.num_cols == 3
+    texts = {cell.text for cell in table_data.table_cells}
+    assert {"1", "2", "3"} <= texts
+    # the third-column cell used to be dropped by the exporter; it must survive now
+    assert "3" in conv_result.document.export_to_markdown()

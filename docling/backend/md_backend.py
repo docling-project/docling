@@ -244,7 +244,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     tcells.append(icell)
 
             num_rows = len(result_table)
-            num_cols = len(result_table[0])
+            # a body row may hold more cells than the header; size to the widest row
+            num_cols = max((len(row) for row in result_table), default=0)
             self.in_table = False
             self.md_table_buffer = []  # clean table markdown buffer
             # Initialize Docling TableData
