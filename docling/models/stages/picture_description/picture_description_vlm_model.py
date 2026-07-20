@@ -36,6 +36,7 @@ class PictureDescriptionVlmModel(
         artifacts_path: Optional[Union[Path, str]],
         options: PictureDescriptionVlmOptions,
         accelerator_options: AcceleratorOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         super().__init__(
             enabled=enabled,
@@ -45,6 +46,8 @@ class PictureDescriptionVlmModel(
             accelerator_options=accelerator_options,
         )
         self.options: PictureDescriptionVlmOptions
+
+        self.hf_token = hf_token
 
         if self.enabled:
             if artifacts_path is None:

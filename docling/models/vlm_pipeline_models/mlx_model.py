@@ -43,12 +43,15 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
 
         self.vlm_options = vlm_options
         self.max_tokens = vlm_options.max_new_tokens
         self.temperature = vlm_options.temperature
+
+        self.hf_token = hf_token
 
         if self.enabled:
             try:
