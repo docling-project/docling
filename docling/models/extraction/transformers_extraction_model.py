@@ -36,10 +36,12 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
         prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT,
+        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
         self.prompt_style = prompt_style
+        self.hf_token = hf_token
 
         if self.enabled:
             self.device = decide_device(
@@ -60,6 +62,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 artifacts_path = self.download_models(
                     repo_id=self.vlm_options.repo_id,
                     revision=self.vlm_options.revision,
+                    hf_token=self.hf_token,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

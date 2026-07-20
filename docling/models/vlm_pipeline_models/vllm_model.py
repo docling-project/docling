@@ -91,6 +91,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
         self.vlm_options: InlineVlmOptions = vlm_options
@@ -101,6 +102,8 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         self.device = "cpu"
         self.max_new_tokens = vlm_options.max_new_tokens
         self.temperature = vlm_options.temperature
+
+        self.hf_token = hf_token
 
         if not self.enabled:
             return
@@ -129,7 +132,9 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         repo_cache_folder = vlm_options.repo_id.replace("/", "--")
         if artifacts_path is None:
             artifacts_path = self.download_models(
-                self.vlm_options.repo_id, revision=self.vlm_options.revision
+                self.vlm_options.repo_id,
+                revision=self.vlm_options.revision,
+                hf_token=self.hf_token,
             )
         elif (artifacts_path / repo_cache_folder).exists():
             artifacts_path = artifacts_path / repo_cache_folder

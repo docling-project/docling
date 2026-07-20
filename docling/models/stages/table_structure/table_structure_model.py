@@ -98,7 +98,10 @@ class TableStructureModel(BaseTableStructureModel):
 
     @staticmethod
     def download_models(
-        local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
+        local_dir: Optional[Path] = None,
+        force: bool = False,
+        progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id="docling-project/docling-models",
@@ -106,6 +109,7 @@ class TableStructureModel(BaseTableStructureModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def draw_table_and_cells(

@@ -4,7 +4,7 @@ import warnings
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, Optional, cast
 
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
@@ -184,6 +184,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=cls._model_repo_id,
@@ -191,6 +192,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def _load_model(self, artifacts_path: Path) -> None:

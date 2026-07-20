@@ -98,6 +98,7 @@ class LayoutModel(BaseLayoutModel):
         force: bool = False,
         progress: bool = False,
         layout_model_config: LayoutModelConfig = LayoutOptions().model_spec,  # use default
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=layout_model_config.repo_id,
@@ -105,6 +106,7 @@ class LayoutModel(BaseLayoutModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def draw_clusters_and_cells_side_by_side(

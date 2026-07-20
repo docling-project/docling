@@ -35,6 +35,7 @@ class PictureDescriptionVlmModel(
         artifacts_path: Optional[Union[Path, str]],
         options: PictureDescriptionVlmOptions,
         accelerator_options: AcceleratorOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         super().__init__(
             enabled=enabled,
@@ -45,9 +46,13 @@ class PictureDescriptionVlmModel(
         )
         self.options: PictureDescriptionVlmOptions
 
+        self.hf_token = hf_token
+
         if self.enabled:
             if artifacts_path is None:
-                artifacts_path = self.download_models(repo_id=self.options.repo_id)
+                artifacts_path = self.download_models(
+                    repo_id=self.options.repo_id, hf_token=self.hf_token
+                )
             else:
                 artifacts_path = Path(artifacts_path) / self.options.repo_cache_folder
 

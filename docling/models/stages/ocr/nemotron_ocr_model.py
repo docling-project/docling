@@ -225,6 +225,7 @@ class NemotronOcrModel(BaseOcrModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         if local_dir is None:
             local_dir = settings.cache_dir / "models" / nemotron_ocr_model_dir()
@@ -238,6 +239,7 @@ class NemotronOcrModel(BaseOcrModel):
             force=force,
             progress=progress,
             revision=_NEMOTRON_OCR_COMMIT,
+            token=hf_token,
         )
 
     @staticmethod
