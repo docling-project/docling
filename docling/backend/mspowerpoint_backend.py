@@ -84,6 +84,14 @@ _CHART_RENDER_HINT = (
     "data without it."
 )
 
+_SAFE_XML_PARSER: Final = etree.XMLParser(
+    resolve_entities=False,
+    load_dtd=False,
+    no_network=True,
+    dtd_validation=False,
+)
+"""Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     """Backend for parsing PowerPoint presentations (PPTX and PPT files).
@@ -1220,7 +1228,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         try:
             for rel in pptx_obj.part.rels.values():
                 if rel.reltype == self.COMMENT_AUTHORS_REL:
-                    root = etree.fromstring(rel.target_part.blob)
+                    root = etree.fromstring(
+                        rel.target_part.blob, parser=_SAFE_XML_PARSER
+                    )
                     author_map = {
                         author_el.get("id", ""): (
                             author_el.get("name", ""),
@@ -1264,7 +1274,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if rel.reltype != self.COMMENT_REL:
                 continue
             try:
-                root = etree.fromstring(rel.target_part.blob)
+                root = etree.fromstring(rel.target_part.blob, parser=_SAFE_XML_PARSER)
                 for cm in root.findall("p:cm", namespaces=self.NAMESPACES):
                     author_id = cm.get("authorId", "")
                     dt = cm.get("dt", "")

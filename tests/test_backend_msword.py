@@ -324,13 +324,9 @@ def test_chart_image_rendering():
     )
 
 
-def test_chart_image_opt_out_keeps_no_image(documents):
-    """Charts stay image-free under default options (render_chart_images=False).
-
-    Reuses the shared conversion, which runs with the default options, so the
-    same document is not converted again just to check the opt-out.
-    """
-    doc = next(item[1] for item in documents if item[0].name == "drawingml.docx")
+def test_chart_image_opt_out_keeps_no_image():
+    """Charts stay image-free under default options (render_chart_images=False)."""
+    doc = _chart_converter(render_chart_images=False).convert(CHART_DOCX).document
     chart = _single_chart_picture(doc)
 
     assert chart.get_image(doc=doc) is None
