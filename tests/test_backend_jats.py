@@ -6,14 +6,17 @@ The JATS source files in tests/data/jats/sources/ and their derived
 groundtruth files (*.itxt, *.json, *.md) are based on the following
 open-access articles:
 
-1. pnas.202535682.nxml  —  CC BY 4.0
-   Úbeda F, Bürger R, Fyon F (2026). "On the origin of PRDM9-guided
-   recombination hotspots." Proceedings of the National Academy of
-   Sciences, 123(26), e2535682123.
-   https://doi.org/10.1073/pnas.2535682123
-   Copyright © 2026 the Author(s). Published by PNAS.
-   Originally obtained from PubMed Central (PMC13320716):
-     https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated/oa_package/1a/89/PMC13320716.tar.gz
+1. ptag100.xml  —  CC BY 4.0
+   Choi JR, Medjber S, Menouar S, Sever R (2026). "Time-Dependent 3D
+   Oscillator with Coulomb Interaction: An Alternative Approach for
+   Analyzing Quark-Antiquark Systems." Progress of Theoretical and
+   Experimental Physics, 2026(7), 073A01.
+   https://doi.org/10.1093/ptep/ptag100
+   Copyright © 2026 The Author(s). Published by Oxford University Press
+   on behalf of the Physical Society of Japan.
+   Originally obtained from SCOAP3 (https://scoap3.org), the Sponsoring
+   Consortium for Open Access Publishing in Particle Physics:
+     https://scoap3-prod-backend.s3.cern.ch/media/harvested_files/10.1093/ptep/ptag100/ptag100.xml
    License: https://creativecommons.org/licenses/by/4.0/
    The derived groundtruth files are adaptations of the original work.
 
@@ -65,8 +68,11 @@ GENERATE = GEN_TEST_DATA
 
 def get_jats_paths():
     directory = Path(os.path.dirname(__file__) + "/data/jats/")
-    xml_files = sorted(directory.rglob("*.nxml"))
-    return xml_files
+    nxml_files = list(directory.rglob("*.nxml"))
+    nxml_stems = {p.stem for p in nxml_files}
+    # Avoid running duplicate conversions of the same content.
+    xml_files = [p for p in directory.rglob("*.xml") if p.stem not in nxml_stems]
+    return sorted(nxml_files + xml_files)
 
 
 def get_converter():
