@@ -141,6 +141,15 @@ def download(
             help="HuggingFace Token token to authenticate and accelerate model downloads. If not provided, reads from HF_TOKEN environment variable (if set). Else runs unauthenticated.",
         ),
     ] = None,
+    hf_token: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            "--hf-token",
+            envvar="HF_TOKEN",
+            help="HuggingFace Token token to authenticate and accelerate model downloads. If not provided, reads from HF_TOKEN environment variable (if set). Else runs unauthenticated.",
+        ),
+    ] = None,
 ):
     if models and all:
         raise typer.BadParameter(
@@ -204,7 +213,6 @@ def download(
           with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
           hf_token=hf_token,
       )
-
       if quiet:
           typer.echo(output_dir)
       else:
