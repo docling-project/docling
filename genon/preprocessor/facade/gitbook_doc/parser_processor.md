@@ -15,6 +15,7 @@
 6. [출력 데이터 구조](#출력-데이터-구조)
 7. [예외 처리](#예외-처리)
 8. [사용 예시](#사용-예시)
+9. [LLM 호출 파일 캐시 / 실패 정책 / 요청 deadline (#329)](#9-llm-호출-파일-캐시--실패-정책--요청-deadline-329)
 
 ---
 
@@ -876,6 +877,9 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 
 > 이미지 설명 문맥 추출(`enrichment.image_description.*`)은 현재 `parser_processor_config.yaml` 설정값으로 제어합니다.
 
+> LLM 호출 파일 캐시·실패 정책(`error_policy`)·요청 deadline(`request_deadline`)은 모든 형식 공통으로
+> `params` 로 opt-in 할 수 있습니다 — [9. LLM 호출 파일 캐시 / 실패 정책 / 요청 deadline (#329)](#9-llm-호출-파일-캐시--실패-정책--요청-deadline-329) 절 참고.
+
 ---
 
 ## 출력 데이터 구조
@@ -1208,3 +1212,48 @@ response = requests.post(
 result = response.json()
 html_content = result["data"]["content"]  # 전체 문서 HTML
 ```
+
+---
+
+## 9. LLM 호출 파일 캐시 / 실패 정책 / 요청 deadline (#329)
+
+대용량 배치 처리 중 문서가 중간에 실패해도, 파싱 단계에서 그때까지 성공한 LLM 호출(OCR/layout VLM·
+TOC·이미지/표 설명·본문요약·메타데이터 등)을 파일로 캐시해 **재시도 시 재호출 없이 재사용**합니다.
+enrichment 실패를 응답으로 돌려주는 `error_policy` 와 행잉을 막는 `request_deadline` 도 지원합니다.
+모두 **opt-in** 이며, 미지정 시 캐시 코드 경로를 타지 않아 기존과 완전히 동일하게 동작합니다.
+
+요청 `params` 옵션(모든 형식 공통):
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `llm_cache` | `false` | `true` 일 때만 LLM 호출 입출력을 파일 캐시(`0`/`1` 표기도 수용) |
+| `interim_root` | env `INTERIM_ROOT`(미설정 시 `/nfs-root/interim`) | 캐시 루트 경로. 우선순위 요청값 > env > 기본 |
+| `workflow_id` | (없음) | 캐시 스코프. **없으면 캐시 비활성** |
+| `run_id` | `"default"` | 캐시 스코프 |
+| `error_policy` | `"lenient"` | `"strict"` 면 enrichment 실패를 `code:1` 로 응답(+`stage`/`error_kind`) |
+| `request_deadline` | (없음) | 요청 전체 상한(초). 초과 시 timeout 응답 |
+
+- **캐시 활성 조건**: `llm_cache` **AND** `workflow_id`. interim root 는 요청 `interim_root` > env
+  `INTERIM_ROOT` > 기본 `/nfs-root/interim` 순으로 항상 확보됩니다. 경로는
+  `<interim_root>/<workflow_id>/<run_id>/llm_cache/<key>.json`. 로그에 호출별 `HIT`/`MISS`/`STORE` 와
+  요청 종료 시 `[llm_cache] hit=.. miss=..` 요약이 남습니다.
+- **`error_policy`**: `lenient`(기본)은 enrichment 실패를 삼키고 `code:0`(기존 동작). `strict` 는
+  실패 시 `code:1` + envelope 에 `stage`(실패 단계)·`error_kind`(`transient`/`permanent`/`timeout`)를 실어 줍니다.
+- **`/chunker`** 는 파싱 결과를 입력받아 청킹만 하므로 LLM 호출이 없어 캐시는 실질 no-op 이며,
+  `interim_ref`(=`"<workflow_id>/<run_id>"`)로 스코프만 전달합니다. 즉 캐시가 실제로 동작하는 단계는 **파싱(`/parser`)** 입니다.
+
+요청 예시(`/parser`):
+```json
+{
+  "file_path": "/app/src/service/genon/preprocessor/sample_files/pdf_sample.pdf",
+  "params": {
+    "llm_cache": true,
+    "interim_root": "/nfs-root/interim",
+    "workflow_id": "wf-123",
+    "run_id": "run-1"
+  }
+}
+```
+
+> 캐시 키 생성 방식, 저장되는 데이터 형태, 저장 제외 대상, 배포 요건(INTERIM_ROOT + 공유 NFS) 등 상세는
+> [코드 서빙 매뉴얼](code_serving.md)의 「LLM 캐시 / 실패 정책 / 요청 deadline (#329)」 절을 참고하세요.

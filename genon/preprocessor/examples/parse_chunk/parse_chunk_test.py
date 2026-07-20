@@ -86,14 +86,17 @@ async def parse_document(file_path: Path, kwargs: dict) -> dict:
     return await get_parser()(mock_request, str(file_path), **kwargs)
 
 
-async def chunk_payload(file_path: Path, payload: dict, chunk_size: int, chunk_mode: str) -> list[dict]:
+async def chunk_payload(file_path: Path, payload: dict, chunk_size: int, chunk_mode: str,
+                        cache_kwargs: dict | None = None) -> list[dict]:
     """청킹 실행 → GenOSVectorMeta dict 리스트.
 
     payload 는 docling({"document":...}) 또는 parse-format({"elements":...}) 어느 쪽이든 허용.
     chunker 가 형태를 스스로 판별한다(file_path 확장자 무관).
+    #329 스코프(cache_kwargs)는 청킹엔 LLM 이 없어 no-op 이지만 API 일관성 위해 전달(내부에서 pop).
     """
     vectors = await get_chunker()(
-        mock_request, str(file_path), document=payload, chunk_size=chunk_size, chunk_mode=chunk_mode
+        mock_request, str(file_path), document=payload, chunk_size=chunk_size, chunk_mode=chunk_mode,
+        **(cache_kwargs or {})
     )
     return [v.model_dump() if hasattr(v, "model_dump") else v for v in vectors]
 
@@ -124,8 +127,10 @@ def collect_files(input_path: Path) -> list[Path]:
     raise SystemExit(1)
 
 
-async def process_one(file_path: Path, out_base: Path, chunk_size: int, chunk_mode: str) -> None:
+async def process_one(file_path: Path, out_base: Path, chunk_size: int, chunk_mode: str,
+                      cache_kwargs: dict | None = None) -> None:
     """파일 1개: (파싱→)청킹 수행 후 결과 저장."""
+    cache_kwargs = cache_kwargs or {}
     is_json = file_path.suffix.lower() == ".json"
 
     if is_json:
@@ -133,7 +138,8 @@ async def process_one(file_path: Path, out_base: Path, chunk_size: int, chunk_mo
         payload = load_docling_json(file_path)
         print("  [parse] skip (docling JSON 입력)")
     else:
-        kwargs = {"org_filename": file_path.name, "log_level": 5}
+        # #329 스코프를 parse kwargs 에 병합(캐시는 parse 단계 LLM 호출에서 동작).
+        kwargs = {"org_filename": file_path.name, "log_level": 5, **cache_kwargs}
         payload = await parse_document(file_path, kwargs)
         if isinstance(payload, dict) and isinstance(payload.get("document"), dict):
             kind = "docling"
@@ -144,7 +150,7 @@ async def process_one(file_path: Path, out_base: Path, chunk_size: int, chunk_mo
             save_json(out_base.with_suffix(".parse.json"), payload)
             print(f"  [parse] parse-format ({n_elems} elements) → 공통 청킹")
 
-    vectors = await chunk_payload(file_path, payload, chunk_size, chunk_mode)
+    vectors = await chunk_payload(file_path, payload, chunk_size, chunk_mode, cache_kwargs)
     save_json(out_base.with_suffix(".chunks.json"), vectors)
     print(f"  [chunk] {len(vectors)} chunks")
 
@@ -164,7 +170,47 @@ def parse_args():
         default="split_only",
         help="split_only=chunk_size 초과 청크만 분할(기본) | resize_all=모든 청크를 chunk_size 에 맞게 병합/분할",
     )
+    # ── #329: LLM 캐시 / error_policy / deadline (opt-in) ──────────────────────
+    # 캐시는 parse 단계(LLM 호출: OCR VLM/TOC/이미지·표 desc/메타데이터)에서 동작한다.
+    # chunk 단계는 LLM 호출이 없어 스코프만 전달(no-op). 두 단계 모두 같은 스코프를 준다.
+    ap.add_argument(
+        "--llm_cache",
+        action="store_true",
+        help="LLM 호출 입출력을 파일 캐시(재실행 시 재사용). workflow_id + interim_root(or env) 필요",
+    )
+    ap.add_argument(
+        "--interim_root",
+        default=None,
+        help="캐시 루트(<interim_root>/<workflow_id>/<run_id>/llm_cache/). 미지정 시 env INTERIM_ROOT",
+    )
+    ap.add_argument("--workflow_id", default=None, help="캐시 스코프 workflow_id (재실행 간 동일해야 재사용)")
+    ap.add_argument("--run_id", default=None, help="캐시 스코프 run_id (미지정 시 'default')")
+    ap.add_argument(
+        "--error_policy",
+        choices=["lenient", "strict"],
+        default=None,
+        help="enrichment 실패 처리: lenient(기본, soft-fail) | strict(실패 시 예외 전파)",
+    )
+    ap.add_argument("--request_deadline", type=float, default=None, help="요청 전체 deadline(초). 초과 시 timeout")
     return ap.parse_args()
+
+
+def build_cache_kwargs(args) -> dict:
+    """#329 파라미터를 kwargs dict 로 (지정된 것만). parse/chunk 양쪽에 동일하게 전달."""
+    kw: dict = {}
+    if getattr(args, "llm_cache", False):
+        kw["llm_cache"] = 1
+    if getattr(args, "interim_root", None):
+        kw["interim_root"] = args.interim_root
+    if getattr(args, "workflow_id", None):
+        kw["workflow_id"] = args.workflow_id
+    if getattr(args, "run_id", None):
+        kw["run_id"] = args.run_id
+    if getattr(args, "error_policy", None):
+        kw["error_policy"] = args.error_policy
+    if getattr(args, "request_deadline", None) is not None:
+        kw["request_deadline"] = args.request_deadline
+    return kw
 
 
 def main():
@@ -174,6 +220,7 @@ def main():
     files = collect_files(input_path)
     is_dir = input_path.is_dir()
     output_dir.mkdir(parents=True, exist_ok=True)
+    cache_kwargs = build_cache_kwargs(args)
 
     for idx, file_path in enumerate(files, start=1):
         print(f"[{idx}/{len(files)}] {file_path}")
@@ -182,7 +229,7 @@ def main():
             out_base = output_dir / file_path.relative_to(input_path)
         else:
             out_base = output_dir / file_path.name
-        asyncio.run(process_one(file_path, out_base, args.chunk_size, args.chunk_mode))
+        asyncio.run(process_one(file_path, out_base, args.chunk_size, args.chunk_mode, cache_kwargs))
 
 
 if __name__ == "__main__":

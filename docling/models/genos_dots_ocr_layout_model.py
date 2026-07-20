@@ -45,6 +45,7 @@ from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
 from docling.utils.genos_dotsocr_postprocessor import LayoutPostprocessor
+from docling.utils.llm_cache import cached_call, in_current_context, remaining_timeout
 from docling.utils.profiling import ProfilingItem, ProfilingScope, TimeRecorder
 from docling.utils.visualization import draw_clusters
 
@@ -1110,7 +1111,8 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             conv_res, "dotsocr_layout_wallclock", scope=ProfilingScope.DOCUMENT
         ):
             with ThreadPoolExecutor(max_workers=len(pages)) as executor:
-                yield from executor.map(_process, pages)
+                # #329: 워커 스레드에도 llm_cache 컨텍스트 전파
+                yield from executor.map(in_current_context(_process), pages)
 
 
 prompt = """Please output the layout information from the PDF image, including each layout element's bbox, its category, and the corresponding text content within the bbox.
@@ -1187,31 +1189,46 @@ def call_vlm_server(
         "Content-Type": "application/json",
     }
 
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=timeout)
-        if response.status_code == 400:
-            fallback_payload = dict(payload)
-            max_completion_tokens = fallback_payload.pop("max_completion_tokens", None)
-            if max_completion_tokens is not None:
-                fallback_payload["max_tokens"] = max_completion_tokens
-                response = requests.post(
-                    url, json=fallback_payload, headers=headers, timeout=timeout
-                )
+    def _produce() -> "tuple[str, dict | None, str | None]":
+        # #329: llm_cache opt-in 시 캐시 경유. 예외는 그대로 전파해 폴백/에러 분기를 보존.
+        call_timeout = remaining_timeout(timeout)
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=call_timeout)
+            if response.status_code == 400:
+                fallback_payload = dict(payload)
+                mct = fallback_payload.pop("max_completion_tokens", None)
+                if mct is not None:
+                    fallback_payload["max_tokens"] = mct
+                    response = requests.post(
+                        url, json=fallback_payload, headers=headers, timeout=call_timeout
+                    )
 
-        response.raise_for_status()
-        data = response.json()
-        usage = data.get("usage") if isinstance(data, dict) else None
-        choice0 = data["choices"][0]
-        # finish_reason: "stop"=정상 종료 / "length"=상한까지 무한 출력(degeneration 신호)
-        return choice0["message"]["content"], usage, choice0.get("finish_reason")
-    except requests.exceptions.ReadTimeout as e:
-        # 엔드포인트는 살아있는데 응답이 timeout 내 안 옴(=무한 출력/행 정황).
-        # 연결 자체 실패(ConnectionError/ConnectTimeout)와 구분해 폴백 분기에 쓴다.
-        raise VLMReadTimeout(f"VLM read timeout: {e}") from e
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"HTTP 요청 오류: {e}") from e
-    except KeyError as e:
-        raise ValueError(f"응답 파싱 오류: {e}\n응답 본문: {response.text}") from e
+            response.raise_for_status()
+            data = response.json()
+            usage = data.get("usage") if isinstance(data, dict) else None
+            choice0 = data["choices"][0]
+
+            _log.debug(f"VLM response: {choice0}")
+
+            # finish_reason: "stop"=정상 종료 / "length"=상한까지 무한 출력(degeneration 신호)
+            return choice0["message"]["content"], usage, choice0.get("finish_reason")
+        except requests.exceptions.ReadTimeout as e:
+            # 엔드포인트는 살아있는데 응답이 timeout 내 안 옴(=무한 출력/행 정황).
+            # 연결 자체 실패(ConnectionError/ConnectTimeout)와 구분해 폴백 분기에 쓴다.
+            raise VLMReadTimeout(f"VLM read timeout: {e}") from e
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"HTTP 요청 오류: {e}") from e
+        except KeyError as e:
+            raise ValueError(f"응답 파싱 오류: {e}\n응답 본문: {response.text}") from e
+
+    # 캐시 키는 원본 payload(모델+프롬프트+이미지+샘플링) + endpoint(url).
+    return cached_call(
+        url,
+        payload,
+        _produce,
+        serialize=lambda t: {"content": t[0], "usage": t[1], "finish_reason": t[2]},
+        deserialize=lambda d: (d.get("content"), d.get("usage"), d.get("finish_reason")),
+    )
 
 
 def _extract_layout_result_items(response):

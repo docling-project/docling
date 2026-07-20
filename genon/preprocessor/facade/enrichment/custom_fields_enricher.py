@@ -9,6 +9,8 @@ import httpx
 import yaml
 from docling_core.types import DoclingDocument
 
+from docling.utils.llm_cache import async_cached_call
+
 from .base_enricher import BaseEnricher
 from .prompt_files import read_prompt_file
 from .prompt_template import PromptTemplate
@@ -284,13 +286,18 @@ class CustomFieldsEnricher(BaseEnricher):
         ctk = resolve_thinking_kwargs(self._thinking, self._thinking_dialect)
         if ctk:
             payload["chat_template_kwargs"] = ctk
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(self._url, json=payload, headers=self._headers)
-            resp.raise_for_status()
-            data = resp.json()
-            message = data["choices"][0]["message"]
-            content = strip_reasoning(message)
-            return self._normalize_message_content(content)
+
+        async def _produce() -> str:
+            # #329: llm_cache opt-in 시 캐시 경유. 미사용 시 기존과 동일.
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                resp = await client.post(self._url, json=payload, headers=self._headers)
+                resp.raise_for_status()
+                data = resp.json()
+                message = data["choices"][0]["message"]
+                content = strip_reasoning(message)
+                return self._normalize_message_content(content)
+
+        return await async_cached_call(self._url, payload, _produce)
 
     def _parse_with_custom_parser(self, llm_output: str, document: DoclingDocument, **kwargs) -> dict:
         try:

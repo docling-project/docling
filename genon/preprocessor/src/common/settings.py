@@ -36,6 +36,11 @@ class Settings(BaseSettings):
         "/var/log/supervisor/gunicorn_stderr.log",
         "/var/log/supervisor/gunicorn_stdout.log"
     ]
+    # #329: LLM 파일 캐시 루트. Temporal worker 와 공유하는 NFS.
+    # 실제 조회는 docling/utils/llm_cache.py 가 os.getenv("INTERIM_ROOT") 로 한다
+    # (facade 가 src.common.settings 에 의존하지 않도록 디커플).
+    # 미설정이면 기본 <NFS_ROOT_DIR or /nfs-root>/interim 로 폴백(캐시는 llm_cache+workflow_id 로 게이팅).
+    INTERIM_ROOT: Optional[str] = None
 
 
 class MsgQueueConfig(BaseSettings):

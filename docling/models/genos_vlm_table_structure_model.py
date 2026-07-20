@@ -13,6 +13,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmTableStructureOptions
 from docling.models.base_model import BasePageModel
 from docling.utils.api_image_request import api_image_request
+from docling.utils.llm_cache import in_current_context
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -333,7 +334,8 @@ class GenosVlmTableStructureModel(BasePageModel):
                         ) as executor:
                             futures = {
                                 executor.submit(
-                                    self._process_single_table,
+                                    # #329: 워커 스레드에도 llm_cache 컨텍스트 전파
+                                    in_current_context(self._process_single_table),
                                     page,
                                     cluster,
                                     ocr_info_by_cluster.get(cluster.id),

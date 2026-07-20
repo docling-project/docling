@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import traceback
@@ -8,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from logger import Logger
-from utils import make_failure_response, make_success_response
+from utils import make_failure_response, make_success_response, failure_response_from_exc
 from config import cors_config
 from common.exception import GenosServiceException
 from common.settings import settings
@@ -25,8 +26,13 @@ cors_config(app)
 @app.exception_handler(GenosServiceException)
 async def mlops_exception_handler(request, exc: GenosServiceException):
     logger.error(f"[GenosServiceException]: {exc.error_msg}")
-    return JSONResponse({'code': exc.error_code, 'errMsg': exc.error_msg, 'data': None, 'error_code': exc.error_code},
-                        status_code=200)
+    body = {'code': exc.error_code, 'errMsg': exc.error_msg, 'data': None, 'error_code': exc.error_code}
+    # #329: strict 경로의 stage/error_type 를 envelope 에 실어 준다(있을 때만).
+    if getattr(exc, 'stage', None) is not None:
+        body['stage'] = exc.stage
+    if getattr(exc, 'error_type', None) is not None:
+        body['error_type'] = exc.error_type
+    return JSONResponse(body, status_code=200)
 
 
 @app.exception_handler(RequestValidationError)
@@ -59,6 +65,27 @@ from preprocessor import DocumentProcessor
 processor = DocumentProcessor()
 
 
+def _request_deadline_seconds(params: dict):
+    """#329: params.request_deadline(초, >0)이면 요청 전체 hard deadline 으로 쓴다.
+
+    LLM 호출 단위 timeout 은 facade 내부(llm_cache.remaining_timeout)에서 이미 적용되며,
+    이 값은 그 위에 씌우는 요청 전체 상한(비-LLM 행잉 방어)이다. 미설정이면 None(무제한).
+    """
+    try:
+        secs = float(params.get('request_deadline'))
+    except (TypeError, ValueError):
+        return None
+    return secs if secs > 0 else None
+
+
+async def _run_with_deadline(request, file_path, params):
+    """processor 호출을 요청 deadline 으로 감싼다. 초과 시 timeout 성격의 실패로 매핑."""
+    rd = _request_deadline_seconds(params)
+    if rd is None:
+        return await processor(request, file_path, **params)
+    return await asyncio.wait_for(processor(request, file_path, **params), timeout=rd)
+
+
 @app.post('/run')
 async def run(
         request: Request,
@@ -68,17 +95,18 @@ async def run(
     pt = time.time()
     try:
         logger.info(f'Start: "{file_path}"')
-        data = await processor(request, file_path, **params)
+        data = await _run_with_deadline(request, file_path, params)
         logger.info(f'Success: "{file_path}"')
+    except asyncio.TimeoutError:
+        logger.error(f'Error(timeout): "{file_path}"')
+        return make_failure_response('request deadline exceeded', error_code=1,
+                                     stage='request', error_type='timeout')
     except GenosServiceException as e:
         logger.error(f'Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return JSONResponse(
-            {'code': 1, 'errMsg': e.error_msg, 'data': None, 'error_code': e.error_code,
-             'error_msg': e.error_msg},
-            status_code=200)
+        return failure_response_from_exc(e)
     except Exception as e:
         logger.error(f'Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return make_failure_response(str(e))
+        return failure_response_from_exc(e)
     finally:
         logger.info(f'End: "{file_path}" ({time.time() - pt:.2f} seconds)')
     return make_success_response(data=data)
@@ -101,17 +129,18 @@ async def parse(
     pt = time.time()
     try:
         logger.info(f'[parser] Start: "{file_path}"')
-        data = await processor(request, file_path, **params)
+        data = await _run_with_deadline(request, file_path, params)
         logger.info(f'[parser] Success: "{file_path}"')
+    except asyncio.TimeoutError:
+        logger.error(f'[parser] Error(timeout): "{file_path}"')
+        return make_failure_response('request deadline exceeded', error_code=1,
+                                     stage='request', error_type='timeout')
     except GenosServiceException as e:
         logger.error(f'[parser] Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return JSONResponse(
-            {'code': 1, 'errMsg': e.error_msg, 'data': None,
-             'error_code': e.error_code, 'error_msg': e.error_msg},
-            status_code=200)
+        return failure_response_from_exc(e)
     except Exception as e:
         logger.error(f'[parser] Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return make_failure_response(str(e))
+        return failure_response_from_exc(e)
     finally:
         logger.info(f'[parser] End: "{file_path}" ({time.time() - pt:.2f} seconds)')
     return make_success_response(data=data)
@@ -135,17 +164,18 @@ async def chunker(
     try:
         logger.info('[chunker] Start')
         # 앞단계(파싱) 결과 docling JSON 은 params["document"] 로 인라인 전달된다.
-        data = await processor(request, file_path, **params)
+        data = await _run_with_deadline(request, file_path, params)
         logger.info('[chunker] Success')
+    except asyncio.TimeoutError:
+        logger.error('[chunker] Error(timeout)')
+        return make_failure_response('request deadline exceeded', error_code=1,
+                                     stage='request', error_type='timeout')
     except GenosServiceException as e:
         logger.error(f'[chunker] Error\n{traceback.format_exc()}\n')
-        return JSONResponse(
-            {'code': 1, 'errMsg': e.error_msg, 'data': None,
-             'error_code': e.error_code, 'error_msg': e.error_msg},
-            status_code=200)
+        return failure_response_from_exc(e)
     except Exception as e:
         logger.error(f'[chunker] Error\n{traceback.format_exc()}\n')
-        return make_failure_response(str(e))
+        return failure_response_from_exc(e)
     finally:
         logger.info(f'[chunker] End ({time.time() - pt:.2f} seconds)')
     return make_success_response(data=data)

@@ -91,6 +91,9 @@ Authorization: Bearer {auth_key}
 - `code` 가 `0` 이면 성공, 그 외에는 실패이며 `errMsg` 에 사유가 담깁니다.
 - 서버 내부 예외가 발생해도 HTTP 상태는 `200` 이며 `code` 가 `0` 이 아닌 값으로 반환됩니다.
   성공 여부는 HTTP 상태가 아니라 **`code` 값으로 판단**하세요.
+- 실패 응답에는 `error_code` 가 함께 담기며, `error_policy: "strict"`(#329) 또는 요청
+  deadline 초과 시엔 `stage`(실패 단계)·`error_kind`(`transient`/`permanent`/`timeout`) 필드가
+  추가됩니다. 자세한 내용은 아래 「LLM 캐시 / 실패 정책 / 요청 deadline (#329)」 절 참고.
 
 엔드포인트 요약:
 
@@ -300,13 +303,22 @@ python serving_gateway_test.py --mode parser \
 
 # 4) 청킹만 (저장해둔 docling JSON 사용)
 python serving_gateway_test.py --mode chunker --doc-json /tmp/doc.json
+
+# 5) LLM 캐시(#329) — 별도 모드가 아니라 parser 에 --param 으로 opt-in.
+#    같은 스코프로 2회 파싱 → 1회차 MISS(저장), 2회차 HIT(재사용). 로그의 hit/miss 및 두 doc 비교.
+python serving_gateway_test.py --mode parser --file-path /data/documents/report.pdf \
+  --param llm_cache=1 --param interim_root=/nfs-root/interim \
+  --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run1.json
+python serving_gateway_test.py --mode parser --file-path /data/documents/report.pdf \
+  --param llm_cache=1 --param interim_root=/nfs-root/interim \
+  --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run2.json
 ```
 
 주요 CLI 인자:
 
 | 인자 | 기본값 | 설명 |
 | --- | --- | --- |
-| `--mode` | `e2e` | `health` / `parser` / `chunker` / `e2e` |
+| `--mode` | `e2e` | `health` / `parser` / `parser_upload` / `chunker` / `e2e` |
 | `--base-url` | `https://genos.genon.ai` | 게이트웨이 base URL |
 | `--serving-id` | `139` | 코드 서빙 ID |
 | `--auth-key` | (스크립트 기본값) | `Authorization: Bearer <key>` |
@@ -316,6 +328,160 @@ python serving_gateway_test.py --mode chunker --doc-json /tmp/doc.json
 | `--out` | `None` | 청크 결과 JSON 저장 경로/디렉터리(옵션) |
 | `--out-doc` | `None` | `parser` 모드의 docling JSON 저장 경로/디렉터리(옵션) |
 | `--timeout` | `3600` | 요청 타임아웃(초) |
+| `--param KEY=VALUE` | (없음) | 임의 `params` 오버라이드(반복). #329 캐시/정책도 이걸로: `llm_cache=1`·`interim_root=..`·`workflow_id=..`·`run_id=..`·`error_policy=strict`·`request_deadline=..` |
+
+## LLM 캐시 / 실패 정책 / 요청 deadline (#329)
+
+모든 POST 엔드포인트(`/preprocess*`·`/parser`·`/chunker`)에서 `params` 로 opt-in 할 수 있는
+공통 옵션입니다. 대용량 배치 중 문서가 중간 실패해도 그때까지 성공한 LLM 호출을 캐시해 재시도 시
+재사용하고, 실패/행잉을 응답으로 돌려줍니다. **미지정 시 기존과 완전히 동일하게 동작**합니다.
+
+| 파라미터 | 위치 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| `llm_cache` | `params` | `false` | `true` 일 때만 LLM 호출 입출력을 파일 캐시(0/1 표기도 수용) |
+| `interim_root` | `params` | env `INTERIM_ROOT`(미설정 시 `/nfs-root/interim`) | 캐시 루트 경로. 우선순위 요청값 > env > 기본 |
+| `workflow_id` | `params` | (없음) | 캐시 스코프. **없으면 캐시 비활성** |
+| `run_id` | `params` | `"default"` | 캐시 스코프 |
+| `error_policy` | `params` | `"lenient"` | `"strict"` 면 enrichment 실패를 `code:1` 로 응답(+`stage`/`error_kind`) |
+| `request_deadline` | `params` | (없음) | 요청 전체 상한(초). 초과 시 timeout 응답 |
+
+- 캐시 활성 조건: `llm_cache` **AND** `workflow_id`. interim root 는 요청 `interim_root` > env
+  `INTERIM_ROOT` > 기본 `/nfs-root/interim` 순으로 항상 확보되므로, 사실상 이 둘만 있으면 켜집니다.
+  경로는 `<interim_root>/<workflow_id>/<run_id>/llm_cache/<key>.json`.
+- `/chunker` 는 `interim_ref`(=`"<workflow_id>/<run_id>"`)로도 스코프를 유도할 수 있습니다
+  (청킹은 LLM 호출이 없어 실질 no-op).
+
+요청 예시(`/parser`):
+```json
+{
+  "file_path": "/app/src/service/genon/preprocessor/sample_files/pdf_sample.pdf",
+  "params": {
+    "llm_cache": true,
+    "interim_root": "/nfs-root/interim",
+    "workflow_id": "wf-123",
+    "run_id": "run-1"
+  }
+}
+```
+
+### 캐시 키(`<key>`) 생성 방식
+
+LLM 호출 1건 = 파일 1개(`<key>.json`). 키는 **그 호출의 지문(fingerprint)** 으로, 엔드포인트와
+요청 payload 를 함께 해싱해 만든다(`docling/utils/llm_cache.py` `cache_key`).
+
+```python
+def cache_key(endpoint, payload):
+    h = hashlib.sha256()
+    h.update(str(endpoint).encode("utf-8"))          # ① 호출 엔드포인트 URL
+    h.update(b"\x00")                                # ② 구분자(널바이트)
+    h.update(_canonical(payload).encode("utf-8"))    # ③ 정규화된 요청 payload
+    return h.hexdigest()                             # 64자 hex → <key>.json
+
+def _canonical(payload):   # 결정적 정규화
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                      separators=(",", ":"), default=str)
+```
+
+| 구성 | 내용 |
+| --- | --- |
+| ① `endpoint` | 그 호출의 URL(모델 서빙 URL). **모델/URL 이 다르면 키가 갈림**(충돌 방지) |
+| ② `\x00` | endpoint 와 payload 경계 구분자 |
+| ③ `payload` | 그 호출의 **전체 요청 본문**: `model`, `messages`(텍스트/이미지 base64), 샘플링 파라미터(`temperature`/`top_p`/`max_tokens`/`seed`/`repetition_penalty`), `chat_template_kwargs` 등 |
+
+- **결정적**: 같은 `(endpoint, payload)` → 항상 같은 64자 hex → 재실행 시 같은 파일을 찾아 **HIT**.
+- **키 순서 무관**: `sort_keys=True` 라 payload dict 키 순서가 달라도 같은 키.
+- 입력이 하나라도 바뀌면(프롬프트·이미지·모델·샘플링 등) 다른 키 → **MISS**(새로 호출·저장).
+
+### 저장되는 데이터 (파일 내용)
+
+각 `<key>.json` 은 forward-compat envelope 로 감싼다.
+```json
+{ "v": 1, "value": <LLM 응답 직렬화값> }
+```
+- `v`: envelope 스키마 버전(현재 1). 값이 바뀌면 기존 캐시는 miss 처리.
+- `value`: 그 호출의 **결과**. 호출 유형별 형태:
+
+| LLM 작업 | 공유 헬퍼 | `value` 형태 |
+| --- | --- | --- |
+| OCR / layout VLM(DotsOCR, 페이지별) | `call_vlm_server` | `{"content": <텍스트>, "usage": <토큰정보\|null>, "finish_reason": <문자열\|null>}` |
+| 텍스트 프롬프트(품질검사·TOC 등) | `call_ai_model` | 문자열(응답 본문, thinking 제거 후) |
+| 이미지 설명 · 표 설명 | `api_image_request` | 문자열(생성 텍스트) |
+| 문서 본문요약(doc_summary) | `summarize_body` | 문자열(요약) |
+| 메타데이터 · 커스텀 필드 | `_call_llm`(async) | 문자열(정규화 content) |
+
+- 저장·읽기 안전성: temp 파일 기록 후 **atomic rename**(부분 쓰기 방지). 읽을 때 JSON 파싱 실패면
+  miss 로 처리해 재호출·덮어쓴다. 같은 키 동시 쓰기는 내용이 같아 락이 필요 없다.
+- **요청(payload)은 파일에 저장하지 않는다** — payload 는 키(해시)로만 반영되고, 파일엔 결과(`value`)만 담긴다.
+
+### 저장 제외 (캐시 안 됨)
+- `None` / 빈 문자열 결과 — "실패성 성공"은 저장 안 함(재호출 기회 보존).
+- 예외로 실패한 호출(402/500 등) — 저장 안 되고 miss 로 남아 **재시도 시 다시 호출**(캐시 오염 없음).
+- 활성 조건 미충족(캐시 off).
+- PaddleOCR `/ocr` 텍스트 엔드포인트(강제 재OCR) — 현재 캐시 범위 밖.
+- `/chunker` — LLM 호출 자체가 없음.
+
+### 로그
+호출마다 캐시 사용 여부가 로그에 남는다.
+```
+[llm_cache] MISS — 캐시 없음, LLM 실제 호출 (endpoint=... key=...)
+[llm_cache] STORE — LLM 결과 캐시 저장 (key=...)
+[llm_cache] HIT  — 캐시 재사용, LLM 호출 안 함 (endpoint=... key=...)
+```
+요청 종료 시 요약: `[llm_cache] hit=.. miss=.. save_fail=.. dir=...`
+
+### 재사용 단위(스코프)
+캐시는 `<workflow_id>/<run_id>` 디렉토리 단위다. Temporal activity 재시도는 같은
+workflow_id/run_id 를 유지하므로 **재시도 간 성공분을 그대로 재사용**한다. 서로 다른
+문서/워크플로우는 다른 디렉토리라 격리된다.
+
+### 실패 정책 (`error_policy`)
+
+| 값 | 동작 |
+| --- | --- |
+| `lenient`(기본) | enrichment 실패를 삼키고 null 로 채운 뒤 `code:0` — 기존 하위호환 동작 |
+| `strict` | enrichment 실패 시 삼키지 않고 `code:1` 로 응답 |
+
+`strict`/timeout 응답 envelope 에는 실패 맥락이 추가된다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `stage` | 실패 단계(`doc_summary`/`image_description`/`table_description`/`metadata`/`custom_fields`/`enrichment`/`request`) |
+| `error_kind` | 실패 성격 — `transient`(연결/5xx) / `permanent`(4xx/파싱) / `timeout` |
+
+> **주의**: `strict` 는 캐시가 선행되어야 실용적이다. 캐시 없이 하드페일하면 재시도마다 성공분이 전부 재과금된다.
+
+### 요청 deadline (`request_deadline`)
+- **요청 전체 상한**(초): 초과 시 timeout 응답(`error_kind: "timeout"`, `stage: "request"`).
+- **per-call timeout**: 개별 LLM 호출도 남은 deadline 으로 소켓 timeout 을 좁혀 조기 종료한다.
+- 미지정 시 상한 없음.
+
+### 배포 요건
+- 코드서빙 컨테이너에 **`INTERIM_ROOT` env** 가 있고(또는 요청 `interim_root` 전달), 그 경로가
+  **Temporal worker 와 공유되는 NFS** 여야 재시도 간 재사용이 성립한다. 요청 `interim_root` 가 env 보다 우선.
+- 셋 중 하나라도 없으면 캐시는 켜지지 않고(안전 no-op) 기존대로 동작한다.
+
+### 테스트 방법
+```bash
+# 게이트웨이(HTTP): parser 를 같은 스코프로 2회 호출 → 1회차 MISS(저장), 2회차 HIT(재사용)
+python serving_gateway_test.py --mode parser --file-path /data/report.pdf \
+  --param llm_cache=1 --param interim_root=/nfs-root/interim \
+  --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run1.json
+python serving_gateway_test.py --mode parser --file-path /data/report.pdf \
+  --param llm_cache=1 --param interim_root=/nfs-root/interim \
+  --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run2.json
+
+# in-process 파싱→청킹: examples/parse_chunk/parse_chunk_test.sh
+python parse_chunk_test.py --llm_cache --interim_root <경로> \
+  --workflow_id wf-1 --run_id run-1 <input.pdf> <out>/
+
+# in-process 적재(/run): shkim_labs/test.sh
+python test.py --llm_cache --interim_root <경로> --workflow_id <id> --run_id <id> <input> <out>
+```
+로그의 1회차 `MISS→STORE`, 2회차 `HIT` 및 요약 `hit=.. miss=..` 로 재사용을 확인한다.
+
+> **참고 — `/parse → /chunk == /run` 정합**: 캐시 도입과 함께 분리 경로(`/parser`→`/chunker`)가
+> 모놀리식(`/run`)과 동일 결과를 내도록 `/parse` 의 auto-OCR 재시도 휴리스틱(빈 텍스트 페이지 감지 포함)과
+> picture 이미지 참조를 `/run` 과 일치시켰다.
 
 ## 설정 참고
 
@@ -344,3 +510,7 @@ python serving_gateway_test.py --mode chunker --doc-json /tmp/doc.json
 - **`code` 가 0이 아님**: 요청이 실패한 것이며 `errMsg` 에 사유가 들어 있습니다.
 - **타임아웃**: 큰 문서 파싱은 시간이 걸릴 수 있습니다. 클라이언트 타임아웃을
   넉넉히(예: 3600초) 설정하세요.
+- **LLM 캐시(#329)가 안 켜져요**: 캐시는 `llm_cache=true` **AND** `workflow_id` 가 있어야 동작합니다
+  (interim root 는 요청 `interim_root` > env `INTERIM_ROOT` > 기본 `/nfs-root/interim` 순으로 항상 확보).
+  재사용은 그 경로가 재시도 간 공유되는 NFS 일 때 성립합니다. 로그의 `[llm_cache] hit=.. miss=..`
+  요약으로 확인하세요. 상세: 위 「LLM 캐시 / 실패 정책 / 요청 deadline (#329)」 절.

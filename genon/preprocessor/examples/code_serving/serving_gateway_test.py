@@ -52,6 +52,25 @@ requests 등 외부 의존 없이 표준 라이브러리(urllib)만 사용한다
     python serving_gateway_test.py --mode parser_upload --upload-file ./chart.pdf \
         --param img_desc=1 --param chart_desc=1 --param chart_detection=1 \
         --param doc_summary=1 --out-doc /tmp/doc.json
+
+    # 8) LLM 캐시(#329) — 캐시는 별도 모드가 아니라 parser 에 --param 으로 opt-in.
+    #    같은 스코프(workflow_id/run_id/interim_root)로 2회 호출 → 1회차 MISS(저장), 2회차 HIT(재사용).
+    python serving_gateway_test.py --mode parser --file-path /data/documents/report.pdf \
+        --param llm_cache=1 --param interim_root=/nfs-root/interim \
+        --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run1.json
+    python serving_gateway_test.py --mode parser --file-path /data/documents/report.pdf \
+        --param llm_cache=1 --param interim_root=/nfs-root/interim \
+        --param workflow_id=wf-123 --param run_id=run-1 --out-doc /tmp/doc_run2.json
+        # (서빙에 INTERIM_ROOT+공유 NFS 필요. 서버 로그 '[llm_cache] hit=.. miss=..' 및 두 doc 비교)
+
+    # 9) error_policy=strict(#329) — enrichment 실패 시 code=1 + stage/error_kind 응답
+    python serving_gateway_test.py --mode parser \
+        --file-path /data/documents/report.pdf \
+        --param error_policy=strict --param img_desc=1
+
+    # 10) 요청 deadline(#329) — 행잉 대신 error_kind=timeout 응답
+    python serving_gateway_test.py --mode parser \
+        --file-path /data/documents/big.pdf --param request_deadline=30
 """
 from __future__ import annotations
 
@@ -312,7 +331,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="청크 최대 크기(0=토큰/문자 기반 분할 안 함). 청킹 config 기본값을 덮어씀")
     p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE",
                    help="파싱 kwargs 오버라이드(반복 가능). "
-                        "예: --param img_desc=1 --param chart_desc=1 --param chart_detection=1 --param doc_summary=1")
+                        "예: --param img_desc=1 --param chart_desc=1 --param chart_detection=1 --param doc_summary=1. "
+                        "LLM 캐시(#329)도 이걸로: --param llm_cache=1 --param interim_root=.. --param workflow_id=.. --param run_id=..")
     p.add_argument("--doc-json", default=None, help="chunker 모드: 입력 docling JSON 파일 경로")
     p.add_argument("--out", default=None, help="청크 결과 JSON 저장 경로 또는 디렉터리(옵션)")
     p.add_argument("--out-doc", default=None, help="parser 모드: docling JSON 저장 경로 또는 디렉터리(옵션)")
