@@ -340,7 +340,7 @@ class NemotronOcrModel(BaseOcrModel):
                 if state.needs_ocr:
                     assert state.recorder is not None
                     state.recorder.resume()
-                    self.post_process_cells(state.cells, state.page)
+                    self.post_process_cells(state.cells, state.page, conv_res)
                     state.recorder.pause()
                     # One "ocr" sample per page (rects + image prep + this page's
                     # inference share + post-processing), so count == valid pages.
