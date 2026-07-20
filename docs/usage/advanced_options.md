@@ -28,6 +28,12 @@ To prefetch EasyOCR recognition models for specific languages, repeat
 $ docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
 ```
 
+To download models using a Hugging Face token, you can either set the `HF_TOKEN` environment variable or pass the `--hf-token` option:
+
+```sh
+$ docling-tools models download --hf-token YOUR_HF_TOKEN
+```
+
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
 Also, you can use `download-hf-repo` parameter to download arbitrary models from HuggingFace by specifying repo id:
@@ -35,6 +41,12 @@ Also, you can use `download-hf-repo` parameter to download arbitrary models from
 ```sh
 $ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
 Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
+```
+
+To download with authentication, add `--hf-token`:
+
+```sh
+$ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview --hf-token YOUR_HF_TOKEN
 ```
 
 **Step 2: Use the prefetched models**
