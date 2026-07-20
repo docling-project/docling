@@ -31,7 +31,7 @@ def draw_clusters(
                 cx0, cy0, cx1, cy1 = tc.rect.to_bounding_box().as_tuple()
                 cx0 *= scale_x
                 cx1 *= scale_x
-                cy0 *= scale_x
+                cy0 *= scale_y
                 cy1 *= scale_y
 
                 draw.rectangle(
@@ -43,7 +43,7 @@ def draw_clusters(
             x0, y0, x1, y1 = c.bbox.as_tuple()
             x0 *= scale_x
             x1 *= scale_x
-            y0 *= scale_x
+            y0 *= scale_y
             y1 *= scale_y
 
             if y1 <= y0:

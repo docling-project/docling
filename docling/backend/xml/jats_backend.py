@@ -507,6 +507,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _handle_inline_formula(
+        self,
+        child: etree._Element,
+        node: etree._Element,
+        node_text: str,
+        inline_segments: list[tuple[DocItemLabel, str]],
+    ) -> str:
+        formula = self._get_inline_equation(child) if node.tag == "p" else None
+        if formula is not None:
+            if node_text.strip():
+                inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
+                node_text = ""
+            inline_segments.append((DocItemLabel.FORMULA, formula))
+        return node_text
+
     def _parse_element_citation(self, node: etree._Element) -> str:
         citation: Citation = {
             "author_names": "",
@@ -637,6 +652,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
         math_text = node.text
+        if not math_text:
+            return
         math_parts = math_text.split("$$")
         if len(math_parts) == 3:
             math_formula = math_parts[1]
@@ -943,11 +960,30 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     label=GroupLabel.LIST, name="list", parent=parent
                 )
             elif child.tag == "list-item":
-                # TODO: address any type of content (another list, formula,...)
+                # TODO: address non-paragraph, non-list content inside list-item
+                #       (e.g. disp-formula, fig, table-wrap)
                 # TODO: address list type and item label
-                text = JatsDocumentBackend._get_text(child).strip()
-                new_parent = doc.add_list_item(text=text, parent=parent)
+                text_parts: list[str] = []
+                nested_lists: list[etree._Element] = []
+
+                for elem in child:
+                    if elem.tag == "p":
+                        text_parts.append(JatsDocumentBackend._get_text(elem).strip())
+                    elif elem.tag == "list":
+                        nested_lists.append(elem)
+
+                text = " ".join(part for part in text_parts if part)
+
+                new_parent = doc.add_list_item(
+                    text=text,
+                    parent=parent,
+                )
+
+                for nested in nested_lists:
+                    self._walk_linear(doc, new_parent, nested)
+
                 stop_walk = True
+
             elif child.tag == "fig":
                 self._add_figure_captions(doc, parent, child)
                 stop_walk = True
@@ -986,12 +1022,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                formula = self._get_inline_equation(child) if node.tag == "p" else None
-                if formula is not None:
-                    if node_text.strip():
-                        inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
-                        node_text = ""
-                    inline_segments.append((DocItemLabel.FORMULA, formula))
+                node_text = self._handle_inline_formula(
+                    child,
+                    node,
+                    node_text,
+                    inline_segments,
+                )
                 stop_walk = True
 
             # step into child

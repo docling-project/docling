@@ -4,13 +4,20 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupItem,
+    PictureClassificationLabel,
+    PictureItem,
+    TableItem,
+)
 from lxml import etree
 from PIL import Image
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -19,7 +26,7 @@ from docling.datamodel.document import (
     SectionHeaderItem,
     TextItem,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, WordFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -214,6 +221,120 @@ def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
     assert "This is test 1" in all_text or "This is test 2" in all_text, (
         "Expected text from paragraphs with images to be extracted"
     )
+
+
+CHART_DOCX = Path("./tests/data/docx/sources/drawingml.docx")
+
+# The line chart embedded in drawingml.docx (word/charts/chart1.xml): categories
+# down the first column, one column per series, header row of series names.
+EXPECTED_CHART_GRID = [
+    ["", "Series 1", "Series 2", "Series 3"],
+    ["Category 1", "4.3", "2.4", "2"],
+    ["Category 2", "2.5", "4.4", "2"],
+    ["Category 3", "3.5", "1.8", "3"],
+    ["Category 4", "4.5", "2.8", "5"],
+]
+
+
+def _has_libreoffice() -> bool:
+    try:
+        return get_libreoffice_cmd(raise_if_unavailable=True) is not None
+    except Exception:
+        return False
+
+
+def _chart_converter(render_chart_images: bool) -> DocumentConverter:
+    return DocumentConverter(
+        allowed_formats=[InputFormat.DOCX],
+        format_options={
+            InputFormat.DOCX: WordFormatOption(
+                backend_options=MsWordBackendOptions(
+                    render_chart_images=render_chart_images
+                )
+            )
+        },
+    )
+
+
+def _single_chart_picture(doc: DoclingDocument) -> PictureItem:
+    charts = [
+        item
+        for item, _ in doc.iterate_items()
+        if isinstance(item, PictureItem)
+        and item.meta is not None
+        and item.meta.classification is not None
+    ]
+    assert len(charts) == 1, f"expected exactly one classified chart, got {len(charts)}"
+    return charts[0]
+
+
+def _grid_from_table_data(table_data) -> list[list[str]]:
+    grid = [[""] * table_data.num_cols for _ in range(table_data.num_rows)]
+    for cell in table_data.table_cells:
+        grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text
+    return grid
+
+
+def test_chart_classification_and_data_without_libreoffice(monkeypatch):
+    """A native Word chart is classified and its data reconstructed without LibreOffice.
+
+    Chart parsing reads the inline cached data in word/charts/chartN.xml, so it
+    must not depend on the LibreOffice image-rendering path being available.
+    """
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+
+    doc = _chart_converter(render_chart_images=False).convert(CHART_DOCX).document
+    chart = _single_chart_picture(doc)
+
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    # No image is produced on the LibreOffice-free path.
+    assert chart.get_image(doc=doc) is None
+    assert chart.meta.tabular_chart is not None
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )
+
+
+@pytest.mark.skipif(
+    not _has_libreoffice(), reason="LibreOffice is required to render chart images"
+)
+def test_chart_image_rendering():
+    """render_chart_images=True attaches a rendered image while keeping the data."""
+    doc = _chart_converter(render_chart_images=True).convert(CHART_DOCX).document
+    chart = _single_chart_picture(doc)
+
+    image = chart.get_image(doc=doc)
+    assert image is not None, "expected a rendered chart image with render_chart_images"
+    # The rendered size depends on the LibreOffice version; only assert it is a
+    # plausible, non-degenerate raster rather than an exact size.
+    assert image.width > 100 and image.height > 100
+
+    # Rendering must not drop the reconstructed classification and data.
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.LINE_CHART
+    )
+    assert _grid_from_table_data(chart.meta.tabular_chart.chart_data) == (
+        EXPECTED_CHART_GRID
+    )
+
+
+def test_chart_image_opt_out_keeps_no_image(documents):
+    """Charts stay image-free under default options (render_chart_images=False).
+
+    Reuses the shared conversion, which runs with the default options, so the
+    same document is not converted again just to check the opt-out.
+    """
+    doc = next(item[1] for item in documents if item[0].name == "drawingml.docx")
+    chart = _single_chart_picture(doc)
+
+    assert chart.get_image(doc=doc) is None
+    assert chart.meta.tabular_chart is not None
 
 
 def test_is_rich_table_cell(docx_paths):
@@ -672,6 +793,119 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def _table_with_grid_before(
+    tmp_path,
+    *,
+    rows,
+    cols,
+    texts,
+    late_row,
+    grid_before,
+    merge=None,
+    filename="grid_before.docx",
+):
+    """Build a docx table where ``late_row`` starts ``grid_before`` columns late.
+
+    ``texts`` maps ``(row, col)`` grid positions to strings; ``merge`` optionally
+    vertically merges ``((r0, c), (r1, c))`` before the leading cells of
+    ``late_row`` are dropped to realize the ``w:gridBefore``.
+    """
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document()
+    table = doc.add_table(rows=rows, cols=cols)
+    table.style = "Table Grid"
+    for (r, c), txt in texts.items():
+        table.cell(r, c).text = txt
+    if merge is not None:
+        (r0, c0), (r1, c1) = merge
+        table.cell(r0, c0).merge(table.cell(r1, c1))
+
+    tr = table.rows[late_row]._tr
+    tr.get_or_add_trPr().append(
+        tr.makeelement(qn("w:gridBefore"), {qn("w:val"): str(grid_before)})
+    )
+    for tc in tr.findall(qn("w:tc"))[:grid_before]:  # drop leading cells
+        tr.remove(tc)
+
+    docx_path = tmp_path / filename
+    doc.save(docx_path)
+    return docx_path
+
+
+def _convert(docx_path):
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    return in_doc._backend.convert()
+
+
+def test_table_row_with_grid_before_is_preserved(tmp_path):
+    """A row starting late via ``w:gridBefore`` keeps its cells at the right column.
+
+    The late-starting cell belongs one column to the right, not one row down.
+    """
+    # 2x2; row 1 starts late (gridBefore=1). Its only remaining cell is B2:
+    #   grid col:   0    1
+    #   row 0:    [A1] [B1]
+    #   row 1:     .   [B2]
+    docx_path = _table_with_grid_before(
+        tmp_path,
+        rows=2,
+        cols=2,
+        texts={(0, 0): "A1", (0, 1): "B1", (1, 1): "B2"},
+        late_row=1,
+        grid_before=1,
+    )
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    by_text = {c.text: c for c in doc.tables[0].data.table_cells}
+
+    assert {"A1", "B1", "B2"}.issubset(by_text)
+    b1, b2 = by_text["B1"], by_text["B2"]
+    assert (b1.start_row_offset_idx, b1.start_col_offset_idx) == (0, 1)
+    assert (b2.start_row_offset_idx, b2.start_col_offset_idx) == (1, 1)
+    assert b1.column_header and not b2.column_header
+
+
+def test_vertical_merge_survives_grid_before_row(tmp_path):
+    """A vertical merge keeps its row span across a row that starts late.
+
+    The merged cell's continuation sits at the same grid column even though the
+    row below it holds fewer cells.
+    """
+    # 3 cols; grid col 2 is vertically merged across rows 0-1, row 1 starts late:
+    #   grid col:   0    1    2
+    #   row 0:    [P] [Q] [X]     X = top of a 2-row vertical merge
+    #   row 1:     .   .  [X]     gridBefore=2; X continues the merge
+    docx_path = _table_with_grid_before(
+        tmp_path,
+        rows=2,
+        cols=3,
+        texts={(0, 0): "P", (0, 1): "Q", (0, 2): "X", (1, 0): "a", (1, 1): "b"},
+        late_row=1,
+        grid_before=2,
+        merge=((0, 2), (1, 2)),
+        filename="vmerge_grid_before.docx",
+    )
+    doc = _convert(docx_path)
+
+    cells = doc.tables[0].data.table_cells
+    by_pos = {(c.start_row_offset_idx, c.start_col_offset_idx): c for c in cells}
+
+    assert by_pos[(0, 0)].text == "P"
+    assert by_pos[(0, 1)].text == "Q"
+
+    merged = by_pos[(0, 2)]
+    assert merged.text.startswith("X")
+    assert merged.row_span == 2
+    assert merged.end_row_offset_idx == 2
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]
@@ -1077,3 +1311,43 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
         if isinstance(item, TextItem) and item.hyperlink is not None
     ]
     assert hyperlinks == []
+
+
+def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
+    """A whitespace-only trailing run must not overwrite the paragraph's formatting.
+
+    Regression test: the final run group was flushed with the format of the last
+    run *seen* rather than the format of the run that opened the group. Word
+    routinely emits a trailing plain run holding just spaces, which silently
+    stripped bold/italic from the whole preceding text.
+    """
+    from docx import Document
+
+    doc = Document()
+
+    para = doc.add_paragraph()
+    para.add_run("All bold text").bold = True
+    para.add_run("   ")
+
+    para = doc.add_paragraph()
+    para.add_run("All italic text").italic = True
+    para.add_run(" ")
+
+    # A bold whitespace-only run must not make the plain text bold either.
+    para = doc.add_paragraph()
+    para.add_run("Plain text")
+    para.add_run("   ").bold = True
+
+    docx_path = tmp_path / "trailing_whitespace_run.docx"
+    doc.save(docx_path)
+
+    doc = _convert(docx_path)
+    formatting = {
+        item.text: item.formatting
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+    }
+
+    assert formatting["All bold text"].bold is True
+    assert formatting["All italic text"].italic is True
+    assert formatting["Plain text"].bold is False

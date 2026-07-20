@@ -444,6 +444,100 @@ WHISPER_TURBO_NATIVE = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
+# English-only OpenAI Whisper checkpoints (part of openai-whisper's registry)
+
+WHISPER_TINY_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="tiny.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_BASE_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="base.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_SMALL_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="small.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="medium.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+# Distil-Whisper models (English-only). These are not part of openai-whisper's
+# registry; the ASR pipeline loads them from the OpenAI-format checkpoints
+# published in the distil-whisper Hugging Face repos.
+
+WHISPER_DISTIL_SMALL_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="distil-small.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_DISTIL_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="distil-medium.en",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_DISTIL_LARGE_V3_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="distil-large-v3",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_DISTIL_LARGE_V3_5_NATIVE = InlineAsrNativeWhisperOptions(
+    repo_id="distil-large-v3.5",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperature=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
 # =============================================================================
 # WhisperS2T Models (CTranslate2 backend - fastest option for CPU/CUDA)
 # =============================================================================
@@ -633,6 +727,14 @@ class AsrModelType(str, Enum):
     WHISPER_BASE_NATIVE = "whisper_base_native"
     WHISPER_LARGE_NATIVE = "whisper_large_native"
     WHISPER_TURBO_NATIVE = "whisper_turbo_native"
+    WHISPER_TINY_EN_NATIVE = "whisper_tiny_en_native"
+    WHISPER_BASE_EN_NATIVE = "whisper_base_en_native"
+    WHISPER_SMALL_EN_NATIVE = "whisper_small_en_native"
+    WHISPER_MEDIUM_EN_NATIVE = "whisper_medium_en_native"
+    WHISPER_DISTIL_SMALL_EN_NATIVE = "whisper_distil_small_en_native"
+    WHISPER_DISTIL_MEDIUM_EN_NATIVE = "whisper_distil_medium_en_native"
+    WHISPER_DISTIL_LARGE_V3_NATIVE = "whisper_distil_large_v3_native"
+    WHISPER_DISTIL_LARGE_V3_5_NATIVE = "whisper_distil_large_v3_5_native"
 
     # Explicit WhisperS2T models (CTranslate2 backend - fastest)
     WHISPER_TINY_S2T = "whisper_tiny_s2t"

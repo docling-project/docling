@@ -25,6 +25,7 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
+    AzureBlobSourceRequest,
     BaseChunkDocumentsRequest,
     BatchConvertSourcesRequest,
     BatchSourceRequestItem,
@@ -33,6 +34,8 @@ from docling.datamodel.service.requests import (
     ConvertSourcesRequest,
     FileSourceRequest,
     GenericChunkDocumentsRequest,
+    GoogleCloudStorageSourceRequest,
+    GoogleDriveSourceRequest,
     HttpSourceRequest,
     S3SourceRequest,
     SourceRequestItem,
@@ -68,8 +71,20 @@ from docling.datamodel.service.responses import (
     WebsocketMessage,
     ZipArchiveResult,
 )
-from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
+from docling.datamodel.service.sources import (
+    AzureBlobCoordinates,
+    FileSource,
+    GoogleCloudStorageCoordinates,
+    GoogleCloudStorageServiceAccountInfo,
+    GoogleDriveCoordinates,
+    GoogleDriveCredentials,
+    HttpSource,
+    S3Coordinates,
+)
 from docling.datamodel.service.targets import (
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
     InBodyTarget,
     PresignedUrlTarget,
     PutTarget,
@@ -82,6 +97,9 @@ from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 __all__ = [
     "AnyHttpSourceRequest",
     "ArtifactRef",
+    "AzureBlobCoordinates",
+    "AzureBlobSourceRequest",
+    "AzureBlobTarget",
     "BaseChunkDocumentsRequest",
     "BaseChunkerOptions",
     "BaseProgress",
@@ -110,6 +128,14 @@ __all__ = [
     "FileSource",
     "FileSourceRequest",
     "GenericChunkDocumentsRequest",
+    "GoogleCloudStorageCoordinates",
+    "GoogleCloudStorageServiceAccountInfo",
+    "GoogleCloudStorageSourceRequest",
+    "GoogleCloudStorageTarget",
+    "GoogleDriveCoordinates",
+    "GoogleDriveCredentials",
+    "GoogleDriveSourceRequest",
+    "GoogleDriveTarget",
     "HealthCheckResponse",
     "HierarchicalChunkerOptions",
     "HttpSource",

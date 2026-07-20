@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from tempfile import mkdtemp
+from typing import Any, Callable, Final, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -14,10 +16,15 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
     TableCell,
     TableData,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.document import ContentLayer
 from lxml import etree
@@ -28,7 +35,9 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.base_models import InputFormat
+from docling.backend.docx.drawingml.utils import convert_to_modern_format
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -46,17 +55,44 @@ try:  # pragma: no cover - import-time guard
 except ImportError as e:  # pragma: no cover - import-time guard
     _PPTX_IMPORT_ERROR = e
 
+# Chart image rendering is opt-in and relies on pypdfium2 plus the shared
+# DrawingML/LibreOffice helpers, which live behind the PDF extra rather than
+# format-pptx. Guard them separately so a slim PPTX install still parses text,
+# tables, and chart data; only render_chart_images needs these.
+_CHART_RENDER_AVAILABLE: bool = False
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    from docling.backend.docx.drawingml.utils import (
+        crop_whitespace,
+        get_docx_to_pdf_converter,
+    )
+
+    _CHART_RENDER_AVAILABLE = True
+except ImportError:  # pragma: no cover - import-time guard
+    pass
+
 _INSTALL_HINT = (
     "The 'python-pptx' package is required to process PowerPoint files. "
     "Install it with `pip install 'docling-slim[format-pptx]'`."
 )
 
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render PowerPoint charts as images "
+    "(render_chart_images=True). Install LibreOffice and make sure `soffice` is "
+    "on PATH. Charts still keep their classification and reconstructed tabular "
+    "data without it."
+)
+
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing PPTX documents.
+    """Backend for parsing PowerPoint presentations (PPTX and PPT files).
 
-    Converts PPTX presentations into structured DoclingDocument format,
-    extracting text, tables, images, lists, and comments from slides.
+    Converts presentations into structured DoclingDocument format, extracting
+    text, tables, images, lists, and comments from slides.
+
+    Legacy ``.ppt`` files (binary PowerPoint 97-2003 format) are first converted
+    to ``.pptx`` via LibreOffice before parsing.
 
     Note:
         Comments are extracted and added to the NOTES content layer. Unlike Word documents,
@@ -81,13 +117,24 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     )
 
     def __init__(
-        self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[MsPowerpointBackendOptions] = None,
     ) -> None:
         if not _PPTX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        if in_doc.format == InputFormat.PPT:
+            path_or_stream = convert_to_modern_format(path_or_stream, "ppt", "pptx")
+        if options is None:
+            options = MsPowerpointBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.page_range = in_doc.limits.page_range
+
+        self.pptx_to_pdf_converter: Optional[Callable] = None
+        self.pptx_to_pdf_converter_init: bool = False
+        self._render_charts: bool = False
 
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
@@ -131,7 +178,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.PPTX}
+        return {InputFormat.PPTX, InputFormat.PPT}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -142,7 +189,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="application/vnd.ms-powerpoint",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 
@@ -586,8 +633,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     ]:
                         # It's a title
                         doc_label = DocItemLabel.TITLE
-                    elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
-                        DocItemLabel.SECTION_HEADER
 
                 # output accumulated inline text:
                 doc.add_text(
@@ -717,6 +762,334 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 doc.add_table(parent=parent_slide, data=data, prov=prov)
         return
 
+    @staticmethod
+    def _chart_type_to_classification(chart_type: Any) -> PictureClassificationLabel:
+        """Map a python-pptx ``XL_CHART_TYPE`` to a docling classification label.
+
+        ``chart.chart_type`` is a granular enum (``COLUMN_CLUSTERED``,
+        ``XY_SCATTER_LINES``, ``THREE_D_PIE``, ...). Rather than enumerate every
+        member, we match on the enum member's name by family, mirroring the
+        Excel backend's tagname mapping: column/bar variants become BAR_CHART,
+        line variants LINE_CHART, pie/doughnut PIE_CHART, scatter SCATTER_CHART,
+        and everything else (area, radar, stock, surface, ...) OTHER_CHART.
+        SCATTER is matched before LINE because ``XY_SCATTER_LINES`` contains both.
+
+        Args:
+            chart_type: An ``XL_CHART_TYPE`` member, or None when python-pptx
+                cannot determine the type (e.g. combination charts).
+
+        Returns:
+            The matching PictureClassificationLabel.
+        """
+        name = chart_type.name if chart_type is not None else ""
+        if "PIE" in name or "DOUGHNUT" in name:
+            return PictureClassificationLabel.PIE_CHART
+        if "SCATTER" in name:
+            return PictureClassificationLabel.SCATTER_CHART
+        if "LINE" in name:
+            return PictureClassificationLabel.LINE_CHART
+        if "BAR" in name or "COL" in name:
+            return PictureClassificationLabel.BAR_CHART
+        return PictureClassificationLabel.OTHER_CHART
+
+    @staticmethod
+    def _chart_title_text(chart: Any) -> Optional[str]:
+        """Return the chart's title text, or None when it has no title.
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+
+        Returns:
+            The stripped title text, or None.
+        """
+        if not chart.has_title:
+            return None
+        text = chart.chart_title.text_frame.text.strip()
+        return text or None
+
+    @staticmethod
+    def _cell_text(value: Any) -> str:
+        """Format a chart category label or data value as cell text.
+
+        python-pptx returns numeric series values as floats and empty points as
+        None. Integer-valued floats are rendered without a trailing ``.0`` so the
+        reconstructed table reads like the source data (``120`` not ``120.0``).
+
+        Args:
+            value: A category label or data point (str, float, int, or None).
+
+        Returns:
+            The value as a string ("" for None).
+        """
+        if value is None:
+            return ""
+        if isinstance(value, float) and value.is_integer():
+            return str(int(value))
+        return str(value)
+
+    def _chart_to_table_data(self, chart: Any) -> Optional[TableData]:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Layout produced (categories down the first column, one column per series):
+
+            | <blank> | <series 0 name> | <series 1 name> | ...
+            | cat_0   | val_0,0         | val_1,0         | ...
+            | cat_1   | val_0,1         | val_1,1         | ...
+
+        Unlike the Excel backend, python-pptx exposes the plotted numbers
+        directly on each series (``series.values``) and the shared category
+        labels on the plot (``plot.categories``) — no workbook reference
+        resolution is needed.
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+
+        Returns:
+            A TableData, or None if the chart exposes no usable series.
+        """
+        series_list = list(chart.series)
+        if not series_list:
+            return None
+
+        plots = list(chart.plots)
+        categories: list[str] = (
+            [self._cell_text(cat) for cat in plots[0].categories] if plots else []
+        )
+
+        columns: list[tuple[str, list[str]]] = []
+        for series in series_list:
+            name = self._cell_text(series.name) if series.name is not None else ""
+            values = [self._cell_text(v) for v in series.values]
+            columns.append((name, values))
+
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+        if num_data_rows == 0:
+            return None
+
+        num_rows = num_data_rows + 1
+        num_cols = 1 + len(columns)
+        cells: list[TableCell] = []
+
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
+                )
+            )
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),
+                    )
+                )
+
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    def _handle_chart(self, shape, parent_slide, slide_ind, doc, slide_size):
+        """Add a native chart shape as a classified PictureItem with its data.
+
+        Each chart becomes a PictureItem whose meta carries (a) the chart-type
+        classification and (b) the chart's plotted numbers reconstructed as a
+        TableData. The chart title, if any, becomes the picture caption. When
+        ``render_chart_images`` is enabled and LibreOffice is available, a
+        rendered image is attached; on any rendering failure the picture keeps
+        its classification and data without an image.
+
+        Args:
+            shape: The python-pptx graphic-frame shape holding the chart.
+            parent_slide: The parent slide group.
+            slide_ind: Zero-based slide index.
+            doc: The DoclingDocument to update.
+            slide_size: The slide size, used for provenance.
+        """
+        try:
+            chart = shape.chart
+        except (ValueError, KeyError, InvalidXmlError) as exc:
+            warnings.warn(
+                f"Skipping malformed chart shape: {exc}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return
+
+        try:
+            chart_type = chart.chart_type
+        except (ValueError, NotImplementedError):
+            chart_type = None
+        classification = self._chart_type_to_classification(chart_type)
+        caption_text = self._chart_title_text(chart)
+        table_data = self._chart_to_table_data(chart)
+
+        prov = self._generate_prov(shape, slide_ind, "", slide_size)
+
+        image_ref = None
+        if self._render_charts:
+            try:
+                chart_image = self._render_chart_image(slide_ind, shape.shape_id)
+                if chart_image is not None:
+                    image_ref = ImageRef.from_pil(image=chart_image, dpi=72)
+            except Exception:
+                _log.warning(
+                    "could not render a chart image; keeping chart data without image",
+                    exc_info=True,
+                )
+
+        caption_item = (
+            doc.add_text(label=DocItemLabel.CAPTION, text=caption_text)
+            if caption_text
+            else None
+        )
+
+        picture = doc.add_picture(
+            parent=parent_slide,
+            image=image_ref,
+            caption=caption_item,
+            prov=prov,
+        )
+        picture.meta = PictureMeta(
+            classification=PictureClassificationMetaField(
+                predictions=[PictureClassificationPrediction(class_name=classification)]
+            ),
+            tabular_chart=(
+                TabularChartMetaField(chart_data=table_data)
+                if table_data is not None
+                else None
+            ),
+        )
+        return
+
+    def _get_libreoffice_converter(self) -> Optional[Callable]:
+        """Lazily initialize and return a LibreOffice converter callable.
+
+        The converter accepts ``(input_path, output_path)`` and converts the
+        input file to PDF. Returns None when LibreOffice is not available.
+        """
+        if self.pptx_to_pdf_converter_init:
+            return self.pptx_to_pdf_converter
+
+        self.pptx_to_pdf_converter_init = True
+        if _CHART_RENDER_AVAILABLE:
+            self.pptx_to_pdf_converter = get_docx_to_pdf_converter()
+        if self.pptx_to_pdf_converter is None:
+            _log.debug("LibreOffice not found — PPTX charts will not be rendered.")
+        return self.pptx_to_pdf_converter
+
+    def _isolate_chart_presentation(
+        self, slide_ind: int, chart_shape_id: int, out_path: Path
+    ) -> bool:
+        """Save a copy of the presentation holding only the target chart.
+
+        A fresh copy of the loaded presentation is reopened, every slide except
+        the chart's is removed, and on that slide every shape except the chart
+        is removed. LibreOffice then renders a single-chart page. When the chart
+        is not a top-level shape (e.g. nested in a group) its ``shape_id`` is not
+        found among the slide's shapes, so the slide is left intact and the whole
+        slide is rendered instead — a best-effort fallback.
+
+        Args:
+            slide_ind: Zero-based index of the slide holding the chart.
+            chart_shape_id: The ``shape_id`` of the chart's graphic frame.
+            out_path: Destination path for the trimmed ``.pptx``.
+
+        Returns:
+            True when the trimmed presentation was written.
+        """
+        if self.pptx_obj is None:
+            return False
+
+        buf = BytesIO()
+        self.pptx_obj.save(buf)
+        buf.seek(0)
+        prs = Presentation(buf)
+
+        slide_id_list = prs.slides._sldIdLst
+        slide_ids = list(slide_id_list)
+        if slide_ind >= len(slide_ids):
+            return False
+        target_slide = prs.slides[slide_ind]
+
+        for idx, slide_id in enumerate(slide_ids):
+            if idx != slide_ind:
+                slide_id_list.remove(slide_id)
+
+        for shp in list(target_slide.shapes):
+            if shp.shape_id != chart_shape_id:
+                shp._element.getparent().remove(shp._element)
+
+        prs.save(str(out_path))
+        return True
+
+    def _render_chart_image(
+        self, slide_ind: int, chart_shape_id: int
+    ) -> Optional[Image.Image]:
+        """Render a native chart to an image via LibreOffice.
+
+        PPTX stores charts as vector definitions with no embedded raster. To
+        obtain a picture we isolate the chart onto a throwaway single-slide
+        presentation, convert that to PDF with LibreOffice — the same external
+        tool already used for EMF/WMF images — and rasterize the first page with
+        pypdfium2, trimming the surrounding whitespace.
+
+        Args:
+            slide_ind: Zero-based index of the slide holding the chart.
+            chart_shape_id: The ``shape_id`` of the chart's graphic frame.
+
+        Returns:
+            A PIL Image, or None when LibreOffice is unavailable or the
+            conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            return None
+
+        temp_dir = Path(mkdtemp())
+        try:
+            input_path = temp_dir / "chart.pptx"
+            output_path = temp_dir / "chart.pdf"
+            if not self._isolate_chart_presentation(
+                slide_ind, chart_shape_id, input_path
+            ):
+                return None
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for a chart")
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("Chart rendering via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
     def _walk_linear(
         self,
         pptx_obj: presentation.Presentation,
@@ -728,6 +1101,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
         slide_height = pptx_obj.slide_height
+
+        self._render_charts = (
+            isinstance(self.options, MsPowerpointBackendOptions)
+            and self.options.render_chart_images
+        )
+        if self._render_charts and self._get_libreoffice_converter() is None:
+            _log.warning(_CHART_RENDER_HINT)
+            self._render_charts = False
 
         max_levels = 10
         parents = {}  # type: ignore
@@ -762,6 +1143,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.has_table:
                     # Handle Tables
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
+                if shape.has_chart:
+                    self._handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     self._handle_pictures(

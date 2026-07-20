@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel
+from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -26,24 +26,6 @@ def get_converter():
     return converter
 
 
-def convert_jats_body(body: str) -> DoclingDocument:
-    xml = f"""<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article article-type="research-article">
-  <body>
-    {body}
-  </body>
-</article>
-"""
-    stream = DocumentStream(
-        name="body-test.nxml",
-        stream=BytesIO(xml.encode()),
-    )
-
-    conv_result: ConversionResult = get_converter().convert(stream)
-    return conv_result.document
-
-
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -56,6 +38,27 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
 </article>
 """
     stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
+    conv_result: ConversionResult = get_converter().convert(stream)
+    return conv_result.document
+
+
+def convert_jats_body(body_content: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <front>
+    <article-meta>
+      <title-group>
+        <article-title>Body Test</article-title>
+      </title-group>
+    </article-meta>
+  </front>
+  <body>
+    {body_content}
+  </body>
+</article>
+"""
+    stream = DocumentStream(name="body-test.nxml", stream=BytesIO(xml.encode()))
     conv_result: ConversionResult = get_converter().convert(stream)
     return conv_result.document
 
@@ -91,6 +94,46 @@ def test_jats_structured_abstract_sections_are_preserved():
     assert "## Abstract" in md
     assert "Background: Background text." in md
     assert "Methods: Methods text." in md
+
+
+def test_jats_nested_lists_are_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>List Test</title>
+          <list>
+            <list-item>
+              <p>Item 1</p>
+              <list>
+                <list-item>
+                  <p>Subitem A</p>
+                </list-item>
+              </list>
+            </list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    # Both items must appear in the rendered output.
+    md = doc.export_to_markdown()
+    assert "- Item 1" in md
+    assert "Subitem A" in md
+
+    # Verify document structure
+    list_items = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(list_items) == 2
+
+    outer_item = next(item for item in list_items if item.text == "Item 1")
+    sub_item = next(item for item in list_items if item.text == "Subitem A")
+
+    sub_item_parent = sub_item.parent.resolve(doc)
+    assert sub_item_parent.label == GroupLabel.LIST
+    assert sub_item_parent.parent == outer_item.get_ref()
 
 
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
@@ -168,6 +211,26 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert _inline_group_items(doc) == []
     formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
     assert formulas == expected_formulas
+
+
+def test_jats_empty_display_formula_does_not_drop_following_content():
+    # A display equation whose <tex-math> is empty must be skipped, not crash the
+    # walk. _add_equation used to call node.text.split("$$") unconditionally, so an
+    # empty <tex-math/> raised AttributeError; convert() swallows it and returns a
+    # truncated document, silently losing everything after the equation.
+    doc = convert_jats_body(
+        "<sec><title>T</title>"
+        "<p>Before the equation.</p>"
+        "<disp-formula><tex-math/></disp-formula>"
+        "<p>After the equation.</p>"
+        "</sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "Before the equation." in md
+    assert "After the equation." in md
+    # The empty display formula produced no FORMULA item.
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
 def test_jats_footnotes_are_preserved():

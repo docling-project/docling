@@ -1,3 +1,20 @@
+## [v2.113.0](https://github.com/docling-project/docling/releases/tag/v2.113.0) - 2026-07-14
+
+### Feature
+
+* **pptx:** Parse native PowerPoint charts as classified pictures with data ([#3794](https://github.com/docling-project/docling/issues/3794)) ([`3b5891c`](https://github.com/docling-project/docling/commit/3b5891c81c3b6f250cea53534d84a8b2f8303b7e))
+* **service:** Expose GCS, Azure Blob, and Google Drive source/target types ([#3795](https://github.com/docling-project/docling/issues/3795)) ([`e1e2fbc`](https://github.com/docling-project/docling/commit/e1e2fbc755ed489d549c3d54e56e83aa41e795cc))
+
+### Fix
+
+* **msword:** Keep paragraph formatting when a trailing run is whitespace-only ([#3799](https://github.com/docling-project/docling/issues/3799)) ([`1db1c32`](https://github.com/docling-project/docling/commit/1db1c323387980557381c45209d043b69059d7c1))
+* **asciidoc:** Drop phantom cell from trailing-pipe table rows ([#3787](https://github.com/docling-project/docling/issues/3787)) ([`f976796`](https://github.com/docling-project/docling/commit/f976796580bf0071f10a53696166f3495948cce0))
+* **md:** Stop duplicating table cells in the Markdown backend ([#3781](https://github.com/docling-project/docling/issues/3781)) ([`6cfdc5f`](https://github.com/docling-project/docling/commit/6cfdc5f39a73f4f1b30666308ca641c7b0f28399))
+* Import pypdfium2 lazily in pdf_outline ([#3796](https://github.com/docling-project/docling/issues/3796)) ([`06e9c89`](https://github.com/docling-project/docling/commit/06e9c8990930f19c0de56fee95a163411cfa8bed))
+* **msword:** Preserve cells and merges in DOCX tables with gridBefore rows ([#3745](https://github.com/docling-project/docling/issues/3745)) ([`1e197a0`](https://github.com/docling-project/docling/commit/1e197a0912e4fdbd6b6e55fb3039b313e182cd5c))
+* Chain original exception in ConversionError for error classification ([#3757](https://github.com/docling-project/docling/issues/3757)) ([`5f2a3b6`](https://github.com/docling-project/docling/commit/5f2a3b628ba2cd6ece77ce1c0bdfd37c494dc6ad))
+* **utils:** Add request timeout to model download to avoid indefinite hangs ([#3784](https://github.com/docling-project/docling/issues/3784)) ([`e2329d9`](https://github.com/docling-project/docling/commit/e2329d986e549184ceb91c4b2d80cc05c6b8d620))
+
 ## [v2.112.0](https://github.com/docling-project/docling/releases/tag/v2.112.0) - 2026-07-11
 
 ### Feature

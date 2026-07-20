@@ -1616,6 +1616,104 @@ class AsrPipelineOptions(PipelineOptions):
     ] = asr_model_specs.WHISPER_TINY
 
 
+from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
+
+
+class VideoPipelineOptions(PipelineOptions):
+    """Configuration options for the video pipeline.
+
+    Controls ASR transcription, frame sampling strategy, and optional
+    scene description for video documents.
+
+    Recommended configs by use case:
+      - Business meetings:  frame_sampling_mode=SCENE_CHANGE, scene_change_prominence=0.03
+      - Lecture recordings: frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0
+      - General video:      frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0
+    """
+
+    asr_options: Annotated[
+        InlineAsrOptions,
+        Field(description="ASR model configuration for the video audio track."),
+    ] = asr_model_specs.WHISPER_TINY
+
+    frame_sampling_mode: Annotated[
+        VideoFrameSamplingMode,
+        Field(description="How representative video frames are selected."),
+    ] = VideoFrameSamplingMode.FIXED_INTERVAL
+
+    frame_interval_seconds: Annotated[
+        float,
+        Field(gt=0, description="Fixed frame sampling interval in seconds."),
+    ] = 10.0
+
+    scene_change_prominence: Annotated[
+        float | None,
+        Field(
+            default=None,
+            ge=0,
+            description="Prominence for local peak detection. None = auto-calibrate.",
+        ),
+    ] = None
+
+    scene_change_probe_fps: Annotated[
+        float,
+        Field(gt=0, description="Low frame rate used for scene-change probing."),
+    ] = 1.0
+
+    min_scene_duration_seconds: Annotated[
+        float,
+        Field(ge=0, description="Minimum duration before accepting a new scene."),
+    ] = 2.0
+
+    max_sampled_frames: Annotated[
+        int | None,
+        Field(default=None, gt=0, description="Optional cap on sampled frames."),
+    ] = None
+
+    scene_change_smooth_window: Annotated[
+        int,
+        Field(
+            default=2,
+            ge=0,
+            description=(
+                "Smoothing window (in frames) applied when detecting scene-change peaks. "
+                "Higher values produce smoother detection."
+            ),
+        ),
+    ] = 2
+
+    cuts_per_minute: Annotated[
+        float | None,
+        Field(
+            default=None,
+            gt=0,
+            description=(
+                "Optional target density of cuts per minute for scene-change sampling. "
+                "If set, the sampler will aim to produce approximately this many cuts per minute."
+            ),
+        ),
+    ] = None
+
+    generate_frame_images: Annotated[
+        bool,
+        Field(
+            default=True,
+            description=(
+                "When True, representative frames are sampled and embedded in the "
+                "output DoclingDocument as picture items."
+            ),
+        ),
+    ] = True
+
+    enable_diarization: Annotated[
+        bool,
+        Field(
+            default=False,
+            description=("Enable speaker diarization on audio tracks when available."),
+        ),
+    ] = False
+
+
 class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for VLM-based structured information extraction pipeline.
 

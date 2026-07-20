@@ -538,26 +538,26 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
 
 
 def test_cli_audio_extensions_coverage():
-    """Test that all audio extensions from FormatToExtensions are covered."""
+    """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
 
-    # Verify that the centralized audio extensions include all expected formats
     audio_extensions = FormatToExtensions[InputFormat.AUDIO]
-    expected_extensions = [
-        "wav",
-        "mp3",
-        "m4a",
-        "aac",
-        "ogg",
-        "flac",
-        "mp4",
-        "avi",
-        "mov",
-    ]
-
-    for ext in expected_extensions:
+    expected_audio = ["wav", "mp3", "m4a", "aac", "ogg", "flac"]
+    for ext in expected_audio:
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
+        )
+
+    video_extensions = FormatToExtensions[InputFormat.VIDEO]
+    expected_video = ["mp4", "avi", "mov", "mkv", "webm"]
+    for ext in expected_video:
+        assert ext in video_extensions, (
+            f"Video extension {ext} not found in FormatToExtensions[InputFormat.VIDEO]"
+        )
+
+    for ext in expected_video:
+        assert ext not in audio_extensions, (
+            f"Video extension {ext} should not be in FormatToExtensions[InputFormat.AUDIO]"
         )
 
 
