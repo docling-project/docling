@@ -120,7 +120,7 @@ def download(
             "--hf-token",
             envvar="HF_TOKEN",
             help="HuggingFace Token token to authenticate and accelerate model downloads. If not provided, reads from HF_TOKEN environment variable (if set). Else runs unauthenticated.",
-        )
+        ),
     ] = None,
     easyocr_lang: Annotated[
         Optional[list[str]],
@@ -152,7 +152,7 @@ def download(
             handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
         )
     to_download = models or (list(_AvailableModels) if all else _default_models)
-    
+
     if easyocr_lang is not None:
         if _AvailableModels.EASYOCR not in to_download:
             raise typer.BadParameter(

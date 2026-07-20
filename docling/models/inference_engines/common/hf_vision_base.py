@@ -32,6 +32,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]],
         model_family_name: str,
+        hf_token: Optional[str | bool] = None,
     ) -> None:
         if model_config is None or model_config.repo_id is None:
             raise ValueError(
@@ -47,6 +48,8 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
         self._model_family_name = model_family_name
         self._processor: Optional[BaseImageProcessor] = None
         self._id_to_label: Dict[int, str] = {}
+
+        self._hf_token = hf_token
 
     def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
         """Resolve model folder from artifacts_path or HF download."""
@@ -67,6 +70,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
                 local_dir=None,
                 force=False,
                 progress=False,
+                hf_token=self._hf_token,
             )
 
         return resolve_model_artifacts_path(
