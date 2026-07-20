@@ -4,7 +4,7 @@ import threading
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from PIL.Image import Image
@@ -42,12 +42,15 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
 
         self.vlm_options = vlm_options
         self.max_tokens = vlm_options.max_new_tokens
         self.temperature = vlm_options.temperature
+
+        self.hf_token = hf_token
 
         if self.enabled:
             try:
@@ -69,6 +72,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 artifacts_path = self.download_models(
                     self.vlm_options.repo_id,
                     revision=self.vlm_options.revision,
+                    hf_token=self.hf_token,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

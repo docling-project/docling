@@ -81,3 +81,4 @@ class LayoutModel(LayoutObjectDetectionModel):
         # LayoutFactory dispatches on the exact options type, so the shim must
         # keep claiming LayoutOptions rather than inheriting the parent's.
         return LayoutOptions
+

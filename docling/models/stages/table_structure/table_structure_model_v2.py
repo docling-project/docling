@@ -98,12 +98,14 @@ class TableStructureModelV2(BaseTableStructureModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=TableStructureModelV2._model_repo_id,
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     # FIXME: this method is here to test the quality and performance of the

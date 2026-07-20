@@ -55,10 +55,13 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
+        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
 
         self.vlm_options = vlm_options
+
+        self.hf_token = hf_token
 
         if self.enabled:
             import torch
@@ -107,7 +110,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
             if artifacts_path is None:
                 artifacts_path = self.download_models(
-                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                    self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                    hf_token=self.hf_token,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
