@@ -130,6 +130,15 @@ def download(
             help="EasyOCR language code to prefetch. Repeat for multiple languages.",
         ),
     ] = None,
+    hf_token: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            "--hf-token",
+            envvar="HF_TOKEN",
+            help="HuggingFace Token token to authenticate and accelerate model downloads. If not provided, reads from HF_TOKEN environment variable (if set). Else runs unauthenticated.",
+        ),
+    ] = None,
 ):
     if models and all:
         raise typer.BadParameter(
@@ -155,31 +164,31 @@ def download(
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     try:
-      output_dir = download_models(
-          output_dir=output_dir,
-          force=force,
-          progress=(not quiet),
-          with_layout=_AvailableModels.LAYOUT in to_download,
-          with_tableformer=_AvailableModels.TABLEFORMER in to_download,
-          with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
-          with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
-          with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
-          with_smolvlm=_AvailableModels.SMOLVLM in to_download,
-          with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
-          with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
-          with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
-          with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
-          with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
-          with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
-          in to_download,
-          with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
-          in to_download,
-          with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
-          with_easyocr=_AvailableModels.EASYOCR in to_download,
-          easyocr_languages=easyocr_lang,
-          with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
-          hf_token=hf_token,
-      )
+        output_dir = download_models(
+            output_dir=output_dir,
+            force=force,
+            progress=(not quiet),
+            with_layout=_AvailableModels.LAYOUT in to_download,
+            with_tableformer=_AvailableModels.TABLEFORMER in to_download,
+            with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
+            with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
+            with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
+            with_smolvlm=_AvailableModels.SMOLVLM in to_download,
+            with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
+            with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
+            with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
+            with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
+            with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
+            with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
+            in to_download,
+            with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
+            in to_download,
+            with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
+            with_easyocr=_AvailableModels.EASYOCR in to_download,
+            easyocr_languages=easyocr_lang,
+            with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
+            hf_token=hf_token,
+        )
 
         if quiet:
             typer.echo(output_dir)
