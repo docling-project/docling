@@ -1747,15 +1747,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):  # Close list
             self.last_numid = self._prev_numid()
-            # Store the list group and its parent for potential reuse
-            if self.level_at_new_list and self.level_at_new_list in self.parents:
-                parent_item = self.parents.get(self.level_at_new_list)
-                if isinstance(parent_item, ListGroup):
-                    self.last_list_group = parent_item
-                    self.last_list_group_numid = self.last_numid
-                    self.last_list_group_parent = self.parents.get(
-                        self.level_at_new_list - 1
-                    )
+            if text and text.strip():
+                # Substantive body text breaks list continuity
+                self._clear_list_group_cache()
+            else:
+                # Empty/whitespace paragraph — cache the group for potential reuse
+                if self.level_at_new_list and self.level_at_new_list in self.parents:
+                    parent_item = self.parents.get(self.level_at_new_list)
+                    if isinstance(parent_item, ListGroup):
+                        self.last_list_group = parent_item
+                        self.last_list_group_numid = self.last_numid
+                        self.last_list_group_parent = self.parents.get(
+                            self.level_at_new_list - 1
+                        )
 
             if self.level_at_new_list:
                 for key in range(len(self.parents)):
