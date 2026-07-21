@@ -1,4 +1,4 @@
-# 적재용(지능형) 전처리기 v.2.2.3 (2026-07-16 Release)
+# 적재용(지능형) 전처리기 v.2.2.3.1 (2026-07-21 Release)
 from __future__ import annotations
 
 import json
