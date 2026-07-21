@@ -56,7 +56,7 @@ def _classify_error(exc: Exception) -> str:
     return ERROR_CODE_INTERNAL
 
 
-def _error_response(tag: str, file_path: str, exc: Exception, error_code=None) -> JSONResponse:
+def _error_response(tag: str, file_path: str, exc: Exception, error_code=None, stage=None) -> JSONResponse:
     """모든 에러 경로의 응답 형태를 통일한다.
 
     code 는 항상 1(실패 플래그), 기존 키(errMsg/error_code/error_msg/data)는 유지하고
@@ -71,20 +71,29 @@ def _error_response(tag: str, file_path: str, exc: Exception, error_code=None) -
     tb = traceback.format_exc()
     tb_tail = (''.join(tb.splitlines(keepends=True)[-_TRACEBACK_TAIL_LINES:])
                if tb and not tb.startswith('NoneType: None') else '')
-    return JSONResponse(
-        {
-            'code': 1,
-            'errMsg': err_msg,
-            'error_msg': err_msg,
-            'error_code': error_code,
-            'error_type': etype,      # 신규: 예외 클래스명
-            'tag': tag,               # 신규: 실패한 엔드포인트/단계
-            'file_path': file_path,   # 신규: 대상 파일
-            'data': None,
-            'traceback': tb_tail,     # 신규: traceback 마지막 N 줄 요약
-        },
-        status_code=200,
-    )
+    body = {
+        'code': 1,
+        'errMsg': err_msg,
+        'error_msg': err_msg,
+        'error_code': error_code,
+        'error_type': etype,      # 예외 클래스명(기존 의미 보존)
+        'tag': tag,               # 실패한 엔드포인트/단계
+        'file_path': file_path,   # 대상 파일
+        'data': None,
+        'traceback': tb_tail,     # traceback 마지막 N 줄 요약
+    }
+    # #329: facade 가 부여한 실패 단계(stage)와 성격(error_kind: transient/permanent/timeout)을
+    # caller(Temporal activity)가 알 수 있게 노출(있을 때만). 기존 error_type(클래스명)은 보존하고
+    # 스펙의 error_type 값은 명명 충돌을 피해 error_kind 로 싣는다.
+    fac_stage = getattr(exc, 'stage', None) or stage
+    if fac_stage is not None:
+        body['stage'] = fac_stage
+    fac_kind = getattr(exc, 'error_type', None)
+    if fac_kind is None and isinstance(exc, (TimeoutError, asyncio.TimeoutError)):
+        fac_kind = 'timeout'   # facade 값이 없는 요청-레벨/일반 timeout 도 성격을 명시
+    if fac_kind is not None:
+        body['error_kind'] = fac_kind
+    return JSONResponse(body, status_code=200)
 
 
 @app.exception_handler(GenosServiceException)
@@ -143,6 +152,19 @@ parser_processor = ParserDocumentProcessor(config_path=_cfg("parser"))          
 chunking_processor = ChunkingDocumentProcessor(config_path=_cfg("chunking"))         # 청킹 전용(/chunker)
 
 
+def _request_deadline_seconds(params: dict):
+    """#329: params.request_deadline(초, >0)이면 요청 전체 hard deadline 으로 쓴다.
+
+    LLM 호출 단위 timeout 은 facade 내부(llm_cache.remaining_timeout, CacheContext.deadline)에서
+    이미 적용되며, 이 값은 그 위에 씌우는 요청 전체 상한(비-LLM 행잉 방어)이다. 미설정이면 None(무제한).
+    """
+    try:
+        secs = float(params.get('request_deadline'))
+    except (TypeError, ValueError):
+        return None
+    return secs if secs > 0 else None
+
+
 async def _run(tag, processor, request, file_path, params, marker=None):
     """엔드포인트 공통 실행 래퍼: 마커 가드 + 로깅 + 예외 처리 + 응답 포맷."""
     if marker and not getattr(processor, marker, False):
@@ -153,9 +175,17 @@ async def _run(tag, processor, request, file_path, params, marker=None):
     pt = time.time()
     try:
         logger.info(f'[{tag}] Start: "{file_path}"')
-        data = await processor(request, file_path, **params)
+        # #329: 요청 전체 deadline(params.request_deadline) 이 있으면 행잉 대신 timeout 응답.
+        rd = _request_deadline_seconds(params)
+        if rd is None:
+            data = await processor(request, file_path, **params)
+        else:
+            data = await asyncio.wait_for(processor(request, file_path, **params), timeout=rd)
         logger.info(f'[{tag}] Success: "{file_path}"')
         return make_success_response(data=data)
+    except asyncio.TimeoutError as e:
+        logger.error(f'[{tag}] Error(timeout): "{file_path}" (request_deadline exceeded)')
+        return _error_response(tag, file_path, e, error_code=ERROR_CODE_TIMEOUT, stage='request')
     except GenosServiceException as e:
         logger.error(f'[{tag}] Error: "{file_path}"\n{traceback.format_exc()}\n')
         return _error_response(tag, file_path, e, error_code=e.error_code)  # facade 코드 보존

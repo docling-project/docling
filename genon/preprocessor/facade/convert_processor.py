@@ -217,6 +217,12 @@ from docling.document_converter import (
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
+from docling.utils.llm_cache import (
+    log_summary as _log_cache_summary,
+    reset_context as _reset_cache_context,
+    resolve_context as _resolve_cache_context,
+    set_context as _set_cache_context,
+)
 from docling.datamodel.document import ConversionResult
 from docling.exceptions import HwpConversionError
 from docling_core.transforms.chunker import (
@@ -1515,10 +1521,14 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
-            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # split_only: base 섹션 granularity 유지 — 구조 그룹핑 병합 없이 섹션마다 분리(장 단위 병합 방지).
+            #   (1·3단계로 만든 섹션을 그대로 두고, 초과분만 5.5단계에서 분할)
+            if self.chunk_mode == "split_only" and len(merged_texts) > 0:
                 b_new_chunk = True
-            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용)
+            elif self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+                b_new_chunk = True
+            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성 (resize_all 구조 경계)
             elif 0 <= section_level < merged_level:
                 b_new_chunk = True
             #----------------------------------
@@ -3384,7 +3394,7 @@ class DocumentProcessor:
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
+        artifacts_dir = Path(output_path) / filename  # 빈 output_path 가 절대경로(/filename)로 바뀌는 것 방지
         if artifacts_dir.is_absolute():
             reference_path = None
         else:
@@ -3457,33 +3467,41 @@ class DocumentProcessor:
         return vectors
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        # HWP/HWPX: docling(SDK + 레거시 백엔드) 처리가 전체 실패하면 PDF 변환으로 최종 폴백한다.
-        # attachment_processor.DocumentProcessor.__call__ 의 PDF 폴백과 동일 취지 —
-        # convert_to_pdf 는 rhwp ↔ LibreOffice HWP→PDF 체인이며, 변환된 PDF 를 PDF 경로로 재처리한다.
-        # (헌법.hwp 처럼 SDK 가 exit 3 으로 거부하거나 02.hwp 처럼 빈 결과를 내는 경우를 살린다.)
-        # 비정상/암호화 파일 사전 감지(이슈 #278/#307): 지원 포맷 매직헤더에 하나도 안 맞고
-        # 텍스트도 아니면(=DRM 암호화/손상 바이너리) 파싱/변환 단계의 garbage 처리를 유발하므로
-        # 진입부에서 컷한다. 확장자와 무관하게 실제 헤더로 판정.
-        bad_reason = _detect_unsupported_file(file_path)
-        if bad_reason:
-            _log.warning(f"[convert] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}")
-            raise GenosServiceException(
-                "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
-            )
+        # #329: LLM 캐시 컨텍스트를 요청 스코프로 설정(최외곽이라 HWP PDF 폴백 재처리까지 커버).
+        #   params.llm_cache + workflow_id + interim_root(or env INTERIM_ROOT) 가 모두 있을 때만
+        #   캐시 동작. 미지정 시 기존과 완전히 동일(no-op). ThreadPool 워커엔 in_current_context 로 전파.
+        _cache_token = _set_cache_context(_resolve_cache_context(kwargs))
+        try:
+            # HWP/HWPX: docling(SDK + 레거시 백엔드) 처리가 전체 실패하면 PDF 변환으로 최종 폴백한다.
+            # attachment_processor.DocumentProcessor.__call__ 의 PDF 폴백과 동일 취지 —
+            # convert_to_pdf 는 rhwp ↔ LibreOffice HWP→PDF 체인이며, 변환된 PDF 를 PDF 경로로 재처리한다.
+            # (헌법.hwp 처럼 SDK 가 exit 3 으로 거부하거나 02.hwp 처럼 빈 결과를 내는 경우를 살린다.)
+            # 비정상/암호화 파일 사전 감지(이슈 #278/#307): 지원 포맷 매직헤더에 하나도 안 맞고
+            # 텍스트도 아니면(=DRM 암호화/손상 바이너리) 파싱/변환 단계의 garbage 처리를 유발하므로
+            # 진입부에서 컷한다. 확장자와 무관하게 실제 헤더로 판정.
+            bad_reason = _detect_unsupported_file(file_path)
+            if bad_reason:
+                _log.warning(f"[convert] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}")
+                raise GenosServiceException(
+                    "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+                )
 
-        ext = Path(file_path).suffix.lower()
-        # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
-        if ext in ('.hwp', '.hwpx', '.hml'):
-            try:
-                return await self._process_request(request, file_path, **kwargs)
-            except Exception as hwp_err:
-                _log.warning(f"[DocumentProcessor] HWP/HWPX 처리 실패, PDF 변환 폴백 시도: {hwp_err}")
-                converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
-                if converted:
-                    _log.info(f"[DocumentProcessor] PDF 변환 성공, PDF 경로로 재처리: {converted}")
-                    return await self._process_request(request, converted, **kwargs)
-                raise hwp_err
-        return await self._process_request(request, file_path, **kwargs)
+            ext = Path(file_path).suffix.lower()
+            # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
+            if ext in ('.hwp', '.hwpx', '.hml'):
+                try:
+                    return await self._process_request(request, file_path, **kwargs)
+                except Exception as hwp_err:
+                    _log.warning(f"[DocumentProcessor] HWP/HWPX 처리 실패, PDF 변환 폴백 시도: {hwp_err}")
+                    converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+                    if converted:
+                        _log.info(f"[DocumentProcessor] PDF 변환 성공, PDF 경로로 재처리: {converted}")
+                        return await self._process_request(request, converted, **kwargs)
+                    raise hwp_err
+            return await self._process_request(request, file_path, **kwargs)
+        finally:
+            _log_cache_summary()
+            _reset_cache_context(_cache_token)
 
 
 class GenosServiceException(Exception):

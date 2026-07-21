@@ -258,6 +258,14 @@ from docling.document_converter import (
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
+from docling.utils.llm_cache import (
+    classify_error as _classify_error,
+    current_context as _cache_current_context,
+    log_summary as _log_cache_summary,
+    reset_context as _reset_cache_context,
+    resolve_context as _resolve_cache_context,
+    set_context as _set_cache_context,
+)
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
     BaseChunk,
@@ -476,6 +484,25 @@ def _as_int_flag(value: Any, default: int = 0) -> int:
         if normalized in {"0", "false", "no", "n", "off"}:
             return 0
     return default
+
+
+# #329: LLM 캐시 / error_policy 컨텍스트 해석은 docling.utils.llm_cache.resolve_context
+# (3개 facade 공용, cross-facade import 회피)를 _resolve_cache_context 로 재노출해 사용한다.
+
+
+def _handle_stage_error(exc: Exception, stage: str) -> None:
+    """enrichment 단계 실패 처리(#329).
+
+    - lenient(기본): 기존처럼 warning 후 계속(soft-fail, 하위호환).
+    - strict: stage/error_type 를 실어 GenosServiceException 으로 재-raise(Temporal 경로).
+    error_policy 는 요청 스코프 CacheContext 에서 읽는다(단일 소스).
+    """
+    error_type = _classify_error(exc)
+    if _cache_current_context().error_policy == "strict":
+        raise GenosServiceException(
+            "1", f"[{stage}] {exc}", stage=stage, error_type=error_type
+        ) from exc
+    _log.warning(f"[DocumentProcessor] {stage} enrichment skipped ({error_type}): {exc}")
 
 
 # pdf_pipeline.device / pdf_pipeline.table_structure_mode 의 yaml 문자열 → docling enum 매핑.
@@ -1493,10 +1520,14 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
-            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # split_only: base 섹션 granularity 유지 — 구조 그룹핑 병합 없이 섹션마다 분리(장 단위 병합 방지).
+            #   (1·3단계로 만든 섹션을 그대로 두고, 초과분만 5.5단계에서 분할)
+            if self.chunk_mode == "split_only" and len(merged_texts) > 0:
                 b_new_chunk = True
-            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용)
+            elif self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+                b_new_chunk = True
+            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성 (resize_all 구조 경계)
             elif 0 <= section_level < merged_level:
                 b_new_chunk = True
             #----------------------------------
@@ -2471,7 +2502,10 @@ class DocumentProcessor:
             return document
         except LLMApiError as e:
             # Preserve provider error payload as-is for load status error message.
-            raise GenosServiceException("1", e.raw_error_message) from e
+            # #329: 기존 hard-fail 동작 유지 + stage/error_type 스탬프(4xx→permanent, 5xx→transient).
+            raise GenosServiceException(
+                "1", e.raw_error_message, stage="enrichment", error_type=_classify_error(e)
+            ) from e
 
     def _normalize_runtime_kwargs(self, kwargs: dict) -> dict:
         """이미지/차트 description 런타임 토글을 정규화한다(전부 0/1 플래그).
@@ -3208,7 +3242,7 @@ class DocumentProcessor:
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
+        artifacts_dir = Path(output_path) / filename  # 빈 output_path 가 절대경로(/filename)로 바뀌는 것 방지
         if artifacts_dir.is_absolute():
             reference_path = None
         else:
@@ -3228,32 +3262,34 @@ class DocumentProcessor:
             enrichment_context = {}
         enrichment_kwargs = dict(kwargs)
         enrichment_kwargs["_enrichment_context"] = enrichment_context
+        # #329: error_policy=strict 이면 _handle_stage_error 가 GenosServiceException 으로
+        # 재-raise(삼키지 않음). lenient(기본)은 기존처럼 warning 후 계속.
         try:
             document = self.enrich_doc_summary(document, **enrichment_kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade doc_summary enrichment skipped: {exc}")
+            _handle_stage_error(exc, "doc_summary")
         try:
             document = self.enrich_image_descriptions(document, **enrichment_kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+            _handle_stage_error(exc, "image_description")
         try:
             document = self.enrich_table_descriptions(document, **enrichment_kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade table enrichment skipped: {exc}")
+            _handle_stage_error(exc, "table_description")
         # 페이지 단위 image description 은 PPT 원본에만 적용(formats.ppt.page_description).
         if is_ppt:
             try:
                 document = self.enrich_page_descriptions(document, **enrichment_kwargs)
             except Exception as exc:
-                _log.warning(f"[DocumentProcessor] page image enrichment skipped: {exc}")
+                _handle_stage_error(exc, "page_description")
         try:
             document = await self.enrich_metadata(document, **enrichment_kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+            _handle_stage_error(exc, "metadata")
         try:
             document = await self.enrich_custom_fields(document, **enrichment_kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
+            _handle_stage_error(exc, "custom_fields")
 
         # 민감정보 분류(#315): 청킹 전, 문서 전체를 분류 워크플로우에 1회 호출 → sensitive_infos.
         # 실제 라벨 부착/마스킹 치환은 청킹 후 compose 에서 quote 매칭으로 수행.
@@ -3357,53 +3393,64 @@ class DocumentProcessor:
         kwargs = self._normalize_runtime_kwargs(kwargs)
         self._configure_runtime_image_mode(kwargs)
 
-        _log.info(f"file_path: {file_path}")
-        _log.info(f"kwargs: {kwargs}")
+        # #329: LLM 캐시 / error_policy 컨텍스트를 요청 스코프로 설정.
+        # ThreadPool 워커 스레드로는 in_current_context 로 전파된다(docling/utils/llm_cache).
+        _cache_token = _set_cache_context(_resolve_cache_context(kwargs))
+        try:
+            _log.info(f"file_path: {file_path}")
+            _log.info(f"kwargs: {kwargs}")
 
-        # 비정상 파일 사전 감지(이슈 #278): 지원 포맷 매직헤더에 하나도 안 맞고 텍스트도
-        # 아니면(=DRM 암호화/손상 바이너리) 변환 시 garbage PDF → VLM 무한 출력/행을
-        # 유발하므로 변환 전에 컷한다. 확장자와 무관하게 실제 헤더로 판정.
-        bad_reason = _detect_unsupported_file(file_path)
-        if bad_reason:
-            _log.warning(
-                f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
+            # 비정상 파일 사전 감지(이슈 #278): 지원 포맷 매직헤더에 하나도 안 맞고 텍스트도
+            # 아니면(=DRM 암호화/손상 바이너리) 변환 시 garbage PDF → VLM 무한 출력/행을
+            # 유발하므로 변환 전에 컷한다. 확장자와 무관하게 실제 헤더로 판정.
+            bad_reason = _detect_unsupported_file(file_path)
+            if bad_reason:
+                _log.warning(
+                    f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
+                )
+                raise GenosServiceException(
+                    "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+                )
+
+            ext = os.path.splitext(file_path)[1].lower()
+
+            # 직접 처리(PDF 변환 없이) 가능한 포맷(이슈 #288): 엑셀 계열(xlsx/xlsm) + csv.
+            # csv 는 본질적으로 tabular 이므로 항상 직접 처리한다(PDF 변환 시 행 분할 문제 방지).
+            # (.xls/.xlsb 는 openpyxl/docling 미지원 → 아래 PDF 변환 경로로 처리)
+            # 이 집합을 변환 가드와 디스패치 양쪽에서 동일하게 써서 "직접 처리 포맷 == 변환 제외 포맷"
+            # 불변식을 유지한다.
+
+            # 직접 처리 포맷이 아니고 PDF 도 아니면 PDF 로 변환한다.
+            # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
+            # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
+            converted_pdf_path: Optional[str] = None
+            if ext not in _XLSX_DIRECT_EXTS and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+                file_path, converted_pdf_path = self._convert_to_pdf(file_path, **kwargs)
+
+            # 포맷별 처리: 직접 처리 가능 포맷은 xlsx 핸들러, 그 외는 PDF(docling) 처리.
+            if ext in _XLSX_DIRECT_EXTS:
+                return await self._process_xlsx(request, file_path, **kwargs)
+            # 원본이 PPT 였는지(변환 전 ext)를 명시 전달 — 페이지 기반 청킹/page description 게이팅용.
+            is_ppt = ext in ('.ppt', '.pptx')
+            return await self._process_pdf(
+                request, file_path, converted_pdf_path, is_ppt=is_ppt, **kwargs
             )
-            raise GenosServiceException(
-                "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
-            )
-
-        ext = os.path.splitext(file_path)[1].lower()
-
-        # 직접 처리(PDF 변환 없이) 가능한 포맷(이슈 #288): 엑셀 계열(xlsx/xlsm) + csv.
-        # csv 는 본질적으로 tabular 이므로 항상 직접 처리한다(PDF 변환 시 행 분할 문제 방지).
-        # (.xls/.xlsb 는 openpyxl/docling 미지원 → 아래 PDF 변환 경로로 처리)
-        # 이 집합을 변환 가드와 디스패치 양쪽에서 동일하게 써서 "직접 처리 포맷 == 변환 제외 포맷"
-        # 불변식을 유지한다.
-
-        # 직접 처리 포맷이 아니고 PDF 도 아니면 PDF 로 변환한다.
-        # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
-        # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
-        converted_pdf_path: Optional[str] = None
-        if ext not in _XLSX_DIRECT_EXTS and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
-            file_path, converted_pdf_path = self._convert_to_pdf(file_path, **kwargs)
-
-        # 포맷별 처리: 직접 처리 가능 포맷은 xlsx 핸들러, 그 외는 PDF(docling) 처리.
-        if ext in _XLSX_DIRECT_EXTS:
-            return await self._process_xlsx(request, file_path, **kwargs)
-        # 원본이 PPT 였는지(변환 전 ext)를 명시 전달 — 페이지 기반 청킹/page description 게이팅용.
-        is_ppt = ext in ('.ppt', '.pptx')
-        return await self._process_pdf(
-            request, file_path, converted_pdf_path, is_ppt=is_ppt, **kwargs
-        )
+        finally:
+            _log_cache_summary()
+            _reset_cache_context(_cache_token)
 
 
 class GenosServiceException(Exception):
     # GenOS 와의 의존성 부분 제거를 위해 추가
-    def __init__(self, error_code: str, error_msg: Optional[str] = None, msg_params: Optional[dict] = None) -> None:
+    def __init__(self, error_code: str, error_msg: Optional[str] = None, msg_params: Optional[dict] = None,
+                 *, stage: Optional[str] = None, error_type: Optional[str] = None) -> None:
         self.code = 1
         self.error_code = error_code
         self.error_msg = error_msg or "GenOS Service Exception"
         self.msg_params = msg_params or {}
+        # #329: 실패 단계(stage)와 성격(error_type: transient/permanent/timeout).
+        self.stage = stage
+        self.error_type = error_type
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

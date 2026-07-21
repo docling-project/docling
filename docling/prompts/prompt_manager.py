@@ -5,6 +5,8 @@ import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from docling.utils.llm_cache import cached_call, remaining_timeout
+
 _log = logging.getLogger(__name__)
 
 # thinking(추론) 토글 공유 헬퍼. enrichment 패키지의 단일 소스를 재사용한다.
@@ -504,26 +506,26 @@ class PromptManager:
             _log.debug(f"API 요청 URL ({category}): {api_url}")
             _log.debug(f"API 요청 페이로드 ({category}): {json.dumps(payload, ensure_ascii=False, indent=2)}")
 
-            # requests.post로 API 호출
-            response = requests.post(
-                api_url,
-                headers=headers,
-                json=payload,
-                timeout=3600
-            )
-
-            # 응답 상태 확인
-            response.raise_for_status()
-
-            # 응답 파싱
-            response_data = response.json()
-
-            # 응답에서 텍스트 추출 (thinking 출력 분리/제거 후 본문만 반환)
-            if "choices" in response_data and len(response_data["choices"]) > 0:
-                return strip_reasoning(response_data["choices"][0]["message"])
-            else:
+            def _produce() -> Optional[str]:
+                # requests.post로 API 호출 (#329: llm_cache opt-in 시 캐시 경유, 미사용 시 그대로)
+                response = requests.post(
+                    api_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=remaining_timeout(3600),
+                )
+                # 응답 상태 확인
+                response.raise_for_status()
+                # 응답 파싱
+                response_data = response.json()
+                # 응답에서 텍스트 추출 (thinking 출력 분리/제거 후 본문만 반환)
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    return strip_reasoning(response_data["choices"][0]["message"])
                 _log.error(f"예상하지 못한 응답 형식 ({category}): {response_data}")
                 return None
+
+            # 캐시 키는 원본 payload(모델+메시지+샘플링) + endpoint. None 은 캐시하지 않는다.
+            return cached_call(api_url, payload, _produce)
 
         except requests.exceptions.RequestException as e:
             _log.error(f"API 요청 실패 ({category}.{prompt_type}): {e}")

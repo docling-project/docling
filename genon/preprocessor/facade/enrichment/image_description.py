@@ -30,6 +30,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ContentLayer
 from docling.utils.api_image_request import api_image_request
+from docling.utils.llm_cache import in_current_context
 
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
@@ -685,7 +686,8 @@ class ImageDescriptionEnricher:
             )
 
         with ThreadPoolExecutor(max_workers=self.options.concurrency) as executor:
-            list(executor.map(_annotate_target, targets))
+            # #329: 워커 스레드에도 llm_cache 컨텍스트 전파
+            list(executor.map(in_current_context(_annotate_target), targets))
 
         total_elapsed = time.perf_counter() - stage_started_at
         _log.info(

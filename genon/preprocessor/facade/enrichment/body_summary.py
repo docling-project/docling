@@ -12,6 +12,8 @@ from typing import Any, Optional
 
 import httpx
 
+from docling.utils.llm_cache import cached_call, remaining_timeout
+
 _log = logging.getLogger(__name__)
 
 # {{full_text}} 를 본문으로 치환하는 기본 요약 프롬프트.
@@ -69,12 +71,17 @@ def summarize_body(
         "model": model or "model",
         "messages": [{"role": "user", "content": prompt}],
     }
-    try:
-        with httpx.Client(timeout=httpx.Timeout(timeout)) as client:
+    def _produce() -> str:
+        # #329: llm_cache opt-in 시 캐시 경유. 빈 결과("")는 cached_call 이 저장하지 않는다.
+        with httpx.Client(timeout=httpx.Timeout(remaining_timeout(timeout))) as client:
             response = client.post(api_url, headers=req_headers, json=body)
         response.raise_for_status()
         data = response.json()
-        doc_summary = str(data["choices"][0]["message"]["content"] or "").strip()
+        return str(data["choices"][0]["message"]["content"] or "").strip()
+
+    # 실패 시 ""(파이프라인 비차단)는 캐시 밖에 유지한다.
+    try:
+        doc_summary = cached_call(api_url, body, _produce)
         _log.debug("[body_summary] body summary success: %s", doc_summary)
         return doc_summary
     except Exception as exc:

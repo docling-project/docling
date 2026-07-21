@@ -22,6 +22,7 @@ from typing import Any, Optional
 from PIL import Image
 
 from docling.utils.api_image_request import api_image_request
+from docling.utils.llm_cache import in_current_context
 
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
@@ -237,5 +238,6 @@ def describe_pages(
                 results[page_no] = text
 
     with ThreadPoolExecutor(max_workers=max(1, int(options.concurrency or 1))) as executor:
-        list(executor.map(_describe, page_nos))
+        # #329: 워커 스레드에도 llm_cache 컨텍스트 전파
+        list(executor.map(in_current_context(_describe), page_nos))
     return results

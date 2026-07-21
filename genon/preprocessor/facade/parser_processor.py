@@ -73,6 +73,14 @@ from docling.document_converter import (
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import check_document, enrich_document
+from docling.utils.llm_cache import (
+    classify_error as _classify_error,
+    current_context as _cache_current_context,
+    log_summary as _log_cache_summary,
+    reset_context as _reset_cache_context,
+    resolve_context as _resolve_cache_context,
+    set_context as _set_cache_context,
+)
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import (
     BoundingBox,
@@ -146,6 +154,21 @@ except ImportError:
     upload_files = None
 
 _log = logging.getLogger(__name__)
+
+
+def _handle_stage_error(exc: Exception, stage: str) -> None:
+    """enrichment 단계 실패 처리(#329).
+
+    - lenient(기본): 기존처럼 warning 후 계속(soft-fail, 하위호환).
+    - strict: stage/error_type 를 실어 GenosServiceException 으로 재-raise(Temporal 경로).
+    error_policy 는 요청 스코프 CacheContext 에서 읽는다(단일 소스).
+    """
+    error_type = _classify_error(exc)
+    if _cache_current_context().error_policy == "strict":
+        raise GenosServiceException(
+            "1", f"[{stage}] {exc}", stage=stage, error_type=error_type
+        ) from exc
+    _log.warning(f"[DocumentProcessor] {stage} enrichment skipped ({error_type}): {exc}")
 
 
 # ── 비정상/암호화 파일 사전 감지 (이슈 #278/#307) ─────────────────────────────
@@ -1455,6 +1478,28 @@ class IntelligentDocumentProcessor:
                     return True
         return False
 
+    def check_empty_text(self, document: DoclingDocument) -> bool:
+        """텍스트 클러스터(박스)는 있는데 그 텍스트가 전부 비어 있는 페이지가 있는지 확인.
+
+        length 폴백(layout_only)이나 텍스트레이어 부재 등으로 박스만 있고 텍스트가
+        안 채워진 페이지를 잡아 강제 OCR 로 보낸다(이슈 #278 B-2).
+        (intelligent_processor.DocumentProcessor.check_empty_text 미러 — /parse↔/run auto-OCR 정합)
+        """
+        from collections import defaultdict
+        page_item_count: dict = defaultdict(int)
+        page_text_len: dict = defaultdict(int)
+        for item, _level in document.iterate_items():
+            if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
+                page_no = item.prov[0].page_no
+                page_item_count[page_no] += 1
+                page_text_len[page_no] += len((item.text or "").strip())
+        for page_no, n_items in page_item_count.items():
+            # 텍스트 아이템이 있는데 그 페이지 텍스트 총량이 0 → 비어있는 페이지
+            if n_items > 0 and page_text_len[page_no] == 0:
+                _log.info(f"[intelligent] page {page_no} 텍스트가 비어있음 → 강제 OCR 필요")
+                return True
+        return False
+
     def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> DoclingDocument:
         """글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR을 수행합니다."""
         import io as _io
@@ -1743,11 +1788,15 @@ class GenericDocumentLoader:
 
 class GenosServiceException(Exception):
     def __init__(self, error_code: str, error_msg: Optional[str] = None,
-                 msg_params: Optional[dict] = None) -> None:
+                 msg_params: Optional[dict] = None,
+                 *, stage: Optional[str] = None, error_type: Optional[str] = None) -> None:
         self.code = 1
         self.error_code = error_code
         self.error_msg = error_msg or "GenOS Service Exception"
         self.msg_params = msg_params or {}
+        # #329: 실패 단계(stage)와 성격(error_type: transient/permanent/timeout).
+        self.stage = stage
+        self.error_type = error_type
 
     def __repr__(self) -> str:
         return f"GenosServiceException(code={self.code!r}, errMsg={self.error_msg!r})"
@@ -1869,21 +1918,39 @@ class DocumentProcessor:
         else:
             document = self._intel.load_documents(file_path, **kwargs)
             if ocr_mode == "auto":
+                # #329(task#1): /run(_load_document)과 동일한 auto 재OCR 휴리스틱으로 정합.
+                # 기존엔 check_empty_text 조건이 빠져 있어, /run 은 재OCR 하는 '텍스트 없는'
+                # 문서를 /parse 는 재OCR 하지 않아 다운스트림 청크가 달라졌다.
                 if (not check_document(document, self._intel.enrichment_options)
-                        or self._intel.check_glyphs(document)):
+                        or self._intel.check_glyphs(document)
+                        or self._intel.check_empty_text(document)):
                     document = self._intel.load_documents_with_docling_ocr(file_path, **kwargs)
 
         if ocr_mode != "disable" and self._intel.ocr_endpoint:
             document = self._intel.ocr_all_table_cells(document, file_path)
 
-        # output_path, output_file = os.path.split(file_path)
-        # filename, _ = os.path.splitext(output_file)
-        # artifacts_dir = Path(f"{output_path}/{filename}")
-        # reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
+        # #329(task#1): /run(_document_to_vectors)과 동일하게 picture/table 이미지 참조를
+        # 설정한다. chunking_processor.compose_vectors 의 set_media_files/get_media_files 는
+        # item.image.uri 를 읽어 media_files 를 구성하는데, 그 uri 는 파싱 단계에서 설정돼야
+        # 한다(청커는 설정하지 않음). 이게 빠져 있으면 /parse→/chunk 의 media_files 가 비어
+        # /run 과 달라진다. PNG 는 공유 NFS(artifacts_dir=파일 경로 기준)에 저장돼 /chunk 가
+        # 같은 경로로 minio 업로드한다.
+        output_path, output_file = os.path.split(file_path)
+        filename, _ = os.path.splitext(output_file)
+        artifacts_dir = Path(output_path) / filename  # 빈 output_path 가 절대경로(/filename)로 바뀌는 것 방지
+        reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
 
-        # document = document._with_pictures_refs(
-        #     image_dir=artifacts_dir, page_no=None, reference_path=reference_path
-        # )
+        document = document._with_pictures_refs(
+            image_dir=artifacts_dir, page_no=None, reference_path=reference_path
+        )
+        # 표 이미지 저장: config on 이고 임베디드 intel 이 해당 기능을 지원할 때만.
+        # (parser 임베디드 IntelligentDocumentProcessor 는 경량 사본이라 이 기능이 없을 수 있음 —
+        #  없으면 조용히 skip. 파스는 원래 표 이미지 미생성이므로 현행 동작 보존.)
+        if getattr(self._intel, "table_image_enabled", False) and hasattr(self._intel, "_save_table_images"):
+            self._intel._save_table_images(
+                document, image_dir=artifacts_dir, reference_path=reference_path
+            )
+
         document = self._intel.enrichment(document, **kwargs)
 
         return document
@@ -2031,26 +2098,28 @@ class DocumentProcessor:
 
     async def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
         """Facade 후처리 enrichment 훅."""
+        # #329: error_policy=strict 이면 _handle_stage_error 가 GenosServiceException 으로
+        # 재-raise(삼키지 않음). lenient(기본)은 기존처럼 warning 후 계속.
         try:
             document = self._intel.enrich_doc_summary(document, **kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade doc_summary enrichment skipped: {exc}")
+            _handle_stage_error(exc, "doc_summary")
         try:
             document = self._intel.enrich_image_descriptions(document, **kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+            _handle_stage_error(exc, "image_description")
         try:
             document = self._intel.enrich_table_descriptions(document, **kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] facade table enrichment skipped: {exc}")
+            _handle_stage_error(exc, "table_description")
         try:
             document = await self._intel.enrich_metadata(document, **kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+            _handle_stage_error(exc, "metadata")
         try:
             document = await self._intel.enrich_custom_fields(document, **kwargs)
         except Exception as exc:
-            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
+            _handle_stage_error(exc, "custom_fields")
         return document
 
     # ------------------------------------------------------------------
@@ -2476,80 +2545,87 @@ class DocumentProcessor:
         kwargs = self._intel._normalize_runtime_kwargs(kwargs)
         self._intel._configure_runtime_image_mode(kwargs)
 
-        ext = os.path.splitext(file_path)[-1].lower()
-        _log.info(f"[DocumentProcessor] file_path={file_path}, ext={ext}")
+        # #329: LLM 캐시 / error_policy 컨텍스트를 요청 스코프로 설정(/parse 는 body 의
+        # workflow_id/run_id 로 스코프 유도). ThreadPool 워커엔 in_current_context 로 전파.
+        _cache_token = _set_cache_context(_resolve_cache_context(kwargs))
+        try:
+            ext = os.path.splitext(file_path)[-1].lower()
+            _log.info(f"[DocumentProcessor] file_path={file_path}, ext={ext}")
 
-        # 비정상/암호화 파일 사전 감지(이슈 #278/#307): 지원 포맷 매직헤더에 하나도 안 맞고
-        # 텍스트도 아니면(=DRM 암호화/손상 바이너리) 파싱/변환 단계의 garbage 처리를 유발하므로
-        # 진입부에서 컷한다. 확장자와 무관하게 실제 헤더로 판정.
-        bad_reason = _detect_unsupported_file(file_path)
-        if bad_reason:
-            _log.warning(f"[parser] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}")
-            raise GenosServiceException(
-                "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
-            )
-
-        if ext in (".wav", ".mp3", ".m4a"):
-            # TODO(#315): PII 마스킹 미적용(보류) — 오디오 전사 텍스트는 별도 논의 후 적용.
-            text = self._parse_audio(file_path, **kwargs)
-            return self._normalize_response(self._audio_to_parse_format(text))
-
-        if ext in (".csv", ".xlsx", ".xlsm"):
-            # docling 모드: MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
-            if self._xlsx_cfg["processing_mode"] == "docling":
-                from genon.preprocessor.converters.xlsx_processor import build_docling_document
-                doc = build_docling_document(file_path)
-                return self._normalize_response(self._build_docling_response(doc, **kwargs))
-            # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
-            # TODO(#315): PII 마스킹 미적용(보류) — tabular 산출은 별도 논의 후 적용.
-            data_dict = self._parse_tabular(file_path)
-            return self._normalize_response(self._tabular_to_parse_format(data_dict))
-
-        enrichment_context: dict = {}
-
-        # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
-        if ext in (".hwp", ".hwpx", ".hml"):
-            doc = self._parse_hwp_hwpx(file_path, **kwargs)
-            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc, **kwargs)
-            if enrichment_context.get("metadata"):
-                result["metadata"] = enrichment_context["metadata"]
-            return self._normalize_response(result)
-
-        if ext == ".docx":
-            doc = self._parse_docx(file_path, **kwargs)
-            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc, clear_coordinates=True, **kwargs)
-            if enrichment_context.get("metadata"):
-                result["metadata"] = enrichment_context["metadata"]
-            return self._normalize_response(result)
-
-        if ext in (".pdf", ".html", ".htm"):
-            doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
-            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc, **kwargs)
-            if enrichment_context.get("metadata"):
-                result["metadata"] = enrichment_context["metadata"]
-            return self._normalize_response(result)
-
-        # PPT: PDF 변환 → 경량 docling 파싱 + 페이지 단위 image description(옵션).
-        # 변환 실패 시에만 레거시 langchain 경로로 폴백한다. (파스 전용 — 청킹 없음)
-        if ext in (".ppt", ".pptx"):
-            doc = self._parse_ppt_docling(file_path, **kwargs)
-            if doc is not None:
-                doc = await self._apply_docling_post_enrichment(
-                    doc, _enrichment_context=enrichment_context, **kwargs
+            # 비정상/암호화 파일 사전 감지(이슈 #278/#307): 지원 포맷 매직헤더에 하나도 안 맞고
+            # 텍스트도 아니면(=DRM 암호화/손상 바이너리) 파싱/변환 단계의 garbage 처리를 유발하므로
+            # 진입부에서 컷한다. 확장자와 무관하게 실제 헤더로 판정.
+            bad_reason = _detect_unsupported_file(file_path)
+            if bad_reason:
+                _log.warning(f"[parser] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}")
+                raise GenosServiceException(
+                    "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
                 )
+
+            if ext in (".wav", ".mp3", ".m4a"):
+                # TODO(#315): PII 마스킹 미적용(보류) — 오디오 전사 텍스트는 별도 논의 후 적용.
+                text = self._parse_audio(file_path, **kwargs)
+                return self._normalize_response(self._audio_to_parse_format(text))
+
+            if ext in (".csv", ".xlsx", ".xlsm"):
+                # docling 모드: MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+                if self._xlsx_cfg["processing_mode"] == "docling":
+                    from genon.preprocessor.converters.xlsx_processor import build_docling_document
+                    doc = build_docling_document(file_path)
+                    return self._normalize_response(self._build_docling_response(doc, **kwargs))
+                # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
+                # TODO(#315): PII 마스킹 미적용(보류) — tabular 산출은 별도 논의 후 적용.
+                data_dict = self._parse_tabular(file_path)
+                return self._normalize_response(self._tabular_to_parse_format(data_dict))
+
+            enrichment_context: dict = {}
+
+            # .hml(HWPML)은 hwp_sdk 260713+ 에서 지원 — 같은 SDK 경로로 라우팅 (이슈 #323)
+            if ext in (".hwp", ".hwpx", ".hml"):
+                doc = self._parse_hwp_hwpx(file_path, **kwargs)
+                doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
                 result = self._build_docling_response(doc, **kwargs)
                 if enrichment_context.get("metadata"):
                     result["metadata"] = enrichment_context["metadata"]
                 return self._normalize_response(result)
-            # PDF 변환 실패 폴백
-            # TODO(#315): PII 마스킹 미적용(보류) — langchain 폴백 경로. docling 아닌 파서 산출은 별도 논의.
+
+            if ext == ".docx":
+                doc = self._parse_docx(file_path, **kwargs)
+                doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+                result = self._build_docling_response(doc, clear_coordinates=True, **kwargs)
+                if enrichment_context.get("metadata"):
+                    result["metadata"] = enrichment_context["metadata"]
+                return self._normalize_response(result)
+
+            if ext in (".pdf", ".html", ".htm"):
+                doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
+                doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+                result = self._build_docling_response(doc, **kwargs)
+                if enrichment_context.get("metadata"):
+                    result["metadata"] = enrichment_context["metadata"]
+                return self._normalize_response(result)
+
+            # PPT: PDF 변환 → 경량 docling 파싱 + 페이지 단위 image description(옵션).
+            # 변환 실패 시에만 레거시 langchain 경로로 폴백한다. (파스 전용 — 청킹 없음)
+            if ext in (".ppt", ".pptx"):
+                doc = self._parse_ppt_docling(file_path, **kwargs)
+                if doc is not None:
+                    doc = await self._apply_docling_post_enrichment(
+                        doc, _enrichment_context=enrichment_context, **kwargs
+                    )
+                    result = self._build_docling_response(doc, **kwargs)
+                    if enrichment_context.get("metadata"):
+                        result["metadata"] = enrichment_context["metadata"]
+                    return self._normalize_response(result)
+                # PDF 변환 실패 폴백
+                # TODO(#315): PII 마스킹 미적용(보류) — langchain 폴백 경로. docling 아닌 파서 산출은 별도 논의.
+                docs = self._parse_other(file_path, **kwargs)
+                return self._normalize_response(self._langchain_to_parse_format(docs))
+
+            # 기타 포맷: doc, txt, json, md, jpg, jpeg, png 등
+            # TODO(#315): PII 마스킹 미적용(보류) — langchain 경로(doc/txt/md/이미지 등)는 별도 논의 후 적용.
             docs = self._parse_other(file_path, **kwargs)
             return self._normalize_response(self._langchain_to_parse_format(docs))
-
-        # 기타 포맷: doc, txt, json, md, jpg, jpeg, png 등
-        # TODO(#315): PII 마스킹 미적용(보류) — langchain 경로(doc/txt/md/이미지 등)는 별도 논의 후 적용.
-        docs = self._parse_other(file_path, **kwargs)
-        return self._normalize_response(self._langchain_to_parse_format(docs))
+        finally:
+            _log_cache_summary()
+            _reset_cache_context(_cache_token)

@@ -94,6 +94,13 @@ from docling.document_converter import (
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
+from docling.utils.llm_cache import (
+    log_summary as _log_cache_summary,
+    parse_interim_ref as _parse_interim_ref,
+    reset_context as _reset_cache_context,
+    resolve_context as _resolve_cache_context,
+    set_context as _set_cache_context,
+)
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
     BaseChunk,
@@ -1239,10 +1246,14 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
-            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # split_only: base 섹션 granularity 유지 — 구조 그룹핑 병합 없이 섹션마다 분리(장 단위 병합 방지).
+            #   (1·3단계로 만든 섹션을 그대로 두고, 초과분만 5.5단계에서 분할)
+            if self.chunk_mode == "split_only" and len(merged_texts) > 0:
                 b_new_chunk = True
-            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용)
+            elif self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+                b_new_chunk = True
+            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성 (resize_all 구조 경계)
             elif 0 <= section_level < merged_level:
                 b_new_chunk = True
             #----------------------------------
@@ -2703,93 +2714,112 @@ class DocumentProcessor:
 
         _log.info(f"[chunker] file_path: {file_path}")
 
-        # 1) 인라인 우선: 앞단계(파싱) 결과를 요청 JSON 에 인라인으로 전달.
-        #    채널(document/file_path)·형태(docling/parse-format) 어느 조합이든 허용한다.
-        raw_payload = kwargs.pop("document", None)
-        if raw_payload is None:
-            raw_payload = kwargs.pop("docling_document", None)
-        # 2) 인라인이 없으면 file_path 가 가리키는 .json 파일에서 로드(폴백).
-        if not raw_payload and file_path and file_path.lower().endswith(".json") and os.path.isfile(file_path):
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    raw_payload = json.load(f)
-            except Exception as exc:
-                raise GenosServiceException(1, f"chunker 입력 파일 로드 실패({file_path}): {exc}") from exc
-        if not raw_payload:
-            raise GenosServiceException(
-                1, "chunker API: 'document'(인라인 JSON) 또는 file_path(.json) 입력이 필요합니다.")
-
-        # parser 결과 형태 판별: docling(DoclingDocument) vs parse-format({"elements":[...]}).
-        # file_path 는 parser 결과 JSON 경로이므로 확장자가 아니라 payload 형태로 분기한다.
-        if isinstance(raw_payload, DoclingDocument):
-            kind, data = "docling", raw_payload
-        else:
-            kind, data = _classify_payload(raw_payload)
-
-        # 민감정보 분류(#315): chunking 은 워크플로우를 호출하지 않는다. parser 가 분류해 파스 출력에
-        #   실어 보낸 sensitive_infos 를 받아 청크에 quote 매칭·라벨·마스킹만 적용(병합).
-        _gr_kwargs = dict(
-            _sensitive_infos=_extract_sensitive_infos(raw_payload),
-            _guardrail_masking=self._gr_cfg.masking_enabled,
+        # #329: /chunk 는 interim_ref(=workflow_id/run_id)로 캐시 스코프를 유도한다.
+        #   현재 청킹 경로엔 LLM 호출이 없어 캐시는 실질 no-op 이지만, Temporal 호출부와
+        #   API 표면을 일관되게 맞추고(파싱 Activity 와 동일 스코프) 미래 확장에 대비해
+        #   컨텍스트를 설정한다. 아래 pop 으로 청킹 내부에는 누출되지 않게 한다.
+        _wf, _run = _parse_interim_ref(kwargs.get("interim_ref"))
+        _cache_token = _set_cache_context(
+            _resolve_cache_context(kwargs, workflow_id=_wf, run_id=_run)
         )
+        # 캐시/정책 키가 split_documents/compose_vectors 로 누출되지 않도록 제거.
+        for _k in ("interim_ref", "interim_root", "llm_cache", "error_policy", "request_deadline", "workflow_id", "run_id"):
+            kwargs.pop(_k, None)
+        try:
+            # 1) 인라인 우선: 앞단계(파싱) 결과를 요청 JSON 에 인라인으로 전달.
+            #    채널(document/file_path)·형태(docling/parse-format) 어느 조합이든 허용한다.
+            raw_payload = kwargs.pop("document", None)
+            if raw_payload is None:
+                raw_payload = kwargs.pop("docling_document", None)
+            # 2) 인라인이 없으면 file_path 가 가리키는 .json 파일에서 로드(폴백).
+            if not raw_payload and file_path and file_path.lower().endswith(".json") and os.path.isfile(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        raw_payload = json.load(f)
+                except Exception as exc:
+                    raise GenosServiceException(1, f"chunker 입력 파일 로드 실패({file_path}): {exc}") from exc
+            if not raw_payload:
+                raise GenosServiceException(
+                    1, "chunker API: 'document'(인라인 JSON) 또는 file_path(.json) 입력이 필요합니다.")
 
-        if kind == "parse":
-            # parse-format(비-docling): legacy(attachment) 와 동일하게 공통 청킹.
-            vectors = self._chunk_parse_format(data, **_gr_kwargs, **kwargs)
-            if not vectors:
-                raise GenosServiceException(1, "chunk length is 0")
-        else:
-            # docling 원본 JSON → DoclingDocument 복원 (parser output.format='docling' 와 round-trip).
-            try:
-                if isinstance(data, DoclingDocument):
-                    document: DoclingDocument = data
-                else:
-                    document: DoclingDocument = DoclingDocument.model_validate(data)
-            except Exception as exc:
-                raise GenosServiceException(1, f"docling document 복원 실패: {exc}") from exc
+            # parser 결과 형태 판별: docling(DoclingDocument) vs parse-format({"elements":[...]}).
+            # file_path 는 parser 결과 JSON 경로이므로 확장자가 아니라 payload 형태로 분기한다.
+            if isinstance(raw_payload, DoclingDocument):
+                kind, data = "docling", raw_payload
+            else:
+                kind, data = _classify_payload(raw_payload)
 
-            # 요청별 상태 초기화 (싱글턴 프로세서 재사용 간 page_chunk_counts 누적 방지).
-            self.page_chunk_counts = defaultdict(int)
-
-            has_text_items = False
-            for item, _ in document.iterate_items():
-                if (isinstance(item, (TextItem, ListItem, CodeItem, SectionHeaderItem)) and item.text and item.text.strip()) or (isinstance(item, TableItem) and item.data and len(item.data.table_cells) == 0):
-                    has_text_items = True
-                    break
-
-            if not has_text_items:
-                # text item 이 없으면 split 결과가 비므로 최소 text item 을 추가 (intelligent 와 동일 로직).
-                prov = ProvenanceItem(
-                    page_no=1,
-                    bbox=BoundingBox(l=0, t=0, r=1, b=1),  # 최소 bbox
-                    charspan=(0, 1),
-                )
-                document.add_text(label=DocItemLabel.TEXT, text=".", prov=prov)
-
-            chunks: List[DocChunk] = self.split_documents(document, **kwargs)
-            if len(chunks) < 1:
-                raise GenosServiceException(1, "chunk length is 0")
-
-            vectors: list[dict] = await self.compose_vectors(
-                document, chunks, file_path, request, **_gr_kwargs, **kwargs,
+            # 민감정보 분류(#315): chunking 은 워크플로우를 호출하지 않는다. parser 가 분류해 파스 출력에
+            #   실어 보낸 sensitive_infos 를 받아 청크에 quote 매칭·라벨·마스킹만 적용(병합).
+            _gr_kwargs = dict(
+                _sensitive_infos=_extract_sensitive_infos(raw_payload),
+                _guardrail_masking=self._gr_cfg.masking_enabled,
             )
 
-        # 벡터 file_path 메타를 입력 file_path 로 채운다(compose_vectors 는 변환 PDF 경우에만
-        # 세팅하므로, chunker 입력 경로(인라인 시 메타용 경로 / 파일 입력 시 .json 경로)를 반영).
-        if file_path:
-            for v in vectors:
-                if not getattr(v, "file_path", None):
-                    v.file_path = file_path
-        return vectors
+            if kind == "parse":
+                # parse-format(비-docling): legacy(attachment) 와 동일하게 공통 청킹.
+                vectors = self._chunk_parse_format(data, **_gr_kwargs, **kwargs)
+                if not vectors:
+                    raise GenosServiceException(1, "chunk length is 0")
+            else:
+                # docling 원본 JSON → DoclingDocument 복원 (parser output.format='docling' 와 round-trip).
+                try:
+                    if isinstance(data, DoclingDocument):
+                        document: DoclingDocument = data
+                    else:
+                        document: DoclingDocument = DoclingDocument.model_validate(data)
+                except Exception as exc:
+                    raise GenosServiceException(1, f"docling document 복원 실패: {exc}") from exc
+
+                # 요청별 상태 초기화 (싱글턴 프로세서 재사용 간 page_chunk_counts 누적 방지).
+                self.page_chunk_counts = defaultdict(int)
+
+                has_text_items = False
+                for item, _ in document.iterate_items():
+                    if (isinstance(item, (TextItem, ListItem, CodeItem, SectionHeaderItem)) and item.text and item.text.strip()) or (isinstance(item, TableItem) and item.data and len(item.data.table_cells) == 0):
+                        has_text_items = True
+                        break
+
+                if not has_text_items:
+                    # text item 이 없으면 split 결과가 비므로 최소 text item 을 추가 (intelligent 와 동일 로직).
+                    prov = ProvenanceItem(
+                        page_no=1,
+                        bbox=BoundingBox(l=0, t=0, r=1, b=1),  # 최소 bbox
+                        charspan=(0, 1),
+                    )
+                    document.add_text(label=DocItemLabel.TEXT, text=".", prov=prov)
+
+                chunks: List[DocChunk] = self.split_documents(document, **kwargs)
+                if len(chunks) < 1:
+                    raise GenosServiceException(1, "chunk length is 0")
+
+                vectors: list[dict] = await self.compose_vectors(
+                    document, chunks, file_path, request, **_gr_kwargs, **kwargs,
+                )
+
+            # 벡터 file_path 메타를 입력 file_path 로 채운다(compose_vectors 는 변환 PDF 경우에만
+            # 세팅하므로, chunker 입력 경로(인라인 시 메타용 경로 / 파일 입력 시 .json 경로)를 반영).
+            if file_path:
+                for v in vectors:
+                    if not getattr(v, "file_path", None):
+                        v.file_path = file_path
+            return vectors
+        finally:
+            _log_cache_summary()
+            _reset_cache_context(_cache_token)
 
 
 class GenosServiceException(Exception):
     # GenOS 와의 의존성 부분 제거를 위해 추가
-    def __init__(self, error_code: str, error_msg: Optional[str] = None, msg_params: Optional[dict] = None) -> None:
+    def __init__(self, error_code: str, error_msg: Optional[str] = None, msg_params: Optional[dict] = None,
+                 *, stage: Optional[str] = None, error_type: Optional[str] = None) -> None:
         self.code = 1
         self.error_code = error_code
         self.error_msg = error_msg or "GenOS Service Exception"
         self.msg_params = msg_params or {}
+        # #329: 실패 단계(stage)와 성격(error_type: transient/permanent/timeout).
+        self.stage = stage
+        self.error_type = error_type
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

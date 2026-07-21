@@ -13,6 +13,7 @@ from docling.datamodel.pipeline_options import (
 from docling.exceptions import OperationNotAllowed
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.utils.api_image_request import api_image_request
+from docling.utils.llm_cache import in_current_context
 
 
 class PictureDescriptionApiModel(PictureDescriptionBaseModel):
@@ -61,4 +62,5 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
             )
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            yield from executor.map(_api_request, images)
+            # #329: 워커 스레드에도 llm_cache 컨텍스트 전파
+            yield from executor.map(in_current_context(_api_request), images)

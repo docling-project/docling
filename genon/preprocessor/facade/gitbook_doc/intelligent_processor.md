@@ -47,6 +47,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [빈 문서 처리](#빈-문서-처리)
   - [5. 출력 데이터 구조](#5-출력-데이터-구조)
   - [6. 예외 / 트러블슈팅](#6-예외--트러블슈팅)
+  - [7. LLM 호출 파일 캐시 / 실패 정책 / 요청 deadline (#329)](#7-llm-호출-파일-캐시--실패-정책--요청-deadline-329)
   - [부록: 코드 내부 상세](#부록-코드-내부-상세)
     - [A.1 초기화 (`__init__` / `_load_config`)](#a1-초기화-__init__--_load_config)
     - [A.2 동적 이미지 옵션](#a2-동적-이미지-옵션)
@@ -1130,6 +1131,54 @@ class GenOSVectorMeta(BaseModel):
 | 설정값 무시됨 | `resource_dev` 가 `resource` 를 override | 로딩 우선순위([§2](#2-빠른-시작)) 확인 — 사이트 값은 `resource_dev` 에 |
 
 **토큰 초과 예외 페이로드** — `LLMApiError` → `GenosServiceException("1", <JSON>)` 으로 전파. JSON: `object=error`, `type=BadRequestError`, `param=prompt`, `code=400`, `message="프롬프트 입력 토큰 (N) 초과 하였습니다. (128000 - reserved 12000)."`.
+
+---
+
+## 7. LLM 호출 파일 캐시 / 실패 정책 / 요청 deadline (#329)
+
+대용량 배치 처리 중 문서가 중간에 실패해도, 그때까지 성공한 LLM 호출(OCR/layout VLM·TOC·이미지/표
+설명·본문요약·메타데이터 등)을 파일로 캐시해 **재시도 시 재호출 없이 재사용**합니다. enrichment 실패를
+응답으로 돌려주는 `error_policy` 와 행잉을 막는 `request_deadline` 도 함께 지원합니다. 모두 **opt-in**
+이며, 미지정 시 캐시 코드 경로를 타지 않아 기존과 완전히 동일하게 동작합니다.
+
+요청 `params` 옵션:
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `llm_cache` | `false` | `true` 일 때만 LLM 호출 입출력을 파일 캐시(`0`/`1` 표기도 수용) |
+| `interim_root` | env `INTERIM_ROOT`(미설정 시 `/nfs-root/interim`) | 캐시 루트 경로. 우선순위 요청값 > env > 기본 |
+| `workflow_id` | (없음) | 캐시 스코프. **없으면 캐시 비활성** |
+| `run_id` | `"default"` | 캐시 스코프 |
+| `error_policy` | `"lenient"` | `"strict"` 면 enrichment 실패를 `code:1` 로 응답(+`stage`/`error_kind`) |
+| `request_deadline` | (없음) | 요청 전체 상한(초). 초과 시 timeout 응답 |
+
+- **캐시 활성 조건**: `llm_cache` **AND** `workflow_id`. interim root 는 요청 `interim_root` > env
+  `INTERIM_ROOT` > 기본 `/nfs-root/interim` 순으로 항상 확보됩니다. 경로는
+  `<interim_root>/<workflow_id>/<run_id>/llm_cache/<key>.json`. 로그에 호출별 `HIT`/`MISS`/`STORE` 와
+  요청 종료 시 `[llm_cache] hit=.. miss=..` 요약이 남습니다.
+- **`error_policy`**: `lenient`(기본)은 enrichment 실패를 삼키고 `code:0`(기존 동작). `strict` 는
+  실패 시 `code:1` + envelope 에 `stage`(실패 단계)·`error_kind`(`transient`/`permanent`/`timeout`)를 실어 줍니다.
+  strict 는 캐시가 선행돼야 실용적입니다(캐시 없이 하드페일하면 재시도마다 성공분 재과금).
+  단, **TOC/문서 품질검사(base enrichment)의 LLM 실패는 정책과 무관하게 하드페일**(`stage="enrichment"`, 기존 동작);
+  `error_policy` 는 이후 enricher(doc_summary/image/table/metadata/custom_fields) 실패를 관장합니다.
+- **`request_deadline`**: 요청 전체 상한과 함께 개별 LLM 호출 timeout 도 좁혀 행잉 대신 timeout 응답을 돌려줍니다.
+  (요청 상한은 await 경계 기준 — 완전 동기 파싱 단계는 선점되지 않을 수 있고, LLM 행잉은 per-call timeout 으로 방어.)
+
+요청 예시(`/preprocess_intelligent`):
+```json
+{
+  "file_path": "/app/src/service/genon/preprocessor/sample_files/pdf_sample.pdf",
+  "params": {
+    "llm_cache": true,
+    "interim_root": "/nfs-root/interim",
+    "workflow_id": "wf-123",
+    "run_id": "run-1"
+  }
+}
+```
+
+> 캐시 키 생성 방식, 저장되는 데이터 형태, 저장 제외 대상, 배포 요건(INTERIM_ROOT + 공유 NFS) 등 상세는
+> [코드 서빙 매뉴얼](code_serving.md)의 「LLM 캐시 / 실패 정책 / 요청 deadline (#329)」 절을 참고하세요.
 
 ---
 

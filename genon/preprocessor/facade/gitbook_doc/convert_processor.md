@@ -24,6 +24,7 @@
 4. [처리 동작 개요 (보조)](#4-처리-동작-개요-보조)
 5. [출력 데이터 구조](#5-출력-데이터-구조)
 6. [예외 / 트러블슈팅](#6-예외--트러블슈팅)
+7. [LLM 호출 파일 캐시 (#329)](#7-llm-호출-파일-캐시-329)
 - [부록: 코드 내부 상세](#부록-코드-내부-상세)
 
 ---
@@ -1114,6 +1115,46 @@ class GenOSVectorMeta(BaseModel):
 | 표 분석 느림 | accurate 모드 | `pdf_pipeline.table_structure_mode: "fast"` |
 | 청크가 너무 큼/작음 | `chunking.chunk_size`(yaml) 또는 kwargs `chunk_size` | 우선순위 kwargs > yaml > 0. 단위는 `chunking.tokenizer_type`(char=문자/huggingface=토큰) |
 | `chunk length is 0` | 청크 미생성(빈 문서/파싱 실패) | 입력 파일·OCR·레이아웃 점검 |
+
+---
+
+## 7. LLM 호출 파일 캐시 (#329)
+
+대용량 배치 처리 중 문서가 중간에 실패해도, 그때까지 성공한 LLM 호출(OCR·이미지/표 설명·TOC·
+메타데이터 등)을 파일로 캐시해 **재시도 시 재호출 없이 재사용**합니다. **opt-in** 이며, 미지정 시
+캐시 코드 경로를 타지 않아 기존과 완전히 동일하게 동작합니다.
+
+요청 `params` 옵션:
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `llm_cache` | `false` | `true` 일 때만 캐시 동작(`0`/`1` 표기도 수용) |
+| `interim_root` | env `INTERIM_ROOT`(미설정 시 `/nfs-root/interim`) | 캐시 루트 경로. 우선순위 요청값 > env > 기본 |
+| `workflow_id` | (없음) | 캐시 스코프. **없으면 캐시 비활성** |
+| `run_id` | `"default"` | 캐시 스코프 |
+
+- **활성 조건**: `llm_cache` **AND** `workflow_id`. interim root 는 요청 `interim_root` > env
+  `INTERIM_ROOT` > 기본 `/nfs-root/interim` 순으로 항상 확보됩니다. 경로는
+  `<interim_root>/<workflow_id>/<run_id>/llm_cache/<key>.json`.
+- `llm_cache` 또는 `workflow_id` 가 없으면 안전한 no-op(기존 동작). 로그에 호출별 `HIT`/`MISS`/`STORE` 와
+  요청 종료 시 `[llm_cache] hit=.. miss=..` 요약이 남습니다.
+- 재시도 간 재사용이 성립하려면 그 경로가 **공유 NFS** 여야 합니다.
+
+요청 예시(`/preprocess_convert`):
+```json
+{
+  "file_path": "/app/src/service/genon/preprocessor/sample_files/pdf_sample.pdf",
+  "params": {
+    "llm_cache": true,
+    "interim_root": "/nfs-root/interim",
+    "workflow_id": "wf-123",
+    "run_id": "run-1"
+  }
+}
+```
+
+> 캐시 키 생성 방식, 저장되는 데이터 형태, 저장 제외 대상, 배포 요건 등 상세는
+> [코드 서빙 매뉴얼](code_serving.md)의 「LLM 캐시 / 실패 정책 / 요청 deadline (#329)」 절을 참고하세요.
 
 ---
 
