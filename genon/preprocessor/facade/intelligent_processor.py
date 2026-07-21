@@ -1520,10 +1520,14 @@ class GenosSmartChunker(BaseChunker):
             section_level = get_header_level(header_infos, first=True)
             merged_level = get_header_level(merged_header_infos, first=False)
 
-            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용. split_only 는 구조 경계에서만 분리)
-            if self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+            # split_only: base 섹션 granularity 유지 — 구조 그룹핑 병합 없이 섹션마다 분리(장 단위 병합 방지).
+            #   (1·3단계로 만든 섹션을 그대로 두고, 초과분만 5.5단계에서 분할)
+            if self.chunk_mode == "split_only" and len(merged_texts) > 0:
                 b_new_chunk = True
-            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
+            # 토큰 수 초과 시 새로운 청크 생성 (resize_all 전용)
+            elif self.chunk_mode == "resize_all" and test_tokens > self.max_tokens and len(merged_texts) > 0:
+                b_new_chunk = True
+            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성 (resize_all 구조 경계)
             elif 0 <= section_level < merged_level:
                 b_new_chunk = True
             #----------------------------------

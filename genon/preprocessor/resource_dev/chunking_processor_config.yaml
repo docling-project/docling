@@ -14,7 +14,8 @@ chunking:
   # 청크 최대 크기(max_tokens). char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
   # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함. 0 초과 시 최소 1024 로 보정.
   chunk_size: 10000
-  # 청킹 모드: split_only(기본) = chunk_size 초과 청크만 분할(구조 보존) |
+  # 청킹 모드: split_only(기본) = 파서 섹션 단위(제N조 등) 그대로 유지 + chunk_size 초과 섹션만 분할
+  #             (작은 섹션을 장 단위로 병합하지 않음) |
   #           resize_all = 모든 청크를 chunk_size 에 맞게 병합/분할. 우선순위: kwargs.chunk_mode > 아래.
   chunk_mode: split_only
   # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
