@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm._utils import (
     format_prompt_for_vlm,
     preprocess_image_batch,
@@ -168,9 +169,16 @@ class VllmVlmEngine(BaseVlmEngine):
                 {},
             )()
 
-            # Wrapper to match expected signature
-            def download_wrapper(repo_id: str, revision: str) -> Path:
-                return downloader.download_models(repo_id, revision=revision)
+            # Wrapper to match expected signature, with exception handling
+            def download_wrapper(
+                repo_id: str,
+                revision: str,
+            ) -> Path:
+                try:
+                    return downloader.download_models(repo_id, revision=revision)
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download {repo_id}")
+                    raise e
 
             artifacts_path = resolve_model_artifacts_path(
                 repo_id=repo_id,

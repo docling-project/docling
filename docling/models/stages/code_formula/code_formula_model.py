@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
+from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -104,7 +105,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             )
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
+                try:
+                    artifacts_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    self.enabled = False
+                    raise e
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
 

@@ -1,5 +1,6 @@
 """Deprecated layout stage kept as a thin shim over the object-detection model.
 
+<<<<<<< HEAD
 This whole module is removable once `LayoutOptions` is dropped: it exists only
 so `PdfPipelineOptions(layout_options=LayoutOptions(...))` still resolves
 through `LayoutFactory`. Nothing here runs inference — `LayoutModel` inherits
@@ -74,7 +75,7 @@ class LayoutModel(LayoutObjectDetectionModel):
             accelerator_options=accelerator_options,
             options=_translate(options),
             enable_remote_services=enable_remote_services,
-        )
+       )
 
     @classmethod
     def get_options_type(cls) -> type[LayoutOptions]:  # ty: ignore[invalid-method-override]

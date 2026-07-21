@@ -7,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
 
+from docling.exceptions import DoclingModelDownloadError
 import pandas as pd
 from docling_core.types.doc import (
     CodeLanguageLabel,
@@ -63,7 +64,20 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             )
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
+                try:
+                    artifacts_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    # Log the error
+                    _log.error(
+                        "Failed to download _BaseChartExtractionModelGraniteVision, marked as disabled"
+                    )
+
+                    # Mark as disabled
+                    self.enabled = False
+
+                    # Propagate exception up
+                    raise e
+
             elif (artifacts_path / self._model_repo_folder).exists():
                 artifacts_path = artifacts_path / self._model_repo_folder
             else:

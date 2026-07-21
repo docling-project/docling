@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy
+from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
@@ -48,7 +49,20 @@ class TableStructureModel(BaseTableStructureModel):
         self.enabled = enabled
         if self.enabled:
             if artifacts_path is None:
-                artifacts_path = self.download_models() / self._model_path
+                try:
+                    artifacts_path = self.download_models() / self._model_path
+                except DoclingModelDownloadError as e:
+                    # Log error
+                    _log.error(
+                        "Failed to download TableStructureModel, marked as disabled"
+                    )
+
+                    # Mark as disabled
+                    self.enabled = False
+
+                    # Propagate exception up
+                    raise e
+
             else:
                 # will become the default in the future
                 if (artifacts_path / self._model_repo_folder).exists():

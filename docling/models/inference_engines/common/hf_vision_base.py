@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 import numpy as np
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm._utils import resolve_model_artifacts_path
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 
@@ -31,7 +32,6 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]],
         model_family_name: str,
-        hf_token: Optional[str | bool] = None,
     ) -> None:
         if model_config is None or model_config.repo_id is None:
             raise ValueError(
@@ -48,26 +48,30 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
         self._processor: Optional[BaseImageProcessor] = None
         self._id_to_label: Dict[int, str] = {}
 
-        self._hf_token = hf_token
-
     def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
         """Resolve model folder from artifacts_path or HF download."""
 
-        def download_wrapper(download_repo_id: str, download_revision: str) -> Path:
+        def download_wrapper(
+            download_repo_id: str,
+            download_revision: str,
+        ) -> Path:
             _log.info(
                 "Downloading %s model from HuggingFace: %s@%s",
                 self._model_family_name,
                 download_repo_id,
                 download_revision,
             )
-            return self.download_models(
-                repo_id=download_repo_id,
-                revision=download_revision,
-                local_dir=None,
-                force=False,
-                progress=False,
-                hf_token=self._hf_token,
-            )
+            try:
+                return self.download_models(
+                    repo_id=download_repo_id,
+                    revision=download_revision,
+                    local_dir=None,
+                    force=False,
+                    progress=False,
+                )
+            except DoclingModelDownloadError as e:
+                _log.error(f"Failed to download {download_repo_id}")
+                raise e
 
         return resolve_model_artifacts_path(
             repo_id=repo_id,
