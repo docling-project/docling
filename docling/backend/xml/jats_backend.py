@@ -24,7 +24,7 @@ import traceback
 from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Final, cast
+from typing import Final, cast
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -39,7 +39,6 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
-from pydantic import Field
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -85,35 +84,20 @@ _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
 
 @dataclass(slots=True)
 class InlineSegment:
-    """An ordered inline run of styled text or an inline formula."""
+    """An ordered inline run of styled text or an inline formula.
 
-    label: Annotated[
-        DocItemLabel,
-        Field(
-            description=(
-                "Docling item label that classifies this inline run when it is "
-                "emitted as a text item."
-            )
-        ),
-    ]
-    text: Annotated[
-        str,
-        Field(
-            description=(
-                "Literal text carried by the run, or the LaTeX body when the run "
-                "is a formula."
-            )
-        ),
-    ]
-    formatting: Annotated[
-        Formatting | None,
-        Field(
-            description=(
-                "Emphasis accumulated from the enclosing tags (bold, italic, "
-                "underline, strike, sub, sup), or None when the run is unstyled."
-            )
-        ),
-    ] = None
+    Attributes:
+        label: Docling item label that classifies this inline run when it is
+            emitted as a text item.
+        text: Literal text carried by the run, or the LaTeX body when the run
+            is a formula.
+        formatting: Emphasis accumulated from the enclosing tags (bold, italic,
+            underline, strike, sub, sup), or ``None`` when the run is unstyled.
+    """
+
+    label: DocItemLabel
+    text: str
+    formatting: Formatting | None = None
 
 
 class Abstract(TypedDict):
