@@ -1741,6 +1741,95 @@ class HeadingHierarchyOptions(BaseModel):
     ] = 0.8
 
 
+class HeaderFooterOptions(BaseModel):
+    """Options for recovering page headers/footers that are actually body content.
+
+    The layout model labels regions as ``PAGE_HEADER``/``PAGE_FOOTER`` from per-page position
+    alone -- it has no notion of whether the text repeats across pages. A one-off heading
+    sitting at the top of a page therefore gets tagged as a page header, moved to the
+    ``FURNITURE`` content layer and silently dropped from the default export (which only emits
+    ``BODY``). See issue #3693.
+
+    When ``enabled``, :class:`HeaderFooterModel` runs just before the reading-order model and,
+    using whole-document context, demotes header/footer detections that are *not* genuine
+    running furniture back into the body. A detection is kept as furniture when **either**:
+
+    - its normalized text (digits stripped, so ``"Page 3 of 10"`` matches ``"Page 4 of 10"``)
+      repeats on at least ``min_repeat_pages`` pages -- a consistent running header/footer; or
+    - the side it belongs to (header vs footer) is present on at least ``min_coverage`` of the
+      pages -- a real running header/footer appears on (almost) every page, so even a
+      section-varying header is trusted, while a "header" that shows up on only a few scattered
+      pages is most likely mis-detected content.
+
+    Otherwise the detection is reclassified -- a non-repeating header becomes a
+    ``SECTION_HEADER`` (so the existing heading-hierarchy step can level it) when
+    ``promote_headers_to_section`` is set, a non-repeating footer becomes plain ``TEXT``. The
+    step never drops items and never touches genuine, repeating headers/footers.
+
+    Notes:
+        - Only applies to documents with at least ``min_pages`` pages; repetition and coverage
+          are not observable on 1-2 page documents, so those are left unchanged.
+        - Disabled by default to preserve current behavior; enable to recover dropped headings.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Recover page headers/footers that are actually body content. When disabled "
+                "(default), the unchanged behavior applies and content the layout model tags as "
+                "a header/footer stays in the FURNITURE layer (dropped from default exports). "
+                "When enabled, non-repeating header/footer detections are demoted back into the "
+                "body so the content is not lost."
+            )
+        ),
+    ] = False
+    min_pages: Annotated[
+        int,
+        Field(
+            ge=1,
+            description=(
+                "Minimum number of pages for the recovery pass to run. Repetition and coverage "
+                "are not observable on very short documents, so 1-2 page documents are left "
+                "unchanged."
+            ),
+        ),
+    ] = 3
+    min_repeat_pages: Annotated[
+        int,
+        Field(
+            ge=2,
+            description=(
+                "A header/footer is treated as genuine running furniture when its normalized "
+                "text (digits stripped) appears on at least this many pages."
+            ),
+        ),
+    ] = 2
+    min_coverage: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "A whole side (header or footer) is trusted as genuine -- even when its text "
+                "varies per page -- if it is present on at least this fraction of pages. Sides "
+                "appearing on fewer pages are considered mis-detections and their non-repeating "
+                "items are demoted to the body."
+            ),
+        ),
+    ] = 0.5
+    promote_headers_to_section: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reclassify a recovered (non-repeating) header as a SECTION_HEADER so the "
+                "heading-hierarchy step can assign it a level. When False, recovered headers "
+                "become plain TEXT. Recovered footers always become plain TEXT."
+            )
+        ),
+    ] = True
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -1901,6 +1990,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    header_footer_options: Annotated[
+        HeaderFooterOptions,
+        Field(
+            description=(
+                "Configuration for recovering page headers/footers that are actually body "
+                "content. Disabled by default; when enabled, a pass before the reading-order "
+                "stage demotes non-repeating header/footer detections back into the body so "
+                "obvious headings are not silently dropped as furniture."
+            )
+        ),
+    ] = HeaderFooterOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
