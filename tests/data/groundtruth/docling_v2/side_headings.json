@@ -1,0 +1,344 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "side_headings",
+  "origin": {
+    "mimetype": "application/pdf",
+    "binary_hash": 12475062062593001133,
+    "filename": "side_headings.pdf"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
+        "$ref": "#/texts/6"
+      },
+      {
+        "$ref": "#/texts/7"
+      },
+      {
+        "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 120.52,
+            "t": 673.33,
+            "r": 200.0,
+            "b": 661.31,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "Package List",
+      "text": "Package List"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 230.0,
+            "t": 733.49,
+            "r": 464.7,
+            "b": 718.69,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            24
+          ]
+        }
+      ],
+      "orig": "FIELD SERVICE SUPPLEMENT",
+      "text": "FIELD SERVICE SUPPLEMENT",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 230.0,
+            "t": 711.18,
+            "r": 397.85,
+            "b": 701.93,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            37
+          ]
+        }
+      ],
+      "orig": "Quick reference for bench technicians",
+      "text": "Quick reference for bench technicians"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 230.0,
+            "t": 671.18,
+            "r": 512.36,
+            "b": 609.93,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            299
+          ]
+        }
+      ],
+      "orig": "Your service kit should contain this supplement, a printed checklist, and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot using the form on the checklist. Do not start a service call with an incomplete kit.",
+      "text": "Your service kit should contain this supplement, a printed checklist, and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot using the form on the checklist. Do not start a service call with an incomplete kit."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 113.32,
+            "t": 580.33,
+            "r": 200.0,
+            "b": 568.31,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "Requirements",
+      "text": "Requirements",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 230.0,
+            "t": 578.18,
+            "r": 530.17,
+            "b": 503.93,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            371
+          ]
+        }
+      ],
+      "orig": "A workstation able to run the diagnostic console is needed, along with the standard probe kit for this revision and a calibrated torque driver. A colour monitor is required so that the fault codes can be read during the bench checks. Use a grounded bench supply, and keep the capacitor discharge tool within reach before any panel on the chassis is opened for inspection.",
+      "text": "A workstation able to run the diagnostic console is needed, along with the standard probe kit for this revision and a calibrated torque driver. A colour monitor is required so that the fault codes can be read during the bench checks. Use a grounded bench supply, and keep the capacitor discharge tool within reach before any panel on the chassis is opened for inspection."
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 87.3,
+            "t": 474.33,
+            "r": 200.0,
+            "b": 462.31,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "Setup and Checks",
+      "text": "Setup and Checks",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 230.0,
+            "t": 472.18,
+            "r": 512.92,
+            "b": 397.93,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            343
+          ]
+        }
+      ],
+      "orig": "Remove the four access screws and lift the cover clear, then inspect the ribbon cable for wear along its full length. Reseat the main connector, refit the cover, and torque the screws to the value printed on the chassis label. Restore power, run the self-test, and record the result in the maintenance log before returning the unit to service.",
+      "text": "Remove the four access screws and lift the cover clear, then inspect the ribbon cable for wear along its full length. Reseat the main connector, refit the cover, and torque the screws to the value printed on the chassis label. Restore power, run the self-test, and record the result in the maintenance log before returning the unit to service."
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_footer",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 50.0,
+            "t": 63.74,
+            "r": 431.93,
+            "b": 56.34,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            110
+          ]
+        }
+      ],
+      "orig": "Part 12-345  -  Revision B  -  Internal use only. All product names are trademarks of their respective owners.",
+      "text": "Part 12-345  -  Revision B  -  Internal use only. All product names are trademarks of their respective owners."
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_footer",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 303.5,
+            "t": 46.46,
+            "r": 308.5,
+            "b": 38.14,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "1",
+      "text": "1"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 612.0,
+        "height": 792.0
+      },
+      "page_no": 1
+    }
+  }
+}
