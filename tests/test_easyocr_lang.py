@@ -1,3 +1,4 @@
+import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -13,10 +14,19 @@ from docling.utils.model_downloader import download_models
 pytestmark = pytest.mark.ml_ocr
 
 runner = CliRunner()
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _single_line_cli_output(output: str) -> str:
-    return " ".join(output.replace("│", "").split())
+    return " ".join(_ANSI_RE.sub("", output).replace("│", "").split())
+
+
+def test_single_line_cli_output_strips_ansi_styles() -> None:
+    output = "\x1b[1;33m--easyocr-lang\x1b[0m requires the 'easyocr'\n│ model"
+
+    assert _single_line_cli_output(output) == (
+        "--easyocr-lang requires the 'easyocr' model"
+    )
 
 
 @pytest.mark.parametrize(
