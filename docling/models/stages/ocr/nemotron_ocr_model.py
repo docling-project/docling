@@ -148,12 +148,12 @@ class NemotronOcrModel(BaseOcrModel):
             # Default values:
             #   infer_length=1024,
             #   detector_max_batch_size=8,
-            #   recognizer_chunk_size=64,
-            #   relational_chunk_size=64,
+            #   recognizer_chunk_size=128,
+            #   relational_chunk_size=128,
             #
-            # - The input image is padded to become square and resized to infer_length (default 1024)
-            # - The input size is (infer_length^2)
-            # - Almost 90% of the time inside Nemotron is spend for the detections of the regions
+            # - The input image is padded to become square and resized to infer_length.
+            # - The input size is analogous to (infer_length^2)
+            # - Almost 90% of the time inside Nemotron is spent on region detection
             # - The detector_max_batch_size exists to prevent GPU out-of-memory errors
             # - Rule of thumb: detector_max_batch_size = 8 / [(infer_length / 1024) ^ 2]
             #
