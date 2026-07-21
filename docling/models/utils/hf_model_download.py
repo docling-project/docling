@@ -33,9 +33,13 @@ def download_hf_model(
             If provided, an optional Git revision id. Can be a branch name, tag, or commit hash. Default is `None`.
         token (`str`, `bool`, *optional*, defaults to `None`):
             If provided, the token used to authenticate and accelerate downloads. Default is `None`.
-                - If `True`, the token is read from the `HF_TOKEN` environment variable.
+                - If `True` OR None, the token is read from the `HF_TOKEN` environment variable.
+                - If `False`, the token is explicitly ignored and only unauthenticated requests are made.
                 - If a string, used directly as the authentication token.
-    Exceptions:
+    Returns:
+        Path object. Path to where the downloaded model files are located.
+
+    Raises:
         DoclingModelDownloadError: Invalid token, unauthorized token, general download error.
     """
     if not progress:
@@ -54,14 +58,14 @@ def download_hf_model(
         # Check if it was an auth failure
         if e.response is not None and e.response.status_code == 401:
             raise DoclingModelDownloadError(
-                f"Authentication failed: The provided Hugging Face token is invalid or unauthorized "
+                f"Authentication failed: The provided HuggingFace token is invalid or unauthorized "
                 f"for repository '{repo_id}'.",
                 original_exception=e,
             ) from e
 
         # General network/repository issues
         raise DoclingModelDownloadError(
-            f"Failed to download Hugging Face model repository '{repo_id}': {e}",
+            f"Failed to download HuggingFace model repository '{repo_id}': {e}",
             original_exception=e,
         ) from e
 
