@@ -56,13 +56,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
-        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
 
         self.vlm_options = vlm_options
-
-        self.hf_token = hf_token
 
         if self.enabled:
             import torch
