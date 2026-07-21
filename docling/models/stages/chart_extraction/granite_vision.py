@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
 
 import pandas as pd
-import torch
 from docling_core.types.doc import (
     CodeLanguageLabel,
     DescriptionMetaField,
@@ -24,7 +23,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import CodeMetaField
 from PIL import Image
 from pydantic import BaseModel
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -200,6 +198,8 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
     _model_repo_revision = "6e1fbaae4604ecc85f4f371416d82154ca49ad67"
 
     def _load_model(self, artifacts_path: Path) -> None:
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
         self._processor = AutoProcessor.from_pretrained(
             artifacts_path,
             trust_remote_code=True,
@@ -357,6 +357,9 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 message=".*incorrect regex pattern.*",
                 category=UserWarning,
             )
+            from transformers import AutoModelForImageTextToText, AutoProcessor
+            import torch
+
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=True,
