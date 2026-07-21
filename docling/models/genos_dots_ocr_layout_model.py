@@ -1222,12 +1222,14 @@ def call_vlm_server(
             raise ValueError(f"응답 파싱 오류: {e}\n응답 본문: {response.text}") from e
 
     # 캐시 키는 원본 payload(모델+프롬프트+이미지+샘플링) + endpoint(url).
+    # content 가 빈 응답은 저장하지 않는다(재시도 시 '빈 VLM 응답' 재생 방지).
     return cached_call(
         url,
         payload,
         _produce,
         serialize=lambda t: {"content": t[0], "usage": t[1], "finish_reason": t[2]},
         deserialize=lambda d: (d.get("content"), d.get("usage"), d.get("finish_reason")),
+        should_cache=lambda t: bool(t and str(t[0] or "").strip()),
     )
 
 

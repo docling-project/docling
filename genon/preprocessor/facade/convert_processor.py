@@ -3394,7 +3394,7 @@ class DocumentProcessor:
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
+        artifacts_dir = Path(output_path) / filename  # 빈 output_path 가 절대경로(/filename)로 바뀌는 것 방지
         if artifacts_dir.is_absolute():
             reference_path = None
         else:

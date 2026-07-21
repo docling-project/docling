@@ -1159,7 +1159,10 @@ class GenOSVectorMeta(BaseModel):
 - **`error_policy`**: `lenient`(기본)은 enrichment 실패를 삼키고 `code:0`(기존 동작). `strict` 는
   실패 시 `code:1` + envelope 에 `stage`(실패 단계)·`error_kind`(`transient`/`permanent`/`timeout`)를 실어 줍니다.
   strict 는 캐시가 선행돼야 실용적입니다(캐시 없이 하드페일하면 재시도마다 성공분 재과금).
+  단, **TOC/문서 품질검사(base enrichment)의 LLM 실패는 정책과 무관하게 하드페일**(`stage="enrichment"`, 기존 동작);
+  `error_policy` 는 이후 enricher(doc_summary/image/table/metadata/custom_fields) 실패를 관장합니다.
 - **`request_deadline`**: 요청 전체 상한과 함께 개별 LLM 호출 timeout 도 좁혀 행잉 대신 timeout 응답을 돌려줍니다.
+  (요청 상한은 await 경계 기준 — 완전 동기 파싱 단계는 선점되지 않을 수 있고, LLM 행잉은 per-call timeout 으로 방어.)
 
 요청 예시(`/preprocess_intelligent`):
 ```json

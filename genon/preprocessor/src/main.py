@@ -27,11 +27,11 @@ cors_config(app)
 async def mlops_exception_handler(request, exc: GenosServiceException):
     logger.error(f"[GenosServiceException]: {exc.error_msg}")
     body = {'code': exc.error_code, 'errMsg': exc.error_msg, 'data': None, 'error_code': exc.error_code}
-    # #329: strict 경로의 stage/error_type 를 envelope 에 실어 준다(있을 때만).
+    # #329: strict 경로의 stage/error_kind 를 envelope 에 실어 준다(있을 때만).
     if getattr(exc, 'stage', None) is not None:
         body['stage'] = exc.stage
     if getattr(exc, 'error_type', None) is not None:
-        body['error_type'] = exc.error_type
+        body['error_kind'] = exc.error_type
     return JSONResponse(body, status_code=200)
 
 
@@ -100,7 +100,7 @@ async def run(
     except asyncio.TimeoutError:
         logger.error(f'Error(timeout): "{file_path}"')
         return make_failure_response('request deadline exceeded', error_code=1,
-                                     stage='request', error_type='timeout')
+                                     stage='request', error_kind='timeout')
     except GenosServiceException as e:
         logger.error(f'Error: "{file_path}"\n{traceback.format_exc()}\n')
         return failure_response_from_exc(e)
@@ -134,7 +134,7 @@ async def parse(
     except asyncio.TimeoutError:
         logger.error(f'[parser] Error(timeout): "{file_path}"')
         return make_failure_response('request deadline exceeded', error_code=1,
-                                     stage='request', error_type='timeout')
+                                     stage='request', error_kind='timeout')
     except GenosServiceException as e:
         logger.error(f'[parser] Error: "{file_path}"\n{traceback.format_exc()}\n')
         return failure_response_from_exc(e)
@@ -169,7 +169,7 @@ async def chunker(
     except asyncio.TimeoutError:
         logger.error('[chunker] Error(timeout)')
         return make_failure_response('request deadline exceeded', error_code=1,
-                                     stage='request', error_type='timeout')
+                                     stage='request', error_kind='timeout')
     except GenosServiceException as e:
         logger.error(f'[chunker] Error\n{traceback.format_exc()}\n')
         return failure_response_from_exc(e)

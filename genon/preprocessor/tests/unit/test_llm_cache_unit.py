@@ -131,11 +131,47 @@ def test_custom_serialize_deserialize_roundtrip(enabled_ctx):
     def produce():
         return ("content", {"tokens": 3}, "stop")
 
-    ser = lambda t: {"content": t[0], "usage": t[1], "finish": t[2]}
-    de = lambda d: (d["content"], d["usage"], d["finish"])
+    def ser(t):
+        return {"content": t[0], "usage": t[1], "finish": t[2]}
+
+    def de(d):
+        return (d["content"], d["usage"], d["finish"])
+
     r1 = m.cached_call("http://vlm", {"img": "b64"}, produce, serialize=ser, deserialize=de)
     r2 = m.cached_call("http://vlm", {"img": "b64"}, produce, serialize=ser, deserialize=de)
     assert r1 == r2 == ("content", {"tokens": 3}, "stop")
+
+
+def test_should_cache_hook_skips_empty_vlm_content(enabled_ctx):
+    """should_cache 훅(#329): 빈 content 튜플은 저장 안 함(재호출), 정상 content 는 저장(hit)."""
+    def guard(t):
+        return bool(t and str(t[0] or "").strip())
+
+    calls = {"n": 0}
+
+    def produce_empty():
+        calls["n"] += 1
+        return ("", {"u": 1}, "stop")
+
+    m.cached_call("http://vlm", {"p": 1}, produce_empty, should_cache=guard)
+    m.cached_call("http://vlm", {"p": 1}, produce_empty, should_cache=guard)
+    assert calls["n"] == 2  # 빈 content 미저장 → 매번 재호출
+
+    calls2 = {"n": 0}
+
+    def produce_ok():
+        calls2["n"] += 1
+        return ("text", None, "stop")
+
+    def ser(t):
+        return {"content": t[0], "usage": t[1], "finish": t[2]}
+
+    def de(d):
+        return (d["content"], d["usage"], d["finish"])
+
+    m.cached_call("http://vlm", {"p": 2}, produce_ok, serialize=ser, deserialize=de, should_cache=guard)
+    r2 = m.cached_call("http://vlm", {"p": 2}, produce_ok, serialize=ser, deserialize=de, should_cache=guard)
+    assert calls2["n"] == 1 and r2 == ("text", None, "stop")  # 정상 content 저장 → 2회차 hit
 
 
 def test_concurrent_identical_writes_are_safe(enabled_ctx):

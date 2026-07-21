@@ -163,7 +163,7 @@ def parse_args():
              "parse-format: CSV/XLSX/TXT/MD/PPT/PPTX/이미지/오디오)",
     )
     ap.add_argument("output_dir", help="결과 저장 디렉터리")
-    ap.add_argument("--chunk-size", type=int, default=0, help="청크 최대 크기 (0=토큰/문자 분할 안 함, 0 초과 시 최소 1024)")
+    ap.add_argument("--chunk-size", type=int, default=10000, help="청크 최대 크기 (0=토큰/문자 분할 안 함, 0 초과 시 최소 1024)")
     ap.add_argument(
         "--chunk-mode",
         choices=["split_only", "resize_all"],

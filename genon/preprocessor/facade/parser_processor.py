@@ -1937,7 +1937,7 @@ class DocumentProcessor:
         # 같은 경로로 minio 업로드한다.
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
+        artifacts_dir = Path(output_path) / filename  # 빈 output_path 가 절대경로(/filename)로 바뀌는 것 방지
         reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
 
         document = document._with_pictures_refs(

@@ -374,11 +374,13 @@ def cached_call(
     *,
     serialize: Callable[[T], Any] = _identity,
     deserialize: Callable[[Any], T] = _identity,
+    should_cache: Callable[[Any], bool] = _should_cache,
 ) -> T:
     """캐시 경유 LLM 호출(동기).
 
     disabled 이면 produce() 를 그대로 반환(추가 I/O 0). enabled 이면 hit 시 재사용,
-    miss 시 produce 후 atomic 저장.
+    miss 시 produce 후 atomic 저장. should_cache 로 결과별 저장 판정을 커스터마이즈할 수 있다
+    (예: VLM 튜플의 content 가 비면 저장 안 함).
     """
     ctx = _CTX.get()
     if not ctx.enabled or not ctx.cache_dir:
@@ -396,7 +398,7 @@ def cached_call(
     ctx._counters.miss += 1
     _log.info("[llm_cache] MISS — 캐시 없음, LLM 실제 호출 (endpoint=%s key=%s)", endpoint, key[:12])
     result = produce()
-    if _should_cache(result):
+    if should_cache(result):
         _write_cache(ctx.cache_dir, path, result, serialize, ctx._counters)
         _log.info("[llm_cache] STORE — LLM 결과 캐시 저장 (key=%s)", key[:12])
     return result
@@ -409,6 +411,7 @@ async def async_cached_call(
     *,
     serialize: Callable[[T], Any] = _identity,
     deserialize: Callable[[Any], T] = _identity,
+    should_cache: Callable[[Any], bool] = _should_cache,
 ) -> T:
     """cached_call 의 async 변형. 파일 I/O 는 to_thread 로 이벤트 루프 블로킹을 피한다."""
     import asyncio
@@ -429,7 +432,7 @@ async def async_cached_call(
     ctx._counters.miss += 1
     _log.info("[llm_cache] MISS — 캐시 없음, LLM 실제 호출 (endpoint=%s key=%s)", endpoint, key[:12])
     result = await produce()
-    if _should_cache(result):
+    if should_cache(result):
         await asyncio.to_thread(
             _write_cache, ctx.cache_dir, path, result, serialize, ctx._counters
         )
