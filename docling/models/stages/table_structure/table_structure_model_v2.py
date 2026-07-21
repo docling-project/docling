@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy
+from docling.exceptions import DoclingModelDownloadError
 import torch
 import torchvision.transforms as T  # type: ignore[import-untyped]
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -51,7 +52,15 @@ class TableStructureModelV2(BaseTableStructureModel):
         if self.enabled:
             # Determine model path
             if artifacts_path is None:
-                model_path = self.download_models()
+                try:
+                    model_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    _log.error(
+                        "Failed to download TableStructureModelV2, marked as disabled"
+                    )
+                    self.enabled = False
+                    raise e
+
             elif (artifacts_path / self._model_repo_folder).exists():
                 model_path = artifacts_path / self._model_repo_folder
             else:

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
+from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import BoundingBox, DocItemLabel
 from PIL import Image
 
@@ -64,10 +65,15 @@ class LayoutModel(BaseLayoutModel):
         model_path = layout_model_config.model_path
 
         if artifacts_path is None:
-            artifacts_path = (
-                self.download_models(layout_model_config=layout_model_config)
-                / model_path
-            )
+            try:
+                artifacts_path = (
+                    self.download_models(layout_model_config=layout_model_config)
+                    / model_path
+                )
+            except DoclingModelDownloadError as e:
+                _log.error("Failed to download LayoutModel")
+                raise e
+
         else:
             if (artifacts_path / model_repo_folder).exists():
                 artifacts_path = artifacts_path / model_repo_folder / model_path

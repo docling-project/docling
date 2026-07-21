@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
+from docling.exceptions import DoclingModelDownloadError
 from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
 
 from docling.datamodel.accelerator_options import (
@@ -112,11 +113,9 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
-        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
-        self.hf_token = hf_token
 
         if self.enabled:
             import torch
@@ -133,11 +132,17 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(
-                    repo_id=self.vlm_options.repo_id,
-                    revision=self.vlm_options.revision,
-                    hf_token=self.hf_token,
-                )
+                try:
+                    artifacts_path = self.download_model(
+                        repo_id=self.vlm_options.repo_id,
+                        revision=self.vlm_options.revision,
+                    )
+                except DoclingModelDownloadError as e:
+                    _log.error(
+                        "Failed to download NuExtractTransformersModel, marked as disabled"
+                    )
+                    self.enabled = False
+                    raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
