@@ -92,7 +92,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
-        hf_token: Optional[str | bool] = None,
     ):
         self.enabled = enabled
         self.vlm_options: InlineVlmOptions = vlm_options
@@ -103,8 +102,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         self.device = "cpu"
         self.max_new_tokens = vlm_options.max_new_tokens
         self.temperature = vlm_options.temperature
-
-        self.hf_token = hf_token
 
         if not self.enabled:
             return
