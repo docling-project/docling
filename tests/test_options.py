@@ -564,13 +564,17 @@ def test_pipeline_cache_with_chart_extraction():
 
     with (
         patch(
-            "docling.pipeline.base_pipeline.ChartExtractionModelGraniteVisionV4"
-        ) as mock_chart,
+            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVision"
+        ) as mock_chart_v1,
+        patch(
+            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVisionV4"
+        ) as mock_chart_v4,
         patch(
             "docling.pipeline.base_pipeline.DocumentPictureClassifier"
         ) as mock_classifier,
     ):
-        mock_chart.return_value = Mock(enabled=True)
+        mock_chart_v1.return_value = Mock(enabled=True)
+        mock_chart_v4.return_value = Mock(enabled=True)
         mock_classifier.return_value = Mock(enabled=True)
 
         converter = DocumentConverter(

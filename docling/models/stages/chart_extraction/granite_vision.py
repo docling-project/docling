@@ -357,8 +357,8 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 message=".*incorrect regex pattern.*",
                 category=UserWarning,
             )
-            from transformers import AutoModelForImageTextToText, AutoProcessor
             import torch
+            from transformers import AutoModelForImageTextToText, AutoProcessor
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
