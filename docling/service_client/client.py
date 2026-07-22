@@ -52,7 +52,9 @@ from docling.datamodel.service.options import (
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
     BatchSourceRequestInput,
+    BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    GenericTargetRequest,
     HttpSourceRequest,
 )
 from docling.datamodel.service.responses import (
@@ -108,7 +110,7 @@ StorageTarget: TypeAlias = (
     S3Target | AzureBlobTarget | GoogleCloudStorageTarget | GoogleDriveTarget
 )
 SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | StorageTarget
-BatchSubmitTarget: TypeAlias = StorageTarget | PresignedUrlTarget
+BatchSubmitTarget: TypeAlias = BatchTargetRequestInput
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -131,6 +133,7 @@ _STORAGE_TARGET_TYPES = (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
     GoogleDriveTarget,
+    GenericTargetRequest,
 )
 
 
@@ -373,7 +376,7 @@ class _BaseDoclingServiceClient:
         self,
         options: ConvertDocumentsRequestOptions,
         output_formats: list[OutputFormat] | None,
-        target: SubmitTarget,
+        target: SubmitTarget | GenericTargetRequest,
     ) -> ConvertDocumentsRequestOptions:
         effective = options
         if output_formats is not None:
@@ -1053,7 +1056,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def submit_batch(
         self,
         sources: Sequence[BatchSourceRequestInput],
-        target: BatchSubmitTarget,
+        target: BatchTargetRequestInput,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -1061,6 +1064,9 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
+        request = BatchConvertSourcesRequest.model_validate(
+            {"sources": sources, "target": target}
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -1070,12 +1076,12 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=target,
+            target=request.target,
         )
         return self._submit_batch_conversion_job(
-            sources=sources,
+            sources=request.sources,
             options=submit_options,
-            target=target,
+            target=request.target,
             request_headers=headers,
         )
 

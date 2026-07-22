@@ -42,6 +42,7 @@ from docling.datamodel.service.options import (
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
     BatchSourceRequestInput,
+    BatchTargetRequestInput,
     ConvertDocumentsRequest,
     HttpSourceRequest,
 )
@@ -297,7 +298,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def submit_batch(
         self,
         sources: Sequence[BatchSourceRequestInput],
-        target: BatchSubmitTarget,
+        target: BatchTargetRequestInput,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -306,6 +307,9 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         | AsyncConversionJob[PresignedUrlConvertResponse]
     ):
         assert self._async_client is not None, "client not open — use async with"
+        request = BatchConvertSourcesRequest.model_validate(
+            {"sources": sources, "target": target}
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -315,17 +319,17 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=target,
+            target=request.target,
         )
         initial_status = await self._submit_batch_task(
-            sources=sources,
+            sources=request.sources,
             options=submit_options,
-            target=target,
+            target=request.target,
             async_client=self._async_client,
             request_headers=headers,
         )
 
-        if _is_storage_target(target):
+        if _is_storage_target(request.target):
 
             async def fetch_result(
                 task_id: str,

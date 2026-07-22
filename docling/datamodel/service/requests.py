@@ -149,7 +149,7 @@ TargetRequest = Annotated[
     Field(discriminator="kind"),
 ]
 
-BatchTargetRequest = Annotated[
+KnownBatchTargetRequest = Annotated[
     S3Target
     | AzureBlobTarget
     | GoogleCloudStorageTarget
@@ -157,6 +157,41 @@ BatchTargetRequest = Annotated[
     | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]
+
+
+class GenericTargetRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    kind: str = Field(min_length=1)
+
+
+_KNOWN_TARGET_MODELS = {
+    target_type.model_fields["kind"].default: target_type
+    for target_type in get_args(get_args(TargetRequest)[0])
+}
+_KNOWN_TARGET_TYPES = tuple(_KNOWN_TARGET_MODELS.values())
+
+
+def _validate_batch_target(value: Any) -> Any:
+    if isinstance(value, _KNOWN_TARGET_TYPES):
+        return value
+    if isinstance(value, BaseModel):
+        payload = value.model_dump()
+    elif isinstance(value, Mapping):
+        payload = value
+    else:
+        return value
+
+    kind = payload.get("kind")
+    target_type = _KNOWN_TARGET_MODELS.get(kind) if isinstance(kind, str) else None
+    return target_type.model_validate(payload) if target_type is not None else value
+
+
+BatchTargetRequest = Annotated[
+    KnownBatchTargetRequest | GenericTargetRequest,
+    BeforeValidator(_validate_batch_target),
+]
+BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
 
 
 ## Complete Source request

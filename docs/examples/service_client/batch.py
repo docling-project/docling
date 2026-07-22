@@ -71,7 +71,12 @@ def main() -> None:
         #             "folder_id": "/incoming",
         #         }
         #     ],
-        #     target=S3Target(bucket="out", prefix="results/", ...),
+        #     target={
+        #         "kind": "plugin_artifact_store",
+        #         "bucket": "out",
+        #         "prefix": "results/",
+        #         "api_key": "secret",
+        #     },
         # )
 
 

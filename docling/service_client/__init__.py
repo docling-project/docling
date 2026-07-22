@@ -4,7 +4,9 @@ from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     BatchSourceRequestInput,
     BatchSourceRequestItem,
+    BatchTargetRequestInput,
     GenericSourceRequest,
+    GenericTargetRequest,
     S3SourceRequest,
 )
 from docling.datamodel.service.responses import (
@@ -47,6 +49,7 @@ __all__ = [
     "AsyncDoclingServiceClient",
     "BatchSourceRequestInput",
     "BatchSourceRequestItem",
+    "BatchTargetRequestInput",
     "ChunkerKind",
     "ConversionError",
     "ConversionItem",
@@ -54,6 +57,7 @@ __all__ = [
     "DoclingServiceClient",
     "DoclingServiceClientError",
     "GenericSourceRequest",
+    "GenericTargetRequest",
     "PresignedUrlConvertDocumentResponse",
     "PresignedUrlConvertResponse",
     "PresignedUrlTarget",

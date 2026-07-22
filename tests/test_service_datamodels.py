@@ -8,6 +8,7 @@ from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
     GenericSourceRequest,
+    GenericTargetRequest,
     GoogleCloudStorageSourceRequest,
     GoogleDriveSourceRequest,
     HttpSourceRequest,
@@ -23,6 +24,13 @@ from docling.datamodel.service.responses import (
     PublicFailureInfo,
     TaskFailureResult,
     TaskStatusResponse,
+)
+from docling.datamodel.service.targets import (
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
+    PresignedUrlTarget,
+    S3Target,
 )
 
 
@@ -164,6 +172,116 @@ def test_batch_convert_sources_request_preserves_known_source_instance() -> None
     )
 
     assert request.sources[0] is source
+
+
+def test_batch_convert_sources_request_preserves_generic_target() -> None:
+    target = {
+        "kind": "plugin_artifact_store",
+        "bucket": "out",
+        "api_key": "secret",
+    }
+
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": target,
+        }
+    )
+
+    assert isinstance(request.target, GenericTargetRequest)
+    assert request.model_dump(mode="json")["target"] == target
+
+
+@pytest.mark.parametrize("target", [{}, {"kind": ""}])
+def test_batch_convert_sources_request_requires_non_empty_target_kind(
+    target: dict[str, str],
+) -> None:
+    with pytest.raises(ValidationError):
+        BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+                "target": target,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    ("kind", "required_field"),
+    [
+        ("s3", "endpoint"),
+        ("azure_blob", "account_name"),
+        ("google_cloud_storage", "bucket"),
+        ("google_drive", "path_id"),
+    ],
+)
+def test_batch_convert_sources_request_keeps_known_target_validation(
+    kind: str,
+    required_field: str,
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+                "target": {"kind": kind},
+            }
+        )
+
+    locations = {error["loc"] for error in exc_info.value.errors()}
+    assert ("target", required_field) in locations
+    assert all("GenericTargetRequest" not in location for location in locations)
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        S3Target(
+            endpoint="s3.example.com",
+            access_key="key",
+            secret_key="secret",
+            bucket="documents",
+        ),
+        AzureBlobTarget(
+            account_name="account",
+            container="documents",
+            connection_string="connection-string",
+        ),
+        GoogleCloudStorageTarget(bucket="documents"),
+        GoogleDriveTarget(
+            path_id="folder-id",
+            token_path="token.json",
+            credentials_path="credentials.json",
+        ),
+        PresignedUrlTarget(),
+    ],
+)
+def test_batch_convert_sources_request_preserves_known_target_type(
+    target: S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PresignedUrlTarget,
+) -> None:
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": target.model_dump(mode="json"),
+        }
+    )
+
+    assert type(request.target) is type(target)
+
+
+@pytest.mark.parametrize("kind", ["inbody", "zip", "put"])
+def test_batch_convert_sources_request_rejects_non_batch_target(kind: str) -> None:
+    target = {"kind": kind, "url": "https://example.com/upload"}
+
+    with pytest.raises(ValidationError):
+        BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+                "target": target,
+            }
+        )
 
 
 def test_batch_convert_sources_request_rejects_file_sources() -> None:
