@@ -331,13 +331,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     _CODE_CALL_PATTERN: Final[re.Pattern[str]] = re.compile(
         r"[A-Za-z_]\((?:\s*\)|[^)]*[\d,._='\"][^)]*\))"
     )
-    # A keyword-led definition/control line, e.g. "def fib(n):". Prose labels
-    # such as "Enclosed item(s):" never start with a language keyword.
+    # A keyword-led block-header line.  Two shapes are accepted:
+    #   - definition/call form: "def fib(n):", "class Foo(Bar):", "for x in range(n):"
+    #   - bare-expression form: "while True:", "if x == 0:", "with open(f) as fh:"
+    # Prose labels that happen to end in ":" (e.g. "Note:") are excluded by the
+    # leading keyword anchor at ^ (re.MULTILINE) combined with requiring at least
+    # one non-space character after the keyword.  Only block-header keywords that
+    # genuinely end their line with ":" are included; statement keywords like
+    # "return" and "import" are omitted to avoid false positives on prose.
     _CODE_DEF_PATTERN: Final[re.Pattern[str]] = re.compile(
-        r"^(?:async\s+)?"
-        r"(?:def|class|if|elif|while|for|with|except|catch|switch"
-        r"|function|func|fn|sub|proc)"
-        r"\s+[\w.]+\(.*\)\s*:$"
+        r"^[ \t]*(?:async\s+)?"
+        r"(?:def|class|if|elif|while|for|with|except|finally|try"
+        r"|catch|switch|function|func|fn|sub|proc)"
+        r"\s+\S[^\n]*:[ \t]*$",
+        re.MULTILINE,
     )
 
     @override
