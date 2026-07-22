@@ -185,7 +185,7 @@ class ConvertPipeline(BasePipeline):
 
         # Lazily import torch-backed chart extraction only when enabled so
         # docling-slim / ONNX-only installs can import DocumentConverter without
-        # pulling torch+transformers (#3805).
+        # pulling torch+transformers.
         if pipeline_options.do_chart_extraction:
             from docling.models.stages.chart_extraction.granite_vision import (
                 ChartExtractionModelGraniteVision,

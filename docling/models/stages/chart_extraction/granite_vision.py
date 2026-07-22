@@ -346,6 +346,9 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
     _model_repo_revision = "dd48e97503de471803850df70843cf9eb5da8712"
 
     def _load_model(self, artifacts_path: Path) -> None:
+        import torch
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -357,8 +360,6 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 message=".*incorrect regex pattern.*",
                 category=UserWarning,
             )
-            import torch
-            from transformers import AutoModelForImageTextToText, AutoProcessor
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
