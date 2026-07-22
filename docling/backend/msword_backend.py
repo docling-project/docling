@@ -890,7 +890,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # If not found directly in paragraph, check if the style defines numbering
         if paragraph.style is not None:
-            style_elem = getattr(paragraph.style, "element", None)
+            style_elem = paragraph.style.element
             if style_elem is not None:
                 style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
                 if style_numPr is not None:
@@ -914,11 +914,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
         """Find the level element from the numbering XML for a given numId and ilvl."""
         try:
-            if not hasattr(self.docx_obj, "part") or not hasattr(
-                self.docx_obj.part, "package"
-            ):
-                return None
-
             numbering_part = None
             for part in self.docx_obj.part.package.parts:
                 if "numbering" in part.partname:
@@ -1069,7 +1064,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if paragraph.style is None:
             return None
 
-        style_elem = getattr(paragraph.style, "element", None)
+        style_elem = paragraph.style.element
         if style_elem is None:
             return None
 
@@ -1172,13 +1167,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
             if default_style is not None and style.element is default_style.element:
                 return ""
-            # A malformed basedOn chain can hop to a style type (e.g. a
-            # numbering style) that lacks these attributes; getattr keeps
-            # the walk safe.
-            font = getattr(style, "font", None)
-            font_name = getattr(font, "name", None)
+            font_name = style.font.name
             if font_name:
                 return font_name.strip().lower()
+            # A malformed basedOn chain can hop to a style type (e.g. a
+            # numbering style) that lacks base_style; getattr keeps the
+            # walk safe.
             style = getattr(style, "base_style", None)
             depth += 1
         return ""
@@ -1342,7 +1336,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if not is_bold:
             try:
                 # Check the raw XML of the run itself for <w:b> tags
-                if hasattr(run, "_element") and run._element is not None:
+                if run._element is not None:
                     b_tags = run._element.xpath(".//w:b | .//w:bCs")
                     for b in b_tags:
                         val = b.get(
@@ -1353,11 +1347,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             break
 
                 # Check the paragraph's direct formatting properties
-                if (
-                    not is_bold
-                    and hasattr(run, "_parent")
-                    and hasattr(run._parent, "_element")
-                ):
+                if not is_bold and run._parent._element is not None:
                     pPr_b = run._parent._element.xpath(
                         "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
                     )
@@ -1373,11 +1363,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if (
                     not is_bold
                     and paragraph is not None
-                    and getattr(paragraph, "style", None)
+                    and paragraph.style is not None
                 ):
                     current_style = paragraph.style
                     while current_style is not None:
-                        if hasattr(current_style, "font") and current_style.font.bold:
+                        if current_style.font.bold:
                             is_bold = True
                             break
 
@@ -1438,9 +1428,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _iter_paragraph_content(
         self, paragraph: Paragraph
     ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
-        if not hasattr(paragraph, "_p"):
-            return []
-
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
 
         def _get_children_recursive(node):
@@ -1505,9 +1492,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return content
 
     def _get_paragraph_text(self, paragraph: Paragraph) -> str:
-        if not hasattr(paragraph, "iter_inner_content") or not hasattr(paragraph, "_p"):
-            return paragraph.text
-
         return "".join(
             text
             for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
@@ -3547,7 +3531,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: A DoclingDocument object to add the comments from docx_obj.
         """
         # Check if document has any comments
-        if not hasattr(docx_obj, "comments") or len(docx_obj.comments) == 0:
+        if len(docx_obj.comments) == 0:
             return
 
         # Process each comment and link to target items
@@ -3627,7 +3611,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Parses the DOCX XML to find commentRangeStart and commentRangeEnd markers
         and builds a map of paragraph elements to their associated comment IDs.
         """
-        if not self.docx_obj or not hasattr(self.docx_obj, "element"):
+        if not self.docx_obj:
             return
 
         # Parse the document body for comment range markers

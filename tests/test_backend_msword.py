@@ -1073,9 +1073,13 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
         def __init__(self, element, docx_obj):
             self.text = "Heading text"
             self.style = SimpleNamespace()
+            self._p = etree.Element("p")
 
     monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
     monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend, "_get_paragraph_text", lambda paragraph: paragraph.text
+    )
     monkeypatch.setattr(
         backend, "_handle_equations_in_text", lambda element, text: (text, [])
     )
@@ -1107,6 +1111,7 @@ def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
         def __init__(self, element, docx_obj):
             self.text = "inline eq"
             self.style = SimpleNamespace()
+            self._p = etree.Element("p")
 
     monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
     monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
