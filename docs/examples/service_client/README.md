@@ -59,6 +59,5 @@ Defaults (OCR, table structure, Markdown output) match that of docling's `Docume
 | ------------ | ------------------------------------------------------------------ |
 | `convert.py` | `convert()` and `convert_all()` — the high-level API               |
 | `tasks.py`   | the `submit*` API: job lifecycle, result targets, per-item fan-out |
-| `batch.py`   | `submit_batch()` for many or long-running HTTP/S3 sources          |
+| `batch.py`   | `submit_batch()` for built-in or plugin connector sources          |
 | `chunk.py`   | `chunk()` — split a document into retrieval-ready pieces           |
-

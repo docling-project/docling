@@ -4,9 +4,14 @@ from pydantic import ValidationError
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
+    AzureBlobSourceRequest,
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
+    GenericSourceRequest,
+    GoogleCloudStorageSourceRequest,
+    GoogleDriveSourceRequest,
     HttpSourceRequest,
+    S3SourceRequest,
 )
 from docling.datamodel.service.responses import (
     ArtifactRef,
@@ -58,6 +63,107 @@ def test_batch_convert_sources_request_allows_zip_http_urls() -> None:
     )
 
     assert str(request.sources[0].url) == "https://example.com/report.zip"
+
+
+def test_batch_convert_sources_request_preserves_generic_source() -> None:
+    source = {
+        "kind": "filenet",
+        "base_url": "https://filenet.example.com/content-services-graphql",
+        "username": "user",
+        "api_key": "secret",
+        "repository_id": "OS1",
+        "folder_id": "/incoming",
+    }
+
+    request = BatchConvertSourcesRequest.model_validate(
+        {"sources": [source], "target": {"kind": "presigned_url"}}
+    )
+
+    assert isinstance(request.sources[0], GenericSourceRequest)
+    assert request.model_dump(mode="json")["sources"][0] == source
+
+
+@pytest.mark.parametrize("source", [{}, {"kind": ""}])
+def test_batch_convert_sources_request_requires_non_empty_kind(
+    source: dict[str, str],
+) -> None:
+    with pytest.raises(ValidationError):
+        BatchConvertSourcesRequest.model_validate(
+            {"sources": [source], "target": {"kind": "presigned_url"}}
+        )
+
+
+@pytest.mark.parametrize(
+    ("kind", "required_field"),
+    [
+        ("s3", "endpoint"),
+        ("azure_blob", "account_name"),
+        ("google_cloud_storage", "bucket"),
+        ("google_drive", "path_id"),
+    ],
+)
+def test_batch_convert_sources_request_keeps_known_source_validation(
+    kind: str,
+    required_field: str,
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        BatchConvertSourcesRequest.model_validate(
+            {"sources": [{"kind": kind}], "target": {"kind": "presigned_url"}}
+        )
+
+    locations = {error["loc"] for error in exc_info.value.errors()}
+    assert ("sources", 0, required_field) in locations
+    assert all("GenericSourceRequest" not in location for location in locations)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        AnyHttpSourceRequest(url="https://example.com/report.pdf"),
+        S3SourceRequest(
+            endpoint="s3.example.com",
+            access_key="key",
+            secret_key="secret",
+            bucket="documents",
+        ),
+        AzureBlobSourceRequest(
+            account_name="account",
+            container="documents",
+            connection_string="connection-string",
+        ),
+        GoogleCloudStorageSourceRequest(bucket="documents"),
+        GoogleDriveSourceRequest(
+            path_id="folder-id",
+            token_path="token.json",
+            credentials_path="credentials.json",
+        ),
+    ],
+)
+def test_batch_convert_sources_request_preserves_known_source_type(
+    source: AnyHttpSourceRequest
+    | S3SourceRequest
+    | AzureBlobSourceRequest
+    | GoogleCloudStorageSourceRequest
+    | GoogleDriveSourceRequest,
+) -> None:
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [source.model_dump(mode="json")],
+            "target": {"kind": "presigned_url"},
+        }
+    )
+
+    assert type(request.sources[0]) is type(source)
+
+
+def test_batch_convert_sources_request_preserves_known_source_instance() -> None:
+    source = HttpSourceRequest(url="https://example.com/report.pdf")
+
+    request = BatchConvertSourcesRequest.model_validate(
+        {"sources": [source], "target": {"kind": "presigned_url"}}
+    )
+
+    assert request.sources[0] is source
 
 
 def test_batch_convert_sources_request_rejects_file_sources() -> None:

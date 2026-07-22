@@ -1,8 +1,16 @@
 import enum
+from collections.abc import Mapping
 from functools import cache
-from typing import Annotated, Generic, Literal
+from typing import Annotated, Any, Generic, Literal, TypeAlias, get_args
 
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    field_validator,
+)
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
@@ -76,7 +84,7 @@ class TargetName(str, enum.Enum):
 
 
 ## Aliases
-BatchSourceRequestItem = Annotated[
+KnownBatchSourceRequestItem = Annotated[
     AnyHttpSourceRequest
     | S3SourceRequest
     | AzureBlobSourceRequest
@@ -84,6 +92,46 @@ BatchSourceRequestItem = Annotated[
     | GoogleDriveSourceRequest,
     Field(discriminator="kind"),
 ]
+
+
+class GenericSourceRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    kind: str = Field(min_length=1)
+
+
+_KNOWN_BATCH_SOURCE_MODELS = {
+    source_type.model_fields["kind"].default: source_type
+    for source_type in (
+        *get_args(get_args(KnownBatchSourceRequestItem)[0]),
+        FileSourceRequest,
+    )
+}
+_KNOWN_BATCH_SOURCE_TYPES = tuple(_KNOWN_BATCH_SOURCE_MODELS.values())
+
+
+def _validate_batch_source(value: Any) -> Any:
+    if isinstance(value, _KNOWN_BATCH_SOURCE_TYPES):
+        return value
+    if isinstance(value, BaseModel):
+        payload = value.model_dump()
+    elif isinstance(value, Mapping):
+        payload = value
+    else:
+        return value
+
+    kind = payload.get("kind")
+    source_type = (
+        _KNOWN_BATCH_SOURCE_MODELS.get(kind) if isinstance(kind, str) else None
+    )
+    return source_type.model_validate(payload) if source_type is not None else value
+
+
+BatchSourceRequestItem = Annotated[
+    KnownBatchSourceRequestItem | GenericSourceRequest,
+    BeforeValidator(_validate_batch_source),
+]
+BatchSourceRequestInput: TypeAlias = BatchSourceRequestItem | Mapping[str, Any]
 
 SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")

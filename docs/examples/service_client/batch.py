@@ -1,8 +1,7 @@
 """Batch conversion with submit_batch() for many or long-running sources.
 
-The batch endpoint accepts source *requests* (HTTP/ZIP URLs or S3 objects) rather
-than uploaded files, and always needs an explicit batch target: `PresignedUrlTarget`
-for service-managed download URLs, or `S3Target` for caller-managed object storage.
+The batch endpoint accepts built-in or server-enabled plugin source requests rather
+than uploaded files, and always needs an explicit batch target.
 
 Run from the repository root:
 
@@ -57,6 +56,23 @@ def main() -> None:
         #     output_formats=[OutputFormat.MARKDOWN],
         # )
         # result = job.result(timeout=600.0)
+
+        # Plugin connectors use mappings because this SDK may not know their schema.
+        # The server performs full validation and must explicitly enable the connector.
+        #
+        # job = client.submit_batch(
+        #     sources=[
+        #         {
+        #             "kind": "filenet",
+        #             "base_url": "https://filenet.example.com/graphql",
+        #             "username": "user",
+        #             "api_key": "secret",
+        #             "repository_id": "OS1",
+        #             "folder_id": "/incoming",
+        #         }
+        #     ],
+        #     target=S3Target(bucket="out", prefix="results/", ...),
+        # )
 
 
 if __name__ == "__main__":

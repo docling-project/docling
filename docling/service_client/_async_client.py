@@ -9,7 +9,7 @@ import re
 import sys
 import time
 import warnings
-from collections.abc import AsyncGenerator, AsyncIterator, Iterable
+from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Sequence
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
@@ -41,7 +41,7 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
-    BatchSourceRequestItem,
+    BatchSourceRequestInput,
     ConvertDocumentsRequest,
     HttpSourceRequest,
 )
@@ -296,7 +296,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def submit_batch(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         target: BatchSubmitTarget,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
@@ -735,16 +735,14 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def _submit_batch_task(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         async_client: httpx.AsyncClient,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest(
-            options=options,
-            sources=sources,
-            target=target,
+        request = BatchConvertSourcesRequest.model_validate(
+            {"options": options, "sources": sources, "target": target}
         )
         response = await self._request_with_retry_using_client(
             async_client=async_client,

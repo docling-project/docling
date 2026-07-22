@@ -1923,7 +1923,13 @@ def test_submit_batch_posts_batch_request() -> None:
                 HttpSourceRequest(
                     url="https://example.org/sample.pdf",
                     headers={"Authorization": "Bearer source-token"},
-                )
+                ),
+                {
+                    "kind": "filenet",
+                    "base_url": "https://filenet.example.com/graphql",
+                    "api_key": "filenet-secret",
+                    "repository_id": "OS1",
+                },
             ],
             output_formats=[OutputFormat.MARKDOWN],
             target=PresignedUrlTarget(),
@@ -1935,6 +1941,12 @@ def test_submit_batch_posts_batch_request() -> None:
     assert '"headers":{"Authorization":"Bearer source-token"}' in str(
         captured["payload"]
     )
+    assert json.loads(str(captured["payload"]))["sources"][1] == {
+        "kind": "filenet",
+        "base_url": "https://filenet.example.com/graphql",
+        "api_key": "filenet-secret",
+        "repository_id": "OS1",
+    }
 
 
 def test_submit_batch_serializes_inline_gcs_secrets_without_redaction() -> None:
@@ -3552,14 +3564,14 @@ async def test_async_submit_batch_posts_batch_request() -> None:
 
     async with _make_async_http_client(handler) as client:
         job = await client.submit_batch(
-            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            sources=[{"kind": "filenet", "repository_id": "OS1"}],
             output_formats=[OutputFormat.MARKDOWN],
             target=PresignedUrlTarget(),
         )
 
     assert job.task_id == "task-batch"
     assert "/v1/convert/source/batch" in str(captured["url"])
-    assert captured["json"] is not None
+    assert captured["json"]["sources"] == [{"kind": "filenet", "repository_id": "OS1"}]
 
 
 @pytest.mark.anyio

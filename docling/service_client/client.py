@@ -14,7 +14,7 @@ import tempfile
 import time
 import warnings
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Iterator
+from collections.abc import AsyncGenerator, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -51,7 +51,7 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
-    BatchSourceRequestItem,
+    BatchSourceRequestInput,
     ConvertDocumentsRequest,
     HttpSourceRequest,
 )
@@ -1052,7 +1052,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def submit_batch(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         target: BatchSubmitTarget,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
@@ -1415,7 +1415,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_conversion_job(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         request_headers: dict[str, str] | None = None,
@@ -1465,15 +1465,13 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_task(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest(
-            options=options,
-            sources=sources,
-            target=target,
+        request = BatchConvertSourcesRequest.model_validate(
+            {"options": options, "sources": sources, "target": target}
         )
         response = self._request_with_retry(
             method="POST",
