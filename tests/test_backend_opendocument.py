@@ -46,6 +46,7 @@ from odfdo import (
     List as OdfList,
     ListItem,
     Paragraph,
+    Section,
     Span,
     Style,
     Table,
@@ -174,6 +175,70 @@ def test_odt_conversion(odt_path: Path):
         for c in table.data.table_cells
     }
     assert cell_texts == {(0, 0): "h1", (0, 1): "h2", (1, 0): "v1", (1, 1): "v2"}
+
+
+def test_odt_section_content(tmp_path: Path):
+    path = tmp_path / "section.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    section = Section(name="Section1")
+    section.append(Header(1, "Heading inside section"))
+    section.append(Paragraph("Paragraph inside section."))
+    table = Table("Nested", width=2, height=1)
+    table.set_value("A1", "left")
+    table.set_value("B1", "right")
+    section.append(table)
+    body.append(section)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [
+        item.text for item in result.document.texts if item.label == "section_header"
+    ] == ["Heading inside section"]
+    assert any(
+        item.text == "Paragraph inside section." for item in result.document.texts
+    )
+    assert len(result.document.tables) == 1
+    assert [cell.text for cell in result.document.tables[0].data.table_cells] == [
+        "left",
+        "right",
+    ]
+
+
+def test_odt_section_preserves_split_list_continuation(tmp_path: Path):
+    path = tmp_path / "section_split_list.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    section = Section(name="Section1")
+    first = OdfList()
+    first.append(ListItem("Outer"))
+    section.append(first)
+
+    continuation = OdfList()
+    bridge = ListItem()
+    nested = OdfList()
+    nested.append(ListItem("Nested"))
+    bridge.append(nested)
+    continuation.append(bridge)
+    section.append(continuation)
+    body.append(section)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item
+        for item, _level in result.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [item.text for item in list_items] == ["Outer", "Nested"]
+    nested_group = list_items[1].parent.resolve(result.document)
+    assert nested_group.parent == list_items[0].get_ref()
 
 
 def test_ods_conversion(ods_path: Path):
