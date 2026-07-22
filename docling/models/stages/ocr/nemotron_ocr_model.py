@@ -143,32 +143,9 @@ class NemotronOcrModel(BaseOcrModel):
             # Initialize the model
             model_dir = self._resolve_model_dir(language, artifacts_path=artifacts_path)
 
-            # Nemotron detection considerations:
-            #
-            # Default values:
-            #   infer_length=1024,
-            #   detector_max_batch_size=8,
-            #   recognizer_chunk_size=128,
-            #   relational_chunk_size=128,
-            #
-            # - The input image is padded to become square and resized to infer_length.
-            # - The input size is analogous to (infer_length^2)
-            # - Almost 90% of the time inside Nemotron is spent on region detection
-            # - The detector_max_batch_size exists to prevent GPU out-of-memory errors
-            # - Rule of thumb: detector_max_batch_size = 8 / [(infer_length / 1024) ^ 2]
-            #
-            # (infer_length, detector_max_batch_size, recognizer_chunk_size, relational_chunk_size)
-            #  (1024,  8, 128, 128)
-            #  ( 896, 10, 128, 128)
-            #  ( 768, 14, 128, 128)
-            #  ( 640, 20, 128, 128)
-            #  ( 512, 32, 128, 128)
-
-
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=language,
-                detector_max_batch_size=self.options.batch_size,
             )
 
     @staticmethod
