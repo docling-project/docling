@@ -50,6 +50,7 @@ from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
+from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 
 _log = logging.getLogger(__name__)
 
@@ -1255,6 +1256,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             bool(strong_hits - {";"})
             or self._CODE_CALL_PATTERN.search(stripped_text) is not None
             or self._CODE_DEF_PATTERN.search(stripped_text) is not None
+            or detect_code_language(stripped_text) is not CodeLanguageLabel.UNKNOWN
         )
         is_code_continuation = self._prev_sibling_is_code and raw_text[:1].isspace()
         if not has_code_char and not is_code_continuation:
@@ -2124,6 +2126,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     merge_target.text = f"{merge_target.text}{joiner}{code_text}"
                     merge_target.orig = f"{merge_target.orig}{joiner}{code_text}"
                     self._pending_code_blank_lines = 0
+                    # Re-detect language on the full accumulated text; a single
+                    # paragraph may be ambiguous while the combined block is not.
+                    if merge_target.code_language is CodeLanguageLabel.UNKNOWN:
+                        merge_target.code_language = detect_code_language(
+                            merge_target.text
+                        )
                 else:
                     # Buffered: written only if more code follows, so a
                     # block never ends in blank lines.
@@ -2138,6 +2146,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     orig=code_text,
                     parent=parent,
                     content_layer=self.content_layer,
+                    code_language=detect_code_language(code_text),
                 )
                 elem_ref.append(code_item.get_ref())
                 self._force_new_code_block = False
