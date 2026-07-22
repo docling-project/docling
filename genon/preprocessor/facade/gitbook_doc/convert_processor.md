@@ -933,9 +933,16 @@ filename: 보고서.pdf
 | **메모리 절감** | `pdf_pipeline.generate_page_images: false`, `images_scale: 1` |
 | **레이아웃 인프라 없음** | `layout.layout_model_type: "docling_layout"` |
 | **청크 크기 조정** | `chunking.chunk_size` (yaml) 또는 호출 kwargs `chunk_size`. 우선순위 kwargs > yaml > 0 |
+| **청킹 모드(작은 청크 병합)** | `chunking.chunk_mode` (yaml) 또는 호출 kwargs `chunk_mode`. `split_only`(기본)/`resize_all`, kwarg 는 `0`/`1` 도 수용 |
 | **청크 크기 계산 방식** | `chunking.tokenizer_type`: `char`(기본)=문자 수 기준 / `huggingface`=HF 토큰 수 기준 |
 
 > **청크 크기**: convert 경로의 청크 크기는 `split_documents()` → `GenosSmartChunker(max_tokens=...)` 로 결정됩니다. 값은 호출 kwargs `chunk_size` 가 우선이고, 없으면 yaml `chunking.chunk_size`, 둘 다 없으면 `0`(크기 기반 분할 안 함)입니다. 크기 단위는 `chunking.tokenizer_type` 으로 정해집니다(`char`=문자 수, `huggingface`=HF 토큰 수). char 모드에서는 HF 토크나이저를 로드하지 않습니다.
+
+> **청킹 모드(`chunk_mode`)**: `chunk_size` 초과 청크의 처리 방식입니다. `split_only`(기본)=구조 기반 청크 유지·초과 청크만 분할(작은 청크 병합 안 함) / `resize_all`=모든 청크를 `chunk_size` 에 맞게 병합·분할. 우선순위 kwargs > yaml > `split_only` 이고, 런타임 kwarg 는 문자열(`"split_only"`/`"resize_all"`) 또는 `0`/`1`(0=split_only, 1=resize_all)을 받습니다. `chunk_size=0` 이면 병합·초과분할이 스킵되어 두 모드가 동일합니다.
+
+> **`chunk_overlap`**(langchain 경로 전용): docling 이 아닌 **langchain fallback**(`RecursiveCharacterTextSplitter`) 으로 청킹하는 포맷에서만 `chunk_size` 와 함께 인접 청크 간 겹침 문자 수를 지정합니다. docling 청킹 경로에는 적용되지 않습니다.
+
+> **`table_as_chunk`**(xlsx docling 전용): **xlsx docling 처리에서 자동 적용**되어 시트/표마다 독립 청크로 분리합니다(`chunk_size` 와 무관). 일반 문서에도 kwarg 로 강제할 수 있으나 통상 지정할 필요가 없습니다.
 
 ### 민감정보 분류/마스킹 (개인정보 비식별화, `guardrail_call`)
 
