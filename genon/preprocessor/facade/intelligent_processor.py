@@ -486,6 +486,39 @@ def _as_int_flag(value: Any, default: int = 0) -> int:
     return default
 
 
+def _resolve_chunk_mode(kwargs: dict, yaml_default: str) -> str:
+    """청킹 병합 모드 결정. 우선순위: 요청 chunk_mode > yaml > 'split_only'.
+
+    chunk_mode 는 문자열('split_only'|'resize_all') 또는 0/1 플래그를 받는다.
+    0(false/no/off) → 'split_only'(구조 경계 보존, 초과 그룹만 분할),
+    1(true/yes/on)  → 'resize_all'(인접 섹션을 chunk_size 한도까지 greedy 병합).
+    (chunk_mode=0 은 falsy 라 `x or default` 로는 무시되므로 `is not None` 으로 판별한다.)
+    """
+    raw = kwargs.get("chunk_mode")
+    if raw is not None:
+        s = str(raw).strip().lower()
+        if s in {"split_only", "resize_all"}:
+            return s
+        if s in {"1", "true", "yes", "on"}:
+            return "resize_all"
+        if s in {"0", "false", "no", "off"}:
+            return "split_only"
+    mode = str(yaml_default or "").strip().lower()
+    return mode if mode in {"split_only", "resize_all"} else "split_only"
+
+
+def _copy_enrichment_options(options, **updates):
+    """DataEnrichmentOptions 를 얕게 복제하며 지정 필드를 override(원본 불변)."""
+    try:
+        return options.model_copy(update=updates)
+    except AttributeError:
+        import copy as _copy
+        cloned = _copy.copy(options)
+        for key, value in updates.items():
+            setattr(cloned, key, value)
+        return cloned
+
+
 # #329: LLM 캐시 / error_policy 컨텍스트 해석은 docling.utils.llm_cache.resolve_context
 # (3개 facade 공용, cross-facade import 회피)를 _resolve_cache_context 로 재노출해 사용한다.
 
@@ -2380,9 +2413,8 @@ class DocumentProcessor:
             chunk_size = self._chunk_size
         chunk_size = _clamp_chunk_size(chunk_size)
         # chunk_mode 우선순위: kwargs > yaml(chunking.chunk_mode) > "split_only"
-        chunk_mode = str(kwargs.get('chunk_mode') or self._chunk_mode).strip().lower()
-        if chunk_mode not in {"split_only", "resize_all"}:
-            chunk_mode = "split_only"
+        # chunk_mode(0/1 또는 'split_only'/'resize_all') > yaml > "split_only"
+        chunk_mode = _resolve_chunk_mode(kwargs, self._chunk_mode)
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = chunk_size if chunk_size is not None else 0,
             merge_peers = True,
@@ -2411,9 +2443,8 @@ class DocumentProcessor:
         if chunk_size is None:
             chunk_size = self._chunk_size
         chunk_size = _clamp_chunk_size(chunk_size)
-        chunk_mode = str(kwargs.get('chunk_mode') or self._chunk_mode).strip().lower()
-        if chunk_mode not in {"split_only", "resize_all"}:
-            chunk_mode = "split_only"
+        # chunk_mode(0/1 또는 'split_only'/'resize_all') > yaml > "split_only"
+        chunk_mode = _resolve_chunk_mode(kwargs, self._chunk_mode)
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens=chunk_size if chunk_size is not None else 0,
             merge_peers=True,
@@ -2487,14 +2518,19 @@ class DocumentProcessor:
 
     def enrichment(self, document: DoclingDocument, is_ppt: bool = False, **kwargs: dict) -> DoclingDocument:
         options = self.enrichment_options
+        # 런타임 toc(0/1) — config 기본값(do_toc_enrichment)을 요청별로 켜고/끈다.
+        # 활성화(0→1)는 TOC endpoint 가 config 에 구성된 경우에만 유효(미구성 시 무시).
+        cur_toc = bool(getattr(options, "do_toc_enrichment", False))
+        want_toc = bool(_as_int_flag(kwargs.get("toc"), 1 if cur_toc else 0))
+        if want_toc != cur_toc:
+            if want_toc and not str(getattr(options, "toc_api_base_url", "") or ""):
+                _log.warning("[intelligent] toc=1 요청이지만 TOC endpoint 미구성 → 무시")
+            else:
+                options = _copy_enrichment_options(options, do_toc_enrichment=want_toc)
+                _log.info("[intelligent] runtime toc override → %s", want_toc)
         # PPT 는 페이지 기반 1chunk 라 목차 계층이 무의미 → TOC 만 비활성(다른 enrichment 는 유지).
         if is_ppt and getattr(options, "do_toc_enrichment", False):
-            try:
-                options = options.model_copy(update={"do_toc_enrichment": False})
-            except AttributeError:
-                import copy as _copy
-                options = _copy.copy(options)
-                options.do_toc_enrichment = False
+            options = _copy_enrichment_options(options, do_toc_enrichment=False)
             _log.info("[intelligent] PPT — TOC enrichment skip")
         try:
             # 새로운 enriched result 받기
@@ -2558,6 +2594,17 @@ class DocumentProcessor:
         )
         normalized["table_desc"] = _as_int_flag(normalized.get("table_desc"), table_default)
         normalized["table_refine"] = _as_int_flag(normalized.get("table_refine"), refine_default)
+
+        # TOC 런타임 토글(toc/toc_on alias) — 기본값은 config 의 do_toc_enrichment.
+        toc_default = _as_int_flag(
+            runtime.get("toc", runtime.get("toc_on")),
+            1 if getattr(self.enrichment_options, "do_toc_enrichment", False) else 0,
+        )
+        normalized["toc"] = _as_int_flag(
+            normalized.get("toc", normalized.get("toc_on")), toc_default
+        )
+        # merge_sections 별칭은 도입하지 않는다 — 기존 chunk_mode kwarg 가 동일 기능이며
+        # split_documents 의 _resolve_chunk_mode() 가 chunk_mode 0/1/문자열을 직접 해석한다.
         return normalized
 
     def _configure_runtime_image_mode(self, kwargs: dict):

@@ -206,6 +206,7 @@ chunking:
   chunk_size: 10000
   # 청킹 모드. split_only(기본) = 구조 기반 청크 유지, chunk_size 초과 청크만 분할(작은 청크 병합 안 함).
   #            resize_all = 모든 청크를 chunk_size 에 맞게 병합/분할. 우선순위: kwargs.chunk_mode > 아래.
+  # 런타임 kwarg 는 문자열('split_only'/'resize_all') 외에 0/1 플래그도 수용한다(0=split_only, 1=resize_all).
   chunk_mode: split_only
   # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
   tokenizer_type: "char"
@@ -708,10 +709,11 @@ convert 의 기본 변환 대상은 `created_date`이며 `authors` 등 나머지
 
 > 프롬프트의 `{{doc_summary}}` 컨텍스트는 이제 **독립 `doc_summary` enricher**(위 참조)가 채웁니다(과거 `image_description.doc_summary.*` 중첩 설정은 표준 `- doc_summary:` 항목으로 이동). `chart.enable: true` 면 변환 단계에서 docling 그림 분류가 자동 활성화됩니다. `chart` 는 별도 LLM 호출을 유발하므로 기본 off 입니다.
 
-**런타임 kwargs 오버라이드 (이미지·차트 description)** — 호출 `params` 로 0/1 플래그 전달 시 config 기본값을 덮어씁니다.
+**런타임 kwargs 오버라이드 (Enrichment 토글)** — 호출 `params` 로 0/1 플래그 전달 시 config 기본값을 덮어씁니다.
 
 | kwargs | 대응 config | 의미 |
 |--------|-------------|------|
+| `toc` | `enrichment.toc.enable` | 목차(TOC) enrichment 사용유무 (별칭 `toc_on`). `0`=이번 요청만 off / `1`=on(단 config 에 TOC endpoint 가 구성돼 있어야 활성화, 미구성 시 무시·경고) |
 | `img_desc` | `image_description.enable` | 이미지 description 사용유무 |
 | `chart_desc` | `image_description.chart.enable` | 차트 description 사용유무 (별칭 `chart_convert`) |
 | `chart_detection` | `image_description.chart.detection` | `1`=auto / `0`=all |

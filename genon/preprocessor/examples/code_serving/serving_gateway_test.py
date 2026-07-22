@@ -71,6 +71,19 @@ requests 등 외부 의존 없이 표준 라이브러리(urllib)만 사용한다
     # 10) 요청 deadline(#329) — 행잉 대신 error_kind=timeout 응답
     python serving_gateway_test.py --mode parser \
         --file-path /data/documents/big.pdf --param request_deadline=30
+
+    # 11) TOC 런타임 토글(task 296) — 요청별 목차 enrichment on/off (toc/toc_on).
+    #     기본값은 config(enrichment.toc). toc=0 이면 config 가 켜져 있어도 이번 요청만 끈다.
+    python serving_gateway_test.py --mode parser_upload --upload-file ./report.pdf \
+        --param toc=0 --out-doc /tmp/doc_notoc.json
+
+    # 12) chunk_mode 0/1 토글(task 296) — intelligent/convert 의 /run 대상. 문자열/0·1 둘 다 수용.
+    #     1(=resize_all): 인접 섹션 병합 / 0(=split_only, 기본): 섹션 구조 보존. 기본값은 config(chunking.chunk_mode).
+    #     같은 문서를 1/0 로 각각 /run 청킹해 청크 수를 비교한다(1 쪽이 더 적어야 정상).
+    python serving_gateway_test.py --mode run --file-path /data/documents/report.pdf \
+        --param chunk_mode=1 --out /tmp/run_merged.json
+    python serving_gateway_test.py --mode run --file-path /data/documents/report.pdf \
+        --param chunk_mode=0 --out /tmp/run_split.json
 """
 from __future__ import annotations
 
@@ -305,6 +318,34 @@ def do_chunker(args, document: dict | None = None) -> list:
     return chunks
 
 
+def do_run(args) -> list:
+    """/run 서빙 호출(파싱+enrich+청킹 일괄) → 벡터(청크) 리스트 반환.
+
+    intelligent/convert facade 의 런타임 kwargs(toc/merge_sections/chart_desc 등)를
+    한 번의 호출로 검증한다. 예: --param toc=0, --param merge_sections=1.
+    """
+    if not args.file_path:
+        raise SystemExit("--file-path 가 필요합니다(서버가 접근 가능한 경로).")
+    params: dict = _extra_params(args)
+    if args.chunk_size is not None:
+        params.setdefault("chunk_size", args.chunk_size)
+    data = _request(
+        args, "POST", "run",
+        payload={"file_path": args.file_path, "params": params},
+    )
+    chunks = data or []
+    print(f"[run] 벡터(청크) {len(chunks)}개 생성 (params={params})")
+    for chunk in chunks[:20]:
+        text = str(chunk.get("text", "")).replace("\n", " ")
+        print(f"  - [{chunk.get('i_chunk_on_doc')}] page={chunk.get('i_page')} {text[:80]}")
+    if args.out:
+        out_path = _json_output_path(args.out, "run_chunks.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(chunks, f, ensure_ascii=False, indent=2)
+        print(f"[run] 벡터 {len(chunks)}개 저장 → {out_path}")
+    return chunks
+
+
 def do_e2e(args) -> int:
     # --upload-file 가 있으면 업로드 파싱으로, 없으면 서버 로컬 경로 파싱으로 진행.
     document = do_parser_upload(args) if args.upload_file else do_parser(args)
@@ -317,7 +358,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="main.py /health·/parser·/chunker 게이트웨이 테스트",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--mode", choices=["health", "parser", "parser_upload", "chunker", "e2e"],
+    p.add_argument("--mode", choices=["health", "run", "parser", "parser_upload", "chunker", "e2e"],
                    default="e2e", help="실행 모드")
     p.add_argument("--base-url", default=DEFAULT_BASE_URL, help="게이트웨이 base URL")
     p.add_argument("--serving-id", default=DEFAULT_SERVING_ID, help="코드서빙 id")
@@ -332,6 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE",
                    help="파싱 kwargs 오버라이드(반복 가능). "
                         "예: --param img_desc=1 --param chart_desc=1 --param chart_detection=1 --param doc_summary=1. "
+                        "TOC/청킹 토글(task 296): --param toc=0 (목차 off) / --param chunk_mode=1 (인접 섹션 병합, 0=구조 보존). "
                         "LLM 캐시(#329)도 이걸로: --param llm_cache=1 --param interim_root=.. --param workflow_id=.. --param run_id=..")
     p.add_argument("--doc-json", default=None, help="chunker 모드: 입력 docling JSON 파일 경로")
     p.add_argument("--out", default=None, help="청크 결과 JSON 저장 경로 또는 디렉터리(옵션)")
@@ -344,6 +386,9 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     if args.mode == "health":
         return do_health(args)
+    if args.mode == "run":
+        do_run(args)
+        return 0
     if args.mode == "parser":
         do_parser(args)
         return 0

@@ -866,6 +866,7 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 | 파라미터 | 타입 | 기본값 | 적용 대상 | 설명 |
 |----------|------|--------|-----------|------|
 | `log_level` | `int` | `defaults.log_level` (없으면 `4`) | 전체 | 로그 레벨. `5`=DEBUG, `4`=INFO, `3`=WARNING, `2`=ERROR, `1`=CRITICAL, `0`=비활성화. 미전달 시 config `defaults.log_level` 값을 사용 |
+| `toc` | `int` | `enrichment.toc.enable` | enrichment 대상 포맷 | 목차(TOC) enrichment 사용유무(별칭 `toc_on`). `0`=이번 요청만 off / `1`=on(단 config 에 TOC endpoint 가 구성돼 있어야 활성화, 미구성 시 무시·경고). 미전달 시 config 값 유지 |
 
 ### HWP / HWPX 전용 파라미터
 

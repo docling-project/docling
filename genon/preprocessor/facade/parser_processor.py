@@ -390,6 +390,18 @@ def _as_int_flag(value: Any, default: int = 0) -> int:
     return default
 
 
+def _copy_enrichment_options(options, **updates):
+    """DataEnrichmentOptions 를 얕게 복제하며 지정 필드를 override(원본 불변)."""
+    try:
+        return options.model_copy(update=updates)
+    except AttributeError:
+        import copy as _copy
+        cloned = _copy.copy(options)
+        for key, value in updates.items():
+            setattr(cloned, key, value)
+        return cloned
+
+
 def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
     if value is None:
         return None
@@ -1296,8 +1308,19 @@ class IntelligentDocumentProcessor:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        options = self.enrichment_options
+        # 런타임 toc(0/1) — config 기본값(do_toc_enrichment)을 요청별로 켜고/끈다.
+        # 활성화(0→1)는 TOC endpoint 가 config 에 구성된 경우에만 유효(미구성 시 무시).
+        cur_toc = bool(getattr(options, "do_toc_enrichment", False))
+        want_toc = bool(_as_int_flag(kwargs.get("toc"), 1 if cur_toc else 0))
+        if want_toc != cur_toc:
+            if want_toc and not str(getattr(options, "toc_api_base_url", "") or ""):
+                _log.warning("[parser] toc=1 요청이지만 TOC endpoint 미구성 → 무시")
+            else:
+                options = _copy_enrichment_options(options, do_toc_enrichment=want_toc)
+                _log.info("[parser] runtime toc override → %s", want_toc)
         try:
-            document = enrich_document(document, self.enrichment_options, **kwargs)
+            document = enrich_document(document, options, **kwargs)
             return document
         except LLMApiError as e:
             # Preserve provider error payload as-is for load status error message.
@@ -1346,6 +1369,16 @@ class IntelligentDocumentProcessor:
         )
         normalized["table_desc"] = _as_int_flag(normalized.get("table_desc"), table_default)
         normalized["table_refine"] = _as_int_flag(normalized.get("table_refine"), refine_default)
+
+        # TOC 런타임 토글(toc/toc_on alias) — 기본값은 config 의 do_toc_enrichment.
+        # (parser 는 parse-only 라 merge_sections/chunk_mode 는 해당 없음 → 미추가)
+        toc_default = _as_int_flag(
+            runtime.get("toc", runtime.get("toc_on")),
+            1 if getattr(self.enrichment_options, "do_toc_enrichment", False) else 0,
+        )
+        normalized["toc"] = _as_int_flag(
+            normalized.get("toc", normalized.get("toc_on")), toc_default
+        )
         return normalized
 
     def _configure_runtime_image_mode(self, kwargs: dict):
