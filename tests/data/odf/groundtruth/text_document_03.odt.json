@@ -36,31 +36,31 @@
         "$ref": "#/groups/12"
       },
       {
-        "$ref": "#/texts/30"
+        "$ref": "#/texts/34"
       },
       {
         "$ref": "#/tables/4"
       },
       {
-        "$ref": "#/texts/34"
+        "$ref": "#/texts/38"
       },
       {
         "$ref": "#/tables/5"
       },
       {
-        "$ref": "#/texts/39"
+        "$ref": "#/texts/43"
       },
       {
         "$ref": "#/tables/6"
       },
       {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/48"
       },
       {
         "$ref": "#/tables/7"
       },
       {
-        "$ref": "#/texts/53"
+        "$ref": "#/texts/57"
       },
       {
         "$ref": "#/tables/8"
@@ -304,6 +304,18 @@
         },
         {
           "$ref": "#/texts/29"
+        },
+        {
+          "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
+        },
+        {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
         }
       ],
       "content_layer": "body",
@@ -320,7 +332,7 @@
           "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/31"
+          "$ref": "#/texts/35"
         }
       ],
       "content_layer": "body",
@@ -334,13 +346,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/32"
+          "$ref": "#/texts/36"
         },
         {
           "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/texts/33"
+          "$ref": "#/texts/37"
         }
       ],
       "content_layer": "body",
@@ -368,10 +380,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/35"
+          "$ref": "#/texts/39"
         },
         {
-          "$ref": "#/texts/36"
+          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "body",
@@ -399,10 +411,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/37"
+          "$ref": "#/texts/41"
         },
         {
-          "$ref": "#/texts/38"
+          "$ref": "#/texts/42"
         }
       ],
       "content_layer": "body",
@@ -430,10 +442,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/44"
         },
         {
-          "$ref": "#/texts/41"
+          "$ref": "#/texts/45"
         }
       ],
       "content_layer": "body",
@@ -461,10 +473,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/42"
+          "$ref": "#/texts/46"
         },
         {
-          "$ref": "#/texts/43"
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
@@ -492,10 +504,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/49"
         },
         {
-          "$ref": "#/texts/46"
+          "$ref": "#/texts/50"
         }
       ],
       "content_layer": "body",
@@ -523,10 +535,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/47"
+          "$ref": "#/texts/51"
         },
         {
-          "$ref": "#/texts/48"
+          "$ref": "#/texts/52"
         }
       ],
       "content_layer": "body",
@@ -554,10 +566,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/49"
+          "$ref": "#/texts/53"
         },
         {
-          "$ref": "#/texts/50"
+          "$ref": "#/texts/54"
         }
       ],
       "content_layer": "body",
@@ -585,10 +597,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/51"
+          "$ref": "#/texts/55"
         },
         {
-          "$ref": "#/texts/52"
+          "$ref": "#/texts/56"
         }
       ],
       "content_layer": "body",
@@ -616,10 +628,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/54"
+          "$ref": "#/texts/58"
         },
         {
-          "$ref": "#/texts/55"
+          "$ref": "#/texts/59"
         }
       ],
       "content_layer": "body",
@@ -1021,6 +1033,18 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
+      "orig": ", ",
+      "text": ", "
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
       "orig": "underline",
       "text": "underline",
       "formatting": {
@@ -1032,7 +1056,19 @@
       }
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", ",
+      "text": ", "
+    },
+    {
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -1051,7 +1087,19 @@
       }
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", and ",
+      "text": ", and "
+    },
+    {
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -1070,7 +1118,19 @@
       }
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": " formatting",
+      "text": " formatting"
+    },
+    {
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/body"
       },
@@ -1083,7 +1143,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/13"
       },
@@ -1095,7 +1155,7 @@
       "text": "Owner avatar"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -1107,7 +1167,7 @@
       "text": "Text and picture"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -1119,7 +1179,7 @@
       "text": "Owner avatar"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1132,7 +1192,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/groups/16"
       },
@@ -1146,7 +1206,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/groups/16"
       },
@@ -1160,7 +1220,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -1174,7 +1234,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -1188,7 +1248,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -1201,7 +1261,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -1215,7 +1275,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -1229,7 +1289,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -1243,7 +1303,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -1257,7 +1317,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -1270,7 +1330,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -1284,7 +1344,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -1298,7 +1358,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -1312,7 +1372,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/groups/26"
       },
@@ -1326,7 +1386,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -1340,7 +1400,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/groups/28"
       },
@@ -1354,7 +1414,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -1368,7 +1428,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -1382,7 +1442,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1395,7 +1455,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/groups/32"
       },
@@ -1409,7 +1469,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/groups/32"
       },
