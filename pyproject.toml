@@ -367,6 +367,9 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# Temporary: pin the unmerged compound list-item marker branch until it is released.
+# See https://github.com/docling-project/docling-ibm-models/pull/<PR>
+docling-ibm-models = { git = "https://github.com/DanielNg0729/docling-ibm-models", branch = "feat/compound-list-item-markers" }
 # docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 
