@@ -85,19 +85,18 @@ _CHART_RENDER_HINT = (
     "data without it."
 )
 
-# Safe XML parser for chart parts — prevents XXE, DTD-over-network, and
-# entity-expansion attacks when parsing untrusted ``chartN.xml`` payloads.
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
     no_network=True,
     dtd_validation=False,
 )
+"""Safe XML parser for chart parts.
 
-# Maps a DrawingML chart plot element name (e.g. "barChart", the child of
-# ``c:plotArea``) to the docling picture-classification label the emitted chart
-# PictureItem is tagged with. These tagnames are shared across the OOXML Office
-# formats; chart types not listed fall back to OTHER_CHART.
+Prevents XXE, DTD-over-network, and entity-expansion attacks when parsing
+untrusted ``chartN.xml`` payloads.
+"""
+
 _CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
     "barChart": PictureClassificationLabel.BAR_CHART,
     "bar3DChart": PictureClassificationLabel.BAR_CHART,
@@ -110,9 +109,18 @@ _CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] =
     "areaChart": PictureClassificationLabel.OTHER_CHART,
     "area3DChart": PictureClassificationLabel.OTHER_CHART,
 }
+"""Maps a DrawingML chart plot element name to a docling picture-classification label.
+
+The key is the tag-local name of the chart type element (e.g. ``"barChart"``,
+the child of ``c:plotArea``). These tag names are shared across OOXML Office
+formats. Chart types not listed fall back to ``OTHER_CHART``.
+"""
 
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
+"""Common prefix of all Strict OOXML namespace and relationship URIs."""
+
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
+"""Host segment of all Transitional OOXML namespace URIs."""
 
 _STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
 """Byte string present in every Strict OOXML part that carries a Strict namespace URI."""
@@ -120,14 +128,14 @@ _STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
-_MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024  # 64 KiB
-"""Read cap for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
+_MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024
+"""Read cap (64 KiB) for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
 
-_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB
-"""Per-member uncompressed size cap applied during Strict-to-Transitional rewriting."""
+_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024
+"""Per-member uncompressed size cap (512 MiB) applied during Strict-to-Transitional rewriting."""
 
-_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB
-"""Total uncompressed size cap for all members during Strict-to-Transitional rewriting."""
+_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024
+"""Total uncompressed size cap (2 GiB) for all members during Strict-to-Transitional rewriting."""
 
 _STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
     "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
@@ -271,10 +279,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
-    # Style names/ids that mark code, per pandoc's docx reader ("Source
-    # Code") and LibreOffice/HTML equivalents. Matched exactly (case-folded),
-    # never by substring: "Unicode" or "Area Code" are not code, and caption
-    # styles like "Listing" are left out.
     _CODE_STYLE_NAMES: Final[frozenset[str]] = frozenset(
         {
             "source code",
@@ -287,6 +291,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "verbatim",
         }
     )
+    """Case-folded paragraph style names that mark a paragraph as code.
+
+    Matched exactly, never by substring: ``"Unicode"`` or ``"Area Code"`` must
+    not match, and caption styles like ``"Listing"`` are intentionally omitted.
+    Mirrors pandoc's docx reader and LibreOffice/HTML equivalents.
+    """
+
     _CODE_STYLE_IDS: Final[frozenset[str]] = frozenset(
         {
             "sourcecode",
@@ -300,12 +311,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "verbatim",
         }
     )
-    # Defensive cap against malformed/cyclic base_style inheritance chains.
-    _MAX_STYLE_INHERITANCE_DEPTH: Final[int] = 10
+    """Case-folded paragraph style IDs that mark a paragraph as code.
 
-    # Fallback font signal: a paragraph counts as code when (nearly) every
-    # character sits in one of these monospaced families and the text looks
-    # code-like (see _is_code_by_font).
+    Complements ``_CODE_STYLE_NAMES``; style IDs are the canonical XML
+    ``w:styleId`` attribute values, distinct from the human-readable name.
+    """
+
+    _MAX_STYLE_INHERITANCE_DEPTH: Final[int] = 10
+    """Defensive cap against malformed or cyclic ``base_style`` inheritance chains."""
+
     _MONOSPACE_FONTS: Final[frozenset[str]] = frozenset(
         {
             "consolas",
@@ -320,25 +334,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "sf mono",
         }
     )
+    """Case-folded font family names considered monospaced for code detection.
+
+    Used by the font-fallback signal in ``_is_code_by_font``: a paragraph is a
+    code candidate when nearly every character resolves to one of these families.
+    """
+
     _MONOSPACE_CHAR_RATIO: Final[float] = 0.9
-    # Punctuation that separates code from monospaced prose. Parentheses,
-    # brackets and lone semicolons are excluded -- phone numbers, citations
-    # and legal clauses use them freely. ASCII only, by design.
+    """Minimum fraction of characters that must be monospaced for font-based code detection."""
+
     _CODE_INDICATIVE_CHARS: Final[frozenset[str]] = frozenset("{};=<>")
-    # An empty call "set()" or a call whose arguments carry code-ish
-    # characters "print(sys.argv)". Plain word(word) shapes like "party(ies)"
-    # stay prose.
+    """ASCII punctuation that distinguishes code from monospaced prose.
+
+    Parentheses, brackets, and lone semicolons are excluded: phone numbers,
+    citations, and legal clauses use them freely.
+    """
+
     _CODE_CALL_PATTERN: Final[re.Pattern[str]] = re.compile(
         r"[A-Za-z_]\((?:\s*\)|[^)]*[\d,._='\"][^)]*\))"
     )
-    # A keyword-led block-header line.  Two shapes are accepted:
-    #   - definition/call form: "def fib(n):", "class Foo(Bar):", "for x in range(n):"
-    #   - bare-expression form: "while True:", "if x == 0:", "with open(f) as fh:"
-    # Prose labels that happen to end in ":" (e.g. "Note:") are excluded by the
-    # leading keyword anchor at ^ (re.MULTILINE) combined with requiring at least
-    # one non-space character after the keyword.  Only block-header keywords that
-    # genuinely end their line with ":" are included; statement keywords like
-    # "return" and "import" are omitted to avoid false positives on prose.
+    """Matches a function/method call whose arguments look code-like.
+
+    Accepts an empty call (``set()``) or one whose arguments carry code-ish
+    characters (``print(sys.argv)``). Plain ``word(word)`` shapes like
+    ``party(ies)`` are intentionally excluded.
+    """
+
     _CODE_DEF_PATTERN: Final[re.Pattern[str]] = re.compile(
         r"^[ \t]*(?:async\s+)?"
         r"(?:def|class|if|elif|while|for|with|except|finally|try"
@@ -346,6 +367,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         r"\s+\S[^\n]*:[ \t]*$",
         re.MULTILINE,
     )
+    """Matches a keyword-led block-header line in two forms.
+
+    - Definition/call form: ``def fib(n):``, ``class Foo(Bar):``, ``for x in range(n):``
+    - Bare-expression form: ``while True:``, ``if x == 0:``, ``with open(f) as fh:``
+
+    Prose labels ending in ``:`` (e.g. ``"Note:"``) are excluded by the leading
+    keyword anchor combined with requiring at least one non-space character after
+    the keyword. Statement keywords that do not produce block headers (``return``,
+    ``import``) are omitted to avoid false positives on prose.
+    """
 
     @override
     def __init__(
