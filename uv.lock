@@ -1584,7 +1584,7 @@ chunking = [
 [[package]]
 name = "docling-ibm-models"
 version = "3.13.3"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/DanielNg0729/docling-ibm-models?branch=feat%2Fcompound-list-item-markers#150a7d05661f2474f7641c40f6f00eeec21b981a" }
 dependencies = [
     { name = "accelerate" },
     { name = "docling-core" },
@@ -1602,10 +1602,6 @@ dependencies = [
     { name = "torchvision", version = "0.27.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version != '3.12.*' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
     { name = "tqdm" },
     { name = "transformers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/37/2b/c0ad433da1210672d6e8e774f1ba601824e0d23153e8cd963521dcf1c28c/docling_ibm_models-3.13.3.tar.gz", hash = "sha256:8c8b55e80b3d20fc74d85ca49a4d064578ef75b9f7251eec42fc9df6af426218", size = 98768, upload-time = "2026-06-04T08:23:08.088Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/6e/a3acfc130967e44e7e3d185c7f59f5ae96df955647e87be533f20576ac41/docling_ibm_models-3.13.3-py3-none-any.whl", hash = "sha256:50fc83d244ce2dc43158e02155d1caa68374d7a169d0f34e67d7eb14f396ffe6", size = 94040, upload-time = "2026-06-04T08:23:06.893Z" },
 ]
 
 [[package]]
@@ -2001,7 +1997,7 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", specifier = ">=2.86.0,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
-    { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
+    { name = "docling-ibm-models", marker = "extra == 'models-local'", git = "https://github.com/DanielNg0729/docling-ibm-models?branch=feat%2Fcompound-list-item-markers" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.0.0,<8.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-video'" },
