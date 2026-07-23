@@ -163,12 +163,18 @@ def extract_outline_from_docling_parse(
 
     items: list[_PdfOutlineItem] = []
 
-    def _walk(node: PdfTableOfContents, level: int) -> None:
-        for child in node.children or []:
-            title = (child.text or child.orig or "").strip()
-            if title:
-                items.append(_PdfOutlineItem(title=title, level=level))
-            _walk(child, level + 1)
+    # Iterative pre-order depth-first walk via an explicit stack, avoiding Python's
+    # call-stack recursion limit. Some large real-world documents (technical manuals,
+    # legal filings) legitimately nest headings hundreds of levels deep, and malformed
+    # PDFs can nest further still; a naive recursive walk here raises RecursionError.
+    stack: list[tuple[PdfTableOfContents, int]] = [
+        (child, 0) for child in reversed(toc.children or [])
+    ]
+    while stack:
+        node, level = stack.pop()
+        title = (node.text or node.orig or "").strip()
+        if title:
+            items.append(_PdfOutlineItem(title=title, level=level))
+        stack.extend((child, level + 1) for child in reversed(node.children or []))
 
-    _walk(toc, 0)
     return items
