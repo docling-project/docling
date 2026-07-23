@@ -1,4 +1,5 @@
 import subprocess
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -85,4 +86,36 @@ def test_convert_with_libreoffice_cleans_up_profile_on_timeout(monkeypatch, tmp_
         converter(input_path, output_path)
 
     # A hung/killed conversion must not leak its profile directory.
+    assert not created_profile_dirs[-1].exists()
+
+
+def test_convert_to_modern_format_uses_isolated_profile(monkeypatch):
+    monkeypatch.setattr(
+        drawingml_utils, "get_libreoffice_cmd", lambda: "/usr/bin/soffice"
+    )
+    created_profile_dirs = _track_mkdtemp(monkeypatch)
+
+    captured_kwargs: dict = {}
+
+    def fake_run(args, **kwargs):
+        captured_kwargs.update(kwargs)
+        # The isolated profile dir (most recently created) must exist while
+        # the "conversion" runs, separate from the outer working tmp_dir.
+        assert created_profile_dirs[-1].exists()
+        outdir = Path(args[args.index("--outdir") + 1])
+        (outdir / "input.docx").write_bytes(b"PK\x03\x04")
+        return MagicMock(returncode=0)
+
+    monkeypatch.setattr(drawingml_utils.subprocess, "run", fake_run)
+
+    result = drawingml_utils.convert_to_modern_format(
+        BytesIO(b"legacy doc bytes"), "doc", "docx", timeout_s=5
+    )
+
+    assert isinstance(result, BytesIO)
+    assert captured_kwargs["timeout"] == 5
+
+    # Both the outer working directory and the isolated profile directory
+    # are cleaned up once the conversion completes.
+    assert not created_profile_dirs[0].exists()
     assert not created_profile_dirs[-1].exists()

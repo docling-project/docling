@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -14,10 +16,12 @@ from PIL import Image, ImageChops
 if TYPE_CHECKING:
     from docx.document import Document
 
-# Maximum seconds to wait for a single LibreOffice conversion. Without this,
-# a hung soffice process (e.g. a modal dialog it can't show in headless mode)
-# blocks the calling thread forever.
 LIBREOFFICE_TIMEOUT_S: Final[int] = 60
+"""Maximum seconds to wait for a single LibreOffice conversion.
+
+Without this, a hung ``soffice`` process (e.g. a modal dialog it can't
+show in headless mode) blocks the calling thread forever.
+"""
 
 
 def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
@@ -49,6 +53,27 @@ def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
         )
 
     return libreoffice_cmd
+
+
+@contextmanager
+def _isolated_libreoffice_profile() -> Iterator[str]:
+    """Yield a ``-env:UserInstallation`` argument backed by a throwaway profile.
+
+    LibreOffice takes an exclusive lock on its user profile directory.
+    Without this, concurrent conversions (parallel workers, docling-serve
+    handling simultaneous requests) share the default profile and collide
+    on that lock, causing conversions to fail intermittently and silently.
+
+    Yields:
+        A ``-env:UserInstallation=<uri>`` CLI argument pointing at a freshly
+        created, empty profile directory. The directory is removed again
+        once the ``with`` block exits.
+    """
+    profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
+    try:
+        yield f"-env:UserInstallation={profile_dir.as_uri()}"
+    finally:
+        shutil.rmtree(profile_dir, ignore_errors=True)
 
 
 def convert_to_modern_format(
@@ -98,21 +123,23 @@ def convert_to_modern_format(
         else:
             input_path = source
 
-        subprocess.run(
-            [
-                libreoffice_cmd,
-                "--headless",
-                "--convert-to",
-                target_suffix,
-                "--outdir",
-                str(tmp_dir),
-                str(input_path),
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=True,
-            timeout=timeout_s,
-        )
+        with _isolated_libreoffice_profile() as profile_arg:
+            subprocess.run(
+                [
+                    libreoffice_cmd,
+                    profile_arg,
+                    "--headless",
+                    "--convert-to",
+                    target_suffix,
+                    "--outdir",
+                    str(tmp_dir),
+                    str(input_path),
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+                timeout=timeout_s,
+            )
 
         converted_path = tmp_dir / (input_path.stem + "." + target_suffix)
         if not converted_path.exists():
@@ -137,17 +164,26 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
 
     if libreoffice_cmd:
 
-        def convert_with_libreoffice(input_path, output_path):
-            # Give this call its own LibreOffice user profile. Without
-            # -env:UserInstallation, concurrent conversions (parallel
-            # workers, docling-serve) share the default profile and collide
-            # on its lock file, causing conversions to fail intermittently.
-            profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
-            try:
+        def convert_with_libreoffice(
+            input_path: str | Path, output_path: str | Path
+        ) -> None:
+            """Convert a DOCX/PPTX file to PDF via LibreOffice.
+
+            Runs the conversion in its own throwaway LibreOffice profile
+            (see ``_isolated_libreoffice_profile``) with a bounded timeout,
+            so a hung ``soffice`` process cannot block the calling thread
+            forever and concurrent conversions cannot collide on the
+            default profile lock.
+
+            Args:
+                input_path: Path to the source file to convert.
+                output_path: Desired path for the converted PDF.
+            """
+            with _isolated_libreoffice_profile() as profile_arg:
                 subprocess.run(
                     [
                         libreoffice_cmd,
-                        f"-env:UserInstallation={profile_dir.as_uri()}",
+                        profile_arg,
                         "--headless",
                         "--convert-to",
                         "pdf",
@@ -160,8 +196,6 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
                     check=True,
                     timeout=LIBREOFFICE_TIMEOUT_S,
                 )
-            finally:
-                shutil.rmtree(profile_dir, ignore_errors=True)
 
             expected_output = os.path.join(
                 os.path.dirname(output_path),
