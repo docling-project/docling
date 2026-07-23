@@ -46,6 +46,7 @@ from odfdo import (
     List as OdfList,
     ListItem,
     Paragraph,
+    Spacer,
     Span,
     Style,
     Table,
@@ -434,6 +435,24 @@ def test_odt_text_document_text_formatting():
     assert "**Lorem Ipsum is not simply random text**" in markdown
     assert "*a Latin professor at Hampden-Sydney College in Virginia*" in markdown
     assert "~~The Extremes of Good and Evil~~" in markdown
+
+
+def test_odt_text_after_space_in_span(tmp_path: Path):
+    path = tmp_path / "span_tail.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    space = Spacer()
+    space.tail = "connective prose here"
+    span = Span()
+    span.append(space)
+    body.append(Paragraph(span))
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert res.document.export_to_markdown() == "connective prose here"
 
 
 def test_odt_text_document_script_formatting():

@@ -313,6 +313,9 @@ def _odf_text_runs(
         if text_recursive.startswith(text):
             text = text_recursive
         return [_OdfTextRun(text=text, formatting=formatting)]
+    if tag == "text:s":
+        text_recursive = getattr(element, "text_recursive", " ")
+        return [_OdfTextRun(text=text_recursive, formatting=formatting)]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting)]
 
