@@ -3474,8 +3474,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         Headers and footers are added in the furniture content and only the text paragraphs
         are parsed. The paragraphs are attached to a single group item for the header or the
-        footer. If the document has a section with new header and footer, they will be parsed
-        in new group items.
+        footer. Every section is visited; a header/footer definition that is inherited
+        ("linked to previous") from an already-emitted section is skipped so it is not
+        duplicated. Sections with different_first_page_header_footer contribute both their
+        first-page and their regular header/footer, since both are actually used.
 
         Args:
             docx_obj: A docx Document object to be parsed.
@@ -3489,54 +3491,43 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//a:p//a:t",
             namespaces=self._BLIP_NAMESPACES,
         )
-        for sec_idx, section in enumerate(docx_obj.sections):
-            if sec_idx > 0 and not section.different_first_page_header_footer:
-                continue
+        emitted_partnames: set[str] = set()
 
-            hdr = (
-                section.first_page_header
-                if section.different_first_page_header_footer
-                else section.header
+        def _add_hdr_ftr_part(part, name: str) -> None:
+            resolved_part = part.part
+            partname = str(resolved_part.partname)
+            if partname in emitted_partnames:
+                return
+            emitted_partnames.add(partname)
+
+            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            tables = part.tables
+            has_blip = self._has_blip(part._element)
+            has_txbx = len(txbx_xpath(part._element)) > 0
+
+            if not (par or tables or has_blip or has_txbx):
+                return
+
+            self.parents[0] = doc.add_group(
+                label=GroupLabel.SECTION,
+                name=name,
+                content_layer=self.content_layer,
             )
-            par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
-            tables = hdr.tables
-            has_blip = self._has_blip(hdr._element)
-            has_txbx = len(txbx_xpath(hdr._element)) > 0
+            # Each header/footer part is its own code-block scope.
+            self._force_new_code_block = True
+            self._pending_code_blank_lines = 0
+            self.current_part = resolved_part
+            self._walk_linear(part._element, doc)
+            self.current_part = self.docx_obj.part
 
-            if par or tables or has_blip or has_txbx:
-                self.parents[0] = doc.add_group(
-                    label=GroupLabel.SECTION,
-                    name="page header",
-                    content_layer=self.content_layer,
-                )
-                # Each header/footer part is its own code-block scope.
-                self._force_new_code_block = True
-                self._pending_code_blank_lines = 0
-                self.current_part = hdr.part
-                self._walk_linear(hdr._element, doc)
-                self.current_part = self.docx_obj.part
+        for section in docx_obj.sections:
+            if section.different_first_page_header_footer:
+                _add_hdr_ftr_part(section.first_page_header, "page header")
+            _add_hdr_ftr_part(section.header, "page header")
 
-            ftr = (
-                section.first_page_footer
-                if section.different_first_page_header_footer
-                else section.footer
-            )
-            par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
-            tables = ftr.tables
-            has_blip = self._has_blip(ftr._element)
-            has_txbx = len(txbx_xpath(ftr._element)) > 0
-
-            if par or tables or has_blip or has_txbx:
-                self.parents[0] = doc.add_group(
-                    label=GroupLabel.SECTION,
-                    name="page footer",
-                    content_layer=self.content_layer,
-                )
-                self._force_new_code_block = True
-                self._pending_code_blank_lines = 0
-                self.current_part = ftr.part
-                self._walk_linear(ftr._element, doc)
-                self.current_part = self.docx_obj.part
+            if section.different_first_page_header_footer:
+                _add_hdr_ftr_part(section.first_page_footer, "page footer")
+            _add_hdr_ftr_part(section.footer, "page footer")
 
         self._force_new_code_block = True
         self._pending_code_blank_lines = 0

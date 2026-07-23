@@ -391,6 +391,96 @@ def test_add_header_footer(documents):
     )
 
 
+def _header_footer_texts(doc: DoclingDocument) -> tuple[list[str], list[str]]:
+    header_texts = [
+        child_ref.resolve(doc).text
+        for group in doc.groups
+        if group.name == "page header"
+        for child_ref in group.children
+    ]
+    footer_texts = [
+        child_ref.resolve(doc).text
+        for group in doc.groups
+        if group.name == "page footer"
+        for child_ref in group.children
+    ]
+    return header_texts, footer_texts
+
+
+def test_add_header_footer_distinct_per_section(tmp_path):
+    """A section's own (non-inherited) header/footer must not be dropped.
+
+    Regression test: sections after the first used to be skipped entirely unless
+    they enabled different_first_page_header_footer, silently discarding that
+    section's own distinct header/footer content.
+    """
+    from docx import Document
+    from docx.enum.section import WD_SECTION
+
+    docx_path = tmp_path / "distinct_section_headers.docx"
+    d = Document()
+    d.sections[0].header.paragraphs[0].text = "SECTION-0 HEADER"
+    d.sections[0].footer.paragraphs[0].text = "SECTION-0 FOOTER"
+
+    d.add_paragraph("body text")
+    d.add_section(WD_SECTION.NEW_PAGE)
+    s1 = d.sections[1]
+    s1.header.is_linked_to_previous = False
+    s1.footer.is_linked_to_previous = False
+    s1.header.paragraphs[0].text = "SECTION-1 HEADER"
+    s1.footer.paragraphs[0].text = "SECTION-1 FOOTER"
+
+    d.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    header_texts, footer_texts = _header_footer_texts(conv_result.document)
+
+    assert "SECTION-0 HEADER" in header_texts
+    assert "SECTION-1 HEADER" in header_texts, (
+        "section 1's own distinct header was dropped"
+    )
+    assert "SECTION-0 FOOTER" in footer_texts
+    assert "SECTION-1 FOOTER" in footer_texts, (
+        "section 1's own distinct footer was dropped"
+    )
+
+
+def test_add_header_footer_first_page_and_regular(tmp_path):
+    """The regular header/footer (pages after the first) must survive alongside
+    the first-page one.
+
+    Regression test: whenever different_first_page_header_footer was set, only the
+    first-page header/footer used to be parsed and the regular header/footer used
+    on every other page was dropped entirely.
+    """
+    from docx import Document
+
+    docx_path = tmp_path / "first_page_and_regular.docx"
+    d = Document()
+    s0 = d.sections[0]
+    s0.different_first_page_header_footer = True
+    s0.header.paragraphs[0].text = "REGULAR HEADER"
+    s0.footer.paragraphs[0].text = "REGULAR FOOTER"
+    s0.first_page_header.paragraphs[0].text = "FIRST PAGE HEADER"
+    s0.first_page_footer.paragraphs[0].text = "FIRST PAGE FOOTER"
+
+    d.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    header_texts, footer_texts = _header_footer_texts(conv_result.document)
+
+    assert "FIRST PAGE HEADER" in header_texts
+    assert "REGULAR HEADER" in header_texts, (
+        "regular header (pages after the first) was dropped when "
+        "different_first_page_header_footer is set"
+    )
+    assert "FIRST PAGE FOOTER" in footer_texts
+    assert "REGULAR FOOTER" in footer_texts, (
+        "regular footer (pages after the first) was dropped when "
+        "different_first_page_header_footer is set"
+    )
+
+
 def test_handle_pictures(documents):
     """Test the function _handle_pictures."""
 
