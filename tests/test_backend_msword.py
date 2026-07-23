@@ -5,12 +5,19 @@ from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import (
+    CodeItem,
+    ContentLayer,
     DocItemLabel,
     GroupItem,
     PictureClassificationLabel,
     PictureItem,
     TableItem,
 )
+from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from lxml import etree
 from PIL import Image
 
@@ -170,30 +177,16 @@ def test_heading_levels(documents):
 
 def test_text_after_image_anchors(documents):
     """Test to analyse whether text gets parsed after image anchors."""
-
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
-
-    found_text_after_anchor_1 = found_text_after_anchor_2 = (
-        found_text_after_anchor_3
-    ) = found_text_after_anchor_4 = False
-    for item, _ in doc.iterate_items():
-        if isinstance(item, TextItem):
-            if item.text == "This is test 1":
-                found_text_after_anchor_1 = True
-            elif item.text == "0:08\nCorrect, he is not.":
-                found_text_after_anchor_2 = True
-            elif item.text == "This is test 2":
-                found_text_after_anchor_3 = True
-            elif item.text == "0:16\nYeah, exactly.":
-                found_text_after_anchor_4 = True
-
-    assert (
-        found_text_after_anchor_1
-        and found_text_after_anchor_2
-        and found_text_after_anchor_3
-        and found_text_after_anchor_4
-    )
+    texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    for expected in (
+        "This is test 1",
+        "0:08\nCorrect, he is not.",
+        "This is test 2",
+        "0:16\nYeah, exactly.",
+    ):
+        assert expected in texts
 
 
 def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
@@ -350,21 +343,15 @@ def test_is_rich_table_cell(docx_paths):
         path_or_stream=path,
     )
 
-    gt_cells: list[bool] = []
-    # table: Table with rich cells
-    gt_cells.extend([False, False, True, True, True, True, True, False])
-    # table: Table with nested table
-    gt_cells.extend([False, False, False, True, True, True])
-    # table: Table with pictures
-    gt_cells.extend([False, False, False, True, True, False])
-    # table: Lists with same numId in different cells
-    gt_cells.extend([True, True])
-    # table: Lists with different numIds in different cells
-    gt_cells.extend([True, True])
-    # table: Multiple columns with lists
-    gt_cells.extend([True, True, True, True])
-    # table: Mixed content - list and regular text in different cells
-    gt_cells.extend([True, False])
+    gt_cells: list[bool] = [
+        *[False, False, True, True, True, True, True, False],  # Table with rich cells
+        *[False, False, False, True, True, True],  # Table with nested table
+        *[False, False, False, True, True, False],  # Table with pictures
+        *[True, True],  # Lists with same numId
+        *[True, True],  # Lists with different numIds
+        *[True, True, True, True],  # Multiple columns with lists
+        *[True, False],  # Mixed content
+    ]
     gt_it = iter(gt_cells)
 
     for idx_t, table in enumerate(backend.docx_obj.tables):
@@ -531,27 +518,18 @@ def test_comments_extraction(documents):
         if hasattr(text_item, "content_layer") and text_item.content_layer == "notes":
             comment_texts.append(text_item.text)
 
-    # Check that author info is included with new format
-    assert any("author: John Reviewer (JR)" in text for text in comment_texts), (
-        "Expected 'author: John Reviewer (JR)' in comments"
-    )
-    assert any("author: Jane Editor (JE)" in text for text in comment_texts), (
-        "Expected 'author: Jane Editor (JE)' in comments"
-    )
+    # Check that author info is included with the expected format
+    assert any("author: John Reviewer (JR)" in text for text in comment_texts)
+    assert any("author: Jane Editor (JE)" in text for text in comment_texts)
 
     # Check that comment text is included
-    assert any("sample reviewer comment" in text for text in comment_texts), (
-        "Expected comment text content"
-    )
+    assert any("sample reviewer comment" in text for text in comment_texts)
     assert any(
         "Another comment by a different reviewer" in text for text in comment_texts
-    ), "Expected second comment text content"
+    )
 
     # Check content layer is NOTES
-    for group in comment_groups:
-        assert group.content_layer == "notes", (
-            "Comments should be in NOTES content layer"
-        )
+    assert all(group.content_layer == "notes" for group in comment_groups)
 
 
 @pytest.mark.parametrize(
@@ -563,6 +541,9 @@ def test_comments_extraction(documents):
         ("Heading 0", "Heading", 1),  # Custom style - level 0 should be clamped to 1
         ("1 Heading", "Heading", 1),  # Number before text
         ("0 Heading", "Heading", 1),  # Zero before text should be clamped to 1
+        ("Normal", "Normal", None),  # Non-heading style
+        ("Title", "Title", None),  # Non-heading style
+        ("CustomStyle", "CustomStyle", None),  # Non-heading style
     ],
 )
 def test_get_heading_and_level(docx_paths, style_label, expected_label, expected_level):
@@ -588,14 +569,8 @@ def test_get_heading_and_level(docx_paths, style_label, expected_label, expected
 def test_get_outline_level_from_style():
     """Test that _get_outline_level_from_style correctly extracts outlineLvl.
 
-    Uses word_sample.docx which has known heading paragraphs:
-    - Paragraph 5: "Let's swim!" with Heading 1 style (outlineLvl=0 in XML)
-    - Paragraph 15: "Let's eat" with Heading 2 style (outlineLvl=1 in XML)
-
-    OOXML outlineLvl is 0-indexed, so our method should return outlineLvl + 1.
+    OOXML outlineLvl is 0-indexed, so the method must return outlineLvl + 1.
     """
-    from docx import Document
-
     docx_path = Path("./tests/data/docx/sources/word_sample.docx")
     in_doc = InputDocument(
         path_or_stream=docx_path,
@@ -603,50 +578,22 @@ def test_get_outline_level_from_style():
         backend=MsWordDocumentBackend,
     )
     backend = in_doc._backend
-    doc = Document(docx_path)
-    paragraphs = doc.paragraphs
+    paragraphs = Document(docx_path).paragraphs
 
-    # Test Heading 1: outlineLvl=0 should return level 1
-    heading1_para = paragraphs[5]
-    assert heading1_para.text == "Let\u2019s swim!", "Test document structure changed"
-    assert heading1_para.style.name == "Heading 1"
-    assert backend._get_outline_level_from_style(heading1_para) == 1
+    h1 = paragraphs[5]
+    assert h1.style.name == "Heading 1"
+    assert h1.text == "Let\u2019s swim!"
+    assert backend._get_outline_level_from_style(h1) == 1  # outlineLvl=0 → level 1
 
-    # Test Heading 2: outlineLvl=1 should return level 2
-    heading2_para = paragraphs[15]
-    assert heading2_para.text == "Let\u2019s eat", "Test document structure changed"
-    assert heading2_para.style.name == "Heading 2"
-    assert backend._get_outline_level_from_style(heading2_para) == 2
+    h2 = paragraphs[15]
+    assert h2.style.name == "Heading 2"
+    assert h2.text == "Let\u2019s eat"
+    assert backend._get_outline_level_from_style(h2) == 2  # outlineLvl=1 → level 2
 
-    # Test non-heading paragraph: should return None
-    normal_para = paragraphs[0]  # First paragraph is not a heading
-    assert "heading" not in normal_para.style.name.lower()
-    assert backend._get_outline_level_from_style(normal_para) is None
-
-
-@pytest.mark.parametrize(
-    "style_label,expected_label,expected_level",
-    [
-        ("Normal", "Normal", None),  # Non-heading style
-        ("Title", "Title", None),  # Non-heading style
-        ("CustomStyle", "CustomStyle", None),  # Non-heading style
-    ],
-)
-def test_get_heading_and_level_non_heading(
-    docx_paths, style_label, expected_label, expected_level
-):
-    """Test _get_heading_and_level returns input unchanged for non-heading styles."""
-    docx_path = docx_paths[0]
-    in_doc = InputDocument(
-        path_or_stream=docx_path,
-        format=InputFormat.DOCX,
-        backend=MsWordDocumentBackend,
-    )
-    backend = in_doc._backend
-
-    label, level = backend._get_heading_and_level(style_label)
-    assert label == expected_label
-    assert level == expected_level
+    non_heading = paragraphs[0]
+    assert non_heading.style.name == "Subtitle"
+    assert non_heading.text == "Summer activities"
+    assert backend._get_outline_level_from_style(non_heading) is None
 
 
 def test_external_image_references():
@@ -654,18 +601,11 @@ def test_external_image_references():
     docx_path = Path("./tests/data/docx/sources/docx_external_image.docx")
     assert docx_path.exists(), f"Test file not found: {docx_path}"
 
-    converter = get_converter()
-
     with pytest.warns(UserWarning, match="Skipping external image reference"):
-        conv_result = converter.convert(docx_path)
-
-    doc = conv_result.document
-
-    # Document should convert successfully (not crash)
-    assert doc is not None
+        conv_result = get_converter().convert(docx_path)
 
     # Text content should still be extracted even though the external image is skipped
-    md = doc.export_to_markdown()
+    md = conv_result.document.export_to_markdown()
     assert "Test Document with External Image" in md
     assert "text before the image" in md
     assert "after the external image" in md
@@ -801,9 +741,6 @@ def test_load_msword_file_propagates_security_error():
 
 def test_inline_sdt_references(tmp_path):
     """Test that inline SDT citation blocks are preserved in DOCX paragraphs."""
-    from docx import Document
-    from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
 
     def _append_citation(paragraph, text: str):
         sdt = OxmlElement("w:sdt")
@@ -896,8 +833,6 @@ def _table_with_grid_before(
     vertically merges ``((r0, c), (r1, c))`` before the leading cells of
     ``late_row`` are dropped to realize the ``w:gridBefore``.
     """
-    from docx import Document
-    from docx.oxml.ns import qn
 
     doc = Document()
     table = doc.add_table(rows=rows, cols=cols)
@@ -1040,9 +975,6 @@ def test_custom_numbering_format_markers(tmp_path):
     e.g. 'Proposal %1:' or 'Observation %1:'. The marker should preserve the
     text prefix/suffix and substitute %N with the counter value for level N.
     """
-    from docx import Document
-    from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
 
     doc = Document()
 
@@ -1078,13 +1010,11 @@ def test_custom_numbering_format_markers(tmp_path):
     # Save and load through backend
     docx_path = tmp_path / "custom_numbering.docx"
     doc.save(str(docx_path))
-
-    in_doc = InputDocument(
+    backend = InputDocument(
         path_or_stream=docx_path,
         format=InputFormat.DOCX,
         backend=MsWordDocumentBackend,
-    )
-    backend = in_doc._backend
+    )._backend
 
     # Simulate counter state and verify markers
     backend.list_counters[(200, 0)] = 1
@@ -1163,9 +1093,13 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
         def __init__(self, element, docx_obj):
             self.text = "Heading text"
             self.style = SimpleNamespace()
+            self._p = etree.Element("p")
 
     monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
     monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend, "_get_paragraph_text", lambda paragraph: paragraph.text
+    )
     monkeypatch.setattr(
         backend, "_handle_equations_in_text", lambda element, text: (text, [])
     )
@@ -1197,6 +1131,7 @@ def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
         def __init__(self, element, docx_obj):
             self.text = "inline eq"
             self.style = SimpleNamespace()
+            self._p = etree.Element("p")
 
     monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
     monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
@@ -1234,31 +1169,14 @@ def test_checkbox_detection_and_parsing(documents):
         in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
     ]
 
-    assert len(checkbox_items) > 0, "No checkboxes found in the document"
-
     # Verify we have both selected and unselected checkboxes
-    selected = [
-        item for item in checkbox_items if item.label == DocItemLabel.CHECKBOX_SELECTED
-    ]
-    unselected = [
-        item
-        for item in checkbox_items
-        if item.label == DocItemLabel.CHECKBOX_UNSELECTED
-    ]
-
-    assert len(selected) > 0, "No selected checkboxes found"
-    assert len(unselected) > 0, "No unselected checkboxes found"
+    assert any(it.label == DocItemLabel.CHECKBOX_SELECTED for it in checkbox_items)
+    assert any(it.label == DocItemLabel.CHECKBOX_UNSELECTED for it in checkbox_items)
 
     checkbox_texts = [item.text for item in checkbox_items]
-    assert any("Design" in text for text in checkbox_texts), (
-        "Expected checkbox text not found"
-    )
-    assert any("Implementation" in text for text in checkbox_texts), (
-        "Expected checkbox text not found"
-    )
-    assert any("Documentation" in text for text in checkbox_texts), (
-        "Expected checkbox text not found"
-    )
+    assert any("Design" in text for text in checkbox_texts)
+    assert any("Implementation" in text for text in checkbox_texts)
+    assert any("Documentation" in text for text in checkbox_texts)
 
 
 def test_checkbox_labels_in_tables(documents):
@@ -1287,67 +1205,44 @@ def test_checkbox_labels_in_tables(documents):
         "Bread",
         "Croissant",
     ]
-
-    found_food_checkboxes = [
-        item for item in checkbox_items if any(food in item.text for food in food_items)
-    ]
-
-    assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"
+    assert any(
+        any(food in item.text for food in food_items) for item in checkbox_items
+    ), "No checkboxes found in table cells"
 
 
 def test_text_after_drawingml_images(documents):
     """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
     name = "drawingml.docx"
-
-    doc_found = False
-    for path, doc in documents:
-        if path.name == name:
-            doc_found = True
-
-            text_items = [
-                item for item, _ in doc.iterate_items() if isinstance(item, TextItem)
-            ]
-
-            assert len(text_items) > 0, (
-                f"No text items found in {name}. "
-                "Text after DrawingML images should be preserved even without LibreOffice."
-            )
-
-            # Log the text items found for debugging
-            _log.info(f"Found {len(text_items)} text items in {name}")
-            for idx, item in enumerate(text_items[:5]):  # Log first 5 items
-                _log.info(f"  Text item {idx}: {item.text[:50]}...")
-
-            break
-
-    if not doc_found:
-        _log.warning(
-            f"Test document '{name}' not found in test set. "
-            "Skipping DrawingML text extraction test."
-        )
+    entry = next((item for item in documents if item[0].name == name), None)
+    if entry is None:
         pytest.skip(f"Test document '{name}' not available")
+    _, doc = entry
+    text_items = [item for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert len(text_items) > 0, (
+        f"No text items found in {name}. "
+        "Text after DrawingML images should be preserved even without LibreOffice."
+    )
 
 
 def test_invisible_spacer_logic():
     backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
 
     assert backend._is_invisible_spacer(None) is False
-
-    # Test microscopic layout dot
-    tiny_img = Image.new("RGB", (4, 4))
-    assert backend._is_invisible_spacer(tiny_img) is True
-
-    # Test 100% transparent RGBA layout box (Alpha = 0)
-    trans_img = Image.new("RGBA", (50, 50), (255, 255, 255, 0))
-    assert backend._is_invisible_spacer(trans_img) is True
-
-    # Test pure white RGB layout box
-    white_img = Image.new("RGB", (50, 50), (255, 255, 255))
-    assert backend._is_invisible_spacer(white_img) is True
-
-    # Test normal, valid graphic
-    valid_img = Image.new("RGB", (50, 50), (100, 150, 200))
-    assert backend._is_invisible_spacer(valid_img) is False
+    assert (
+        backend._is_invisible_spacer(Image.new("RGB", (4, 4))) is True
+    )  # microscopic dot
+    assert (
+        backend._is_invisible_spacer(Image.new("RGBA", (50, 50), (255, 255, 255, 0)))
+        is True
+    )  # fully transparent
+    assert (
+        backend._is_invisible_spacer(Image.new("RGB", (50, 50), (255, 255, 255)))
+        is True
+    )  # pure white
+    assert (
+        backend._is_invisible_spacer(Image.new("RGB", (50, 50), (100, 150, 200)))
+        is False
+    )  # coloured
 
 
 def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
@@ -1358,9 +1253,6 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     ``AnyUrl(address)`` unguarded, so any address with a scheme but invalid
     contents crashed the pipeline.
     """
-    from docx import Document
-    from docx.opc.constants import RELATIONSHIP_TYPE as RT
-    from docx.oxml.ns import qn
 
     doc = Document()
     para = doc.add_paragraph("Before link. ")
@@ -1407,7 +1299,6 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     routinely emits a trailing plain run holding just spaces, which silently
     stripped bold/italic from the whole preceding text.
     """
-    from docx import Document
 
     doc = Document()
 
@@ -1437,3 +1328,259 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["All bold text"].bold is True
     assert formatting["All italic text"].italic is True
     assert formatting["Plain text"].bold is False
+
+
+# ------ Code-block detection tests ------
+
+_CODE_BLOCKS_FIXTURE = Path("./tests/data/docx/sources/docx_code_blocks.docx")
+
+
+def _convert_built(document, tmp_path) -> DoclingDocument:
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    return _convert(path)
+
+
+def _add_mono(document, text: str, font: str = "Consolas"):
+    para = document.add_paragraph()
+    para.add_run(text).font.name = font
+
+
+def _add_code_style(document, name: str = "Source Code", font: str | None = None):
+    style = document.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+    if font is not None:
+        style.font.name = font
+    return style
+
+
+def _code_items(doc: DoclingDocument) -> list[CodeItem]:
+    return [it for it in doc.texts if isinstance(it, CodeItem)]
+
+
+def _plain_texts(doc: DoclingDocument) -> set[str]:
+    # CodeItem is a TextItem subclass, so it is excluded explicitly rather
+    # than relying on isinstance(item, TextItem) alone.
+    return {
+        item.text
+        for item in doc.texts
+        if isinstance(item, TextItem) and not isinstance(item, CodeItem)
+    }
+
+
+def test_docx_code_blocks():
+    """Integration check against the committed fixture: style-name detection,
+    monospaced-font detection, consecutive-paragraph merging, and false-positive
+    guards all in one pass.
+    """
+    doc = _convert(_CODE_BLOCKS_FIXTURE)
+
+    code_items = _code_items(doc)
+    assert len(code_items) == 3, (
+        "Expected 3 CodeItems: 'Source Code' style, font-only, and the merged "
+        "multi-line font-only block"
+    )
+    assert code_items[0].text == "import sys\nprint(sys.argv)", (
+        "Consecutive 'Source Code'-styled paragraphs should merge into one CodeItem"
+    )
+    assert code_items[1].text == "SELECT * FROM users WHERE active = 1;"
+    assert code_items[2].text == (
+        "def fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n"
+        "        a, b = b, a + b\n    return a"
+    ), "Consecutive monospaced paragraphs should merge with indentation preserved"
+
+    negative_texts = {
+        "Call the printf function to print formatted output to standard out.",
+        "See the original source for details.",
+        "Listing 3.2",
+        "This memo is set in a typewriter face for a vintage look and feel throughout.",
+    }
+    assert negative_texts <= _plain_texts(doc), (
+        "Negative cases must remain plain TextItems, not CodeItems"
+    )
+
+
+def test_docx_code_block_merging(tmp_path):
+    """Merging, boundary, and list-interaction rules for code blocks."""
+    # Interior blank paragraphs are preserved; trailing blanks are dropped.
+    d = Document()
+    _add_code_style(d)
+    for line in ("line1 = 1", "", "line3 = 3", "", ""):
+        d.add_paragraph(line, style="Source Code")
+    d.add_paragraph("prose follows")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["line1 = 1\n\nline3 = 3"], (
+        "Interior blanks preserved; trailing blanks stripped"
+    )
+
+    # An intervening element (picture) breaks the block.
+    png = tmp_path / "dot.png"
+    Image.new("RGB", (32, 32), (10, 20, 30)).save(str(png))
+    d = Document()
+    _add_mono(d, "x = 1;")
+    d.add_picture(str(png))
+    _add_mono(d, "y = 2;")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["x = 1;", "y = 2;"]
+
+    # A furniture-table cell is a boundary; a flanking blank code paragraph
+    # must not "spend" the barrier.
+    d = Document()
+    _add_code_style(d)
+    d.add_paragraph("before = 1;", style="Source Code")
+    onecell = d.add_table(rows=1, cols=1)
+    onecell.rows[0].cells[0].paragraphs[0].style = "Source Code"
+    onecell.rows[0].cells[0].paragraphs[0].add_run("inside = 2;")
+    d.add_paragraph("", style="Source Code")
+    d.add_paragraph("after = 3;", style="Source Code")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == [
+        "before = 1;",
+        "inside = 2;",
+        "after = 3;",
+    ]
+
+    # Lists: code after a list must not nest inside the ListGroup, and a
+    # resumed list must not fuse the surrounding code blocks.
+    d = Document()
+    _add_code_style(d)
+    d.add_paragraph("bullet one", style="List Bullet")
+    d.add_paragraph("bullet two", style="List Bullet")
+    d.add_paragraph("code_a = 1;", style="Source Code")
+    d.add_paragraph("bullet three", style="List Bullet")
+    d.add_paragraph("code_b = 2;", style="Source Code")
+    doc = _convert_built(d, tmp_path)
+    codes = _code_items(doc)
+    assert [c.text for c in codes] == ["code_a = 1;", "code_b = 2;"]
+    assert all(type(c.parent.resolve(doc)).__name__ != "ListGroup" for c in codes), (
+        "Code blocks must not nest inside a ListGroup"
+    )
+
+    # Monospaced list items adjacent to a code block are never absorbed.
+    d = Document()
+    _add_mono(d, "x = 1;")
+    for item_text in ("config.set();", "another();"):
+        li = d.add_paragraph(style="List Bullet")
+        li.add_run(item_text).font.name = "Consolas"
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["x = 1;"]
+    assert {"config.set();", "another();"} <= {it.text for it in doc.texts}
+
+
+def test_docx_code_detection(tmp_path):
+    """Style-name rules, font-fallback detection, and false-positive guards."""
+
+    # Style names that merely contain "code" (substring) must not match.
+    d = Document()
+    for name in ("Barcode", "Unicode", "Area Code"):
+        d.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        d.add_paragraph("Some prose text.", style=name)
+    doc = _convert_built(d, tmp_path)
+    assert not _code_items(doc), "Substring 'code' style names must not be flagged"
+
+    # Style inheritance: a child of a recognised code style is code.
+    d = Document()
+    child = d.styles.add_style("Project Listing", WD_STYLE_TYPE.PARAGRAPH)
+    child.base_style = _add_code_style(d)
+    d.add_paragraph("value = lookup(key);", style="Project Listing")
+    doc = _convert_built(d, tmp_path)
+    assert len(_code_items(doc)) == 1, "Style inheriting from a code style is code"
+
+    # Monospace font set at style level (run.font.name is None) is detected,
+    # including through a base_style chain.
+    d = Document()
+    mono_base = d.styles.add_style("Mono Base", WD_STYLE_TYPE.PARAGRAPH)
+    mono_base.font.name = "Consolas"
+    mono_sub = d.styles.add_style("Mono Sub", WD_STYLE_TYPE.PARAGRAPH)
+    mono_sub.base_style = mono_base
+    for line in ("server {", "  listen 80;", "}"):
+        d.add_paragraph(line, style="Mono Sub")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["server {\n  listen 80;\n}"], (
+        "Monospace font inherited via base_style chain must be detected"
+    )
+
+    # Document-default font is not code evidence; an explicit run font is.
+    d = Document()
+    d.styles["Normal"].font.name = "Courier New"
+    d.add_paragraph("JOHN (V.O.)")
+    d.add_paragraph("Payment terms: net thirty (30) days from receipt of invoice.")
+    para = d.add_paragraph()
+    para.add_run("total = a + b;").font.name = "Consolas"
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["total = a + b;"], (
+        "Document-default font must not count as code evidence"
+    )
+
+    # Post-code monospaced prose and isolated indented prose stay text.
+    d = Document()
+    _add_mono(d, "total = a + b;")
+    _add_mono(d, "End of the worked example.")
+    d.add_paragraph("An introductory sentence.")
+    _add_mono(d, "    an indented monospaced remark")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["total = a + b;"]
+    assert "End of the worked example." in _plain_texts(doc)
+    assert "an indented monospaced remark" in _plain_texts(doc)
+
+    # Semicolons, parenthesised prose, and tracked insertions are not code.
+    d = Document()
+    tw = d.styles.add_style("Typewriter", WD_STYLE_TYPE.PARAGRAPH)
+    tw.font.name = "Courier New"
+    for clause in (
+        "He came; he saw; he conquered the entire realm.",
+        "Refer to Section 12(b) and paragraph 3(c) of the Agreement.",
+        "Enclosed item(s):",
+    ):
+        d.add_paragraph(clause, style="Typewriter")
+    # A proportional-font tracked insertion (w:ins) breaks the all-monospace check.
+    para = d.add_paragraph()
+    para.add_run("x = 1;").font.name = "Consolas"
+    ins = OxmlElement("w:ins")
+    ins.set(qn("w:id"), "1")
+    ins.set(qn("w:author"), "Reviewer")
+    ins_run = OxmlElement("w:r")
+    ins_text = OxmlElement("w:t")
+    ins_text.text = "  and a long proportional-font prose insertion"
+    ins_text.set(qn("xml:space"), "preserve")
+    ins_run.append(ins_text)
+    ins.append(ins_run)
+    para._p.append(ins)
+    doc = _convert_built(d, tmp_path)
+    assert not _code_items(doc), (
+        "Prose shapes and tracked insertions must not be classified as code"
+    )
+
+    # A code-styled table cell yields a CodeItem; an empty one is safe.
+    d = Document()
+    _add_code_style(d, font="Consolas")
+    table = d.add_table(rows=1, cols=2)
+    table.rows[0].cells[0].text = "Label"
+    code_cell = table.rows[0].cells[1]
+    code_cell.paragraphs[0].style = "Source Code"
+    code_cell.paragraphs[0].add_run("x = compute(y);")
+    doc = _convert_built(d, tmp_path)
+    assert len(_code_items(doc)) == 1
+
+    # Header/footer code stays in the furniture layer and is excluded from the
+    # body markdown export.
+    d = Document()
+    _add_code_style(d, font="Consolas")
+    d.add_paragraph("a = 1;", style="Source Code")
+    header = d.sections[0].header
+    header.paragraphs[0].style = d.styles["Source Code"]
+    header.paragraphs[0].add_run("hdr_line = 99;")
+    doc = _convert_built(d, tmp_path)
+    body_codes = [c for c in _code_items(doc) if c.content_layer == ContentLayer.BODY]
+    assert [c.text for c in body_codes] == ["a = 1;"]
+    assert "hdr_line" not in doc.export_to_markdown()
+
+    # A checkbox carrying a code style must keep its checkbox label.
+    document = Document(str(Path("./tests/data/docx/sources/docx_checkboxes.docx")))
+    document.styles.add_style("Source Code", WD_STYLE_TYPE.PARAGRAPH)
+    next(
+        p for p in document.paragraphs if p.text.strip() == "Design"
+    ).style = "Source Code"
+    doc = _convert_built(document, tmp_path)
+    assert not _code_items(doc), "A code-styled checkbox must not become a CodeItem"
+    design = next(it for it in doc.texts if it.text == "Design")
+    assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
