@@ -346,6 +346,86 @@ def test_cli_html_image_headers_require_remote_fetch(tmp_path):
     )
 
 
+def test_cli_default_verbosity_logs_per_file_progress(tmp_path):
+    """At default verbosity (-v not given), the CLI must still surface
+    which input file is currently being converted. Regression for #3467
+    where multi-file batches (e.g. directories of audio) gave no per-file
+    feedback at default verbosity.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app, [str(first), str(second), "--from", "md", "--output", str(output)]
+        )
+        assert result.exit_code == 0
+
+        # After default-verbosity invocation, per-file progress loggers must
+        # be enabled at INFO so the "Processing document <name>" line fires.
+        assert progress_logger.isEnabledFor(logging.INFO)
+        assert converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
+def test_cli_quiet_suppresses_per_file_progress(tmp_path):
+    """`--quiet` reinstates fully silent default output: the per-file progress
+    loggers stay at WARNING so callers (e.g. AI agents) that shell out to
+    docling don't get unexpected INFO lines bloating their context.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app,
+            [
+                str(first),
+                str(second),
+                "--from",
+                "md",
+                "--quiet",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+
+        # With --quiet the progress loggers are left at WARNING, so INFO-level
+        # per-file lines are suppressed.
+        assert not progress_logger.isEnabledFor(logging.INFO)
+        assert not converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
     from docling.cli.main import export_documents
     from docling.datamodel.base_models import ConversionStatus, InputFormat

@@ -359,6 +359,11 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
+    help=(
+        "Convert documents with Docling. At default verbosity a per-file "
+        "progress line is logged; pass -q/--quiet for fully silent output "
+        "(useful when calling docling from an AI agent or script)."
+    ),
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
@@ -929,6 +934,16 @@ def convert(  # noqa: C901
             help="Set the verbosity level. -v for info logging, -vv for debug logging.",
         ),
     ] = 0,
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet",
+            "-q",
+            help="Suppress the per-file progress log emitted at default verbosity, "
+            "restoring fully silent output (warnings and errors only). Has no "
+            "effect when -v/--verbose is given.",
+        ),
+    ] = False,
     debug_visualize_cells: Annotated[
         bool,
         typer.Option(..., help="Enable debug output which visualizes the PDF cells"),
@@ -1036,6 +1051,13 @@ def convert(  # noqa: C901
 
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
+        if not quiet:
+            # Keep per-file progress visible at default verbosity so users running
+            # long-running conversions (e.g. directories of audio files) can see
+            # which input is currently in flight. --quiet opts back out for callers
+            # (e.g. AI agents) that need fully silent output.
+            logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
+            logging.getLogger("docling.document_converter").setLevel(logging.INFO)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:
