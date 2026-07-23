@@ -7,6 +7,7 @@ from docling.datamodel.service.requests import (
     AzureBlobSourceRequest,
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
+    GenericChunkTarget,
     GenericSourceRequest,
     GenericTargetRequest,
     GoogleCloudStorageSourceRequest,
@@ -31,6 +32,7 @@ from docling.datamodel.service.targets import (
     GoogleDriveTarget,
     PresignedUrlTarget,
     S3Target,
+    ZipTarget,
 )
 
 
@@ -362,3 +364,111 @@ def test_task_status_response_accepts_structured_failure() -> None:
 
     assert response.failure is not None
     assert response.failure.phase == FailurePhase.ORCHESTRATION
+
+
+## chunk_target tests
+
+
+def test_batch_convert_sources_request_preserves_generic_chunk_target() -> None:
+    chunk_target = {
+        "kind": "opensearch",
+        "index": "docs",
+        "endpoint": "https://search.example.com",
+    }
+
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": {"kind": "presigned_url"},
+            "chunk_target": chunk_target,
+        }
+    )
+
+    assert isinstance(request.chunk_target, GenericChunkTarget)
+    assert request.model_dump(mode="json")["chunk_target"] == chunk_target
+
+
+@pytest.mark.parametrize("chunk_target", [{}, {"kind": ""}])
+def test_batch_convert_sources_request_requires_non_empty_chunk_target_kind(
+    chunk_target: dict[str, str],
+) -> None:
+    with pytest.raises(ValidationError):
+        BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+                "target": {"kind": "presigned_url"},
+                "chunk_target": chunk_target,
+            }
+        )
+
+
+def test_batch_convert_sources_request_keeps_known_chunk_target_validation() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+                "target": {"kind": "presigned_url"},
+                "chunk_target": {"kind": "s3"},
+            }
+        )
+
+    locations = {error["loc"] for error in exc_info.value.errors()}
+    assert ("chunk_target", "endpoint") in locations
+    assert all("GenericChunkTarget" not in str(loc) for loc in locations)
+
+
+@pytest.mark.parametrize(
+    "chunk_target",
+    [
+        PresignedUrlTarget(),
+        S3Target(
+            endpoint="s3.example.com",
+            access_key="key",
+            secret_key="secret",
+            bucket="documents",
+        ),
+        ZipTarget(),
+    ],
+)
+def test_batch_convert_sources_request_preserves_known_chunk_target_type(
+    chunk_target: PresignedUrlTarget | S3Target | ZipTarget,
+) -> None:
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": {"kind": "presigned_url"},
+            "chunk_target": chunk_target.model_dump(mode="json"),
+        }
+    )
+
+    assert type(request.chunk_target) is type(chunk_target)
+
+
+def test_batch_convert_sources_request_preserves_known_chunk_target_instance() -> None:
+    chunk_target = S3Target(
+        endpoint="s3.example.com",
+        access_key="key",
+        secret_key="secret",
+        bucket="chunks",
+    )
+
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": {"kind": "presigned_url"},
+            "chunk_target": chunk_target,
+        }
+    )
+
+    assert request.chunk_target is chunk_target
+
+
+def test_batch_convert_sources_request_chunk_target_is_optional() -> None:
+    request = BatchConvertSourcesRequest.model_validate(
+        {
+            "sources": [{"kind": "http", "url": "https://example.com/report.pdf"}],
+            "target": {"kind": "presigned_url"},
+        }
+    )
+
+    assert request.chunk_target is None

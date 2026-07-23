@@ -1,6 +1,6 @@
-from typing import Annotated, Any, Dict, Literal
+from typing import Annotated, Literal
 
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
@@ -55,7 +55,19 @@ Target = Annotated[
     Field(discriminator="kind"),
 ]
 
-ChunkTarget = Annotated[
-    PresignedUrlTarget | S3Target | ZipTarget | Dict[str, Any],
-    Field(),
+KnownChunkTarget = Annotated[
+    PresignedUrlTarget | S3Target | ZipTarget,
+    Field(discriminator="kind"),
 ]
+
+
+class GenericChunkTarget(BaseModel):
+    """Passthrough for plugin/extension chunk targets not known to this library."""
+
+    model_config = ConfigDict(extra="allow")
+
+    kind: str = Field(min_length=1)
+
+
+# Deprecated: use ChunkTargetRequest from requests.py for validated deserialization.
+ChunkTarget = KnownChunkTarget

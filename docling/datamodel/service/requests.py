@@ -26,10 +26,11 @@ from docling.datamodel.service.sources import (
 )
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
-    ChunkTarget,
+    GenericChunkTarget,
     GoogleCloudStorageTarget,
     GoogleDriveTarget,
     InBodyTarget,
+    KnownChunkTarget,
     PresignedUrlTarget,
     PutTarget,
     S3Target,
@@ -192,13 +193,42 @@ BatchTargetRequest = Annotated[
 ]
 BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
 
+_KNOWN_CHUNK_TARGET_MODELS = {
+    target_type.model_fields["kind"].default: target_type
+    for target_type in get_args(get_args(KnownChunkTarget)[0])
+}
+_KNOWN_CHUNK_TARGET_TYPES = tuple(_KNOWN_CHUNK_TARGET_MODELS.values())
+
+
+def _validate_chunk_target(value: Any) -> Any:
+    if isinstance(value, _KNOWN_CHUNK_TARGET_TYPES):
+        return value
+    if isinstance(value, BaseModel):
+        payload = value.model_dump()
+    elif isinstance(value, Mapping):
+        payload = value
+    else:
+        return value
+
+    kind = payload.get("kind")
+    target_type = (
+        _KNOWN_CHUNK_TARGET_MODELS.get(kind) if isinstance(kind, str) else None
+    )
+    return target_type.model_validate(payload) if target_type is not None else value
+
+
+ChunkTargetRequest = Annotated[
+    KnownChunkTarget | GenericChunkTarget,
+    BeforeValidator(_validate_chunk_target),
+]
+
 
 ## Complete Source request
 class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
     target: BatchTargetRequest
-    chunk_target: ChunkTarget | None = None
+    chunk_target: ChunkTargetRequest | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -206,7 +236,7 @@ class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem] = Field(min_length=1)
     target: TargetRequest = PresignedUrlTarget()
-    chunk_target: ChunkTarget | None = None
+    chunk_target: ChunkTargetRequest | None = None
     callbacks: list[CallbackSpec] = []
 
 
