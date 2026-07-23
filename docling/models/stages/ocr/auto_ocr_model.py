@@ -50,8 +50,7 @@ class OcrAutoModel(BaseOcrModel):
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
                         options=OcrMacOptions(
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
+                            mode=self.options.mode,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -69,8 +68,7 @@ class OcrAutoModel(BaseOcrModel):
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
                         options=NemotronOcrOptions(
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
+                            mode=self.options.mode,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -90,8 +88,7 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=RapidOcrOptions(
                             backend="onnxruntime",
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
+                            mode=self.options.mode,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -109,8 +106,7 @@ class OcrAutoModel(BaseOcrModel):
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
                         options=EasyOcrOptions(
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
+                            mode=self.options.mode,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -128,8 +124,7 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=RapidOcrOptions(
                             backend="torch",
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
+                            mode=self.options.mode,
                         ),
                         accelerator_options=accelerator_options,
                     )

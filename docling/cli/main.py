@@ -113,6 +113,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
     OcrAutoOptions,
+    OcrMode,
     OcrOptions,
     PdfBackend,
     PdfPipelineOptions,
@@ -819,9 +820,19 @@ def convert(  # noqa: C901
         bool,
         typer.Option(
             ...,
-            help="Replace any existing text with OCR generated text over the full content.",
+            help=(
+                "DEPRECATED: use `--ocr-mode full_page` instead. "
+                "Replace any existing text with OCR generated text over the full content."
+            ),
         ),
     ] = False,
+    ocr_mode: Annotated[
+        OcrMode,
+        typer.Option(
+            ...,
+            help="Which document regions are fed to the OCR engine.",
+        ),
+    ] = OcrMode.DEFAULT,
     tables: Annotated[
         bool,
         typer.Option(
@@ -1163,9 +1174,20 @@ def convert(  # noqa: C901
         export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
+        # Deprecated --force-ocr wins over --ocr-mode; warn when used.
+        if force_ocr:
+            warnings.warn(
+                "`--force-ocr` is deprecated; use "
+                f"`--ocr-mode {OcrMode.FULL_PAGE.value}` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            resolved_ocr_mode = OcrMode.FULL_PAGE
+        else:
+            resolved_ocr_mode = ocr_mode
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
             kind=ocr_engine,
-            force_full_page_ocr=force_ocr,
+            mode=resolved_ocr_mode,
         )
 
         ocr_lang_list = _split_list(ocr_lang)

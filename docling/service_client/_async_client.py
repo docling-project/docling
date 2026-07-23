@@ -9,7 +9,7 @@ import re
 import sys
 import time
 import warnings
-from collections.abc import AsyncGenerator, AsyncIterator, Iterable
+from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Sequence
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
@@ -41,7 +41,8 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
-    BatchSourceRequestItem,
+    BatchSourceRequestInput,
+    BatchTargetRequestInput,
     ConvertDocumentsRequest,
     HttpSourceRequest,
 )
@@ -296,8 +297,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def submit_batch(
         self,
-        sources: list[BatchSourceRequestItem],
-        target: BatchSubmitTarget,
+        sources: Sequence[BatchSourceRequestInput],
+        target: BatchTargetRequestInput,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -306,6 +307,9 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         | AsyncConversionJob[PresignedUrlConvertResponse]
     ):
         assert self._async_client is not None, "client not open — use async with"
+        request = BatchConvertSourcesRequest.model_validate(
+            {"sources": sources, "target": target}
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -315,17 +319,17 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=target,
+            target=request.target,
         )
         initial_status = await self._submit_batch_task(
-            sources=sources,
+            sources=request.sources,
             options=submit_options,
-            target=target,
+            target=request.target,
             async_client=self._async_client,
             request_headers=headers,
         )
 
-        if _is_storage_target(target):
+        if _is_storage_target(request.target):
 
             async def fetch_result(
                 task_id: str,
@@ -735,16 +739,14 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def _submit_batch_task(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         async_client: httpx.AsyncClient,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest(
-            options=options,
-            sources=sources,
-            target=target,
+        request = BatchConvertSourcesRequest.model_validate(
+            {"options": options, "sources": sources, "target": target}
         )
         response = await self._request_with_retry_using_client(
             async_client=async_client,

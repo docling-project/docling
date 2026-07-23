@@ -24,6 +24,11 @@ from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBa
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
+    LayoutPostprocessorOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -35,6 +40,9 @@ from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import 
 )
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.stages.layout.layout_model import LayoutModel
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
+)
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
@@ -87,6 +95,23 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
             options=self.pipeline_options.layout_options,
+        )
+
+        # Standalone layout post-processing stage; the VLM prompt augmentation
+        # reads processed clusters from page.predictions.layout.
+        lo = self.pipeline_options.layout_options
+        create_orphan = (
+            lo.create_orphan_clusters
+            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
+            else False
+        )
+        self.layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=create_orphan,
+                run_postprocessor=self.layout_model.requires_layout_postprocessing,
+            )
         )
 
         # VLM model based on options type
@@ -216,6 +241,15 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             queue_max_size=opts.queue_max_size,
         )
 
+        # Layout post-processing stage
+        layout_postprocess_stage = ThreadedPipelineStage(
+            name="layout_postprocess",
+            model=self.layout_postprocessing_model,
+            batch_size=1,
+            batch_timeout=opts.batch_timeout_seconds,
+            queue_max_size=opts.queue_max_size,
+        )
+
         # VLM stage - now layout-aware through enhanced build_prompt
         vlm_stage = ThreadedPipelineStage(
             name="vlm",
@@ -227,10 +261,11 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
         # Wire stages
         output_q = ThreadedQueue(opts.queue_max_size)
-        layout_stage.add_output_queue(vlm_stage.input_queue)
+        layout_stage.add_output_queue(layout_postprocess_stage.input_queue)
+        layout_postprocess_stage.add_output_queue(vlm_stage.input_queue)
         vlm_stage.add_output_queue(output_q)
 
-        stages = [layout_stage, vlm_stage]
+        stages = [layout_stage, layout_postprocess_stage, vlm_stage]
         return RunContext(
             stages=stages, first_stage=layout_stage, output_queue=output_q
         )

@@ -407,12 +407,10 @@ class ConvertDocumentsOptions(BaseModel):
                     "lang": ["en", "fr"],
                     "use_gpu": True,
                     "confidence_threshold": 0.5,
-                    "force_full_page_ocr": False,
                 },
                 {
                     "kind": "tesseract_cli",
                     "lang": ["eng", "deu"],
-                    "force_full_page_ocr": False,
                 },
             ],
         ),

@@ -1,3 +1,28 @@
+## [v2.115.0](https://github.com/docling-project/docling/releases/tag/v2.115.0) - 2026-07-23
+
+### Feature
+
+* **service-client:** Support generic batch connector sources ([#3841](https://github.com/docling-project/docling/issues/3841)) ([`4d82545`](https://github.com/docling-project/docling/commit/4d825450d0987197fd0a1774f5dfb73cdf978136))
+* **docx:** Detect code blocks via paragraph styles and fonts ([#3735](https://github.com/docling-project/docling/issues/3735)) ([`73a2b08`](https://github.com/docling-project/docling/commit/73a2b08ef8aab70e36a26024f3b8762b2a614e52))
+* **jats/inline-formula:** Support emphasis elements and Inline formulas ([#3726](https://github.com/docling-project/docling/issues/3726)) ([`df4fdc9`](https://github.com/docling-project/docling/commit/df4fdc918a505843d741d097002d463cda4a78ce))
+
+### Fix
+
+* **cli:** Show per-file progress at default verbosity ([#3477](https://github.com/docling-project/docling/issues/3477)) ([`5ee146c`](https://github.com/docling-project/docling/commit/5ee146c295f3d53ed824cf2a64018c2b4ae00be9))
+* **odf:** Preserve content inside sections ([#3852](https://github.com/docling-project/docling/issues/3852)) ([`b627ca9`](https://github.com/docling-project/docling/commit/b627ca9146ba9d92468b09539e1d67cd07cfba31))
+* Propagate VLM metadata to VlmPrediction ([#3818](https://github.com/docling-project/docling/issues/3818)) ([`63d180a`](https://github.com/docling-project/docling/commit/63d180ab01e8e4bd91131fc00df6e00885343dc3))
+* **ocr:** Prefetch EasyOCR models by language ([#3834](https://github.com/docling-project/docling/issues/3834)) ([`64c0888`](https://github.com/docling-project/docling/commit/64c08887f88979a4fd4ba8c05e9d1c370a3439d7))
+* Lazy-load chart extraction so docling-slim needs no torch ([#3837](https://github.com/docling-project/docling/issues/3837)) ([`428426f`](https://github.com/docling-project/docling/commit/428426f6959cc32cd8064e5c2156ed424223f724))
+* **docx:** Preserve reading order when body text interrupts a list ([#3838](https://github.com/docling-project/docling/issues/3838)) ([`6dd92e8`](https://github.com/docling-project/docling/commit/6dd92e8fa9fd1078f143f5d25b1f3c03845fa938))
+
+### Documentation
+
+* Add format-specific behavior of table serializers ([#3833](https://github.com/docling-project/docling/issues/3833)) ([`530d12d`](https://github.com/docling-project/docling/commit/530d12dafc350f1f464adea10a1ea537af50a7f4))
+
+### Performance
+
+* **xlsx:** Replace O(n) merge-cell scan with O(1) spatial index ([#3808](https://github.com/docling-project/docling/issues/3808)) ([`c952572`](https://github.com/docling-project/docling/commit/c952572a1c71f194e1244ee95d331454502514d4))
+
 ## [v2.114.0](https://github.com/docling-project/docling/releases/tag/v2.114.0) - 2026-07-20
 
 ### Feature

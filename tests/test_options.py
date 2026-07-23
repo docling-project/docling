@@ -455,26 +455,6 @@ def test_page_error_carries_page_no(test_doc_path):
         assert not err.error_message.startswith("Page ")
 
 
-def test_ocr_coverage_threshold(test_doc_path):
-    pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = True
-    pipeline_options.ocr_options.bitmap_area_threshold = 1.1
-
-    converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_options=pipeline_options,
-            )
-        }
-    )
-
-    test_doc_path = Path("./tests/data/scanned/sources/ocr_test.pdf")
-    doc_result: ConversionResult = converter.convert(test_doc_path)
-
-    # this should have generated no results, since we set a very high threshold
-    assert len(doc_result.document.texts) == 0
-
-
 def test_nemotron_ocr_backend_registration():
     factory = get_ocr_factory(allow_external_plugins=False)
 
