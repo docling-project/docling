@@ -98,6 +98,7 @@ class InputFormat(str, Enum):
     DOC = "doc"
     PPTX = "pptx"
     PPT = "ppt"
+    HWPX = "hwpx"
     HTML = "html"
     IMAGE = "image"
     PDF = "pdf"
@@ -144,6 +145,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOC: ["doc", "dot"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
+    InputFormat.HWPX: ["hwpx"],
     InputFormat.PDF: ["pdf"],
     InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
@@ -187,6 +189,11 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.PPT: [
         "application/vnd.ms-powerpoint",
+    ],
+    InputFormat.HWPX: [
+        "application/hwp+zip",
+        "application/vnd.hancom.hwpx",
+        "application/x-hwpx",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],

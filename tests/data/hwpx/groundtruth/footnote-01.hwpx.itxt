@@ -1,0 +1,63 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: table with [1x1]
+  item-2 at level 1: table with [1x3]
+  item-3 at level 1: list: group list
+    item-4 at level 2: list_item: 개념
+      item-5 at level 3: list: group list
+        item-6 at level 4: list_item: 플라스틱 액체와 같은 원료를 사출해 3차원 모양의 고체 물질을 자유롭게 찍어내는 기술
+        item-7 at level 4: list_item: 산업용 샘플을 찍어내던 것에서 발전해 시계, 신발, 휴대전화 케이스, 자동차 부속품까지 출력
+        item-8 at level 4: list_item: 3D기술을 활용하면 비용 효율성을 높일 수 있기 때문에 변화가 빠른 제조업 분야에 활용도가 높고 일본, 미국 등에서는 본격 상용화
+        item-9 at level 4: list_item: 소비재, 의료, 교육, 건축, 자동차, 항공/우주 관련 산업에도 도입
+    item-10 at level 2: list_item: 3D 프린팅 기술의 장점
+      item-11 at level 3: list: group list
+        item-12 at level 4: list_item: 기존의 틀을 만들어 찍어내는 방법은 하나의 물건을 만드는데 ... 원료를 한 겹씩 쌓아서 물건을 만들기 때문에 다품종 소량 생산이 가능
+        item-13 at level 4: list_item: 아무리 복잡한 모양이라도 간편하게 만들어 낼 수 있기 때문에 정교하고 복잡한 모양도 한 번에 인쇄 가능
+          item-14 at level 5: list: group list
+            item-15 at level 6: list_item: 3D 프린터로 만들 수 있는 물건은 사실상 무궁무진하다고 볼 수 있음
+  item-16 at level 1: footnote: 플라스틱 액체란
+  item-17 at level 1: footnote: 3D 프린팅은 플라스틱 액체와 같은 원료
+  item-18 at level 1: table with [1x3]
+  item-19 at level 1: list: group list
+    item-20 at level 2: list_item: 사회적 변화 예상
+      item-21 at level 3: list: group list
+        item-22 at level 4: list_item: 시제품 제작 시간과 비용 절감 및 이를 통한 제품 혁신의 가속화
+        item-23 at level 4: list_item: 제품 생산에 있어 짧은 Setup 시간, 공구 작동의 오차 감소에 따른 생산성 향상
+        item-24 at level 4: list_item: 금형의 냉각회로, 항공기 부품 등 제품 수명 주기가 길고 재료비가 비싸며, 제품 형상이 복잡한 분야에서 그 잠재력을 최대한 활용
+        item-25 at level 4: list_item: 상용화 단계에 있는 3D 바이오프린터 기술의 완성도가 높아져 개인 맞춤형 조직, 장기 생산 가능으로 수명 연장
+          item-26 at level 5: list: group list
+            item-27 at level 6: list_item: 이미 보청기 개발, 샴쌍둥이 분리 수술, 인공 뼈 이식, 의족 등에서 3D 프린터 활용 사례가 확인
+    item-28 at level 2: list_item: 문제점 분석
+      item-29 at level 3: list: group list
+        item-30 at level 4: list_item: (일반 접근성) 3D 프린팅에 대한 높은 관심에 비해 일반 국민이 이를 체험‧활용할 수 있는 장비 등의 인프라 부족
+        item-31 at level 4: list_item: (인력부족) 3D 프린팅의 도입‧보급이 확대되고 있으나, 이를 활용할 수 있는 인력이 부족하고, 관련 교육, 인재양성 체계 등 미흡
+          item-32 at level 5: list: group list
+            item-33 at level 6: list_item: 모델링, 데이터 검증, 유지보수 등 3D 프린팅 각 분야별 ... 필수적이고 교육프로그램 및 강사형 인재 부족으로 인력수급 불균형 우려
+        item-34 at level 4: list_item: (범죄에 이용되는 사례) 집에서도 설계도만 있으면 손쉽게 총기류를 만들 수 있다는 점에서 위험성이 제기
+          item-35 at level 5: list: group list
+            item-36 at level 6: list_item: 일본에서 3D 프린터로 권총을 만든 남자가 체포, 해외 사이트에서 총 설계도의 데이터를 다운로드하고 자체제작으로 조립
+            item-37 at level 6: list_item: 자금력 있는 범죄 조직이 3D 프린터를 사용해 대량의 불법 마약을 대량 생산할 수 있다고 이미 예상
+            item-38 at level 6: list_item: 의약품의 레시피만 알면 이론적으로 집에서 약을 만들 수도 있어 가짜 의약품 유통의 우려
+    item-39 at level 2: list_item: 기대효과
+      item-40 at level 3: list: group list
+        item-41 at level 4: list_item: 제조업, 의료, IT 분야 등 다방면에서 기술 패러다임을 바꾸며, 산업혁신을 이끌 것으로 기대되고 있음
+          item-42 at level 5: list: group list
+            item-43 at level 6: list_item: 맞춤형 보청기나 의족, 의수 제작, 인공 장기 제작까지 사용될 수도 있을 것으로 기대
+        item-44 at level 4: list_item: 최근 3D 프린팅 기술에 관심이 집중되는 이유는 3D 프린터 가격이 낮아져 대중화 될 것으로 전망
+          item-45 at level 5: list: group list
+            item-46 at level 6: list_item: 시제품 제작에만 그쳤던 3D 프린팅 기술이 집에서의 개인화, 맞춤화된 장난감, 액세서리 제작에 사용
+    item-47 at level 2: list_item: 제도적 대처 방안
+      item-48 at level 3: list: group list
+        item-49 at level 4: list_item: 기술의 대중화에 있어 가장 큰 과제는 표준화이며, 장기적으로 보면 모든 상품을 쉽게 복제할 수 있는 저작권 보호 제도 마련 시급
+        item-50 at level 4: list_item: 지식재산권법, 제조물책임법, 총포도검법 등 정미 및 바이오메디컬 적용 규정 도입
+        item-51 at level 4: list_item: 산업생태계 전반에서 동반성장을 하도록 하려면 불법․무단제조 제품의 유통과 판매 등에 대한 선제적인 제도정비
+        item-52 at level 4: list_item: 기존 산업과의 갈등을 줄이기 위한 범정부 차원의 노력
+        item-53 at level 4: list_item: 전문인력 양성 및 기술 수용성 확산
+          item-54 at level 5: list: group list
+            item-55 at level 6: list_item: 저가의 장비 및 S/W 보급, 3D 프린팅 교육과정 신설 및 교육 확대, 올바른 이용 홍보가 필요
+  item-56 at level 1: footnote: 썀쌍둥이란 샴이란
+  item-57 at level 1: footnote: 여기서의 기대효과
+  item-58 at level 1: footnote: 커스터마이징된 장난감
+  item-59 at level 1: footnote: 다양한 업체에서 만들어지는 제품의 재료 표준화
+  item-60 at level 1: footnote: 지식재산법의 재정
+  item-61 at level 1: footnote: 제조되는 물건들에 대한 관련 법들
+  item-62 at level 1: table with [1x1]

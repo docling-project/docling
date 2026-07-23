@@ -1,0 +1,5 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section_header: 제1장 서론
+  item-2 at level 1: section_header: 1.1 연구 배경
+  item-3 at level 1: section_header: 1.1.1 세부 사항
+  item-4 at level 1: text: 이 문서는 개요 수준 제목 처리를 시험하기 위한 본문 문단입니다.

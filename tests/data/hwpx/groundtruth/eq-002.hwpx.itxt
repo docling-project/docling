@@ -1,0 +1,22 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: ②
+  item-2 at level 1: text: 의 네제곱근 중 실수인 것은
+  item-3 at level 1: formula: sqrt {3} ` ^{f(n)}
+  item-4 at level 1: text: ,이므로
+  item-5 at level 1: formula: root {4} of {sqrt {3} ` ^{f(n)}}
+  item-6 at level 1: formula: - root {4} of {sqrt {3} ` ^{f(n)}}
+  item-7 at level 1: formula: root {4} of {sqrt {3} ` ^{f(n)}} ... ot {4} of {sqrt {3} ` ^{f(n)}} RIGHT )
+  item-8 at level 1: formula: =- sqrt {3} ` ^{{1} over {4} f(n)} TIMES  sqrt {3} ` ^{{1} over {4} f(n)}
+  item-9 at level 1: formula: =-3` ^{{1} over {8} f(n)} TIMES  3` ^{{1} over {8} f(n)}
+  item-10 at level 1: formula: =-3` ^{{1} over {8} f(n)+} ` ^{{1} over {8} f(n)}
+  item-11 at level 1: formula: =-3` ^{{1} over {4} f(n)}
+  item-12 at level 1: formula: =-9
+  item-13 at level 1: text: 따라서 이므로
+  item-14 at level 1: formula: 3` ^{{1} over {4} f(n)}
+  item-15 at level 1: formula: =3 ^{2}
+  item-16 at level 1: text: ,  ㉠
+  item-17 at level 1: formula: {1} over {4} f(n)
+  item-18 at level 1: formula: =2
+  item-19 at level 1: formula: f(n)
+  item-20 at level 1: formula: =8
+  item-21 at level 1: formula: cdots cdots

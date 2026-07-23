@@ -12,6 +12,7 @@ Below you can find a listing of all supported input and output formats.
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
+| HWPX | Korean Hangul Word Processor XML format (OWPML, KS X 6101); parses paragraphs, outline headings, numbered/bulleted lists, tables with merged cells, embedded pictures, footnotes and equations. The legacy binary `.hwp` format is not supported |
 | EPUB | Electronic Publication format for e-books |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
