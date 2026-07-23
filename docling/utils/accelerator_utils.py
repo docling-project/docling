@@ -23,6 +23,8 @@ def decide_device(
 
     has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
     has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    # torch.xpu only exists in builds with Intel XPU support; unlike
+    # torch.backends.cuda/mps it is not present on all torch installs.
     has_xpu = hasattr(torch, "xpu") and torch.xpu.is_available()
 
     if supported_devices is not None:

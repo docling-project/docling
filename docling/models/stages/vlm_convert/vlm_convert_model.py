@@ -34,7 +34,14 @@ def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
     if output.stop_reason in _VLM_STOP_REASON_VALUES:
         stop_reason = VlmStopReason(output.stop_reason)
 
-    return VlmPrediction(text=output.text, stop_reason=stop_reason)
+    metadata = output.metadata or {}
+    return VlmPrediction(
+        text=output.text,
+        stop_reason=stop_reason,
+        generation_time=metadata.get("generation_time", -1),
+        num_tokens=metadata.get("num_tokens"),
+        usage=metadata.get("usage"),
+    )
 
 
 class VlmConvertModel(BasePageModel):

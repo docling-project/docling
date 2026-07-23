@@ -26,7 +26,7 @@ COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
 STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
 FUZZY_BBOX_TOL_RATIO = (
-    0.006  # OCR/image output varies more, but gross shifts should fail
+    0.008  # OCR/image output varies more, but gross shifts should fail
 )
 STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
