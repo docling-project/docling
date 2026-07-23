@@ -4,8 +4,6 @@ Text 1
 
 <!-- image -->
 
-<!-- image -->
-
 Line chart
 
 |            |   Series 1 |   Series 2 |   Series 3 |
@@ -18,5 +16,3 @@ Line chart
 <!-- image -->
 
 Fig – Torque v/s Speed characteristics
-
-<!-- image -->

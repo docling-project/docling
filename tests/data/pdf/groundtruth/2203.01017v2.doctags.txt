@@ -185,7 +185,7 @@
 <ordered_list><list_item><loc_41><loc_267><loc_234><loc_288>Get the minimal grid dimensions - number of rows and columns for the predicted table structure. This represents the most granular grid for the underlying table structure.</list_item>
 <list_item><loc_41><loc_290><loc_234><loc_318>Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.</list_item>
 <list_item><loc_41><loc_321><loc_234><loc_334>Use a carefully selected IOU threshold to designate the matches as 'good' ones and 'bad' ones.</list_item>
-<list_item><loc_41><loc_336><loc_234><loc_356>3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.</list_item>
+<list_item><loc_41><loc_336><loc_234><loc_356>If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.</list_item>
 <list_item><loc_41><loc_359><loc_234><loc_379>Find the best-fitting content alignment for the predicted cells with good IOU per each column. The alignment of the column can be identified by the following formula:</list_item>
 </ordered_list>
 <formula><loc_90><loc_394><loc_234><loc_414></formula>
@@ -196,10 +196,10 @@
 <list_item><loc_252><loc_179><loc_445><loc_245>Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.</list_item>
 <list_item><loc_252><loc_247><loc_445><loc_290>In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.</list_item>
 <list_item><loc_252><loc_293><loc_445><loc_358>Pick up the remaining orphan cells. There could be cases, when after applying all the previous post-processing steps, some PDF cells could still remain without any match to predicted cells. However, it is still possible to deduce the correct matching for an orphan PDF cell by mapping its bounding box on the geometry of the grid. This mapping decides if the content of the orphan cell will be appended to an already matched table cell, or a new table cell should be created to match with the orphan.</list_item>
-<list_item><loc_252><loc_361><loc_445><loc_381>9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).</list_item>
-<list_item><loc_252><loc_384><loc_445><loc_397>9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.</list_item>
-<list_item><loc_252><loc_399><loc_445><loc_420>9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).</list_item>
-<list_item><loc_252><loc_422><loc_445><loc_435>9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.</list_item>
+<list_item><loc_252><loc_361><loc_445><loc_381>Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).</list_item>
+<list_item><loc_252><loc_384><loc_445><loc_397>Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.</list_item>
+<list_item><loc_252><loc_399><loc_445><loc_420>Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).</list_item>
+<list_item><loc_252><loc_422><loc_445><loc_435>Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.</list_item>
 </ordered_list>
 <text><loc_252><loc_437><loc_445><loc_450><loc_41><loc_48><loc_73><loc_53>9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or- phan cell.</text>
 <page_footer><loc_239><loc_464><loc_247><loc_469>12</page_footer>

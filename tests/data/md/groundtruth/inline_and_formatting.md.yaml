@@ -228,51 +228,8 @@ tables:
         text: data b
     num_cols: 2
     num_rows: 2
+    orientation: rot_0
     table_cells:
-    - col_span: 1
-      column_header: true
-      end_col_offset_idx: 1
-      end_row_offset_idx: 1
-      fillable: false
-      row_header: false
-      row_section: false
-      row_span: 1
-      start_col_offset_idx: 0
-      start_row_offset_idx: 0
-      text: Bold Heading
-    - col_span: 1
-      column_header: true
-      end_col_offset_idx: 2
-      end_row_offset_idx: 1
-      fillable: false
-      row_header: false
-      row_section: false
-      row_span: 1
-      start_col_offset_idx: 1
-      start_row_offset_idx: 0
-      text: Italic Heading
-    - col_span: 1
-      column_header: false
-      end_col_offset_idx: 1
-      end_row_offset_idx: 2
-      fillable: false
-      row_header: false
-      row_section: false
-      row_span: 1
-      start_col_offset_idx: 0
-      start_row_offset_idx: 1
-      text: data a
-    - col_span: 1
-      column_header: false
-      end_col_offset_idx: 2
-      end_row_offset_idx: 2
-      fillable: false
-      row_header: false
-      row_section: false
-      row_span: 1
-      start_col_offset_idx: 1
-      start_row_offset_idx: 1
-      text: data b
     - col_span: 1
       column_header: true
       end_col_offset_idx: 1

@@ -64,11 +64,13 @@ Collabo ... vention measures at all school levels.
     item-58 at level 2: text: No
   item-59 at level 1: section: group textbox
     item-60 at level 2: text: Yes
-  item-61 at level 1: text: 
-  item-62 at level 1: section: group textbox
-    item-63 at level 2: text: Case closed.
-    item-64 at level 2: text: 
-    item-65 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
-  item-66 at level 1: section: group textbox
-    item-67 at level 2: text: No
-  item-68 at level 1: text: 
+  item-61 at level 1: section: group textbox
+    item-62 at level 2: text: Yes
+  item-63 at level 1: text: 
+  item-64 at level 1: section: group textbox
+    item-65 at level 2: text: Case closed.
+    item-66 at level 2: text: 
+    item-67 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
+  item-68 at level 1: section: group textbox
+    item-69 at level 2: text: No
+  item-70 at level 1: text: 

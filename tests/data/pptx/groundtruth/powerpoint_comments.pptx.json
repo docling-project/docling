@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_comments",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 166076676741187219,
     "filename": "powerpoint_comments.pptx"
   },

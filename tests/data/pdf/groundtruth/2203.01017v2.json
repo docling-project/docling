@@ -16242,9 +16242,9 @@
         }
       ],
       "orig": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
-      "text": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
-      "enumerated": false,
-      "marker": ""
+      "text": "If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
+      "enumerated": true,
+      "marker": "3.a."
     },
     {
       "self_ref": "#/texts/561",
@@ -16528,9 +16528,9 @@
         }
       ],
       "orig": "9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
-      "text": "9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
-      "enumerated": false,
-      "marker": ""
+      "text": "Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
+      "enumerated": true,
+      "marker": "9a."
     },
     {
       "self_ref": "#/texts/571",
@@ -16557,9 +16557,9 @@
         }
       ],
       "orig": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
-      "text": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
-      "enumerated": false,
-      "marker": ""
+      "text": "Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
+      "enumerated": true,
+      "marker": "9b."
     },
     {
       "self_ref": "#/texts/572",
@@ -16586,9 +16586,9 @@
         }
       ],
       "orig": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
-      "text": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
-      "enumerated": false,
-      "marker": ""
+      "text": "Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
+      "enumerated": true,
+      "marker": "9c."
     },
     {
       "self_ref": "#/texts/573",
@@ -16615,9 +16615,9 @@
         }
       ],
       "orig": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
-      "text": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
-      "enumerated": false,
-      "marker": ""
+      "text": "Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
+      "enumerated": true,
+      "marker": "9d."
     },
     {
       "self_ref": "#/texts/574",
@@ -18892,6 +18892,7 @@
         ],
         "num_rows": 1,
         "num_cols": 1,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -19311,6 +19312,7 @@
         ],
         "num_rows": 5,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -20446,6 +20448,7 @@
         ],
         "num_rows": 7,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -22290,6 +22293,7 @@
         ],
         "num_rows": 11,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -23777,6 +23781,7 @@
         ],
         "num_rows": 4,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -24710,6 +24715,7 @@
         ],
         "num_rows": 7,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -25320,6 +25326,7 @@
         "table_cells": [],
         "num_rows": 0,
         "num_cols": 0,
+        "orientation": "rot_0",
         "grid": []
       },
       "annotations": []

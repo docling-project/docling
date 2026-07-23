@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_sample",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 15572290240354948364,
     "filename": "powerpoint_sample.pptx"
   },

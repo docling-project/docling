@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "pptx_chart",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 17902016994395085351,
     "filename": "pptx_chart.pptx"
   },

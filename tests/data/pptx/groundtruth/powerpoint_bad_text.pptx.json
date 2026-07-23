@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_bad_text",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 1443005848482130016,
     "filename": "powerpoint_bad_text.pptx"
   },
