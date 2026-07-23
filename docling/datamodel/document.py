@@ -790,6 +790,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif suffix == ".pptx":
                     mime = mime_root + ".presentationml.presentation"
+                elif suffix == ".hwpx":
+                    mime = FormatToMimeType[InputFormat.HWPX][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -821,6 +823,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif objname.endswith(".pptx"):
                     mime = mime_root + ".presentationml.presentation"
+                elif objname.endswith(".hwpx"):
+                    mime = FormatToMimeType[InputFormat.HWPX][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -877,9 +881,11 @@ class _DocumentConversionInput(BaseModel):
                 elif "ppt/presentation.xml" in names:
                     return mime_root + ".presentationml.presentation"
                 if "mimetype" in names:
-                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
-                    if odf_mime.startswith("application/vnd.oasis.opendocument."):
-                        return odf_mime.strip()
+                    zip_mime = zf.read("mimetype").decode("ascii", errors="ignore")
+                    if zip_mime.startswith("application/vnd.oasis.opendocument."):
+                        return zip_mime.strip()
+                    if zip_mime.strip() == FormatToMimeType[InputFormat.HWPX][0]:
+                        return FormatToMimeType[InputFormat.HWPX][0]
         except (zipfile.BadZipFile, OSError):
             pass
         finally:
@@ -990,6 +996,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.PPT]:
             mime = FormatToMimeType[InputFormat.PPT][0]
+        elif ext in FormatToExtensions[InputFormat.HWPX]:
+            mime = FormatToMimeType[InputFormat.HWPX][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
         elif ext in FormatToExtensions[InputFormat.XLS]:
