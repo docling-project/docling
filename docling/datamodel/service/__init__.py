@@ -13,6 +13,7 @@ from docling.datamodel.service.callbacks import (
 from docling.datamodel.service.chunking import (
     BaseChunkerOptions,
     ChunkerType,
+    ChunkingOptionType,
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
 )
@@ -70,6 +71,7 @@ from docling.datamodel.service.responses import (
 )
 from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
 from docling.datamodel.service.targets import (
+    ChunkTarget,
     InBodyTarget,
     PresignedUrlTarget,
     PutTarget,
@@ -90,9 +92,11 @@ __all__ = [
     "BatchTargetRequest",
     "CallbackSpec",
     "ChunkDocumentResponse",
+    "ChunkTarget",
     "ChunkedDocumentResult",
     "ChunkedDocumentResultItem",
     "ChunkerType",
+    "ChunkingOptionType",
     "ClearResponse",
     "ConvertDocumentErrorResponse",
     "ConvertDocumentResponse",

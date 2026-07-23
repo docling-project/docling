@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Dict, Literal
 
 from pydantic import AnyHttpUrl, BaseModel, Field
 
@@ -29,4 +29,9 @@ class PresignedUrlTarget(BaseModel):
 Target = Annotated[
     InBodyTarget | ZipTarget | S3Target | PutTarget | PresignedUrlTarget,
     Field(discriminator="kind"),
+]
+
+ChunkTarget = Annotated[
+    PresignedUrlTarget | S3Target | ZipTarget | Dict[str, Any],
+    Field(),
 ]

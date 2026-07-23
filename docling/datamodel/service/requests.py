@@ -6,12 +6,11 @@ from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
-from docling.datamodel.service.chunking import (
-    BaseChunkerOptions,
-)
+from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
 from docling.datamodel.service.targets import (
+    ChunkTarget,
     InBodyTarget,
     PresignedUrlTarget,
     PutTarget,
@@ -79,6 +78,7 @@ class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
     target: BatchTargetRequest
+    chunk_target: ChunkTarget | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -86,6 +86,7 @@ class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem] = Field(min_length=1)
     target: TargetRequest = PresignedUrlTarget()
+    chunk_target: ChunkTarget | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -120,6 +121,14 @@ ChunkingOptT = TypeVar("ChunkingOptT", bound=BaseChunkerOptions)
 
 class GenericChunkDocumentsRequest(BaseChunkDocumentsRequest, Generic[ChunkingOptT]):
     chunking_options: ChunkingOptT
+
+    @field_validator("convert_options", mode="after")
+    @classmethod
+    def sync_convert_chunking_options(cls, value: ConvertDocumentsOptions):
+        value.do_chunking = True
+        value.chunking_options = None
+        value.chunking_preset = None
+        return value
 
 
 @cache
