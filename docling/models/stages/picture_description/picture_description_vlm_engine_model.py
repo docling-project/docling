@@ -16,10 +16,10 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
 )
-from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineType,
     create_vlm_engine,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
@@ -105,6 +105,51 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             # Set provenance from model spec
             self.provenance = f"{self.repo_id} ({engine_type.value})"
 
+    def _resolve_runtime_engine_type(self) -> VlmEngineType:
+        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        if selected_engine_type is not None:
+            return selected_engine_type
+        return self.options.engine_options.engine_type
+
+    def _build_engine_inputs(
+        self, image_list: list[Image.Image]
+    ) -> list[VlmEngineInput]:
+        """Build a batch of ``VlmEngineInput`` sharing one generation-config template.
+
+        Generation config is derived from the model spec, but can be overridden by the stage options.
+
+        Args:
+            image_list: list of Images to build Engine Inputs for.
+
+        Returns:
+            List of VlmEngineInput objects for batch prediction.
+        """
+        prompt = self.options.prompt
+        model_spec = self.options.model_spec
+        runtime_engine_type = self._resolve_runtime_engine_type()
+
+        stop_strings = list(model_spec.stop_strings)
+        extra_generation_config = model_spec.get_runtime_input_extra_config(
+            runtime_engine_type
+        )
+
+        # if present generation_config overrides model_spec defaults
+        gen_cfg = self.options.generation_config or {}
+        temperature = gen_cfg.get("temperature", model_spec.temperature)
+        max_new_tokens = gen_cfg.get("max_new_tokens", model_spec.max_new_tokens)
+
+        return [
+            VlmEngineInput(
+                image=image,
+                prompt=prompt,
+                temperature=float(temperature),
+                max_new_tokens=int(max_new_tokens),
+                stop_strings=stop_strings,
+                extra_generation_config=extra_generation_config,
+            )
+            for image in image_list
+        ]
+
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         """Generate descriptions for a batch of images.
 
@@ -117,10 +162,8 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
         if self.engine is None:
             raise RuntimeError("Engine not initialized")
 
-        # Get prompt from options
-        prompt = self.options.prompt
-
         # Convert to list for batch processing
+        # TODO: Consider using chunking here
         image_list = list(images)
 
         if not image_list:
@@ -128,15 +171,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
 
         try:
             # Prepare batch of engine inputs
-            engine_inputs = [
-                VlmEngineInput(
-                    image=image,
-                    prompt=prompt,
-                    temperature=0.0,
-                    max_new_tokens=200,  # Use from options if available
-                )
-                for image in image_list
-            ]
+            engine_inputs = self._build_engine_inputs(image_list)
 
             # Generate descriptions using batch prediction
             outputs = self.engine.predict_batch(engine_inputs)

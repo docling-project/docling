@@ -1,0 +1,39 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: Summer activities
+  item-2 at level 1: section_header: Swimming in the lake
+    item-3 at level 2: text: Duck
+    item-4 at level 2: picture
+    item-5 at level 2: text: Figure 1: This is a cute duckling
+    item-6 at level 2: section_header: Let’s swim!
+  item-7 at level 1: text: To get started with swimming, fi ...  down in a water and try not to drown:
+  item-8 at level 1: list: group list
+    item-9 at level 2: list_item: You can relax and look around
+    item-10 at level 2: list_item: Paddle about
+    item-11 at level 2: list_item: Enjoy summer warmth
+  item-12 at level 1: text: Also, don’t forget:
+  item-13 at level 1: list: group list
+    item-14 at level 2: list_item: Wear sunglasses
+    item-15 at level 2: list_item: Don’t forget to drink water
+    item-16 at level 2: list_item: Use sun cream
+  item-17 at level 1: text: Hmm, what else…
+  item-18 at level 1: section: group header-0
+    item-19 at level 2: section: group header-1
+      item-20 at level 3: section_header: Let’s eat
+  item-21 at level 1: text: After we had a good day of swimm ... , it’s important to eat something nice
+  item-22 at level 1: text: I like to eat leaves
+  item-23 at level 1: text: Here are some interesting things a respectful duck could eat:
+  item-24 at level 1: table with [4x3]
+    item-25 at level 2: unspecified: group rich_cell_group_1_0_0
+      item-26 at level 3: text: 
+    item-27 at level 2: unspecified: group rich_cell_group_1_0_1
+      item-28 at level 3: text: Leaves
+    item-29 at level 2: unspecified: group rich_cell_group_1_0_2
+      item-30 at level 3: text: Berries
+    item-31 at level 2: unspecified: group rich_cell_group_1_0_3
+      item-32 at level 3: text: Grain
+  item-33 at level 1: text: 
+  item-34 at level 1: text: And let’s add another list in the end:
+  item-35 at level 1: list: group list
+    item-36 at level 2: list_item: Leaves
+    item-37 at level 2: list_item: Berries
+    item-38 at level 2: list_item: Grain

@@ -251,9 +251,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             table_data = TableData(
                 num_rows=num_rows, num_cols=num_cols, table_cells=tcells
             )
-            # Populate
-            for tcell in tcells:
-                table_data.table_cells.append(tcell)
             if len(tcells) > 0:
                 doc.add_table(data=table_data)
         return

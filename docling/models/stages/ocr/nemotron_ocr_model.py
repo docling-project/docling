@@ -1,6 +1,7 @@
 import logging
 import platform
 import sys
+import time
 from collections import deque
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
@@ -22,7 +23,7 @@ from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
-from docling.utils.profiling import TimeRecorder
+from docling.utils.profiling import TimeIntervalRecorder
 
 _log = logging.getLogger(__name__)
 
@@ -82,13 +83,14 @@ class _PageOcrState:
 
     page: Page
     ocr_rects: list[BoundingBox]
-    # Number of valid OCR rectangles still awaiting a prediction. A page is
-    # fully processed once this reaches zero.
+    # Count-down counter of the number of valid OCR rectangles waiting for a prediction
     remaining: int
-    # Whether this page should run through OCR post-processing on completion.
-    # Pages with an invalid backend are passed through untouched.
+    # Whether this page should run through OCR post-processing on completion
+    # Pages with an invalid backend are passed through untouched
     needs_ocr: bool
     cells: list[TextCell] = field(default_factory=list)
+    # Per-page OCR stopwatch. Present but unused for invalid pass-through pages
+    recorder: Optional[TimeIntervalRecorder] = None
 
 
 @dataclass
@@ -283,19 +285,23 @@ class NemotronOcrModel(BaseOcrModel):
 
         image_arrays = [entry.image for entry in buffer]
 
-        # Run the model to get the raw predictions. `self.reader` accepts a
-        # list of images and returns one prediction list per image.
-        with TimeRecorder(conv_res, "ocr"):
-            batch_predictions = cast(
-                Sequence[Sequence[NemotronOcrPrediction]],
-                self.reader(
-                    image_arrays,
-                    merge_level=self.options.merge_level,
-                ),
-            )
+        # Measure the inference time and amortize it across the pages
+        profile_inference = settings.debug.profile_pipeline_timings
+        infer_start = time.monotonic() if profile_inference else 0.0
+        batch_predictions = cast(
+            Sequence[Sequence[NemotronOcrPrediction]],
+            self.reader(
+                image_arrays,
+                merge_level=self.options.merge_level,
+            ),
+        )
+        if profile_inference:
+            per_rect_seconds = (time.monotonic() - infer_start) / len(buffer)
+            for entry in buffer:
+                if entry.state.recorder is not None:
+                    entry.state.recorder.add(per_rect_seconds)
 
-        # Convert the raw predictions to docling's OCR cells and route them to
-        # the page they belong to.
+        # Convert the raw predictions to docling's OCR cells and route them to their page
         for entry, raw_predictions in zip(buffer, batch_predictions):
             image_width, image_height = entry.image_size
             cells = [
@@ -322,7 +328,7 @@ class NemotronOcrModel(BaseOcrModel):
             return
 
         # Ensure the "ocr" timing entry always exists, even for documents that produce no rectangles
-        TimeRecorder(conv_res, "ocr")
+        TimeIntervalRecorder(conv_res, "ocr")
 
         # Pages currently in flight, kept in input order so they can be yielded in the same order
         pending: deque[_PageOcrState] = deque()
@@ -332,7 +338,13 @@ class NemotronOcrModel(BaseOcrModel):
             while pending and pending[0].remaining == 0:
                 state = pending.popleft()
                 if state.needs_ocr:
+                    assert state.recorder is not None
+                    state.recorder.resume()
                     self.post_process_cells(state.cells, state.page)
+                    state.recorder.pause()
+                    # One "ocr" sample per page (rects + image prep + this page's
+                    # inference share + post-processing), so count == valid pages.
+                    state.recorder.close()
                     if settings.debug.visualize_ocr:
                         self.draw_ocr_rects_and_cells(
                             conv_res, state.page, state.ocr_rects
@@ -354,28 +366,33 @@ class NemotronOcrModel(BaseOcrModel):
                 yield from drain_completed()
                 continue
 
+            recorder = TimeIntervalRecorder(conv_res, "ocr")
+            recorder.resume()
             ocr_rects = self.get_ocr_rects(page)
+            recorder.pause()
             valid_rects = [ocr_rect for ocr_rect in ocr_rects if ocr_rect.area() != 0]
             state = _PageOcrState(
                 page=page,
                 ocr_rects=ocr_rects,
                 remaining=len(valid_rects),
                 needs_ocr=True,
+                recorder=recorder,
             )
             pending.append(state)
 
             for ocr_rect in valid_rects:
+                recorder.resume()
                 high_res_image = page._backend.get_page_image(
                     scale=self.scale, cropbox=ocr_rect
                 )
-                buffer.append(
-                    _BufferedRect(
-                        state=state,
-                        ocr_rect=ocr_rect,
-                        image=numpy.array(high_res_image),
-                        image_size=high_res_image.size,
-                    )
+                buffered_rect = _BufferedRect(
+                    state=state,
+                    ocr_rect=ocr_rect,
+                    image=numpy.array(high_res_image),
+                    image_size=high_res_image.size,
                 )
+                recorder.pause()
+                buffer.append(buffered_rect)
 
                 if len(buffer) >= batch_size:
                     self._run_buffer(conv_res, buffer)

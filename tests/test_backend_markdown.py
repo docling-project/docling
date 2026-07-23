@@ -273,3 +273,31 @@ def test_code_block_language_detection():
         CodeLanguageLabel.SQL,
         CodeLanguageLabel.UNKNOWN,
     ]
+
+
+def test_convert_table_has_no_duplicate_cells():
+    """
+    Regression test:
+    A parsed Markdown table must expose each cell exactly once. The backend used
+    to append every cell a second time after passing it to the TableData
+    constructor, so table.data.table_cells contained twice the real cell count
+    (each grid position appeared twice) in export_to_dict/JSON and anything
+    iterating the cells directly.
+    """
+    markdown = """| Region | Q1 | Q2 |
+| --- | --- | --- |
+| North | 10 | 20 |
+| South | 30 | 40 |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0]
+    table_data = table.data
+    assert len(table_data.table_cells) == table_data.num_rows * table_data.num_cols
+
+    positions = [
+        (cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in table_data.table_cells
+    ]
+    assert len(positions) == len(set(positions))

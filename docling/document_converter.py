@@ -52,6 +52,7 @@ from docling.datamodel.backend_options import (
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
+    MsWordBackendOptions,
     PdfBackendOptions,
     XBRLBackendOptions,
 )
@@ -70,6 +71,7 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
     build_invalid_input_errors,
+    get_input_rejection_cause,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
@@ -83,6 +85,7 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -124,6 +127,7 @@ class ExcelFormatOption(FormatOption):
 class WordFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsWordDocumentBackend
+    backend_options: Optional[MsWordBackendOptions] = None
 
 
 class PowerpointFormatOption(FormatOption):
@@ -226,6 +230,13 @@ class AudioFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
+class VideoFormatOption(FormatOption):
+    """Format option for video input, processed via VideoPipeline."""
+
+    pipeline_cls: Type = VideoPipeline
+    backend: Type[AbstractDocumentBackend] = NoOpBackend
+
+
 class LatexFormatOption(FormatOption):
     """Format options for LaTeX documents."""
 
@@ -250,8 +261,11 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.CSV: CsvFormatOption(),
         InputFormat.BOXNOTE: BoxNoteFormatOption(),
         InputFormat.XLSX: ExcelFormatOption(),
+        InputFormat.XLS: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
+        InputFormat.DOC: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.PPT: PowerpointFormatOption(),
         InputFormat.ODT: OdtFormatOption(),
         InputFormat.ODS: OdsFormatOption(),
         InputFormat.ODP: OdpFormatOption(),
@@ -272,6 +286,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
         InputFormat.AUDIO: AudioFormatOption(),
+        InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
@@ -548,10 +563,14 @@ class DocumentConverter:
                 if conv_res.errors:
                     error_messages = [err.error_message for err in conv_res.errors]
                     error_details = f" Errors: {'; '.join(error_messages)}"
+                # Chain the underlying exception (when one was captured during
+                # input construction) so callers can classify failures via
+                # ``__cause__`` — e.g. an encrypted PDF surfaces the original
+                # ``PdfiumError``. See issue #1920.
                 raise ConversionError(
                     f"Conversion failed for: {conv_res.input.file} with status: "
                     f"{conv_res.status.value}.{error_details}"
-                )
+                ) from get_input_rejection_cause(conv_res.input)
             else:
                 yield conv_res
 

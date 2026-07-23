@@ -163,3 +163,34 @@ def test_backend_reports_missing_dependency_with_install_hint(
     result = _run_with_blocked_module(blocked_module, body)
     assert result.returncode == 0, result.stderr
     assert "actionable-error-raised" in result.stdout
+
+
+def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
+    # The service client reaches docling.utils.pdf_outline (via noop_backend ->
+    # datamodel.document, which needs only the _PdfOutlineItem model), so a
+    # module-level pypdfium2 import there breaks `import docling.service_client`
+    # on any slim install that omits the PDF pipeline. Guard the deferred import.
+    result = _run_with_blocked_module(
+        "pypdfium2",
+        "import docling.service_client\n"
+        "from docling.datamodel.service.options import ConvertDocumentsOptions\n",
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_converter_constructs_without_chart_extraction_dependency() -> None:
+    """Importing DocumentConverter must not require transformers.
+
+    docling-slim[models-onnxruntime] ships without torch or transformers.
+    This regression test verifies the import is fully deferred behind the
+    `do_chart_extraction` flag.
+
+    Note: torch cannot be blocked via sys.modules here because scipy (an
+    unrelated transitive dependency) also inspects sys.modules["torch"] and
+    crashes on None.
+    """
+    result = _run_with_blocked_module(
+        "transformers",
+        "from docling.document_converter import DocumentConverter\nDocumentConverter()\n",
+    )
+    assert result.returncode == 0, result.stderr

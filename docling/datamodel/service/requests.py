@@ -8,9 +8,19 @@ from typing_extensions import TypeVar
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
-from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
+from docling.datamodel.service.sources import (
+    AzureBlobCoordinates,
+    FileSource,
+    GoogleCloudStorageCoordinates,
+    GoogleDriveCoordinates,
+    HttpSource,
+    S3Coordinates,
+)
 from docling.datamodel.service.targets import (
     ChunkTarget,
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
     InBodyTarget,
     PresignedUrlTarget,
     PutTarget,
@@ -45,6 +55,18 @@ class S3SourceRequest(S3Coordinates):
     kind: Literal["s3"] = "s3"
 
 
+class AzureBlobSourceRequest(AzureBlobCoordinates):
+    kind: Literal["azure_blob"] = "azure_blob"
+
+
+class GoogleCloudStorageSourceRequest(GoogleCloudStorageCoordinates):
+    kind: Literal["google_cloud_storage"] = "google_cloud_storage"
+
+
+class GoogleDriveSourceRequest(GoogleDriveCoordinates):
+    kind: Literal["google_drive"] = "google_drive"
+
+
 ## Multipart targets
 class TargetName(str, enum.Enum):
     INBODY = InBodyTarget().kind
@@ -54,7 +76,11 @@ class TargetName(str, enum.Enum):
 
 ## Aliases
 BatchSourceRequestItem = Annotated[
-    AnyHttpSourceRequest | S3SourceRequest,
+    AnyHttpSourceRequest
+    | S3SourceRequest
+    | AzureBlobSourceRequest
+    | GoogleCloudStorageSourceRequest
+    | GoogleDriveSourceRequest,
     Field(discriminator="kind"),
 ]
 
@@ -63,12 +89,23 @@ SourceRequestItem = Annotated[
 ]
 
 TargetRequest = Annotated[
-    InBodyTarget | ZipTarget | S3Target | PutTarget | PresignedUrlTarget,
+    InBodyTarget
+    | ZipTarget
+    | S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PutTarget
+    | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]
 
 BatchTargetRequest = Annotated[
-    S3Target | PresignedUrlTarget,
+    S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]
 

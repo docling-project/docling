@@ -28,7 +28,7 @@ import httpx
 from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
-from pydantic import AnyHttpUrl, TypeAdapter, ValidationError
+from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
@@ -68,6 +68,9 @@ from docling.datamodel.service.responses import (
     UsageLimitExceededResponse,
 )
 from docling.datamodel.service.targets import (
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
     InBodyTarget,
     PresignedUrlTarget,
     S3Target,
@@ -101,8 +104,11 @@ if TYPE_CHECKING:
     from docling.service_client._async_client import AsyncDoclingServiceClient
 
 SourceType: TypeAlias = Path | str | DocumentStream | HttpSourceRequest
-SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget
-BatchSubmitTarget: TypeAlias = S3Target | PresignedUrlTarget
+StorageTarget: TypeAlias = (
+    S3Target | AzureBlobTarget | GoogleCloudStorageTarget | GoogleDriveTarget
+)
+SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | StorageTarget
+BatchSubmitTarget: TypeAlias = StorageTarget | PresignedUrlTarget
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -119,6 +125,17 @@ TRANSPORT_RETRYABLE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 DEFAULT_ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS = 60.0
 DEFAULT_MAX_ARTIFACT_DOWNLOAD_BYTES = 512 * 1024 * 1024
 MAX_ARTIFACT_DOWNLOAD_REDIRECTS = 5
+
+_STORAGE_TARGET_TYPES = (
+    S3Target,
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
+)
+
+
+def _is_storage_target(target: object) -> bool:
+    return isinstance(target, _STORAGE_TARGET_TYPES)
 
 
 def _is_safe_artifact_url(url: str) -> bool:
@@ -300,8 +317,25 @@ class _BaseDoclingServiceClient:
         request: ConvertDocumentsRequest | BatchConvertSourcesRequest,
     ) -> dict[str, Any]:
         payload = request.model_dump(mode="json", exclude_none=True)
+        raw_payload = request.model_dump(mode="python", exclude_none=True)
+        payload = self._restore_secret_values(raw_payload, payload)
         payload["options"] = self._serialize_convert_options(request.options)
         return payload
+
+    def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
+        if isinstance(raw, (SecretStr, SecretBytes)):
+            return raw.get_secret_value()
+        if isinstance(raw, dict) and isinstance(dumped, dict):
+            return {
+                key: self._restore_secret_values(raw[key], dumped[key])
+                for key in dumped
+            }
+        if isinstance(raw, list) and isinstance(dumped, list):
+            return [
+                self._restore_secret_values(raw_item, dumped_item)
+                for raw_item, dumped_item in zip(raw, dumped)
+            ]
+        return dumped
 
     def _resolve_options(
         self,
@@ -339,7 +373,7 @@ class _BaseDoclingServiceClient:
         self,
         options: ConvertDocumentsRequestOptions,
         output_formats: list[OutputFormat] | None,
-        target: InBodyTarget | ZipTarget | S3Target | PresignedUrlTarget,
+        target: SubmitTarget,
     ) -> ConvertDocumentsRequestOptions:
         effective = options
         if output_formats is not None:
@@ -907,11 +941,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         """Yield one outcome per submitted item.
@@ -935,11 +974,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         warnings.warn(
@@ -974,6 +1018,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     ) -> (
         ConversionJob[ConversionResult]
         | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
         descriptor = self._describe_source(source)
@@ -1120,6 +1165,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     ) -> (
         ConversionJob[ConversionResult]
         | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
         descriptor = descriptor or self._describe_source(source)
@@ -1353,6 +1399,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 task_id=task_id,
                 last_status=last_status,
             )
+        if _is_storage_target(target):
+            return lambda task_id, last_status: self._fetch_presigned_document_result(
+                task_id=task_id,
+                last_status=last_status,
+            )
         return lambda task_id, last_status: self._build_conversion_result(
             payload=self._fetch_convert_result_payload(
                 task_id=task_id,
@@ -1378,7 +1429,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             target=target,
             request_headers=request_headers,
         )
-        if isinstance(target, S3Target):
+        if _is_storage_target(target):
 
             def fetch_result(
                 task_id: str,
@@ -1928,11 +1979,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         self._ensure_sync_bridge_allowed()
@@ -1948,17 +2004,27 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         async def run() -> AsyncGenerator[
             tuple[
                 ConversionItem,
-                ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+                (
+                    ConvertDocumentResponse
+                    | PresignedUrlConvertDocumentResponse
+                    | PresignedUrlConvertResponse
+                    | Exception
+                ),
             ],
             None,
         ]:

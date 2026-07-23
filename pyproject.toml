@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.112.0"  # DO NOT EDIT, updated automatically
+version = "2.114.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -104,7 +104,7 @@ format-pdf = [
   'docling-slim[format-pdf-pypdfium2,format-pdf-docling]',
 ]
 
-# --- Office Formats (office = docx + pptx + xlsx) ---
+# --- Office Formats ---
 format-docx = [
   'python-docx>=1.2.0,<2.0.0',
 ]
@@ -172,6 +172,15 @@ format-audio = [
   'openai-whisper>=20250625',
   'numba>=0.63.0',
   'whisper-s2t-reborn>=1.6.3,<2 ; sys_platform != "darwin" or platform_machine != "arm64"',
+]
+
+# Video pipeline: transcription (format-audio) plus speaker diarization.
+format-video = [
+  'docling-slim[format-audio]',
+  'resemblyzer>=0.1.4,<0.2.0',
+  'soundfile>=0.12.1,<1.0.0',
+  'scikit-learn>=1.3.0,<2.0.0',
+  'librosa>=0.10.0,<1.0.0',
 ]
 
 # ============================================================================
@@ -274,6 +283,11 @@ standard = [
 ]
 
 all = [
+  # format-video is deliberately excluded: it pulls in resemblyzer, which
+  # requires webrtcvad, which has no wheels and needs Python dev headers
+  # (Python.h) plus a C compiler to build from source. `all` must install
+  # cleanly without a compiler, so speaker diarization stays opt-in via
+  # docling-slim[format-video].
   'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
