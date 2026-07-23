@@ -17,8 +17,8 @@ from docling.datamodel.service.sources import (
     S3Coordinates,
 )
 from docling.datamodel.service.targets import (
-    ChunkTarget,
     AzureBlobTarget,
+    ChunkTarget,
     GoogleCloudStorageTarget,
     GoogleDriveTarget,
     InBodyTarget,
