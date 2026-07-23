@@ -370,6 +370,12 @@ try:
 except ImportError:
     upload_files = None
 
+# HWP/HWPX 품질 복구(선택적). 모듈 로드 실패 시 None → 복구 미적용(기존 동작 유지).
+try:
+    from genon.preprocessor.converters.hwp_recovery import HwpQualityRecovery
+except ImportError:
+    HwpQualityRecovery = None
+
 
 # ============================================================
 # 설정 로딩 헬퍼 (from parser_processor.py)
@@ -2184,6 +2190,11 @@ class DocumentProcessor:
         # 기본 컨버터들 생성
         self._create_converters()
 
+        # HWP/HWPX 품질 복구(선택적). 모듈 미로드 시 None → 복구 미적용(기존 동작).
+        self._hwp_recovery = (
+            HwpQualityRecovery(reload_fn=self._load_document) if HwpQualityRecovery else None
+        )
+
         self.image_description_enricher = ImageDescriptionEnricher(
             self.image_description_options
         )
@@ -3255,9 +3266,22 @@ class DocumentProcessor:
         )
 
     async def _process_pdf(self, request: Request, file_path: str,
-                           converted_pdf_path: Optional[str], is_ppt: bool = False, **kwargs: dict):
+                           converted_pdf_path: Optional[str], is_ppt: bool = False,
+                           source_file_path: Optional[str] = None, **kwargs: dict):
         """PDF(또는 PDF 로 변환된) 입력을 docling 으로 로딩 후 공유 파이프라인으로 처리."""
         document = self._load_document(file_path, **kwargs)
+
+        # HWP/HWPX 품질 복구(선택적): PDF 변환이 내용을 잃으면(text score 낮음) rhwp 재변환
+        # 재시도 → 개선되면 교체. HWPX 는 네이티브 XML 추출로 추가 폴백. hwp_recovery 모듈이
+        # 로드된 경우에만 적용하고, 없으면 로딩된 document 를 그대로 통과(기존 동작).
+        # source_file_path 는 변환 전 원본(.hwp/.hwpx). 정상 문서는 score≥임계값 이라 미진입.
+        if source_file_path is None:
+            source_file_path = file_path
+        if self._hwp_recovery is not None:
+            file_path, converted_pdf_path, document = self._hwp_recovery.recover(
+                document, source_file_path, file_path, converted_pdf_path, **kwargs
+            )
+
         return await self._document_to_vectors(
             document, file_path, request,
             converted_pdf_path=converted_pdf_path, ocr_table_cells=True, is_ppt=is_ppt, **kwargs
@@ -3471,6 +3495,8 @@ class DocumentProcessor:
             # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
             # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
             converted_pdf_path: Optional[str] = None
+            # HWP/HWPX 품질 복구가 참조할 변환 전 원본 경로(rhwp 재변환/네이티브 추출용).
+            source_file_path = file_path
             if ext not in _XLSX_DIRECT_EXTS and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
                 file_path, converted_pdf_path = self._convert_to_pdf(file_path, **kwargs)
 
@@ -3480,7 +3506,8 @@ class DocumentProcessor:
             # 원본이 PPT 였는지(변환 전 ext)를 명시 전달 — 페이지 기반 청킹/page description 게이팅용.
             is_ppt = ext in ('.ppt', '.pptx')
             return await self._process_pdf(
-                request, file_path, converted_pdf_path, is_ppt=is_ppt, **kwargs
+                request, file_path, converted_pdf_path, is_ppt=is_ppt,
+                source_file_path=source_file_path, **kwargs
             )
         finally:
             _log_cache_summary()
