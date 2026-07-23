@@ -1527,7 +1527,7 @@ class XmlTable:
 
     @staticmethod
     def _parse_colwidth(colwidth: str | None) -> float:
-        # CALS colwidth may be fixed ("36pt"), proportional ("2*"), or absent; take the leading magnitude.
+        """Parse CALS colwidth magnitude from fixed ("36pt"), proportional ("2*"), or absent values."""
         if not colwidth:
             return 1.0
         match = re.match(r"\s*([0-9]*\.?[0-9]+)", colwidth)
