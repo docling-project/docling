@@ -80,6 +80,7 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderOptions,
 )
 from docling.pipeline.base_pipeline import ConvertPipeline
+from docling.pipeline.reading_order_utils import correct_reading_order_on_page
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -1041,6 +1042,14 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
+
+            # Correct reading order for single-column PDFs where items may be
+            # emitted out of physical page order despite correct bbox provenance
+            if conv_res.document is not None:
+                _log.debug("Correcting reading order for page-scoped bbox ordering")
+                moved = correct_reading_order_on_page(conv_res.document)
+                if moved > 0:
+                    _log.debug(f"Repositioned {moved} items for correct reading order")
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
