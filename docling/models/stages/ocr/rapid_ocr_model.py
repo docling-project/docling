@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal, Type, TypedDict
+from typing import TYPE_CHECKING, Type
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -20,295 +20,195 @@ from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
+if TYPE_CHECKING:
+    from rapidocr.inference_engine.base import FileInfo
+    from rapidocr.utils.typings import EngineType, OCRVersion
+
 _log = logging.getLogger(__name__)
 
-_ModelPathEngines = Literal["onnxruntime", "torch"]
-_ModelPathTypes = Literal[
-    "det_model_path", "cls_model_path", "rec_model_path", "rec_keys_path", "font_path"
-]
-_RAPIDOCR_BACKENDS: tuple[_ModelPathEngines, ...] = ("onnxruntime", "torch")
+# Recognition/detection model size for the PP-OCRv6 path; v4/v5 use "mobile".
+_RAPIDOCR_DET_MODEL_LANG = "ch"
+_RAPIDOCR_CLS_MODEL_LANG = "ch"
+_RAPIDOCR_MODEL_TYPE = "small"
+_RAPIDOCR_V4V5_MODEL_TYPE = "mobile"
 
+# Docling's default language names -> rapidocr language codes.
+_DOCLING_LANG_NORMALIZE: dict[str, str] = {"chinese": "ch", "english": "en"}
 
-class _ModelPathDetail(TypedDict):
-    url: str | None
-    path: str | None
-
-
-_RAPIDOCR_MODELSCOPE_RELEASE = "v3.9.0"
-_RAPIDOCR_MODELSCOPE_BASE_URL = (
-    "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve"
+# Recognition languages served by the PP-OCRv4 backbone
+_PPOCRV4_LANGS = frozenset(
+    {"arabic", "cyrillic", "devanagari", "ka", "korean", "latin", "ta", "te"}
 )
-_RAPIDOCR_DEFAULT_LANGUAGE = "chinese"
-_RAPIDOCR_PPOCRV6_ONNX_MODEL_PATHS: dict[_ModelPathTypes, str | None] = {
-    "det_model_path": "onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx",
-    "cls_model_path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
-    "rec_model_path": "onnx/PP-OCRv6/rec/PP-OCRv6_rec_small.onnx",
-    "rec_keys_path": None,
-    "font_path": "resources/fonts/FZYTK.TTF",
-}
-_RAPIDOCR_CHINESE_MODEL_PATHS: dict[
-    _ModelPathEngines, dict[_ModelPathTypes, str | None]
-] = {
-    "onnxruntime": {
-        **_RAPIDOCR_PPOCRV6_ONNX_MODEL_PATHS,
-    },
-    "torch": {
-        "det_model_path": "torch/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.pth",
-        "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
-        "rec_model_path": "torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile.pth",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt",
-        "font_path": "resources/fonts/FZYTK.TTF",
-    },
-}
-_RAPIDOCR_ENGLISH_MODEL_PATHS: dict[
-    _ModelPathEngines, dict[_ModelPathTypes, str | None]
-] = {
-    "onnxruntime": {
-        **_RAPIDOCR_PPOCRV6_ONNX_MODEL_PATHS,
-    },
-    "torch": {
-        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_mobile.pth",
-        "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
-        "rec_model_path": "torch/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.pth",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt",
-        "font_path": "resources/fonts/FZYTK.TTF",
-    },
-}
-
-
-_RAPIDOCR_LATIN_MODEL_PATHS: dict[
-    _ModelPathEngines, dict[_ModelPathTypes, str | None]
-] = {
-    "onnxruntime": {
-        **_RAPIDOCR_PPOCRV6_ONNX_MODEL_PATHS,
-    },
-    # The Torch backend does not have PP-OCRv6 assets yet. Keep the previous
-    # Latin rec model + dict; detector/classifier mirror the English set.
-    "torch": {
-        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_mobile.pth",
-        "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
-        "rec_model_path": "torch/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile.pth",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile/latin_dict.txt",
-        "font_path": "resources/fonts/FZYTK.TTF",
-    },
-}
-
-
-def _build_model_detail(path: str | None) -> _ModelPathDetail:
-    if path is None:
-        return {
-            "url": None,
-            "path": None,
-        }
-    return {
-        "url": f"{_RAPIDOCR_MODELSCOPE_BASE_URL}/{_RAPIDOCR_MODELSCOPE_RELEASE}/{path}",
-        "path": path,
+# Recognition languages served by the PP-OCRv5 backbone
+_PPOCRV5_LANGS = frozenset(
+    {
+        "arabic",
+        "ch",
+        "cyrillic",
+        "devanagari",
+        "el",
+        "en",
+        "eslav",
+        "korean",
+        "latin",
+        "ta",
+        "te",
+        "th",
     }
+)
 
 
-# Maps user-facing language names (ISO 639-1/639-2 codes and English names,
-# tesseract-style values included) onto the bundled RapidOCR model sets.
-_RAPIDOCR_LANGUAGE_GROUPS: dict[str, str] = {
-    # english model set
-    "en": "english",
-    "eng": "english",
-    "english": "english",
-    # chinese model set
-    "ch": "chinese",
-    "chi": "chinese",
-    "zh": "chinese",
-    "zho": "chinese",
-    "chinese": "chinese",
-    # latin model set (latin_dict covers most Latin-script European languages)
-    "latin": "latin",
-    "de": "latin",
-    "deu": "latin",
-    "ger": "latin",
-    "german": "latin",
-    "fr": "latin",
-    "fra": "latin",
-    "fre": "latin",
-    "french": "latin",
-    "es": "latin",
-    "spa": "latin",
-    "spanish": "latin",
-    "it": "latin",
-    "ita": "latin",
-    "italian": "latin",
-    "pt": "latin",
-    "por": "latin",
-    "portuguese": "latin",
-    "nl": "latin",
-    "nld": "latin",
-    "dut": "latin",
-    "dutch": "latin",
-    "fi": "latin",
-    "fin": "latin",
-    "finnish": "latin",
-    "sv": "latin",
-    "swe": "latin",
-    "swedish": "latin",
-    "da": "latin",
-    "dan": "latin",
-    "danish": "latin",
-    "no": "latin",
-    "nor": "latin",
-    "norwegian": "latin",
-    "pl": "latin",
-    "pol": "latin",
-    "polish": "latin",
-    "cs": "latin",
-    "ces": "latin",
-    "cze": "latin",
-    "czech": "latin",
-    "ro": "latin",
-    "ron": "latin",
-    "rum": "latin",
-    "romanian": "latin",
-    "hu": "latin",
-    "hun": "latin",
-    "hungarian": "latin",
-    "tr": "latin",
-    "tur": "latin",
-    "turkish": "latin",
-    "hr": "latin",
-    "hrv": "latin",
-    "croatian": "latin",
-    "sk": "latin",
-    "slk": "latin",
-    "slovak": "latin",
-    "sl": "latin",
-    "slv": "latin",
-    "slovenian": "latin",
-    "ca": "latin",
-    "cat": "latin",
-    "catalan": "latin",
-    "id": "latin",
-    "ind": "latin",
-    "indonesian": "latin",
-}
+def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]":
+    """Map a requested language + backend onto a (PP-OCR version, rec language).
 
-
-def _resolve_rapidocr_language(languages: list[str] | None) -> str:
-    """Map requested languages onto a bundled RapidOCR model set.
-
-    Falls back to the default set *loudly*: silently running the Chinese
-    recognition model on Latin-script documents drops inter-word spaces
-    (see docling issues #2887, #1635, #2927).
+    - Prefer PP-OCRv6 (whose recognizer is multilingual and covers ~52 codes)
+    - Otherwise fall back to PP-OCRv4 for the torch backend or PP-OCRv5 for the others.
+    - Raises when the language cannot be served by the resolved backbone.
     """
-    if not languages:
-        return _RAPIDOCR_DEFAULT_LANGUAGE
+    from rapidocr.utils.model_resolver import COMMON_LANG_ALIASES, PP_OCRV6_LANGS
+    from rapidocr.utils.typings import OCRVersion
 
-    groups: list[str] = []
-    unknown: list[str] = []
-    for language in languages:
-        # "en-US" / "en_US" -> "en"
-        normalized = language.strip().lower().replace("_", "-").split("-")[0]
-        group = _RAPIDOCR_LANGUAGE_GROUPS.get(normalized)
-        if group is None:
-            unknown.append(language)
-        else:
-            groups.append(group)
-
-    if unknown:
+    langs = lang or ["ch"]
+    if len(langs) > 1:
         _log.warning(
-            "RapidOCR has no bundled model set for language(s) %s; known values "
-            "map onto the 'english', 'latin' or 'chinese' model sets.",
-            unknown,
+            "RapidOCR uses a single language; using %r and ignoring %r.",
+            langs[0],
+            langs[1:],
         )
-    if not groups:
-        _log.warning(
-            "Falling back to the '%s' RapidOCR model set; note the Chinese "
-            "recognition model drops inter-word spaces in Latin-script text.",
-            _RAPIDOCR_DEFAULT_LANGUAGE,
-        )
-        return _RAPIDOCR_DEFAULT_LANGUAGE
+    code = langs[0].strip().lower()
+    code = _DOCLING_LANG_NORMALIZE.get(code, code)
+    aliased = COMMON_LANG_ALIASES.get(code, code)
 
-    distinct = set(groups)
-    if distinct == {"english"}:
-        return "english"
-    if distinct <= {"english", "latin"}:
-        # the latin set covers English plus other Latin-script languages
-        return "latin"
-    if len(distinct) == 1:
-        return groups[0]
-    _log.warning(
-        "Requested languages %s span multiple RapidOCR model sets %s; using "
-        "'%s' (first requested). Run separate conversions for the others.",
-        languages,
-        sorted(distinct),
-        groups[0],
+    if aliased in PP_OCRV6_LANGS:
+        return OCRVersion.PPOCRV6, aliased
+
+    if backend == "torch":
+        if aliased in _PPOCRV4_LANGS:
+            return OCRVersion.PPOCRV4, aliased
+        raise ValueError(
+            f"RapidOCR torch backend does not support language {langs[0]!r}. "
+            f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV4_LANGS)}."
+        )
+
+    if aliased in _PPOCRV5_LANGS:
+        return OCRVersion.PPOCRV5, aliased
+    raise ValueError(
+        f"RapidOCR {backend} backend does not support language {langs[0]!r}. "
+        f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV5_LANGS)}."
     )
-    return groups[0]
 
 
-def _rapidocr_lang_type_params(ocr_lang: str) -> dict[str, object]:
-    """Language params for the no-pinned-paths flow (no artifacts_path).
+def _download_if_missing(url: str, dest: Path, *, force: bool, progress: bool) -> Path:
+    if dest.exists() and not force:
+        return dest
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    buf = download_url_with_progress(url, progress=progress)
+    with dest.open("wb") as fw:
+        fw.write(buf.read())
+    return dest
 
-    Without explicit model paths RapidOCR resolves models itself — and its
-    defaults are the Chinese set regardless of what was requested here, so the
-    resolved language must be passed through. Older rapidocr versions without
-    the typings module keep their defaults.
+
+def _download_rapidocr_model(
+    target_dir: Path,
+    file_info: "FileInfo",
+    engine: "EngineType",
+    *,
+    force: bool,
+    progress: bool,
+) -> tuple[Path, Path | None]:
+    """Resolve a checkpoint URL from rapidocr's registry and download it.
+
+    Returns the local model path and the recognition-keys path when the entry ships a dict_url
+    (v6/v5 onnx embed the charset, so this is None for them).
     """
-    try:
-        from rapidocr.utils.typings import LangDet, LangRec  # type: ignore
-    except ImportError:
-        return {}
-    mapping: dict[str, dict[str, object]] = {
-        "english": {"Det.lang_type": LangDet.EN, "Rec.lang_type": LangRec.EN},
-        "latin": {"Det.lang_type": LangDet.EN, "Rec.lang_type": LangRec.LATIN},
-    }
-    return mapping.get(ocr_lang, {})
+    from rapidocr.inference_engine.base import InferSession
+    from rapidocr.utils.typings import EngineType
+
+    info = InferSession.get_model_url(file_info)
+    model_url = info["model_dir"]
+
+    if engine == EngineType.PADDLE:
+        # paddle ships a directory bundle; the "model path" is that directory.
+        model_url = model_url.rstrip("/")
+        model_path = target_dir / Path(model_url).name
+        for name, sha in info.items():
+            if name in ("model_dir", "dict_url"):
+                continue
+            _download_if_missing(
+                f"{model_url}/{name}",
+                model_path / name,
+                force=force,
+                progress=progress,
+            )
+    else:
+        model_path = target_dir / Path(model_url).name
+        _download_if_missing(model_url, model_path, force=force, progress=progress)
+
+    dict_path: Path | None = None
+    dict_url = info.get("dict_url")
+    if dict_url:
+        dict_path = _download_if_missing(
+            dict_url, target_dir / Path(dict_url).name, force=force, progress=progress
+        )
+    return model_path, dict_path
 
 
-def _rapidocr_torch_ppocrv4_params() -> dict[str, object]:
-    try:
-        from rapidocr.utils.typings import ModelType, OCRVersion  # type: ignore
-    except ImportError:
-        return {}
+def _ensure_rapidocr_models(
+    target_dir: Path,
+    engine: "EngineType",
+    version: "OCRVersion",
+    rec_lang: str,
+    *,
+    force: bool = False,
+    progress: bool = False,
+) -> dict[str, Path | None]:
+    """Ensure the det/cls/rec checkpoints exist locally, downloading if needed"""
+    from rapidocr.inference_engine.base import FileInfo
+    from rapidocr.utils.typings import ModelType, OCRVersion, TaskType
+
+    target_dir = Path(target_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    size = ModelType(
+        _RAPIDOCR_MODEL_TYPE
+        if version == OCRVersion.PPOCRV6
+        else _RAPIDOCR_V4V5_MODEL_TYPE
+    )
+    cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
+
+    det_path, _ = _download_rapidocr_model(
+        target_dir,
+        FileInfo(engine, version, TaskType.DET, _RAPIDOCR_DET_MODEL_LANG, size),
+        engine,
+        force=force,
+        progress=progress,
+    )
+    cls_path, _ = _download_rapidocr_model(
+        target_dir,
+        FileInfo(
+            engine, OCRVersion.PPOCRV4, TaskType.CLS, _RAPIDOCR_CLS_MODEL_LANG, cls_size
+        ),
+        engine,
+        force=force,
+        progress=progress,
+    )
+    rec_path, rec_keys_path = _download_rapidocr_model(
+        target_dir,
+        FileInfo(engine, version, TaskType.REC, rec_lang, size),
+        engine,
+        force=force,
+        progress=progress,
+    )
     return {
-        "Det.ocr_version": OCRVersion.PPOCRV4,
-        "Det.model_type": ModelType.MOBILE,
-        "Cls.ocr_version": OCRVersion.PPOCRV4,
-        "Cls.model_type": ModelType.MOBILE,
-        "Rec.ocr_version": OCRVersion.PPOCRV4,
-        "Rec.model_type": ModelType.MOBILE,
+        "det_model_path": det_path,
+        "cls_model_path": cls_path,
+        "rec_model_path": rec_path,
+        "rec_keys_path": rec_keys_path,
     }
 
 
 class RapidOcrModel(BaseOcrModel):
     _model_repo_folder = "RapidOcr"
-    # from https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/default_models.yaml
-    # matching the default config in https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/config.yaml
-    # and naming f"{file_info.engine_type.value}.{file_info.ocr_version.value}.{file_info.task_type.value}"
-    _models_by_language: dict[
-        str, dict[_ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]]
-    ] = {
-        "chinese": {
-            backend: {
-                key: _build_model_detail(path)
-                for key, path in _RAPIDOCR_CHINESE_MODEL_PATHS[backend].items()
-            }
-            for backend in _RAPIDOCR_BACKENDS
-        },
-        "english": {
-            backend: {
-                key: _build_model_detail(path)
-                for key, path in _RAPIDOCR_ENGLISH_MODEL_PATHS[backend].items()
-            }
-            for backend in _RAPIDOCR_BACKENDS
-        },
-        "latin": {
-            backend: {
-                key: _build_model_detail(path)
-                for key, path in _RAPIDOCR_LATIN_MODEL_PATHS[backend].items()
-            }
-            for backend in _RAPIDOCR_BACKENDS
-        },
-    }
-    _default_models: dict[
-        _ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]
-    ] = _models_by_language[_RAPIDOCR_DEFAULT_LANGUAGE]
 
     def __init__(
         self,
@@ -351,12 +251,10 @@ class RapidOcrModel(BaseOcrModel):
                 "torch": EngineType.TORCH,
             }
             backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
-            backend_key: _ModelPathEngines = "onnxruntime"
-            if backend_enum == EngineType.TORCH:
-                backend_key = "torch"
 
-            ocr_lang = _resolve_rapidocr_language(self.options.lang)
-            model_set = self._models_by_language[ocr_lang][backend_key]
+            ppocr_version, rec_lang = _resolve_rapidocr(
+                self.options.lang, self.options.backend
+            )
 
             det_model_path = self.options.det_model_path
             cls_model_path = self.options.cls_model_path
@@ -364,23 +262,22 @@ class RapidOcrModel(BaseOcrModel):
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
 
-            if artifacts_path is not None:
-
-                def resolve_artifact_path(
-                    model_type: _ModelPathTypes, configured_path: str | None
-                ) -> str | Path | None:
-                    if configured_path is not None:
-                        return configured_path
-                    path = model_set[model_type]["path"]
-                    if path is None:
-                        return None
-                    return artifacts_path / self._model_repo_folder / path
-
-                det_model_path = resolve_artifact_path("det_model_path", det_model_path)
-                cls_model_path = resolve_artifact_path("cls_model_path", cls_model_path)
-                rec_model_path = resolve_artifact_path("rec_model_path", rec_model_path)
-                rec_keys_path = resolve_artifact_path("rec_keys_path", rec_keys_path)
-                font_path = resolve_artifact_path("font_path", font_path)
+            # Auto-resolve/download the model set unless the user pinned explicit
+            # detection/recognition paths (mirrors the previous opt-out gate).
+            if det_model_path is None and rec_model_path is None:
+                if artifacts_path is not None:
+                    target_dir = artifacts_path / self._model_repo_folder
+                else:
+                    target_dir = settings.cache_dir / "models" / self._model_repo_folder
+                resolved = _ensure_rapidocr_models(
+                    target_dir, backend_enum, ppocr_version, rec_lang
+                )
+                det_model_path = str(resolved["det_model_path"])
+                rec_model_path = str(resolved["rec_model_path"])
+                if cls_model_path is None and resolved["cls_model_path"] is not None:
+                    cls_model_path = str(resolved["cls_model_path"])
+                if rec_keys_path is None and resolved["rec_keys_path"] is not None:
+                    rec_keys_path = str(resolved["rec_keys_path"])
 
             for model_path in (
                 det_model_path,
@@ -431,10 +328,6 @@ class RapidOcrModel(BaseOcrModel):
                 _log.warning(
                     "The 'rec_font_path' option for RapidOCR is deprecated. Please use 'font_path' instead."
                 )
-            if det_model_path is None and rec_model_path is None:
-                params.update(_rapidocr_lang_type_params(ocr_lang))
-                if backend_enum == EngineType.TORCH:
-                    params.update(_rapidocr_torch_ppocrv4_params())
 
             user_params = self.options.rapidocr_params
             if user_params:
@@ -448,31 +341,28 @@ class RapidOcrModel(BaseOcrModel):
     @classmethod
     def download_models(
         cls,
-        backend: _ModelPathEngines,
+        backend: str,
         local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
-        lang: str = "chinese",
+        lang: str = "ch",
     ) -> Path:
-        if local_dir is None:
-            local_dir = settings.cache_dir / "models" / RapidOcrModel._model_repo_folder
+        from rapidocr import EngineType  # type: ignore
 
+        if local_dir is None:
+            local_dir = settings.cache_dir / "models" / cls._model_repo_folder
+        local_dir = Path(local_dir)
         local_dir.mkdir(parents=True, exist_ok=True)
 
-        # Download models
-        resolved_lang = _resolve_rapidocr_language([lang])
-        model_set = cls._models_by_language[resolved_lang][backend]
-        for model_type, model_details in model_set.items():
-            if model_details["path"] is None or model_details["url"] is None:
-                continue
-            output_path = local_dir / model_details["path"]
-            if output_path.exists() and not force:
-                continue
-            output_path.parent.mkdir(exist_ok=True, parents=True)
-            buf = download_url_with_progress(model_details["url"], progress=progress)
-            with output_path.open("wb") as fw:
-                fw.write(buf.read())
-
+        version, rec_lang = _resolve_rapidocr([lang], backend)
+        _ensure_rapidocr_models(
+            local_dir,
+            EngineType(backend),
+            version,
+            rec_lang,
+            force=force,
+            progress=progress,
+        )
         return local_dir
 
     def __call__(
