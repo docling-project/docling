@@ -1,4 +1,5 @@
 import glob
+from io import BytesIO
 from pathlib import Path
 
 from docling.backend.asciidoc_backend import (
@@ -22,6 +23,23 @@ def _get_backend(fname):
 
     doc_backend = in_doc._backend
     return doc_backend
+
+
+def test_list_dedent_to_base_does_not_crash():
+    # A list that starts indented and then dedents back to the base level used
+    # to raise "TypeError: '<' not supported between instances of 'int' and
+    # 'NoneType'": the dedent loop walked past level 0, where the base indent is
+    # never set. It should keep both items instead.
+    src = b"  * a\n* b\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="dedent.asciidoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [item.text for item in doc.texts] == ["a", "b"]
 
 
 def test_parse_picture():
