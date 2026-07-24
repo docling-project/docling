@@ -39,14 +39,17 @@ from .verify_utils import verify_document, verify_export
 
 pytest.importorskip("odfdo")
 from odfdo import (
+    Bookmark,
     Document as OdfDocument,
     DrawPage,
     Frame,
     Header,
+    LineBreak,
     List as OdfList,
     ListItem,
     Paragraph,
     Section,
+    Spacer,
     Span,
     Style,
     Table,
@@ -273,6 +276,55 @@ def test_odp_conversion(odp_path: Path):
         "Second bullet",
         "Second Slide Heading",
     } <= body_texts
+
+
+@pytest.mark.parametrize(
+    ("input_format", "document_type", "suffix"),
+    [
+        (InputFormat.ODT, "text", ".odt"),
+        (InputFormat.ODP, "presentation", ".odp"),
+    ],
+)
+def test_odf_preserves_text_after_inline_children(
+    tmp_path: Path,
+    input_format: InputFormat,
+    document_type: str,
+    suffix: str,
+):
+    path = tmp_path / f"inline_tail{suffix}"
+    doc = OdfDocument(document_type)
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Lead")
+    span = Span()
+    span.append(Spacer())
+    span.append("connective prose here")
+    paragraph.append(span)
+    paragraph.append(Bookmark("inline-marker"))
+    paragraph.append(" bookmarked tail")
+    paragraph.append(LineBreak())
+    paragraph.append("next line")
+
+    if input_format == InputFormat.ODT:
+        body.append(paragraph)
+    else:
+        page = DrawPage("page1", name="Slide One")
+        page.append(
+            Frame.text_frame(
+                paragraph,
+                size=("10cm", "5cm"),
+                position=("1cm", "1cm"),
+            )
+        )
+        body.append(page)
+
+    doc.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[input_format]).convert(path)
+    text_items = [item.text for item in result.document.texts if item.label == "text"]
+
+    assert text_items == ["Lead connective prose here bookmarked tail\nnext line"]
 
 
 def test_ods_merged_cells(tmp_path: Path):
