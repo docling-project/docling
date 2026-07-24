@@ -26,11 +26,9 @@ from docling.datamodel.service.sources import (
 )
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
-    GenericChunkTarget,
     GoogleCloudStorageTarget,
     GoogleDriveTarget,
     InBodyTarget,
-    KnownChunkTarget,
     PresignedUrlTarget,
     PutTarget,
     S3Target,
@@ -193,40 +191,6 @@ BatchTargetRequest = Annotated[
 ]
 BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
 
-# ---------------------------------------------------------------------------
-# Chunk-target validation (same coerce-or-passthrough pattern as batch targets)
-# ---------------------------------------------------------------------------
-
-_KNOWN_CHUNK_TARGET_MODELS = {
-    target_type.model_fields["kind"].default: target_type
-    for target_type in get_args(get_args(KnownChunkTarget)[0])
-}
-_KNOWN_CHUNK_TARGET_TYPES = tuple(_KNOWN_CHUNK_TARGET_MODELS.values())
-
-
-def _validate_chunk_target(value: Any) -> Any:
-    if isinstance(value, _KNOWN_CHUNK_TARGET_TYPES):
-        return value
-    if isinstance(value, BaseModel):
-        payload = value.model_dump()
-    elif isinstance(value, Mapping):
-        payload = value
-    else:
-        return value
-
-    kind = payload.get("kind")
-    target_type = (
-        _KNOWN_CHUNK_TARGET_MODELS.get(kind) if isinstance(kind, str) else None
-    )
-    return target_type.model_validate(payload) if target_type is not None else value
-
-
-ChunkTargetRequest = Annotated[
-    KnownChunkTarget | GenericChunkTarget,
-    BeforeValidator(_validate_chunk_target),
-]
-ChunkTargetRequestInput: TypeAlias = ChunkTargetRequest | Mapping[str, Any]
-
 
 ## Complete Source request
 class BatchConvertSourcesRequest(BaseModel):
@@ -236,8 +200,6 @@ class BatchConvertSourcesRequest(BaseModel):
     # Mutually exclusive with targets; neither is deprecated.
     target: BatchTargetRequest | None = None
     targets: list[BatchTargetRequest] | None = None
-    # Optional destination for chunked output (independent of targets).
-    chunk_target: ChunkTargetRequest | None = None
     callbacks: list[CallbackSpec] = []
 
 

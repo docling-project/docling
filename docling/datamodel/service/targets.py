@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyHttpUrl, BaseModel, Field
 
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
@@ -52,30 +52,5 @@ Target = Annotated[
     | GoogleDriveTarget
     | PutTarget
     | PresignedUrlTarget,
-    Field(discriminator="kind"),
-]
-
-# ---------------------------------------------------------------------------
-# Chunk targets — where chunked output should be written.
-# Known concrete targets reuse the same coordinate models as document targets.
-# Unknown server-defined chunk targets are preserved as GenericChunkTarget.
-# ---------------------------------------------------------------------------
-
-KnownChunkTarget = Annotated[
-    PresignedUrlTarget | ZipTarget | S3Target,
-    Field(discriminator="kind"),
-]
-
-
-class GenericChunkTarget(BaseModel):
-    """Passthrough for chunk-target kinds not known to this client version."""
-
-    model_config = ConfigDict(extra="allow")
-
-    kind: str = Field(min_length=1)
-
-
-ChunkTarget = Annotated[
-    KnownChunkTarget | GenericChunkTarget,
     Field(discriminator="kind"),
 ]
