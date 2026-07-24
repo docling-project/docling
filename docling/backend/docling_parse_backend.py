@@ -79,6 +79,18 @@ def _make_docling_parse_page_content_config(
     )
 
 
+def _sanitize_text_cells(cells: Iterable[TextCell]) -> None:
+    for cell in cells:
+        cell.text = cell.text.replace("\x00", "")
+        cell.orig = cell.orig.replace("\x00", "")
+
+
+def _sanitize_segmented_page_text(seg_page: SegmentedPdfPage) -> None:
+    _sanitize_text_cells(seg_page.char_cells)
+    _sanitize_text_cells(seg_page.word_cells)
+    _sanitize_text_cells(seg_page.textline_cells)
+
+
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
@@ -130,6 +142,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
             self._page_no + 1,
             content_config=content_config,
         )
+        _sanitize_segmented_page_text(seg_page)
 
         # In Docling, all TextCell instances are expected with top-left origin.
         [
@@ -412,6 +425,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             return None
         if self._seg_page is None:
             seg_page = self._result.get_page()
+            _sanitize_segmented_page_text(seg_page)
             page_height = seg_page.dimension.height
             for tc in seg_page.textline_cells:
                 tc.to_top_left_origin(page_height)

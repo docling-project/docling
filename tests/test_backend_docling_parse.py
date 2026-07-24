@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from docling_core.types.doc import CoordOrigin
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 from docling_parse.pdf_parser import ContentLevel
 from PIL import Image, ImageDraw, ImageStat
 
@@ -13,6 +14,7 @@ from docling.backend.docling_parse_backend import (
     DoclingParsePageBackend,
     ThreadedDoclingParseDocumentBackend,
     ThreadedDoclingParsePageBackend,
+    _sanitize_text_cells,
 )
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
@@ -36,6 +38,38 @@ def _get_backend(pdf_doc):
 
     doc_backend = in_doc._backend
     return doc_backend
+
+
+def test_sanitize_text_cells_removes_nul_characters():
+    rect = BoundingRectangle(
+        r_x0=0,
+        r_y0=0,
+        r_x1=1,
+        r_y1=0,
+        r_x2=1,
+        r_y2=1,
+        r_x3=0,
+        r_y3=1,
+    )
+    cell = TextCell(
+        rect=rect,
+        text="30.45 mg.mL \x00 1",
+        orig="30.45 mg.mL \x00 1",
+        from_ocr=False,
+    )
+    unicode_cell = TextCell(
+        rect=rect,
+        text="30.45 mg.mL\u207b\u00b9",
+        orig="30.45 mg.mL\u207b\u00b9",
+        from_ocr=False,
+    )
+
+    _sanitize_text_cells([cell, unicode_cell])
+
+    assert cell.text == "30.45 mg.mL  1"
+    assert cell.orig == "30.45 mg.mL  1"
+    assert unicode_cell.text == "30.45 mg.mL\u207b\u00b9"
+    assert unicode_cell.orig == "30.45 mg.mL\u207b\u00b9"
 
 
 def test_text_cell_counts():
@@ -554,6 +588,9 @@ def test_non_threaded_page_backend_disables_bitmap_byte_materialization() -> Non
     captured_content_config: Any | None = None
 
     class _FakeCell:
+        text = "text\x00"
+        orig = "orig\x00"
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
@@ -596,6 +633,8 @@ def test_non_threaded_page_backend_disables_bitmap_byte_materialization() -> Non
         page_backend.unload()
 
     assert len(cells) == 1
+    assert cells[0].text == "text"
+    assert cells[0].orig == "orig"
     assert captured_content_config is not None
     assert captured_content_config.include_bitmap_bytes is False
 
@@ -648,6 +687,9 @@ def test_threaded_page_backend_delegates_image_access() -> None:
 
 def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     class _FakeCell:
+        text = "text\x00"
+        orig = "orig\x00"
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
@@ -669,6 +711,8 @@ def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     cells = list(page_backend.get_text_cells())
 
     assert len(cells) == 1
+    assert cells[0].text == "text"
+    assert cells[0].orig == "orig"
 
 
 def _create_black_square_pdf(path: Path) -> None:
