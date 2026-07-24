@@ -42,6 +42,10 @@ class OcrAutoModel(BaseOcrModel):
 
         self._engine: Optional[BaseOcrModel] = None
         if self.enabled:
+            # Forward the requested language only when set, so each delegate keeps
+            # its own default when OcrAutoOptions.lang is left at the default ([]).
+            lang_kwargs = {"lang": self.options.lang} if self.options.lang else {}
+
             if "darwin" == sys.platform:
                 try:
                     from ocrmac import ocrmac
@@ -51,6 +55,7 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=OcrMacOptions(
                             mode=self.options.mode,
+                            **lang_kwargs,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -69,6 +74,7 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=NemotronOcrOptions(
                             mode=self.options.mode,
+                            **lang_kwargs,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -89,6 +95,7 @@ class OcrAutoModel(BaseOcrModel):
                         options=RapidOcrOptions(
                             backend="onnxruntime",
                             mode=self.options.mode,
+                            **lang_kwargs,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -107,6 +114,7 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=EasyOcrOptions(
                             mode=self.options.mode,
+                            **lang_kwargs,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -125,6 +133,7 @@ class OcrAutoModel(BaseOcrModel):
                         options=RapidOcrOptions(
                             backend="torch",
                             mode=self.options.mode,
+                            **lang_kwargs,
                         ),
                         accelerator_options=accelerator_options,
                     )
