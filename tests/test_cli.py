@@ -146,6 +146,65 @@ def test_cli_exports_dclx(tmp_path):
     assert b"DCLX CLI" in payload
 
 
+def test_cli_preserves_outputs_for_inputs_with_same_stem(tmp_path):
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    first_source = first_dir / "document.md"
+    second_source = second_dir / "document.md"
+    first_source.write_text("# First source\n\nFirst unique content.", encoding="utf-8")
+    second_source.write_text(
+        "# Second source\n\nSecond unique content.", encoding="utf-8"
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(first_source),
+            str(second_source),
+            "--from",
+            "md",
+            "--to",
+            "md",
+            "--to",
+            "chunks",
+            "--chunks-type",
+            "hierarchical",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert {path.name for path in output.iterdir()} == {
+        "document.md",
+        "document_2.md",
+        "document.chunks.jsonl",
+        "document_2.chunks.jsonl",
+    }
+    markdown_outputs = {
+        stem: (output / f"{stem}.md").read_text(encoding="utf-8")
+        for stem in ("document", "document_2")
+    }
+    chunk_outputs = {
+        stem: (output / f"{stem}.chunks.jsonl").read_text(encoding="utf-8")
+        for stem in ("document", "document_2")
+    }
+
+    assert any("First unique content" in text for text in markdown_outputs.values())
+    assert any("Second unique content" in text for text in markdown_outputs.values())
+    for stem, markdown_text in markdown_outputs.items():
+        chunk_text = chunk_outputs[stem]
+        assert ("First unique content" in markdown_text) == (
+            "First unique content" in chunk_text
+        )
+        assert ("Second unique content" in markdown_text) == (
+            "Second unique content" in chunk_text
+        )
+
+
 def test_cli_from_odf_expands_to_open_document_formats(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
