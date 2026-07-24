@@ -13,7 +13,7 @@ from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter, PowerpointFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -43,9 +43,22 @@ def get_pptx_paths():
 
 
 def get_converter():
+    from docling.document_converter import DocumentConverter
+
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
+
+
+def convert_with_pptx_backend(pptx_path: Path) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=pptx_path,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+
+    assert in_doc.valid
+    return in_doc._backend.convert()
 
 
 def test_e2e_pptx_conversions():
@@ -338,3 +351,67 @@ def test_chart_image_rendering(libreoffice_available):
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"
     )
+
+
+def test_pptx_shapes_are_sorted_by_visual_position():
+    class FakeShape:
+        def __init__(self, name, top=None, left=None):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    class BadPositionShape:
+        @property
+        def top(self):
+            raise ValueError("bad position")
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    same_row_right = FakeShape("same-row-right", top=100, left=300)
+    lower_left = FakeShape("lower-left", top=200000, left=100)
+    same_row_left = FakeShape("same-row-left", top=1000, left=100)
+    unpositioned = FakeShape("unpositioned")
+
+    ordered_shapes = backend._iter_shapes_by_position(
+        [lower_left, same_row_right, unpositioned, same_row_left]
+    )
+
+    assert [shape.name for shape in ordered_shapes] == [
+        "same-row-left",
+        "same-row-right",
+        "lower-left",
+        "unpositioned",
+    ]
+    assert backend._get_shape_position(BadPositionShape(), "top") is None
+
+
+def test_pptx_row_grouping_uses_sliding_window():
+    """Shapes in a contiguous band should all land in the same row.
+
+    With a fixed-anchor strategy, shapes at tops 0, 40000, and 80000 EMUs
+    (each 40000 apart, within the 45720 EMU tolerance) would be split: the
+    third shape is 80000 EMUs from the first anchor (0), exceeding tolerance.
+    The sliding-window strategy compares each shape against its immediate
+    predecessor, so all three end up in the same row and are sorted by left.
+    """
+
+    class FakeShape:
+        def __init__(self, name, top, left):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    # Three shapes in a contiguous band, each 40 000 EMUs apart.
+    # Fixed-anchor would split them; sliding-window keeps them together.
+    a = FakeShape("a", top=0, left=200)
+    b = FakeShape("b", top=40000, left=100)
+    c = FakeShape("c", top=80000, left=300)
+    # This shape is more than one tolerance step from c, so it forms a new row.
+    d = FakeShape("d", top=200000, left=100)
+
+    ordered = [s.name for s in backend._iter_shapes_by_position([d, c, a, b])]
+
+    # a, b, c are in the same row sorted left-to-right; d is in its own row.
+    assert ordered == ["b", "a", "c", "d"]
