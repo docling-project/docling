@@ -99,6 +99,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
 
     @staticmethod
+    def _split_table_row(row: str) -> list[str]:
+        """Split a table row into its cells.
+
+        The leading and trailing pipes are optional in GFM, so an empty field is
+        only dropped when it comes from a pipe at the very edge of the row.
+        """
+        cells = row.split("|")
+        if cells and not cells[0].strip():
+            cells = cells[1:]
+        if cells and not cells[-1].strip():
+            cells = cells[:-1]
+        return [cell.strip() for cell in cells]
+
+    @staticmethod
     def _unescape_except_pipe(text: str) -> str:
         def replace(match):
             entity = match.group(0)
@@ -212,12 +226,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             for n, md_table_row in enumerate(self.md_table_buffer):
                 data = []
                 if n == 0:
-                    header = [t.strip() for t in md_table_row.split("|")[1:-1]]
+                    header = MarkdownDocumentBackend._split_table_row(md_table_row)
                     for value in header:
                         data.append(value)
                     result_table.append(data)
                 if n > 1:
-                    values = [t.strip() for t in md_table_row.split("|")[1:-1]]
+                    values = MarkdownDocumentBackend._split_table_row(md_table_row)
                     for value in values:
                         data.append(value)
                     result_table.append(data)

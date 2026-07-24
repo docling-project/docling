@@ -301,3 +301,30 @@ def test_convert_table_has_no_duplicate_cells():
         for cell in table_data.table_cells
     ]
     assert len(positions) == len(set(positions))
+
+
+def test_convert_table_without_trailing_pipes():
+    """
+    Regression test:
+    The leading and trailing pipes of a GFM table row are both optional, and the
+    backend's own row detector only requires a leading one. Splitting a row with
+    [1:-1] assumed both were present, so a row written without the trailing pipe
+    lost its last cell and the table came out one column short.
+    """
+    with_trailing = """| Region | Q1 |
+| --- | --- |
+| North | 10 |
+"""
+    without_trailing = """| Region | Q1
+| --- | ---
+| North | 10
+"""
+    expected = ["Region", "Q1", "North", "10"]
+
+    for markdown in (with_trailing, without_trailing):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
