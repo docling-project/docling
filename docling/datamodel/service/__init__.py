@@ -13,6 +13,7 @@ from docling.datamodel.service.callbacks import (
 from docling.datamodel.service.chunking import (
     BaseChunkerOptions,
     ChunkerType,
+    ChunkingOptionType,
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
 )
@@ -119,6 +120,7 @@ __all__ = [
     "ChunkedDocumentResult",
     "ChunkedDocumentResultItem",
     "ChunkerType",
+    "ChunkingOptionType",
     "ClearResponse",
     "ConvertDocumentErrorResponse",
     "ConvertDocumentResponse",

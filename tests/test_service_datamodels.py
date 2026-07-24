@@ -31,6 +31,7 @@ from docling.datamodel.service.targets import (
     GoogleDriveTarget,
     PresignedUrlTarget,
     S3Target,
+    ZipTarget,
 )
 
 

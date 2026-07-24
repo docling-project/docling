@@ -37,6 +37,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersModelType,
 )
+from docling.datamodel.service.chunking import ChunkingOptionType
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     PageRange,
@@ -526,6 +527,31 @@ class ConvertDocumentsOptions(BaseModel):
             examples=["<!-- page-break -->", ""],
         ),
     ] = ""
+
+    chunking_options: Annotated[
+        Optional[ChunkingOptionType],
+        Field(
+            default=None,
+            description="Chunker configuration.",
+            discriminator="chunker",
+        ),
+    ] = None
+
+    chunking_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                'Preset ID for chunking (e.g. "granite_embedding_278m"). '
+                "Mutually exclusive with chunking_options."
+            ),
+            examples=[
+                "granite_embedding_278m",
+                "minilm_l6",
+                "hierarchical",
+            ],
+        ),
+    ] = None
 
     do_code_enrichment: Annotated[
         bool,
@@ -1059,5 +1085,14 @@ class ConvertDocumentsOptions(BaseModel):
         # Ensure preset and custom_config are mutually exclusive
         if self.ocr_preset != "auto" and self.ocr_custom_config:
             raise ValueError("Cannot specify both ocr_preset and ocr_custom_config.")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_chunking_options(self) -> Self:
+        if self.chunking_preset and self.chunking_options is not None:
+            raise ValueError(
+                "Cannot specify both chunking_preset and chunking_options."
+            )
 
         return self
