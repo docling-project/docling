@@ -1713,7 +1713,8 @@ class XmlTable:
                                     end = ientry + 2
                                     shift = 1
 
-                                if end > len(tg_range["cell_offst"]):
+                                n_offst = len(tg_range["cell_offst"])
+                                if start < 1 or start > n_offst or end > n_offst:
                                     wrong_nbr_cols = True
                                     self.nbr_messages += 1
                                     if self.nbr_messages <= self.max_nbr_messages:

@@ -143,6 +143,29 @@ def test_tables(tables):
     assert len(file_table.table_cells) == 130
 
 
+def test_table_out_of_range_namest_does_not_crash():
+    """An entry whose numeric namest points past the declared columns must degrade, not crash."""
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        '<tbody><row><entry namest="9">a</entry></row></tbody>'
+        "</tgroup></table>"
+    )
+    table = XmlTable(xml).parse()
+    assert table is not None
+    assert table.num_cols == 2
+    # the malformed cell is dropped; a well-formed sibling table still parses
+    well_formed = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody><row><entry>a</entry><entry>b</entry></row></tbody>"
+        "</tgroup></table>"
+    )
+    ok = XmlTable(well_formed).parse()
+    assert ok is not None
+    assert [cell.text for cell in ok.table_cells] == ["a", "b"]
+
+
 def test_patent_uspto_ice(patents):
     """Test applications and grants Full Text Data/XML Version 4.x ICE."""
 
