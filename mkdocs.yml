@@ -108,7 +108,6 @@ nav:
       - _generated/examples/video_pipeline.md
       - "Figure export": _generated/examples/export_figures.md
       - "Table export": _generated/examples/export_tables.md
-      - "Multimodal export": _generated/examples/export_multimodal.md
       - "Force full page OCR": _generated/examples/full_page_ocr.md
       - "Automatic OCR language detection with tesseract": _generated/examples/tesseract_lang_detection.md
       - "RapidOCR with custom OCR models": _generated/examples/rapidocr_with_custom_models.md
