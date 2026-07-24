@@ -125,6 +125,7 @@ nav:
       - _generated/examples/hybrid_chunking.md
       - _generated/examples/line_based_chunking.md
       - _generated/examples/advanced_chunking_and_serialization.md
+      - "Trivial chunker": _generated/examples/trivial_chunking.md
     - 📤 Information extraction:
       - _generated/examples/extraction.md
     - 🤖 RAG with AI dev frameworks:
