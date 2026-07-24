@@ -2062,6 +2062,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+    # Shutdown control
+    stage_shutdown_timeout_seconds: Annotated[
+        float,
+        Field(
+            description=(
+                "Seconds to wait for each pipeline stage thread to terminate during shutdown before it is "
+                "abandoned as stuck (its resources may then leak for the rest of the process lifetime). Only "
+                "used by `StandardPdfPipeline` (threaded mode)."
+            )
+        ),
+    ] = 15.0
 
 
 class ProcessingPipeline(str, Enum):
