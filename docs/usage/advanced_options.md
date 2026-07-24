@@ -142,6 +142,27 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Recover headings absorbed into pictures
+
+Occasionally the layout model detects a text block — typically a banner-style heading rendered inside a filled box — as a `PICTURE`. The text is then nested under the picture and dropped from every content layer, so it is missing from the output even when furniture is included (see [#3699](https://github.com/docling-project/docling/issues/3699)).
+
+You can opt in to recovering such text. When enabled, a picture whose area is largely covered by text-only clusters is treated as spurious: the picture is discarded and its text is kept as regular text/heading clusters instead. Genuine figures (which carry little or no text) are left untouched. The option is off by default, so existing output is unaffected unless you turn it on.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.layout_options.recover_text_in_pictures = True  # default: False
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
