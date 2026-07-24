@@ -143,6 +143,29 @@ def test_tables(tables):
     assert len(file_table.table_cells) == 130
 
 
+@pytest.mark.parametrize(
+    "colspecs",
+    [
+        '<colspec colname="1" colwidth="1*"/><colspec colname="2" colwidth="2*"/>',
+        '<colspec colname="1"/><colspec colname="2"/>',
+        '<colspec colname="1" colwidth="50pt"/><colspec colname="2" colwidth="60pt"/>',
+    ],
+)
+def test_table_colwidth_variants(colspecs):
+    """CALS colwidth may be proportional ("1*") or absent; both must parse, not drop the table."""
+    xml = (
+        f'<table><tgroup cols="2">{colspecs}'
+        "<tbody><row><entry>a</entry><entry>b</entry></row></tbody>"
+        "</tgroup></table>"
+    )
+    table = XmlTable(xml).parse()
+    assert table is not None
+    assert table.num_rows == 1
+    assert table.num_cols == 2
+    assert [cell.text for cell in table.table_cells] == ["a", "b"]
+    assert [cell.start_col_offset_idx for cell in table.table_cells] == [0, 1]
+
+
 def test_patent_uspto_ice(patents):
     """Test applications and grants Full Text Data/XML Version 4.x ICE."""
 
