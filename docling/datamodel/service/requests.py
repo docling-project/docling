@@ -193,6 +193,10 @@ BatchTargetRequest = Annotated[
 ]
 BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
 
+# ---------------------------------------------------------------------------
+# Chunk-target validation (same coerce-or-passthrough pattern as batch targets)
+# ---------------------------------------------------------------------------
+
 _KNOWN_CHUNK_TARGET_MODELS = {
     target_type.model_fields["kind"].default: target_type
     for target_type in get_args(get_args(KnownChunkTarget)[0])
@@ -221,13 +225,17 @@ ChunkTargetRequest = Annotated[
     KnownChunkTarget | GenericChunkTarget,
     BeforeValidator(_validate_chunk_target),
 ]
-
+ChunkTargetRequestInput: TypeAlias = ChunkTargetRequest | Mapping[str, Any]
 
 ## Complete Source request
 class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
-    target: BatchTargetRequest
+    # Singular convenience alias — normalised to targets=[target] downstream.
+    # Mutually exclusive with targets; neither is deprecated.
+    target: BatchTargetRequest | None = None
+    targets: list[BatchTargetRequest] | None = None
+    # Optional destination for chunked output (independent of targets).
     chunk_target: ChunkTargetRequest | None = None
     callbacks: list[CallbackSpec] = []
 
@@ -236,7 +244,6 @@ class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem] = Field(min_length=1)
     target: TargetRequest = PresignedUrlTarget()
-    chunk_target: ChunkTargetRequest | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -275,7 +282,6 @@ class GenericChunkDocumentsRequest(BaseChunkDocumentsRequest, Generic[ChunkingOp
     @field_validator("convert_options", mode="after")
     @classmethod
     def sync_convert_chunking_options(cls, value: ConvertDocumentsOptions):
-        value.do_chunking = True
         value.chunking_options = None
         value.chunking_preset = None
         return value

@@ -528,22 +528,11 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = ""
 
-    do_chunking: Annotated[
-        bool,
-        Field(
-            description=(
-                "If enabled, chunk the converted document and emit chunk artifacts. "
-                "Boolean. Optional, defaults to false."
-            ),
-            examples=[False],
-        ),
-    ] = False
-
     chunking_options: Annotated[
         Optional[ChunkingOptionType],
         Field(
             default=None,
-            description="Chunker configuration. Requires do_chunking=True.",
+            description="Chunker configuration.",
             discriminator="chunker",
         ),
     ] = None
@@ -1104,13 +1093,6 @@ class ConvertDocumentsOptions(BaseModel):
         if self.chunking_preset and self.chunking_options is not None:
             raise ValueError(
                 "Cannot specify both chunking_preset and chunking_options."
-            )
-
-        if (
-            self.chunking_preset or self.chunking_options is not None
-        ) and not self.do_chunking:
-            raise ValueError(
-                "chunking_preset and chunking_options require do_chunking=True."
             )
 
         return self

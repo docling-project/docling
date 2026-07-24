@@ -2072,7 +2072,7 @@ def test_submit_batch_returns_presigned_result_for_presigned_target() -> None:
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, request_headers=None: (
+            lambda self, sources, options, target, targets=None, request_headers=None: (
                 _status_response("task-presigned-batch", "pending")
             ),
             client,
@@ -2106,7 +2106,7 @@ def test_submit_batch_returns_counts_result_for_s3_target() -> None:
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, request_headers=None: (
+            lambda self, sources, options, target, targets=None, request_headers=None: (
                 _status_response("task-s3", "pending")
             ),
             client,
@@ -2154,7 +2154,7 @@ def test_submit_batch_returns_counts_result_for_generic_target() -> None:
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, request_headers=None: (
+            lambda self, sources, options, target, targets=None, request_headers=None: (
                 _status_response("task-plugin-target", "pending")
             ),
             client,
@@ -3647,7 +3647,7 @@ async def test_async_submit_batch_returns_presigned_result() -> None:
 
     async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, async_client, request_headers=None: (
+            lambda self, sources, options, target, async_client, targets=None, request_headers=None: (
                 asyncio.sleep(
                     0, result=_status_response("task-presigned-batch", "pending")
                 )
@@ -3691,7 +3691,7 @@ async def test_async_submit_batch_returns_counts_result_for_s3_target() -> None:
 
     async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, async_client, request_headers=None: (
+            lambda self, sources, options, target, async_client, targets=None, request_headers=None: (
                 asyncio.sleep(0, result=_status_response("task-s3", "pending"))
             ),
             client,
@@ -3747,7 +3747,7 @@ async def test_async_submit_batch_returns_counts_result_for_azure_target() -> No
 
     async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target, async_client, request_headers=None: (
+            lambda self, sources, options, target, async_client, targets=None, request_headers=None: (
                 asyncio.sleep(0, result=_status_response("task-azure", "pending"))
             ),
             client,
@@ -4128,3 +4128,198 @@ async def test_async_submit_and_retrieve_each_rejects_invalid_max_in_flight(
                 target=InBodyTarget(),
             ):
                 pass
+
+
+# --- submit_batch multi-target ---
+
+
+def test_submit_batch_posts_targets_list_to_batch_endpoint() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200, json=_status_response("task-multi-target", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            targets=[
+                S3Target(
+                    endpoint="s3.example.org",
+                    access_key="a",
+                    secret_key="b",
+                    bucket="output-s3",
+                ),
+                PresignedUrlTarget(),
+            ],
+        )
+
+    assert job.task_id == "task-multi-target"
+    assert captured["path"] == "/v1/convert/source/batch"
+    payload = captured["payload"]
+    assert "target" not in payload
+    assert isinstance(payload["targets"], list)
+    assert len(payload["targets"]) == 2
+    assert payload["targets"][0]["kind"] == "s3"
+    assert payload["targets"][1]["kind"] == "presigned_url"
+
+
+def test_submit_batch_requires_target_or_targets() -> None:
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(ValueError, match="requires either"):
+            client.submit_batch(
+                sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            )
+
+
+def test_submit_batch_rejects_both_target_and_targets() -> None:
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(ValueError, match="supply only one"):
+            client.submit_batch(
+                sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+                target=PresignedUrlTarget(),
+                targets=[PresignedUrlTarget()],
+            )
+
+
+def test_submit_batch_returns_storage_result_for_targets_list_with_storage_target() -> None:
+    storage_result = PresignedUrlConvertDocumentResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, targets=None, request_headers=None: (
+                _status_response("task-multi-storage", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_document_result = MethodType(
+            lambda self, task_id, last_status: storage_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            targets=[
+                S3Target(
+                    endpoint="s3.example.org",
+                    access_key="a",
+                    secret_key="b",
+                    bucket="output",
+                ),
+                PresignedUrlTarget(),
+            ],
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is storage_result
+
+
+def test_submit_batch_returns_presigned_result_for_targets_list_without_storage() -> None:
+    presigned_result = PresignedUrlConvertResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+        documents=[],
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, targets=None, request_headers=None: (
+                _status_response("task-multi-presigned", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_result = MethodType(
+            lambda self, task_id, last_status: presigned_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            targets=[PresignedUrlTarget()],
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is presigned_result
+
+
+@pytest.mark.anyio
+async def test_async_submit_batch_posts_targets_list() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["url"] = url
+        captured["json"] = kw.get("json")
+        return httpx.Response(
+            200,
+            json=_status_response("task-async-multi", "pending").model_dump(mode="json"),
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            targets=[
+                S3Target(
+                    endpoint="s3.example.org",
+                    access_key="a",
+                    secret_key="b",
+                    bucket="output",
+                ),
+                PresignedUrlTarget(),
+            ],
+        )
+
+    assert job.task_id == "task-async-multi"
+    assert "/v1/convert/source/batch" in str(captured["url"])
+    payload = captured["json"]
+    assert "target" not in payload
+    assert isinstance(payload["targets"], list)
+    assert len(payload["targets"]) == 2
+    assert payload["targets"][0]["kind"] == "s3"
+    assert payload["targets"][1]["kind"] == "presigned_url"
+
+
+@pytest.mark.anyio
+async def test_async_submit_batch_requires_target_or_targets() -> None:
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(ValueError, match="requires either"):
+            await client.submit_batch(
+                sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            )
+
+
+@pytest.mark.anyio
+async def test_async_submit_batch_rejects_both_target_and_targets() -> None:
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(ValueError, match="supply only one"):
+            await client.submit_batch(
+                sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+                target=PresignedUrlTarget(),
+                targets=[PresignedUrlTarget()],
+            )

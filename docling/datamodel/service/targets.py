@@ -55,19 +55,27 @@ Target = Annotated[
     Field(discriminator="kind"),
 ]
 
+# ---------------------------------------------------------------------------
+# Chunk targets — where chunked output should be written.
+# Known concrete targets reuse the same coordinate models as document targets.
+# Unknown server-defined chunk targets are preserved as GenericChunkTarget.
+# ---------------------------------------------------------------------------
+
 KnownChunkTarget = Annotated[
-    PresignedUrlTarget | S3Target | ZipTarget,
+    PresignedUrlTarget | ZipTarget | S3Target,
     Field(discriminator="kind"),
 ]
 
 
 class GenericChunkTarget(BaseModel):
-    """Passthrough for plugin/extension chunk targets not known to this library."""
+    """Passthrough for chunk-target kinds not known to this client version."""
 
     model_config = ConfigDict(extra="allow")
 
     kind: str = Field(min_length=1)
 
 
-# Deprecated: use ChunkTargetRequest from requests.py for validated deserialization.
-ChunkTarget = KnownChunkTarget
+ChunkTarget = Annotated[
+    KnownChunkTarget | GenericChunkTarget,
+    Field(discriminator="kind"),
+]

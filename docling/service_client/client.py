@@ -52,6 +52,7 @@ from docling.datamodel.service.options import (
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
     BatchSourceRequestInput,
+    BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
     GenericTargetRequest,
@@ -1056,32 +1057,46 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def submit_batch(
         self,
         sources: Sequence[BatchSourceRequestInput],
-        target: BatchTargetRequestInput,
+        target: BatchTargetRequestInput | None = None,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
+        *,
+        targets: list[BatchTargetRequestInput] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
-        request = BatchConvertSourcesRequest.model_validate(
-            {"sources": sources, "target": target}
-        )
+        if target is None and targets is None:
+            raise ValueError("submit_batch() requires either 'target' or 'targets'.")
+        if target is not None and targets is not None:
+            raise ValueError(
+                "submit_batch() received both 'target' and 'targets'; supply only one."
+            )
+        payload: dict[str, Any] = {"sources": sources}
+        if targets is not None:
+            payload["targets"] = targets
+        else:
+            payload["target"] = target
+        request = BatchConvertSourcesRequest.model_validate(payload)
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
             max_file_size=None,
             page_range=None,
         )
+        # Use the first effective target for output-format hint.
+        first_target = (request.targets or [request.target])[0]
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=request.target,
+            target=first_target,
         )
         return self._submit_batch_conversion_job(
             sources=request.sources,
             options=submit_options,
             target=request.target,
+            targets=request.targets,
             request_headers=headers,
         )
 
@@ -1423,7 +1438,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         self,
         sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
-        target: BatchSubmitTarget,
+        target: BatchSubmitTarget | None,
+        targets: list[BatchTargetRequest] | None = None,
         request_headers: dict[str, str] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
@@ -1433,9 +1449,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             sources=sources,
             options=options,
             target=target,
+            targets=targets,
             request_headers=request_headers,
         )
-        if _is_storage_target(target):
+        all_targets = targets if targets is not None else ([target] if target is not None else [])
+        if any(_is_storage_target(t) for t in all_targets):
 
             def fetch_result(
                 task_id: str,
@@ -1473,12 +1491,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         self,
         sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
-        target: BatchSubmitTarget,
+        target: BatchSubmitTarget | None,
+        targets: list[BatchTargetRequest] | None = None,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest.model_validate(
-            {"options": options, "sources": sources, "target": target}
-        )
+        payload: dict[str, Any] = {"options": options, "sources": sources}
+        if targets is not None:
+            payload["targets"] = targets
+        else:
+            payload["target"] = target
+        request = BatchConvertSourcesRequest.model_validate(payload)
         response = self._request_with_retry(
             method="POST",
             path="/v1/convert/source/batch",
