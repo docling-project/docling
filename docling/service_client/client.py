@@ -1452,7 +1452,9 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             targets=targets,
             request_headers=request_headers,
         )
-        all_targets = targets if targets is not None else ([target] if target is not None else [])
+        all_targets = (
+            targets if targets is not None else ([target] if target is not None else [])
+        )
         if any(_is_storage_target(t) for t in all_targets):
 
             def fetch_result(

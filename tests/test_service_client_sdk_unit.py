@@ -4140,7 +4140,10 @@ def test_submit_batch_posts_targets_list_to_batch_endpoint() -> None:
         captured["path"] = request.url.path
         captured["payload"] = json.loads(request.content.decode("utf-8"))
         return httpx.Response(
-            200, json=_status_response("task-multi-target", "pending").model_dump(mode="json")
+            200,
+            json=_status_response("task-multi-target", "pending").model_dump(
+                mode="json"
+            ),
         )
 
     transport = httpx.MockTransport(handler)
@@ -4192,7 +4195,9 @@ def test_submit_batch_rejects_both_target_and_targets() -> None:
             )
 
 
-def test_submit_batch_returns_storage_result_for_targets_list_with_storage_target() -> None:
+def test_submit_batch_returns_storage_result_for_targets_list_with_storage_target() -> (
+    None
+):
     storage_result = PresignedUrlConvertDocumentResponse(
         num_converted=1,
         num_succeeded=1,
@@ -4234,7 +4239,9 @@ def test_submit_batch_returns_storage_result_for_targets_list_with_storage_targe
     assert result is storage_result
 
 
-def test_submit_batch_returns_presigned_result_for_targets_list_without_storage() -> None:
+def test_submit_batch_returns_presigned_result_for_targets_list_without_storage() -> (
+    None
+):
     presigned_result = PresignedUrlConvertResponse(
         num_converted=1,
         num_succeeded=1,
@@ -4278,7 +4285,9 @@ async def test_async_submit_batch_posts_targets_list() -> None:
         captured["json"] = kw.get("json")
         return httpx.Response(
             200,
-            json=_status_response("task-async-multi", "pending").model_dump(mode="json"),
+            json=_status_response("task-async-multi", "pending").model_dump(
+                mode="json"
+            ),
         )
 
     async with _make_async_http_client(handler) as client:
