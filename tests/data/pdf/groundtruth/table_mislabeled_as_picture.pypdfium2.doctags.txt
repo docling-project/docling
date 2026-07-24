@@ -1,0 +1,61 @@
+<doctag><unordered_list><list_item><loc_61><loc_35><loc_195><loc_49> They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid</list_item>
+<list_item><loc_61><loc_53><loc_194><loc_68> They coordinate appointments of private practitioners (ex officio, or panel appoint -ments) to legal aid cases</list_item>
+<list_item><loc_61><loc_72><loc_186><loc_79> They supervise, coach or mentor private practitioners who take legal aid cases</list_item>
+<list_item><loc_61><loc_83><loc_175><loc_90> They conduct or organize training sessions for staff lawyers/paralegals</list_item>
+<list_item><loc_61><loc_94><loc_191><loc_109> They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals</list_item>
+<list_item><loc_61><loc_113><loc_198><loc_120> Other (Please specify) _____________________________________________________</list_item>
+<list_item><loc_61><loc_124><loc_154><loc_131> Not applicable, there is no institutional legal aid provider</list_item>
+<list_item><loc_53><loc_159><loc_194><loc_172>If your country has an institutional legal aid provider (e.g. public defender), what is the maximum caseload per lawyer at one time?</list_item>
+<list_item><loc_60><loc_180><loc_118><loc_185>_______ at the national (federal) level</list_item>
+<list_item><loc_60><loc_194><loc_118><loc_199>_______ at the regional (district) level</list_item>
+<list_item><loc_60><loc_208><loc_117><loc_213>_______ at the local (municipal) level</list_item>
+<list_item><loc_61><loc_221><loc_109><loc_226> There is no such limitation</list_item>
+<list_item><loc_53><loc_245><loc_195><loc_265>If your country has an institutional legal aid provider (e.g. public defender), do the staff lawyers coordinate to uniformly challenge common violations of national and international due process rights and human rights?</list_item>
+<list_item><loc_61><loc_270><loc_118><loc_276> Yes, at the national (federal) level</list_item>
+<list_item><loc_61><loc_281><loc_112><loc_287> Yes, at regional (district) level</list_item>
+<list_item><loc_61><loc_292><loc_117><loc_298> Yes, at the local (municipal) level</list_item>
+</unordered_list>
+<text><loc_61><loc_303><loc_64><loc_308></text>
+<text><loc_68><loc_305><loc_72><loc_309>No</text>
+<ordered_list><list_item><loc_53><loc_338><loc_197><loc_358>If your country has an institutional legal aid provider (e.g. public defender), does it have specialized providers and/or units for representing child victims, child witnesses or suspected and accused children?</list_item>
+<list_item><loc_61><loc_363><loc_118><loc_369> Yes, at the national (federal) level</list_item>
+</ordered_list>
+<text><loc_61><loc_374><loc_64><loc_379></text>
+<text><loc_68><loc_375><loc_112><loc_381>Yes, at regional (district) level</text>
+<unordered_list><list_item><loc_61><loc_385><loc_117><loc_392> Yes, at the local (municipal) level</list_item>
+</unordered_list>
+<text><loc_61><loc_396><loc_64><loc_401></text>
+<text><loc_68><loc_398><loc_72><loc_402>No</text>
+<ordered_list><list_item><loc_309><loc_36><loc_454><loc_56>If your country allows legal aid services through university-based student law clinics, are there national guidelines on how students are supervised in providing legal aid services? (Please select all that apply)</list_item>
+<list_item><loc_317><loc_61><loc_440><loc_68> Yes, there are specific guidelines for non-lawyers providing legal aid services</list_item>
+<list_item><loc_317><loc_72><loc_411><loc_79> Yes, there are specific guidelines on faculty/student ratios</list_item>
+<list_item><loc_317><loc_83><loc_393><loc_90> No, it is up to the discretion of each university</list_item>
+<list_item><loc_317><loc_94><loc_342><loc_100> Don't know</list_item>
+<list_item><loc_317><loc_106><loc_398><loc_112> There are no university-based student law clinics</list_item>
+<list_item><loc_309><loc_140><loc_454><loc_161>If your country allows legal aid services through university-based student law clinics, what type of legal aid services is a student authorized to undertake? (Please select all that apply)</list_item>
+<list_item><loc_317><loc_165><loc_418><loc_172> There is no limitation; they have the same authority as lawyers</list_item>
+<list_item><loc_317><loc_176><loc_422><loc_183> They can represent people in administrative or civil law hearings</list_item>
+<list_item><loc_317><loc_188><loc_397><loc_194> They can provide primary legal aid (legal advice)</list_item>
+<list_item><loc_317><loc_199><loc_377><loc_205> They can prepare legal documents</list_item>
+<list_item><loc_317><loc_210><loc_420><loc_217> They can represent people in court in civil and criminal matters</list_item>
+<list_item><loc_317><loc_221><loc_444><loc_228> They have the same authority as lawyers in criminal cases of low to mid gravity</list_item>
+<list_item><loc_317><loc_232><loc_450><loc_239> They can provide a full range of legal services in criminal cases regardless of gravity</list_item>
+</ordered_list>
+<text><loc_317><loc_243><loc_320><loc_248></text>
+<text><loc_324><loc_245><loc_367><loc_250>They can conduct mediation</text>
+<unordered_list><list_item><loc_317><loc_255><loc_451><loc_269> They are authorized to provide only those services that a faculty member or practic -ing lawyer supervises</list_item>
+</unordered_list>
+<text><loc_317><loc_273><loc_320><loc_278></text>
+<text><loc_317><loc_284><loc_320><loc_289></text>
+<text><loc_357><loc_290><loc_454><loc_291>_____________________________________________________</text>
+<text><loc_324><loc_275><loc_342><loc_279>Don't know</text>
+<text><loc_324><loc_286><loc_356><loc_291>Other (Please specify)</text>
+<ordered_list><list_item><loc_309><loc_319><loc_454><loc_340>Are specialized legal aid services provided focusing on specific disadvantaged population groups? If yes, please indicate to whom these services are provided, and whether they are provided by State-funded legal aid, civil society organizations, or both.</list_item>
+</ordered_list>
+<text><loc_316><loc_342><loc_355><loc_347>(Please select all that apply)</text>
+<otsl><loc_315><loc_354><loc_472><loc_450><ecel><ecel><ched>State funded  legal aid<ched>CSOs<nl><fcel>y<fcel>Persons with disabilities<fcel>*<fcel>*<nl><fcel>y<fcel>Children<fcel>*<fcel>*<nl><fcel>y<fcel>Women<fcel>*<fcel>*<nl><fcel>y<fcel>The elderly<fcel>*<fcel>*<nl><fcel>y<fcel>Migrants<fcel>*<fcel>*<nl><fcel>y<fcel>Refugees, asylum seekers, or stateless persons<fcel>*<fcel>*<nl><fcel>y<fcel>Internally displaced persons<fcel>*<fcel>*<nl></otsl>
+<page_footer><loc_17><loc_478><loc_23><loc_482>208</page_footer>
+<page_footer><loc_129><loc_478><loc_198><loc_483>Global Study on Legal Aid — Global Report</page_footer>
+<page_footer><loc_302><loc_478><loc_312><loc_482>Annex</page_footer>
+<page_footer><loc_477><loc_478><loc_483><loc_482>209</page_footer>
+</doctag>

@@ -1,0 +1,4234 @@
+<doclang version="0.7">
+  <page_header>
+    <layer value="furniture"/>
+    <location value="15"/>
+    <location value="135"/>
+    <location value="30"/>
+    <location value="362"/>
+    arXiv:2203.01017v2 [cs.CV] 11 Mar 2022
+  </page_header>
+  <heading level="2">
+    <location value="81"/>
+    <location value="69"/>
+    <location value="417"/>
+    <location value="77"/>
+    TableFormer: Table Structure Understanding with Transformers.
+  </heading>
+  <text>
+    <location value="119"/>
+    <location value="95"/>
+    <location value="379"/>
+    <location value="109"/>
+    Ahmed Nassar, Nikolaos Livathinos, Maksym Lysak, Peter Staar IBM Research
+  </text>
+  <text>
+    <location value="175"/>
+    <location value="114"/>
+    <location value="317"/>
+    <location value="120"/>
+    {ahn,nli,mly,taa}@zurich.ibm.com
+  </text>
+  <heading level="2">
+    <location value="122"/>
+    <location value="139"/>
+    <location value="159"/>
+    <location value="145"/>
+    Abstract
+  </heading>
+  <text>
+    <location value="41"/>
+    <location value="156"/>
+    <location value="240"/>
+    <location value="332"/>
+<![CDATA[Tables organize valuable content in a concise and compact representation. This content is extremely valuable for systems such as search engines, Knowledge Graph's, etc, since they enhance their predictive capabilities. Unfortunately, tables come in a large variety of shapes and sizes. Furthermore, they can have complex column/row-header configurations, multiline rows, different variety of separation lines, missing entries, etc. As such, the correct identification of the table-structure from an image is a nontrivial task. In this paper, we present a new table-structure identification model. The latter improves the latest end-toend deep learning model (i.e. encoder-dual-decoder from PubTabNet) in two significant ways. First, we introduce a new object detection decoder for table-cells. In this way, we can obtain the content of the table-cells from programmatic PDF's directly from the PDF source and avoid the training of the custom OCR decoders. This architectural change leads to more accurate table-content extraction and allows us to tackle non-english tables. Second, we replace the LSTM decoders with transformer based decoders. This upgrade improves significantly the previous state-of-the-art tree-editing-distance-score (TEDS) from 91% to 98.5% on simple tables and from 88.7% to 95% on complex tables.]]>  </text>
+  <heading level="2">
+    <location value="43"/>
+    <location value="349"/>
+    <location value="106"/>
+    <location value="354"/>
+    1. Introduction
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="362"/>
+    <location value="239"/>
+    <location value="460"/>
+    The occurrence of tables in documents is ubiquitous. They often summarise quantitative or factual data, which is cumbersome to describe in verbose text but nevertheless extremely valuable. Unfortunately, this compact representation is often not easy to parse by machines. There are many implicit conventions used to obtain a compact table representation. For example, tables often have complex columnand row-headers in order to reduce duplicated cell content. Lines of different shapes and sizes are leveraged to separate content or indicate a tree structure. Additionally, tables can also have empty/missing table-entries or multi-row textual table-entries. Fig. 1 shows a table which presents all these issues.
+  </text>
+  <heading level="2">
+    <location value="264"/>
+    <location value="141"/>
+    <location value="340"/>
+    <location value="145"/>
+    a. Picture of a table:
+  </heading>
+  <table>
+    <location value="264"/>
+    <location value="149"/>
+    <location value="449"/>
+    <location value="196"/>
+    <ched/>
+    1
+    <nl/>
+  </table>
+  <text>
+    <location value="448"/>
+    <location value="229"/>
+    <location value="451"/>
+    <location value="233"/>
+    7
+  </text>
+  <table>
+    <location value="264"/>
+    <location value="280"/>
+    <location value="449"/>
+    <location value="321"/>
+    <fcel/>
+    0
+    <fcel/>
+    1  2 1
+    <lcel/>
+    <lcel/>
+    <nl/>
+    <fcel/>
+    3  4
+    <fcel/>
+    5
+    <fcel/>
+    6
+    <fcel/>
+    7
+    <nl/>
+    <fcel/>
+    9  13
+    <fcel/>
+    10
+    <fcel/>
+    11
+    <fcel/>
+    12
+    <nl/>
+    <fcel/>
+    8 2
+    <fcel/>
+    14
+    <fcel/>
+    15
+    <fcel/>
+    16
+    <nl/>
+    <fcel/>
+    17
+    <fcel/>
+    18
+    <fcel/>
+    19
+    <fcel/>
+    20
+    <nl/>
+  </table>
+  <picture>
+    <location value="263"/>
+    <location value="146"/>
+    <location value="450"/>
+    <location value="321"/>
+    <caption>
+      <location value="258"/>
+      <location value="333"/>
+      <location value="456"/>
+      <location value="361"/>
+<![CDATA[Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.]]>    </caption>
+    <list class="ordered">
+      <ldiv>
+        <marker>b.</marker>
+      </ldiv>
+      <location value="265"/>
+      <location value="203"/>
+      <location value="406"/>
+      <location value="215"/>
+      Red-annotation of bounding boxes, Blue-predictions by TableFormer
+    </list>
+    <list class="ordered">
+      <ldiv>
+        <marker>c.</marker>
+      </ldiv>
+      <location value="264"/>
+      <location value="272"/>
+      <location value="410"/>
+      <location value="277"/>
+      Structure predicted by TableFormer:
+    </list>
+    <text>
+      <location value="298"/>
+      <location value="221"/>
+      <location value="301"/>
+      <location value="225"/>
+      0
+    </text>
+    <text>
+      <location value="342"/>
+      <location value="222"/>
+      <location value="344"/>
+      <location value="226"/>
+      1
+    </text>
+    <text>
+      <location value="419"/>
+      <location value="221"/>
+      <location value="422"/>
+      <location value="225"/>
+      2
+    </text>
+    <text>
+      <location value="298"/>
+      <location value="228"/>
+      <location value="301"/>
+      <location value="232"/>
+      3
+    </text>
+    <text>
+      <location value="337"/>
+      <location value="230"/>
+      <location value="340"/>
+      <location value="234"/>
+      4
+    </text>
+    <text>
+      <location value="376"/>
+      <location value="228"/>
+      <location value="378"/>
+      <location value="232"/>
+      5
+    </text>
+    <text>
+      <location value="412"/>
+      <location value="229"/>
+      <location value="415"/>
+      <location value="233"/>
+      6
+    </text>
+    <text>
+      <location value="292"/>
+      <location value="251"/>
+      <location value="295"/>
+      <location value="255"/>
+      8
+    </text>
+    <text>
+      <location value="326"/>
+      <location value="243"/>
+      <location value="329"/>
+      <location value="247"/>
+      9
+    </text>
+    <text>
+      <location value="371"/>
+      <location value="243"/>
+      <location value="377"/>
+      <location value="247"/>
+      10
+    </text>
+    <text>
+      <location value="400"/>
+      <location value="243"/>
+      <location value="406"/>
+      <location value="247"/>
+      11
+    </text>
+    <text>
+      <location value="438"/>
+      <location value="243"/>
+      <location value="444"/>
+      <location value="247"/>
+      12
+    </text>
+    <text>
+      <location value="336"/>
+      <location value="251"/>
+      <location value="342"/>
+      <location value="255"/>
+      13
+    </text>
+    <text>
+      <location value="371"/>
+      <location value="251"/>
+      <location value="377"/>
+      <location value="254"/>
+      14
+    </text>
+    <text>
+      <location value="401"/>
+      <location value="251"/>
+      <location value="407"/>
+      <location value="255"/>
+      15
+    </text>
+    <text>
+      <location value="439"/>
+      <location value="250"/>
+      <location value="445"/>
+      <location value="254"/>
+      16
+    </text>
+    <text>
+      <location value="345"/>
+      <location value="259"/>
+      <location value="351"/>
+      <location value="263"/>
+      17
+    </text>
+    <text>
+      <location value="371"/>
+      <location value="258"/>
+      <location value="377"/>
+      <location value="262"/>
+      18
+    </text>
+    <text>
+      <location value="401"/>
+      <location value="258"/>
+      <location value="408"/>
+      <location value="262"/>
+      19
+    </text>
+    <text>
+      <location value="439"/>
+      <location value="258"/>
+      <location value="445"/>
+      <location value="262"/>
+      20
+    </text>
+    <text>
+      <location value="267"/>
+      <location value="283"/>
+      <location value="270"/>
+      <location value="287"/>
+      0
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="283"/>
+      <location value="293"/>
+      <location value="287"/>
+      1
+    </text>
+    <text>
+      <location value="330"/>
+      <location value="283"/>
+      <location value="333"/>
+      <location value="287"/>
+      2
+    </text>
+    <text>
+      <location value="267"/>
+      <location value="291"/>
+      <location value="270"/>
+      <location value="295"/>
+      3
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="291"/>
+      <location value="294"/>
+      <location value="295"/>
+      4
+    </text>
+    <text>
+      <location value="330"/>
+      <location value="291"/>
+      <location value="333"/>
+      <location value="295"/>
+      5
+    </text>
+    <text>
+      <location value="369"/>
+      <location value="291"/>
+      <location value="372"/>
+      <location value="295"/>
+      6
+    </text>
+    <text>
+      <location value="408"/>
+      <location value="291"/>
+      <location value="411"/>
+      <location value="295"/>
+      7
+    </text>
+    <text>
+      <location value="267"/>
+      <location value="307"/>
+      <location value="270"/>
+      <location value="311"/>
+      8
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="299"/>
+      <location value="294"/>
+      <location value="303"/>
+      9
+    </text>
+    <text>
+      <location value="331"/>
+      <location value="299"/>
+      <location value="337"/>
+      <location value="303"/>
+      10
+    </text>
+    <text>
+      <location value="370"/>
+      <location value="299"/>
+      <location value="375"/>
+      <location value="303"/>
+      11
+    </text>
+    <text>
+      <location value="409"/>
+      <location value="299"/>
+      <location value="415"/>
+      <location value="303"/>
+      12
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="307"/>
+      <location value="297"/>
+      <location value="311"/>
+      13
+    </text>
+    <text>
+      <location value="331"/>
+      <location value="307"/>
+      <location value="337"/>
+      <location value="310"/>
+      14
+    </text>
+    <text>
+      <location value="370"/>
+      <location value="307"/>
+      <location value="376"/>
+      <location value="311"/>
+      15
+    </text>
+    <text>
+      <location value="409"/>
+      <location value="307"/>
+      <location value="415"/>
+      <location value="311"/>
+      16
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="314"/>
+      <location value="297"/>
+      <location value="318"/>
+      17
+    </text>
+    <text>
+      <location value="331"/>
+      <location value="314"/>
+      <location value="337"/>
+      <location value="318"/>
+      18
+    </text>
+    <text>
+      <location value="370"/>
+      <location value="314"/>
+      <location value="376"/>
+      <location value="318"/>
+      19
+    </text>
+    <text>
+      <location value="408"/>
+      <location value="314"/>
+      <location value="415"/>
+      <location value="318"/>
+      20
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="152"/>
+      <location value="381"/>
+      <location value="157"/>
+      1
+    </text>
+    <text>
+      <location value="323"/>
+      <location value="231"/>
+      <location value="327"/>
+      <location value="236"/>
+      3
+    </text>
+    <text>
+      <location value="307"/>
+      <location value="290"/>
+      <location value="311"/>
+      <location value="296"/>
+      3
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="174"/>
+      <location value="282"/>
+      <location value="179"/>
+      2
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="246"/>
+      <location value="283"/>
+      <location value="251"/>
+      2
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="306"/>
+      <location value="282"/>
+      <location value="311"/>
+      2
+    </text>
+    <text>
+      <location value="401"/>
+      <location value="220"/>
+      <location value="403"/>
+      <location value="226"/>
+      1
+    </text>
+    <text>
+      <location value="386"/>
+      <location value="283"/>
+      <location value="388"/>
+      <location value="288"/>
+      1
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="163"/>
+      <location value="326"/>
+      <location value="169"/>
+      3
+    </text>
+  </picture>
+  <text>
+    <location value="259"/>
+    <location value="378"/>
+    <location value="456"/>
+    <location value="429"/>
+    Recently, significant progress has been made with vision based approaches to extract tables in documents. For the sake of completeness, the issue of table extraction from documents is typically decomposed into two separate challenges, i.e. (1) finding the location of the table(s) on a document-page and (2) finding the structure of a given table in the document.
+  </text>
+  <text>
+    <thread thread_id="1"/>
+    <location value="258"/>
+    <location value="432"/>
+    <location value="456"/>
+    <location value="461"/>
+    The first problem is called table-location and has been previously addressed [30 , 38 , 19 , 21 , 23 , 26 , 8] with stateof-the-art object-detection networks (e.g. YOLO and later on Mask-RCNN [9]). For all practical purposes, it can be
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="1"/>
+    <location value="42"/>
+    <location value="49"/>
+    <location value="239"/>
+    <location value="61"/>
+    considered as a solved problem, given enough ground-truth data to train on.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="248"/>
+    <location value="475"/>
+    <location value="250"/>
+    <location value="479"/>
+    1
+  </page_footer>
+  <text>
+    <location value="42"/>
+    <location value="64"/>
+    <location value="239"/>
+    <location value="147"/>
+    The second problem is called table-structure decomposition. The latter is a long standing problem in the community of document understanding [6 , 4 , 14]. Contrary to the table-location problem, there are no commonly used approaches that can easily be re-purposed to solve this problem. Lately, a set of new model-architectures has been proposed by the community to address table-structure decomposition [37 , 36 , 18 , 20]. All these models have some weaknesses (see Sec. 2). The common denominator here is the reliance on textual features and/or the inability to provide the bounding box of each table-cell in the original image.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="150"/>
+    <location value="240"/>
+    <location value="240"/>
+    In this paper, we want to address these weaknesses and present a robust table-structure decomposition algorithm. The design criteria for our model are the following. First, we want our algorithm to be language agnostic. In this way, we can obtain the structure of any table, irregardless of the language. Second, we want our algorithm to leverage as much data as possible from the original PDF document. For programmatic PDF documents, the text-cells can often be extracted much faster and with higher accuracy compared to OCR methods. Last but not least, we want to have a direct link between the table-cell and its bounding box in the image.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="243"/>
+    <location value="240"/>
+    <location value="278"/>
+    To meet the design criteria listed above, we developed a new model called TableFormer and a synthetically generated table structure dataset called SynthTabNet 1 . In particular, our contributions in this work can be summarised as follows:
+  </text>
+  <list>
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="287"/>
+    <location value="240"/>
+    <location value="316"/>
+    We propose TableFormer, a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="325"/>
+    <location value="239"/>
+    <location value="354"/>
+    Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="362"/>
+    <location value="239"/>
+    <location value="383"/>
+    We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="391"/>
+    <location value="239"/>
+    <location value="413"/>
+    An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.
+  </list>
+  <text>
+    <thread thread_id="2"/>
+    <location value="42"/>
+    <location value="421"/>
+    <location value="239"/>
+    <location value="448"/>
+    The paper is structured as follows. In Sec. 2, we give a brief overview of the current state-of-the-art. In Sec. 3 , we describe the datasets on which we train. In Sec. 4, we introduce the TableFormer model-architecture and describe
+  </text>
+  <text>
+    <thread thread_id="2"/>
+    <location value="259"/>
+    <location value="49"/>
+    <location value="456"/>
+    <location value="70"/>
+<![CDATA[its results & performance in Sec. 5. As a conclusion, we describe how this new model-architecture can be re-purposed for other tasks in the computer-vision community.]]>  </text>
+  <footnote>
+    <location value="52"/>
+    <location value="455"/>
+    <location value="154"/>
+    <location value="461"/>
+    1 https://github.com/IBM/SynthTabNet
+  </footnote>
+  <heading level="2">
+    <location value="259"/>
+    <location value="79"/>
+    <location value="417"/>
+    <location value="84"/>
+    2. Previous work and State of the Art
+  </heading>
+  <text>
+    <location value="258"/>
+    <location value="92"/>
+    <location value="456"/>
+    <location value="213"/>
+<![CDATA[Identifying the structure of a table has been an outstanding problem in the document-parsing community, that motivates many organised public challenges [6 , 4 , 14]. The difficulty of the problem can be attributed to a number of factors. First, there is a large variety in the shapes and sizes of tables. Such large variety requires a flexible method. This is especially true for complex column- and row headers, which can be extremely intricate and demanding. A second factor of complexity is the lack of data with regard to table-structure. Until the publication of PubTabNet [37], there were no large datasets (i.e. > 100K tables) that provided structure information. This happens primarily due to the fact that tables are notoriously time-consuming to annotate by hand. However, this has definitely changed in recent years with the deliverance of PubTabNet [37], FinTabNet [36], TableBank [17] etc.]]>  </text>
+  <text>
+    <location value="258"/>
+    <location value="216"/>
+    <location value="456"/>
+    <location value="290"/>
+    Before the rising popularity of deep neural networks, the community relied heavily on heuristic and/or statistical methods to do table structure identification [3 , 7 , 11 , 5 , 13 , 28]. Although such methods work well on constrained tables [12], a more data-driven approach can be applied due to the advent of convolutional neural networks (CNNs) and the availability of large datasets. To the best-of-our knowledge, there are currently two different types of network architecture that are being pursued for state-of-the-art tablestructure identification.
+  </text>
+  <text>
+    <thread thread_id="3"/>
+    <location value="258"/>
+    <location value="293"/>
+    <location value="456"/>
+    <location value="461"/>
+<![CDATA[Image-to-Text networks: In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37 , 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are "image-encoder → text-decoder" (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the "image-encoder → dual decoder" (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder, i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the]]>  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="3"/>
+    <location value="42"/>
+    <location value="49"/>
+    <location value="209"/>
+    <location value="54"/>
+    tag-decoder which is constrained to the table-tags.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    2
+  </page_footer>
+  <text>
+    <location value="42"/>
+    <location value="56"/>
+    <location value="240"/>
+    <location value="178"/>
+    In practice, both network architectures (IETD and IEDD) require an implicit, custom trained object-characterrecognition (OCR) to obtain the content of the table-cells. In the case of IETD, this OCR engine is implicit in the decoder similar to [24]. For the IEDD, the OCR is solely embedded in the content-decoder. This reliance on a custom, implicit OCR decoder is of course problematic. OCR is a well known and extremely tough problem, that often needs custom training for each individual language. However, the limited availability for non-english content in the current datasets, makes it impractical to apply the IETD and IEDD methods on tables with other languages. Additionally, OCR can be completely omitted if the tables originate from programmatic PDF documents with known positions of each cell. The latter was the inspiration for the work of this paper.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="180"/>
+    <location value="240"/>
+    <location value="317"/>
+<![CDATA[Graph Neural networks: Graph Neural networks (GNN's) take a radically different approach to tablestructure extraction. Note that one table cell can constitute out of multiple text-cells. To obtain the table-structure, one creates an initial graph, where each of the text-cells becomes a node in the graph similar to [33 , 34 , 2]. Each node is then associated with en embedding vector coming from the encoded image, its coordinates and the encoded text. Furthermore, nodes that represent adjacent text-cells are linked. Graph Convolutional Networks (GCN's) based methods take the image as an input, but also the position of the text-cells and their content [18]. The purpose of a GCN is to transform the input graph into a new graph, which replaces the old links with new ones. The new links then represent the table-structure. With this approach, one can avoid the need to build custom OCR decoders. However, the quality of the reconstructed structure is not comparable to the current state-of-the-art [18].]]>  </text>
+  <text>
+    <location value="42"/>
+    <location value="319"/>
+    <location value="240"/>
+    <location value="402"/>
+    Hybrid Deep Learning-Rule-Based approach: A popular current model for table-structure identification is the use of a hybrid Deep Learning-Rule-Based approach similar to [27 , 29]. In this approach, one first detects the position of the table-cells with object detection (e.g. YoloVx or MaskRCNN), then classifies the table into different types (from its images) and finally uses different rule-sets to obtain its table-structure. Currently, this approach achieves stateof-the-art results, but is not an end-to-end deep-learning method. As such, new rules need to be written if different types of tables are encountered.
+  </text>
+  <heading level="2">
+    <location value="42"/>
+    <location value="411"/>
+    <location value="88"/>
+    <location value="417"/>
+    3. Datasets
+  </heading>
+  <text>
+    <thread thread_id="4"/>
+    <location value="42"/>
+    <location value="424"/>
+    <location value="239"/>
+    <location value="461"/>
+    We rely on large-scale datasets such as PubTabNet [37], FinTabNet [36], and TableBank [17] datasets to train and evaluate our models. These datasets span over various appearance styles and content. We also introduce our own synthetically generated SynthTabNet dataset to fix an im-
+  </text>
+  <text>
+    <thread thread_id="4"/>
+    <location value="258"/>
+    <location value="205"/>
+    <location value="365"/>
+    <location value="211"/>
+    balance in the previous datasets.
+  </text>
+  <picture>
+    <location value="260"/>
+    <location value="51"/>
+    <location value="460"/>
+    <location value="162"/>
+    <caption>
+      <location value="258"/>
+      <location value="173"/>
+      <location value="456"/>
+      <location value="185"/>
+      Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets
+    </caption>
+    <text>
+      <location value="319"/>
+      <location value="52"/>
+      <location value="407"/>
+      <location value="56"/>
+      PubTabNet + FinTabNet
+    </text>
+    <text>
+      <location value="333"/>
+      <location value="156"/>
+      <location value="393"/>
+      <location value="162"/>
+      Rows / Columns
+    </text>
+    <text>
+      <location value="269"/>
+      <location value="151"/>
+      <location value="271"/>
+      <location value="154"/>
+      0
+    </text>
+    <text>
+      <location value="306"/>
+      <location value="151"/>
+      <location value="312"/>
+      <location value="154"/>
+      10
+    </text>
+    <text>
+      <location value="344"/>
+      <location value="151"/>
+      <location value="349"/>
+      <location value="154"/>
+      20
+    </text>
+    <text>
+      <location value="382"/>
+      <location value="151"/>
+      <location value="387"/>
+      <location value="154"/>
+      30
+    </text>
+    <text>
+      <location value="419"/>
+      <location value="151"/>
+      <location value="425"/>
+      <location value="154"/>
+      40
+    </text>
+    <text>
+      <location value="454"/>
+      <location value="151"/>
+      <location value="460"/>
+      <location value="154"/>
+      50
+    </text>
+    <text>
+      <location value="265"/>
+      <location value="149"/>
+      <location value="267"/>
+      <location value="152"/>
+      0
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="128"/>
+      <location value="268"/>
+      <location value="131"/>
+      20
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="109"/>
+      <location value="268"/>
+      <location value="112"/>
+      40
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="88"/>
+      <location value="268"/>
+      <location value="91"/>
+      60
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="68"/>
+      <location value="267"/>
+      <location value="71"/>
+      80
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="137"/>
+      <location value="267"/>
+      <location value="140"/>
+      10
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="119"/>
+      <location value="268"/>
+      <location value="122"/>
+      30
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="99"/>
+      <location value="268"/>
+      <location value="102"/>
+      50
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="78"/>
+      <location value="267"/>
+      <location value="81"/>
+      70
+    </text>
+    <text>
+      <location value="262"/>
+      <location value="58"/>
+      <location value="268"/>
+      <location value="61"/>
+      90
+    </text>
+    <text>
+      <location value="446"/>
+      <location value="144"/>
+      <location value="449"/>
+      <location value="148"/>
+      0
+    </text>
+    <text>
+      <location value="447"/>
+      <location value="70"/>
+      <location value="458"/>
+      <location value="74"/>
+      10K
+    </text>
+    <text>
+      <location value="446"/>
+      <location value="85"/>
+      <location value="454"/>
+      <location value="88"/>
+      8K
+    </text>
+    <text>
+      <location value="446"/>
+      <location value="100"/>
+      <location value="454"/>
+      <location value="103"/>
+      6K
+    </text>
+    <text>
+      <location value="446"/>
+      <location value="114"/>
+      <location value="454"/>
+      <location value="118"/>
+      4K
+    </text>
+    <text>
+      <location value="446"/>
+      <location value="129"/>
+      <location value="453"/>
+      <location value="133"/>
+      2K
+    </text>
+  </picture>
+  <text>
+    <location value="258"/>
+    <location value="214"/>
+    <location value="456"/>
+    <location value="406"/>
+<![CDATA[The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as "simple" when it does not contain row spans or column spans, otherwise it is "complex". The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.]]>  </text>
+  <text>
+    <thread thread_id="5"/>
+    <location value="259"/>
+    <location value="409"/>
+    <location value="456"/>
+    <location value="460"/>
+    Due to the heterogeneity across the dataset formats, it was necessary to combine all available data into one homogenized dataset before we could train our models for practical purposes. Given the size of PubTabNet, we adopted its annotation format and we extracted and converted all tables as PNG images with a resolution of 72 dpi. Additionally, we have filtered out tables with extreme sizes due to small
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="5"/>
+    <location value="42"/>
+    <location value="49"/>
+    <location value="239"/>
+    <location value="62"/>
+    amount of such tables, and kept only those ones ranging between 1*1 and 20*10 (rows/columns).
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="250"/>
+    <location value="479"/>
+    3
+  </page_footer>
+  <text>
+    <location value="42"/>
+    <location value="65"/>
+    <location value="239"/>
+    <location value="201"/>
+    The availability of the bounding boxes for all table cells is essential to train our models. In order to distinguish between empty and non-empty bounding boxes, we have introduced a binary class in the annotation. Unfortunately, the original datasets either omit the bounding boxes for whole tables (e.g. TableBank) or they narrow their scope only to non-empty cells. Therefore, it was imperative to introduce a data pre-processing procedure that generates the missing bounding boxes out of the annotation information. This procedure first parses the provided table structure and calculates the dimensions of the most fine-grained grid that covers the table structure. Notice that each table cell may occupy multiple grid squares due to row or column spans. In case of PubTabNet we had to compute missing bounding boxes for 48% of the simple and 69% of the complex tables. Regarding FinTabNet, 68% of the simple and 98% of the complex tables require the generation of bounding boxes.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="206"/>
+    <location value="240"/>
+    <location value="281"/>
+    As it is illustrated in Fig. 2, the table distributions from all datasets are skewed towards simpler structures with fewer number of rows/columns. Additionally, there is very limited variance in the table styles, which in case of PubTabNet and FinTabNet means one styling format for the majority of the tables. Similar limitations appear also in the type of table content, which in some cases (e.g. FinTabNet) is restricted to a certain domain. Ultimately, the lack of diversity in the training dataset damages the ability of the models to generalize well on unseen data.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="284"/>
+    <location value="240"/>
+    <location value="406"/>
+    Motivated by those observations we aimed at generating a synthetic table dataset named SynthTabNet. This approach offers control over: 1) the size of the dataset, 2) the table structure, 3) the table style and 4) the type of content. The complexity of the table structure is described by the size of the table header and the table body, as well as the percentage of the table cells covered by row spans and column spans. A set of carefully designed styling templates provides the basis to build a wide range of table appearances. Lastly, the table content is generated out of a curated collection of text corpora. By controlling the size and scope of the synthetic datasets we are able to train and evaluate our models in a variety of different conditions. For example, we can first generate a highly diverse dataset to train our models and then evaluate their performance on other synthetic datasets which are focused on a specific domain.
+  </text>
+  <text>
+    <thread thread_id="6"/>
+    <location value="42"/>
+    <location value="409"/>
+    <location value="239"/>
+    <location value="461"/>
+    In this regard, we have prepared four synthetic datasets, each one containing 150k examples. The corpora to generate the table text consists of the most frequent terms appearing in PubTabNet and FinTabNet together with randomly generated text. The first two synthetic datasets have been fine-tuned to mimic the appearance of the original datasets but encompass more complicated table structures. The third
+  </text>
+  <text>
+    <thread thread_id="6"/>
+    <location value="259"/>
+    <location value="161"/>
+    <location value="456"/>
+    <location value="190"/>
+    one adopts a colorful appearance with high contrast and the last one contains tables with sparse content. Lastly, we have combined all synthetic datasets into one big unified synthetic dataset of 600k examples.
+  </text>
+  <table>
+    <location value="260"/>
+    <location value="46"/>
+    <location value="454"/>
+    <location value="101"/>
+    <caption>
+      <location value="259"/>
+      <location value="108"/>
+      <location value="456"/>
+      <location value="145"/>
+<![CDATA[Table 1: Both "Combined-Tabnet" and "CombinedTabnet" are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.]]>    </caption>
+    <ecel/>
+    <ecel/>
+    <ecel/>
+    <ched/>
+    Tags Bbox Size Format
+    <nl/>
+    <rhed/>
+    PubTabNet
+    <fcel/>
+    ✓
+    <fcel/>
+    ✓
+    <fcel/>
+    509k PNG
+    <nl/>
+    <rhed/>
+    FinTabNet
+    <fcel/>
+    ✓
+    <fcel/>
+    ✓
+    <fcel/>
+    112k PDF
+    <nl/>
+    <rhed/>
+    TableBank
+    <fcel/>
+    ✓
+    <fcel/>
+    ✗
+    <fcel/>
+    145k JPEG
+    <nl/>
+    <rhed/>
+    Combined-Tabnet(*)
+    <fcel/>
+    ✓
+    <fcel/>
+    ✓
+    <fcel/>
+    400k PNG
+    <nl/>
+    <rhed/>
+    Combined(**)
+    <fcel/>
+    ✓
+    <fcel/>
+    ✓
+    <fcel/>
+    500k PNG
+    <nl/>
+    <rhed/>
+    SynthTabNet
+    <fcel/>
+    ✓
+    <fcel/>
+    ✓
+    <fcel/>
+    600k PNG
+    <nl/>
+  </table>
+  <text>
+    <location value="269"/>
+    <location value="192"/>
+    <location value="453"/>
+    <location value="197"/>
+    Tab. 1 summarizes the various attributes of the datasets.
+  </text>
+  <heading level="2">
+    <location value="259"/>
+    <location value="208"/>
+    <location value="372"/>
+    <location value="213"/>
+    4. The TableFormer model
+  </heading>
+  <text>
+    <location value="258"/>
+    <location value="221"/>
+    <location value="456"/>
+    <location value="289"/>
+    Given the image of a table, TableFormer is able to predict: 1) a sequence of tokens that represent the structure of a table, and 2) a bounding box coupled to a subset of those tokens. The conversion of an image into a sequence of tokens is a well-known task [35 , 16]. While attention is often used as an implicit method to associate each token of the sequence with a position in the original image, an explicit association between the individual table-cells and the image bounding boxes is also required.
+  </text>
+  <heading level="2">
+    <location value="259"/>
+    <location value="296"/>
+    <location value="351"/>
+    <location value="301"/>
+    4.1. Model architecture.
+  </heading>
+  <text>
+    <location value="258"/>
+    <location value="308"/>
+    <location value="456"/>
+    <location value="429"/>
+<![CDATA[We now describe in detail the proposed method, which is composed of three main components, see Fig. 4. Our CNN Backbone Network encodes the input as a feature vector of predefined length. The input feature vector of the encoded image is passed to the Structure Decoder to produce a sequence of HTML tags that represent the structure of the table. With each prediction of an HTML standard data cell ('<td>') the hidden state of that cell is passed to the Cell BBox Decoder. As for spanning cells, such as row or column span, the tag is broken down to '<', 'rowspan= ' or 'colspan=', with the number of spanning cells (attribute), and '>'. The hidden state attached to '<' is passed to the Cell BBox Decoder. A shared feed forward network (FFN) receives the hidden states from the Structure Decoder, to provide the final detection predictions of the bounding box coordinates and their classification.]]>  </text>
+  <text>
+    <thread thread_id="7"/>
+    <location value="258"/>
+    <location value="432"/>
+    <location value="456"/>
+    <location value="461"/>
+    CNN Backbone Network. A ResNet-18 CNN is the backbone that receives the table image and encodes it as a vector of predefined length. The network has been modified by removing the linear and pooling layer, as we are not per-
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="7"/>
+    <location value="258"/>
+    <location value="161"/>
+    <location value="456"/>
+    <location value="190"/>
+    forming classification, and adding an adaptive pooling layer of size 28*28. ResNet by default downsamples the image resolution by 32 and then the encoded image is provided to both the Structure Decoder, and Cell BBox Decoder .
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    4
+  </page_footer>
+  <picture>
+    <location value="62"/>
+    <location value="50"/>
+    <location value="435"/>
+    <location value="119"/>
+    <caption>
+      <location value="42"/>
+      <location value="132"/>
+      <location value="456"/>
+      <location value="145"/>
+      Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure.
+    </caption>
+    <text>
+      <location value="69"/>
+      <location value="79"/>
+      <location value="70"/>
+      <location value="81"/>
+      1.
+    </text>
+    <text>
+      <location value="73"/>
+      <location value="79"/>
+      <location value="78"/>
+      <location value="81"/>
+      Item
+    </text>
+    <text>
+      <location value="69"/>
+      <location value="74"/>
+      <location value="78"/>
+      <location value="76"/>
+      Names
+    </text>
+    <text>
+      <location value="86"/>
+      <location value="75"/>
+      <location value="96"/>
+      <location value="76"/>
+      Amount
+    </text>
+    <text>
+      <location value="81"/>
+      <location value="79"/>
+      <location value="87"/>
+      <location value="81"/>
+      1000
+    </text>
+    <text>
+      <location value="81"/>
+      <location value="83"/>
+      <location value="86"/>
+      <location value="84"/>
+      500
+    </text>
+    <text>
+      <location value="81"/>
+      <location value="86"/>
+      <location value="87"/>
+      <location value="88"/>
+      3500
+    </text>
+    <text>
+      <location value="81"/>
+      <location value="90"/>
+      <location value="86"/>
+      <location value="92"/>
+      150
+    </text>
+    <text>
+      <location value="93"/>
+      <location value="79"/>
+      <location value="97"/>
+      <location value="81"/>
+      unit
+    </text>
+    <text>
+      <location value="93"/>
+      <location value="83"/>
+      <location value="97"/>
+      <location value="84"/>
+      unit
+    </text>
+    <text>
+      <location value="93"/>
+      <location value="86"/>
+      <location value="97"/>
+      <location value="88"/>
+      unit
+    </text>
+    <text>
+      <location value="93"/>
+      <location value="90"/>
+      <location value="97"/>
+      <location value="92"/>
+      unit
+    </text>
+    <text>
+      <location value="68"/>
+      <location value="83"/>
+      <location value="70"/>
+      <location value="84"/>
+      2.
+    </text>
+    <text>
+      <location value="73"/>
+      <location value="83"/>
+      <location value="78"/>
+      <location value="84"/>
+      Item
+    </text>
+    <text>
+      <location value="68"/>
+      <location value="86"/>
+      <location value="78"/>
+      <location value="88"/>
+      3. Item
+    </text>
+    <text>
+      <location value="68"/>
+      <location value="90"/>
+      <location value="70"/>
+      <location value="92"/>
+      4.
+    </text>
+    <text>
+      <location value="73"/>
+      <location value="90"/>
+      <location value="78"/>
+      <location value="92"/>
+      Item
+    </text>
+    <text>
+      <location value="74"/>
+      <location value="59"/>
+      <location value="95"/>
+      <location value="61"/>
+      Extracted
+    </text>
+    <text>
+      <location value="69"/>
+      <location value="63"/>
+      <location value="100"/>
+      <location value="67"/>
+      Table Images
+    </text>
+    <text>
+      <location value="121"/>
+      <location value="65"/>
+      <location value="150"/>
+      <location value="68"/>
+      Standardized
+    </text>
+    <text>
+      <location value="128"/>
+      <location value="70"/>
+      <location value="144"/>
+      <location value="73"/>
+      Images
+    </text>
+    <text>
+      <location value="211"/>
+      <location value="52"/>
+      <location value="223"/>
+      <location value="55"/>
+      BBox
+    </text>
+    <text>
+      <location value="207"/>
+      <location value="56"/>
+      <location value="226"/>
+      <location value="59"/>
+      Decoder
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="51"/>
+      <location value="294"/>
+      <location value="54"/>
+      BBoxes
+    </text>
+    <text>
+      <location value="327"/>
+      <location value="62"/>
+      <location value="361"/>
+      <location value="65"/>
+      BBoxes can be
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="66"/>
+      <location value="364"/>
+      <location value="69"/>
+      traced back to the
+    </text>
+    <text>
+      <location value="325"/>
+      <location value="70"/>
+      <location value="363"/>
+      <location value="74"/>
+      original image to
+    </text>
+    <text>
+      <location value="327"/>
+      <location value="74"/>
+      <location value="361"/>
+      <location value="77"/>
+      extract content
+    </text>
+    <text>
+      <location value="361"/>
+      <location value="98"/>
+      <location value="417"/>
+      <location value="102"/>
+      Structure Tags sequence
+    </text>
+    <text>
+      <location value="361"/>
+      <location value="102"/>
+      <location value="418"/>
+      <location value="106"/>
+      provide full description of
+    </text>
+    <text>
+      <location value="369"/>
+      <location value="106"/>
+      <location value="409"/>
+      <location value="109"/>
+      the table structure
+    </text>
+    <text>
+      <location value="275"/>
+      <location value="115"/>
+      <location value="307"/>
+      <location value="119"/>
+      Structure Tags
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="80"/>
+      <location value="313"/>
+      <location value="84"/>
+      <content>BBoxes in sync 
+ith t</content>
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="83"/>
+      <location value="319"/>
+      <location value="87"/>
+      <content>y
+with tag sequence</content>
+    </text>
+    <text>
+      <location value="165"/>
+      <location value="57"/>
+      <location value="184"/>
+      <location value="60"/>
+      Encoder
+    </text>
+    <text>
+      <location value="207"/>
+      <location value="84"/>
+      <location value="227"/>
+      <location value="87"/>
+      Structure
+    </text>
+    <text>
+      <location value="207"/>
+      <location value="87"/>
+      <location value="226"/>
+      <location value="90"/>
+      Decoder
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="58"/>
+      <location value="305"/>
+      <location value="61"/>
+      [x1, y2, x2, y2]
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="63"/>
+      <location value="309"/>
+      <location value="67"/>
+<![CDATA[[x1', y2', x2', y2']]]>    </text>
+    <text>
+      <location value="277"/>
+      <location value="68"/>
+      <location value="313"/>
+      <location value="72"/>
+<![CDATA[[x1'', y2'', x2'', y2'']]]>    </text>
+    <text>
+      <location value="277"/>
+      <location value="76"/>
+      <location value="280"/>
+      <location value="76"/>
+      ...
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="92"/>
+      <location value="280"/>
+      <location value="94"/>
+<![CDATA[<TR>]]>    </text>
+    <text>
+      <location value="270"/>
+      <location value="96"/>
+      <location value="352"/>
+      <location value="99"/>
+      <content><![CDATA[<TD> 1 </TD><TD colspan="2"> </TD>
+2
+1]]></content>
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="101"/>
+      <location value="292"/>
+      <location value="103"/>
+<![CDATA[</TR><TR>]]>    </text>
+    <text>
+      <location value="270"/>
+      <location value="105"/>
+      <location value="313"/>
+      <location value="108"/>
+      <content><![CDATA[<TD> </TD><TD>...
+3]]></content>
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="112"/>
+      <location value="273"/>
+      <location value="113"/>
+      ...
+    </text>
+    <text>
+      <location value="271"/>
+      <location value="58"/>
+      <location value="273"/>
+      <location value="61"/>
+      1
+    </text>
+    <text>
+      <location value="271"/>
+      <location value="63"/>
+      <location value="273"/>
+      <location value="66"/>
+      2
+    </text>
+    <text>
+      <location value="271"/>
+      <location value="69"/>
+      <location value="273"/>
+      <location value="71"/>
+      3
+    </text>
+    <text>
+      <location value="336"/>
+      <location value="96"/>
+      <location value="338"/>
+      <location value="99"/>
+      2
+    </text>
+    <text>
+      <location value="283"/>
+      <location value="105"/>
+      <location value="285"/>
+      <location value="108"/>
+      3
+    </text>
+    <text>
+      <location value="380"/>
+      <location value="68"/>
+      <location value="383"/>
+      <location value="71"/>
+      3
+    </text>
+    <text>
+      <location value="380"/>
+      <location value="59"/>
+      <location value="382"/>
+      <location value="61"/>
+      1
+    </text>
+    <text>
+      <location value="413"/>
+      <location value="59"/>
+      <location value="415"/>
+      <location value="62"/>
+      2
+    </text>
+    <text>
+      <location value="283"/>
+      <location value="96"/>
+      <location value="284"/>
+      <location value="99"/>
+      <content>1 
+1</content>
+    </text>
+  </picture>
+  <picture>
+    <location value="45"/>
+    <location value="167"/>
+    <location value="239"/>
+    <location value="327"/>
+    <caption>
+      <location value="42"/>
+      <location value="341"/>
+      <location value="240"/>
+      <location value="440"/>
+<![CDATA[Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder. During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells ('<td>', '<') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes.]]>    </caption>
+    <text>
+      <location value="62"/>
+      <location value="168"/>
+      <location value="85"/>
+      <location value="171"/>
+      Input Image
+    </text>
+    <text>
+      <location value="102"/>
+      <location value="168"/>
+      <location value="132"/>
+      <location value="171"/>
+      Tokenised Tags
+    </text>
+    <text>
+      <location value="66"/>
+      <location value="241"/>
+      <location value="105"/>
+      <location value="243"/>
+      Multi-Head Attention
+    </text>
+    <text>
+      <location value="66"/>
+      <location value="254"/>
+      <location value="104"/>
+      <location value="256"/>
+<![CDATA[Add & Normalisation]]>    </text>
+    <text>
+      <location value="64"/>
+      <location value="275"/>
+      <location value="107"/>
+      <location value="277"/>
+      Feed Forward Network
+    </text>
+    <text>
+      <location value="66"/>
+      <location value="288"/>
+      <location value="104"/>
+      <location value="291"/>
+<![CDATA[Add & Normalisation]]>    </text>
+    <text>
+      <location value="140"/>
+      <location value="300"/>
+      <location value="152"/>
+      <location value="302"/>
+      Linear
+    </text>
+    <text>
+      <location value="139"/>
+      <location value="310"/>
+      <location value="154"/>
+      <location value="312"/>
+      Softmax
+    </text>
+    <text>
+      <location value="55"/>
+      <location value="210"/>
+      <location value="111"/>
+      <location value="213"/>
+      CNN BACKBONE ENCODER
+    </text>
+    <text>
+      <location value="100"/>
+      <location value="175"/>
+      <location value="134"/>
+      <location value="178"/>
+      [30, 1, 2, 3, 4, … 3,
+    </text>
+    <text>
+      <location value="108"/>
+      <location value="178"/>
+      <location value="126"/>
+      <location value="181"/>
+      4, 5, 8, 31]
+    </text>
+    <text>
+      <location value="51"/>
+      <location value="220"/>
+      <location value="66"/>
+      <location value="222"/>
+      Positional
+    </text>
+    <text>
+      <location value="51"/>
+      <location value="223"/>
+      <location value="66"/>
+      <location value="225"/>
+      Encoding
+    </text>
+    <text>
+      <location value="113"/>
+      <location value="190"/>
+      <location value="128"/>
+      <location value="193"/>
+      Positional
+    </text>
+    <text>
+      <location value="113"/>
+      <location value="193"/>
+      <location value="128"/>
+      <location value="196"/>
+      Encoding
+    </text>
+    <text>
+      <location value="126"/>
+      <location value="224"/>
+      <location value="165"/>
+      <location value="226"/>
+<![CDATA[Add & Normalisation]]>    </text>
+    <text>
+      <location value="126"/>
+      <location value="256"/>
+      <location value="165"/>
+      <location value="258"/>
+<![CDATA[Add & Normalisation]]>    </text>
+    <text>
+      <location value="126"/>
+      <location value="244"/>
+      <location value="165"/>
+      <location value="246"/>
+      Multi-Head Attention
+    </text>
+    <text>
+      <location value="126"/>
+      <location value="285"/>
+      <location value="165"/>
+      <location value="288"/>
+<![CDATA[Add & Normalisation]]>    </text>
+    <text>
+      <location value="124"/>
+      <location value="274"/>
+      <location value="167"/>
+      <location value="276"/>
+      Feed Forward Network
+    </text>
+    <text>
+      <location value="202"/>
+      <location value="204"/>
+      <location value="214"/>
+      <location value="206"/>
+      Linear
+    </text>
+    <text>
+      <location value="203"/>
+      <location value="234"/>
+      <location value="214"/>
+      <location value="237"/>
+      Linear
+    </text>
+    <text>
+      <location value="191"/>
+      <location value="218"/>
+      <location value="225"/>
+      <location value="221"/>
+      Attention Network
+    </text>
+    <text>
+      <location value="191"/>
+      <location value="263"/>
+      <location value="200"/>
+      <location value="265"/>
+      MLP
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="263"/>
+      <location value="226"/>
+      <location value="265"/>
+      Linear
+    </text>
+    <text>
+      <location value="200"/>
+      <location value="248"/>
+      <location value="216"/>
+      <location value="251"/>
+      Sigmoid
+    </text>
+    <text>
+      <location value="46"/>
+      <location value="249"/>
+      <location value="49"/>
+      <location value="291"/>
+      Transformer Encoder Network
+    </text>
+    <text>
+      <location value="46"/>
+      <location value="242"/>
+      <location value="49"/>
+      <location value="245"/>
+      x2
+    </text>
+    <text>
+      <location value="72"/>
+      <location value="314"/>
+      <location value="102"/>
+      <location value="317"/>
+      Encoded Output
+    </text>
+    <text>
+      <location value="192"/>
+      <location value="181"/>
+      <location value="222"/>
+      <location value="184"/>
+      Encoded Output
+    </text>
+    <text>
+      <location value="132"/>
+      <location value="324"/>
+      <location value="159"/>
+      <location value="327"/>
+      Predicted Tags
+    </text>
+    <text>
+      <location value="191"/>
+      <location value="284"/>
+      <location value="225"/>
+      <location value="287"/>
+<![CDATA[Bounding Boxes &]]>    </text>
+    <text>
+      <location value="196"/>
+      <location value="288"/>
+      <location value="220"/>
+      <location value="290"/>
+      Classification
+    </text>
+    <text>
+      <location value="155"/>
+      <location value="190"/>
+      <location value="176"/>
+      <location value="193"/>
+      Transformer
+    </text>
+    <text>
+      <location value="150"/>
+      <location value="194"/>
+      <location value="181"/>
+      <location value="196"/>
+      Decoder Network
+    </text>
+    <text>
+      <location value="163"/>
+      <location value="184"/>
+      <location value="166"/>
+      <location value="185"/>
+      x4
+    </text>
+    <text>
+      <location value="185"/>
+      <location value="177"/>
+      <location value="231"/>
+      <location value="179"/>
+      CELL BBOX DECODER
+    </text>
+    <text>
+      <location value="127"/>
+      <location value="210"/>
+      <location value="164"/>
+      <location value="212"/>
+      Masked Multi-Head
+    </text>
+    <text>
+      <location value="137"/>
+      <location value="214"/>
+      <location value="154"/>
+      <location value="216"/>
+      Attention
+    </text>
+  </picture>
+  <text>
+    <location value="258"/>
+    <location value="192"/>
+    <location value="456"/>
+    <location value="268"/>
+<![CDATA[Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. "Scene Understanding", "Image Captioning"), something which we relate to the simplicity of table images.]]>  </text>
+  <text>
+    <location value="258"/>
+    <location value="270"/>
+    <location value="456"/>
+    <location value="351"/>
+    The transformer encoder receives an encoded image from the CNN Backbone Network and refines it through a multi-head dot-product attention layer, followed by a Feed Forward Network. During training, the transformer decoder receives as input the output feature produced by the transformer encoder, and the tokenized input of the HTML ground-truth tags. Using a stack of multi-head attention layers, different aspects of the tag sequence could be inferred. This is achieved by each attention head on a layer operating in a different subspace, and then combining altogether their attention score.
+  </text>
+  <text>
+    <location value="258"/>
+    <location value="355"/>
+    <location value="456"/>
+    <location value="422"/>
+<![CDATA[Cell BBox Decoder. Our architecture allows to simultaneously predict HTML tags and bounding boxes for each table cell without the need of a separate object detector end to end. This approach is inspired by DETR [1] which employs a Transformer Encoder, and Decoder that looks for a specific number of object queries (potential object detections). As our model utilizes a transformer architecture, the hidden state of the <td>' and '<' HTML structure tags become the object query.]]>  </text>
+  <text>
+    <thread thread_id="8"/>
+    <location value="258"/>
+    <location value="424"/>
+    <location value="456"/>
+    <location value="461"/>
+    The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted at-
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="8"/>
+    <location value="42"/>
+    <location value="49"/>
+    <location value="240"/>
+    <location value="101"/>
+    tention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problem where imbalances between the number of detections and the amount of objects may exist. In our case, we know up front that the produced detections always match with the table cells in number and correspondence.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    5
+  </page_footer>
+  <text>
+    <location value="42"/>
+    <location value="103"/>
+    <location value="240"/>
+    <location value="155"/>
+    The output features for each table cell are then fed into the feed-forward network (FFN). The FFN consists of a Multi-Layer Perceptron (3 layers with ReLU activation function) that predicts the normalized coordinates for the bounding box of each table cell. Finally, the predicted bounding boxes are classified based on whether they are empty or not using a linear layer.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="158"/>
+    <location value="240"/>
+    <location value="287"/>
+    Loss Functions. We formulate a multi-task loss Eq. 2 to train our network. The Cross-Entropy loss (denoted as l s ) is used to train the Structure Decoder which predicts the structure tokens. As for the Cell BBox Decoder it is trained with a combination of losses denoted as l box. l box consists of the generally used l1 loss for object detection and the IoU loss (liou) to be scale invariant as explained in [25]. In comparison to DETR, we do not use the Hungarian algorithm [15] to match the predicted bounding boxes with the ground-truth boxes, as we have already achieved a one-toone match through two steps: 1) Our token input sequence is naturally ordered, therefore the hidden states of the table data cells are also in order when they are provided as input to the Cell BBox Decoder, and 2) Our bounding boxes generation mechanism (see Sec. 3) ensures a one-to-one mapping between the cell content and its bounding box for all post-processed datasets.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="290"/>
+    <location value="239"/>
+    <location value="303"/>
+    The loss used to train the TableFormer can be defined as following:
+  </text>
+  <formula>
+    <location value="104"/>
+    <location value="319"/>
+    <location value="239"/>
+    <location value="335"/>
+  </formula>
+  <text>
+    <location value="42"/>
+    <location value="343"/>
+    <location value="235"/>
+    <location value="349"/>
+    where λ ∈ [0, 1], and λiou, λl1 ∈ R are hyper-parameters.
+  </text>
+  <heading level="2">
+    <location value="42"/>
+    <location value="359"/>
+    <location value="144"/>
+    <location value="366"/>
+    5. Experimental Results
+  </heading>
+  <heading level="2">
+    <location value="42"/>
+    <location value="373"/>
+    <location value="150"/>
+    <location value="379"/>
+    5.1. Implementation Details
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="385"/>
+    <location value="239"/>
+    <location value="414"/>
+    TableFormer uses ResNet-18 as the CNN Backbone Network. The input images are resized to 448*448 pixels and the feature map has a dimension of 28*28. Additionally, we enforce the following input constraints:
+  </text>
+  <formula>
+    <location value="77"/>
+    <location value="423"/>
+    <location value="239"/>
+    <location value="439"/>
+  </formula>
+  <text>
+    <thread thread_id="9"/>
+    <location value="42"/>
+    <location value="448"/>
+    <location value="239"/>
+    <location value="461"/>
+    Although input constraints are used also by other methods, such as EDD, ours are less restrictive due to the improved
+  </text>
+  <text>
+    <thread thread_id="9"/>
+    <location value="258"/>
+    <location value="49"/>
+    <location value="456"/>
+    <location value="70"/>
+    runtime performance and lower memory footprint of TableFormer. This allows to utilize input samples with longer sequences and images with larger dimensions.
+  </text>
+  <text>
+    <location value="258"/>
+    <location value="75"/>
+    <location value="456"/>
+    <location value="212"/>
+<![CDATA[The Transformer Encoder consists of two "Transformer Encoder Layers", with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four "Transformer Decoder Layers" with similar input and output dimensions as the "Transformer Encoder Layers". Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5.]]>  </text>
+  <text>
+    <location value="258"/>
+    <location value="218"/>
+    <location value="456"/>
+    <location value="277"/>
+    For training, TableFormer is trained with 3 Adam optimizers, each one for the CNN Backbone Network , Structure Decoder, and Cell BBox Decoder. Taking the PubTabNet as an example for our parameter set up, the initializing learning rate is 0.001 for 12 epochs with a batch size of 24, and λ set to 0.5. Afterwards, we reduce the learning rate to 0.0001, the batch size to 18 and train for 12 more epochs or convergence.
+  </text>
+  <text>
+    <location value="258"/>
+    <location value="283"/>
+    <location value="456"/>
+    <location value="358"/>
+<![CDATA[TableFormer is implemented with PyTorch and Torchvision libraries [22]. To speed up the inference, the image undergoes a single forward pass through the CNN Backbone Network and transformer encoder. This eliminates the overhead of generating the same features for each decoding step. Similarly, we employ a 'caching' technique to preform faster autoregressive decoding. This is achieved by storing the features of decoded tokens so we can reuse them for each time step. Therefore, we only compute the attention for each new tag.]]>  </text>
+  <heading level="2">
+    <location value="259"/>
+    <location value="375"/>
+    <location value="332"/>
+    <location value="380"/>
+    5.2. Generalization
+  </heading>
+  <text>
+    <location value="258"/>
+    <location value="390"/>
+    <location value="456"/>
+    <location value="435"/>
+    TableFormer is evaluated on three major publicly available datasets of different nature to prove the generalization and effectiveness of our model. The datasets used for evaluation are the PubTabNet, FinTabNet and TableBank which stem from the scientific, financial and general domains respectively.
+  </text>
+  <text>
+    <location value="259"/>
+    <location value="440"/>
+    <location value="456"/>
+    <location value="461"/>
+    We also share our baseline results on the challenging SynthTabNet dataset. Throughout our experiments, the same parameters stated in Sec. 5.1 are utilized.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    6
+  </page_footer>
+  <page_break/>
+  <heading level="2">
+    <location value="42"/>
+    <location value="48"/>
+    <location value="140"/>
+    <location value="53"/>
+    5.3. Datasets and Metrics
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="60"/>
+    <location value="239"/>
+    <location value="89"/>
+    The Tree-Edit-Distance-Based Similarity (TEDS) metric was introduced in [37]. It represents the prediction, and ground-truth as a tree structure of HTML tags. This similarity is calculated as:
+  </text>
+  <formula>
+    <location value="72"/>
+    <location value="97"/>
+    <location value="239"/>
+    <location value="112"/>
+  </formula>
+  <text>
+    <location value="42"/>
+    <location value="117"/>
+    <location value="239"/>
+    <location value="137"/>
+    where Ta Ta and Tb Tb represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and |T| represents the number of nodes in T .
+  </text>
+  <heading level="2">
+    <location value="42"/>
+    <location value="145"/>
+    <location value="142"/>
+    <location value="152"/>
+    5.4. Quantitative Analysis
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="157"/>
+    <location value="240"/>
+    <location value="256"/>
+    Structure. As shown in Tab. 2, TableFormer outperforms all SOTA methods across different datasets by a large margin for predicting the table structure from an image. All the more, our model outperforms pre-trained methods. During the evaluation we do not apply any table filtering. We also provide our baseline results on the SynthTabNet dataset. It has been observed that large tables (e.g. tables that occupy half of the page or more) yield poor predictions. We attribute this issue to the image resizing during the preprocessing step, that produces downsampled images with indistinguishable features. This problem can be addressed by treating such big tables with a separate model which accepts a large input image size.
+  </text>
+  <table>
+    <location value="44"/>
+    <location value="264"/>
+    <location value="237"/>
+    <location value="376"/>
+    <ched/>
+    Model
+    <ched/>
+    TEDS Dataset Simple Complex All
+    <nl/>
+    <rhed/>
+    EDD PTN 91.1 88.7 89.9
+    <ecel/>
+    <nl/>
+    <ecel/>
+    <fcel/>
+    GTE PTN - - 93.01
+    <nl/>
+    <rhed/>
+    TableFormer PTN 98.5 95.0
+    <fcel/>
+    96.75
+    <nl/>
+    <rhed/>
+    EDD FTN 88.4 92.08 90.6
+    <ecel/>
+    <nl/>
+    <ecel/>
+    <fcel/>
+    GTE FTN - - 87.14
+    <nl/>
+    <rhed/>
+    GTE (FT) FTN - - 91.02
+    <ecel/>
+    <nl/>
+    <rhed/>
+    TableFormer FTN 97.5 96.0
+    <fcel/>
+    96.8
+    <nl/>
+    <rhed/>
+    EDD TB 86.0 - 86.0
+    <ecel/>
+    <nl/>
+    <rhed/>
+    TableFormer TB 89.6 -
+    <fcel/>
+    89.6
+    <nl/>
+    <rhed/>
+    TableFormer STN 96.9 95.7 96.7
+    <ecel/>
+    <nl/>
+  </table>
+  <text>
+    <location value="42"/>
+    <location value="383"/>
+    <location value="240"/>
+    <location value="388"/>
+    Table 2: Structure results on PubTabNet (PTN), FinTabNet
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="391"/>
+    <location value="218"/>
+    <location value="403"/>
+    (FTN), TableBank (TB) and SynthTabNet (STN). FT: Model was trained on PubTabNet then finetuned.
+  </text>
+  <text>
+    <thread thread_id="10"/>
+    <location value="42"/>
+    <location value="417"/>
+    <location value="240"/>
+    <location value="461"/>
+    Cell Detection. Like any object detector, our Cell BBox Detector provides bounding boxes that can be improved with post-processing during inference. We make use of the grid-like structure of tables to refine the predictions. A detailed explanation on the post-processing is available in the supplementary material. As shown in Tab. 3, we evaluate
+  </text>
+  <text>
+    <thread thread_id="10"/>
+    <location value="258"/>
+    <location value="49"/>
+    <location value="456"/>
+    <location value="147"/>
+<![CDATA[our Cell BBox Decoder accuracy for cells with a class label of 'content' only using the PASCAL VOC mAP metric for pre-processing and post-processing. Note that we do not have post-processing results for SynthTabNet as images are only provided. To compare the performance of our proposed approach, we've integrated TableFormer's Cell BBox Decoder into EDD architecture. As mentioned previously, the Structure Decoder provides the Cell BBox Decoder with the features needed to predict the bounding box predictions. Therefore, the accuracy of the Structure Decoder directly influences the accuracy of the Cell BBox Decoder. If the Structure Decoder predicts an extra column, this will result in an extra column of predicted bounding boxes.]]>  </text>
+  <table>
+    <location value="258"/>
+    <location value="160"/>
+    <location value="447"/>
+    <location value="196"/>
+    <caption>
+      <location value="258"/>
+      <location value="205"/>
+      <location value="456"/>
+      <location value="218"/>
+      Table 3: Cell Bounding Box detection results on PubTabNet, and FinTabNet. PP: Post-processing.
+    </caption>
+    <ecel/>
+    <ched/>
+    Model Dataset mAP mAP (PP)
+    <nl/>
+    <rhed/>
+    EDD+BBox PubTabNet 79.2 82.7
+    <ecel/>
+    <nl/>
+    <rhed/>
+    TableFormer PubTabNet
+    <fcel/>
+    82.1 86.8
+    <nl/>
+    <rhed/>
+    TableFormer SynthTabNet 87.7 -
+    <ecel/>
+    <nl/>
+  </table>
+  <text>
+    <location value="258"/>
+    <location value="238"/>
+    <location value="456"/>
+    <location value="336"/>
+    Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations.
+  </text>
+  <table>
+    <location value="278"/>
+    <location value="349"/>
+    <location value="436"/>
+    <location value="416"/>
+    <caption>
+      <location value="259"/>
+      <location value="425"/>
+      <location value="456"/>
+      <location value="446"/>
+      Table 4: Results of structure with content retrieved using cell detection on PubTabNet. In all cases the input is PDF documents with cropped tables.
+    </caption>
+    <ched/>
+    Model
+    <ched/>
+    TEDS Simple Complex All
+    <nl/>
+    <rhed/>
+    Tabula 78.0 57.8 67.9
+    <ecel/>
+    <nl/>
+    <rhed/>
+    Traprange 60.8 49.9 55.4
+    <ecel/>
+    <nl/>
+    <rhed/>
+    Camelot 80.0 66.0 73.0
+    <ecel/>
+    <nl/>
+    <rhed/>
+    Acrobat Pro 68.9 61.8 65.3
+    <ecel/>
+    <nl/>
+    <rhed/>
+    EDD 91.2 85.4 88.3
+    <ecel/>
+    <nl/>
+    <rhed/>
+    TableFormer 95.4 90.1
+    <fcel/>
+    93.6
+    <nl/>
+  </table>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    7
+  </page_footer>
+  <page_break/>
+  <list class="ordered">
+    <ldiv>
+      <marker>a.</marker>
+    </ldiv>
+    <location value="45"/>
+    <location value="51"/>
+    <location value="418"/>
+    <location value="56"/>
+    Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells
+  </list>
+  <picture>
+    <location value="42"/>
+    <location value="60"/>
+    <location value="464"/>
+    <location value="190"/>
+    <list class="ordered">
+      <ldiv>
+        <marker>b.</marker>
+      </ldiv>
+      <location value="46"/>
+      <location value="135"/>
+      <location value="322"/>
+      <location value="140"/>
+      Structure predicted by TableFormer, with superimposed matched PDF cell text:
+    </list>
+    <text>
+      <location value="45"/>
+      <location value="61"/>
+      <location value="237"/>
+      <location value="66"/>
+      Japanese language (previously unseen by TableFormer):
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="61"/>
+      <location value="360"/>
+      <location value="66"/>
+      Example table from FinTabNet:
+    </text>
+    <text>
+      <location value="176"/>
+      <location value="143"/>
+      <location value="199"/>
+      <location value="146"/>
+      論文ファイル
+    </text>
+    <text>
+      <location value="221"/>
+      <location value="143"/>
+      <location value="236"/>
+      <location value="146"/>
+      参考文献
+    </text>
+    <text>
+      <location value="93"/>
+      <location value="148"/>
+      <location value="100"/>
+      <location value="151"/>
+      出典
+    </text>
+    <text>
+      <location value="147"/>
+      <location value="148"/>
+      <location value="181"/>
+      <location value="151"/>
+      ファイル数 英語
+    </text>
+    <text>
+      <location value="193"/>
+      <location value="148"/>
+      <location value="203"/>
+      <location value="151"/>
+      日本語
+    </text>
+    <text>
+      <location value="214"/>
+      <location value="148"/>
+      <location value="222"/>
+      <location value="151"/>
+      英語
+    </text>
+    <text>
+      <location value="234"/>
+      <location value="148"/>
+      <location value="244"/>
+      <location value="151"/>
+      日本語
+    </text>
+    <text>
+      <location value="46"/>
+      <location value="153"/>
+      <location value="136"/>
+      <location value="156"/>
+      Association for Computational Linguistics(ACL2003)
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="153"/>
+      <location value="158"/>
+      <location value="155"/>
+      65
+    </text>
+    <text>
+      <location value="175"/>
+      <location value="153"/>
+      <location value="179"/>
+      <location value="155"/>
+      65
+    </text>
+    <text>
+      <location value="197"/>
+      <location value="153"/>
+      <location value="198"/>
+      <location value="155"/>
+      0
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="153"/>
+      <location value="221"/>
+      <location value="155"/>
+      150
+    </text>
+    <text>
+      <location value="238"/>
+      <location value="153"/>
+      <location value="240"/>
+      <location value="155"/>
+      0
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="157"/>
+      <location value="117"/>
+      <location value="160"/>
+      Computational Linguistics(COLING2002)
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="157"/>
+      <location value="159"/>
+      <location value="159"/>
+      140
+    </text>
+    <text>
+      <location value="174"/>
+      <location value="157"/>
+      <location value="180"/>
+      <location value="159"/>
+      140
+    </text>
+    <text>
+      <location value="197"/>
+      <location value="157"/>
+      <location value="198"/>
+      <location value="159"/>
+      0
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="157"/>
+      <location value="221"/>
+      <location value="159"/>
+      150
+    </text>
+    <text>
+      <location value="238"/>
+      <location value="157"/>
+      <location value="240"/>
+      <location value="159"/>
+      0
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="161"/>
+      <location value="105"/>
+      <location value="164"/>
+      電気情報通信学会2003年総合大会
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="161"/>
+      <location value="159"/>
+      <location value="163"/>
+      150
+    </text>
+    <text>
+      <location value="176"/>
+      <location value="161"/>
+      <location value="178"/>
+      <location value="163"/>
+      8
+    </text>
+    <text>
+      <location value="195"/>
+      <location value="161"/>
+      <location value="201"/>
+      <location value="163"/>
+      142
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="161"/>
+      <location value="221"/>
+      <location value="163"/>
+      223
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="161"/>
+      <location value="242"/>
+      <location value="163"/>
+      147
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="166"/>
+      <location value="109"/>
+      <location value="169"/>
+      情報処理学会第65回全国大会(2003)
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="166"/>
+      <location value="159"/>
+      <location value="168"/>
+      177
+    </text>
+    <text>
+      <location value="176"/>
+      <location value="166"/>
+      <location value="177"/>
+      <location value="168"/>
+      1
+    </text>
+    <text>
+      <location value="195"/>
+      <location value="166"/>
+      <location value="201"/>
+      <location value="168"/>
+      176
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="166"/>
+      <location value="221"/>
+      <location value="168"/>
+      150
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="166"/>
+      <location value="242"/>
+      <location value="168"/>
+      236
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="171"/>
+      <location value="109"/>
+      <location value="174"/>
+      第17回人工知能学会全国大会(2003)
+    </text>
+    <text>
+      <location value="153"/>
+      <location value="170"/>
+      <location value="159"/>
+      <location value="173"/>
+      208
+    </text>
+    <text>
+      <location value="176"/>
+      <location value="170"/>
+      <location value="178"/>
+      <location value="173"/>
+      5
+    </text>
+    <text>
+      <location value="194"/>
+      <location value="170"/>
+      <location value="201"/>
+      <location value="173"/>
+      203
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="170"/>
+      <location value="221"/>
+      <location value="173"/>
+      152
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="170"/>
+      <location value="242"/>
+      <location value="173"/>
+      244
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="175"/>
+      <location value="106"/>
+      <location value="178"/>
+      自然言語処理研究会第146〜155回
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="175"/>
+      <location value="158"/>
+      <location value="177"/>
+      98
+    </text>
+    <text>
+      <location value="176"/>
+      <location value="175"/>
+      <location value="178"/>
+      <location value="177"/>
+      2
+    </text>
+    <text>
+      <location value="196"/>
+      <location value="175"/>
+      <location value="200"/>
+      <location value="177"/>
+      96
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="175"/>
+      <location value="221"/>
+      <location value="177"/>
+      150
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="175"/>
+      <location value="242"/>
+      <location value="177"/>
+      232
+    </text>
+    <text>
+      <location value="47"/>
+      <location value="180"/>
+      <location value="88"/>
+      <location value="183"/>
+      WWWから収集した論文
+    </text>
+    <text>
+      <location value="154"/>
+      <location value="180"/>
+      <location value="159"/>
+      <location value="182"/>
+      107
+    </text>
+    <text>
+      <location value="175"/>
+      <location value="180"/>
+      <location value="179"/>
+      <location value="182"/>
+      73
+    </text>
+    <text>
+      <location value="196"/>
+      <location value="180"/>
+      <location value="200"/>
+      <location value="182"/>
+      34
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="180"/>
+      <location value="221"/>
+      <location value="182"/>
+      147
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="180"/>
+      <location value="241"/>
+      <location value="182"/>
+      96
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="185"/>
+      <location value="146"/>
+      <location value="188"/>
+      計
+    </text>
+    <text>
+      <location value="153"/>
+      <location value="185"/>
+      <location value="160"/>
+      <location value="187"/>
+      945
+    </text>
+    <text>
+      <location value="174"/>
+      <location value="185"/>
+      <location value="180"/>
+      <location value="187"/>
+      294
+    </text>
+    <text>
+      <location value="194"/>
+      <location value="185"/>
+      <location value="200"/>
+      <location value="187"/>
+      651
+    </text>
+    <text>
+      <location value="214"/>
+      <location value="185"/>
+      <location value="222"/>
+      <location value="187"/>
+      1122
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="185"/>
+      <location value="242"/>
+      <location value="187"/>
+      955
+    </text>
+    <text>
+      <location value="384"/>
+      <location value="143"/>
+      <location value="454"/>
+      <location value="147"/>
+      Weighted Average Grant Date Fair
+    </text>
+    <text>
+      <location value="413"/>
+      <location value="147"/>
+      <location value="424"/>
+      <location value="150"/>
+      Value
+    </text>
+    <text>
+      <location value="329"/>
+      <location value="153"/>
+      <location value="341"/>
+      <location value="156"/>
+      RSUs
+    </text>
+    <text>
+      <location value="328"/>
+      <location value="143"/>
+      <location value="366"/>
+      <location value="147"/>
+      Shares (in millions)
+    </text>
+    <text>
+      <location value="358"/>
+      <location value="153"/>
+      <location value="369"/>
+      <location value="156"/>
+      PSUs
+    </text>
+    <text>
+      <location value="392"/>
+      <location value="153"/>
+      <location value="403"/>
+      <location value="156"/>
+      RSUs
+    </text>
+    <text>
+      <location value="433"/>
+      <location value="153"/>
+      <location value="444"/>
+      <location value="156"/>
+      PSUs
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="158"/>
+      <location value="304"/>
+      <location value="161"/>
+      Nonvested on January 1
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="158"/>
+      <location value="337"/>
+      <location value="161"/>
+      1.1
+    </text>
+    <text>
+      <location value="360"/>
+      <location value="158"/>
+      <location value="366"/>
+      <location value="161"/>
+      0.3
+    </text>
+    <text>
+      <location value="390"/>
+      <location value="158"/>
+      <location value="404"/>
+      <location value="161"/>
+      90.10 $
+    </text>
+    <text>
+      <location value="430"/>
+      <location value="158"/>
+      <location value="444"/>
+      <location value="161"/>
+      $ 91.19
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="164"/>
+      <location value="272"/>
+      <location value="167"/>
+      Granted
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="164"/>
+      <location value="338"/>
+      <location value="167"/>
+      0.5
+    </text>
+    <text>
+      <location value="360"/>
+      <location value="164"/>
+      <location value="365"/>
+      <location value="167"/>
+      0.1
+    </text>
+    <text>
+      <location value="391"/>
+      <location value="164"/>
+      <location value="403"/>
+      <location value="167"/>
+      117.44
+    </text>
+    <text>
+      <location value="431"/>
+      <location value="164"/>
+      <location value="443"/>
+      <location value="167"/>
+      122.41
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="169"/>
+      <location value="270"/>
+      <location value="172"/>
+      Vested
+    </text>
+    <text>
+      <location value="330"/>
+      <location value="169"/>
+      <location value="339"/>
+      <location value="172"/>
+      (0.5)
+    </text>
+    <text>
+      <location value="358"/>
+      <location value="169"/>
+      <location value="367"/>
+      <location value="172"/>
+      (0.1)
+    </text>
+    <text>
+      <location value="392"/>
+      <location value="169"/>
+      <location value="403"/>
+      <location value="172"/>
+      87.08
+    </text>
+    <text>
+      <location value="432"/>
+      <location value="169"/>
+      <location value="443"/>
+      <location value="172"/>
+      81.14
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="174"/>
+      <location value="298"/>
+      <location value="177"/>
+      Canceled or forfeited
+    </text>
+    <text>
+      <location value="330"/>
+      <location value="175"/>
+      <location value="339"/>
+      <location value="178"/>
+      (0.1)
+    </text>
+    <text>
+      <location value="361"/>
+      <location value="176"/>
+      <location value="365"/>
+      <location value="177"/>
+      —
+    </text>
+    <text>
+      <location value="390"/>
+      <location value="175"/>
+      <location value="403"/>
+      <location value="177"/>
+      102.01
+    </text>
+    <text>
+      <location value="432"/>
+      <location value="175"/>
+      <location value="443"/>
+      <location value="177"/>
+      92.18
+    </text>
+    <text>
+      <location value="256"/>
+      <location value="180"/>
+      <location value="312"/>
+      <location value="183"/>
+      Nonvested on December 31
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="180"/>
+      <location value="338"/>
+      <location value="183"/>
+      1.0
+    </text>
+    <text>
+      <location value="360"/>
+      <location value="180"/>
+      <location value="365"/>
+      <location value="183"/>
+      0.3
+    </text>
+    <text>
+      <location value="388"/>
+      <location value="180"/>
+      <location value="405"/>
+      <location value="183"/>
+      104.85 $
+    </text>
+    <text>
+      <location value="429"/>
+      <location value="180"/>
+      <location value="446"/>
+      <location value="183"/>
+      $ 104.51
+    </text>
+  </picture>
+  <text>
+    <location value="319"/>
+    <location value="189"/>
+    <location value="459"/>
+    <location value="193"/>
+    Text is aligned to match original for ease of viewing
+  </text>
+  <picture>
+    <location value="43"/>
+    <location value="245"/>
+    <location value="454"/>
+    <location value="287"/>
+    <caption>
+      <location value="42"/>
+      <location value="207"/>
+      <location value="456"/>
+      <location value="235"/>
+      Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.
+    </caption>
+    <text>
+      <location value="45"/>
+      <location value="247"/>
+      <location value="71"/>
+      <location value="249"/>
+      Ground Truth
+    </text>
+    <text>
+      <location value="185"/>
+      <location value="247"/>
+      <location value="286"/>
+      <location value="250"/>
+      Red - PDF cells, Green - predicted bounding boxes
+    </text>
+    <text>
+      <location value="366"/>
+      <location value="259"/>
+      <location value="436"/>
+      <location value="262"/>
+      16 17 18 19 20 21 22
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="266"/>
+      <location value="349"/>
+      <location value="269"/>
+      23 24 25
+    </text>
+    <text>
+      <location value="366"/>
+      <location value="266"/>
+      <location value="393"/>
+      <location value="269"/>
+      26 27 28
+    </text>
+    <text>
+      <location value="323"/>
+      <location value="272"/>
+      <location value="327"/>
+      <location value="275"/>
+      30
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="272"/>
+      <location value="446"/>
+      <location value="275"/>
+      31 32 33 34 35 36 37 38 39 40 41
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="280"/>
+      <location value="327"/>
+      <location value="282"/>
+      42
+    </text>
+    <text>
+      <location value="333"/>
+      <location value="280"/>
+      <location value="447"/>
+      <location value="282"/>
+      43 44 45 46 47 48 49 50 51 52 53
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="252"/>
+      <location value="325"/>
+      <location value="255"/>
+      0
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="252"/>
+      <location value="436"/>
+      <location value="255"/>
+      1 2 3 4 5 6 7 8 9 10
+    </text>
+    <text>
+      <location value="442"/>
+      <location value="252"/>
+      <location value="446"/>
+      <location value="255"/>
+      11
+    </text>
+    <text>
+      <location value="323"/>
+      <location value="258"/>
+      <location value="349"/>
+      <location value="261"/>
+      12 13 14
+    </text>
+    <text>
+      <location value="356"/>
+      <location value="263"/>
+      <location value="360"/>
+      <location value="266"/>
+      15
+    </text>
+    <text>
+      <location value="421"/>
+      <location value="266"/>
+      <location value="426"/>
+      <location value="269"/>
+      29
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="247"/>
+      <location value="360"/>
+      <location value="249"/>
+      Predicted Structure
+    </text>
+  </picture>
+  <text>
+    <location value="52"/>
+    <location value="297"/>
+    <location value="445"/>
+    <location value="302"/>
+    Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.
+  </text>
+  <heading level="2">
+    <location value="42"/>
+    <location value="318"/>
+    <location value="137"/>
+    <location value="324"/>
+    5.5. Qualitative Analysis
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="347"/>
+    <location value="240"/>
+    <location value="461"/>
+<![CDATA[We showcase several visualizations for the different components of our network on various "complex" tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.]]>  </text>
+  <heading level="2">
+    <location value="259"/>
+    <location value="317"/>
+    <location value="385"/>
+    <location value="323"/>
+<![CDATA[6. Future Work & Conclusion]]>  </heading>
+  <text>
+    <location value="258"/>
+    <location value="332"/>
+    <location value="456"/>
+    <location value="421"/>
+<![CDATA[In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce "SynthTabNet" a challenging synthetically generated dataset that reinforces missing characteristics from other datasets.]]>  </text>
+  <heading level="2">
+    <location value="259"/>
+    <location value="434"/>
+    <location value="305"/>
+    <location value="440"/>
+    References
+  </heading>
+  <list class="ordered">
+    <ldiv>
+      <marker>[1]</marker>
+    </ldiv>
+    <location value="263"/>
+    <location value="449"/>
+    <location value="456"/>
+    <location value="461"/>
+    Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-
+  </list>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    8
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="59"/>
+    <location value="49"/>
+    <location value="239"/>
+    <location value="75"/>
+    end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision – ECCV 2020, pages 213–229, Cham, 2020. Springer International Publishing. 5
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>[2]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="78"/>
+    <location value="239"/>
+    <location value="97"/>
+    Zewen Chi, Heyan Huang, Heng-Da Xu, Houjin Yu, Wanxuan Yin, and Xian-Ling Mao. Complicated table structure recognition. arXiv preprint arXiv:1908.04729, 2019. 3
+    <ldiv>
+      <marker>[3]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="99"/>
+    <location value="239"/>
+    <location value="117"/>
+    Bertrand Couasnon and Aurelie Lemaitre. Recognition of Tables and Forms, pages 647–677. Springer London, London, 2014. 2
+    <ldiv>
+      <marker>[4]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="120"/>
+    <location value="239"/>
+    <location value="147"/>
+    Herve D ´ ´ ejean, Jean-Luc Meunier, Liangcai Gao, Yilun ´ ´ Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2
+    <ldiv>
+      <marker>[5]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="149"/>
+    <location value="240"/>
+    <location value="175"/>
+    Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. In International Conference on Pattern Recognition and Image Analysis, pages 609–618. Springer, 2005. 2
+    <ldiv>
+      <marker>[6]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="178"/>
+    <location value="240"/>
+    <location value="204"/>
+    Max Gobel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. ¨ ¨ Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition, pages 1449–1453, 2013. 2
+    <ldiv>
+      <marker>[7]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="206"/>
+    <location value="240"/>
+    <location value="225"/>
+<![CDATA[EA Green and M Krishnamoorthy. Recognition of tables using table grammars. procs. In Symposium on Document Analysis and Recognition (SDAIR'95), pages 261–277. 2]]>    <ldiv>
+      <marker>[8]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="228"/>
+    <location value="239"/>
+    <location value="261"/>
+    Khurram Azeem Hashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1
+    <ldiv>
+      <marker>[9]</marker>
+    </ldiv>
+    <location value="46"/>
+    <location value="263"/>
+    <location value="240"/>
+    <location value="283"/>
+    Kaiming He, Georgia Gkioxari, Piotr Dollar, and Ross Girshick. Mask r-cnn. In Proceedings of the IEEE International Conference on Computer Vision (ICCV), Oct 2017. 1
+    <ldiv>
+      <marker>[10]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="285"/>
+    <location value="239"/>
+    <location value="311"/>
+<![CDATA[Yelin He, X. Qi, Jiaquan Ye, Peng Gao, Yihao Chen, Bingcong Li, Xin Tang, and Rong Xiao. Pingan-vcgroup's solution for icdar 2021 competition on scientific table image recognition to latex. ArXiv, abs/2105.01846, 2021. 2]]>    <ldiv>
+      <marker>[11]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="313"/>
+    <location value="240"/>
+    <location value="346"/>
+    Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and Gordon Wilfong. Medium-independent table detection. In Document Recognition and Retrieval VII, volume 3967, pages 291–302. International Society for Optics and Photonics, 1999. 2
+    <ldiv>
+      <marker>[12]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="349"/>
+    <location value="240"/>
+    <location value="382"/>
+<![CDATA[Matthew Hurst. A constraint-based approach to table structure derivation. In Proceedings of the Seventh International Conference on Document Analysis and Recognition - Volume 2, ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2]]>    <ldiv>
+      <marker>[13]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="384"/>
+    <location value="240"/>
+    <location value="418"/>
+    Thotreingam Kasar, Philippine Barlas, Sebastien Adam, Clement Chatelain, and Thierry Paquet. Learning to detect ´ ´ tables in scanned document images using line information. In 2013 12th International Conference on Document Analysis and Recognition, pages 1185–1189. IEEE, 2013. 2
+    <ldiv>
+      <marker>[14]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="420"/>
+    <location value="240"/>
+    <location value="439"/>
+    Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar 2021 competition on scientific table image recognition to latex, 2021. 2
+    <ldiv>
+      <marker>[15]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="441"/>
+    <location value="240"/>
+    <location value="460"/>
+    Harold W Kuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83–97, 1955. 6
+    <ldiv>
+      <marker>[16]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="49"/>
+    <location value="456"/>
+    <location value="88"/>
+    Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generating simple image descriptions. IEEE Transactions on Pattern Analysis and Machine Intelligence, 35(12):2891–2903, 2013. 4
+    <ldiv>
+      <marker>[17]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="92"/>
+    <location value="456"/>
+    <location value="111"/>
+    Minghao Li, Lei Cui, Shaohan Huang, Furu Wei, Ming Zhou, and Zhoujun Li. Tablebank: A benchmark dataset for table detection and recognition, 2019. 2 , 3
+    <ldiv>
+      <marker>[18]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="113"/>
+    <location value="456"/>
+    <location value="167"/>
+    Yiren Li, Zheng Huang, Junchi Yan, Yi Zhou, Fan Ye, and Xianhui Liu. Gfte: Graph-based financial table extraction. In Alberto Del Bimbo, Rita Cucchiara, Stan Sclaroff, Giovanni Maria Farinella, Tao Mei, Marco Bertini, Hugo Jair Escalante, and Roberto Vezzani, editors, Pattern Recognition. ICPR International Workshops and Challenges, pages 644–658, Cham, 2021. Springer International Publishing. 2 , 3
+    <ldiv>
+      <marker>[19]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="170"/>
+    <location value="456"/>
+    <location value="211"/>
+    Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter Staar. Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence, 35(17):15137–15145, May 2021. 1
+    <ldiv>
+      <marker>[20]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="213"/>
+    <location value="456"/>
+    <location value="240"/>
+    Rujiao Long, Wen Wang, Nan Xue, Feiyu Gao, Zhibo Yang, Yongpan Wang, and Gui-Song Xia. Parsing table structures in the wild. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 944–952, 2021. 2
+    <ldiv>
+      <marker>[21]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="242"/>
+    <location value="456"/>
+    <location value="283"/>
+    Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extraction from scanned document images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 128–133. IEEE, 2019. 1
+    <ldiv>
+      <marker>[22]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="285"/>
+    <location value="456"/>
+    <location value="360"/>
+<![CDATA[Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alche-Buc, E. ´ ´ Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32, pages 8024–8035. Curran Associates, Inc., 2019. 6]]>    <ldiv>
+      <marker>[23]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="363"/>
+    <location value="456"/>
+    <location value="404"/>
+    Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-based documents. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops, pages 572–573, 2020. 1
+    <ldiv>
+      <marker>[24]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="406"/>
+    <location value="456"/>
+    <location value="432"/>
+    Shah Rukh Qasim, Hassan Mahmood, and Faisal Shafait. Rethinking table recognition using graph neural networks. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 142–147. IEEE, 2019. 3
+    <ldiv>
+      <marker>[25]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="434"/>
+    <location value="456"/>
+    <location value="461"/>
+    Hamid Rezatofighi, Nathan Tsoi, JunYoung Gwak, Amir Sadeghian, Ian Reid, and Silvio Savarese. Generalized intersection over union: A metric and a loss for bounding box regression. In Proceedings of the IEEE/CVF Conference on
+  </list>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="247"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="479"/>
+    9
+  </page_footer>
+  <page_break/>
+  <list>
+    <ldiv/>
+    <location value="59"/>
+    <location value="49"/>
+    <location value="239"/>
+    <location value="60"/>
+    Computer Vision and Pattern Recognition, pages 658–666, 2019. 6
+    <ldiv>
+      <marker>[26]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="63"/>
+    <location value="240"/>
+    <location value="104"/>
+    Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR), volume 01, pages 1162– 1167, 2017. 1
+    <ldiv>
+      <marker>[27]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="106"/>
+    <location value="239"/>
+    <location value="146"/>
+    Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR international conference on document analysis and recognition (ICDAR), volume 1, pages 1162–1167. IEEE, 2017. 3
+    <ldiv>
+      <marker>[28]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="149"/>
+    <location value="240"/>
+    <location value="175"/>
+    Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems, pages 65– 72, 2010. 2
+    <ldiv>
+      <marker>[29]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="177"/>
+    <location value="240"/>
+    <location value="211"/>
+    Shoaib Ahmed Siddiqui, Imran Ali Fateh, Syed Tahseen Raza Rizvi, Andreas Dengel, and Sheraz Ahmed. Deeptabstr: Deep learning based table structure recognition. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 1403–1409. IEEE, 2019. 3
+    <ldiv>
+      <marker>[30]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="213"/>
+    <location value="239"/>
+    <location value="246"/>
+<![CDATA[Peter W J Staar, Michele Dolfi, Christoph Auer, and Costas Bekas. Corpus conversion service: A machine learning platform to ingest documents at scale. In Proceedings of the 24th ACM SIGKDD, KDD '18, pages 774–782, New York, NY, USA, 2018. ACM. 1]]>    <ldiv>
+      <marker>[31]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="249"/>
+    <location value="239"/>
+    <location value="296"/>
+    Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 5998–6008. Curran Associates, Inc., 2017. 5
+    <ldiv>
+      <marker>[32]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="299"/>
+    <location value="240"/>
+    <location value="325"/>
+    Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. Show and tell: A neural image caption generator. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), June 2015. 2
+    <ldiv>
+      <marker>[33]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="327"/>
+    <location value="240"/>
+    <location value="354"/>
+    Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstruct syntactic structures from table images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 749–755. IEEE, 2019. 3
+    <ldiv>
+      <marker>[34]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="356"/>
+    <location value="240"/>
+    <location value="382"/>
+    Wenyuan Xue, Baosheng Yu, Wen Wang, Dacheng Tao, and Qingyong Li. Tgrnet: A table graph reconstruction network for table structure recognition. arXiv preprint arXiv:2106.10598, 2021. 3
+    <ldiv>
+      <marker>[35]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="384"/>
+    <location value="240"/>
+    <location value="411"/>
+    Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 4651–4659, 2016. 4
+    <ldiv>
+      <marker>[36]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="413"/>
+    <location value="240"/>
+    <location value="446"/>
+    Xinyi Zheng, Doug Burdick, Lucian Popa, Peter Zhong, and Nancy Xin Ru Wang. Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. Winter Conference for Applications in Computer Vision (WACV), 2021. 2 , 3
+    <ldiv>
+      <marker>[37]</marker>
+    </ldiv>
+    <location value="43"/>
+    <location value="449"/>
+    <location value="239"/>
+    <location value="461"/>
+    Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,
+    <ldiv/>
+    <location value="275"/>
+    <location value="49"/>
+    <location value="456"/>
+    <location value="75"/>
+    and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision – ECCV 2020, pages 564–580, Cham, 2020. Springer International Publishing. 2 , 3 , 7
+    <ldiv>
+      <marker>[38]</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="78"/>
+    <location value="456"/>
+    <location value="104"/>
+    Xu Zhong, Jianbin Tang, and Antonio Jimeno Yepes. Publaynet: Largest dataset ever for document layout analysis. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 1015–1022, 2019. 1
+  </list>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    10
+  </page_footer>
+  <page_break/>
+  <heading level="2">
+    <location value="111"/>
+    <location value="71"/>
+    <location value="389"/>
+    <location value="78"/>
+    TableFormer: Table Structure Understanding with Transformers
+  </heading>
+  <text>
+    <location value="185"/>
+    <location value="79"/>
+    <location value="313"/>
+    <location value="88"/>
+    Supplementary Material
+  </text>
+  <heading level="2">
+    <location value="43"/>
+    <location value="104"/>
+    <location value="147"/>
+    <location value="110"/>
+    1. Details on the datasets
+  </heading>
+  <heading level="2">
+    <location value="43"/>
+    <location value="117"/>
+    <location value="126"/>
+    <location value="123"/>
+    1.1. Data preparation
+  </heading>
+  <text>
+    <location value="42"/>
+    <location value="129"/>
+    <location value="240"/>
+    <location value="251"/>
+<![CDATA[As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have "strict" tables, i.e. tables where every row has exactly the same length.]]>  </text>
+  <text>
+    <location value="42"/>
+    <location value="253"/>
+    <location value="240"/>
+    <location value="406"/>
+    We have developed a technique that tries to derive a missing bounding box out of its neighbors. As a first step, we use the annotation data to generate the most fine-grained grid that covers the table structure. In case of strict HTML tables, all grid squares are associated with some table cell and in the presence of table spans a cell extends across multiple grid squares. When enough bounding boxes are known for a rectangular table, it is possible to compute the geometrical border lines between the grid rows and columns. Eventually this information is used to generate the missing bounding boxes. Additionally, the existence of unused grid squares indicates that the table rows have unequal number of columns and the overall structure is non-strict. The generation of missing bounding boxes for non-strict HTML tables is ambiguous and therefore quite challenging. Thus, we have decided to simply discard those tables. In case of PubTabNet we have computed missing bounding boxes for 48% of the simple and 69% of the complex tables. Regarding FinTabNet, 68% of the simple and 98% of the complex tables require the generation of bounding boxes.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="408"/>
+    <location value="239"/>
+    <location value="421"/>
+    Figure 7 illustrates the distribution of the tables across different dimensions per dataset.
+  </text>
+  <heading level="2">
+    <location value="43"/>
+    <location value="428"/>
+    <location value="128"/>
+    <location value="435"/>
+    1.2. Synthetic datasets
+  </heading>
+  <text>
+    <thread thread_id="11"/>
+    <location value="42"/>
+    <location value="440"/>
+    <location value="240"/>
+    <location value="462"/>
+    Aiming to train and evaluate our models in a broader spectrum of table data we have synthesized four types of datasets. Each one contains tables with different appear-
+  </text>
+  <text>
+    <thread thread_id="11"/>
+    <location value="258"/>
+    <location value="105"/>
+    <location value="456"/>
+    <location value="134"/>
+    ances in regard to their size, structure, style and content. Every synthetic dataset contains 150k examples, summing up to 600k synthetic examples. All datasets are divided into Train, Test and Val splits (80%, 10%, 10%).
+  </text>
+  <text>
+    <location value="259"/>
+    <location value="137"/>
+    <location value="456"/>
+    <location value="150"/>
+    The process of generating a synthetic dataset can be decomposed into the following steps:
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="152"/>
+    <location value="456"/>
+    <location value="204"/>
+    Prepare styling and content templates: The styling templates have been manually designed and organized into groups of scope specific appearances (e.g. financial data, marketing data, etc.) Additionally, we have prepared curated collections of content templates by extracting the most frequently used terms out of non-synthetic datasets (e.g. PubTabNet, FinTabNet, etc.).
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="207"/>
+    <location value="456"/>
+    <location value="290"/>
+    Generate table structures: The structure of each synthetic dataset assumes a horizontal table header which potentially spans over multiple rows and a table body that may contain a combination of row spans and column spans. However, spans are not allowed to cross the header - body boundary. The table structure is described by the parameters: Total number of table rows and columns, number of header rows, type of spans (header only spans, row only spans, column only spans, both row and column spans), maximum span size and the ratio of the table area covered by spans.
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="293"/>
+    <location value="456"/>
+    <location value="322"/>
+    Generate content: Based on the dataset theme, a set of suitable content templates is chosen first. Then, this content can be combined with purely random text to produce the synthetic content.
+    <ldiv>
+      <marker>4.</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="324"/>
+    <location value="456"/>
+    <location value="353"/>
+    Apply styling templates: Depending on the domain of the synthetic dataset, a set of styling templates is first manually selected. Then, a style is randomly selected to format the appearance of the synthesized table.
+    <ldiv>
+      <marker>5.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="355"/>
+    <location value="456"/>
+    <location value="392"/>
+    Render the complete tables: The synthetic table is finally rendered by a web browser engine to generate the bounding boxes for each table cell. A batching technique is utilized to optimize the runtime overhead of the rendering process.
+  </list>
+  <heading level="2">
+    <location value="259"/>
+    <location value="402"/>
+    <location value="456"/>
+    <location value="417"/>
+    2. Prediction post-processing for PDF documents
+  </heading>
+  <text>
+    <location value="259"/>
+    <location value="425"/>
+    <location value="456"/>
+    <location value="462"/>
+    Although TableFormer can predict the table structure and the bounding boxes for tables recognized inside PDF documents, this is not enough when a full reconstruction of the original table is required. This happens mainly due the following reasons:
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="252"/>
+    <location value="479"/>
+    11
+  </page_footer>
+  <page_break/>
+  <picture>
+    <location value="44"/>
+    <location value="48"/>
+    <location value="456"/>
+    <location value="95"/>
+    <caption>
+      <location value="42"/>
+      <location value="107"/>
+      <location value="456"/>
+      <location value="120"/>
+      Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity.
+    </caption>
+    <text>
+      <location value="45"/>
+      <location value="49"/>
+      <location value="127"/>
+      <location value="53"/>
+      PubTabNet b.
+    </text>
+    <text>
+      <location value="243"/>
+      <location value="50"/>
+      <location value="267"/>
+      <location value="53"/>
+      FinTabNet
+    </text>
+    <text>
+      <location value="375"/>
+      <location value="50"/>
+      <location value="403"/>
+      <location value="53"/>
+      Table Bank
+    </text>
+    <text>
+      <location value="69"/>
+      <location value="91"/>
+      <location value="79"/>
+      <location value="94"/>
+      Train
+    </text>
+    <text>
+      <location value="53"/>
+      <location value="65"/>
+      <location value="71"/>
+      <location value="69"/>
+      Complex
+    </text>
+    <text>
+      <location value="57"/>
+      <location value="80"/>
+      <location value="71"/>
+      <location value="84"/>
+      Simple
+    </text>
+    <text>
+      <location value="191"/>
+      <location value="66"/>
+      <location value="209"/>
+      <location value="69"/>
+      Complex
+    </text>
+    <text>
+      <location value="195"/>
+      <location value="82"/>
+      <location value="209"/>
+      <location value="85"/>
+      Simple
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="74"/>
+      <location value="346"/>
+      <location value="77"/>
+      Simple
+    </text>
+    <text>
+      <location value="82"/>
+      <location value="91"/>
+      <location value="88"/>
+      <location value="94"/>
+      Val
+    </text>
+    <text>
+      <location value="52"/>
+      <location value="55"/>
+      <location value="63"/>
+      <location value="58"/>
+      100%
+    </text>
+    <text>
+      <location value="69"/>
+      <location value="56"/>
+      <location value="89"/>
+      <location value="58"/>
+      500K 10K
+    </text>
+    <text>
+      <location value="206"/>
+      <location value="92"/>
+      <location value="235"/>
+      <location value="94"/>
+      Train Test Val
+    </text>
+    <text>
+      <location value="190"/>
+      <location value="55"/>
+      <location value="202"/>
+      <location value="58"/>
+      100%
+    </text>
+    <text>
+      <location value="209"/>
+      <location value="56"/>
+      <location value="236"/>
+      <location value="58"/>
+      91K 10K 10K
+    </text>
+    <text>
+      <location value="343"/>
+      <location value="91"/>
+      <location value="372"/>
+      <location value="94"/>
+      Train Test Val
+    </text>
+    <text>
+      <location value="328"/>
+      <location value="55"/>
+      <location value="340"/>
+      <location value="58"/>
+      100%
+    </text>
+    <text>
+      <location value="344"/>
+      <location value="56"/>
+      <location value="373"/>
+      <location value="58"/>
+      130K 5K 10K
+    </text>
+    <text>
+      <location value="96"/>
+      <location value="91"/>
+      <location value="114"/>
+      <location value="95"/>
+      Complex
+    </text>
+    <text>
+      <location value="98"/>
+      <location value="61"/>
+      <location value="106"/>
+      <location value="64"/>
+      Non
+    </text>
+    <text>
+      <location value="95"/>
+      <location value="65"/>
+      <location value="106"/>
+      <location value="68"/>
+      Strict
+    </text>
+    <text>
+      <location value="95"/>
+      <location value="69"/>
+      <location value="106"/>
+      <location value="72"/>
+      HTML
+    </text>
+    <text>
+      <location value="95"/>
+      <location value="79"/>
+      <location value="106"/>
+      <location value="82"/>
+      Strict
+    </text>
+    <text>
+      <location value="95"/>
+      <location value="83"/>
+      <location value="106"/>
+      <location value="86"/>
+      HTML
+    </text>
+    <text>
+      <location value="116"/>
+      <location value="91"/>
+      <location value="130"/>
+      <location value="95"/>
+      Simple
+    </text>
+    <text>
+      <location value="102"/>
+      <location value="56"/>
+      <location value="126"/>
+      <location value="58"/>
+      230K 280K
+    </text>
+    <text>
+      <location value="261"/>
+      <location value="56"/>
+      <location value="269"/>
+      <location value="59"/>
+      65K
+    </text>
+    <text>
+      <location value="241"/>
+      <location value="92"/>
+      <location value="259"/>
+      <location value="95"/>
+      Complex
+    </text>
+    <text>
+      <location value="242"/>
+      <location value="60"/>
+      <location value="250"/>
+      <location value="63"/>
+      Non
+    </text>
+    <text>
+      <location value="239"/>
+      <location value="64"/>
+      <location value="250"/>
+      <location value="67"/>
+      Strict
+    </text>
+    <text>
+      <location value="239"/>
+      <location value="68"/>
+      <location value="250"/>
+      <location value="71"/>
+      HTML
+    </text>
+    <text>
+      <location value="239"/>
+      <location value="78"/>
+      <location value="250"/>
+      <location value="80"/>
+      Strict
+    </text>
+    <text>
+      <location value="239"/>
+      <location value="82"/>
+      <location value="250"/>
+      <location value="84"/>
+      HTML
+    </text>
+    <text>
+      <location value="261"/>
+      <location value="92"/>
+      <location value="275"/>
+      <location value="95"/>
+      Simple
+    </text>
+    <text>
+      <location value="251"/>
+      <location value="56"/>
+      <location value="259"/>
+      <location value="59"/>
+      47K
+    </text>
+    <text>
+      <location value="390"/>
+      <location value="92"/>
+      <location value="404"/>
+      <location value="95"/>
+      Simple
+    </text>
+    <text>
+      <location value="384"/>
+      <location value="61"/>
+      <location value="392"/>
+      <location value="63"/>
+      Non
+    </text>
+    <text>
+      <location value="381"/>
+      <location value="65"/>
+      <location value="392"/>
+      <location value="67"/>
+      Strict
+    </text>
+    <text>
+      <location value="381"/>
+      <location value="69"/>
+      <location value="393"/>
+      <location value="71"/>
+      HTML
+    </text>
+    <text>
+      <location value="392"/>
+      <location value="55"/>
+      <location value="402"/>
+      <location value="58"/>
+      145K
+    </text>
+    <text>
+      <location value="134"/>
+      <location value="92"/>
+      <location value="153"/>
+      <location value="95"/>
+      Complex
+    </text>
+    <text>
+      <location value="129"/>
+      <location value="61"/>
+      <location value="145"/>
+      <location value="64"/>
+      Contain
+    </text>
+    <text>
+      <location value="130"/>
+      <location value="65"/>
+      <location value="145"/>
+      <location value="68"/>
+      Missing
+    </text>
+    <text>
+      <location value="130"/>
+      <location value="69"/>
+      <location value="145"/>
+      <location value="72"/>
+      bboxes
+    </text>
+    <text>
+      <location value="273"/>
+      <location value="69"/>
+      <location value="289"/>
+      <location value="72"/>
+      Contain
+    </text>
+    <text>
+      <location value="274"/>
+      <location value="73"/>
+      <location value="289"/>
+      <location value="76"/>
+      Missing
+    </text>
+    <text>
+      <location value="275"/>
+      <location value="77"/>
+      <location value="289"/>
+      <location value="80"/>
+      bboxes
+    </text>
+    <text>
+      <location value="410"/>
+      <location value="67"/>
+      <location value="426"/>
+      <location value="70"/>
+      Dataset
+    </text>
+    <text>
+      <location value="410"/>
+      <location value="71"/>
+      <location value="426"/>
+      <location value="74"/>
+<![CDATA[doesn't]]>    </text>
+    <text>
+      <location value="410"/>
+      <location value="75"/>
+      <location value="425"/>
+      <location value="78"/>
+      provide
+    </text>
+    <text>
+      <location value="411"/>
+      <location value="79"/>
+      <location value="425"/>
+      <location value="82"/>
+      bboxes
+    </text>
+    <text>
+      <location value="155"/>
+      <location value="92"/>
+      <location value="169"/>
+      <location value="95"/>
+      Simple
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="56"/>
+      <location value="165"/>
+      <location value="58"/>
+      230K 280K
+    </text>
+    <text>
+      <location value="299"/>
+      <location value="56"/>
+      <location value="307"/>
+      <location value="58"/>
+      65K
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="92"/>
+      <location value="313"/>
+      <location value="95"/>
+      Complex Simple
+    </text>
+    <text>
+      <location value="289"/>
+      <location value="56"/>
+      <location value="298"/>
+      <location value="58"/>
+      47K
+    </text>
+    <text>
+      <location value="426"/>
+      <location value="91"/>
+      <location value="440"/>
+      <location value="95"/>
+      Simple
+    </text>
+    <text>
+      <location value="428"/>
+      <location value="56"/>
+      <location value="438"/>
+      <location value="58"/>
+      145K
+    </text>
+  </picture>
+  <list>
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="136"/>
+    <location value="239"/>
+    <location value="149"/>
+    TableFormer output does not include the table cell content.
+    <ldiv>
+      <marker>·</marker>
+    </ldiv>
+    <location value="52"/>
+    <location value="158"/>
+    <location value="240"/>
+    <location value="171"/>
+    There are occasional inaccuracies in the predictions of the bounding boxes.
+  </list>
+  <text>
+    <location value="42"/>
+    <location value="180"/>
+    <location value="239"/>
+    <location value="256"/>
+    However, it is possible to mitigate those limitations by combining the TableFormer predictions with the information already present inside a programmatic PDF document. More specifically, PDF documents can be seen as a sequence of PDF cells where each cell is described by its content and bounding box. If we are able to associate the PDF cells with the predicted table cells, we can directly link the PDF cell content to the table cell structure and use the PDF bounding boxes to correct misalignments in the predicted table cell bounding boxes.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="258"/>
+    <location value="239"/>
+    <location value="271"/>
+    Here is a step-by-step description of the prediction postprocessing:
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="42"/>
+    <location value="274"/>
+    <location value="239"/>
+    <location value="295"/>
+    Get the minimal grid dimensions - number of rows and columns for the predicted table structure. This represents the most granular grid for the underlying table structure.
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="42"/>
+    <location value="297"/>
+    <location value="239"/>
+    <location value="325"/>
+    Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="42"/>
+    <location value="328"/>
+    <location value="239"/>
+    <location value="342"/>
+<![CDATA[Use a carefully selected IOU threshold to designate the matches as "good" ones and "bad" ones.]]>    <ldiv/>
+    <location value="42"/>
+    <location value="344"/>
+    <location value="239"/>
+    <location value="364"/>
+    3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.
+    <ldiv>
+      <marker>4.</marker>
+    </ldiv>
+    <location value="42"/>
+    <location value="367"/>
+    <location value="240"/>
+    <location value="388"/>
+    Find the best-fitting content alignment for the predicted cells with good IOU per each column. The alignment of the column can be identified by the following formula:
+  </list>
+  <formula>
+    <location value="93"/>
+    <location value="403"/>
+    <location value="239"/>
+    <location value="423"/>
+  </formula>
+  <text>
+    <location value="42"/>
+    <location value="431"/>
+    <location value="239"/>
+    <location value="445"/>
+    where c is one of {left, centroid, right} and x c is the xcoordinate for the corresponding point.
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>5.</marker>
+    </ldiv>
+    <location value="42"/>
+    <location value="447"/>
+    <location value="239"/>
+    <location value="460"/>
+    Use the alignment computed in step 4, to compute the median x-coordinate for all table columns and the me-
+    <ldiv/>
+    <location value="259"/>
+    <location value="136"/>
+    <location value="456"/>
+    <location value="164"/>
+    dian cell size for all table cells. The usage of median during the computations, helps to eliminate outliers caused by occasional column spans which are usually wider than the normal.
+    <ldiv>
+      <marker>6.</marker>
+    </ldiv>
+    <location value="259"/>
+    <location value="167"/>
+    <location value="456"/>
+    <location value="180"/>
+    Snap all cells with bad IOU to their corresponding median x-coordinates and cell sizes.
+    <ldiv>
+      <marker>7.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="183"/>
+    <location value="456"/>
+    <location value="249"/>
+    Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.
+    <ldiv>
+      <marker>8.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="253"/>
+    <location value="456"/>
+    <location value="296"/>
+    In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.
+    <ldiv>
+      <marker>9.</marker>
+    </ldiv>
+    <location value="258"/>
+    <location value="300"/>
+    <location value="456"/>
+    <location value="367"/>
+    Pick up the remaining orphan cells. There could be cases, when after applying all the previous post-processing steps, some PDF cells could still remain without any match to predicted cells. However, it is still possible to deduce the correct matching for an orphan PDF cell by mapping its bounding box on the geometry of the grid. This mapping decides if the content of the orphan cell will be appended to an already matched table cell, or a new table cell should be created to match with the orphan.
+    <ldiv/>
+    <location value="258"/>
+    <location value="369"/>
+    <location value="456"/>
+    <location value="390"/>
+    9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).
+    <ldiv/>
+    <location value="258"/>
+    <location value="393"/>
+    <location value="456"/>
+    <location value="406"/>
+<![CDATA[9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.]]>    <ldiv/>
+    <location value="258"/>
+    <location value="408"/>
+    <location value="456"/>
+    <location value="429"/>
+    9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).
+    <ldiv/>
+    <location value="258"/>
+    <location value="432"/>
+    <location value="456"/>
+    <location value="445"/>
+<![CDATA[9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.]]>  </list>
+  <text>
+    <thread thread_id="12"/>
+    <location value="259"/>
+    <location value="448"/>
+    <location value="456"/>
+    <location value="461"/>
+    9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or-
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="12"/>
+    <location value="42"/>
+    <location value="49"/>
+    <location value="74"/>
+    <location value="54"/>
+    phan cell.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    12
+  </page_footer>
+  <text>
+    <location value="42"/>
+    <location value="56"/>
+    <location value="240"/>
+    <location value="70"/>
+    9f. Otherwise create a new structural cell and match it wit the orphan cell.
+  </text>
+  <text>
+    <location value="42"/>
+    <location value="72"/>
+    <location value="239"/>
+    <location value="85"/>
+    Aditional images with examples of TableFormer predictions and post-processing can be found below.
+  </text>
+  <picture>
+    <location value="68"/>
+    <location value="94"/>
+    <location value="210"/>
+    <location value="315"/>
+  </picture>
+  <text>
+    <location value="53"/>
+    <location value="325"/>
+    <location value="228"/>
+    <location value="330"/>
+    Figure 8: Example of a table with multi-line header.
+  </text>
+  <picture>
+    <location value="258"/>
+    <location value="60"/>
+    <location value="466"/>
+    <location value="190"/>
+    <caption>
+      <location value="258"/>
+      <location value="198"/>
+      <location value="456"/>
+      <location value="210"/>
+      Figure 9: Example of a table with big empty distance between cells.
+    </caption>
+  </picture>
+  <table>
+    <location value="280"/>
+    <location value="293"/>
+    <location value="410"/>
+    <location value="325"/>
+  </table>
+  <picture>
+    <location value="279"/>
+    <location value="245"/>
+    <location value="434"/>
+    <location value="431"/>
+    <caption>
+      <location value="261"/>
+      <location value="440"/>
+      <location value="453"/>
+      <location value="446"/>
+      Figure 10: Example of a complex table with empty cells.
+    </caption>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    13
+  </page_footer>
+  <page_break/>
+  <picture>
+    <location value="42"/>
+    <location value="66"/>
+    <location value="238"/>
+    <location value="223"/>
+  </picture>
+  <text>
+    <location value="42"/>
+    <location value="231"/>
+    <location value="239"/>
+    <location value="243"/>
+    Figure 11: Simple table with different style and empty cells.
+  </text>
+  <picture>
+    <location value="266"/>
+    <location value="58"/>
+    <location value="447"/>
+    <location value="232"/>
+    <caption>
+      <location value="264"/>
+      <location value="240"/>
+      <location value="450"/>
+      <location value="246"/>
+      Figure 13: Table predictions example on colorful table.
+    </caption>
+  </picture>
+  <picture>
+    <location value="41"/>
+    <location value="277"/>
+    <location value="445"/>
+    <location value="433"/>
+    <caption>
+      <location value="46"/>
+      <location value="434"/>
+      <location value="235"/>
+      <location value="440"/>
+      Figure 12: Simple table predictions and post processing.
+    </caption>
+  </picture>
+  <text>
+    <location value="289"/>
+    <location value="442"/>
+    <location value="425"/>
+    <location value="448"/>
+    Figure 14: Example with multi-line text.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    14
+  </page_footer>
+  <page_break/>
+  <picture>
+    <location value="43"/>
+    <location value="78"/>
+    <location value="441"/>
+    <location value="410"/>
+    <caption>
+      <location value="71"/>
+      <location value="416"/>
+      <location value="210"/>
+      <location value="422"/>
+      Figure 15: Example with triangular table.
+    </caption>
+  </picture>
+  <text>
+    <location value="258"/>
+    <location value="422"/>
+    <location value="456"/>
+    <location value="436"/>
+    Figure 16: Example of how post-processing helps to restore mis-aligned bounding boxes prediction artifact.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    15
+  </page_footer>
+  <page_break/>
+  <picture>
+    <location value="55"/>
+    <location value="164"/>
+    <location value="442"/>
+    <location value="322"/>
+    <caption>
+      <location value="42"/>
+      <location value="329"/>
+      <location value="456"/>
+      <location value="342"/>
+      Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.
+    </caption>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="246"/>
+    <location value="475"/>
+    <location value="253"/>
+    <location value="479"/>
+    16
+  </page_footer>
+</doclang>

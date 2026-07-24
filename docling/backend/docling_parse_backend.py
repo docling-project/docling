@@ -473,12 +473,6 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        requested_page_numbers = _resolve_threaded_page_numbers(
-            self.path_or_stream,
-            password,
-            in_doc.limits.page_range,
-        )
-
         parser_threads = (
             self.options.parser_threads
             if isinstance(self.options, ThreadedDoclingParseBackendOptions)
@@ -510,11 +504,29 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             ),
             decode_config=decode_config,
         )
-        self.doc_key = self.parser.load(
-            self.path_or_stream,
-            password=password,
-            page_numbers=requested_page_numbers,
-        )
+        try:
+            requested_page_numbers = _resolve_threaded_page_numbers(
+                self.path_or_stream,
+                password,
+                in_doc.limits.page_range,
+            )
+            self.doc_key = self.parser.load(
+                self.path_or_stream,
+                password=password,
+                page_numbers=requested_page_numbers,
+            )
+        except (RuntimeError, ValueError) as e:
+            # pypdfium2 (PdfiumError) raises RuntimeError; the threaded parser
+            # surfaces native parse failures on unreadable bytes as ValueError
+            # (e.g. "vector::reserve"). Tag both as load failures.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
     def is_valid(self) -> bool:
         return not self._closed and self.page_count() > 0

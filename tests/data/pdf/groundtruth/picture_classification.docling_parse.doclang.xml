@@ -1,0 +1,80 @@
+<doclang version="0.7">
+  <heading level="2">
+    <location value="112"/>
+    <location value="81"/>
+    <location value="211"/>
+    <location value="89"/>
+    Figures Example
+  </heading>
+  <text>
+    <location value="112"/>
+    <location value="97"/>
+    <location value="399"/>
+    <location value="187"/>
+    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+  </text>
+  <picture>
+    <location value="113"/>
+    <location value="197"/>
+    <location value="397"/>
+    <location value="329"/>
+    <caption>
+      <location value="190"/>
+      <location value="342"/>
+      <location value="322"/>
+      <location value="348"/>
+      Figure 1: This is an example image.
+    </caption>
+  </picture>
+  <text>
+    <location value="112"/>
+    <location value="358"/>
+    <location value="399"/>
+    <location value="433"/>
+    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="254"/>
+    <location value="450"/>
+    <location value="258"/>
+    <location value="455"/>
+    1
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="112"/>
+    <location value="83"/>
+    <location value="399"/>
+    <location value="173"/>
+    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+  </text>
+  <picture>
+    <location value="183"/>
+    <location value="180"/>
+    <location value="328"/>
+    <location value="329"/>
+    <caption>
+      <location value="190"/>
+      <location value="338"/>
+      <location value="322"/>
+      <location value="344"/>
+      Figure 2: This is an example image.
+    </caption>
+  </picture>
+  <text>
+    <location value="112"/>
+    <location value="353"/>
+    <location value="399"/>
+    <location value="436"/>
+    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="254"/>
+    <location value="450"/>
+    <location value="258"/>
+    <location value="455"/>
+    2
+  </page_footer>
+</doclang>
