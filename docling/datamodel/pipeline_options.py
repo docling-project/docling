@@ -279,13 +279,19 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commonly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR currently supports 'english' and 'chinese' (default). "
-                "See RapidOCR documentation for other supported languages."
+                "Recognition language. RapidOCR uses a single language per run; if more than one "
+                "value is given only the first is used. Accepted values resolve to a PP-OCR "
+                "recognizer: PP-OCRv6 covers ~52 language codes (e.g. 'ch', 'en', 'de', 'fr', "
+                "'japan'; the docling defaults 'chinese'/'english' map to 'ch'/'en'). Script-family "
+                "names route to PP-OCRv5 on the onnxruntime/openvino/paddle backends ('arabic', "
+                "'ch', 'cyrillic', 'devanagari', 'el', 'en', 'eslav', 'korean', 'latin', 'ta', "
+                "'te', 'th') or to PP-OCRv4 on the torch backend ('arabic', 'cyrillic', "
+                "'devanagari', 'ka', 'korean', 'latin', 'ta', 'te'). A language the resolved "
+                "backend cannot serve raises an error rather than falling back silently."
             )
         ),
     ] = ["chinese"]
@@ -294,7 +300,9 @@ class RapidOcrOptions(OcrOptions):
         Field(
             description=(
                 "Inference backend for RapidOCR. Options: `onnxruntime` (default, cross-platform), `openvino` (Intel), "
-                "`paddle` (PaddlePaddle), `torch` (PyTorch). Choose based on your hardware and available libraries."
+                "`paddle` (PaddlePaddle), `torch` (PyTorch). Choose based on your hardware and available libraries. "
+                "Note: for languages outside the PP-OCRv6 set, `torch` is limited to the PP-OCRv4 script models while "
+                "the other backends use the wider PP-OCRv5 set (see `lang`)."
             )
         ),
     ] = "onnxruntime"

@@ -217,16 +217,17 @@ def download_models(
         )
 
     if with_rapidocr:
+        # PP-OCRv6 recognition/detection are multilingual, so the default set
+        # per backend covers all v6 languages; non-v6 languages are fetched on
+        # demand at runtime.
         for backend in ("torch", "onnxruntime"):
-            for lang in ("chinese", "english"):
-                _log.info(f"Downloading rapidocr {backend} {lang} models...")
-                RapidOcrModel.download_models(
-                    backend=backend,
-                    local_dir=output_dir / RapidOcrModel._model_repo_folder,
-                    force=force,
-                    progress=progress,
-                    lang=lang,
-                )
+            _log.info(f"Downloading rapidocr {backend} models...")
+            RapidOcrModel.download_models(
+                backend=backend,
+                local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                force=force,
+                progress=progress,
+            )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")
