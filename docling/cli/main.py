@@ -239,9 +239,6 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     return list(dict.fromkeys(expanded_formats))
 
 
-ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-ocr_engines_enum_internal = ocr_factory_internal.get_enum()
-
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
 
@@ -845,9 +842,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The registered OCR engine kind to use. Use "
+                "--show-external-plugins to list third-party options."
             ),
         ),
     ] = OcrAutoOptions.kind,
