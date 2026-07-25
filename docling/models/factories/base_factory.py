@@ -3,11 +3,11 @@ import logging
 from abc import ABCMeta
 from typing import Generic, Optional, Type, TypeVar
 
-from pluggy import PluginManager
 from pydantic import BaseModel
 
 from docling.datamodel.pipeline_options import BaseOptions
 from docling.models.base_model import BaseModelWithOptions
+from docling.models.factories.plugin_registry import load_plugin_modules
 
 A = TypeVar("A", bound=BaseModelWithOptions)
 
@@ -35,7 +35,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     def registered_kind(self) -> list[str]:
         return [opt.kind for opt in self._classes.keys()]
 
-    def get_enum(self) -> enum.Enum:
+    def get_enum(self) -> type[enum.Enum]:
         return enum.Enum(
             self.plugin_attr_name + "_enum",
             names={kind: kind for kind in self.registered_kind},
@@ -92,27 +92,18 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     ):
         plugin_name = plugin_name or self.plugin_name
 
-        plugin_manager = PluginManager(plugin_name)
-        plugin_manager.load_setuptools_entrypoints(plugin_name)
-
-        for plugin_name, plugin_module in plugin_manager.list_name_plugin():
-            plugin_module_name = str(plugin_module.__name__)  # type: ignore
-
-            if not allow_external_plugins and not plugin_module_name.startswith(
-                "docling."
-            ):
-                logger.warning(
-                    f"The plugin {plugin_name} will not be loaded because Docling is being executed with allow_external_plugins=false."
-                )
-                continue
-
-            attr = getattr(plugin_module, self.plugin_attr_name, None)
+        for plugin in load_plugin_modules(
+            plugin_name,
+            allow_external_plugins=allow_external_plugins,
+        ):
+            # Plugin hook names are the documented third-party interface.
+            attr = getattr(plugin.module, self.plugin_attr_name, None)
 
             if callable(attr):
-                logger.info("Loading plugin %r", plugin_name)
+                logger.info("Loading plugin %r", plugin.name)
 
                 config = attr()
-                self.process_plugin(config, plugin_name, plugin_module_name)
+                self.process_plugin(config, plugin.name, plugin.module_name)
 
     def process_plugin(self, config, plugin_name: str, plugin_module_name: str):
         for item in config[self.plugin_attr_name]:
