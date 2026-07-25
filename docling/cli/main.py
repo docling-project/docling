@@ -152,7 +152,10 @@ from docling.models.factories import (
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.models.factories.plugin_registry import is_internal_plugin_distribution
+from docling.models.factories.plugin_registry import (
+    is_internal_plugin_distribution,
+    load_plugin_modules,
+)
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -407,6 +410,13 @@ def show_external_plugins_callback(value: bool):
         picture_factory_all = get_picture_description_factory(
             allow_external_plugins=True
         )
+        plugin_packages = {
+            plugin.name: plugin.distribution_name
+            for plugin in load_plugin_modules(
+                BaseFactory.default_plugin_name,
+                allow_external_plugins=True,
+            )
+        }
 
         def print_external_plugins(factory: BaseFactory, factory_name: str):
             table = rich.table.Table(title=f"Available {factory_name} engines")
@@ -414,13 +424,12 @@ def show_external_plugins_callback(value: bool):
             table.add_column("Plugin")
             table.add_column("Package")
             for meta in factory.registered_meta.values():
-                if meta.package is not None and not is_internal_plugin_distribution(
-                    meta.package
-                ):
+                package = plugin_packages.get(meta.plugin_name)
+                if package is not None and not is_internal_plugin_distribution(package):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
-                        meta.package,
+                        package,
                     )
             rich.print(table)
 

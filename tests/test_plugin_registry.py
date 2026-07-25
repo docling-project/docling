@@ -393,6 +393,58 @@ def test_base_factory_registration_contract_is_preserved() -> None:
     assert hook_factory.registered_kind == ["shared-kind"]
 
 
+def test_plugin_discovery_preserves_factory_override_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _TrackingFactory(BaseFactory[_PluginModelBase]):
+        def __init__(self) -> None:
+            super().__init__("ocr_engines")
+            self.process_calls = 0
+            self.register_calls = 0
+
+        def process_plugin(
+            self,
+            config: object,
+            plugin_name: str,
+            plugin_module_name: str,
+        ) -> None:
+            self.process_calls += 1
+            super().process_plugin(config, plugin_name, plugin_module_name)
+
+        def register(
+            self,
+            cls: type[_PluginModelBase],
+            plugin_name: str,
+            plugin_module_name: str,
+        ) -> None:
+            self.register_calls += 1
+            super().register(cls, plugin_name, plugin_module_name)
+
+    plugin_module = ModuleType("overridden_factory_plugin")
+
+    def ocr_engines() -> object:
+        return {"ocr_engines": [_FirstModel]}
+
+    setattr(plugin_module, "ocr_engines", ocr_engines)
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="override-plugin",
+                module=plugin_module.__name__,
+                loader=lambda: plugin_module,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+    factory = _TrackingFactory()
+
+    factory.load_from_plugins(allow_external_plugins=True)
+
+    assert factory.process_calls == 1
+    assert factory.register_calls == 1
+    assert factory.registered_kind == ["shared-kind"]
+
+
 def test_plugin_options_must_declare_a_nonempty_kind() -> None:
     factory = BaseFactory[_PluginModelBase]("ocr_engines")
 

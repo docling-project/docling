@@ -34,7 +34,6 @@ class FactoryMeta(BaseModel):
     kind: str
     plugin_name: str
     module: str
-    package: str | None = None
 
 
 class BaseFactory(Generic[A], metaclass=ABCMeta):
@@ -106,7 +105,6 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         self._register_models(
             (cls,),
             plugin_name=plugin_name,
-            plugin_package_name=None,
             plugin_module_name=plugin_module_name,
         )
 
@@ -138,32 +136,16 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                     f"Plugin {plugin.name!r} failed while running its "
                     f"{self.plugin_attr_name!r} hook: {exc}"
                 ) from exc
-            self._process_plugin(
-                config=config,
-                plugin_name=plugin.name,
-                plugin_package_name=plugin.distribution_name,
-                plugin_module_name=plugin.module_name,
+            self.process_plugin(
+                config,
+                plugin.name,
+                plugin.module_name,
             )
 
     def process_plugin(
         self,
         config: object,
         plugin_name: str,
-        plugin_module_name: str,
-    ) -> None:
-        self._process_plugin(
-            config=config,
-            plugin_name=plugin_name,
-            plugin_package_name=None,
-            plugin_module_name=plugin_module_name,
-        )
-
-    def _process_plugin(
-        self,
-        *,
-        config: object,
-        plugin_name: str,
-        plugin_package_name: str | None,
         plugin_module_name: str,
     ) -> None:
         if not isinstance(config, Mapping):
@@ -196,24 +178,33 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 )
             validated_models.append(cast(type[A], model))
 
-        self._register_models(
-            validated_models,
-            plugin_name=plugin_name,
-            plugin_package_name=plugin_package_name,
-            plugin_module_name=plugin_module_name,
-        )
+        self._validate_registrations(validated_models, plugin_name)
+        for model in validated_models:
+            self.register(model, plugin_name, plugin_module_name)
 
     def _register_models(
         self,
         models: Sequence[type[A]],
         *,
         plugin_name: str,
-        plugin_package_name: str | None,
         plugin_module_name: str,
+    ) -> None:
+        self._validate_registrations(models, plugin_name)
+        for model in models:
+            options_type, kind = self._validate_options_type(model, plugin_name)
+            self._classes[options_type] = model
+            self._options_by_kind[kind] = options_type
+            self._meta[options_type] = FactoryMeta(
+                kind=kind,
+                plugin_name=plugin_name,
+                module=plugin_module_name,
+            )
+
+    def _validate_registrations(
+        self, models: Sequence[type[A]], plugin_name: str
     ) -> None:
         classes = self._classes.copy()
         options_by_kind = self._options_by_kind.copy()
-        registrations: list[tuple[type[BaseOptions], str, type[A]]] = []
 
         for model in models:
             options_type, kind = self._validate_options_type(model, plugin_name)
@@ -238,17 +229,6 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
             classes[options_type] = model
             options_by_kind[kind] = options_type
-            registrations.append((options_type, kind, model))
-
-        for options_type, kind, model in registrations:
-            self._classes[options_type] = model
-            self._options_by_kind[kind] = options_type
-            self._meta[options_type] = FactoryMeta(
-                kind=kind,
-                plugin_name=plugin_name,
-                package=plugin_package_name,
-                module=plugin_module_name,
-            )
 
     def _validate_options_type(
         self, model: type[A], plugin_name: str
