@@ -152,7 +152,7 @@ from docling.models.factories import (
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.models.factories.plugin_registry import is_internal_plugin_module
+from docling.models.factories.plugin_registry import is_internal_plugin_distribution
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -414,11 +414,11 @@ def show_external_plugins_callback(value: bool):
             table.add_column("Plugin")
             table.add_column("Package")
             for meta in factory.registered_meta.values():
-                if not is_internal_plugin_module(meta.module):
+                if not is_internal_plugin_distribution(meta.package):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
-                        meta.module.split(".")[0],
+                        meta.package,
                     )
             rich.print(table)
 

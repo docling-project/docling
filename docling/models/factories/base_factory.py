@@ -33,6 +33,7 @@ class PluginHookError(RuntimeError):
 class FactoryMeta(BaseModel):
     kind: str
     plugin_name: str
+    package: str
     module: str
 
 
@@ -97,10 +98,18 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
-    def register(self, cls: type[A], plugin_name: str, plugin_module_name: str) -> None:
+    def register(
+        self,
+        cls: type[A],
+        *,
+        plugin_name: str,
+        plugin_package_name: str,
+        plugin_module_name: str,
+    ) -> None:
         self._register_models(
             (cls,),
             plugin_name=plugin_name,
+            plugin_package_name=plugin_package_name,
             plugin_module_name=plugin_module_name,
         )
 
@@ -132,10 +141,19 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                     f"Plugin {plugin.name!r} failed while running its "
                     f"{self.plugin_attr_name!r} hook: {exc}"
                 ) from exc
-            self.process_plugin(config, plugin.name, plugin.module_name)
+            self.process_plugin(
+                config,
+                plugin.name,
+                plugin.distribution_name,
+                plugin.module_name,
+            )
 
     def process_plugin(
-        self, config: object, plugin_name: str, plugin_module_name: str
+        self,
+        config: object,
+        plugin_name: str,
+        plugin_package_name: str,
+        plugin_module_name: str,
     ) -> None:
         if not isinstance(config, Mapping):
             raise self._configuration_error(
@@ -163,6 +181,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         self._register_models(
             validated_models,
             plugin_name=plugin_name,
+            plugin_package_name=plugin_package_name,
             plugin_module_name=plugin_module_name,
         )
 
@@ -171,6 +190,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         models: Sequence[type[A]],
         *,
         plugin_name: str,
+        plugin_package_name: str,
         plugin_module_name: str,
     ) -> None:
         classes = self._classes.copy()
@@ -208,6 +228,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             self._meta[options_type] = FactoryMeta(
                 kind=options_type.kind,
                 plugin_name=plugin_name,
+                package=plugin_package_name,
                 module=plugin_module_name,
             )
 

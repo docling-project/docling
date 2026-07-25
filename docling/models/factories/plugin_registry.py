@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import cache
 from importlib import metadata
 
-_INTERNAL_MODULE = "docling"
+_INTERNAL_DISTRIBUTIONS = frozenset({"docling-slim"})
 
 
 class PluginDiscoveryError(RuntimeError):
@@ -18,6 +18,8 @@ class PluginLoadError(RuntimeError):
 class _PluginEntryPoint:
     name: str
     module_name: str
+    value: str
+    distribution_name: str
     load: Callable[[], object]
 
 
@@ -25,6 +27,7 @@ class _PluginEntryPoint:
 class PluginModule:
     name: str
     module_name: str
+    distribution_name: str
     module: object
 
 
@@ -49,31 +52,46 @@ def _discover_entry_points(
     *,
     allow_external_plugins: bool,
 ) -> tuple[_PluginEntryPoint, ...]:
-    entry_points_by_name: dict[str, _PluginEntryPoint] = {}
+    discovered_entry_points: list[_PluginEntryPoint] = []
 
     for distribution in metadata.distributions():
+        distribution_name = distribution.metadata["Name"]
         for entry_point in distribution.entry_points:
             if entry_point.group != group:
                 continue
-            if not allow_external_plugins and not is_internal_plugin_module(
-                entry_point.module
+            if not allow_external_plugins and not is_internal_plugin_distribution(
+                distribution_name
             ):
                 continue
 
-            discovered = _PluginEntryPoint(
-                name=entry_point.name,
-                module_name=entry_point.module,
-                load=entry_point.load,
-            )
-            registered = entry_points_by_name.get(discovered.name)
-            if registered is None:
-                entry_points_by_name[discovered.name] = discovered
-            elif registered.module_name != discovered.module_name:
-                raise PluginDiscoveryError(
-                    f"Plugin entry point {discovered.name!r} is provided by both "
-                    f"{registered.module_name!r} and {discovered.module_name!r}. "
-                    "Entry point names must be unique."
+            discovered_entry_points.append(
+                _PluginEntryPoint(
+                    name=entry_point.name,
+                    module_name=entry_point.module,
+                    value=entry_point.value,
+                    distribution_name=distribution_name,
+                    load=entry_point.load,
                 )
+            )
+
+    discovered_entry_points.sort(
+        key=lambda entry_point: (
+            entry_point.name,
+            entry_point.distribution_name,
+            entry_point.value,
+        )
+    )
+    entry_points_by_name: dict[str, _PluginEntryPoint] = {}
+    for discovered in discovered_entry_points:
+        registered = entry_points_by_name.get(discovered.name)
+        if registered is not None:
+            raise PluginDiscoveryError(
+                f"Plugin entry point {discovered.name!r} is provided by both "
+                f"{registered.distribution_name!r} ({registered.value!r}) and "
+                f"{discovered.distribution_name!r} ({discovered.value!r}). "
+                "Entry point names must be unique."
+            )
+        entry_points_by_name[discovered.name] = discovered
 
     return tuple(entry_points_by_name.values())
 
@@ -90,12 +108,12 @@ def _load_plugin(entry_point: _PluginEntryPoint) -> PluginModule:
     return PluginModule(
         name=entry_point.name,
         module_name=entry_point.module_name,
+        distribution_name=entry_point.distribution_name,
         module=plugin_module,
     )
 
 
-def is_internal_plugin_module(module_name: str) -> bool:
-    """Return whether a plugin module is owned by the Docling package."""
-    return module_name == _INTERNAL_MODULE or module_name.startswith(
-        f"{_INTERNAL_MODULE}."
-    )
+def is_internal_plugin_distribution(distribution_name: str) -> bool:
+    """Return whether a plugin entry point comes from Docling's own package."""
+    normalized_name = distribution_name.casefold().replace("_", "-")
+    return normalized_name in _INTERNAL_DISTRIBUTIONS

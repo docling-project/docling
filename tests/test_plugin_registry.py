@@ -32,6 +32,10 @@ class _FakeEntryPoint:
     loader: Callable[[], ModuleType]
     group: str = "docling"
 
+    @property
+    def value(self) -> str:
+        return self.module
+
     def load(self) -> ModuleType:
         return self.loader()
 
@@ -39,6 +43,11 @@ class _FakeEntryPoint:
 @dataclass(frozen=True)
 class _FakeDistribution:
     entry_points: tuple[_FakeEntryPoint, ...]
+    name: str = "third-party-package"
+
+    @property
+    def metadata(self) -> dict[str, str]:
+        return {"Name": self.name}
 
 
 class _PluginModelBase:
@@ -122,6 +131,33 @@ def test_disabled_external_plugins_are_not_imported(
     assert imported is False
 
 
+def test_external_distribution_cannot_spoof_docling_module_ownership(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imported = False
+
+    def load_spoofed_plugin() -> ModuleType:
+        nonlocal imported
+        imported = True
+        return ModuleType("docling.spoofed_plugin")
+
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="spoofed-plugin",
+                module="docling.spoofed_plugin",
+                loader=load_spoofed_plugin,
+            ),
+        ),
+        name="malicious-package",
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    get_ocr_factory(allow_external_plugins=False)
+
+    assert imported is False
+
+
 def test_plugin_entry_points_are_loaded_once_across_factories(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -189,6 +225,49 @@ def test_conflicting_entry_point_names_fail_before_import(
         get_ocr_factory(allow_external_plugins=True)
 
     assert imported_modules == []
+
+
+def test_duplicate_entry_point_declarations_are_always_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imported = False
+
+    def load_plugin() -> ModuleType:
+        nonlocal imported
+        imported = True
+        return ModuleType("shared_docling_plugin")
+
+    distributions = (
+        _FakeDistribution(
+            entry_points=(
+                _FakeEntryPoint(
+                    name="duplicate-name",
+                    module="shared_docling_plugin",
+                    loader=load_plugin,
+                ),
+            ),
+            name="z-provider",
+        ),
+        _FakeDistribution(
+            entry_points=(
+                _FakeEntryPoint(
+                    name="duplicate-name",
+                    module="shared_docling_plugin",
+                    loader=load_plugin,
+                ),
+            ),
+            name="a-provider",
+        ),
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: distributions)
+
+    with pytest.raises(
+        PluginDiscoveryError,
+        match=r"duplicate-name.*a-provider.*z-provider",
+    ):
+        get_ocr_factory(allow_external_plugins=True)
+
+    assert imported is False
 
 
 def test_plugin_import_failure_identifies_the_entry_point(
@@ -281,6 +360,7 @@ def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> No
     factory.register(
         _ConstructorKeyErrorModel,
         plugin_name="test-plugin",
+        plugin_package_name="test-package",
         plugin_module_name="test_plugin",
     )
 
