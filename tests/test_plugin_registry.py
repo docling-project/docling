@@ -14,6 +14,7 @@ from docling.models.factories import (
 )
 from docling.models.factories.plugin_registry import (
     PluginDiscoveryError,
+    PluginLoadError,
     load_plugin_modules,
 )
 
@@ -144,3 +145,31 @@ def test_conflicting_entry_point_names_fail_before_import(
         get_ocr_factory(allow_external_plugins=True)
 
     assert imported_modules == []
+
+
+def test_plugin_import_failure_identifies_the_entry_point(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import_error = ImportError("missing optional runtime")
+
+    def fail_to_load() -> ModuleType:
+        raise import_error
+
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="broken-plugin",
+                module="broken_docling_plugin",
+                loader=fail_to_load,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    with pytest.raises(
+        PluginLoadError,
+        match=r"broken-plugin.*broken_docling_plugin",
+    ) as exc_info:
+        get_ocr_factory(allow_external_plugins=True)
+
+    assert exc_info.value.__cause__ is import_error

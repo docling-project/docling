@@ -10,6 +10,10 @@ class PluginDiscoveryError(RuntimeError):
     """Installed plugin metadata does not define a deterministic registry."""
 
 
+class PluginLoadError(RuntimeError):
+    """An allowed plugin entry point could not be imported."""
+
+
 @dataclass(frozen=True, slots=True)
 class _PluginEntryPoint:
     name: str
@@ -32,11 +36,7 @@ def load_plugin_modules(
 ) -> tuple[PluginModule, ...]:
     """Load each allowed plugin entry point once, preserving discovery order."""
     return tuple(
-        PluginModule(
-            name=entry_point.name,
-            module_name=entry_point.module_name,
-            module=entry_point.load(),
-        )
+        _load_plugin(entry_point)
         for entry_point in _discover_entry_points(
             group,
             allow_external_plugins=allow_external_plugins,
@@ -74,6 +74,22 @@ def _discover_entry_points(
                 )
 
     return tuple(entry_points_by_name.values())
+
+
+def _load_plugin(entry_point: _PluginEntryPoint) -> PluginModule:
+    try:
+        plugin_module = entry_point.load()
+    except Exception as exc:
+        raise PluginLoadError(
+            f"Could not load plugin entry point {entry_point.name!r} "
+            f"from {entry_point.module_name!r}: {exc}"
+        ) from exc
+
+    return PluginModule(
+        name=entry_point.name,
+        module_name=entry_point.module_name,
+        module=plugin_module,
+    )
 
 
 def _is_internal(module_name: str) -> bool:
