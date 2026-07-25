@@ -12,7 +12,10 @@ from docling.models.factories import (
     get_picture_description_factory,
     get_table_structure_factory,
 )
-from docling.models.factories.plugin_registry import load_plugin_modules
+from docling.models.factories.plugin_registry import (
+    PluginDiscoveryError,
+    load_plugin_modules,
+)
 
 
 @dataclass(frozen=True)
@@ -101,3 +104,43 @@ def test_plugin_entry_points_are_loaded_once_across_factories(
     get_picture_description_factory(allow_external_plugins=True)
 
     assert load_count == 1
+
+
+def test_conflicting_entry_point_names_fail_before_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imported_modules: list[str] = []
+
+    def load_plugin(module_name: str) -> ModuleType:
+        imported_modules.append(module_name)
+        return ModuleType(module_name)
+
+    distributions = (
+        _FakeDistribution(
+            entry_points=(
+                _FakeEntryPoint(
+                    name="duplicate-name",
+                    module="first_docling_plugin",
+                    loader=lambda: load_plugin("first_docling_plugin"),
+                ),
+            )
+        ),
+        _FakeDistribution(
+            entry_points=(
+                _FakeEntryPoint(
+                    name="duplicate-name",
+                    module="second_docling_plugin",
+                    loader=lambda: load_plugin("second_docling_plugin"),
+                ),
+            )
+        ),
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: distributions)
+
+    with pytest.raises(
+        PluginDiscoveryError,
+        match=(r"duplicate-name.*first_docling_plugin.*second_docling_plugin"),
+    ):
+        get_ocr_factory(allow_external_plugins=True)
+
+    assert imported_modules == []
