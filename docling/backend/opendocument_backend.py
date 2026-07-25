@@ -997,10 +997,16 @@ def _chart_data_from_frame(
 
     try:
         chart_content = odf_obj.get_part(_embedded_odf_content_path(object_href))
-    except Exception:
+        # odfdo resolves XML parts lazily, so a reference to a part that is missing
+        # from the package only fails once the part is actually read.
+        chart_classification = _odf_chart_classification(chart_content)
+        chart_tables = chart_content.get_elements("descendant::table:table")
+    except Exception as e:
+        _log.warning(
+            "Could not read embedded OpenDocument object %s: %s", object_href, e
+        )
         return None
-    chart_classification = _odf_chart_classification(chart_content)
-    for table in chart_content.get_elements("descendant::table:table"):
+    for table in chart_tables:
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
