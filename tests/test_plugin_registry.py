@@ -13,7 +13,11 @@ from docling.models.factories import (
     get_picture_description_factory,
     get_table_structure_factory,
 )
-from docling.models.factories.base_factory import BaseFactory, PluginConfigurationError
+from docling.models.factories.base_factory import (
+    BaseFactory,
+    PluginConfigurationError,
+    PluginHookError,
+)
 from docling.models.factories.plugin_registry import (
     PluginDiscoveryError,
     PluginLoadError,
@@ -282,3 +286,33 @@ def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> No
 
     with pytest.raises(KeyError, match="raised inside model constructor"):
         factory.create_instance(_FirstOptions())
+
+
+def test_plugin_hook_failures_identify_the_capability(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hook_error = RuntimeError("plugin setup failed")
+    plugin_module = ModuleType("failing_hook_docling_plugin")
+
+    def ocr_engines() -> object:
+        raise hook_error
+
+    setattr(plugin_module, "ocr_engines", ocr_engines)
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="failing-hook-plugin",
+                module=plugin_module.__name__,
+                loader=lambda: plugin_module,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    with pytest.raises(
+        PluginHookError,
+        match=r"failing-hook-plugin.*ocr_engines.*plugin setup failed",
+    ) as exc_info:
+        get_ocr_factory(allow_external_plugins=True)
+
+    assert exc_info.value.__cause__ is hook_error

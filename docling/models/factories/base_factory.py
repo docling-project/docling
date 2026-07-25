@@ -26,6 +26,10 @@ class PluginConfigurationError(RuntimeError):
     """A plugin hook returned data outside Docling's plugin contract."""
 
 
+class PluginHookError(RuntimeError):
+    """A plugin hook failed while declaring its models."""
+
+
 class FactoryMeta(BaseModel):
     kind: str
     plugin_name: str
@@ -121,7 +125,13 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 )
 
             logger.info("Loading plugin %r", plugin.name)
-            config = hook()
+            try:
+                config = hook()
+            except Exception as exc:
+                raise PluginHookError(
+                    f"Plugin {plugin.name!r} failed while running its "
+                    f"{self.plugin_attr_name!r} hook: {exc}"
+                ) from exc
             self.process_plugin(config, plugin.name, plugin.module_name)
 
     def process_plugin(
