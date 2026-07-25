@@ -1,7 +1,7 @@
 import enum
 import logging
 from abc import ABCMeta
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Generic, Literal, TypeVar, cast
 
 from pydantic import BaseModel
@@ -46,11 +46,12 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         self.model_type = model_type
 
         self._classes: dict[type[BaseOptions], type[A]] = {}
+        self._options_by_kind: dict[str, type[BaseOptions]] = {}
         self._meta: dict[type[BaseOptions], FactoryMeta] = {}
 
     @property
     def registered_kind(self) -> list[str]:
-        return [opt.kind for opt in self._classes.keys()]
+        return list(self._options_by_kind)
 
     def get_enum(self) -> type[enum.Enum]:
         return enum.Enum(
@@ -76,10 +77,11 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             raise RuntimeError(self._err_msg_on_class_not_found(options.kind))
 
     def create_options(self, kind: str, *args, **kwargs) -> BaseOptions:
-        for opt_cls, _ in self._classes.items():
-            if opt_cls.kind == kind:
-                return opt_cls(*args, **kwargs)
-        raise RuntimeError(self._err_msg_on_class_not_found(kind))
+        try:
+            options_type = self._options_by_kind[kind]
+        except KeyError:
+            raise RuntimeError(self._err_msg_on_class_not_found(kind)) from None
+        return options_type(*args, **kwargs)
 
     def _err_msg_on_class_not_found(self, kind: str):
         msg = []
@@ -92,16 +94,10 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
     def register(self, cls: type[A], plugin_name: str, plugin_module_name: str) -> None:
-        opt_type = cls.get_options_type()
-
-        if opt_type in self._classes:
-            raise ValueError(
-                f"{opt_type.kind!r} already registered to class {self._classes[opt_type]!r}"
-            )
-
-        self._classes[opt_type] = cls
-        self._meta[opt_type] = FactoryMeta(
-            kind=opt_type.kind, plugin_name=plugin_name, module=plugin_module_name
+        self._register_models(
+            (cls,),
+            plugin_name=plugin_name,
+            plugin_module_name=plugin_module_name,
         )
 
     def load_from_plugins(
@@ -154,8 +150,56 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 )
             validated_models.append(cast(type[A], model))
 
-        for model in validated_models:
-            self.register(model, plugin_name, plugin_module_name)
+        self._register_models(
+            validated_models,
+            plugin_name=plugin_name,
+            plugin_module_name=plugin_module_name,
+        )
+
+    def _register_models(
+        self,
+        models: Sequence[type[A]],
+        *,
+        plugin_name: str,
+        plugin_module_name: str,
+    ) -> None:
+        classes = self._classes.copy()
+        options_by_kind = self._options_by_kind.copy()
+        registrations: list[tuple[type[BaseOptions], type[A]]] = []
+
+        for model in models:
+            options_type = model.get_options_type()
+            registered_model = classes.get(options_type)
+            if registered_model is not None:
+                raise self._configuration_error(
+                    plugin_name,
+                    f"{options_type.__name__} is already registered to "
+                    f"{registered_model.__name__}, so it cannot also register "
+                    f"{model.__name__}",
+                )
+
+            registered_options = options_by_kind.get(options_type.kind)
+            if registered_options is not None:
+                registered_model = classes[registered_options]
+                raise self._configuration_error(
+                    plugin_name,
+                    f"model kind {options_type.kind!r} is already registered to "
+                    f"{registered_model.__name__}, so it cannot also register "
+                    f"{model.__name__}",
+                )
+
+            classes[options_type] = model
+            options_by_kind[options_type.kind] = options_type
+            registrations.append((options_type, model))
+
+        for options_type, model in registrations:
+            self._classes[options_type] = model
+            self._options_by_kind[options_type.kind] = options_type
+            self._meta[options_type] = FactoryMeta(
+                kind=options_type.kind,
+                plugin_name=plugin_name,
+                module=plugin_module_name,
+            )
 
     def _configuration_error(
         self, plugin_name: str, problem: str

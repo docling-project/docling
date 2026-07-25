@@ -2,17 +2,18 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from importlib import metadata
 from types import ModuleType
-from typing import Callable
+from typing import Callable, ClassVar
 
 import pytest
 
+from docling.datamodel.pipeline_options import BaseOptions
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
     get_picture_description_factory,
     get_table_structure_factory,
 )
-from docling.models.factories.base_factory import PluginConfigurationError
+from docling.models.factories.base_factory import BaseFactory, PluginConfigurationError
 from docling.models.factories.plugin_registry import (
     PluginDiscoveryError,
     PluginLoadError,
@@ -34,6 +35,35 @@ class _FakeEntryPoint:
 @dataclass(frozen=True)
 class _FakeDistribution:
     entry_points: tuple[_FakeEntryPoint, ...]
+
+
+class _PluginModelBase:
+    def __init__(self, *, options: BaseOptions, **kwargs: object) -> None:
+        self.options = options
+
+    @classmethod
+    def get_options_type(cls) -> type[BaseOptions]:
+        raise NotImplementedError
+
+
+class _FirstOptions(BaseOptions):
+    kind: ClassVar[str] = "shared-kind"
+
+
+class _SecondOptions(BaseOptions):
+    kind: ClassVar[str] = "shared-kind"
+
+
+class _FirstModel(_PluginModelBase):
+    @classmethod
+    def get_options_type(cls) -> type[BaseOptions]:
+        return _FirstOptions
+
+
+class _SecondModel(_PluginModelBase):
+    @classmethod
+    def get_options_type(cls) -> type[BaseOptions]:
+        return _SecondOptions
 
 
 @pytest.fixture(autouse=True)
@@ -201,3 +231,33 @@ def test_malformed_plugin_configuration_identifies_the_contract(
         match=r"malformed-plugin.*ocr_engines.*model class",
     ):
         get_ocr_factory(allow_external_plugins=True)
+
+
+def test_plugin_model_kinds_must_be_unique(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin_module = ModuleType("duplicate_kind_docling_plugin")
+
+    def ocr_engines() -> object:
+        return {"ocr_engines": [_FirstModel, _SecondModel]}
+
+    setattr(plugin_module, "ocr_engines", ocr_engines)
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="duplicate-kind-plugin",
+                module=plugin_module.__name__,
+                loader=lambda: plugin_module,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+    factory = BaseFactory("ocr_engines", _PluginModelBase)
+
+    with pytest.raises(
+        PluginConfigurationError,
+        match=r"duplicate-kind-plugin.*shared-kind.*_FirstModel.*_SecondModel",
+    ):
+        factory.load_from_plugins(allow_external_plugins=True)
+
+    assert factory.registered_kind == []
