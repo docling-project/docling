@@ -414,7 +414,9 @@ def show_external_plugins_callback(value: bool):
             table.add_column("Plugin")
             table.add_column("Package")
             for meta in factory.registered_meta.values():
-                if not is_internal_plugin_distribution(meta.package):
+                if meta.package is not None and not is_internal_plugin_distribution(
+                    meta.package
+                ):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
