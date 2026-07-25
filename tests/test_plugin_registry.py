@@ -66,6 +66,15 @@ class _SecondModel(_PluginModelBase):
         return _SecondOptions
 
 
+class _ConstructorKeyErrorModel(_PluginModelBase):
+    def __init__(self, *, options: BaseOptions, **kwargs: object) -> None:
+        raise KeyError("raised inside model constructor")
+
+    @classmethod
+    def get_options_type(cls) -> type[BaseOptions]:
+        return _FirstOptions
+
+
 @pytest.fixture(autouse=True)
 def _clear_factory_cache() -> Iterator[None]:
     factory_getters = (
@@ -261,3 +270,15 @@ def test_plugin_model_kinds_must_be_unique(
         factory.load_from_plugins(allow_external_plugins=True)
 
     assert factory.registered_kind == []
+
+
+def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> None:
+    factory = BaseFactory("ocr_engines", _PluginModelBase)
+    factory.register(
+        _ConstructorKeyErrorModel,
+        plugin_name="test-plugin",
+        plugin_module_name="test_plugin",
+    )
+
+    with pytest.raises(KeyError, match="raised inside model constructor"):
+        factory.create_instance(_FirstOptions())
