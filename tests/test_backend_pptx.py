@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,16 +6,21 @@ import pytest
 from docling_core.types.doc import (
     ContentLayer,
     GroupItem,
+    NodeItem,
     PictureClassificationLabel,
+    PictureItem,
     TextItem,
 )
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
 from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
 from docling.document_converter import DocumentConverter, PowerpointFormatOption
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
+from docling.pipeline.simple_pipeline import SimplePipeline
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -22,6 +28,27 @@ from .verify_utils import verify_document, verify_export
 GENERATE = GEN_TEST_DATA
 
 CHART_PPTX = Path("./tests/data/pptx/sources/pptx_chart.pptx")
+
+
+class _PictureEnrichmentModel(BaseItemAndImageEnrichmentModel):
+    images_scale = 1.0
+
+    def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
+        return isinstance(element, PictureItem)
+
+    def __call__(
+        self,
+        doc: DoclingDocument,
+        element_batch: Iterable[ItemAndImageEnrichmentElement],
+    ) -> Iterable[NodeItem]:
+        for element in element_batch:
+            yield element.item
+
+
+class _ChartEnrichmentPipeline(SimplePipeline):
+    def __init__(self, pipeline_options: ConvertPipelineOptions) -> None:
+        super().__init__(pipeline_options)
+        self.enrichment_pipe = [_PictureEnrichmentModel()]
 
 
 @pytest.fixture(scope="module")
@@ -303,6 +330,22 @@ def test_chart_image_not_rendered_by_default():
     assert picture.image is None, (
         "chart picture should have no image when render_chart_images is off"
     )
+
+
+def test_chart_enrichment_skips_image_when_pages_empty():
+    """Image enrichment skips native charts without an embedded or page image."""
+    format_options = {
+        InputFormat.PPTX: PowerpointFormatOption(pipeline_cls=_ChartEnrichmentPipeline)
+    }
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX], format_options=format_options
+    )
+
+    result = converter.convert(CHART_PPTX, raises_on_error=True)
+
+    pictures = list(result.document.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
 
 
 def test_chart_image_rendering(libreoffice_available):
