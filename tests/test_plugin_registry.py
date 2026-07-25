@@ -6,7 +6,13 @@ from typing import Callable
 
 import pytest
 
-from docling.models.factories import get_ocr_factory
+from docling.models.factories import (
+    get_layout_factory,
+    get_ocr_factory,
+    get_picture_description_factory,
+    get_table_structure_factory,
+)
+from docling.models.factories.plugin_registry import load_plugin_modules
 
 
 @dataclass(frozen=True)
@@ -27,9 +33,19 @@ class _FakeDistribution:
 
 @pytest.fixture(autouse=True)
 def _clear_factory_cache() -> Iterator[None]:
-    get_ocr_factory.cache_clear()
+    factory_getters = (
+        get_layout_factory,
+        get_ocr_factory,
+        get_picture_description_factory,
+        get_table_structure_factory,
+    )
+    for get_factory in factory_getters:
+        get_factory.cache_clear()
+    load_plugin_modules.cache_clear()
     yield
-    get_ocr_factory.cache_clear()
+    for get_factory in factory_getters:
+        get_factory.cache_clear()
+    load_plugin_modules.cache_clear()
 
 
 def test_disabled_external_plugins_are_not_imported(
@@ -56,3 +72,32 @@ def test_disabled_external_plugins_are_not_imported(
     get_ocr_factory(allow_external_plugins=False)
 
     assert imported is False
+
+
+def test_plugin_entry_points_are_loaded_once_across_factories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    load_count = 0
+
+    def load_external_plugin() -> ModuleType:
+        nonlocal load_count
+        load_count += 1
+        return ModuleType("third_party_docling_plugin")
+
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="third-party",
+                module="third_party_docling_plugin",
+                loader=load_external_plugin,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    get_ocr_factory(allow_external_plugins=True)
+    get_layout_factory(allow_external_plugins=True)
+    get_table_structure_factory(allow_external_plugins=True)
+    get_picture_description_factory(allow_external_plugins=True)
+
+    assert load_count == 1

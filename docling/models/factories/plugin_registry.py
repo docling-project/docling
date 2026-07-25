@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cache
 from importlib import metadata
 
 _INTERNAL_MODULE = "docling"
@@ -11,6 +12,7 @@ class PluginModule:
     module: object
 
 
+@cache
 def load_plugin_modules(
     group: str,
     *,
