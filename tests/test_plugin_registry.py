@@ -12,6 +12,7 @@ from docling.models.factories import (
     get_picture_description_factory,
     get_table_structure_factory,
 )
+from docling.models.factories.base_factory import PluginConfigurationError
 from docling.models.factories.plugin_registry import (
     PluginDiscoveryError,
     PluginLoadError,
@@ -173,3 +174,30 @@ def test_plugin_import_failure_identifies_the_entry_point(
         get_ocr_factory(allow_external_plugins=True)
 
     assert exc_info.value.__cause__ is import_error
+
+
+def test_malformed_plugin_configuration_identifies_the_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin_module = ModuleType("malformed_docling_plugin")
+
+    def ocr_engines() -> object:
+        return {"ocr_engines": ["not-a-model-class"]}
+
+    setattr(plugin_module, "ocr_engines", ocr_engines)
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="malformed-plugin",
+                module=plugin_module.__name__,
+                loader=lambda: plugin_module,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    with pytest.raises(
+        PluginConfigurationError,
+        match=r"malformed-plugin.*ocr_engines.*model class",
+    ):
+        get_ocr_factory(allow_external_plugins=True)

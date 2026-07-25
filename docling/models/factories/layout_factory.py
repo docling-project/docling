@@ -3,5 +3,5 @@ from docling.models.factories.base_factory import BaseFactory
 
 
 class LayoutFactory(BaseFactory[BaseLayoutModel]):
-    def __init__(self, *args, **kwargs):
-        super().__init__("layout_engines", *args, **kwargs)
+    def __init__(self, plugin_name: str = BaseFactory.default_plugin_name) -> None:
+        super().__init__("layout_engines", BaseLayoutModel, plugin_name)

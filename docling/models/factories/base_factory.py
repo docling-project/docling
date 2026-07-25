@@ -1,7 +1,8 @@
 import enum
 import logging
 from abc import ABCMeta
-from typing import Generic, Optional, Type, TypeVar
+from collections.abc import Mapping
+from typing import Generic, Literal, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -10,9 +11,19 @@ from docling.models.base_model import BaseModelWithOptions
 from docling.models.factories.plugin_registry import load_plugin_modules
 
 A = TypeVar("A", bound=BaseModelWithOptions)
+PluginCapability = Literal[
+    "layout_engines",
+    "ocr_engines",
+    "picture_description",
+    "table_structure_engines",
+]
 
 
 logger = logging.getLogger(__name__)
+
+
+class PluginConfigurationError(RuntimeError):
+    """A plugin hook returned data outside Docling's plugin contract."""
 
 
 class FactoryMeta(BaseModel):
@@ -24,12 +35,18 @@ class FactoryMeta(BaseModel):
 class BaseFactory(Generic[A], metaclass=ABCMeta):
     default_plugin_name = "docling"
 
-    def __init__(self, plugin_attr_name: str, plugin_name=default_plugin_name):
+    def __init__(
+        self,
+        plugin_attr_name: PluginCapability,
+        model_type: type[A],
+        plugin_name: str = default_plugin_name,
+    ) -> None:
         self.plugin_name = plugin_name
         self.plugin_attr_name = plugin_attr_name
+        self.model_type = model_type
 
-        self._classes: dict[Type[BaseOptions], Type[A]] = {}
-        self._meta: dict[Type[BaseOptions], FactoryMeta] = {}
+        self._classes: dict[type[BaseOptions], type[A]] = {}
+        self._meta: dict[type[BaseOptions], FactoryMeta] = {}
 
     @property
     def registered_kind(self) -> list[str]:
@@ -44,11 +61,11 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         )
 
     @property
-    def classes(self):
+    def classes(self) -> Mapping[type[BaseOptions], type[A]]:
         return self._classes
 
     @property
-    def registered_meta(self):
+    def registered_meta(self) -> Mapping[type[BaseOptions], FactoryMeta]:
         return self._meta
 
     def create_instance(self, options: BaseOptions, **kwargs) -> A:
@@ -74,7 +91,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
-    def register(self, cls: Type[A], plugin_name: str, plugin_module_name: str):
+    def register(self, cls: type[A], plugin_name: str, plugin_module_name: str) -> None:
         opt_type = cls.get_options_type()
 
         if opt_type in self._classes:
@@ -88,8 +105,8 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         )
 
     def load_from_plugins(
-        self, plugin_name: Optional[str] = None, allow_external_plugins: bool = False
-    ):
+        self, plugin_name: str | None = None, allow_external_plugins: bool = False
+    ) -> None:
         plugin_name = plugin_name or self.plugin_name
 
         for plugin in load_plugin_modules(
@@ -97,17 +114,53 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             allow_external_plugins=allow_external_plugins,
         ):
             # Plugin hook names are the documented third-party interface.
-            attr = getattr(plugin.module, self.plugin_attr_name, None)
+            hook = getattr(plugin.module, self.plugin_attr_name, None)
 
-            if callable(attr):
-                logger.info("Loading plugin %r", plugin.name)
+            if hook is None:
+                continue
+            if not callable(hook):
+                raise self._configuration_error(
+                    plugin.name,
+                    f"the {self.plugin_attr_name!r} hook must be callable",
+                )
 
-                config = attr()
-                self.process_plugin(config, plugin.name, plugin.module_name)
+            logger.info("Loading plugin %r", plugin.name)
+            config = hook()
+            self.process_plugin(config, plugin.name, plugin.module_name)
 
-    def process_plugin(self, config, plugin_name: str, plugin_module_name: str):
-        for item in config[self.plugin_attr_name]:
-            try:
-                self.register(item, plugin_name, plugin_module_name)
-            except ValueError:
-                logger.warning("%r already registered", item)
+    def process_plugin(
+        self, config: object, plugin_name: str, plugin_module_name: str
+    ) -> None:
+        if not isinstance(config, Mapping):
+            raise self._configuration_error(
+                plugin_name, "the hook must return a mapping"
+            )
+
+        plugin_config = cast(Mapping[object, object], config)
+        models = plugin_config.get(self.plugin_attr_name)
+        if not isinstance(models, list):
+            raise self._configuration_error(
+                plugin_name,
+                f"the {self.plugin_attr_name!r} value must be a list of model classes",
+            )
+
+        validated_models: list[type[A]] = []
+        for index, model in enumerate(models):
+            if not isinstance(model, type) or not issubclass(model, self.model_type):
+                raise self._configuration_error(
+                    plugin_name,
+                    f"{self.plugin_attr_name!r} item {index} must be a "
+                    f"{self.model_type.__name__} model class",
+                )
+            validated_models.append(cast(type[A], model))
+
+        for model in validated_models:
+            self.register(model, plugin_name, plugin_module_name)
+
+    def _configuration_error(
+        self, plugin_name: str, problem: str
+    ) -> PluginConfigurationError:
+        return PluginConfigurationError(
+            f"Plugin {plugin_name!r} has an invalid {self.plugin_attr_name!r} "
+            f"contract: {problem}."
+        )

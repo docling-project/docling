@@ -3,5 +3,7 @@ from docling.models.factories.base_factory import BaseFactory
 
 
 class TableStructureFactory(BaseFactory[BaseTableStructureModel]):
-    def __init__(self, *args, **kwargs):
-        super().__init__("table_structure_engines", *args, **kwargs)
+    def __init__(self, plugin_name: str = BaseFactory.default_plugin_name) -> None:
+        super().__init__(
+            "table_structure_engines", BaseTableStructureModel, plugin_name
+        )
