@@ -354,7 +354,7 @@ def test_plugin_model_kinds_must_be_unique(
         )
     )
     monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
-    factory = BaseFactory("ocr_engines", _PluginModelBase)
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
 
     with pytest.raises(
         PluginConfigurationError,
@@ -366,11 +366,10 @@ def test_plugin_model_kinds_must_be_unique(
 
 
 def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> None:
-    factory = BaseFactory("ocr_engines", _PluginModelBase)
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
     factory.register(
         _ConstructorKeyErrorModel,
         plugin_name="test-plugin",
-        plugin_package_name="test-package",
         plugin_module_name="test_plugin",
     )
 
@@ -378,8 +377,24 @@ def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> No
         factory.create_instance(_FirstOptions())
 
 
+def test_base_factory_registration_contract_is_preserved() -> None:
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
+    factory.register(_FirstModel, "test-plugin", "test_plugin")
+
+    assert factory.registered_kind == ["shared-kind"]
+
+    hook_factory = BaseFactory[_PluginModelBase]("ocr_engines")
+    hook_factory.process_plugin(
+        {"ocr_engines": [_FirstModel]},
+        "test-plugin",
+        "test_plugin",
+    )
+
+    assert hook_factory.registered_kind == ["shared-kind"]
+
+
 def test_plugin_options_must_declare_a_nonempty_kind() -> None:
-    factory = BaseFactory("ocr_engines", _PluginModelBase)
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
 
     with pytest.raises(
         PluginConfigurationError,
@@ -388,7 +403,6 @@ def test_plugin_options_must_declare_a_nonempty_kind() -> None:
         factory.register(
             _MissingKindModel,
             plugin_name="test-plugin",
-            plugin_package_name="test-package",
             plugin_module_name="test_plugin",
         )
 

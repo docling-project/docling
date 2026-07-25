@@ -33,22 +33,21 @@ class PluginHookError(RuntimeError):
 class FactoryMeta(BaseModel):
     kind: str
     plugin_name: str
-    package: str
     module: str
+    package: str | None = None
 
 
 class BaseFactory(Generic[A], metaclass=ABCMeta):
     default_plugin_name = "docling"
+    model_type: type[BaseModelWithOptions] | None = None
 
     def __init__(
         self,
         plugin_attr_name: PluginCapability,
-        model_type: type[A],
         plugin_name: str = default_plugin_name,
     ) -> None:
         self.plugin_name = plugin_name
         self.plugin_attr_name = plugin_attr_name
-        self.model_type = model_type
 
         self._classes: dict[type[BaseOptions], type[A]] = {}
         self._options_by_kind: dict[str, type[BaseOptions]] = {}
@@ -101,15 +100,13 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     def register(
         self,
         cls: type[A],
-        *,
         plugin_name: str,
-        plugin_package_name: str,
         plugin_module_name: str,
     ) -> None:
         self._register_models(
             (cls,),
             plugin_name=plugin_name,
-            plugin_package_name=plugin_package_name,
+            plugin_package_name=None,
             plugin_module_name=plugin_module_name,
         )
 
@@ -141,18 +138,32 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                     f"Plugin {plugin.name!r} failed while running its "
                     f"{self.plugin_attr_name!r} hook: {exc}"
                 ) from exc
-            self.process_plugin(
-                config,
-                plugin.name,
-                plugin.distribution_name,
-                plugin.module_name,
+            self._process_plugin(
+                config=config,
+                plugin_name=plugin.name,
+                plugin_package_name=plugin.distribution_name,
+                plugin_module_name=plugin.module_name,
             )
 
     def process_plugin(
         self,
         config: object,
         plugin_name: str,
-        plugin_package_name: str,
+        plugin_module_name: str,
+    ) -> None:
+        self._process_plugin(
+            config=config,
+            plugin_name=plugin_name,
+            plugin_package_name=None,
+            plugin_module_name=plugin_module_name,
+        )
+
+    def _process_plugin(
+        self,
+        *,
+        config: object,
+        plugin_name: str,
+        plugin_package_name: str | None,
         plugin_module_name: str,
     ) -> None:
         if not isinstance(config, Mapping):
@@ -170,11 +181,18 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         validated_models: list[type[A]] = []
         for index, model in enumerate(models):
-            if not isinstance(model, type) or not issubclass(model, self.model_type):
+            if not isinstance(model, type) or (
+                self.model_type is not None and not issubclass(model, self.model_type)
+            ):
+                expected_model = (
+                    self.model_type.__name__
+                    if self.model_type is not None
+                    else "BaseModelWithOptions"
+                )
                 raise self._configuration_error(
                     plugin_name,
                     f"{self.plugin_attr_name!r} item {index} must be a "
-                    f"{self.model_type.__name__} model class",
+                    f"{expected_model} model class",
                 )
             validated_models.append(cast(type[A], model))
 
@@ -190,7 +208,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         models: Sequence[type[A]],
         *,
         plugin_name: str,
-        plugin_package_name: str,
+        plugin_package_name: str | None,
         plugin_module_name: str,
     ) -> None:
         classes = self._classes.copy()

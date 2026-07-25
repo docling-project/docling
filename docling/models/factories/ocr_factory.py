@@ -7,5 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class OcrFactory(BaseFactory[BaseOcrModel]):
+    model_type = BaseOcrModel
+
     def __init__(self, plugin_name: str = BaseFactory.default_plugin_name) -> None:
-        super().__init__("ocr_engines", BaseOcrModel, plugin_name)
+        super().__init__("ocr_engines", plugin_name)
