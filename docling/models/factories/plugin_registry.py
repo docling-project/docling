@@ -55,10 +55,21 @@ def _discover_entry_points(
     discovered_entry_points: list[_PluginEntryPoint] = []
 
     for distribution in metadata.distributions():
-        distribution_name = distribution.metadata["Name"]
         for entry_point in distribution.entry_points:
             if entry_point.group != group:
                 continue
+            try:
+                distribution_name = distribution.metadata["Name"]
+            except KeyError:
+                raise PluginDiscoveryError(
+                    f"Plugin entry point {entry_point.name!r} has no provider "
+                    "distribution name."
+                ) from None
+            if not distribution_name:
+                raise PluginDiscoveryError(
+                    f"Plugin entry point {entry_point.name!r} has an empty provider "
+                    "distribution name."
+                )
             if not allow_external_plugins and not is_internal_plugin_distribution(
                 distribution_name
             ):
