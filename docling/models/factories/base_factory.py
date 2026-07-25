@@ -195,10 +195,10 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     ) -> None:
         classes = self._classes.copy()
         options_by_kind = self._options_by_kind.copy()
-        registrations: list[tuple[type[BaseOptions], type[A]]] = []
+        registrations: list[tuple[type[BaseOptions], str, type[A]]] = []
 
         for model in models:
-            options_type = model.get_options_type()
+            options_type, kind = self._validate_options_type(model, plugin_name)
             registered_model = classes.get(options_type)
             if registered_model is not None:
                 raise self._configuration_error(
@@ -208,29 +208,57 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                     f"{model.__name__}",
                 )
 
-            registered_options = options_by_kind.get(options_type.kind)
+            registered_options = options_by_kind.get(kind)
             if registered_options is not None:
                 registered_model = classes[registered_options]
                 raise self._configuration_error(
                     plugin_name,
-                    f"model kind {options_type.kind!r} is already registered to "
+                    f"model kind {kind!r} is already registered to "
                     f"{registered_model.__name__}, so it cannot also register "
                     f"{model.__name__}",
                 )
 
             classes[options_type] = model
-            options_by_kind[options_type.kind] = options_type
-            registrations.append((options_type, model))
+            options_by_kind[kind] = options_type
+            registrations.append((options_type, kind, model))
 
-        for options_type, model in registrations:
+        for options_type, kind, model in registrations:
             self._classes[options_type] = model
-            self._options_by_kind[options_type.kind] = options_type
+            self._options_by_kind[kind] = options_type
             self._meta[options_type] = FactoryMeta(
-                kind=options_type.kind,
+                kind=kind,
                 plugin_name=plugin_name,
                 package=plugin_package_name,
                 module=plugin_module_name,
             )
+
+    def _validate_options_type(
+        self, model: type[A], plugin_name: str
+    ) -> tuple[type[BaseOptions], str]:
+        try:
+            options_type = model.get_options_type()
+        except Exception as exc:
+            raise self._configuration_error(
+                plugin_name,
+                f"{model.__name__}.get_options_type() failed: {exc}",
+            ) from exc
+
+        if not isinstance(options_type, type) or not issubclass(
+            options_type, BaseOptions
+        ):
+            raise self._configuration_error(
+                plugin_name,
+                f"{model.__name__}.get_options_type() must return a "
+                "BaseOptions subclass",
+            )
+
+        kind = vars(options_type).get("kind")
+        if not isinstance(kind, str) or not kind:
+            raise self._configuration_error(
+                plugin_name,
+                f"{options_type.__name__} must declare a non-empty string kind",
+            )
+        return options_type, kind
 
     def _configuration_error(
         self, plugin_name: str, problem: str

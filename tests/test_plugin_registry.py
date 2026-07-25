@@ -67,6 +67,10 @@ class _SecondOptions(BaseOptions):
     kind: ClassVar[str] = "shared-kind"
 
 
+class _MissingKindOptions(BaseOptions):
+    pass
+
+
 class _FirstModel(_PluginModelBase):
     @classmethod
     def get_options_type(cls) -> type[BaseOptions]:
@@ -86,6 +90,12 @@ class _ConstructorKeyErrorModel(_PluginModelBase):
     @classmethod
     def get_options_type(cls) -> type[BaseOptions]:
         return _FirstOptions
+
+
+class _MissingKindModel(_PluginModelBase):
+    @classmethod
+    def get_options_type(cls) -> type[BaseOptions]:
+        return _MissingKindOptions
 
 
 @pytest.fixture(autouse=True)
@@ -366,6 +376,23 @@ def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> No
 
     with pytest.raises(KeyError, match="raised inside model constructor"):
         factory.create_instance(_FirstOptions())
+
+
+def test_plugin_options_must_declare_a_nonempty_kind() -> None:
+    factory = BaseFactory("ocr_engines", _PluginModelBase)
+
+    with pytest.raises(
+        PluginConfigurationError,
+        match=r"test-plugin.*_MissingKindOptions.*non-empty.*kind",
+    ):
+        factory.register(
+            _MissingKindModel,
+            plugin_name="test-plugin",
+            plugin_package_name="test-package",
+            plugin_module_name="test_plugin",
+        )
+
+    assert factory.registered_kind == []
 
 
 def test_plugin_hook_failures_identify_the_capability(
