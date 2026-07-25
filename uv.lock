@@ -285,6 +285,15 @@ wheels = [
 ]
 
 [[package]]
+name = "aspose-email-foss"
+version = "26.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/69/489bf60a973a0a8c5d9ec59b5a1441a50d00fcf050850f3a046dc69cdb5c/aspose_email_foss-26.3.tar.gz", hash = "sha256:a2e5b8be13671c169f7309c67ce0d54d521b4c660c6e0e8286cdf75217fbaa74", size = 50788, upload-time = "2026-03-16T18:11:11.955Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/08/7119d5a962385d6b0b842cfaa278f06b9b425bc58a6d375317307cec1ea9/aspose_email_foss-26.3-py3-none-any.whl", hash = "sha256:c6552466727acacf9decea4cfa2e913133c92f8619d7a1674b715d7216b6b545", size = 45329, upload-time = "2026-03-16T18:11:10.387Z" },
+]
+
+[[package]]
 name = "asttokens"
 version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1666,6 +1675,7 @@ dependencies = [
 all = [
     { name = "accelerate" },
     { name = "arelle-release" },
+    { name = "aspose-email-foss" },
     { name = "beautifulsoup4" },
     { name = "defusedxml" },
     { name = "docling-core", extra = ["chunking"] },
@@ -1779,6 +1789,7 @@ format-docx = [
     { name = "python-docx" },
 ]
 format-email = [
+    { name = "aspose-email-foss" },
     { name = "beautifulsoup4" },
     { name = "mail-parser" },
 ]
@@ -1879,6 +1890,7 @@ service-client = [
 ]
 standard = [
     { name = "accelerate" },
+    { name = "aspose-email-foss" },
     { name = "beautifulsoup4" },
     { name = "defusedxml" },
     { name = "docling-core", extra = ["chunking"] },
@@ -1995,6 +2007,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'models-local'", specifier = ">=1.0.0,<2" },
     { name = "accelerate", marker = "extra == 'models-vlm-inline'", specifier = ">=1.2.1,<2.0.0" },
     { name = "arelle-release", marker = "extra == 'format-xml-xbrl'", specifier = ">=2.38.17,<3.0.0" },
+    { name = "aspose-email-foss", marker = "extra == 'format-email'", specifier = ">=26.3,<27.0" },
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },

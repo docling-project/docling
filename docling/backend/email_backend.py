@@ -10,7 +10,7 @@ from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import EmailBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -30,39 +30,96 @@ try:  # pragma: no cover - import-time guard
 except ImportError as e:  # pragma: no cover - import-time guard
     _MAILPARSER_IMPORT_ERROR = e
 
+# aspose-email-foss (MIT, pure Python) reads Outlook .msg files and projects
+# them onto a standard email.message.EmailMessage, which mailparser then parses
+# through the same path as .eml input. It ships in the `format-email` extra, so
+# guard the import for the same slim-install reason as mailparser above.
+_ASPOSE_MSG_AVAILABLE: bool = False
+_ASPOSE_MSG_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from aspose.email_foss.cfb import CFBReader
+    from aspose.email_foss.msg import MapiMessage, MsgDocument, MsgReader
+
+    _ASPOSE_MSG_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _ASPOSE_MSG_IMPORT_ERROR = e
+
 _log = logging.getLogger(__name__)
+
+# OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
+_MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
     "Install it with `pip install 'docling-slim[format-email]'`."
 )
 
+_MSG_INSTALL_HINT = (
+    "The 'aspose-email-foss' package is required to process Outlook .msg files. "
+    "Install it with `pip install 'docling-slim[format-email]'`."
+)
+
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: EmailBackendOptions | None = None,
+    ):
         # Raised before super().__init__() so a missing optional dependency
         # gives an actionable message rather than a NameError when mailparser
         # is dereferenced below.
         if not _MAILPARSER_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _MAILPARSER_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        if options is None:
+            options = EmailBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
+        self.options: EmailBackendOptions = options
         self.valid = False
+        self.is_msg = False
         self.mail: mailparser.MailParser | None = None
 
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.mail = mailparser.parse_from_bytes(self.path_or_stream.getvalue())
-            elif isinstance(self.path_or_stream, Path):
-                self.mail = mailparser.parse_from_file(str(self.path_or_stream))
-            else:
-                raise TypeError(f"Unsupported input type: {type(self.path_or_stream)}")
+            raw = self._read_bytes()
+            self.is_msg = raw.startswith(_MSG_MAGIC)
+            if self.is_msg:
+                raw = self._msg_to_rfc822_bytes(raw)
+            self.mail = mailparser.parse_from_bytes(raw)
 
             self.valid = self.mail is not None
+        except ImportError:
+            raise
         except Exception as exc:
             raise DocumentLoadError(
                 f"Could not initialize email backend for file with hash {self.document_hash}."
             ) from exc
+
+    def _read_bytes(self) -> bytes:
+        if isinstance(self.path_or_stream, BytesIO):
+            return self.path_or_stream.getvalue()
+        if isinstance(self.path_or_stream, Path):
+            return self.path_or_stream.read_bytes()
+        raise TypeError(f"Unsupported input type: {type(self.path_or_stream)}")
+
+    @staticmethod
+    def _msg_to_rfc822_bytes(data: bytes) -> bytes:
+        """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
+
+        Reusing the RFC 822 output lets the ``.msg`` path share the exact body,
+        HTML, address, and attachment handling used for ``.eml`` input.
+        """
+        if not _ASPOSE_MSG_AVAILABLE:
+            raise ImportError(_MSG_INSTALL_HINT) from _ASPOSE_MSG_IMPORT_ERROR
+
+        reader = MsgReader(CFBReader(data))
+        try:
+            document = MsgDocument.from_reader(reader)
+            message = MapiMessage.from_msg_document(document)
+        finally:
+            reader.close()
+        return message.to_email_bytes()
 
     def is_valid(self) -> bool:
         return self.valid
@@ -141,14 +198,35 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             return mail_date.strip()
         return ""
 
+    def _get_attachment_labels(self) -> list[str]:
+        """Return one display label per attachment (name, optional content type).
+
+        Only attachment metadata is surfaced; the encoded payload is never
+        included, matching how ``.eml`` attachment content is excluded.
+        """
+        assert self.mail is not None
+
+        labels: list[str] = []
+        for index, attachment in enumerate(self.mail.attachments or []):
+            filename = (attachment.get("filename") or "").strip()
+            if not filename:
+                filename = f"attachment-{index + 1}"
+            content_type = (attachment.get("mail_content_type") or "").strip()
+            labels.append(f"{filename} ({content_type})" if content_type else filename)
+        return labels
+
     def convert(self) -> DoclingDocument:
         if not self.is_valid() or self.mail is None:
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        # A .msg is projected onto RFC 822 for conversion, so the origin uses
+        # the message/rfc822 mimetype for both inputs (DocumentOrigin only
+        # accepts registered MIME types); the .msg filename fallback preserves
+        # the distinction when no filename is available.
         origin = DocumentOrigin(
-            filename=self.file.name or "file.eml",
+            filename=self.file.name or ("file.msg" if self.is_msg else "file.eml"),
             mimetype="message/rfc822",
             binary_hash=self.document_hash,
         )
@@ -172,5 +250,13 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
         for body_paragraph in body_paragraphs:
             doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
+
+        if self.options.list_attachments:
+            attachment_labels = self._get_attachment_labels()
+            if attachment_labels:
+                doc.add_heading(text="Attachments", level=2)
+                attachments_group = doc.add_list_group(name="attachments")
+                for label in attachment_labels:
+                    doc.add_list_item(text=label, parent=attachments_group)
 
         return doc
