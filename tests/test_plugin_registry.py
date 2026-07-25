@@ -423,3 +423,46 @@ def test_plugin_hook_failures_identify_the_capability(
         get_ocr_factory(allow_external_plugins=True)
 
     assert exc_info.value.__cause__ is hook_error
+
+
+def test_cli_inventory_discovers_external_picture_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from typer.testing import CliRunner
+
+    from docling.cli.main import app
+    from docling.models.stages.picture_description.picture_description_api_model import (
+        PictureDescriptionApiModel,
+    )
+
+    load_count = 0
+    plugin_module = ModuleType("external_picture_plugin")
+
+    def picture_description() -> object:
+        return {"picture_description": [PictureDescriptionApiModel]}
+
+    def load_plugin() -> ModuleType:
+        nonlocal load_count
+        load_count += 1
+        return plugin_module
+
+    setattr(plugin_module, "picture_description", picture_description)
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="external-picture-plugin",
+                module=plugin_module.__name__,
+                loader=load_plugin,
+            ),
+        ),
+        name="external-picture-package",
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+
+    result = CliRunner().invoke(app, ["convert", "--show-external-plugins"])
+
+    assert result.exit_code == 0
+    assert "Available picture description engines" in result.output
+    assert "external-picture-plugin" in result.output
+    assert "external-picture-package" in result.output
+    assert load_count == 1
