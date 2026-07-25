@@ -12,14 +12,16 @@ from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
 
+from docling.cli import main as cli_main
 from docling.cli.export_utils import _should_generate_export_images, _split_list
-from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
 from docling.document_converter import PdfFormatOption
+from docling.models.factories.base_factory import FactoryMeta
 
+app = cli_main.app
 runner = CliRunner()
 
 PNG_BYTES = base64.b64decode(
@@ -95,6 +97,43 @@ def test_cli_import_does_not_discover_plugins() -> None:
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+def test_cli_plugin_inventory_includes_picture_description(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _InventoryFactory:
+        def __init__(self, metadata: tuple[FactoryMeta, ...]) -> None:
+            self.registered_meta = dict(enumerate(metadata))
+
+    empty_factory = _InventoryFactory(())
+    picture_factory = _InventoryFactory(
+        (
+            FactoryMeta(
+                kind="external-picture",
+                plugin_name="picture-plugin",
+                module="third_party_docling.picture",
+            ),
+        )
+    )
+    monkeypatch.setattr(cli_main, "get_ocr_factory", lambda **_: empty_factory)
+    monkeypatch.setattr(cli_main, "get_layout_factory", lambda **_: empty_factory)
+    monkeypatch.setattr(
+        cli_main, "get_table_structure_factory", lambda **_: empty_factory
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "get_picture_description_factory",
+        lambda **_: picture_factory,
+        raising=False,
+    )
+
+    result = runner.invoke(app, ["convert", "--show-external-plugins"])
+
+    assert result.exit_code == 0
+    assert "Available picture description engines" in result.output
+    assert "external-picture" in result.output
+    assert "picture-plugin" in result.output
 
 
 def test_cli_version():

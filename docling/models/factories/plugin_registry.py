@@ -55,7 +55,9 @@ def _discover_entry_points(
         for entry_point in distribution.entry_points:
             if entry_point.group != group:
                 continue
-            if not allow_external_plugins and not _is_internal(entry_point.module):
+            if not allow_external_plugins and not is_internal_plugin_module(
+                entry_point.module
+            ):
                 continue
 
             discovered = _PluginEntryPoint(
@@ -92,7 +94,8 @@ def _load_plugin(entry_point: _PluginEntryPoint) -> PluginModule:
     )
 
 
-def _is_internal(module_name: str) -> bool:
+def is_internal_plugin_module(module_name: str) -> bool:
+    """Return whether a plugin module is owned by the Docling package."""
     return module_name == _INTERNAL_MODULE or module_name.startswith(
         f"{_INTERNAL_MODULE}."
     )
