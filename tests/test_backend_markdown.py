@@ -301,3 +301,34 @@ def test_convert_table_has_no_duplicate_cells():
         for cell in table_data.table_cells
     ]
     assert len(positions) == len(set(positions))
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # A soft-wrapped paragraph renders as one line with a space at the wrap point.
+        (
+            "After the swim,\nit is time to eat\nsomething nice\n",
+            "After the swim, it is time to eat something nice",
+        ),
+        # Emphasis boundaries keep the source spacing, and none is invented.
+        ("Foo *emph* bar\n", "Foo *emph* bar"),
+        (
+            "The pipe (| or `|`) only in tables.\n",
+            "The pipe (| or `|`) only in tables.",
+        ),
+        # No space at the boundary in the source, so none in the output.
+        ("a*b*c\n", "a*b*c"),
+    ],
+)
+def test_inline_whitespace_round_trips_through_markdown(source, expected):
+    """Marko run boundaries survive: the export reproduces the source line."""
+    stream = BytesIO(source.encode())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="test.md",
+    )
+    doc = MarkdownDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    assert doc.export_to_markdown() == expected

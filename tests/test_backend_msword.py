@@ -180,10 +180,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run rather than being stripped and re-invented by the serializer.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts

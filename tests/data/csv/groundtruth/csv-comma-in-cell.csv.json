@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "csv-comma-in-cell",
   "origin": {
     "mimetype": "text/csv",
@@ -306,6 +306,7 @@
         ],
         "num_rows": 5,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {

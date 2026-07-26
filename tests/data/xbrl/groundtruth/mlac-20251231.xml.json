@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "mlac-20251231",
   "furniture": {
     "self_ref": "#/furniture",
@@ -3499,8 +3499,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Preference Shares",
-      "text": "Preference Shares",
+      "orig": "Preference Shares ",
+      "text": "Preference Shares ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -3518,8 +3518,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-",
-      "text": "-",
+      "orig": "- ",
+      "text": "- ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -3549,8 +3549,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Class A Ordinary Shares",
-      "text": "Class A Ordinary Shares",
+      "orig": "Class A Ordinary Shares ",
+      "text": "Class A Ordinary Shares ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -3568,8 +3568,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-",
-      "text": "-",
+      "orig": "- ",
+      "text": "- ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -3599,8 +3599,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Class B Ordinary Shares",
-      "text": "Class B Ordinary Shares",
+      "orig": "Class B Ordinary Shares ",
+      "text": "Class B Ordinary Shares ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -3618,8 +3618,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-",
-      "text": "-",
+      "orig": "- ",
+      "text": "- ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -3943,8 +3943,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The Company's CODM has been identified as the Chief Executive Officer , who reviews the operating results for the Company as a whole to make decisions about allocating resources and assessing financial performance. Accordingly, management has determined that the Company only has one reportable segment.",
-      "text": "The Company's CODM has been identified as the Chief Executive Officer , who reviews the operating results for the Company as a whole to make decisions about allocating resources and assessing financial performance. Accordingly, management has determined that the Company only has one reportable segment."
+      "orig": "The Company's CODM has been identified as the Chief Executive Officer, who reviews the operating results for the Company as a whole to make decisions about allocating resources and assessing financial performance. Accordingly, management has determined that the Company only has one reportable segment.",
+      "text": "The Company's CODM has been identified as the Chief Executive Officer, who reviews the operating results for the Company as a whole to make decisions about allocating resources and assessing financial performance. Accordingly, management has determined that the Company only has one reportable segment."
     },
     {
       "self_ref": "#/texts/201",

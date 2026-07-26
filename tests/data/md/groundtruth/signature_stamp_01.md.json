@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "signature_stamp_01",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 2979414821188907113,
+    "binary_hash": 3703610756227907514,
     "filename": "signature_stamp_01.md"
   },
   "furniture": {

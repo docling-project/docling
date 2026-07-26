@@ -22,44 +22,44 @@ item-0 at level 0: unspecified: group _root_
       item-20 at level 3: section_header: Outcome and covariate variables
         item-21 at level 4: text: The outcome of interest for this ... r than or equal to 1% Mf or 2% Ag [4].
         item-22 at level 4: inline: group group
-          item-23 at level 5: text: Potential covariates were derive ... ous variables were derived from either
+          item-23 at level 5: text: Potential covariates were derive ... us variables were derived from either 
           item-24 at level 5: text: a priori
-          item-25 at level 5: text: knowledge or through exploratory ... is and the final categorizations used.
+          item-25 at level 5: text:  knowledge or through explorator ... is and the final categorizations used.
         item-26 at level 4: section_header: Baseline prevalence
           item-27 at level 5: text: Baseline prevalence can be assum ... (2) using the cut-off of <10% or ≥10%.
         item-28 at level 4: section_header: Agent
           item-29 at level 5: inline: group group
-            item-30 at level 6: text: In terms of differences in trans ... mics by agent, research has shown that
+            item-30 at level 6: text: In terms of differences in trans ... ics by agent, research has shown that 
             item-31 at level 6: text: Brugia
-            item-32 at level 6: text: spp. are more susceptible to the anti-filarial drug regimens than
+            item-32 at level 6: text:  spp. are more susceptible to the anti-filarial drug regimens than 
             item-33 at level 6: text: Wuchereria bancrofti
-            item-34 at level 6: text: parasites [23]. Thus, we combined districts reporting
+            item-34 at level 6: text:  parasites [23]. Thus, we combined districts reporting 
             item-35 at level 6: text: B
-            item-36 at level 6: text: .
+            item-36 at level 6: text: . 
             item-37 at level 6: text: malayi
-            item-38 at level 6: text: and
+            item-38 at level 6: text:  and 
             item-39 at level 6: text: B
-            item-40 at level 6: text: .
+            item-40 at level 6: text: . 
             item-41 at level 6: text: timori
-            item-42 at level 6: text: and compared them to areas with
+            item-42 at level 6: text:  and compared them to areas with 
             item-43 at level 6: text: W
-            item-44 at level 6: text: .
+            item-44 at level 6: text: . 
             item-45 at level 6: text: bancrofti
-            item-46 at level 6: text: or mixed parasites. Two variable ... e were variables delineating vectors (
+            item-46 at level 6: text:  or mixed parasites. Two variabl ... e were variables delineating vectors (
             item-47 at level 6: text: Anopheles
-            item-48 at level 6: text: or
+            item-48 at level 6: text:  or 
             item-49 at level 6: text: Mansonia
-            item-50 at level 6: text: compared to
+            item-50 at level 6: text:  compared to 
             item-51 at level 6: text: Culex
             item-52 at level 6: text: ) from the environmental domain  ... dazole (DEC-ALB)] from the MDA domain.
         item-53 at level 4: section_header: Environment
           item-54 at level 5: text: LF transmission intensity is inf ... dicates a higher level of “greenness.”
           item-55 at level 5: inline: group group
-            item-56 at level 6: text: We included the socio-economic v ...  countries LF is mostly transmitted by
+            item-56 at level 6: text: We included the socio-economic v ... countries LF is mostly transmitted by 
             item-57 at level 6: text: Culex
-            item-58 at level 6: text: in urban areas and by
+            item-58 at level 6: text:  in urban areas and by 
             item-59 at level 6: text: Anopheles
-            item-60 at level 6: text: in rural areas [32]. Additionall ...  proxy for socio-economic status [33].
+            item-60 at level 6: text:  in rural areas [32]. Additional ...  proxy for socio-economic status [33].
           item-61 at level 5: text: Finally, all or parts of distric ... s were co-endemic with onchocerciasis.
         item-62 at level 4: section_header: MDA
           item-63 at level 5: text: Treatment effectiveness depends  ... esent a threat to elimination [41,42].
@@ -71,13 +71,13 @@ item-0 at level 0: unspecified: group _root_
       item-69 at level 3: section_header: Statistical analysis and modeling
         item-70 at level 4: text: Statistical analysis and modelin ... d the number of variables accordingly.
         item-71 at level 4: inline: group group
-          item-72 at level 5: text: Sensitivity analysis was perform ... ica, (3) including only districts with
+          item-72 at level 5: text: Sensitivity analysis was perform ... ca, (3) including only districts with 
           item-73 at level 5: text: W
-          item-74 at level 5: text: .
+          item-74 at level 5: text: . 
           item-75 at level 5: text: bancrofti
-          item-76 at level 5: text: parasite, and (4) including only districts with
+          item-76 at level 5: text:  parasite, and (4) including only districts with 
           item-77 at level 5: text: Anopheles
-          item-78 at level 5: text: as the primary vector. The sensi ... ot have been truly LF-endemic [43,44].
+          item-78 at level 5: text:  as the primary vector. The sens ... ot have been truly LF-endemic [43,44].
     item-79 at level 2: section_header: Results
       item-80 at level 3: text: The overall pre-TAS pass rate fo ... ts had baseline prevalences below 20%.
       item-81 at level 3: picture
@@ -85,7 +85,7 @@ item-0 at level 0: unspecified: group _root_
       item-82 at level 3: picture
         item-82 at level 4: caption: Fig 2 District-level baseline prevalence by country.
       item-83 at level 3: inline: group group
-        item-84 at level 4: text: Fig 3 shows the unadjusted analy ... FTS diagnostic test, primary vector of
+        item-84 at level 4: text: Fig 3 shows the unadjusted analy ... TS diagnostic test, primary vector of 
         item-85 at level 4: text: Culex
         item-86 at level 4: text: , treatment with DEC-ALB, higher ... overage, and sufficient rounds of MDA.
       item-87 at level 3: picture
@@ -95,17 +95,17 @@ item-0 at level 0: unspecified: group _root_
       item-90 at level 3: picture
         item-90 at level 4: caption: Fig 4 Adjusted risk ratios for pre-TAS failure with 95% Confidence Interval from log-binomial model.
       item-91 at level 3: inline: group group
-        item-92 at level 4: text: Sensitivity analyses were conduc ... cts in Africa, (3) only districts with
+        item-92 at level 4: text: Sensitivity analyses were conduc ... ts in Africa, (3) only districts with 
         item-93 at level 4: text: W
-        item-94 at level 4: text: .
+        item-94 at level 4: text: . 
         item-95 at level 4: text: bancrofti
-        item-96 at level 4: text: , and (4) only districts with
+        item-96 at level 4: text: , and (4) only districts with 
         item-97 at level 4: text: Anopheles
-        item-98 at level 4: text: as primary vector. The results o ... hough the estimate was unstable in the
+        item-98 at level 4: text:  as primary vector. The results  ... ough the estimate was unstable in the 
         item-99 at level 4: text: W
-        item-100 at level 4: text: .
+        item-100 at level 4: text: . 
         item-101 at level 4: text: bancrofti
-        item-102 at level 4: text: -only and
+        item-102 at level 4: text: -only and 
         item-103 at level 4: text: Anopheles
         item-104 at level 4: text: -only models (models 3 and 4 res ... gnified by large confidence intervals.
       item-105 at level 3: table with [11x6]
@@ -115,30 +115,30 @@ item-0 at level 0: unspecified: group _root_
         item-107 at level 4: caption: Fig 5 Analysis of failures by model combinations.
     item-108 at level 2: section_header: Discussion
       item-109 at level 3: inline: group group
-        item-110 at level 4: text: This paper reports for the first ...  similar to what was found in Goldberg
+        item-110 at level 4: text: This paper reports for the first ... similar to what was found in Goldberg 
         item-111 at level 4: text: et al
         item-112 at level 4: text: ., which explored ecological and ... ctors associated with TAS failure [7].
       item-113 at level 3: text: Though diagnostic test used was  ...  FTS was more sensitive than ICT [45].
       item-114 at level 3: inline: group group
-        item-115 at level 4: text: Elevation was the only environme ... ous studies [8,31], including Goldberg
+        item-115 at level 4: text: Elevation was the only environme ... us studies [8,31], including Goldberg 
         item-116 at level 4: text: et al
         item-117 at level 4: text: . [7], who used a cutoff of 200  ... ich impact vector chances of survival.
       item-118 at level 3: inline: group group
-        item-119 at level 4: text: The small number of failures ove ... ied in the bivariate analyses, such as
+        item-119 at level 4: text: The small number of failures ove ... ed in the bivariate analyses, such as 
         item-120 at level 4: text: Culex
-        item-121 at level 4: text: vector, higher population densit ... ecisions. Other models have shown that
+        item-121 at level 4: text:  vector, higher population densi ... cisions. Other models have shown that 
         item-122 at level 4: text: Culex
-        item-123 at level 4: text: as the predominant vector in a district, compared to
+        item-123 at level 4: text:  as the predominant vector in a district, compared to 
         item-124 at level 4: text: Anopheles
         item-125 at level 4: text: , results in more intense interv ... search has shown the opposite [15,16].
       item-126 at level 3: inline: group group
-        item-127 at level 4: text: All other variables included in  ... -TAS failure in our analysis. Goldberg
+        item-127 at level 4: text: All other variables included in  ... TAS failure in our analysis. Goldberg 
         item-128 at level 4: text: et al
-        item-129 at level 4: text: . found
+        item-129 at level 4: text: . found 
         item-130 at level 4: text: Brugia
-        item-131 at level 4: text: spp. to be significantly associa ...  to the small number of districts with
+        item-131 at level 4: text:  spp. to be significantly associ ... to the small number of districts with 
         item-132 at level 4: text: Brugia
-        item-133 at level 4: text: spp. in our dataset (6%) compared to 46% in the Goldberg
+        item-133 at level 4: text:  spp. in our dataset (6%) compared to 46% in the Goldberg 
         item-134 at level 4: text: et al
         item-135 at level 4: text: . article [7]. MDA coverage leve ... are not necessary to lower prevalence.
       item-136 at level 3: text: Limitations to this study includ ...  reducing LF prevalence [41,48,51–53].

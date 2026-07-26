@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "ptag100",
   "origin": {
     "mimetype": "application/xml",
-    "binary_hash": 9686555413297756133,
+    "binary_hash": 14366422657990467249,
     "filename": "ptag100.xml"
   },
   "furniture": {
@@ -2075,8 +2075,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We consider a quark–antiquark pair with a time-dependent effective reduced mass",
-      "text": "We consider a quark–antiquark pair with a time-dependent effective reduced mass"
+      "orig": "We consider a quark–antiquark pair with a time-dependent effective reduced mass ",
+      "text": "We consider a quark–antiquark pair with a time-dependent effective reduced mass "
     },
     {
       "self_ref": "#/texts/14",
@@ -2099,8 +2099,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in spherical coordinates, governed by a central potential",
-      "text": "in spherical coordinates, governed by a central potential"
+      "orig": " in spherical coordinates, governed by a central potential ",
+      "text": " in spherical coordinates, governed by a central potential "
     },
     {
       "self_ref": "#/texts/16",
@@ -2123,8 +2123,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": " where ",
+      "text": " where "
     },
     {
       "self_ref": "#/texts/18",
@@ -2147,8 +2147,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/20",
@@ -2171,8 +2171,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are coefficients that depend on time. While",
-      "text": "are coefficients that depend on time. While"
+      "orig": " are coefficients that depend on time. While ",
+      "text": " are coefficients that depend on time. While "
     },
     {
       "self_ref": "#/texts/22",
@@ -2195,8 +2195,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "represents a confining trap potential with adjustable strength,",
-      "text": "represents a confining trap potential with adjustable strength,"
+      "orig": " represents a confining trap potential with adjustable strength, ",
+      "text": " represents a confining trap potential with adjustable strength, "
     },
     {
       "self_ref": "#/texts/24",
@@ -2219,8 +2219,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a Coulomb perturbation with the constraint",
-      "text": "is a Coulomb perturbation with the constraint"
+      "orig": " is a Coulomb perturbation with the constraint ",
+      "text": " is a Coulomb perturbation with the constraint "
     },
     {
       "self_ref": "#/texts/26",
@@ -2291,8 +2291,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as",
-      "text": "This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as"
+      "orig": "This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as ",
+      "text": "This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as "
     },
     {
       "self_ref": "#/texts/32",
@@ -2315,8 +2315,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", where",
-      "text": ", where"
+      "orig": ", where ",
+      "text": ", where "
     },
     {
       "self_ref": "#/texts/34",
@@ -2339,8 +2339,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/36",
@@ -2370,8 +2370,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the total angular momentum, the formula for which is given by",
-      "text": "is the total angular momentum, the formula for which is given by"
+      "orig": " is the total angular momentum, the formula for which is given by",
+      "text": " is the total angular momentum, the formula for which is given by"
     },
     {
       "self_ref": "#/texts/38",
@@ -2394,8 +2394,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as",
-      "text": "To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as"
+      "orig": "To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as ",
+      "text": "To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as "
     },
     {
       "self_ref": "#/texts/40",
@@ -2525,8 +2525,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Because",
-      "text": "Because"
+      "orig": "Because ",
+      "text": "Because "
     },
     {
       "self_ref": "#/texts/46",
@@ -2549,8 +2549,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator",
-      "text": "in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator"
+      "orig": " in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator ",
+      "text": " in Eq. (1) is represented in terms of time functions, directly solving Eq. (3) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [24]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator "
     },
     {
       "self_ref": "#/texts/48",
@@ -2573,8 +2573,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "rather than",
-      "text": "rather than"
+      "orig": " rather than ",
+      "text": " rather than "
     },
     {
       "self_ref": "#/texts/50",
@@ -2597,8 +2597,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in Eq. (1), where",
-      "text": "in Eq. (1), where"
+      "orig": " in Eq. (1), where ",
+      "text": " in Eq. (1), where "
     },
     {
       "self_ref": "#/texts/52",
@@ -2621,8 +2621,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "does not involve time-derivative operators. Moreover,",
-      "text": "does not involve time-derivative operators. Moreover,"
+      "orig": " does not involve time-derivative operators. Moreover, ",
+      "text": " does not involve time-derivative operators. Moreover, "
     },
     {
       "self_ref": "#/texts/54",
@@ -2645,8 +2645,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence.",
-      "text": "is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence."
+      "orig": " is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence.",
+      "text": " is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum–classical correspondence."
     },
     {
       "self_ref": "#/texts/56",
@@ -2657,8 +2657,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "By the definition of the invariant operator,",
-      "text": "By the definition of the invariant operator,"
+      "orig": "By the definition of the invariant operator, ",
+      "text": "By the definition of the invariant operator, "
     },
     {
       "self_ref": "#/texts/57",
@@ -2681,8 +2681,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "satisfies the equation:",
-      "text": "satisfies the equation:"
+      "orig": " satisfies the equation:",
+      "text": " satisfies the equation:"
     },
     {
       "self_ref": "#/texts/59",
@@ -2705,8 +2705,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction",
-      "text": "If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction"
+      "orig": "If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction ",
+      "text": "If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction "
     },
     {
       "self_ref": "#/texts/61",
@@ -2753,8 +2753,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/65",
@@ -2777,8 +2777,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a phase function that can be obtained from",
-      "text": "is a phase function that can be obtained from"
+      "orig": " is a phase function that can be obtained from",
+      "text": " is a phase function that can be obtained from"
     },
     {
       "self_ref": "#/texts/67",
@@ -2801,8 +2801,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To find the expression of the invariant",
-      "text": "To find the expression of the invariant"
+      "orig": "To find the expression of the invariant ",
+      "text": "To find the expression of the invariant "
     },
     {
       "self_ref": "#/texts/69",
@@ -2825,8 +2825,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "utilizing Eq. (4), we set",
-      "text": "utilizing Eq. (4), we set"
+      "orig": " utilizing Eq. (4), we set",
+      "text": " utilizing Eq. (4), we set"
     },
     {
       "self_ref": "#/texts/71",
@@ -2849,8 +2849,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/73",
@@ -2873,8 +2873,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/75",
@@ -2897,8 +2897,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/77",
@@ -2921,8 +2921,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and",
-      "text": ", and"
+      "orig": ", and ",
+      "text": ", and "
     },
     {
       "self_ref": "#/texts/79",
@@ -2945,8 +2945,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of",
-      "text": "are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of"
+      "orig": " are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of ",
+      "text": " are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of "
     },
     {
       "self_ref": "#/texts/81",
@@ -2969,8 +2969,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "after substituting Eqs. (1) and (7) into Eq. (4) yields",
-      "text": "after substituting Eqs. (1) and (7) into Eq. (4) yields"
+      "orig": " after substituting Eqs. (1) and (7) into Eq. (4) yields",
+      "text": " after substituting Eqs. (1) and (7) into Eq. (4) yields"
     },
     {
       "self_ref": "#/texts/83",
@@ -3029,8 +3029,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/88",
@@ -3053,8 +3053,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is an arbitrary real constant and",
-      "text": "is an arbitrary real constant and"
+      "orig": " is an arbitrary real constant and ",
+      "text": " is an arbitrary real constant and "
     },
     {
       "self_ref": "#/texts/90",
@@ -3077,8 +3077,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a solution of the following equation",
-      "text": "is a solution of the following equation"
+      "orig": " is a solution of the following equation",
+      "text": " is a solution of the following equation"
     },
     {
       "self_ref": "#/texts/92",
@@ -3101,8 +3101,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "with",
-      "text": "with"
+      "orig": "with ",
+      "text": "with "
     },
     {
       "self_ref": "#/texts/94",
@@ -3125,8 +3125,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "being a real constant. The above invariant is valid under the condition that",
-      "text": "being a real constant. The above invariant is valid under the condition that"
+      "orig": " being a real constant. The above invariant is valid under the condition that ",
+      "text": " being a real constant. The above invariant is valid under the condition that "
     },
     {
       "self_ref": "#/texts/96",
@@ -3149,8 +3149,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "follows the relation",
-      "text": "follows the relation"
+      "orig": " follows the relation",
+      "text": " follows the relation"
     },
     {
       "self_ref": "#/texts/98",
@@ -3283,8 +3283,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Because the quantum wave functions of the system are represented in terms of the eigenfunctions of",
-      "text": "Because the quantum wave functions of the system are represented in terms of the eigenfunctions of"
+      "orig": "Because the quantum wave functions of the system are represented in terms of the eigenfunctions of ",
+      "text": "Because the quantum wave functions of the system are represented in terms of the eigenfunctions of "
     },
     {
       "self_ref": "#/texts/102",
@@ -3307,8 +3307,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant",
-      "text": ", it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant"
+      "orig": ", it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant ",
+      "text": ", it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant "
     },
     {
       "self_ref": "#/texts/104",
@@ -3331,8 +3331,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "as",
-      "text": "as"
+      "orig": " as",
+      "text": " as"
     },
     {
       "self_ref": "#/texts/106",
@@ -3355,8 +3355,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/108",
@@ -3379,8 +3379,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are the eigenvalues and",
-      "text": "are the eigenvalues and"
+      "orig": " are the eigenvalues and ",
+      "text": " are the eigenvalues and "
     },
     {
       "self_ref": "#/texts/110",
@@ -3403,8 +3403,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are time-dependent eigenfunctions. Given that",
-      "text": "are time-dependent eigenfunctions. Given that"
+      "orig": " are time-dependent eigenfunctions. Given that ",
+      "text": " are time-dependent eigenfunctions. Given that "
     },
     {
       "self_ref": "#/texts/112",
@@ -3451,8 +3451,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/116",
@@ -3475,8 +3475,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a time-dependent unitary operator given by",
-      "text": "is a time-dependent unitary operator given by"
+      "orig": " is a time-dependent unitary operator given by",
+      "text": " is a time-dependent unitary operator given by"
     },
     {
       "self_ref": "#/texts/118",
@@ -3499,8 +3499,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Then, if we write the transformed invariant operator as",
-      "text": "Then, if we write the transformed invariant operator as"
+      "orig": "Then, if we write the transformed invariant operator as ",
+      "text": "Then, if we write the transformed invariant operator as "
     },
     {
       "self_ref": "#/texts/120",
@@ -3523,8 +3523,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", the eigenvalue equation in the transformed frame is represented in terms of",
-      "text": ", the eigenvalue equation in the transformed frame is represented in terms of"
+      "orig": ", the eigenvalue equation in the transformed frame is represented in terms of ",
+      "text": ", the eigenvalue equation in the transformed frame is represented in terms of "
     },
     {
       "self_ref": "#/texts/122",
@@ -3595,8 +3595,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/128",
@@ -3619,8 +3619,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "while",
-      "text": "while"
+      "orig": " while ",
+      "text": " while "
     },
     {
       "self_ref": "#/texts/130",
@@ -3643,8 +3643,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of",
-      "text": ". An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of"
+      "orig": ". An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of ",
+      "text": ". An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of "
     },
     {
       "self_ref": "#/texts/132",
@@ -3667,8 +3667,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "with respect to",
-      "text": "with respect to"
+      "orig": " with respect to ",
+      "text": " with respect to "
     },
     {
       "self_ref": "#/texts/134",
@@ -3698,8 +3698,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", followed by the application of Eq. (13), yields",
-      "text": ", followed by the application of Eq. (13), yields"
+      "orig": ", followed by the application of Eq. (13), yields ",
+      "text": ", followed by the application of Eq. (13), yields "
     },
     {
       "self_ref": "#/texts/136",
@@ -3722,8 +3722,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". This means that",
-      "text": ". This means that"
+      "orig": ". This means that ",
+      "text": ". This means that "
     },
     {
       "self_ref": "#/texts/138",
@@ -3746,8 +3746,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant",
-      "text": "is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant"
+      "orig": " is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant ",
+      "text": " is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant "
     },
     {
       "self_ref": "#/texts/140",
@@ -3806,8 +3806,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "According to the invariant operator theory, the wave functions of the transformed system are represented in terms of",
-      "text": "According to the invariant operator theory, the wave functions of the transformed system are represented in terms of"
+      "orig": "According to the invariant operator theory, the wave functions of the transformed system are represented in terms of ",
+      "text": "According to the invariant operator theory, the wave functions of the transformed system are represented in terms of "
     },
     {
       "self_ref": "#/texts/145",
@@ -3854,8 +3854,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where we have introduced",
-      "text": "where we have introduced"
+      "orig": "where we have introduced ",
+      "text": "where we have introduced "
     },
     {
       "self_ref": "#/texts/149",
@@ -3878,8 +3878,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", whereas",
-      "text": ", whereas"
+      "orig": ", whereas ",
+      "text": ", whereas "
     },
     {
       "self_ref": "#/texts/151",
@@ -3902,8 +3902,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are the spherical harmonics. The angular part of the eigenfunctions takes the form",
-      "text": "are the spherical harmonics. The angular part of the eigenfunctions takes the form"
+      "orig": " are the spherical harmonics. The angular part of the eigenfunctions takes the form",
+      "text": " are the spherical harmonics. The angular part of the eigenfunctions takes the form"
     },
     {
       "self_ref": "#/texts/153",
@@ -3926,8 +3926,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/155",
@@ -3950,8 +3950,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are the associated Legendre polynomials, while the spherical normalization constants are",
-      "text": "are the associated Legendre polynomials, while the spherical normalization constants are"
+      "orig": " are the associated Legendre polynomials, while the spherical normalization constants are ",
+      "text": " are the associated Legendre polynomials, while the spherical normalization constants are "
     },
     {
       "self_ref": "#/texts/157",
@@ -3974,8 +3974,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". The allowed orbital and magnetic quantum numbers are",
-      "text": ". The allowed orbital and magnetic quantum numbers are"
+      "orig": ". The allowed orbital and magnetic quantum numbers are ",
+      "text": ". The allowed orbital and magnetic quantum numbers are "
     },
     {
       "self_ref": "#/texts/159",
@@ -3998,8 +3998,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/161",
@@ -4058,8 +4058,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The equation is analytically intractable unless",
-      "text": "The equation is analytically intractable unless"
+      "orig": "The equation is analytically intractable unless ",
+      "text": "The equation is analytically intractable unless "
     },
     {
       "self_ref": "#/texts/166",
@@ -4082,8 +4082,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "owing to the coexistence of",
-      "text": "owing to the coexistence of"
+      "orig": " owing to the coexistence of ",
+      "text": " owing to the coexistence of "
     },
     {
       "self_ref": "#/texts/168",
@@ -4106,8 +4106,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/170",
@@ -4130,8 +4130,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "terms. To resolve this difficulty, we employ the Greene–Aldrich approximation scheme of the form [36–39]",
-      "text": "terms. To resolve this difficulty, we employ the Greene–Aldrich approximation scheme of the form [36–39]"
+      "orig": " terms. To resolve this difficulty, we employ the Greene–Aldrich approximation scheme of the form [36–39]",
+      "text": " terms. To resolve this difficulty, we employ the Greene–Aldrich approximation scheme of the form [36–39]"
     },
     {
       "self_ref": "#/texts/172",
@@ -4154,8 +4154,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "together with a coordinate transformation",
-      "text": "together with a coordinate transformation"
+      "orig": "together with a coordinate transformation ",
+      "text": "together with a coordinate transformation "
     },
     {
       "self_ref": "#/texts/174",
@@ -4178,8 +4178,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter",
-      "text": ". This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter"
+      "orig": ". This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter ",
+      "text": ". This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter "
     },
     {
       "self_ref": "#/texts/176",
@@ -4202,8 +4202,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing",
-      "text": "is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing"
+      "orig": " is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing ",
+      "text": " is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing "
     },
     {
       "self_ref": "#/texts/178",
@@ -4226,8 +4226,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than",
-      "text": "to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than"
+      "orig": " to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than ",
+      "text": " to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than "
     },
     {
       "self_ref": "#/texts/180",
@@ -4250,8 +4250,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". For example, in quarkonium models,",
-      "text": ". For example, in quarkonium models,"
+      "orig": ". For example, in quarkonium models, ",
+      "text": ". For example, in quarkonium models, "
     },
     {
       "self_ref": "#/texts/182",
@@ -4274,8 +4274,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting",
-      "text": "is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting"
+      "orig": " is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting ",
+      "text": " is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting "
     },
     {
       "self_ref": "#/texts/184",
@@ -4298,8 +4298,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "within this range is a reasonable choice.",
-      "text": "within this range is a reasonable choice."
+      "orig": " within this range is a reasonable choice.",
+      "text": " within this range is a reasonable choice."
     },
     {
       "self_ref": "#/texts/186",
@@ -4310,8 +4310,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Then, by rewriting the notation as",
-      "text": "Then, by rewriting the notation as"
+      "orig": "Then, by rewriting the notation as ",
+      "text": "Then, by rewriting the notation as "
     },
     {
       "self_ref": "#/texts/187",
@@ -4382,8 +4382,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In the representation of Eq. (24), we neglected higher-order terms corresponding to",
-      "text": "In the representation of Eq. (24), we neglected higher-order terms corresponding to"
+      "orig": "In the representation of Eq. (24), we neglected higher-order terms corresponding to ",
+      "text": "In the representation of Eq. (24), we neglected higher-order terms corresponding to "
     },
     {
       "self_ref": "#/texts/193",
@@ -4406,8 +4406,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/195",
@@ -4537,8 +4537,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/201",
@@ -4573,8 +4573,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/204",
@@ -4597,8 +4597,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are parameters appropriately chosen depending on a given system. Because this equation has two singularities at",
-      "text": "are parameters appropriately chosen depending on a given system. Because this equation has two singularities at"
+      "orig": " are parameters appropriately chosen depending on a given system. Because this equation has two singularities at ",
+      "text": " are parameters appropriately chosen depending on a given system. Because this equation has two singularities at "
     },
     {
       "self_ref": "#/texts/206",
@@ -4621,8 +4621,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/208",
@@ -4777,8 +4777,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We now examine a simple case where",
-      "text": "We now examine a simple case where"
+      "orig": "We now examine a simple case where ",
+      "text": "We now examine a simple case where "
     },
     {
       "self_ref": "#/texts/221",
@@ -4825,8 +4825,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "the function",
-      "text": "the function"
+      "orig": "the function ",
+      "text": "the function "
     },
     {
       "self_ref": "#/texts/225",
@@ -4849,8 +4849,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is represented by the Gauss hypergeometric function as [29]",
-      "text": "is represented by the Gauss hypergeometric function as [29]"
+      "orig": " is represented by the Gauss hypergeometric function as [29]",
+      "text": " is represented by the Gauss hypergeometric function as [29]"
     },
     {
       "self_ref": "#/texts/227",
@@ -4873,8 +4873,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/229",
@@ -4897,8 +4897,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/231",
@@ -4921,8 +4921,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and",
-      "text": ", and"
+      "orig": ", and ",
+      "text": ", and "
     },
     {
       "self_ref": "#/texts/233",
@@ -4945,8 +4945,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". The mathematical formula of this hypergeometric function is as follows:",
-      "text": ". The mathematical formula of this hypergeometric function is as follows:"
+      "orig": ". The mathematical formula of this hypergeometric function is as follows: ",
+      "text": ". The mathematical formula of this hypergeometric function is as follows: "
     },
     {
       "self_ref": "#/texts/235",
@@ -4969,8 +4969,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", where",
-      "text": ", where"
+      "orig": ", where ",
+      "text": ", where "
     },
     {
       "self_ref": "#/texts/237",
@@ -4993,8 +4993,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for",
-      "text": "for"
+      "orig": " for ",
+      "text": " for "
     },
     {
       "self_ref": "#/texts/239",
@@ -5017,8 +5017,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/241",
@@ -5053,8 +5053,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The Gauss hypergeometric function",
-      "text": "The Gauss hypergeometric function"
+      "orig": "The Gauss hypergeometric function ",
+      "text": "The Gauss hypergeometric function "
     },
     {
       "self_ref": "#/texts/244",
@@ -5077,8 +5077,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function",
-      "text": "serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function"
+      "orig": " serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function ",
+      "text": " serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function "
     },
     {
       "self_ref": "#/texts/246",
@@ -5101,8 +5101,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "terminates and reduces to a polynomial when",
-      "text": "terminates and reduces to a polynomial when"
+      "orig": " terminates and reduces to a polynomial when ",
+      "text": " terminates and reduces to a polynomial when "
     },
     {
       "self_ref": "#/texts/248",
@@ -5132,8 +5132,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular,",
-      "text": "is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular,"
+      "orig": " is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, ",
+      "text": " is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, "
     },
     {
       "self_ref": "#/texts/250",
@@ -5156,8 +5156,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a generalization of Kummer’s confluent hypergeometric function",
-      "text": "is a generalization of Kummer’s confluent hypergeometric function"
+      "orig": " is a generalization of Kummer’s confluent hypergeometric function ",
+      "text": " is a generalization of Kummer’s confluent hypergeometric function "
     },
     {
       "self_ref": "#/texts/252",
@@ -5180,8 +5180,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Hence, in the limiting case where",
-      "text": ". Hence, in the limiting case where"
+      "orig": ". Hence, in the limiting case where ",
+      "text": ". Hence, in the limiting case where "
     },
     {
       "self_ref": "#/texts/254",
@@ -5204,8 +5204,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/256",
@@ -5228,8 +5228,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "converges to",
-      "text": "converges to"
+      "orig": " converges to ",
+      "text": " converges to "
     },
     {
       "self_ref": "#/texts/258",
@@ -5252,8 +5252,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". This convergence is rooted in the fact that, while",
-      "text": ". This convergence is rooted in the fact that, while"
+      "orig": ". This convergence is rooted in the fact that, while ",
+      "text": ". This convergence is rooted in the fact that, while "
     },
     {
       "self_ref": "#/texts/260",
@@ -5276,8 +5276,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to",
-      "text": "has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to"
+      "orig": " has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to ",
+      "text": " has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to "
     },
     {
       "self_ref": "#/texts/262",
@@ -5300,8 +5300,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The",
-      "text": "[44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The"
+      "orig": " [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The ",
+      "text": " [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The "
     },
     {
       "self_ref": "#/texts/264",
@@ -5324,8 +5324,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the",
-      "text": "function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the"
+      "orig": " function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the ",
+      "text": " function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the "
     },
     {
       "self_ref": "#/texts/266",
@@ -5348,8 +5348,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24).",
-      "text": "function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24)."
+      "orig": " function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24).",
+      "text": " function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24)."
     },
     {
       "self_ref": "#/texts/268",
@@ -5490,8 +5490,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of",
-      "text": "We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of"
+      "orig": "We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of ",
+      "text": "We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of "
     },
     {
       "self_ref": "#/texts/271",
@@ -5514,8 +5514,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(instead of",
-      "text": "(instead of"
+      "orig": " (instead of ",
+      "text": " (instead of "
     },
     {
       "self_ref": "#/texts/273",
@@ -5538,8 +5538,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "), we need to determine the eigenfunctions",
-      "text": "), we need to determine the eigenfunctions"
+      "orig": "), we need to determine the eigenfunctions ",
+      "text": "), we need to determine the eigenfunctions "
     },
     {
       "self_ref": "#/texts/275",
@@ -5562,8 +5562,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of Eq. (14). However, directly solving for",
-      "text": "of Eq. (14). However, directly solving for"
+      "orig": " of Eq. (14). However, directly solving for ",
+      "text": " of Eq. (14). However, directly solving for "
     },
     {
       "self_ref": "#/texts/277",
@@ -5586,8 +5586,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is likely to be a formidable task. To circumvent this difficulty, we first derive",
-      "text": "is likely to be a formidable task. To circumvent this difficulty, we first derive"
+      "orig": " is likely to be a formidable task. To circumvent this difficulty, we first derive ",
+      "text": " is likely to be a formidable task. To circumvent this difficulty, we first derive "
     },
     {
       "self_ref": "#/texts/279",
@@ -5610,8 +5610,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "from Eq. (17), and then reconstruct the desired eigenfunctions",
-      "text": "from Eq. (17), and then reconstruct the desired eigenfunctions"
+      "orig": " from Eq. (17), and then reconstruct the desired eigenfunctions ",
+      "text": " from Eq. (17), and then reconstruct the desired eigenfunctions "
     },
     {
       "self_ref": "#/texts/281",
@@ -5634,8 +5634,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "by inversely transforming the obtained",
-      "text": "by inversely transforming the obtained"
+      "orig": " by inversely transforming the obtained ",
+      "text": " by inversely transforming the obtained "
     },
     {
       "self_ref": "#/texts/283",
@@ -5658,8 +5658,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once",
-      "text": ", utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once"
+      "orig": ", utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once ",
+      "text": ", utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once "
     },
     {
       "self_ref": "#/texts/285",
@@ -5682,8 +5682,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are obtained, the wave functions",
-      "text": "are obtained, the wave functions"
+      "orig": " are obtained, the wave functions ",
+      "text": " are obtained, the wave functions "
     },
     {
       "self_ref": "#/texts/287",
@@ -5706,8 +5706,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "can be expressed in terms of them accordingly.",
-      "text": "can be expressed in terms of them accordingly."
+      "orig": " can be expressed in terms of them accordingly.",
+      "text": " can be expressed in terms of them accordingly."
     },
     {
       "self_ref": "#/texts/289",
@@ -5718,8 +5718,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To obtain",
-      "text": "To obtain"
+      "orig": "To obtain ",
+      "text": "To obtain "
     },
     {
       "self_ref": "#/texts/290",
@@ -5766,8 +5766,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/294",
@@ -5790,8 +5790,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are normalization constants for the final wave functions. We applied",
-      "text": "are normalization constants for the final wave functions. We applied"
+      "orig": " are normalization constants for the final wave functions. We applied ",
+      "text": " are normalization constants for the final wave functions. We applied "
     },
     {
       "self_ref": "#/texts/296",
@@ -5814,8 +5814,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in this equation. In addition, from the comparison of Eq. (24) with the NUFA equation (26), we acquire the following parameter relations:",
-      "text": "in this equation. In addition, from the comparison of Eq. (24) with the NUFA equation (26), we acquire the following parameter relations:"
+      "orig": " in this equation. In addition, from the comparison of Eq. (24) with the NUFA equation (26), we acquire the following parameter relations:",
+      "text": " in this equation. In addition, from the comparison of Eq. (24) with the NUFA equation (26), we acquire the following parameter relations:"
     },
     {
       "self_ref": "#/texts/298",
@@ -5862,8 +5862,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Although the original NUFA representations of",
-      "text": "Although the original NUFA representations of"
+      "orig": "Although the original NUFA representations of ",
+      "text": "Although the original NUFA representations of "
     },
     {
       "self_ref": "#/texts/302",
@@ -5886,8 +5886,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/304",
@@ -5934,8 +5934,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of",
-      "text": ") from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of"
+      "orig": ") from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of ",
+      "text": ") from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of "
     },
     {
       "self_ref": "#/texts/308",
@@ -5965,8 +5965,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and must vanish as",
-      "text": "and must vanish as"
+      "orig": " and must vanish as ",
+      "text": " and must vanish as "
     },
     {
       "self_ref": "#/texts/310",
@@ -5989,8 +5989,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/312",
@@ -6049,8 +6049,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "By squaring both sides of this equation and using the second relation from Eq. (36) together with the formula of",
-      "text": "By squaring both sides of this equation and using the second relation from Eq. (36) together with the formula of"
+      "orig": "By squaring both sides of this equation and using the second relation from Eq. (36) together with the formula of ",
+      "text": "By squaring both sides of this equation and using the second relation from Eq. (36) together with the formula of "
     },
     {
       "self_ref": "#/texts/317",
@@ -6073,8 +6073,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "given in Eq. (37), the equation associated with the eigenvalues can be obtained as",
-      "text": "given in Eq. (37), the equation associated with the eigenvalues can be obtained as"
+      "orig": " given in Eq. (37), the equation associated with the eigenvalues can be obtained as",
+      "text": " given in Eq. (37), the equation associated with the eigenvalues can be obtained as"
     },
     {
       "self_ref": "#/texts/319",
@@ -6097,8 +6097,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "It is possible to rearrange this equation into a formula for",
-      "text": "It is possible to rearrange this equation into a formula for"
+      "orig": "It is possible to rearrange this equation into a formula for ",
+      "text": "It is possible to rearrange this equation into a formula for "
     },
     {
       "self_ref": "#/texts/321",
@@ -6121,8 +6121,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for",
-      "text": "by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for"
+      "orig": " by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for ",
+      "text": " by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for "
     },
     {
       "self_ref": "#/texts/323",
@@ -6145,8 +6145,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "from Eq. (37) into the resulting equation, and using Eq. (25), we finally obtain the eigenvalues:",
-      "text": "from Eq. (37) into the resulting equation, and using Eq. (25), we finally obtain the eigenvalues:"
+      "orig": " from Eq. (37) into the resulting equation, and using Eq. (25), we finally obtain the eigenvalues:",
+      "text": " from Eq. (37) into the resulting equation, and using Eq. (25), we finally obtain the eigenvalues:"
     },
     {
       "self_ref": "#/texts/325",
@@ -6181,8 +6181,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In addition, by considering Eq. (27) with Eqs. (28), (29), and (34), the corresponding radial wave functions can be derived in terms of",
-      "text": "In addition, by considering Eq. (27) with Eqs. (28), (29), and (34), the corresponding radial wave functions can be derived in terms of"
+      "orig": "In addition, by considering Eq. (27) with Eqs. (28), (29), and (34), the corresponding radial wave functions can be derived in terms of ",
+      "text": "In addition, by considering Eq. (27) with Eqs. (28), (29), and (34), the corresponding radial wave functions can be derived in terms of "
     },
     {
       "self_ref": "#/texts/328",
@@ -6205,8 +6205,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to be",
-      "text": "to be"
+      "orig": " to be",
+      "text": " to be"
     },
     {
       "self_ref": "#/texts/330",
@@ -6277,8 +6277,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "From a mathematical standpoint, it is possible to define the parameter",
-      "text": "From a mathematical standpoint, it is possible to define the parameter"
+      "orig": "From a mathematical standpoint, it is possible to define the parameter ",
+      "text": "From a mathematical standpoint, it is possible to define the parameter "
     },
     {
       "self_ref": "#/texts/336",
@@ -6301,8 +6301,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "interchangeably with",
-      "text": "interchangeably with"
+      "orig": " interchangeably with ",
+      "text": " interchangeably with "
     },
     {
       "self_ref": "#/texts/338",
@@ -6325,8 +6325,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". However, by choosing",
-      "text": ". However, by choosing"
+      "orig": ". However, by choosing ",
+      "text": ". However, by choosing "
     },
     {
       "self_ref": "#/texts/340",
@@ -6349,8 +6349,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "as in Eq. (42), we allow the possibility for",
-      "text": "as in Eq. (42), we allow the possibility for"
+      "orig": " as in Eq. (42), we allow the possibility for ",
+      "text": " as in Eq. (42), we allow the possibility for "
     },
     {
       "self_ref": "#/texts/342",
@@ -6373,8 +6373,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to take on negative values. When",
-      "text": "to take on negative values. When"
+      "orig": " to take on negative values. When ",
+      "text": " to take on negative values. When "
     },
     {
       "self_ref": "#/texts/344",
@@ -6397,8 +6397,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the (",
-      "text": "is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the ("
+      "orig": " is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the (",
+      "text": " is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the ("
     },
     {
       "self_ref": "#/texts/346",
@@ -6421,8 +6421,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ")th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator",
-      "text": ")th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator"
+      "orig": ")th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator ",
+      "text": ")th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator "
     },
     {
       "self_ref": "#/texts/348",
@@ -6445,8 +6445,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are represented in the form",
-      "text": "are represented in the form"
+      "orig": " are represented in the form",
+      "text": " are represented in the form"
     },
     {
       "self_ref": "#/texts/350",
@@ -6469,8 +6469,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The complete eigenfunctions of the invariant",
-      "text": "The complete eigenfunctions of the invariant"
+      "orig": "The complete eigenfunctions of the invariant ",
+      "text": "The complete eigenfunctions of the invariant "
     },
     {
       "self_ref": "#/texts/352",
@@ -6500,8 +6500,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "that belongs to the original system, i.e., the untransformed system, are given by the relation",
-      "text": "that belongs to the original system, i.e., the untransformed system, are given by the relation"
+      "orig": " that belongs to the original system, i.e., the untransformed system, are given by the relation",
+      "text": " that belongs to the original system, i.e., the untransformed system, are given by the relation"
     },
     {
       "self_ref": "#/texts/354",
@@ -6548,8 +6548,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Meanwhile,",
-      "text": "Meanwhile,"
+      "orig": "Meanwhile, ",
+      "text": "Meanwhile, "
     },
     {
       "self_ref": "#/texts/358",
@@ -6572,8 +6572,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)",
-      "text": "are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)"
+      "orig": " are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)",
+      "text": " are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)"
     },
     {
       "self_ref": "#/texts/360",
@@ -6620,8 +6620,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "whereas",
-      "text": "whereas"
+      "orig": "whereas ",
+      "text": "whereas "
     },
     {
       "self_ref": "#/texts/364",
@@ -6644,8 +6644,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection.",
-      "text": "denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection."
+      "orig": " denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection.",
+      "text": " denotes the Beta function [48]. The eigenfunctions in Eq. (47) are essentially related to the Schrödinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection."
     },
     {
       "self_ref": "#/texts/366",
@@ -6694,8 +6694,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions",
-      "text": "According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions"
+      "orig": "According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions ",
+      "text": "According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions "
     },
     {
       "self_ref": "#/texts/368",
@@ -6718,8 +6718,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase",
-      "text": "of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase"
+      "orig": " of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase ",
+      "text": " of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase "
     },
     {
       "self_ref": "#/texts/370",
@@ -6742,8 +6742,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate",
-      "text": "associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate"
+      "orig": " associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate ",
+      "text": " associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate "
     },
     {
       "self_ref": "#/texts/372",
@@ -6766,8 +6766,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "instead of",
-      "text": "instead of"
+      "orig": " instead of ",
+      "text": " instead of "
     },
     {
       "self_ref": "#/texts/374",
@@ -6838,8 +6838,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/380",
@@ -6862,8 +6862,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are given by Eq. (40). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark–antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [49,50]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations.",
-      "text": "are given by Eq. (40). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark–antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [49,50]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations."
+      "orig": " are given by Eq. (40). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark–antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [49,50]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations.",
+      "text": " are given by Eq. (40). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark–antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [49,50]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations."
     },
     {
       "self_ref": "#/texts/382",
@@ -6898,8 +6898,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where the explicit forms of",
-      "text": "where the explicit forms of"
+      "orig": "where the explicit forms of ",
+      "text": "where the explicit forms of "
     },
     {
       "self_ref": "#/texts/385",
@@ -6922,8 +6922,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/387",
@@ -6946,8 +6946,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with",
-      "text": "are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with"
+      "orig": " are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with ",
+      "text": " are given in Eqs. (51) and (47), respectively. The resulting wave functions (52), together with "
     },
     {
       "self_ref": "#/texts/389",
@@ -6970,8 +6970,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair.",
-      "text": "in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair."
+      "orig": " in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair.",
+      "text": " in Eq. (40), serve as fundamental solutions for the quark–antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [51,52]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark–antiquark pair."
     },
     {
       "self_ref": "#/texts/391",
@@ -7014,8 +7014,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the",
-      "text": "Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the"
+      "orig": "Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the ",
+      "text": "Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the "
     },
     {
       "self_ref": "#/texts/394",
@@ -7038,8 +7038,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as",
-      "text": "-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as"
+      "orig": "-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as ",
+      "text": "-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as "
     },
     {
       "self_ref": "#/texts/396",
@@ -7062,8 +7062,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues.",
-      "text": "[5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues."
+      "orig": " [5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues.",
+      "text": " [5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues."
     },
     {
       "self_ref": "#/texts/398",
@@ -7215,8 +7215,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Because the angular part",
-      "text": "Because the angular part"
+      "orig": "Because the angular part ",
+      "text": "Because the angular part "
     },
     {
       "self_ref": "#/texts/405",
@@ -7287,8 +7287,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and consider the fact that",
-      "text": "and consider the fact that"
+      "orig": "and consider the fact that ",
+      "text": "and consider the fact that "
     },
     {
       "self_ref": "#/texts/411",
@@ -7311,8 +7311,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/413",
@@ -7335,8 +7335,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in this case can be expressed in terms of",
-      "text": "in this case can be expressed in terms of"
+      "orig": " in this case can be expressed in terms of ",
+      "text": " in this case can be expressed in terms of "
     },
     {
       "self_ref": "#/texts/415",
@@ -7366,8 +7366,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "as",
-      "text": "as"
+      "orig": " as",
+      "text": " as"
     },
     {
       "self_ref": "#/texts/417",
@@ -7390,8 +7390,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "along with Eq. (44) as the formula of",
-      "text": "along with Eq. (44) as the formula of"
+      "orig": "along with Eq. (44) as the formula of ",
+      "text": "along with Eq. (44) as the formula of "
     },
     {
       "self_ref": "#/texts/419",
@@ -7438,8 +7438,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "where",
-      "text": "where"
+      "orig": "where ",
+      "text": "where "
     },
     {
       "self_ref": "#/texts/423",
@@ -7462,8 +7462,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the integral part:",
-      "text": "is the integral part:"
+      "orig": " is the integral part:",
+      "text": " is the integral part:"
     },
     {
       "self_ref": "#/texts/425",
@@ -7486,8 +7486,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To evaluate the integration",
-      "text": "To evaluate the integration"
+      "orig": "To evaluate the integration ",
+      "text": "To evaluate the integration "
     },
     {
       "self_ref": "#/texts/427",
@@ -7534,8 +7534,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "which holds when",
-      "text": "which holds when"
+      "orig": "which holds when ",
+      "text": "which holds when "
     },
     {
       "self_ref": "#/texts/431",
@@ -7558,8 +7558,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/433",
@@ -7582,8 +7582,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". This relation also holds when",
-      "text": ". This relation also holds when"
+      "orig": ". This relation also holds when ",
+      "text": ". This relation also holds when "
     },
     {
       "self_ref": "#/texts/435",
@@ -7606,8 +7606,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", where",
-      "text": ", where"
+      "orig": ", where ",
+      "text": ", where "
     },
     {
       "self_ref": "#/texts/437",
@@ -7678,8 +7678,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "under the conditions",
-      "text": "under the conditions"
+      "orig": "under the conditions ",
+      "text": "under the conditions "
     },
     {
       "self_ref": "#/texts/443",
@@ -7702,8 +7702,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/445",
@@ -7726,8 +7726,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". The two shape parameters of this function, in our case, are",
-      "text": ". The two shape parameters of this function, in our case, are"
+      "orig": ". The two shape parameters of this function, in our case, are ",
+      "text": ". The two shape parameters of this function, in our case, are "
     },
     {
       "self_ref": "#/texts/447",
@@ -7750,8 +7750,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": " and ",
+      "text": " and "
     },
     {
       "self_ref": "#/texts/449",
@@ -7774,8 +7774,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Thus, considering that the Pochhammer number is given by",
-      "text": ". Thus, considering that the Pochhammer number is given by"
+      "orig": ". Thus, considering that the Pochhammer number is given by ",
+      "text": ". Thus, considering that the Pochhammer number is given by "
     },
     {
       "self_ref": "#/texts/451",
@@ -7798,8 +7798,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", where",
-      "text": ", where"
+      "orig": ", where ",
+      "text": ", where "
     },
     {
       "self_ref": "#/texts/453",
@@ -7822,8 +7822,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants",
-      "text": ", a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants"
+      "orig": ", a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants ",
+      "text": ", a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants "
     },
     {
       "self_ref": "#/texts/455",
