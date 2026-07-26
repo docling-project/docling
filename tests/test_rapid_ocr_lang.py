@@ -217,3 +217,32 @@ def test_rapidocr_passes_lang_type_without_artifacts(monkeypatch) -> None:
     assert params["Det.lang_type"] == "en"
     # No pinned paths: rapidocr resolves the models itself.
     assert params["Rec.model_path"] is None
+
+
+def test_rapidocr_uses_ppocrv4_for_onnx_latin_without_artifacts(monkeypatch) -> None:
+    captured_params: list[dict[str, object]] = []
+    _install_fake_rapidocr(monkeypatch, captured_params)
+
+    fake_typings = ModuleType("rapidocr.utils.typings")
+    fake_typings.LangDet = SimpleNamespace(EN="en", CH="ch", MULTI="multi")
+    fake_typings.LangRec = SimpleNamespace(EN="en", LATIN="latin", CH="ch")
+    fake_typings.ModelType = SimpleNamespace(MOBILE="mobile")
+    fake_typings.OCRVersion = SimpleNamespace(PPOCRV4="PP-OCRv4")
+    fake_utils = ModuleType("rapidocr.utils")
+    fake_utils.typings = fake_typings
+    monkeypatch.setitem(sys.modules, "rapidocr.utils", fake_utils)
+    monkeypatch.setitem(sys.modules, "rapidocr.utils.typings", fake_typings)
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=RapidOcrOptions(lang=["es"], backend="onnxruntime"),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert len(captured_params) == 1
+    params = captured_params[0]
+    assert params["Rec.lang_type"] == "latin"
+    for stage in ("Det", "Cls", "Rec"):
+        assert params[f"{stage}.ocr_version"] == "PP-OCRv4"
+        assert params[f"{stage}.model_type"] == "mobile"

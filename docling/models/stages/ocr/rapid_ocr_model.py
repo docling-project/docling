@@ -261,7 +261,7 @@ def _rapidocr_lang_type_params(ocr_lang: str) -> dict[str, object]:
     return mapping.get(ocr_lang, {})
 
 
-def _rapidocr_torch_ppocrv4_params() -> dict[str, object]:
+def _rapidocr_ppocrv4_params() -> dict[str, object]:
     try:
         from rapidocr.utils.typings import ModelType, OCRVersion  # type: ignore
     except ImportError:
@@ -433,8 +433,11 @@ class RapidOcrModel(BaseOcrModel):
                 )
             if det_model_path is None and rec_model_path is None:
                 params.update(_rapidocr_lang_type_params(ocr_lang))
-                if backend_enum == EngineType.TORCH:
-                    params.update(_rapidocr_torch_ppocrv4_params())
+                # PP-OCRv6 has per-language routes but no generic Latin route.
+                if backend_enum == EngineType.TORCH or (
+                    backend_enum == EngineType.ONNXRUNTIME and ocr_lang == "latin"
+                ):
+                    params.update(_rapidocr_ppocrv4_params())
 
             user_params = self.options.rapidocr_params
             if user_params:
