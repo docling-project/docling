@@ -174,11 +174,7 @@ class VllmVlmEngine(BaseVlmEngine):
                 repo_id: str,
                 revision: str,
             ) -> Path:
-                try:
-                    return downloader.download_models(repo_id, revision=revision)
-                except DoclingModelDownloadError as e:
-                    _log.error("Failed to download {repo_id}")
-                    raise e
+                return downloader.download_models(repo_id, revision=revision)
 
             artifacts_path = resolve_model_artifacts_path(
                 repo_id=repo_id,
