@@ -114,7 +114,6 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     )
                 except DoclingModelDownloadError as e:
                     _log.error("Failed to download HuggingFaceTransformersVlmModel")
-                    self.enabled = False
                     raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

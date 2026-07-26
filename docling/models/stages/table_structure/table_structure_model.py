@@ -52,15 +52,7 @@ class TableStructureModel(BaseTableStructureModel):
                 try:
                     artifacts_path = self.download_models() / self._model_path
                 except DoclingModelDownloadError as e:
-                    # Log error
-                    _log.error(
-                        "Failed to download TableStructureModel, marked as disabled"
-                    )
-
-                    # Mark as disabled
-                    self.enabled = False
-
-                    # Propagate exception up
+                    _log.error("Failed to download TableStructureModel")
                     raise e
 
             else:
