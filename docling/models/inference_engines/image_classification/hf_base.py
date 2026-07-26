@@ -32,7 +32,6 @@ class HfImageClassificationEngineBase(
         model_config: Optional[EngineModelConfig] = None,
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]] = None,
-        hf_token: Optional[str | bool] = None,
     ) -> None:
         super().__init__(options=options, model_config=model_config)
         self.options: BaseImageClassificationEngineOptions = options
@@ -41,7 +40,6 @@ class HfImageClassificationEngineBase(
             accelerator_options=accelerator_options,
             artifacts_path=artifacts_path,
             model_family_name="image-classification",
-            hf_token=hf_token,
         )
 
     def _build_output(

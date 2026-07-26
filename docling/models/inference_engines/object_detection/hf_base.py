@@ -28,7 +28,6 @@ class HfObjectDetectionEngineBase(HfVisionModelMixin, BaseObjectDetectionEngine)
         model_config: Optional[EngineModelConfig] = None,
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]] = None,
-        hf_token: Optional[str | bool] = None,
     ) -> None:
         super().__init__(options=options, model_config=model_config)
         self.options: BaseObjectDetectionEngineOptions = options
@@ -37,7 +36,6 @@ class HfObjectDetectionEngineBase(HfVisionModelMixin, BaseObjectDetectionEngine)
             accelerator_options=accelerator_options,
             artifacts_path=artifacts_path,
             model_family_name="object-detection",
-            hf_token=hf_token,
         )
 
     def _build_output(
