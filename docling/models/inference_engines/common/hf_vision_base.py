@@ -61,17 +61,13 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
                 download_repo_id,
                 download_revision,
             )
-            try:
-                return self.download_models(
-                    repo_id=download_repo_id,
-                    revision=download_revision,
-                    local_dir=None,
-                    force=False,
-                    progress=False,
-                )
-            except DoclingModelDownloadError as e:
-                _log.error(f"Failed to download {download_repo_id}")
-                raise e
+            return self.download_models(
+                repo_id=download_repo_id,
+                revision=download_revision,
+                local_dir=None,
+                force=False,
+                progress=False,
+            )
 
         return resolve_model_artifacts_path(
             repo_id=repo_id,
