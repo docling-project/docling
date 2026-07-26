@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -447,8 +447,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the area formula.",
-      "text": "is the area formula."
+      "orig": " is the area formula.",
+      "text": " is the area formula."
     },
     {
       "self_ref": "#/texts/7",
@@ -525,8 +525,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are physics formulas.",
-      "text": "are physics formulas."
+      "orig": " are physics formulas.",
+      "text": " are physics formulas."
     },
     {
       "self_ref": "#/texts/13",
@@ -579,8 +579,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the Pythagorean theorem.",
-      "text": "is the Pythagorean theorem."
+      "orig": " is the Pythagorean theorem.",
+      "text": " is the Pythagorean theorem."
     },
     {
       "self_ref": "#/texts/17",

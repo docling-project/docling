@@ -163,6 +163,29 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
 """OOXML numFmt values that produce visible list/heading markers."""
 
 
+def _trim_run_edges(
+    runs: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
+) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+    """Trim only the outer edges of a run sequence, leaving interior whitespace intact.
+
+    Same shape as the ODF backend's ``_normalize_odf_text_runs``: leading and trailing
+    whitespace belongs to the block, whitespace between runs belongs to the text.
+    """
+    while runs and not runs[0][0].strip():
+        runs.pop(0)
+    if runs:
+        text, formatting, hyperlink = runs[0]
+        runs[0] = (text.lstrip(), formatting, hyperlink)
+
+    while runs and not runs[-1][0].strip():
+        runs.pop()
+    if runs:
+        text, formatting, hyperlink = runs[-1]
+        runs[-1] = (text.rstrip(), formatting, hyperlink)
+
+    return [run for run in runs if run[0]]
+
+
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
     if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
@@ -1593,21 +1616,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         group_text = ""
         previous_format = None
 
-        # Iterate over the runs of the paragraph and group them by format
+        # Group the runs by format, concatenating faithfully: in DOCX the boundary space very
+        # often lives inside a formatted run, and it is the run's own text (see
+        # `DoclingDocument.add_inline_group`). Stripping each group here is what forced the
+        # serializers to invent separators.
         for text, format, hyperlink in self._iter_paragraph_content(paragraph):
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
                 # If the style changes for a non empty text, add the previous group
-                if len(group_text.strip()) > 0:
-                    paragraph_elements.append(
-                        (group_text.strip(), previous_format, None)
-                    )
+                if group_text:
+                    paragraph_elements.append((group_text, previous_format, None))
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
                 if hyperlink is not None:
-                    paragraph_elements.append((text.strip(), format, hyperlink))
+                    paragraph_elements.append((text, format, hyperlink))
                     text = ""
                 else:
                     previous_format = format
@@ -1615,10 +1639,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             group_text += text
 
         # Format the last group
-        if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), previous_format, None))
+        if group_text:
+            paragraph_elements.append((group_text, previous_format, None))
 
-        return paragraph_elements
+        return _trim_run_edges(paragraph_elements)
 
     def _has_checkbox(self, element: BaseOxmlElement) -> bool:
         """Check if a paragraph element contains a checkbox.
@@ -2423,6 +2447,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
             elem_ref: Optional list to append created element references to.
         """
+        runs: list[tuple[DocItemLabel, str]] = []
         text_tmp = text
         for eq in equations:
             if len(text_tmp) == 0:
@@ -2434,33 +2459,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
             if len(pre_eq_text) > 0:
-                e1 = doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=pre_eq_text,
-                    content_layer=self.content_layer,
-                )
-                if elem_ref is not None:
-                    elem_ref.append(e1.get_ref())
-
-            e2 = doc.add_text(
-                label=DocItemLabel.FORMULA,
-                parent=parent,
-                text=eq.replace("<eq>", "").replace("</eq>", ""),
-                content_layer=self.content_layer,
+                runs.append((DocItemLabel.TEXT, pre_eq_text))
+            runs.append(
+                (DocItemLabel.FORMULA, eq.replace("<eq>", "").replace("</eq>", ""))
             )
-            if elem_ref is not None:
-                elem_ref.append(e2.get_ref())
 
         if len(text_tmp) > 0:
-            e3 = doc.add_text(
-                label=DocItemLabel.TEXT,
+            runs.append((DocItemLabel.TEXT, text_tmp))
+
+        # Trim the paragraph's outer edges only. The whitespace around an inline equation is a
+        # significant run boundary: stripping the fragment after the last equation merged it
+        # into the formula (`$A=\pi r^{2}$is the area formula`) once the serializer stopped
+        # inventing a separator.
+        if runs and runs[0][0] == DocItemLabel.TEXT:
+            runs[0] = (DocItemLabel.TEXT, runs[0][1].lstrip())
+        if runs and runs[-1][0] == DocItemLabel.TEXT:
+            runs[-1] = (DocItemLabel.TEXT, runs[-1][1].rstrip())
+
+        for label, run_text in runs:
+            if label == DocItemLabel.TEXT and not run_text:
+                continue
+            item = doc.add_text(
+                label=label,
                 parent=parent,
-                text=text_tmp.strip(),
+                text=run_text,
                 content_layer=self.content_layer,
             )
             if elem_ref is not None:
-                elem_ref.append(e3.get_ref())
+                elem_ref.append(item.get_ref())
 
     def _manage_list_structure(
         self,

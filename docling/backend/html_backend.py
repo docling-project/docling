@@ -82,6 +82,10 @@ _log = logging.getLogger(__name__)
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
 
+# Any run of whitespace in normal HTML flow renders as a single space. The sentinel is not
+# whitespace, so an explicit <br> survives the collapse.
+_WHITESPACE_RUN: Final = re.compile(r"\s+")
+
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
 
@@ -293,7 +297,9 @@ class AnnotatedTextList(list):
             f = at.formatting
             c = at.code
             s = at.source_tag_id
-            current_text += t.strip() + " "
+            # Faithful concatenation: stripping each run and re-joining with " " invented
+            # separators the source never had. Boundary whitespace is already in the run text.
+            current_text += t
             if f is not None and current_f is None:
                 current_f = f
             elif f is not None and current_f is not None and f != current_f:
@@ -337,7 +343,6 @@ class AnnotatedTextList(list):
         formatting = self[0].formatting
         code = self[0].code
         source_tag_id = self[0].source_tag_id
-        last_elm = text
         for i in range(1, len(self)):
             if (
                 hyperlink == self[i].hyperlink
@@ -345,11 +350,9 @@ class AnnotatedTextList(list):
                 and code == self[i].code
                 and source_tag_id == self[i].source_tag_id
             ):
-                sep = " "
-                if not self[i].text.strip() or not last_elm.strip():
-                    sep = ""
-                text += sep + self[i].text
-                last_elm = self[i].text
+                # Same-format neighbours merge faithfully: any whitespace between them is
+                # already in the run text, so a separator here would duplicate it.
+                text += self[i].text
             else:
                 simplified.append(
                     AnnotatedText(
@@ -361,7 +364,6 @@ class AnnotatedTextList(list):
                     )
                 )
                 text = self[i].text
-                last_elm = text
                 hyperlink = self[i].hyperlink
                 formatting = self[i].formatting
                 code = self[i].code
@@ -377,6 +379,45 @@ class AnnotatedTextList(list):
                 )
             )
         return simplified
+
+    def normalize_whitespace(self) -> AnnotatedTextList:
+        """Collapse boundary whitespace across runs and trim the block edge.
+
+        Per-node collapsing is not enough: `["a ", " ", " b"]` is three separate nodes whose
+        faithful concatenation is `"a   b"`. Whitespace at a run boundary -- in either run, or in
+        a whitespace-only run between them -- collapses to exactly one space, carried by the left
+        run so it sits outside the right run's formatting. The block's outer edges are trimmed
+        once, here, so no downstream emitter needs to strip anything.
+
+        Not for preformatted content, where every space and newline is significant.
+        """
+        kept: AnnotatedTextList = AnnotatedTextList()
+        space_pending = False
+        for at in self:
+            if not at.text:
+                continue
+            core = at.text.strip()
+            if not core:
+                # A whitespace-only run contributes a boundary, nothing else.
+                space_pending = True
+                continue
+            if (space_pending or at.text[:1].isspace()) and kept:
+                # A code run is wrapped in `` ` `` downstream, and the serializers hoist
+                # whitespace out of emphasis but not out of a code delimiter. Keep the boundary
+                # space outside both delimiters.
+                if not kept[-1].code:
+                    kept[-1] = kept[-1].model_copy(update={"text": kept[-1].text + " "})
+                elif not at.code:
+                    core = " " + core
+                else:
+                    # Both sides are code: either delimiter would swallow it (`a`` b`), so the
+                    # boundary becomes an unformatted run of its own between them.
+                    kept.append(AnnotatedText(text=" ", source_tag_id=at.source_tag_id))
+            # A trailing space is only significant if something follows; the loop ending here
+            # leaves it dropped, which is the block-edge trim.
+            space_pending = at.text[-1:].isspace()
+            kept.append(at.model_copy(update={"text": core}))
+        return kept
 
     def split_by_newline(self) -> list[Self]:
         """Split text elements on multiple consecutive line breaks (from <br> tags).
@@ -1191,24 +1232,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _compact_adjacent_single_char_parts(
         self, parts: AnnotatedTextList
     ) -> list[tuple[AnnotatedText, list[str]]]:
+        def single_char(part: AnnotatedText) -> Optional[str]:
+            """Return the lone character of *part*, or None if it cannot be compacted.
+
+            A run carrying edge whitespace is a word boundary in rendered span soup, so
+            compacting across it would glue words together. Only bare characters qualify.
+            """
+            cleaned = HTMLDocumentBackend._clean_unicode(part.text)
+            return cleaned if len(cleaned) == 1 and not cleaned.isspace() else None
+
         compacted: list[tuple[AnnotatedText, list[str]]] = []
         idx = 0
         while idx < len(parts):
             current = parts[idx]
-            current_text = HTMLDocumentBackend._clean_unicode(current.text.strip())
+            current_text = single_char(current)
 
-            if len(current_text) == 1 and current.source_tag_id is not None:
+            if current_text is not None and current.source_tag_id is not None:
                 run_chars: list[str] = []
                 run_source_ids: list[str] = []
                 prev_source_id: Optional[str] = None
                 run_end = idx
                 while run_end < len(parts):
                     candidate = parts[run_end]
-                    candidate_text = HTMLDocumentBackend._clean_unicode(
-                        candidate.text.strip()
-                    )
+                    candidate_text = single_char(candidate)
                     if (
-                        len(candidate_text) != 1
+                        candidate_text is None
                         or candidate.hyperlink != current.hyperlink
                         or candidate.formatting != current.formatting
                         or candidate.code != current.code
@@ -1445,9 +1493,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             ]
             is_rich = len(content) > 1
         else:
+            # Normalized, or the inter-tag whitespace of `<td>\n<p>x</p>\n</td>` counts as two
+            # extra runs and the cell is misclassified as rich.
             annotations = self._extract_text_and_hyperlink_recursively(
                 table_cell, find_parent_annotation=True
-            )
+            ).normalize_whitespace()
             if not annotations:
                 is_rich = bool(
                     item for item in children if item.name in {"img", "input"}
@@ -1622,6 +1672,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
 
             for annotated_text_list in parts:
+                # One normalization per block: resolves boundaries across runs and trims the
+                # block edge, so nothing below strips individual runs.
+                annotated_text_list = annotated_text_list.normalize_whitespace()
                 compacted_parts = self._compact_adjacent_single_char_parts(
                     annotated_text_list
                 )
@@ -1634,9 +1687,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     annotated_text_list, doc, force=force_inline_group
                 ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
-                        if annotated_text.text.strip():
+                        # Keep whitespace-only runs: normalization already trimmed the block
+                        # edges, so one that survives is a significant boundary (it carries the
+                        # space between two adjacent code spans).
+                        if annotated_text.text:
                             seg_clean = HTMLDocumentBackend._clean_unicode(
-                                annotated_text.text.strip()
+                                annotated_text.text
                             )
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
@@ -1873,12 +1929,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
 
             if keep_newlines:
-                text: str = item.strip()
+                # Preformatted content: every space and newline is significant, so take it
+                # verbatim. Stripping each string used to be masked by the serializer's `" "`
+                # join; with a faithful join it merges words (`<pre>See <a>x</a> first</pre>`).
+                text: str = str(item)
             else:
-                # For normal content, collapse newlines to spaces (HTML spec behavior)
-                # but preserve the sentinel character for explicit <br> tags
-                text = item.replace("\n", " ").replace("\r", " ")
-                text = " ".join(text.split())
+                # For normal content, collapse runs of whitespace to a single space (HTML spec
+                # behavior) but preserve the sentinel character for explicit <br> tags.
+                # Collapse only, never trim: `" ".join(s.split())` also stripped the edges, and
+                # that is where the run boundary lives -- `H<sub>2</sub>O` vs `x<sup>2</sup> + y`
+                # are indistinguishable once it is gone.
+                text = _WHITESPACE_RUN.sub(" ", item)
 
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
@@ -2164,7 +2225,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         annotated_text_list = self._extract_text_and_hyperlink_recursively(
             tag, find_parent_annotation=True
         )
-        annotated_text = annotated_text_list.to_single_text_element()
+        annotated_text = (
+            annotated_text_list.normalize_whitespace().to_single_text_element()
+        )
         text_clean = HTMLDocumentBackend._clean_unicode(annotated_text.text)
         prov = self._make_text_prov(
             text=text_clean,
@@ -2319,10 +2382,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parts = self._extract_text_and_hyperlink_recursively(
             tag, ignore_list=True, find_parent_annotation=True
         )
-        min_parts = parts.simplify_text_elements()
-        item_text = re.sub(
-            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-        ).strip()
+        min_parts = parts.simplify_text_elements().normalize_whitespace()
+        item_text = "".join([el.text for el in min_parts])
 
         if not item_text:
             return None
@@ -2344,8 +2405,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             with self._use_inline_group(min_parts, doc):
                 compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
                 for annotated_text, source_tag_ids in compacted_parts:
-                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
-                    clean_text = HTMLDocumentBackend._clean_unicode(text_part)
+                    # Already normalized as one block above -- no per-run strip.
+                    clean_text = HTMLDocumentBackend._clean_unicode(annotated_text.text)
 
                     # Apply extra formatting if provided
                     formatting = annotated_text.formatting
@@ -2646,11 +2707,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             annotated_texts: AnnotatedTextList = text_list.simplify_text_elements()
             for part in annotated_texts.split_by_newline():
+                part = part.normalize_whitespace()
                 compacted_part = self._compact_adjacent_single_char_parts(part)
                 with self._use_inline_group(part, doc) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_part:
-                        if seg := annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
+                        # See above: a surviving whitespace-only run is a significant boundary.
+                        if annotated_text.text:
+                            seg_clean = HTMLDocumentBackend._clean_unicode(
+                                annotated_text.text
+                            )
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -2744,12 +2809,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
+            # Preformatted content: every interior space is significant, so trim the block
+            # edges once (HTML drops the newline right after `<pre>`) instead of stripping each
+            # fragment. Stripping them merged `<pre>See <a>x</a> first</pre>` into one word
+            # once the serializer stopped inserting a separator.
+            if annotated_texts:
+                head = annotated_texts[0]
+                annotated_texts[0] = head.model_copy(
+                    update={"text": head.text.lstrip("\n")}
+                )
+                tail = annotated_texts[-1]
+                annotated_texts[-1] = tail.model_copy(
+                    update={"text": tail.text.rstrip()}
+                )
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_clean = HTMLDocumentBackend._clean_unicode(
-                        annotated_text.text.strip()
-                    )
+                    if not annotated_text.text:
+                        continue
+                    text_clean = HTMLDocumentBackend._clean_unicode(annotated_text.text)
                     prov = self._make_prov(
                         text=text_clean,
                         tag=tag,
@@ -4438,13 +4516,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
 
-        caption_anno_text = caption.to_single_text_element()
+        caption_anno_text = caption.normalize_whitespace().to_single_text_element()
 
         caption_item: Optional[TextItem] = None
         if caption_anno_text.text:
-            text_clean = HTMLDocumentBackend._clean_unicode(
-                caption_anno_text.text.strip()
-            )
+            text_clean = HTMLDocumentBackend._clean_unicode(caption_anno_text.text)
             prov = self._make_prov(
                 text=text_clean,
                 tag=caption_prov_tag or img_tag,

@@ -24,8 +24,8 @@ item-0 at level 0: unspecified: group _root_
           item-23 at level 5: list: group descriptions
             item-24 at level 6: list_item: 
               item-25 at level 7: inline: group group
-                item-26 at level 8: text: HyperText Markup Language - used for
-                item-27 at level 8: text: structuring
+                item-26 at level 8: text: HyperText Markup Language - used for 
+                item-27 at level 8: text: structuring 
                 item-28 at level 8: text: web content
         item-29 at level 4: list_item: CSS
           item-30 at level 5: list: group descriptions

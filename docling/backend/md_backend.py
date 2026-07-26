@@ -566,20 +566,25 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             original_text = (
                 element.children if isinstance(element.children, str) else ""
             )
-            snippet_text = unescape(original_text.strip())
-            is_table_row = bool(snippet_text) and (
+            # Keep the raw fragment: whitespace at a `RawText` edge is the boundary between
+            # inline runs (`Foo *emph* bar` -> `"Foo "`, `"emph"`, `" bar"`) and the serializers
+            # concatenate faithfully. Marko has already trimmed the block edges for us.
+            # Table parsing stays on the stripped text -- it works on whole source lines.
+            snippet_text = unescape(original_text)
+            stripped_text = unescape(original_text.strip())
+            is_table_row = bool(stripped_text) and (
                 # A header cell in bold or a link arrives as its own node with
                 # no pipe in it, so once the paragraph is known to be a table,
                 # every piece of it belongs to that table, pipe or not.
                 self.in_pipeless_table
                 or (
-                    "|" in snippet_text
+                    "|" in stripped_text
                     and (self.in_table or original_text.lstrip().startswith("|"))
                 )
             )
             if is_table_row:
                 self.in_table = True
-            if self.in_table and snippet_text:
+            if self.in_table and stripped_text:
                 snippet_text = self._unescape_except_pipe(original_text.strip())
                 # If we're in a table, keep adding text (for formatted content in cells)
                 if self.md_table_buffer:
@@ -591,10 +596,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._close_table(doc)
 
                 if creation_stack:
+                    # Headings and list items become one item's own text, not a run: trim.
                     parent_item = self._flush_creation_stack(
                         doc=doc,
                         creation_stack=creation_stack,
-                        snippet_text=snippet_text,
+                        snippet_text=stripped_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                         list_last_item_by_ref=list_last_item_by_ref,
@@ -656,6 +662,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if self.in_table:
                 _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
+            elif element.soft:
+                # A soft-wrapped paragraph renders as one line with a space at the wrap point.
+                # Dropping it used to be masked by the serializer's `" "` join between runs;
+                # with a faithful join it merges the words across the wrap.
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent_item,
+                    text=" ",
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1

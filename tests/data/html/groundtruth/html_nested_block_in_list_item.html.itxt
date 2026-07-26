@@ -16,14 +16,14 @@ item-0 at level 0: unspecified: group _root_
       item-15 at level 3: list: group ordered list
         item-16 at level 4: list_item: 
           item-17 at level 5: inline: group group
-            item-18 at level 6: text: Item with
-            item-19 at level 6: text: bold
+            item-18 at level 6: text: Item with 
+            item-19 at level 6: text: bold 
             item-20 at level 6: text: text First paragraph block Second paragraph block
         item-21 at level 4: list_item: 
           item-22 at level 5: inline: group group
-            item-23 at level 6: text: Another item in
+            item-23 at level 6: text: Another item in 
             item-24 at level 6: code: python
-            item-25 at level 6: text: language
+            item-25 at level 6: text:  language
         item-26 at level 4: list_item: Final item
     item-27 at level 2: section_header: Nested list in divs
       item-28 at level 3: list: group list

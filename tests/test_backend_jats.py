@@ -235,20 +235,20 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
         pytest.param(
             "The mass energy relation <inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula> is famous.",
             [
-                (DocItemLabel.TEXT, "The mass energy relation", None),
+                (DocItemLabel.TEXT, "The mass energy relation ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "is famous.", None),
+                (DocItemLabel.TEXT, " is famous.", None),
             ],
             id="text-formula-text",
         ),
         pytest.param(
             "Given <inline-formula><tex-math>$$a^2$$</tex-math></inline-formula> and <inline-formula><tex-math>$$b^2$$</tex-math></inline-formula> we sum.",
             [
-                (DocItemLabel.TEXT, "Given", None),
+                (DocItemLabel.TEXT, "Given ", None),
                 (DocItemLabel.FORMULA, "a^2", None),
-                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.TEXT, " and ", None),
                 (DocItemLabel.FORMULA, "b^2", None),
-                (DocItemLabel.TEXT, "we sum.", None),
+                (DocItemLabel.TEXT, " we sum.", None),
             ],
             id="multiple-formulas",
         ),
@@ -257,9 +257,9 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             # (adjacent unstyled runs are coalesced into one segment)
             "The relation <inline-formula>foo <tex-math>$$E=mc^2$$</tex-math> bar</inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation foo", None),
+                (DocItemLabel.TEXT, "The relation foo ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "bar holds.", None),
+                (DocItemLabel.TEXT, " bar holds.", None),
             ],
             id="text-inside-inline-formula",
         ),
@@ -267,19 +267,20 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             # tex-math is not always wrapped in $$...$$ in real JATS files
             "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation", None),
+                (DocItemLabel.TEXT, "The relation ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "holds.", None),
+                (DocItemLabel.TEXT, " holds.", None),
             ],
             id="bare-tex-math",
         ),
         pytest.param(
             "We use <inline-formula><italic>x</italic> <tex-math>$$a^2$$</tex-math></inline-formula> here.",
             [
-                (DocItemLabel.TEXT, "We use", None),
+                (DocItemLabel.TEXT, "We use ", None),
                 (DocItemLabel.TEXT, "x", (False, True, False, False, Script.BASELINE)),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "a^2", None),
-                (DocItemLabel.TEXT, "here.", None),
+                (DocItemLabel.TEXT, " here.", None),
             ],
             id="italic-inside-formula",
         ),
@@ -288,18 +289,20 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             [
                 (DocItemLabel.TEXT, "Index x", None),
                 (DocItemLabel.TEXT, "i", (False, False, False, False, Script.SUB)),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "x_i", None),
-                (DocItemLabel.TEXT, "shown.", None),
+                (DocItemLabel.TEXT, " shown.", None),
             ],
             id="subscript-inside-formula",
         ),
         pytest.param(
             "Take <inline-formula><bold><italic>v</italic></bold> <tex-math>$$v$$</tex-math></inline-formula> next.",
             [
-                (DocItemLabel.TEXT, "Take", None),
+                (DocItemLabel.TEXT, "Take ", None),
                 (DocItemLabel.TEXT, "v", (True, True, False, False, Script.BASELINE)),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "v", None),
-                (DocItemLabel.TEXT, "next.", None),
+                (DocItemLabel.TEXT, " next.", None),
             ],
             id="nested-emphasis-inside-formula",
         ),
@@ -308,9 +311,9 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             # formula (not leaked as raw ``$$...$$`` text)
             "Val <inline-formula><italic><tex-math>$$x^2$$</tex-math></italic></inline-formula> shown.",
             [
-                (DocItemLabel.TEXT, "Val", None),
+                (DocItemLabel.TEXT, "Val ", None),
                 (DocItemLabel.FORMULA, "x^2", None),
-                (DocItemLabel.TEXT, "shown.", None),
+                (DocItemLabel.TEXT, " shown.", None),
             ],
             id="tex-math-inside-emphasis",
         ),
@@ -319,16 +322,17 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             # and adjacent unstyled runs are coalesced
             "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
             [
-                (DocItemLabel.TEXT, "Compare", None),
+                (DocItemLabel.TEXT, "Compare ", None),
                 (
                     DocItemLabel.TEXT,
                     "lhs",
                     (False, True, False, False, Script.BASELINE),
                 ),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "a", None),
-                (DocItemLabel.TEXT, "rhs and", None),
+                (DocItemLabel.TEXT, " rhs and ", None),
                 (DocItemLabel.FORMULA, "b", None),
-                (DocItemLabel.TEXT, "now.", None),
+                (DocItemLabel.TEXT, " now.", None),
             ],
             id="formula-with-surrounding-elements",
         ),
@@ -383,13 +387,13 @@ def test_jats_paragraph_emphasis_is_preserved():
     groups = _inline_group_items(doc)
     assert len(groups) == 1
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "The species", None),
+        (DocItemLabel.TEXT, "The species ", None),
         (
             DocItemLabel.TEXT,
             "Homo sapiens",
             (False, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, "is", None),
+        (DocItemLabel.TEXT, " is ", None),
         (DocItemLabel.TEXT, "common", (True, False, False, False, Script.BASELINE)),
         (DocItemLabel.TEXT, ".", None),
     ]
@@ -574,3 +578,24 @@ def test_e2e_jats_conversions_stream():
 
 def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
+
+
+def test_jats_inline_runs_rejoin_to_the_source_text():
+    """Runs concatenate back to the paragraph text: no invented and no lost separator."""
+    cases = {
+        "The species <italic>Homo sapiens</italic> is <bold>common</bold>.": (
+            "The species Homo sapiens is common."
+        ),
+        # no whitespace at the boundary in the source, so none in the runs
+        "Water is H<sub>2</sub>O here.": "Water is H2O here.",
+        "Note<sup>1</sup> follows.": "Note1 follows.",
+        # block edges are trimmed exactly once; interior whitespace is verbatim, since
+        # XML content is not whitespace-collapsed the way HTML normal flow is
+        "  padded  <italic>x</italic>  ": "padded  x",
+    }
+    for paragraph, expected in cases.items():
+        doc = convert_jats_body(f"<sec><title>T</title><p>{paragraph}</p></sec>")
+        runs = [
+            t.text for t in doc.texts if t.label == DocItemLabel.TEXT and t.text != "T"
+        ]
+        assert "".join(runs) == expected, paragraph

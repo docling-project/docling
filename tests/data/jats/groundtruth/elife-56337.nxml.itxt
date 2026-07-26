@@ -7,9 +7,9 @@ item-0 at level 0: unspecified: group _root_
     item-6 at level 2: section_header: Introduction
       item-7 at level 3: text: Nearly half of the human and mou ... s are active beyond early development.
       item-8 at level 3: inline: group group
-        item-9 at level 4: text: TEs, especially long terminal re ... ion by recruiting KAP1 to TEs. Indeed,
+        item-9 at level 4: text: TEs, especially long terminal re ... on by recruiting KAP1 to TEs. Indeed, 
         item-10 at level 4: text: Zfp809
-        item-11 at level 4: text: knock-out (KO) in mice resulted  ... f evolutionarily young KRAB-ZFP genes.
+        item-11 at level 4: text:  knock-out (KO) in mice resulted ... f evolutionarily young KRAB-ZFP genes.
     item-12 at level 2: section_header: Results
       item-13 at level 3: section_header: Mouse KRAB-ZFPs target retrotransposons
         item-14 at level 4: text: We analyzed the RNA expression p ... duplications (Kauzlaric et al., 2017).
@@ -24,9 +24,9 @@ item-0 at level 0: unspecified: group _root_
         item-21 at level 4: inline: group group
           item-22 at level 5: text: We generally observed that KRAB- ... ZFP961 motif closely resembles the PBS
           item-23 at level 5: text: Lys1,2
-          item-24 at level 5: text: (Figure 1—figure supplement 3A), ... f et al., 2008). Repression of the PBS
+          item-24 at level 5: text:  (Figure 1—figure supplement 3A) ... f et al., 2008). Repression of the PBS
           item-25 at level 5: text: Lys1,2
-          item-26 at level 5: text: by ZFP961 was also confirmed in  ... responsible for this silencing effect.
+          item-26 at level 5: text:  by ZFP961 was also confirmed in ... responsible for this silencing effect.
         item-27 at level 4: text: To further test the hypothesis t ... t easily evade repression by mutation.
         item-28 at level 4: text: Our KRAB-ZFP ChIP-seq dataset al ... ntirely shift the mode of DNA binding.
       item-29 at level 3: section_header: Genetic deletion of KRAB-ZFP gen ...  leads to retrotransposon reactivation
@@ -38,15 +38,15 @@ item-0 at level 0: unspecified: group _root_
         item-34 at level 4: picture
           item-34 at level 5: caption: Figure 3. TE-dependent gene activation in KRAB-ZFP cluster KO ES cells. (A) Differential gene expression in Chr2-cl and Chr4-cl KO ES cells. Significantly up- and downregulated genes (adjusted p-value<0.05) are highlighted in red and green, respectively, KRAB-ZFP genes within the deleted clusters are shown in blue. (B) Correlation of TEs and gene deregulation. Plots show enrichment of TE groups within 100 kb of up- and downregulated genes relative to all genes. Significantly overrepresented LTR and LINE groups (adjusted p-value<0.1) are highlighted in blue and red, respectively. (C) Schematic view of the downstream region of Chst1 where a 5’ truncated ETn insertion is located. ChIP-seq (Input subtracted from ChIP) data for overexpressed epitope-tagged Gm13051 (a Chr4-cl KRAB-ZFP) in F9 EC cells, and re-mapped KAP1 (GEO accession: GSM1406445) and H3K9me3 (GEO accession: GSM1327148) in WT ES cells are shown together with RNA-seq data from Chr4-cl WT and KO ES cells (mapped using Bowtie (-a -m 1 --strata -v 2) to exclude reads that cannot be uniquely mapped). (D) RT-qPCR analysis of Chst1 mRNA expression in Chr4-cl WT and KO ES cells with or without the CRISPR/Cas9 deleted ETn insertion near Chst1. Values represent mean expression (normalized to Gapdh) from three biological replicates per sample (each performed in three technical replicates) in arbitrary units. Error bars represent standard deviation and asterisks indicate significance (p<0.01, Student’s t-test). n.s.: not significant. (E) Mean coverage of ChIP-seq data (Input subtracted from ChIP) in Chr4-cl WT and KO ES cells over 127 full-length ETn insertions. The binding sites of the Chr4-cl KRAB-ZFPs Rex2 and Gm13051 are indicated by dashed lines.
         item-35 at level 4: inline: group group
-          item-36 at level 5: text: While we generally observed that ... ETn insertion to the first exon of the
+          item-36 at level 5: text: While we generally observed that ... Tn insertion to the first exon of the 
           item-37 at level 5: text: Cd59a
-          item-38 at level 5: text: gene, which is strongly activate ... is located about 60 kb from the TSS of
+          item-38 at level 5: text:  gene, which is strongly activat ... s located about 60 kb from the TSS of 
           item-39 at level 5: text: Chst1
-          item-40 at level 5: text: , one of the top-upregulated gen ... C). RT-qPCR analysis revealed that the
+          item-40 at level 5: text: , one of the top-upregulated gen ... ). RT-qPCR analysis revealed that the 
           item-41 at level 5: text: Chst1
-          item-42 at level 5: text: upregulation phenotype in Chr4-c ... ontrolled ETn-borne enhancer regulates
+          item-42 at level 5: text:  upregulation phenotype in Chr4- ... ntrolled ETn-borne enhancer regulates 
           item-43 at level 5: text: Chst1
-          item-44 at level 5: text: expression (Figure 3D). Furtherm ... he internal region and not on the LTR.
+          item-44 at level 5: text:  expression (Figure 3D). Further ... he internal region and not on the LTR.
       item-45 at level 3: section_header: ETn retrotransposition in Chr4-cl KO and WT mice
         item-46 at level 4: text: IAP, ETn/ETnERV and MuLV/RLTR4 r ... s may contribute to reduced viability.
         item-47 at level 4: text: We reasoned that retrotransposon ... Tn insertions at a high recovery rate.
@@ -66,49 +66,49 @@ item-0 at level 0: unspecified: group _root_
         item-59 at level 4: inline: group group
           item-60 at level 5: text: Mouse ES cells and F9 EC cells w ... nes originate from JM8A3.N1 C57BL/6N-A
           item-61 at level 5: text: tm1Brd
-          item-62 at level 5: text: ES cells (KOMP Repository). Chr2 ... KO/KO and KO/WT (B6/129 F2) offspring.
+          item-62 at level 5: text:  ES cells (KOMP Repository). Chr ... KO/KO and KO/WT (B6/129 F2) offspring.
       item-63 at level 3: section_header: Generation of KRAB-ZFP expressing cell lines
         item-64 at level 4: inline: group group
-          item-65 at level 5: text: KRAB-ZFP ORFs were PCR-amplified ... r 3XHA tags in F9 EC or ES cells using
+          item-65 at level 5: text: KRAB-ZFP ORFs were PCR-amplified ...  3XHA tags in F9 EC or ES cells using 
           item-66 at level 5: text: Sleeping beauty
-          item-67 at level 5: text: transposon-based (Wolf et al., 2 ... led and further expanded for ChIP-seq.
+          item-67 at level 5: text:  transposon-based (Wolf et al.,  ... led and further expanded for ChIP-seq.
       item-68 at level 3: section_header: CRISPR/Cas9 mediated deletion of KRAB-ZFP clusters and an MMETn insertion
         item-69 at level 4: inline: group group
           item-70 at level 5: text: All gRNAs were expressed from th ... ddgene_42230) and nucleofected into 10
           item-71 at level 5: text: 6
-          item-72 at level 5: text: ES cells using Amaxa nucleofecti ... PCR genotyping (Supplementary file 3).
+          item-72 at level 5: text:  ES cells using Amaxa nucleofect ... PCR genotyping (Supplementary file 3).
       item-73 at level 3: section_header: ChIP-seq analysis
         item-74 at level 4: inline: group group
           item-75 at level 5: text: For ChIP-seq analysis of KRAB-ZFP expressing cells, 5–10 × 10
           item-76 at level 5: text: 7
-          item-77 at level 5: text: cells were crosslinked and immun ... 010 or Khil et al., 2012 respectively.
+          item-77 at level 5: text:  cells were crosslinked and immu ... 010 or Khil et al., 2012 respectively.
         item-78 at level 4: text: ChIP-seq libraries were construc ...  were re-mapped using Bowtie (--best).
       item-79 at level 3: section_header: Luciferase reporter assays
         item-80 at level 4: inline: group group
-          item-81 at level 5: text: For KRAB-ZFP repression assays,  ... y of the MMETn element upstream of the
+          item-81 at level 5: text: For KRAB-ZFP repression assays,  ...  of the MMETn element upstream of the 
           item-82 at level 5: text: Cd59a
-          item-83 at level 5: text: gene, fragments of varying sizes ... after transfection as described above.
+          item-83 at level 5: text:  gene, fragments of varying size ... after transfection as described above.
       item-84 at level 3: section_header: RNA-seq analysis
         item-85 at level 4: inline: group group
-          item-86 at level 5: text: Whole RNA was purified using RNe ... function of BED tools. The probability
+          item-86 at level 5: text: Whole RNA was purified using RNe ... unction of BED tools. The probability 
           item-87 at level 5: text: p
-          item-88 at level 5: text: in the binomial distribution was ... apped with KRAB-ZFP peaks. Then, given
+          item-88 at level 5: text:  in the binomial distribution wa ... pped with KRAB-ZFP peaks. Then, given 
           item-89 at level 5: text: n
-          item-90 at level 5: text: which is the number of specific groups of genes, and
+          item-90 at level 5: text:  which is the number of specific groups of genes, and 
           item-91 at level 5: text: x
-          item-92 at level 5: text: which is the number of this grou ... lemented in the R function p.adjust().
+          item-92 at level 5: text:  which is the number of this gro ... lemented in the R function p.adjust().
       item-93 at level 3: section_header: Reduced representation bisulfite sequencing (RRBS-seq)
         item-94 at level 4: text: For RRBS-seq analysis, Chr4-cl W ... h sample were considered for analysis.
       item-95 at level 3: section_header: Retrotransposition assay
         item-96 at level 4: inline: group group
           item-97 at level 5: text: The retrotransposition vectors p ... MusD retrotransposition assays, 5 × 10
           item-98 at level 5: text: 4
-          item-99 at level 5: text: HeLa cells (ATCC CCL-2) were tra ... were stained with Amido Black (Sigma).
+          item-99 at level 5: text:  HeLa cells (ATCC CCL-2) were tr ... were stained with Amido Black (Sigma).
       item-100 at level 3: section_header: Capture-seq screen
         item-101 at level 4: inline: group group
           item-102 at level 5: text: To identify novel retrotransposo ... target enrichment using the SureSelect
           item-103 at level 5: text: QXT
-          item-104 at level 5: text: Target Enrichment kit (Agilent). ... assembly using the Unicycler software.
+          item-104 at level 5: text:  Target Enrichment kit (Agilent) ... assembly using the Unicycler software.
     item-105 at level 2: section_header: Funding Information
       item-106 at level 3: text: This paper was supported by the following grants:
       item-107 at level 3: list: group list

@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "escaped_characters",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 4129962407829858370,
+    "binary_hash": 9622616909157515894,
     "filename": "escaped_characters.md"
   },
   "furniture": {
@@ -275,8 +275,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The pipe symbol (| or",
-      "text": "The pipe symbol (| or"
+      "orig": "The pipe symbol (| or ",
+      "text": "The pipe symbol (| or "
     },
     {
       "self_ref": "#/texts/12",

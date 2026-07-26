@@ -1448,3 +1448,55 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        # An empty formatted element between two words is one boundary, not three spaces.
+        (b"<p>a <strong> </strong> b</p>", "a b"),
+        # No whitespace at the boundary in the source: none in the output.
+        (b"<p>Water is H<sub>2</sub>O here.</p>", "Water is H2O here."),
+        # Whitespace after the closing tag is significant and must survive.
+        (b"<p>x<sup>2</sup> + y<sup>3</sup> ok</p>", "x2 + y3 ok"),
+        # Whitespace inside a formatted run belongs outside the emphasis markers.
+        (b"<p><strong>bold </strong>tail</p>", "**bold** tail"),
+        # Runs of whitespace collapse (HTML spec) but the boundary is kept.
+        (b"<p>a  \n  <em>b</em>   c</p>", "a *b* c"),
+        # The block edge is trimmed exactly once.
+        (b"<p>   padded   </p>", "padded"),
+    ],
+)
+def test_inline_whitespace_boundaries(body, expected):
+    """Inline runs carry their own whitespace; nothing is invented or lost at a boundary."""
+    html = b"<html><body>" + body + b"</body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.export_to_markdown() == expected
+
+
+def test_single_char_spans_do_not_compact_across_a_boundary():
+    """The single-char compactor must not glue words that a space separates.
+
+    Rendered span soup emits one span per character; compacting them is what turns
+    `<span>H</span><span>i</span>` into `Hi`. A span carrying edge whitespace is a word
+    boundary, so it must stop the run.
+    """
+    html = (
+        b"<html><body><p>"
+        b"<span>H</span><span>i</span><span> </span><span>t</span><span>o</span>"
+        b"</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.export_to_markdown() == "Hi to"
