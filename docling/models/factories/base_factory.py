@@ -51,6 +51,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         self._classes: dict[type[BaseOptions], type[A]] = {}
         self._options_by_kind: dict[str, type[BaseOptions]] = {}
         self._meta: dict[type[BaseOptions], FactoryMeta] = {}
+        self._model_contracts: dict[type[A], tuple[type[BaseOptions], str]] = {}
 
     @property
     def registered_kind(self) -> list[str]:
@@ -233,6 +234,10 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     def _validate_options_type(
         self, model: type[A], plugin_name: str
     ) -> tuple[type[BaseOptions], str]:
+        cached_contract = self._model_contracts.get(model)
+        if cached_contract is not None:
+            return cached_contract
+
         try:
             options_type = model.get_options_type()
         except Exception as exc:
@@ -256,7 +261,9 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 plugin_name,
                 f"{options_type.__name__} must declare a non-empty string kind",
             )
-        return options_type, kind
+        contract = (options_type, kind)
+        self._model_contracts[model] = contract
+        return contract
 
     def _configuration_error(
         self, plugin_name: str, problem: str

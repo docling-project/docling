@@ -393,6 +393,27 @@ def test_base_factory_registration_contract_is_preserved() -> None:
     assert hook_factory.registered_kind == ["shared-kind"]
 
 
+def test_model_contract_is_evaluated_once_per_factory() -> None:
+    evaluation_count = 0
+
+    class _SingleEvaluationModel(_PluginModelBase):
+        @classmethod
+        def get_options_type(cls) -> type[BaseOptions]:
+            nonlocal evaluation_count
+            evaluation_count += 1
+            return _FirstOptions
+
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
+
+    factory.process_plugin(
+        {"ocr_engines": [_SingleEvaluationModel]},
+        "test-plugin",
+        "test_plugin",
+    )
+
+    assert evaluation_count == 1
+
+
 def test_plugin_discovery_preserves_factory_override_dispatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
