@@ -298,6 +298,11 @@ def _formatting_from_odf_text_style(
     return _formatting_or_none(formatting)
 
 
+def _odf_tail(element: Any) -> str:
+    """Return the text following ``element``, i.e. the lxml tail odfdo exposes."""
+    return getattr(element, "tail", None) or ""
+
+
 def _odf_text_runs(
     element: Any,
     odf_obj: OdfDocument | None,
@@ -309,11 +314,8 @@ def _odf_text_runs(
     )
     tag = getattr(element, "tag", None)
     if tag == "text:line-break":
-        text = getattr(element, "text", "\n") or "\n"
-        text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive.startswith(text):
-            text = text_recursive
-        return [_OdfTextRun(text=text, formatting=formatting)]
+        # The text following the break is this element's tail; the caller emits it.
+        return [_OdfTextRun(text="\n", formatting=formatting)]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting)]
 
@@ -322,13 +324,20 @@ def _odf_text_runs(
     if text:
         runs.append(_OdfTextRun(text=text, formatting=formatting))
 
-    for child in getattr(element, "children", []):
+    children = getattr(element, "children", [])
+    for child in children:
         runs.extend(_odf_text_runs(child, odf_obj, formatting))
+        # odfdo is lxml-backed: the text *between* two child elements is held in the first
+        # child's tail and belongs to this element's formatting. Skipping it dropped content
+        # outright -- `with <span>bold</span>, <span>underline</span>` lost both ", ".
+        if tail := _odf_tail(child):
+            runs.append(_OdfTextRun(text=tail, formatting=formatting))
 
-    if not runs and not getattr(element, "children", []):
+    if not runs and not children:
+        # `text_recursive` includes the tail, which the caller emits itself.
         text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive:
-            runs.append(_OdfTextRun(text=text_recursive, formatting=formatting))
+        if own_text := text_recursive.removesuffix(_odf_tail(element)):
+            runs.append(_OdfTextRun(text=own_text, formatting=formatting))
 
     return runs
 

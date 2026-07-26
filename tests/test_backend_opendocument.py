@@ -1093,3 +1093,37 @@ def test_ods_sheet_names_filter(tmp_path: Path):
         f"Should have 1 group, got {len(doc_single.groups)}"
     )
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
+
+
+def test_odf_text_between_spans_is_not_dropped():
+    """Text sitting *between* two ``<text:span>`` elements must survive extraction.
+
+    ``odfdo`` is lxml-backed, so the text after a child element lives in that child's
+    ``tail``. The run walker only read ``element.text`` and recursed into children, so
+    ``with <span>bold</span>, <span>underline</span>, and <span>italic</span> formatting``
+    silently lost every ``", "`` plus the trailing ``" formatting"``. The serializer's old
+    ``" "`` join disguised it as plausible spacing.
+
+    ``text_recursive`` is odfdo's own faithful reading of the paragraph, so it is an
+    independent expected value for the concatenated runs.
+    """
+    from odfdo import Document as OdfDocument
+
+    from docling.backend.opendocument_backend import (
+        _normalize_odf_text_runs,
+        _odf_text_runs,
+    )
+
+    odf_obj = OdfDocument("tests/data/odf/sources/text_document_03.odt")
+    paragraph = next(
+        p
+        for p in odf_obj.body.get_paragraphs()
+        if "After table with" in p.text_recursive
+    )
+
+    runs = _normalize_odf_text_runs(_odf_text_runs(paragraph, odf_obj))
+    assert "".join(run.text for run in runs) == paragraph.text_recursive.strip()
+    assert (
+        "".join(run.text for run in runs)
+        == "After table with bold, underline, strikethrough, and italic formatting"
+    )
