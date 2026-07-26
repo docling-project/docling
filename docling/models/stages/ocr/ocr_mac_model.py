@@ -38,7 +38,8 @@ class OcrMacModel(BaseOcrModel):
         )
         self.options: OcrMacOptions
 
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         if self.enabled:
             if "darwin" != sys.platform:
