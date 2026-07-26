@@ -414,9 +414,27 @@ class _MlxWhisperModel:
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
-        audio_path: Path = Path(conv_res.input.file).resolve()
+        path_or_stream = conv_res.input._backend.path_or_stream
+        temp_file_path: Path | None = None
+
+        if not isinstance(path_or_stream, (BytesIO, Path)):
+            raise RuntimeError(
+                f"ASR pipeline requires a file path or BytesIO stream, "
+                f"but got {type(path_or_stream)}"
+            )
 
         try:
+            if isinstance(path_or_stream, BytesIO):
+                suffix = Path(conv_res.input.file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp_file:
+                    temp_file_path = Path(tmp_file.name)
+                    tmp_file.write(path_or_stream.getvalue())
+                audio_path = temp_file_path
+            else:
+                audio_path = path_or_stream
+
             if shutil.which("ffmpeg") is None:
                 _log.error(MISSING_FFMPEG_MESSAGE)
                 conv_res.errors.append(
@@ -436,9 +454,17 @@ class _MlxWhisperModel:
 
         except Exception as exc:
             _log.error(f"MLX Audio transcription has an error: {exc}")
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
 
-        conv_res.status = ConversionStatus.FAILURE
-        return conv_res
+        finally:
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as exc:
+                    _log.warning(
+                        f"Failed to delete temporary file {temp_file_path}: {exc}"
+                    )
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """Transcribe audio using MLX Whisper.
