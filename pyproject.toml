@@ -368,7 +368,11 @@ members = ["packages/docling"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
+# The InlineGroup whitespace contract lands in lock-step with docling-core: these backends emit
+# runs that own their boundary whitespace, and only a faithful-join core renders them correctly.
+# Drop this source once docling-core ships the release carrying it, and raise the floor in
+# `dependencies` to that version.
+docling-core = { git = "https://github.com/docling-project/docling-core", branch = "cau/serializer-whitespace-fixes" }
 
 [tool.uv]
 package = true
