@@ -32,7 +32,7 @@ def download_hf_model(
         revision (`str`, *optional*, defaults to `None`):
             If provided, an optional Git revision id. Can be a branch name, tag, or commit hash. Default is `None`.
         token (`str`, `bool`, *optional*, defaults to `None`):
-            If provided, the token used to authenticate and accelerate downloads. Default is `None`.
+            If provided, the token is used to authenticate and accelerate downloads. Default is `None`.
                 - If `True` OR None, the token is read from the `HF_TOKEN` environment variable.
                 - If `False`, the token is explicitly ignored and only unauthenticated requests are made.
                 - If a string, used directly as the authentication token.
@@ -87,6 +87,30 @@ class HuggingFaceModelDownloadMixin:
         revision: Optional[str] = None,
         hf_token: Optional[str | bool] = None,
     ) -> Path:
+        """Download model files from a HuggingFace repo.
+
+        Args:
+            repo_id (`str`):
+                HuggingFace repo. User or organization name.
+            local_dir (`Path`, *optional*, defaults to `None`):
+                If provided, downloaded files go in this directory. Default is `None`.
+            force (`bool`, defaults to `False`):
+                Whether to force a download even if the file exists in a local cache. Default is `False`.
+            progress (`bool`, defaults to `False`):
+                Toggles progress bars. Default is `False`.
+            revision (`str`, *optional*, defaults to `None`):
+                If provided, an optional Git revision id. Can be a branch name, tag, or commit hash. Default is `None`.
+            token (`str`, `bool`, *optional*, defaults to `None`):
+                If provided, the token is used to authenticate and accelerate downloads. Default is `None`.
+                    - If `True` OR None, the token is read from the `HF_TOKEN` environment variable.
+                    - If `False`, the token is explicitly ignored and only unauthenticated requests are made.
+                    - If a string, used directly as the authentication token.
+        Returns:
+            Path object. Path to where the downloaded model files are located.
+
+        Raises:
+            DoclingModelDownloadError: Invalid token, unauthorized token, general download error.
+        """
         return download_hf_model(
             repo_id=repo_id,
             local_dir=local_dir,
