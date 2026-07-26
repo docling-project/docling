@@ -51,7 +51,6 @@ class PictureDescriptionVlmModel(
                 try:
                     artifacts_path = self.download_models(repo_id=self.options.repo_id)
                 except DoclingModelDownloadError as e:
-                    self.enabled = False
                     raise e
             else:
                 artifacts_path = Path(artifacts_path) / self.options.repo_cache_folder

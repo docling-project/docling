@@ -67,15 +67,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 try:
                     artifacts_path = self.download_models()
                 except DoclingModelDownloadError as e:
-                    # Log the error
-                    _log.error(
-                        "Failed to download _BaseChartExtractionModelGraniteVision, marked as disabled"
-                    )
-
-                    # Mark as disabled
-                    self.enabled = False
-
-                    # Propagate exception up
+                    _log.error(f"Failed to download {self._model_repo_id}")
                     raise e
 
             elif (artifacts_path / self._model_repo_folder).exists():

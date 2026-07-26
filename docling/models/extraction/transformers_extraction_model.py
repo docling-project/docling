@@ -64,10 +64,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                         revision=self.vlm_options.revision,
                     )
                 except DoclingModelDownloadError as e:
-                    _log.error(
-                        "Failed to download TransformersExtractionModel, marked as disabled"
-                    )
-                    self.enabled = False
+                    _log.error("Failed to download TransformersExtractionModel")
                     raise e
 
             elif (artifacts_path / repo_cache_folder).exists():

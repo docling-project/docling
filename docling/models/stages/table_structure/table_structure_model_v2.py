@@ -55,10 +55,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                 try:
                     model_path = self.download_models()
                 except DoclingModelDownloadError as e:
-                    _log.error(
-                        "Failed to download TableStructureModelV2, marked as disabled"
-                    )
-                    self.enabled = False
+                    _log.error("Failed to download TableStructureModelV2")
                     raise e
 
             elif (artifacts_path / self._model_repo_folder).exists():

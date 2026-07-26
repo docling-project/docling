@@ -133,15 +133,12 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
 
             if artifacts_path is None:
                 try:
-                    artifacts_path = self.download_model(
+                    artifacts_path = self.download_models(
                         repo_id=self.vlm_options.repo_id,
                         revision=self.vlm_options.revision,
                     )
                 except DoclingModelDownloadError as e:
-                    _log.error(
-                        "Failed to download NuExtractTransformersModel, marked as disabled"
-                    )
-                    self.enabled = False
+                    _log.error("Failed to download NuExtractTransformersModel")
                     raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

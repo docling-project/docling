@@ -108,7 +108,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
                 try:
                     artifacts_path = self.download_models()
                 except DoclingModelDownloadError as e:
-                    self.enabled = False
+                    # No logging
                     raise e
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
