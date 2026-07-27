@@ -485,10 +485,6 @@ WHISPER_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
 WHISPER_DISTIL_SMALL_EN_NATIVE = InlineAsrNativeWhisperOptions(
     repo_id="distil-small.en",
     inference_framework=InferenceAsrFramework.WHISPER,
-    # Distil-Whisper checkpoints are English-only; pin the language so the
-    # default language=None never triggers a detection pass (distil-large-v3/
-    # v3.5 keep large-v3's multilingual vocab, so whisper would otherwise
-    # auto-detect on them).
     language="en",
     verbose=True,
     timestamps=True,
