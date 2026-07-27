@@ -510,6 +510,10 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             ),
             decode_config=decode_config,
         )
+        # The threaded parser derives its document key by hashing from the current stream
+        # offset, so the stream has to be rewound for that key to cover the whole document.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
         self.doc_key = self.parser.load(
             self.path_or_stream,
             password=password,
