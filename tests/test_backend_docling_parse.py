@@ -109,17 +109,23 @@ def test_supersample_factor_backend_option(test_doc_path):
         backend=DoclingParseDocumentBackend,
         backend_options=PdfBackendOptions(supersample_factor=1.0),
     )
-    page_backend = in_doc._backend.load_page(0)
+    doc_backend = in_doc._backend
+    page_backend = doc_backend.load_page(0)
 
-    image = page_backend.get_page_image(scale=2)
+    try:
+        image = page_backend.get_page_image(scale=2)
 
-    pdf = pdfium.PdfDocument(test_doc_path)
-    reference = pdf[0].render(scale=2, rotation=0, crop=(0, 0, 0, 0)).to_pil()
-    pdf.close()
+        pdf = pdfium.PdfDocument(test_doc_path)
+        try:
+            reference = pdf[0].render(scale=2, rotation=0, crop=(0, 0, 0, 0)).to_pil()
+        finally:
+            pdf.close()
 
-    assert image.size == reference.size
-    assert image.tobytes() == reference.tobytes()
-
+        assert image.size == reference.size
+        assert image.tobytes() == reference.tobytes()
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
 
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
