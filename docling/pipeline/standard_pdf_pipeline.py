@@ -50,6 +50,7 @@ from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     LayoutOptions,
     LayoutPostprocessorOptions,
+    OcrMode,
     ThreadedPdfPipelineOptions,
 )
 from docling.datamodel.settings import settings
@@ -597,7 +598,11 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.preprocessing_model = PagePreprocessingModel(
             options=PagePreprocessingOptions(
-                images_scale=self.pipeline_options.images_scale
+                images_scale=self.pipeline_options.images_scale,
+                allow_empty_cells_on_decode_error=(
+                    self.pipeline_options.do_ocr
+                    and self.pipeline_options.ocr_options.mode == OcrMode.FULL_PAGE
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
