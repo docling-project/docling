@@ -80,22 +80,30 @@ def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]"
     aliased = COMMON_LANG_ALIASES.get(code, code)
 
     if aliased in PP_OCRV6_LANGS:
-        return OCRVersion.PPOCRV6, aliased
-
-    if backend == "torch":
-        if aliased in _PPOCRV4_LANGS:
-            return OCRVersion.PPOCRV4, aliased
+        version = OCRVersion.PPOCRV6
+    elif backend == "torch":
+        if aliased not in _PPOCRV4_LANGS:
+            raise ValueError(
+                f"RapidOCR torch backend does not support language {langs[0]!r}. "
+                f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV4_LANGS)}."
+            )
+        version = OCRVersion.PPOCRV4
+    elif aliased in _PPOCRV5_LANGS:
+        version = OCRVersion.PPOCRV5
+    else:
         raise ValueError(
-            f"RapidOCR torch backend does not support language {langs[0]!r}. "
-            f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV4_LANGS)}."
+            f"RapidOCR {backend} backend does not support language {langs[0]!r}. "
+            f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV5_LANGS)}."
         )
 
-    if aliased in _PPOCRV5_LANGS:
-        return OCRVersion.PPOCRV5, aliased
-    raise ValueError(
-        f"RapidOCR {backend} backend does not support language {langs[0]!r}. "
-        f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV5_LANGS)}."
+    _log.debug(
+        "RapidOCR resolved lang=%r backend=%r -> version=%s rec_lang=%r",
+        lang,
+        backend,
+        version.value,
+        aliased,
     )
+    return version, aliased
 
 
 def _download_if_missing(url: str, dest: Path, *, force: bool, progress: bool) -> Path:
