@@ -185,18 +185,54 @@ def test_rapidocr_unsupported_language_raises(monkeypatch, tmp_path: Path) -> No
         )
 
 
-def test_rapidocr_no_artifacts_downloads_to_cache(monkeypatch, tmp_path: Path) -> None:
+def test_rapidocr_no_artifacts_uses_library_params(monkeypatch, tmp_path: Path) -> None:
+    from rapidocr.utils.typings import OCRVersion
+
     monkeypatch.setattr(settings, "cache_dir", tmp_path)
-    params, _ = _build(
+    params, downloaded = _build(
         monkeypatch,
         RapidOcrOptions(lang=["en"], backend="onnxruntime"),
         None,
     )
-    expected = tmp_path / "models" / "RapidOcr"
-    assert str(params["Rec.model_path"]).startswith(str(expected))
+    # Without artifacts_path docling downloads nothing; RapidOCR serves the
+    # checkpoints bundled in its package (and its own cache).
+    assert downloaded == []
+    assert not (tmp_path / "models" / "RapidOcr").exists()
+    # Model paths stay unset; the resolved version/language is forwarded instead.
+    assert params["Det.model_path"] is None
+    assert params["Rec.model_path"] is None
+    assert params["Rec.ocr_version"] == OCRVersion.PPOCRV6
+    assert params["Rec.lang_type"] == "en"
 
 
-def test_rapidocr_explicit_paths_skip_resolution(monkeypatch, tmp_path: Path) -> None:
+def test_rapidocr_pinned_paths_skip_download(monkeypatch, tmp_path: Path) -> None:
+    det = tmp_path / "custom_det.onnx"
+    rec = tmp_path / "custom_rec.onnx"
+    det.write_bytes(b"x")
+    rec.write_bytes(b"x")
+    params, downloaded = _build(
+        monkeypatch,
+        RapidOcrOptions(
+            lang=["en"],
+            backend="onnxruntime",
+            det_model_path=str(det),
+            rec_model_path=str(rec),
+        ),
+        None,
+    )
+    assert params["Det.model_path"] == str(det)
+    assert params["Rec.model_path"] == str(rec)
+    # Pinned det+rec, no artifacts_path -> nothing downloaded; cls is left to
+    # RapidOCR via library params (per-model independence).
+    assert downloaded == []
+    assert "Det.ocr_version" not in params
+    assert "Rec.ocr_version" not in params
+    assert "Cls.ocr_version" in params
+
+
+def test_rapidocr_artifacts_pinned_det_rec_resolves_cls(
+    monkeypatch, tmp_path: Path
+) -> None:
     det = tmp_path / "custom_det.onnx"
     rec = tmp_path / "custom_rec.onnx"
     det.write_bytes(b"x")
@@ -211,10 +247,14 @@ def test_rapidocr_explicit_paths_skip_resolution(monkeypatch, tmp_path: Path) ->
         ),
         tmp_path,
     )
+    # Pinned det/rec are kept and never re-downloaded...
     assert params["Det.model_path"] == str(det)
     assert params["Rec.model_path"] == str(rec)
-    # user pinned det+rec -> no auto-download happens.
-    assert downloaded == []
+    assert all("cls" in url.lower() for url in downloaded)
+    # ...but cls is still resolved into the bundle (fixes the old asymmetry where
+    # pinning det+rec silently skipped cls).
+    assert params["Cls.model_path"] is not None
+    assert str(params["Cls.model_path"]).startswith(str(tmp_path / "RapidOcr"))
 
 
 # --- download_models / prefetch ---------------------------------------------

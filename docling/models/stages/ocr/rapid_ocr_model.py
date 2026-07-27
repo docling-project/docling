@@ -159,10 +159,13 @@ def _ensure_rapidocr_models(
     version: "OCRVersion",
     rec_lang: str,
     *,
+    need_det: bool = True,
+    need_cls: bool = True,
+    need_rec: bool = True,
     force: bool = False,
     progress: bool = False,
 ) -> dict[str, Path | None]:
-    """Ensure the det/cls/rec checkpoints exist locally, downloading if needed"""
+    """Ensure the requested det/cls/rec checkpoints exist locally, downloading if needed"""
     from rapidocr.inference_engine.base import FileInfo
     from rapidocr.utils.typings import ModelType, OCRVersion, TaskType
 
@@ -176,35 +179,81 @@ def _ensure_rapidocr_models(
     )
     cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
 
-    det_path, _ = _download_rapidocr_model(
-        target_dir,
-        FileInfo(engine, version, TaskType.DET, _RAPIDOCR_DET_MODEL_LANG, size),
-        engine,
-        force=force,
-        progress=progress,
-    )
-    cls_path, _ = _download_rapidocr_model(
-        target_dir,
-        FileInfo(
-            engine, OCRVersion.PPOCRV4, TaskType.CLS, _RAPIDOCR_CLS_MODEL_LANG, cls_size
-        ),
-        engine,
-        force=force,
-        progress=progress,
-    )
-    rec_path, rec_keys_path = _download_rapidocr_model(
-        target_dir,
-        FileInfo(engine, version, TaskType.REC, rec_lang, size),
-        engine,
-        force=force,
-        progress=progress,
-    )
+    det_path: Path | None = None
+    cls_path: Path | None = None
+    rec_path: Path | None = None
+    rec_keys_path: Path | None = None
+
+    if need_det:
+        det_path, _ = _download_rapidocr_model(
+            target_dir,
+            FileInfo(engine, version, TaskType.DET, _RAPIDOCR_DET_MODEL_LANG, size),
+            engine,
+            force=force,
+            progress=progress,
+        )
+    if need_cls:
+        cls_path, _ = _download_rapidocr_model(
+            target_dir,
+            FileInfo(
+                engine,
+                OCRVersion.PPOCRV4,
+                TaskType.CLS,
+                _RAPIDOCR_CLS_MODEL_LANG,
+                cls_size,
+            ),
+            engine,
+            force=force,
+            progress=progress,
+        )
+    if need_rec:
+        rec_path, rec_keys_path = _download_rapidocr_model(
+            target_dir,
+            FileInfo(engine, version, TaskType.REC, rec_lang, size),
+            engine,
+            force=force,
+            progress=progress,
+        )
     return {
         "det_model_path": det_path,
         "cls_model_path": cls_path,
         "rec_model_path": rec_path,
         "rec_keys_path": rec_keys_path,
     }
+
+
+def _rapidocr_model_params(
+    version: "OCRVersion",
+    rec_lang: str,
+    *,
+    det_pinned: bool,
+    cls_pinned: bool,
+    rec_pinned: bool,
+) -> dict[str, object]:
+    """Params that let RapidOCR resolve/download the models itself"""
+    from rapidocr.utils.typings import ModelType, OCRVersion
+
+    size = (
+        ModelType(_RAPIDOCR_MODEL_TYPE)
+        if version == OCRVersion.PPOCRV6
+        else ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
+    )
+    cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
+
+    params: dict[str, object] = {}
+    if not det_pinned:
+        params["Det.ocr_version"] = version
+        params["Det.lang_type"] = _RAPIDOCR_DET_MODEL_LANG
+        params["Det.model_type"] = size
+    if not cls_pinned:
+        params["Cls.ocr_version"] = OCRVersion.PPOCRV4
+        params["Cls.lang_type"] = _RAPIDOCR_CLS_MODEL_LANG
+        params["Cls.model_type"] = cls_size
+    if not rec_pinned:
+        params["Rec.ocr_version"] = version
+        params["Rec.lang_type"] = rec_lang
+        params["Rec.model_type"] = size
+    return params
 
 
 class RapidOcrModel(BaseOcrModel):
@@ -262,22 +311,40 @@ class RapidOcrModel(BaseOcrModel):
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
 
-            # Auto-resolve/download the model set unless the user pinned explicit
-            # detection/recognition paths (mirrors the previous opt-out gate).
-            if det_model_path is None and rec_model_path is None:
-                if artifacts_path is not None:
-                    target_dir = artifacts_path / self._model_repo_folder
-                else:
-                    target_dir = settings.cache_dir / "models" / self._model_repo_folder
+            # Params forwarded to RapidOCR only in the library-managed flow (no
+            # artifacts_path); empty when we hand RapidOCR explicit model paths.
+            lang_params: dict[str, object] = {}
+
+            if artifacts_path is not None:
+                target_dir = artifacts_path / self._model_repo_folder
+
+                # Explicitly download the required model artifacts
                 resolved = _ensure_rapidocr_models(
-                    target_dir, backend_enum, ppocr_version, rec_lang
+                    target_dir,
+                    backend_enum,
+                    ppocr_version,
+                    rec_lang,
+                    need_det=det_model_path is None,
+                    need_cls=cls_model_path is None,
+                    need_rec=rec_model_path is None,
                 )
-                det_model_path = str(resolved["det_model_path"])
-                rec_model_path = str(resolved["rec_model_path"])
+                if det_model_path is None:
+                    det_model_path = str(resolved["det_model_path"])
+                if rec_model_path is None:
+                    rec_model_path = str(resolved["rec_model_path"])
                 if cls_model_path is None and resolved["cls_model_path"] is not None:
                     cls_model_path = str(resolved["cls_model_path"])
                 if rec_keys_path is None and resolved["rec_keys_path"] is not None:
                     rec_keys_path = str(resolved["rec_keys_path"])
+            else:
+                # Populate the rapidocr parameters only. RapidOCR downloads by itself
+                lang_params = _rapidocr_model_params(
+                    ppocr_version,
+                    rec_lang,
+                    det_pinned=det_model_path is not None,
+                    cls_pinned=cls_model_path is not None,
+                    rec_pinned=rec_model_path is not None,
+                )
 
             for model_path in (
                 det_model_path,
@@ -328,6 +395,9 @@ class RapidOcrModel(BaseOcrModel):
                 _log.warning(
                     "The 'rec_font_path' option for RapidOCR is deprecated. Please use 'font_path' instead."
                 )
+
+            # Library-managed model-resolution params
+            params.update(lang_params)
 
             user_params = self.options.rapidocr_params
             if user_params:
