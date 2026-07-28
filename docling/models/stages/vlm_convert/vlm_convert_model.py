@@ -12,7 +12,12 @@ from pathlib import Path
 from PIL import Image as PILImage
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason, VlmPredictionToken
+from docling.datamodel.base_models import (
+    Page,
+    VlmPrediction,
+    VlmPredictionToken,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.models.base_model import BasePageModel
