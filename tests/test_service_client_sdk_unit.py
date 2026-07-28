@@ -1695,17 +1695,45 @@ def test_submit_chunk_local_string_source_uses_file_endpoint(tmp_path: Path) -> 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
         job = client.submit_chunk(
-            source=str(sample),
-            chunker=ChunkerKind.HYBRID,
-            options=ConvertDocumentsRequestOptions(),
+            str(sample),
+            ChunkerKind.HYBRID,
+            ConvertDocumentsRequestOptions(),
         )
 
     assert job.task_id == "task-chunk-file-string"
     assert captured["path"] == "/v1/chunk/hybrid/file/async"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["include_converted_doc"] is False
     files = captured["files"]
     assert isinstance(files, dict)
     assert files["files"][0] == "sample.pdf"
     assert files["files"][2] == "application/pdf"
+
+
+def test_submit_chunk_url_source_can_include_converted_doc() -> None:
+    captured: dict[str, object] = {}
+
+    def fake_request_with_retry(**kw: object) -> httpx.Response:
+        captured.update(kw)
+        return httpx.Response(
+            200,
+            json=_status_response("task-chunk-url", "pending").model_dump(mode="json"),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        job = client.submit_chunk(
+            source="https://example.org/sample.pdf",
+            chunker=ChunkerKind.HIERARCHICAL,
+            include_converted_doc=True,
+        )
+
+    assert job.task_id == "task-chunk-url"
+    assert captured["path"] == "/v1/chunk/hierarchical/source/async"
+    payload = captured["json"]
+    assert isinstance(payload, dict)
+    assert payload["include_converted_doc"] is True
 
 
 def test_submit_accepts_http_source_request() -> None:
@@ -3793,6 +3821,7 @@ async def test_async_submit_chunk_url_source_posts_correct_endpoint() -> None:
 
     def handler(method: str, url: str, **kw: object) -> httpx.Response:
         captured["url"] = url
+        captured["json"] = kw["json"]
         return httpx.Response(
             200, json=_status_response("chunk-1", "pending").model_dump(mode="json")
         )
@@ -3801,10 +3830,43 @@ async def test_async_submit_chunk_url_source_posts_correct_endpoint() -> None:
         job = await client.submit_chunk(
             source="https://example.org/doc.pdf",
             chunker=ChunkerKind.HYBRID,
+            include_converted_doc=True,
         )
 
     assert "/v1/chunk/hybrid/source/async" in str(captured["url"])
     assert job.task_id == "chunk-1"
+    payload = captured["json"]
+    assert isinstance(payload, dict)
+    assert payload["include_converted_doc"] is True
+
+
+@pytest.mark.anyio
+async def test_async_submit_chunk_file_can_include_converted_doc(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "sample.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+    captured: dict[str, object] = {}
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["url"] = url
+        captured["data"] = kw["data"]
+        return httpx.Response(
+            200, json=_status_response("chunk-2", "pending").model_dump(mode="json")
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit_chunk(
+            source=source,
+            chunker=ChunkerKind.HIERARCHICAL,
+            include_converted_doc=True,
+        )
+
+    assert "/v1/chunk/hierarchical/file/async" in str(captured["url"])
+    assert job.task_id == "chunk-2"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["include_converted_doc"] is True
 
 
 # --- health / version ---

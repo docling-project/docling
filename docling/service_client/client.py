@@ -1006,8 +1006,15 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
+        *,
+        include_converted_doc: bool = False,
     ) -> ChunkDocumentResponse:
-        job = self.submit_chunk(source=source, chunker=chunker, options=options)
+        job = self.submit_chunk(
+            source=source,
+            chunker=chunker,
+            options=options,
+            include_converted_doc=include_converted_doc,
+        )
         return job.result(timeout=self._job_timeout)
 
     def submit(
@@ -1090,6 +1097,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
+        *,
+        include_converted_doc: bool = False,
     ) -> ConversionJob[ChunkDocumentResponse]:
         resolved = self._resolve_options(
             options=options,
@@ -1101,6 +1110,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             source=source,
             chunker=chunker,
             options=resolved.options,
+            include_converted_doc=include_converted_doc,
         )
         handlers = _JobHandlers[ChunkDocumentResponse](
             poll=self._poll_task_status,
@@ -1251,6 +1261,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions,
+        *,
+        include_converted_doc: bool,
     ) -> TaskStatusResponse:
         source = self._normalize_source(source)
         if isinstance(source, HttpSourceRequest):
@@ -1266,7 +1278,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                     mode="json", exclude_none=True
                 ),
                 "sources": [source.model_dump(mode="json")],
-                "include_converted_doc": False,
+                "include_converted_doc": include_converted_doc,
                 "target": InBodyTarget().model_dump(mode="json"),
                 "callbacks": [],
             }
@@ -1291,7 +1303,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             data.update(
                 {f"chunking_{key}": value for key, value in chunk_payload.items()}
             )
-            data["include_converted_doc"] = False
+            data["include_converted_doc"] = include_converted_doc
             data["target_type"] = "inbody"
             response = self._request_with_retry(
                 method="POST",

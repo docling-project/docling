@@ -371,6 +371,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
+        *,
+        include_converted_doc: bool = False,
     ) -> AsyncConversionJob[ChunkDocumentResponse]:
         resolved = self._resolve_options(
             options=options,
@@ -382,6 +384,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             source=source,
             chunker=chunker,
             options=resolved.options,
+            include_converted_doc=include_converted_doc,
         )
         handlers: _AsyncJobHandlers[ChunkDocumentResponse] = _AsyncJobHandlers(
             poll=self._poll_task_status,
@@ -767,6 +770,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions,
+        *,
+        include_converted_doc: bool,
     ) -> TaskStatusResponse:
         source = self._normalize_source(source)
         if isinstance(source, HttpSourceRequest):
@@ -782,7 +787,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                     exclude_none=True,
                 ),
                 "sources": [source.model_dump(mode="json", exclude_none=True)],
-                "include_converted_doc": False,
+                "include_converted_doc": include_converted_doc,
                 "target": InBodyTarget().model_dump(mode="json"),
                 "callbacks": [],
             }
@@ -807,7 +812,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             data.update(
                 {f"chunking_{key}": value for key, value in chunk_payload.items()}
             )
-            data["include_converted_doc"] = False
+            data["include_converted_doc"] = include_converted_doc
             data["target_type"] = InBodyTarget().kind
             response = await self._request_with_retry(
                 method="POST",

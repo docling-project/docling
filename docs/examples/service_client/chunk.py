@@ -27,7 +27,11 @@ def main() -> None:
         url=os.environ["DOCLING_SERVICE_URL"],
         api_key=os.environ.get("DOCLING_SERVICE_API_KEY", ""),
     ) as client:
-        response = client.chunk(source=SOURCE, chunker=ChunkerKind.HIERARCHICAL)
+        response = client.chunk(
+            source=SOURCE,
+            chunker=ChunkerKind.HIERARCHICAL,
+            include_converted_doc=True,
+        )
         print(
             len(response.chunks), "chunks from", len(response.documents), "document(s)"
         )
