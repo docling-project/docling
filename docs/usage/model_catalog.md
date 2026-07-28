@@ -346,6 +346,7 @@ options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 
 ## Additional Resources
 
+- [Model Backends](model_backends.md) - Models organized by runtime backend (ONNX, PyTorch, MLX, vLLM, other)
 - [Vision Models Usage Guide](vision_models.md) - VLM-specific documentation
 - [Advanced Options](advanced_options.md) - Advanced configuration
 - [GPU Support](gpu.md) - GPU acceleration setup

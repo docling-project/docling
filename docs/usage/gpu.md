@@ -124,6 +124,92 @@ Here is a list of known models which are available in gguf format and how to use
 
 TBA.
 
+## AMD ROCm support
+
+Docling has no separate "ROCm" device option: a ROCm-built PyTorch exposes
+itself under the same `torch.cuda` namespace that CUDA uses (`torch.cuda.is_available()`,
+`.to("cuda")`, etc.), so `AcceleratorDevice.CUDA` / `device="cuda"` is the
+correct setting on both NVIDIA and AMD hardware. No Docling code changes are
+required to target an AMD GPU.
+
+This was verified end-to-end on an AMD Ryzen AI 7 PRO 350 (Radeon 860M,
+`gfx1152`, ROCm 7.14): with `AcceleratorOptions(device=AcceleratorDevice.CUDA)`,
+both the default layout model and TableFormer ran their real GPU kernels
+through the standard PDF pipeline and produced correct output (detected text
+and a structured table), with no code changes to Docling.
+
+### Installing a ROCm-enabled PyTorch
+
+For GPUs with an official ROCm PyTorch build, install from the versioned
+wheel index:
+
+```sh
+pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm6.4
+```
+
+Brand-new APUs are often not yet covered by that index (their `gfx` target
+isn't in the prebuilt wheel's compiled kernel list). For those, AMD publishes
+a multi-arch index with per-architecture kernel packages:
+
+```sh
+pip install --index-url https://repo.amd.com/rocm/whl-multi-arch/ \
+  "torch[device-gfx1152]==2.12.0+rocm7.14.0" \
+  "torchvision[device-gfx1152]==0.27.0+rocm7.14.0"
+```
+
+Replace `gfx1152` with your GPU's actual LLVM target (see below) and pick the
+`torch`/ROCm version pair the index currently offers.
+
+### Verifying the wheel actually covers your GPU
+
+Installing *a* ROCm wheel is not the same as installing one with kernels for
+your specific chip. Silent mismatches surface as a segfault or hang at kernel
+dispatch time, not a clean Python exception. Before relying on GPU inference:
+
+1. Get the GPU's real LLVM target from `rocminfo`, not from the marketing
+   name: look for the `Name:` field directly under the GPU's `Agent` block
+   (e.g. `gfx1152`), and treat this as ground truth over anything a
+   heuristic or lookup table infers from the product name.
+2. Compare it against what PyTorch actually shipped kernels for:
+   ```py
+   import torch
+   print(torch.cuda.get_arch_list())
+   ```
+   If your GPU's target is missing, expect a crash rather than a graceful
+   error the moment a kernel launches.
+3. Only after both agree, confirm with a real kernel launch (a plain
+   `torch.matmul` on `device="cuda"`), since that's the only step that can't
+   be fooled by version tags.
+
+Do **not** reach for `HSA_OVERRIDE_GFX_VERSION` as a first fix for a missing
+kernel target — it makes `rocminfo` and library init report a different
+(supported) `gfx` value than the hardware actually implements, which trades a
+loud, early failure for a silent, later one (page faults / wrong results at
+kernel dispatch). It's a last-resort spoof, not a substitute for installing a
+wheel that actually ships kernels for your chip.
+
+### Known caveats on ROCm
+
+- **ONNX-backed models** (RapidOCR's default ONNX backend, the opt-in ONNX
+  layout detector, ONNX image-classification/object-detection engines) only
+  request `CUDAExecutionProvider`/`CPUExecutionProvider`; there is no
+  `ROCMExecutionProvider` branch yet, so these currently fall back to CPU on
+  AMD GPUs regardless of `accelerator_options.device`.
+- **`cuda_use_flash_attention2`** assumes the CUDA-only `flash-attn` PyPI
+  wheel and will not install/work on ROCm. Leave it `False`. PyTorch's SDPA
+  still runs its Flash/Memory-efficient attention kernels on ROCm, but
+  `transformers` currently flags them as experimental on AMD GPUs
+  (`Flash Efficient attention on Current AMD GPU is still experimental.
+  Enable it with TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1.`) and falls back
+  correctly if disabled.
+- **Nemotron OCR** hard-requires `torch.version.cuda` to be set (CUDA-only
+  gate); `torch.version.cuda` is always `None` on a ROCm build, so this model
+  cannot run on AMD GPUs.
+- **WhisperS2T** (CTranslate2 backend) has no ROCm build upstream; use the
+  native Whisper backend instead for AMD GPUs.
+- **vLLM** has an official ROCm build; the VLM pipeline's vLLM engine should
+  work against it but has not been verified here.
+
 ## Performance results
 
 ### Test data

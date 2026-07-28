@@ -71,6 +71,7 @@ nav:
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
       - Model catalog: usage/model_catalog.md
+      - Model backends: usage/model_backends.md
       - GPU support: usage/gpu.md
       - MCP server: usage/mcp.md
       - Jobkit: usage/jobkit.md
