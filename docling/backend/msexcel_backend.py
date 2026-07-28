@@ -47,11 +47,12 @@ from docling.backend.abstract_backend import (
     PaginatedDocumentBackend,
 )
 from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
     crop_whitespace,
     get_libreoffice_cmd,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -61,6 +62,7 @@ _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from openpyxl import Workbook, load_workbook
+    from openpyxl.cell.cell import Cell, MergedCell
     from openpyxl.chartsheet.chartsheet import Chartsheet
     from openpyxl.drawing.image import Image
     from openpyxl.drawing.spreadsheet_drawing import (
@@ -147,6 +149,66 @@ class DataRegion:
         return self.max_row - self.min_row + 1
 
 
+class _MergedCellIndex:
+    """Index merged-cell anchors without expanding their coordinate ranges."""
+
+    def __init__(self, sheet: Worksheet) -> None:
+        self._anchor_spans: dict[tuple[int, int], tuple[int, int]] = {}
+
+        min_row: int | None = None
+        min_col: int | None = None
+        max_row = 0
+        max_col = 0
+
+        for merged_range in sheet.merged_cells.ranges:
+            anchor = (merged_range.min_row - 1, merged_range.min_col - 1)
+            self._anchor_spans.setdefault(
+                anchor,
+                (
+                    merged_range.max_row - merged_range.min_row + 1,
+                    merged_range.max_col - merged_range.min_col + 1,
+                ),
+            )
+            min_row = (
+                merged_range.min_row
+                if min_row is None
+                else min(min_row, merged_range.min_row)
+            )
+            min_col = (
+                merged_range.min_col
+                if min_col is None
+                else min(min_col, merged_range.min_col)
+            )
+            max_row = max(max_row, merged_range.max_row)
+            max_col = max(max_col, merged_range.max_col)
+
+        self.bounds = (
+            DataRegion(min_row, max_row, min_col, max_col)
+            if min_row is not None and min_col is not None
+            else None
+        )
+
+    def contains(self, cell: Cell | MergedCell) -> bool:
+        """Return whether a cell is an anchor or shadow of a merged range."""
+        return (
+            isinstance(cell, MergedCell)
+            or (
+                cell.row - 1,
+                cell.column - 1,
+            )
+            in self._anchor_spans
+        )
+
+    @staticmethod
+    def is_shadow(cell: Cell | MergedCell) -> bool:
+        """Return whether a cell is a non-anchor part of a merged range."""
+        return isinstance(cell, MergedCell)
+
+    def span_at(self, row: int, col: int) -> tuple[int, int]:
+        """Return the row and column span for a 0-based anchor coordinate."""
+        return self._anchor_spans.get((row, col), (1, 1))
+
+
 class ExcelCell(BaseModel):
     """Represents an Excel cell.
 
@@ -183,7 +245,7 @@ class ExcelTable(BaseModel):
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing Excel workbooks.
+    """Backend for parsing Excel workbooks (XLSX and XLS files).
 
     The backend converts an Excel workbook into a DoclingDocument object.
     Each worksheet is converted into a separate page.
@@ -198,11 +260,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     bounding box object with the cell indices as units (0-based index). The size of this
     bounding box is the number of columns and rows that the table or picture spans.
 
+    Legacy ``.xls`` files (binary Excel 97-2004 format) are first converted to
+    ``.xlsx`` via LibreOffice before parsing.
+
     Limitations:
         - Threaded comments (Excel 365+) are only extracted when the file is provided
           as a Path. When provided as a BytesIO stream, threaded comments cannot be
           extracted because the stream is consumed by openpyxl during initialization.
           Old-style cell comments (notes) are always extracted regardless of input type.
+        - Legacy ``.xls`` files are always converted to a ``BytesIO`` stream before
+          parsing, so threaded comments are not available for that format.
     """
 
     # Maximum seconds to wait for a single LibreOffice EMF/WMF conversion.
@@ -233,6 +300,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         if not _OPENPYXL_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _OPENPYXL_IMPORT_ERROR
+        if in_doc.format == InputFormat.XLS:
+            path_or_stream = convert_to_modern_format(path_or_stream, "xls", "xlsx")
         if options is None:
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -414,7 +483,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.XLSX}
+        return {InputFormat.XLSX, InputFormat.XLS}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -429,7 +498,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 
@@ -763,7 +832,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             ),
         )
 
-    def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
+    def _find_true_data_bounds(
+        self, sheet: Worksheet, merged_cell_index: _MergedCellIndex
+    ) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
 
         This function scans all cells to find the smallest rectangular region that contains
@@ -772,6 +843,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         Args:
             sheet: The worksheet to analyze.
+            merged_cell_index: Index containing merged-cell anchors, spans, and
+                bounds for the worksheet.
 
         Returns:
             A data region representing the smallest rectangle that covers all data and merged cells.
@@ -788,16 +861,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 max_row = max(max_row, r)
                 max_col = max(max_col, c)
 
-        # Expand bounds to include merged cells
-        for merged in sheet.merged_cells.ranges:
+        # Expand bounds to include merged cells without scanning all ranges again.
+        if merged_cell_index.bounds is not None:
+            merged_bounds = merged_cell_index.bounds
             min_row = (
-                merged.min_row if min_row is None else min(min_row, merged.min_row)
+                merged_bounds.min_row
+                if min_row is None
+                else min(min_row, merged_bounds.min_row)
             )
             min_col = (
-                merged.min_col if min_col is None else min(min_col, merged.min_col)
+                merged_bounds.min_col
+                if min_col is None
+                else min(min_col, merged_bounds.min_col)
             )
-            max_row = max(max_row, merged.max_row)
-            max_col = max(max_col, merged.max_col)
+            max_row = max(max_row, merged_bounds.max_row)
+            max_col = max(max_col, merged_bounds.max_col)
 
         # If no data found, default to (1, 1, 1, 1)
         if min_row is None or min_col is None:
@@ -822,9 +900,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 - A list of ExcelTable objects representing the data tables
                 - A dict mapping (row, col) to (author, comment_text, timestamp) for cells with comments
         """
-        bounds: DataRegion = self._find_true_data_bounds(
-            sheet
-        )  # The true data boundaries
+        merged_cell_index = _MergedCellIndex(sheet)
+        bounds = self._find_true_data_bounds(sheet, merged_cell_index)
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
@@ -872,7 +949,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 # If the cell starts a new table, find its bounds
                 table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, bounds.max_row, bounds.max_col
+                    sheet,
+                    start_row=ri,
+                    start_col=rj,
+                    max_row=bounds.max_row,
+                    max_col=bounds.max_col,
+                    merged_cell_index=merged_cell_index,
                 )
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
@@ -882,10 +964,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_table_bounds(
         self,
         sheet: Worksheet,
+        *,
         start_row: int,
         start_col: int,
         max_row: int,
         max_col: int,
+        merged_cell_index: _MergedCellIndex,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
         """Determine table bounds using a Flood Fill (BFS) strategy.
 
@@ -932,7 +1016,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         min_c, max_c = start_col, start_col
 
         # Helper: Check if a cell has content
-        def has_content(r, c):
+        def has_content(r: int, c: int) -> bool:
             if r < 0 or c < 0 or r >= max_row or c >= max_col:
                 return False
 
@@ -941,11 +1025,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if cell.value is not None:
                 return True
 
-            # 2. Check merge ranges
-            for mr in sheet.merged_cells.ranges:
-                if cell.coordinate in mr:
-                    return True
-            return False
+            # 2. Check the worksheet-level merged-cell index.
+            return merged_cell_index.contains(cell)
 
         # --- Phase 1: Flood Fill (Connectivity Check) ---
         while queue:
@@ -984,17 +1065,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # --- Phase 2: Extract Data (Semantic Grid) ---
         data = []
 
-        # We must identify cells that are "shadowed" by a merge (not the top-left)
-        hidden_merge_cells = set()
-        for mr in sheet.merged_cells.ranges:
-            mr_min_r, mr_min_c = mr.min_row - 1, mr.min_col - 1
-            mr_max_r, mr_max_c = mr.max_row - 1, mr.max_col - 1
-            for r in range(mr_min_r, mr_max_r + 1):
-                for c in range(mr_min_c, mr_max_c + 1):
-                    if r == mr_min_r and c == mr_min_c:
-                        continue
-                    hidden_merge_cells.add((r, c))
-
         # We iterate the bounding box of the found region
         # Gaps inside the bounding box become empty cells (preserving layout)
         for ri in range(min_r, max_r + 1):
@@ -1005,20 +1075,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # Logic: If we found a "U" shape, do we fill the middle?
                 # Yes, Excel tables are typically treated as rectangular bounding boxes.
 
-                if (ri, rj) in hidden_merge_cells:
+                cell = sheet.cell(row=ri + 1, column=rj + 1)
+                if merged_cell_index.is_shadow(cell):
                     continue
 
-                cell = sheet.cell(row=ri + 1, column=rj + 1)
                 cell_text = str(cell.value) if cell.value is not None else ""
 
                 # Compute Spans
-                row_span = 1
-                col_span = 1
-                for mr in sheet.merged_cells.ranges:
-                    if (ri + 1) == mr.min_row and (rj + 1) == mr.min_col:
-                        row_span = (mr.max_row - mr.min_row) + 1
-                        col_span = (mr.max_col - mr.min_col) + 1
-                        break
+                row_span, col_span = merged_cell_index.span_at(ri, rj)
 
                 data.append(
                     ExcelCell(

@@ -1,4 +1,3 @@
-import copy
 import logging
 import warnings
 from collections.abc import Sequence
@@ -18,9 +17,8 @@ from docling.datamodel.settings import settings
 from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
-from docling.utils.layout_postprocessor import LayoutPostprocessor
 from docling.utils.profiling import TimeRecorder
-from docling.utils.visualization import draw_clusters
+from docling.utils.visualization import draw_clusters_and_cells_side_by_side
 
 _log = logging.getLogger(__name__)
 
@@ -107,50 +105,6 @@ class LayoutModel(BaseLayoutModel):
             progress=progress,
         )
 
-    def draw_clusters_and_cells_side_by_side(
-        self, conv_res, page, clusters, mode_prefix: str, show: bool = False
-    ):
-        """
-        Draws a page image side by side with clusters filtered into two categories:
-        - Left: Clusters excluding FORM, KEY_VALUE_REGION, and PICTURE.
-        - Right: Clusters including FORM, KEY_VALUE_REGION, and PICTURE.
-        Includes label names and confidence scores for each cluster.
-        """
-        scale_x = page.image.width / page.size.width
-        scale_y = page.image.height / page.size.height
-
-        # Filter clusters for left and right images
-        exclude_labels = {
-            DocItemLabel.FORM,
-            DocItemLabel.KEY_VALUE_REGION,
-            DocItemLabel.PICTURE,
-        }
-        left_clusters = [c for c in clusters if c.label not in exclude_labels]
-        right_clusters = [c for c in clusters if c.label in exclude_labels]
-        # Create a deep copy of the original image for both sides
-        left_image = page.image.copy()
-        right_image = page.image.copy()
-
-        # Draw clusters on both images
-        draw_clusters(left_image, left_clusters, scale_x, scale_y)
-        draw_clusters(right_image, right_clusters, scale_x, scale_y)
-        # Combine the images side by side
-        combined_width = left_image.width * 2
-        combined_height = left_image.height
-        combined_image = Image.new("RGB", (combined_width, combined_height))
-        combined_image.paste(left_image, (0, 0))
-        combined_image.paste(right_image, (left_image.width, 0))
-        if show:
-            combined_image.show()
-        else:
-            out_path: Path = (
-                Path(settings.debug.debug_output_path)
-                / f"debug_{conv_res.input.file.stem}"
-            )
-            out_path.mkdir(parents=True, exist_ok=True)
-            out_file = out_path / f"{mode_prefix}_layout_page_{page.page_no:05}.png"
-            combined_image.save(str(out_file), format="png")
-
     def predict_layout(
         self,
         conv_res: ConversionResult,
@@ -212,39 +166,14 @@ class LayoutModel(BaseLayoutModel):
                 clusters.append(cluster)
 
             if settings.debug.visualize_raw_layout:
-                self.draw_clusters_and_cells_side_by_side(
-                    conv_res, page, clusters, mode_prefix="raw"
+                draw_clusters_and_cells_side_by_side(
+                    conv_res.input.file, page, clusters, mode_prefix="raw"
                 )
 
-            # Apply postprocessing
-            processed_clusters, processed_cells = LayoutPostprocessor(
-                page, clusters, self.options
-            ).postprocess()
-            # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
-
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    "Mean of empty slice|invalid value encountered in scalar divide",
-                    RuntimeWarning,
-                    "numpy",
-                )
-
-                conv_res.confidence.pages[page.page_no].layout_score = float(
-                    np.mean([c.confidence for c in processed_clusters])
-                )
-
-                conv_res.confidence.pages[page.page_no].ocr_score = float(
-                    np.mean([c.confidence for c in processed_cells if c.from_ocr])
-                )
-
-            prediction = LayoutPrediction(clusters=processed_clusters)
+            # Emit raw clusters; post-processing (cell assignment, layout_score)
+            # is performed by the downstream LayoutPostprocessingModel stage.
+            prediction = LayoutPrediction(clusters=clusters)
             page.predictions.layout = prediction
-
-            if settings.debug.visualize_layout:
-                self.draw_clusters_and_cells_side_by_side(
-                    conv_res, page, processed_clusters, mode_prefix="postprocessed"
-                )
 
             layout_predictions.append(prediction)
 

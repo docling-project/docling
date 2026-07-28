@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type, cast
+from typing import Annotated, Literal, Type, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -113,6 +113,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
     OcrAutoOptions,
+    OcrMode,
     OcrOptions,
     PdfBackend,
     PdfPipelineOptions,
@@ -359,6 +360,11 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
+    help=(
+        "Convert documents with Docling. At default verbosity a per-file "
+        "progress line is logged; pass -q/--quiet for fully silent output "
+        "(useful when calling docling from an AI agent or script)."
+    ),
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
@@ -497,7 +503,9 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode, split_page_view=False
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    split_page_view=False,
                 )
 
             # Export HTML format:
@@ -774,6 +782,34 @@ def convert(  # noqa: C901
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
+    video_sampling_mode: Annotated[
+        Literal["fixed", "scene"],
+        typer.Option(..., help="frame sampling mode."),
+    ] = "fixed",
+    video_frame_interval: Annotated[
+        float,
+        typer.Option(..., help="Seconds between frames in fixed interval mode."),
+    ] = 10.0,
+    video_cuts_per_minute: Annotated[
+        float,
+        typer.Option(
+            ..., help="Target cuts per minute in scene mode (overrides prominence)."
+        ),
+    ] = 0.0,
+    video_prominence: Annotated[
+        float,
+        typer.Option(
+            ...,
+            help="Scene change prominence threshold. 0 = auto (adapts sensitivity to video motion; recommended). Set a fixed value (e.g. 0.01) only to override.",
+        ),
+    ] = 0.0,
+    video_diarization: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="Enable speaker diarization (who said what). Requires resemblyzer.",
+        ),
+    ] = False,
     ocr: Annotated[
         bool,
         typer.Option(
@@ -784,9 +820,19 @@ def convert(  # noqa: C901
         bool,
         typer.Option(
             ...,
-            help="Replace any existing text with OCR generated text over the full content.",
+            help=(
+                "DEPRECATED: use `--ocr-mode full_page` instead. "
+                "Replace any existing text with OCR generated text over the full content."
+            ),
         ),
     ] = False,
+    ocr_mode: Annotated[
+        OcrMode,
+        typer.Option(
+            ...,
+            help="Which document regions are fed to the OCR engine.",
+        ),
+    ] = OcrMode.DEFAULT,
     tables: Annotated[
         bool,
         typer.Option(
@@ -899,6 +945,16 @@ def convert(  # noqa: C901
             help="Set the verbosity level. -v for info logging, -vv for debug logging.",
         ),
     ] = 0,
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet",
+            "-q",
+            help="Suppress the per-file progress log emitted at default verbosity, "
+            "restoring fully silent output (warnings and errors only). Has no "
+            "effect when -v/--verbose is given.",
+        ),
+    ] = False,
     debug_visualize_cells: Annotated[
         bool,
         typer.Option(..., help="Enable debug output which visualizes the PDF cells"),
@@ -1006,6 +1062,13 @@ def convert(  # noqa: C901
 
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
+        if not quiet:
+            # Keep per-file progress visible at default verbosity so users running
+            # long-running conversions (e.g. directories of audio files) can see
+            # which input is currently in flight. --quiet opts back out for callers
+            # (e.g. AI agents) that need fully silent output.
+            logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
+            logging.getLogger("docling.document_converter").setLevel(logging.INFO)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:
@@ -1111,9 +1174,20 @@ def convert(  # noqa: C901
         export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
+        # Deprecated --force-ocr wins over --ocr-mode; warn when used.
+        if force_ocr:
+            warnings.warn(
+                "`--force-ocr` is deprecated; use "
+                f"`--ocr-mode {OcrMode.FULL_PAGE.value}` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            resolved_ocr_mode = OcrMode.FULL_PAGE
+        else:
+            resolved_ocr_mode = ocr_mode
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
             kind=ocr_engine,
-            force_full_page_ocr=force_ocr,
+            mode=resolved_ocr_mode,
         )
 
         ocr_lang_list = _split_list(ocr_lang)
@@ -1309,6 +1383,48 @@ def convert(  # noqa: C901
             pipeline_options=asr_pipeline_options,
         )
         format_options[InputFormat.AUDIO] = audio_format_option
+
+        # Video pipeline options
+        # Deferred like the AsrPipeline/VlmPipeline
+        # imports above: docling.pipeline.video_pipeline transitively pulls
+        # in the ASR/diarization ML stack and video_frame_sampling pulls in
+        # scipy, so we avoid paying that cost unless video input is used.
+        has_video_source = InputFormat.VIDEO in from_formats and any(
+            _name_matches_format(src, InputFormat.VIDEO) for src in source
+        )
+        if has_video_source:
+            from docling.datamodel.pipeline_options import VideoPipelineOptions
+            from docling.document_converter import VideoFormatOption
+            from docling.pipeline.video_pipeline import VideoPipeline
+            from docling.utils.video_frame_sampling import VideoFrameSamplingMode
+
+            # Both sampling modes are usable with their defaults: fixed-interval
+            # uses video_frame_interval, and scene-change auto-calibrates its
+            # prominence threshold when neither --video-prominence nor
+            # --video-cuts-per-minute is given (see _auto_prominence).
+            video_pipeline_options = VideoPipelineOptions()
+            video_pipeline_options.enable_diarization = video_diarization
+            video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+            if video_sampling_mode == "scene":
+                video_pipeline_options.frame_sampling_mode = (
+                    VideoFrameSamplingMode.SCENE_CHANGE
+                )
+                video_pipeline_options.cuts_per_minute = (
+                    video_cuts_per_minute if video_cuts_per_minute > 0 else None
+                )
+                video_pipeline_options.scene_change_prominence = (
+                    video_prominence if video_prominence > 0 else None
+                )
+            else:
+                video_pipeline_options.frame_sampling_mode = (
+                    VideoFrameSamplingMode.FIXED_INTERVAL
+                )
+                video_pipeline_options.frame_interval_seconds = video_frame_interval
+            video_format_option = VideoFormatOption(
+                pipeline_cls=VideoPipeline,
+                pipeline_options=video_pipeline_options,
+            )
+            format_options[InputFormat.VIDEO] = video_format_option
 
         # Common options for all pipelines
         if artifacts_path is not None:

@@ -26,6 +26,9 @@ except ImportError as e:
     sys.exit(1)
 
 from docling.datamodel.settings import settings
+from docling.models.stages.ocr.easyocr_model import (
+    _resolve_easyocr_recognition_models,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.model_downloader import download_models
 
@@ -110,6 +113,14 @@ def download(
             help="No extra output is generated, the CLI prints only the directory with the cached models.",
         ),
     ] = False,
+    easyocr_lang: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            ...,
+            "--easyocr-lang",
+            help="EasyOCR language code to prefetch. Repeat for multiple languages.",
+        ),
+    ] = None,
 ):
     if models and all:
         raise typer.BadParameter(
@@ -123,6 +134,16 @@ def download(
             handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
         )
     to_download = models or (list(_AvailableModels) if all else _default_models)
+    if easyocr_lang is not None:
+        if _AvailableModels.EASYOCR not in to_download:
+            raise typer.BadParameter(
+                "--easyocr-lang requires the 'easyocr' model",
+                param_hint="--easyocr-lang",
+            )
+        try:
+            _resolve_easyocr_recognition_models(easyocr_lang)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     output_dir = download_models(
         output_dir=output_dir,
         force=force,
@@ -144,6 +165,7 @@ def download(
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
+        easyocr_languages=easyocr_lang,
         with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
     )
 

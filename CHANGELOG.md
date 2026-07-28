@@ -1,3 +1,51 @@
+## [v2.115.0](https://github.com/docling-project/docling/releases/tag/v2.115.0) - 2026-07-23
+
+### Feature
+
+* **service-client:** Support generic batch connector sources ([#3841](https://github.com/docling-project/docling/issues/3841)) ([`4d82545`](https://github.com/docling-project/docling/commit/4d825450d0987197fd0a1774f5dfb73cdf978136))
+* **docx:** Detect code blocks via paragraph styles and fonts ([#3735](https://github.com/docling-project/docling/issues/3735)) ([`73a2b08`](https://github.com/docling-project/docling/commit/73a2b08ef8aab70e36a26024f3b8762b2a614e52))
+* **jats/inline-formula:** Support emphasis elements and Inline formulas ([#3726](https://github.com/docling-project/docling/issues/3726)) ([`df4fdc9`](https://github.com/docling-project/docling/commit/df4fdc918a505843d741d097002d463cda4a78ce))
+
+### Fix
+
+* **cli:** Show per-file progress at default verbosity ([#3477](https://github.com/docling-project/docling/issues/3477)) ([`5ee146c`](https://github.com/docling-project/docling/commit/5ee146c295f3d53ed824cf2a64018c2b4ae00be9))
+* **odf:** Preserve content inside sections ([#3852](https://github.com/docling-project/docling/issues/3852)) ([`b627ca9`](https://github.com/docling-project/docling/commit/b627ca9146ba9d92468b09539e1d67cd07cfba31))
+* Propagate VLM metadata to VlmPrediction ([#3818](https://github.com/docling-project/docling/issues/3818)) ([`63d180a`](https://github.com/docling-project/docling/commit/63d180ab01e8e4bd91131fc00df6e00885343dc3))
+* **ocr:** Prefetch EasyOCR models by language ([#3834](https://github.com/docling-project/docling/issues/3834)) ([`64c0888`](https://github.com/docling-project/docling/commit/64c08887f88979a4fd4ba8c05e9d1c370a3439d7))
+* Lazy-load chart extraction so docling-slim needs no torch ([#3837](https://github.com/docling-project/docling/issues/3837)) ([`428426f`](https://github.com/docling-project/docling/commit/428426f6959cc32cd8064e5c2156ed424223f724))
+* **docx:** Preserve reading order when body text interrupts a list ([#3838](https://github.com/docling-project/docling/issues/3838)) ([`6dd92e8`](https://github.com/docling-project/docling/commit/6dd92e8fa9fd1078f143f5d25b1f3c03845fa938))
+
+### Documentation
+
+* Add format-specific behavior of table serializers ([#3833](https://github.com/docling-project/docling/issues/3833)) ([`530d12d`](https://github.com/docling-project/docling/commit/530d12dafc350f1f464adea10a1ea537af50a7f4))
+
+### Performance
+
+* **xlsx:** Replace O(n) merge-cell scan with O(1) spatial index ([#3808](https://github.com/docling-project/docling/issues/3808)) ([`c952572`](https://github.com/docling-project/docling/commit/c952572a1c71f194e1244ee95d331454502514d4))
+
+## [v2.114.0](https://github.com/docling-project/docling/releases/tag/v2.114.0) - 2026-07-20
+
+### Feature
+
+* Add support for legacy binary office formats ([#3804](https://github.com/docling-project/docling/issues/3804)) ([`d0bca90`](https://github.com/docling-project/docling/commit/d0bca90b5a0ae8054186e54196ffb7032875927e))
+* **msword:** Parse native Word charts as classified pictures with data ([#3809](https://github.com/docling-project/docling/issues/3809)) ([`26ff0b2`](https://github.com/docling-project/docling/commit/26ff0b25a17b632ddd3aa60312381dce93463c8d))
+* **video:** Add VideoPipeline, VideoFormatOption, and InputFormat.VIDEO ([#3768](https://github.com/docling-project/docling/issues/3768)) ([`6f0df37`](https://github.com/docling-project/docling/commit/6f0df37cd087f5b170d2161106359fa367b3171f))
+* **asr:** Add English-only and Distil-Whisper presets to native backend ([#3741](https://github.com/docling-project/docling/issues/3741)) ([`39b67b6`](https://github.com/docling-project/docling/commit/39b67b6f2d1132323d97381ec0289183c75b0e55))
+
+### Fix
+
+* Fix the profiling of NemotronOcrModel ([#3816](https://github.com/docling-project/docling/issues/3816)) ([`ccd09fb`](https://github.com/docling-project/docling/commit/ccd09fbfea9fba4aac57495e50afb9be6a889d1f))
+* **pptx:** Use a safe XML parser ([#3831](https://github.com/docling-project/docling/issues/3831)) ([`a71c447`](https://github.com/docling-project/docling/commit/a71c44789198988e6a55717a73ad199400a7524f))
+* **jats:** Preserve nested list structure in list items ([#3619](https://github.com/docling-project/docling/issues/3619)) ([`43f56c4`](https://github.com/docling-project/docling/commit/43f56c40191da8ddea14236b7c07e271cf359829))
+* Skip empty display formulas in the JATS backend instead of truncating the document ([#3813](https://github.com/docling-project/docling/issues/3813)) ([`320c517`](https://github.com/docling-project/docling/commit/320c517b9c61cafa503ef7b1f1d808b01b3e88c9))
+* Fall back to default image size for non-numeric AsciiDoc dimensions ([#3814](https://github.com/docling-project/docling/issues/3814)) ([`e398d5a`](https://github.com/docling-project/docling/commit/e398d5a2c826d4cf2a373c96706929fed517e58b))
+* **vlm:** Use each element's own page for force_backend_text ([#3807](https://github.com/docling-project/docling/issues/3807)) ([`469e1ad`](https://github.com/docling-project/docling/commit/469e1ad87b8e5f4df5189cebc2747627a5b2af88))
+* **visualization:** Scale top y-edge by scale_y in draw_clusters ([#3790](https://github.com/docling-project/docling/issues/3790)) ([`0844a97`](https://github.com/docling-project/docling/commit/0844a9709adefa4abfa21aff1fcb6609648e80fb))
+* Use generation_config from options in PictureDescriptionVlmEngineModel ([#3778](https://github.com/docling-project/docling/issues/3778)) ([`e548307`](https://github.com/docling-project/docling/commit/e548307e8d32bb197c787b1f2998a87bafbc743b))
+* **docx:** Clean up DrawingML temp dir on conversion error ([#3797](https://github.com/docling-project/docling/issues/3797)) ([`9b5aabc`](https://github.com/docling-project/docling/commit/9b5aabc4cfa48faab72c43b3b3581ed053c85897))
+* **uspto:** Detect Grant Full Text Data/XML v2.5 patents case-insensitively ([#3801](https://github.com/docling-project/docling/issues/3801)) ([`6fb35f9`](https://github.com/docling-project/docling/commit/6fb35f94625d1d54bad678e52be6d5fe2263f483))
+* **pptx:** Remove ineffective subtitle label expression ([#3785](https://github.com/docling-project/docling/issues/3785)) ([`d278116`](https://github.com/docling-project/docling/commit/d27811650d02847e250e92ee1b16cd7b415651cd))
+
 ## [v2.113.0](https://github.com/docling-project/docling/releases/tag/v2.113.0) - 2026-07-14
 
 ### Feature

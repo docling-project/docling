@@ -17,7 +17,10 @@ from docling.datamodel.vlm_model_specs import (
 )
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
 from docling.models.stages.layout.layout_model import LayoutModel
-from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+from docling.models.stages.ocr.easyocr_model import (
+    EasyOcrModel,
+    _resolve_easyocr_recognition_models,
+)
 from docling.models.stages.ocr.nemotron_ocr_model import (
     NemotronOcrModel,
     nemotron_ocr_model_dir,
@@ -56,8 +59,18 @@ def download_models(
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     with_easyocr: bool = False,
+    easyocr_languages: Optional[list[str]] = None,
     with_nemotron_ocr: bool = False,
 ):
+    if easyocr_languages is not None and not with_easyocr:
+        raise ValueError("easyocr_languages requires with_easyocr=True")
+
+    easyocr_recognition_models = ["english_g2", "latin_g2"]
+    if easyocr_languages is not None:
+        easyocr_recognition_models = _resolve_easyocr_recognition_models(
+            easyocr_languages
+        )
+
     if output_dir is None:
         output_dir = settings.cache_dir / "models"
 
@@ -219,6 +232,7 @@ def download_models(
         _log.info("Downloading easyocr models...")
         EasyOcrModel.download_models(
             local_dir=output_dir / EasyOcrModel._model_repo_folder,
+            recognition_models=easyocr_recognition_models,
             force=force,
             progress=progress,
         )

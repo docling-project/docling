@@ -466,6 +466,18 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.pipeline.video_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_transcriber",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.pipeline.vlm_pipeline"
 layer = "pipeline"
 depends_on = [
