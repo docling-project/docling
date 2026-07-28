@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "legacy_sample",
   "origin": {
-    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "mimetype": "application/vnd.ms-excel",
     "binary_hash": 2990859493501256454,
     "filename": "legacy_sample.xls"
   },

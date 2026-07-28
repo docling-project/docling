@@ -18892,6 +18892,7 @@
         ],
         "num_rows": 1,
         "num_cols": 1,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -19311,6 +19312,7 @@
         ],
         "num_rows": 5,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -20446,6 +20448,7 @@
         ],
         "num_rows": 7,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -22290,6 +22293,7 @@
         ],
         "num_rows": 11,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -23777,6 +23781,7 @@
         ],
         "num_rows": 4,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -24710,6 +24715,7 @@
         ],
         "num_rows": 7,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -25320,6 +25326,7 @@
         "table_cells": [],
         "num_rows": 0,
         "num_cols": 0,
+        "orientation": "rot_0",
         "grid": []
       },
       "annotations": []

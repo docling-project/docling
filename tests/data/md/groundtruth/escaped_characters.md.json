@@ -4,7 +4,7 @@
   "name": "escaped_characters",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 961663658752708402,
+    "binary_hash": 4129962407829858370,
     "filename": "escaped_characters.md"
   },
   "furniture": {
@@ -569,6 +569,7 @@
         ],
         "num_rows": 7,
         "num_cols": 2,
+        "orientation": "rot_0",
         "grid": [
           [
             {
