@@ -52,6 +52,15 @@ for result in client.convert_all(
 Defaults (OCR, table structure, Markdown output) match that of docling's `DocumentConverter`. Pass
 `options=ConvertDocumentsOptions(...)` only when you need to override them.
 
+## Local-file targets
+
+For `submit()` calls with a local `Path` or `DocumentStream`, the client uploads
+the file as multipart data and sends both the legacy `target_type` field and the
+complete target object as JSON in the `target` field. The structured field
+preserves storage coordinates and credentials for targets such as S3, Azure
+Blob, Google Cloud Storage, and Google Drive while remaining compatible with
+services that use `target_type` for simple targets.
+
 ## Examples
 
 

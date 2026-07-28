@@ -716,6 +716,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             files = await self._source_to_upload_files(source)
             data = self._serialize_convert_options(options)
             data["target_type"] = target.kind
+            data["target"] = self._serialize_target(target)
             response = await self._request_with_retry_using_client(
                 async_client=async_client,
                 method="POST",

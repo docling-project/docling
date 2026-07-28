@@ -298,8 +298,9 @@ class _BaseDoclingServiceClient:
 
         File uploads send each option as a form field, but multipart fields
         accept only primitives or lists of primitives. Nested values (e.g.
-        ``ocr_custom_config``) are JSON-encoded so the service can rebuild
-        them; primitives and primitive lists are passed through unchanged.
+        ``ocr_custom_config`` or the structured ``target``) are JSON-encoded
+        so the service can rebuild them; primitives and primitive lists are
+        passed through unchanged.
         """
 
         def _is_primitive(value: Any) -> bool:
@@ -324,6 +325,11 @@ class _BaseDoclingServiceClient:
         payload = self._restore_secret_values(raw_payload, payload)
         payload["options"] = self._serialize_convert_options(request.options)
         return payload
+
+    def _serialize_target(self, target: SubmitTarget) -> dict[str, Any]:
+        payload = target.model_dump(mode="json", exclude_none=True)
+        raw_payload = target.model_dump(mode="python", exclude_none=True)
+        return self._restore_secret_values(raw_payload, payload)
 
     def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
         if isinstance(raw, (SecretStr, SecretBytes)):
@@ -1226,6 +1232,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             files = self._source_to_upload_files(source)
             data = self._serialize_convert_options(options)
             data["target_type"] = target.kind
+            data["target"] = self._serialize_target(target)
             response = self._request_with_retry(
                 method="POST",
                 path="/v1/convert/file/async",

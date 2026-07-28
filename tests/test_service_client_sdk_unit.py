@@ -54,10 +54,14 @@ from docling.datamodel.service.responses import (
     TaskStatusResponse,
     WebsocketMessage,
 )
-from docling.datamodel.service.sources import GoogleDriveCoordinates
+from docling.datamodel.service.sources import (
+    GoogleCloudStorageServiceAccountInfo,
+    GoogleDriveCoordinates,
+)
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
+    GoogleDriveTarget,
     InBodyTarget,
     PresignedUrlTarget,
     S3Target,
@@ -1511,6 +1515,32 @@ def test_serialize_convert_options_omits_defaults_and_none() -> None:
     )
 
 
+def test_serialize_target_restores_nested_secret_values() -> None:
+    target = GoogleCloudStorageTarget(
+        bucket="converted",
+        service_account_key=GoogleCloudStorageServiceAccountInfo(
+            project_id="project",
+            private_key_id="private-key-id",
+            private_key="private-key",
+            client_email="service-account@example.com",
+            client_id="client-id",
+            auth_uri="https://accounts.example.com/auth",
+            token_uri="https://accounts.example.com/token",
+            auth_provider_x509_cert_url="https://accounts.example.com/certs",
+            client_x509_cert_url="https://accounts.example.com/client-cert",
+            universe_domain="example.com",
+        ),
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        payload = client._serialize_target(target)
+
+    assert payload["service_account_key"]["private_key"] == "private-key"
+    assert payload["service_account_key"]["client_email"] == (
+        "service-account@example.com"
+    )
+
+
 def test_form_encode_options_jsonifies_nested_values() -> None:
     encoded = DoclingServiceClient._form_encode_options(
         {
@@ -1640,6 +1670,7 @@ def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
     assert isinstance(data, dict)
     assert data["page_range"] == [3, 7]
     assert data["target_type"] == "inbody"
+    assert json.loads(data["target"]) == {"kind": "inbody"}
     files = captured["files"]
     assert isinstance(files, dict)
     assert files["files"][0] == "sample.pdf"
@@ -1675,7 +1706,67 @@ def test_submit_file_serializes_convert_options_without_defaults(
     assert captured["data"] == {
         "page_range": [3, 7],
         "target_type": "inbody",
+        "target": json.dumps({"kind": "inbody"}),
     }
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        S3Target(
+            endpoint="s3.example.org",
+            access_key="access-key",
+            secret_key="secret-key",
+            bucket="converted",
+            key_prefix="documents/",
+        ),
+        AzureBlobTarget(
+            account_name="account",
+            container="converted",
+            connection_string="UseDevelopmentStorage=true",
+            blob_prefix="documents/",
+        ),
+        GoogleCloudStorageTarget(
+            bucket="converted",
+            key_prefix="documents/",
+        ),
+        GoogleDriveTarget(
+            path_id="folder-id",
+            token_path="token.json",
+            credentials_path="credentials.json",
+        ),
+    ],
+    ids=["s3", "azure-blob", "google-cloud-storage", "google-drive"],
+)
+def test_submit_file_preserves_full_storage_target(
+    tmp_path: Path,
+    target: (S3Target | AzureBlobTarget | GoogleCloudStorageTarget | GoogleDriveTarget),
+) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def fake_request_with_retry(**kwargs: object) -> httpx.Response:
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            json=_status_response("task-file-storage", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        job = client.submit(source=sample, target=target)
+
+    assert job.task_id == "task-file-storage"
+    assert captured["path"] == "/v1/convert/file/async"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["target_type"] == target.kind
+    assert json.loads(data["target"]) == target.model_dump(
+        mode="json", exclude_none=True
+    )
 
 
 def test_submit_chunk_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
@@ -3574,6 +3665,7 @@ async def test_async_submit_non_json_target_uses_zip_target(
         assert data.get("target_type") == "zip", (
             f"expected zip, got {data.get('target_type')}"
         )
+        assert json.loads(data["target"]) == {"kind": "zip"}
         return httpx.Response(
             200, json=_status_response("task-raw", "pending").model_dump(mode="json")
         )
@@ -3589,6 +3681,43 @@ async def test_async_submit_non_json_target_uses_zip_target(
         )
 
     assert job.task_id == "task-raw"
+
+
+@pytest.mark.anyio
+async def test_async_submit_file_preserves_full_azure_target(
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+    target = AzureBlobTarget(
+        account_name="account",
+        container="converted",
+        connection_string="UseDevelopmentStorage=true",
+        blob_prefix="documents/",
+    )
+
+    def handler(method: str, url: str, **kwargs: object) -> httpx.Response:
+        captured["method"] = method
+        captured["url"] = url
+        captured["data"] = kwargs["data"]
+        return httpx.Response(
+            200,
+            json=_status_response("task-file-azure", "pending").model_dump(mode="json"),
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit(source=sample, target=target)
+
+    assert job.task_id == "task-file-azure"
+    assert captured["method"] == "POST"
+    assert "/v1/convert/file/async" in str(captured["url"])
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["target_type"] == "azure_blob"
+    assert json.loads(data["target"]) == target.model_dump(
+        mode="json", exclude_none=True
+    )
 
 
 @pytest.mark.anyio
