@@ -638,6 +638,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group_numid = None
         self.last_list_group_parent = None
 
+    def _end_list_on_body_text(self, text: str) -> None:
+        """Drop the cached list group once body text follows a list.
+
+        A blank spacer paragraph between a list item and this text closes the
+        list but keeps the group cached, so a later item would re-open a group
+        that now sits *before* this paragraph and the text would be rendered
+        after the whole list.
+        """
+        if text:
+            self._clear_list_group_cache()
+
     @contextmanager
     def _isolated_list_context(self):
         """Preserve list state during table cell processing.
@@ -2176,6 +2187,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # barrier armed.
 
         else:
+            self._end_list_on_body_text(text)
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
