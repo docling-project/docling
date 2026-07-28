@@ -99,8 +99,8 @@
 </ordered_list>
 <picture><loc_41><loc_59><loc_453><loc_185></picture>
 <text><loc_311><loc_185><loc_449><loc_188>Text is aligned to match original for ease of viewing</text>
-<picture><loc_42><loc_240><loc_443><loc_280><caption><loc_41><loc_203><loc_445><loc_231>Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.</caption></picture>
-<caption><loc_51><loc_290><loc_435><loc_295>Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.</caption>
+<caption><loc_41><loc_203><loc_445><loc_231>Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.</caption>
+<picture><loc_42><loc_240><loc_443><loc_280><caption><loc_51><loc_290><loc_435><loc_295>Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.</caption></picture>
 <section_header_level_1><loc_41><loc_310><loc_134><loc_316>5.5. Qualitative Analysis</section_header_level_1>
 <text><loc_41><loc_339><loc_234><loc_450>We showcase several visualizations for the different components of our network on various 'complex' tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.</text>
 <section_header_level_1><loc_252><loc_310><loc_377><loc_317>6. Future Work & Conclusion</section_header_level_1>
@@ -206,15 +206,13 @@
 <page_break>
 <text><loc_41><loc_55><loc_234><loc_68>9f. Otherwise create a new structural cell and match it wit the orphan cell.</text>
 <text><loc_41><loc_70><loc_234><loc_83>Aditional images with examples of TableFormer predictions and post-processing can be found below.</text>
-<picture><loc_67><loc_92><loc_205><loc_308></picture>
-<caption><loc_52><loc_317><loc_223><loc_323>Figure 8: Example of a table with multi-line header.</caption>
+<picture><loc_67><loc_92><loc_205><loc_308><caption><loc_52><loc_317><loc_223><loc_323>Figure 8: Example of a table with multi-line header.</caption></picture>
 <picture><loc_252><loc_59><loc_455><loc_185><caption><loc_252><loc_194><loc_445><loc_207>Figure 9: Example of a table with big empty distance between cells.</caption></picture>
 <otsl><loc_274><loc_286><loc_400><loc_317></otsl>
 <picture><loc_273><loc_239><loc_424><loc_420><caption><loc_255><loc_430><loc_443><loc_435>Figure 10: Example of a complex table with empty cells.</caption></picture>
 <page_footer><loc_239><loc_464><loc_247><loc_469>13</page_footer>
 <page_break>
-<picture><loc_41><loc_64><loc_233><loc_217></picture>
-<caption><loc_41><loc_225><loc_234><loc_238>Figure 11: Simple table with different style and empty cells.</caption>
+<picture><loc_41><loc_64><loc_233><loc_217><caption><loc_41><loc_225><loc_234><loc_238>Figure 11: Simple table with different style and empty cells.</caption></picture>
 <picture><loc_259><loc_57><loc_437><loc_227><caption><loc_258><loc_235><loc_440><loc_240>Figure 13: Table predictions example on colorful table.</caption></picture>
 <picture><loc_40><loc_270><loc_434><loc_423><caption><loc_45><loc_424><loc_230><loc_430>Figure 12: Simple table predictions and post processing.</caption></picture>
 <caption><loc_282><loc_432><loc_416><loc_437>Figure 14: Example with multi-line text.</caption>
