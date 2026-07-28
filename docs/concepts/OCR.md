@@ -88,76 +88,76 @@ ko      -> korean
 
 The following table explains the semantic of each language input for RapidOCR
 
-```
-token        meaning
------------  ---------------------------------------------------------------------------------------
-af           Afrikaans
-arabic       Arabic-script family (9): Arabic, Persian, Uyghur, Urdu, Pashto, Kurdish, Sindhi,
-             Baluchi, English
-az           Azerbaijani
-bs           Bosnian
-ca           Catalan
-ch           Chinese (Simplified)
-chinese_cht  Chinese (Traditional)
-cs           Czech
-cy           Welsh
-cyrillic     Cyrillic-script family (34): Russian, Belarusian, Ukrainian, Serbian (Cyrillic),
-             Bulgarian, Mongolian, Abkhaz, Adyghe, Kabardian, Avar, Dargwa, Ingush, Chechen, Lak,
-             Lezgian, Tabasaran, Kazakh, Kyrgyz, Tajik, Macedonian, Tatar, Chuvash, Bashkir, Meadow
-             Mari, Moldovan, Udmurt, Komi, Ossetian, Buriat, Kalmyk, Tuvan, Yakut, Karakalpak,
-             English
-da           Danish
-de           German
-devanagari   Devanagari-script family (14): Hindi, Marathi, Nepali, Bihari, Maithili, Angika,
-             Bhojpuri, Magahi, Sadri, Newari, Konkani (Goan), Sanskrit, Haryanvi, English
-el           Greek
-en           English
-es           Spanish
-eslav        East Slavic family, Cyrillic script (4): Russian, Belarusian, Ukrainian, English
-et           Estonian
-eu           Basque
-fi           Finnish
-fr           French
-ga           Irish
-gl           Galician
-hr           Croatian
-hu           Hungarian
-id           Indonesian
-is           Icelandic
-it           Italian
-japan        Japanese
-ka           Kannada
-korean       Korean
-ku           Kurdish
-la           Latin
-lb           Luxembourgish
-lt           Lithuanian
-lv           Latvian
-mi           Maori
-ms           Malay
-mt           Maltese
-nl           Dutch
-no           Norwegian
-oc           Occitan
-pl           Polish
-pt           Portuguese
-qu           Quechua
-rm           Romansh
-ro           Romanian
-rs_latin     Serbian (Latin)
-sk           Slovak
-sl           Slovenian
-sq           Albanian
-sv           Swedish
-sw           Swahili
-ta           Tamil
-te           Telugu
-th           Thai
-tl           Tagalog
-tr           Turkish
-uz           Uzbek
-vi           Vietnamese
-```
+| Token         | Meaning                                                                        |
+| ------------- | ------------------------------------------------------------------------------ |
+| `af`          | Afrikaans                                                                      |
+| `arabic`      | Arabic-script family (9): Arabic, Persian, Uyghur, Urdu, Pashto, Kurdish,      |
+|               | Sindhi, Baluchi, English                                                       |
+| `az`          | Azerbaijani                                                                    |
+| `bs`          | Bosnian                                                                        |
+| `ca`          | Catalan                                                                        |
+| `ch`          | Chinese (Simplified)                                                           |
+| `chinese_cht` | Chinese (Traditional)                                                          |
+| `cs`          | Czech                                                                          |
+| `cy`          | Welsh                                                                          |
+| `cyrillic`    | Cyrillic-script family (34): Russian, Belarusian, Ukrainian, Serbian           |
+|               | (Cyrillic), Bulgarian, Mongolian, Abkhaz, Adyghe, Kabardian, Avar, Dargwa,     |
+|               | Ingush, Chechen, Lak, Lezgian, Tabasaran, Kazakh, Kyrgyz, Tajik, Macedonian,   |
+|               | Tatar, Chuvash, Bashkir, Meadow Mari, Moldovan, Udmurt, Komi, Ossetian,        |
+|               | Buriat, Kalmyk, Tuvan, Yakut, Karakalpak, English                              |
+| `da`          | Danish                                                                         |
+| `de`          | German                                                                         |
+| `devanagari`  | Devanagari-script family (14): Hindi, Marathi, Nepali, Bihari, Maithili,       |
+|               | Angika, Bhojpuri, Magahi, Sadri, Newari, Konkani (Goan), Sanskrit, Haryanvi,   |
+|               | English                                                                        |
+| `el`          | Greek                                                                          |
+| `en`          | English                                                                        |
+| `es`          | Spanish                                                                        |
+| `eslav`       | East Slavic family, Cyrillic script (4): Russian, Belarusian, Ukrainian,       |
+|               | English                                                                        |
+| `et`          | Estonian                                                                       |
+| `eu`          | Basque                                                                         |
+| `fi`          | Finnish                                                                        |
+| `fr`          | French                                                                         |
+| `ga`          | Irish                                                                          |
+| `gl`          | Galician                                                                       |
+| `hr`          | Croatian                                                                       |
+| `hu`          | Hungarian                                                                      |
+| `id`          | Indonesian                                                                     |
+| `is`          | Icelandic                                                                      |
+| `it`          | Italian                                                                        |
+| `japan`       | Japanese                                                                       |
+| `ka`          | Kannada                                                                        |
+| `korean`      | Korean                                                                         |
+| `ku`          | Kurdish                                                                        |
+| `la`          | Latin                                                                          |
+| `lb`          | Luxembourgish                                                                  |
+| `lt`          | Lithuanian                                                                     |
+| `lv`          | Latvian                                                                        |
+| `mi`          | Maori                                                                          |
+| `ms`          | Malay                                                                          |
+| `mt`          | Maltese                                                                        |
+| `nl`          | Dutch                                                                          |
+| `no`          | Norwegian                                                                      |
+| `oc`          | Occitan                                                                        |
+| `pl`          | Polish                                                                         |
+| `pt`          | Portuguese                                                                     |
+| `qu`          | Quechua                                                                        |
+| `rm`          | Romansh                                                                        |
+| `ro`          | Romanian                                                                       |
+| `rs_latin`    | Serbian (Latin)                                                                |
+| `sk`          | Slovak                                                                         |
+| `sl`          | Slovenian                                                                      |
+| `sq`          | Albanian                                                                       |
+| `sv`          | Swedish                                                                        |
+| `sw`          | Swahili                                                                        |
+| `ta`          | Tamil                                                                          |
+| `te`          | Telugu                                                                         |
+| `th`          | Thai                                                                           |
+| `tl`          | Tagalog                                                                        |
+| `tr`          | Turkish                                                                        |
+| `uz`          | Uzbek                                                                          |
+| `vi`          | Vietnamese                                                                     |
 
 ## EasyOCR
 
@@ -172,19 +172,20 @@ The language resolution that takes place inside EasyOCR enables those models tha
 The following table shows which recognition model is enabled per language combination
 (the detection checkpoint `craft_mlt_25k.pth` is required in all cases):
 
-| Recognition checkpoint | Supported languages                                          |
-| ---------------------- | ------------------------------------------------------------ |
-| `english_g2.pth`       | en                                                           |
-| `latin_g2.pth`         | af, az, bs, cs, cy, da, de, en, es, et, fr, ga, hr, hu, id,  |
-|                        | is, it, ku, la, lt, lv, mi, ms, mt, nl, no, oc, pi, pl, pt,  |
-|                        | ro, rs_latin, sk, sl, sq, sv, sw, tl, tr, uz, vi             |
-| `zh_sim_g2.pth`        | ch_sim + en                                                  |
-| `japanese_g2.pth`      | ja + en                                                      |
-| `korean_g2.pth`        | ko + en                                                      |
-| `telugu.pth`           | te + en                                                      |
-| `kannada.pth`          | kn + en                                                      |
-| `cyrillic_g2.pth`      | ru, rs_cyrillic, be, bg, uk, mn, abq, ady, kbd, ava, dar,    |
-|                        | inh, che, lbe, lez, tab, tjk, en                             |
+| Recognition checkpoint | Supported languages                                                     |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `english_g2.pth`       | `en`                                                                    |
+| `latin_g2.pth`         | `af`, `az`, `bs`, `cs`, `cy`, `da`, `de`, `en`, `es`, `et`, `fr`, `ga`, |
+|                        | `hr`, `hu`, `id`, `is`, `it`, `ku`, `la`, `lt`, `lv`, `mi`, `ms`, `mt`, |
+|                        | `nl`, `no`, `oc`, `pi`, `pl`, `pt`, `ro`, `rs_latin`, `sk`, `sl`, `sq`, |
+|                        | `sv`, `sw`, `tl`, `tr`, `uz`, `vi`                                      |
+| `zh_sim_g2.pth`        | `ch_sim` + `en`                                                         |
+| `japanese_g2.pth`      | `ja` + `en`                                                             |
+| `korean_g2.pth`        | `ko` + `en`                                                             |
+| `telugu.pth`           | `te` + `en`                                                             |
+| `kannada.pth`          | `kn` + `en`                                                             |
+| `cyrillic_g2.pth`      | `ru`, `rs_cyrillic`, `be`, `bg`, `uk`, `mn`, `abq`, `ady`, `kbd`,       |
+|                        | `ava`, `dar`, `inh`, `che`, `lbe`, `lez`, `tab`, `tjk`, `en`            |
 
 <u>Notice</u>: keep the requested language list as short and specific as possible. Because the resolution
 picks a model that covers *all* requested languages, adding a language you do not need downgrades the
@@ -207,8 +208,8 @@ The following table shows the supported Python versions and languages
 
 | Nemotron version | Python version   | Supported language inputs                              |
 | ---------------- | ---------------- | ------------------------------------------------------ |
-| v2.0.0           | 3.12 only        | "english" (alias "en"), "multilingual" (alias "multi") |
-| v2.0.2           | 3.11, 3.12, 3.13 | "english" (alias "en"), "multilingual" (alias "multi") |
+| v2.0.0           | 3.12 only        | `english` (alias `en`), `multilingual` (alias `multi`) |
+| v2.0.2           | 3.11, 3.12, 3.13 | `english` (alias `en`), `multilingual` (alias `multi`) |
 
 
 The "multi/multilingual" languages cover: English, Chinese (Simplified and Traditional), Japanese, Korean, and Russian
