@@ -63,7 +63,7 @@ class HttpSource(BaseModel):
         dict[str, Any],
         Field(
             description="Additional headers used to fetch the urls, "
-                        "e.g. authorization, agent, etc"
+            "e.g. authorization, agent, etc"
         ),
     ] = {}
 
@@ -77,7 +77,7 @@ class BaseFormatOption(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def backend_options_for_input(
-            self, source: Path | str | DocumentStream
+        self, source: Path | str | DocumentStream
     ) -> "BackendOptions | None":
         return None
 
@@ -416,7 +416,7 @@ class FigureElement(BasePageElement):
 
     @field_serializer("confidence")
     def _serialize(
-            self, value: float | None, info: FieldSerializationInfo
+        self, value: float | None, info: FieldSerializationInfo
     ) -> float | None:
         return (
             round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
@@ -486,10 +486,10 @@ class Page(BaseModel):
             return []
 
     def get_image(
-            self,
-            scale: float = 1.0,
-            max_size: int | None = None,
-            cropbox: BoundingBox | None = None,
+        self,
+        scale: float = 1.0,
+        max_size: int | None = None,
+        cropbox: BoundingBox | None = None,
     ) -> Image | None:
         if self._backend is None:
             return self._image_cache.get(scale, None)
