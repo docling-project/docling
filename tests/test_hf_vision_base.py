@@ -1,9 +1,9 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
-from docling.models.inference_engines.common.hf_vision_base import HfVisionModelMixin
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.stage_model_specs import EngineModelConfig
+from docling.exceptions import DoclingModelDownloadError
+from docling.models.inference_engines.common.hf_vision_base import HfVisionModelMixin
 
 
 def test_hf_vision_base_model_download_failure(monkeypatch, caplog):

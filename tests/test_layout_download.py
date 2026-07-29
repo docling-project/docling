@@ -1,8 +1,8 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
-from docling.models.stages.layout.layout_model import LayoutModel, LayoutOptions
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
+from docling.models.stages.layout.layout_model import LayoutModel, LayoutOptions
 
 
 def test_layout_model_download_failure(monkeypatch, caplog):

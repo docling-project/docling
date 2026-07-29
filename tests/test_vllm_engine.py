@@ -1,14 +1,12 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.stage_model_specs import EngineModelConfig
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm.vllm_engine import (
     VllmVlmEngine,
     VllmVlmEngineOptions,
 )
-
-from docling.datamodel.accelerator_options import AcceleratorOptions
-
-from docling.datamodel.stage_model_specs import EngineModelConfig
 
 
 def test_vllm_engine_model_download_failure(monkeypatch, caplog):

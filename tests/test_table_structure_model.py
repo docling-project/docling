@@ -1,11 +1,11 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.table_structure.table_structure_model import (
     TableStructureModel,
     TableStructureOptions,
 )
-from docling.datamodel.accelerator_options import AcceleratorOptions
 
 
 def test_table_structure_model_download_failure(monkeypatch, caplog):

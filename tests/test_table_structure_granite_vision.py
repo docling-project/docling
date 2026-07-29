@@ -2,12 +2,11 @@ import pytest
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
     _parse_otsl_output,
 )
-
-from docling.exceptions import DoclingModelDownloadError
 
 pytestmark = pytest.mark.ml_vlm
 

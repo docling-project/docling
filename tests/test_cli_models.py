@@ -4,12 +4,13 @@ These tests use a mock HTTP server to intercept HuggingFace Hub requests and ver
 that tokens are passed correctly.
 """
 
-from unittest import mock
-from typer.testing import CliRunner
-from unittest.mock import patch, MagicMock
-from typing import List, Tuple
 import os
+from typing import List, Tuple
+from unittest import mock
+from unittest.mock import MagicMock, patch
+
 import pytest
+from typer.testing import CliRunner
 
 from docling.cli.models import app
 from docling.exceptions import DoclingModelDownloadError, DoclingMultiModelDownloadError
@@ -84,7 +85,7 @@ def test_models_download_hf_repo_help():
 def test_models_download_with_token_string(mock_snapshot_download):
     """Test models download command with string HF token using mock server."""
 
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["download", "--all", "--hf-token", "test_token"],
     )
@@ -186,7 +187,7 @@ def test_models_download_with_invalid_token_and_quiet_option(
 def test_models_download_hf_repo_with_token_string(mock_snapshot_download):
     """Test models download command with string HF token using mock server."""
 
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["download-hf-repo", "dummy-repo/file1", "--hf-token", "test_token"],
     )

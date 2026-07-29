@@ -1,6 +1,6 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm.mlx_engine import (
     MlxVlmEngine,
     MlxVlmEngineOptions,

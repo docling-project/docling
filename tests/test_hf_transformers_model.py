@@ -1,12 +1,12 @@
-from docling.datamodel import accelerator_options
-from docling.exceptions import DoclingModelDownloadError
 import pytest
 
+from docling.datamodel import accelerator_options
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
     InlineVlmOptions,
 )
-from docling.datamodel.accelerator_options import AcceleratorOptions
 
 
 def test_hf_transformers_model_download_failure(monkeypatch, caplog):

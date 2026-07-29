@@ -7,7 +7,6 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
 
-from docling.exceptions import DoclingModelDownloadError
 import pandas as pd
 from docling_core.types.doc import (
     CodeLanguageLabel,
@@ -31,6 +30,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

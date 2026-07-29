@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from docling.exceptions import DoclingModelDownloadError
 import pytest
 import torch
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Optional, Union, cast
 
 import numpy as np
-from docling.exceptions import DoclingModelDownloadError
 import torch
 from PIL.Image import Image
 from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
@@ -16,6 +15,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
     build_granite_vision_inputs,

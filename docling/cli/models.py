@@ -4,6 +4,7 @@ import warnings
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Optional
+
 from docling.exceptions import DoclingModelDownloadError, DoclingMultiModelDownloadError
 
 # Check for CLI dependencies

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
-from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -18,6 +17,7 @@ from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

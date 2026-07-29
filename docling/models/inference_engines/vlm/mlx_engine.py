@@ -6,7 +6,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Union, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 from PIL.Image import Image
 
