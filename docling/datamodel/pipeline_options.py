@@ -1460,6 +1460,19 @@ class BaseLayoutOptions(BaseOptions):
             )
         ),
     ] = False
+    recover_text_in_pictures: Annotated[
+        bool,
+        Field(
+            description=(
+                "Recover text wrongly absorbed into PICTURE regions. The layout model sometimes detects a text "
+                "block (e.g. a banner-style heading inside a filled box) as a PICTURE; the contained text cells are "
+                "then nested under the picture and dropped from every content layer, including FURNITURE. When True, "
+                "a PICTURE whose area is largely covered by text-only clusters is treated as spurious so its text is "
+                "kept as regular text/heading clusters instead of being silently discarded (see issue #3699). "
+                "Opt-in to keep existing figure handling unchanged by default."
+            )
+        ),
+    ] = False
 
 
 class LayoutOptions(BaseLayoutOptions):
