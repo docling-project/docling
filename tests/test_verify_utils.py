@@ -65,7 +65,7 @@ def test_verify_docitems_rejects_gross_bbox_variance_for_fuzzy_docs():
     with pytest.raises(AssertionError, match="BBox left mismatch"):
         verify_docitems(
             doc_pred=_make_doc_with_bbox(
-                left=30.0, page_width=2000.0, page_height=2829.0
+                left=40.0, page_width=2000.0, page_height=2829.0
             ),
             doc_true=_make_doc_with_bbox(
                 left=10.0, page_width=2000.0, page_height=2829.0

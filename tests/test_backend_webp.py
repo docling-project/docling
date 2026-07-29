@@ -3,20 +3,20 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from pydantic.type_adapter import R
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
+    OcrMode,
     OcrOptions,
     RapidOcrOptions,
     TesseractCliOcrOptions,
     TesseractOcrOptions,
 )
 from docling.document_converter import DocumentConverter, ImageFormatOption
-from tests.groundtruth_paths import get_regular_groundtruth_paths
+from tests.groundtruth_paths import get_ocr_groundtruth_paths
 from tests.verify_utils import verify_conversion_result_v2
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -53,22 +53,22 @@ def test_e2e_webp_conversions():
         EasyOcrOptions(),
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),
-        EasyOcrOptions(force_full_page_ocr=True),
-        TesseractOcrOptions(force_full_page_ocr=True),
-        TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]),
-        TesseractCliOcrOptions(force_full_page_ocr=True),
-        TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]),
+        EasyOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
+        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE),
+        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
     ]
 
     # rapidocr is only available for Python >=3.6,<3.14
     if sys.version_info < (3, 14):
         engines.append(RapidOcrOptions())
-        engines.append(RapidOcrOptions(force_full_page_ocr=True))
+        engines.append(RapidOcrOptions(mode=OcrMode.FULL_PAGE))
 
     # only works on mac
     if "darwin" == sys.platform:
         engines.append(OcrMacOptions())
-        engines.append(OcrMacOptions(force_full_page_ocr=True))
+        engines.append(OcrMacOptions(mode=OcrMode.FULL_PAGE))
     for ocr_options in engines:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"
@@ -82,7 +82,9 @@ def test_e2e_webp_conversions():
             )
 
             verify_conversion_result_v2(
-                gt=get_regular_groundtruth_paths(webp_path),
+                gt=get_ocr_groundtruth_paths(
+                    webp_path, mode=ocr_options.mode, engine=ocr_options.kind
+                ),
                 doc_result=doc_result,
                 generate=GENERATE,
                 fuzzy=True,

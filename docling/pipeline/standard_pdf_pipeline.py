@@ -46,7 +46,12 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
+    LayoutPostprocessorOptions,
+    ThreadedPdfPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
@@ -58,6 +63,9 @@ from docling.models.stages.code_formula.code_formula_vlm_model import (
 )
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
+)
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
 )
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
@@ -224,6 +232,7 @@ class ThreadedPipelineStage:
         batch_size: int,
         batch_timeout: float,
         queue_max_size: int,
+        shutdown_timeout: float = 15.0,
         postprocess: Callable[[ThreadedItem], None] | None = None,
         timed_out_run_ids: set[int] | None = None,
     ) -> None:
@@ -231,6 +240,7 @@ class ThreadedPipelineStage:
         self.model = model
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout
+        self.shutdown_timeout = shutdown_timeout
         self.input_queue = ThreadedQueue(queue_max_size)
         self._outputs: list[ThreadedQueue] = []
         self._thread: threading.Thread | None = None
@@ -260,13 +270,14 @@ class ThreadedPipelineStage:
         self._running = False
         self.input_queue.close()
         if self._thread is not None:
-            # Give thread 15s to finish naturally before abandoning
-            self._thread.join(timeout=15.0)
+            # Give the thread self.shutdown_timeout seconds to finish naturally before abandoning
+            self._thread.join(timeout=self.shutdown_timeout)
             if self._thread.is_alive():
                 _log.warning(
-                    "Stage %s thread did not terminate within 15s. "
+                    "Stage %s thread did not terminate within %.1fs. "
                     "Thread is likely stuck in a blocking call and will be abandoned (resources may leak).",
                     self.name,
+                    self.shutdown_timeout,
                 )
 
     # ------------------------------------------------------------------ _run
@@ -403,6 +414,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
         batch_timeout: float,
         queue_max_size: int,
         model: Any,
+        shutdown_timeout: float = 15.0,
         timed_out_run_ids: set[int] | None = None,
     ) -> None:
         super().__init__(
@@ -411,6 +423,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
             batch_size=1,
             batch_timeout=batch_timeout,
             queue_max_size=queue_max_size,
+            shutdown_timeout=shutdown_timeout,
             timed_out_run_ids=timed_out_run_ids,
         )
 
@@ -602,6 +615,23 @@ class StandardPdfPipeline(ConvertPipeline):
             accelerator_options=self.pipeline_options.accelerator_options,
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
+
+        # Interim solution: Create LayoutPostprocessorOptions from the layout_option parameters
+        lo = self.pipeline_options.layout_options
+        create_orphan = (
+            lo.create_orphan_clusters
+            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
+            else False
+        )
+        self.layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=create_orphan,
+                run_postprocessor=self.layout_model.requires_layout_postprocessing,
+            )
+        )
+
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
@@ -686,6 +716,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
             model=self.preprocessing_model,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         ocr = ThreadedPipelineStage(
@@ -694,6 +725,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.ocr_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         layout = ThreadedPipelineStage(
@@ -702,6 +734,16 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.layout_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
+            timed_out_run_ids=timed_out_run_ids,
+        )
+        layout_postprocess = ThreadedPipelineStage(
+            name="layout_postprocess",
+            model=self.layout_postprocessing_model,
+            batch_size=1,
+            batch_timeout=opts.batch_polling_interval_seconds,
+            queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         table = ThreadedPipelineStage(
@@ -710,6 +752,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.table_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         assemble = ThreadedPipelineStage(
@@ -718,19 +761,21 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=1,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             postprocess=self._release_page_resources,
             timed_out_run_ids=timed_out_run_ids,
         )
 
         # wire stages
         output_q = ThreadedQueue(opts.queue_max_size)
-        preprocess.add_output_queue(ocr.input_queue)
-        ocr.add_output_queue(layout.input_queue)
-        layout.add_output_queue(table.input_queue)
-        table.add_output_queue(assemble.input_queue)
-        assemble.add_output_queue(output_q)
+        preprocess.add_output_queue(layout.input_queue)  # PDF parsing
+        layout.add_output_queue(ocr.input_queue)  # Layout prediction
+        ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
+        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
+        table.add_output_queue(assemble.input_queue)  # Table model
+        assemble.add_output_queue(output_q)  # Assembly
 
-        stages = [preprocess, ocr, layout, table, assemble]
+        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
         return RunContext(
             stages=stages,
             first_stage=preprocess,
@@ -765,7 +810,8 @@ class StandardPdfPipeline(ConvertPipeline):
         """Stream-build the document with a dedicated producer thread.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
-        iter_pages/get_size), that thread will be abandoned after a brief wait (15s) during cleanup.
+        iter_pages/get_size), that thread will be abandoned after a brief wait
+        (`PdfPipelineOptions.stage_shutdown_timeout_seconds`, 15s by default) during cleanup.
         The thread continues running until the blocking call completes, potentially holding
         resources (e.g., pypdfium2_lock).
         """
@@ -927,11 +973,13 @@ class StandardPdfPipeline(ConvertPipeline):
             for st in ctx.stages:
                 st.stop()
             ctx.output_queue.close()
-            producer_thread.join(timeout=15.0)
+            shutdown_timeout = self.pipeline_options.stage_shutdown_timeout_seconds
+            producer_thread.join(timeout=shutdown_timeout)
             if producer_thread.is_alive():
                 _log.warning(
-                    "Producer thread for run %d did not terminate within 15s and will be abandoned.",
+                    "Producer thread for run %d did not terminate within %.1fs and will be abandoned.",
                     run_id,
+                    shutdown_timeout,
                 )
 
         self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)

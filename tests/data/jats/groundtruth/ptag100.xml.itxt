@@ -1,0 +1,688 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Time-Dependent 3D Oscillator wit ...  for Analyzing Quark–Antiquark Systems
+    item-2 at level 2: paragraph: Jeong Ryeol Choi, Salim Medjber, Salah Menouar, Ramazan Sever
+    item-3 at level 2: section_header: Abstract
+      item-4 at level 3: text: In this work, the dynamics of qu ... its connection to the Higgs mechanism.
+    item-5 at level 2: section_header: 1.
+      item-6 at level 3: text: Quark–antiquark pairs are a key  ... arches and dark matter theories [4–7].
+      item-7 at level 3: text: In light of this, it is essentia ...  functions in their own right [15–19].
+      item-8 at level 3: text: To overcome this limitation, the ...  the help of the Schrödinger equation.
+      item-9 at level 3: text: Regarding coupling of potentials ...  effects and nonequilibrium processes.
+      item-10 at level 3: text: The main contributions of the pr ... verned by time-dependent Hamiltonians.
+    item-11 at level 2: section_header: 2.
+      item-12 at level 3: section_header: 2.1.
+        item-13 at level 4: section_header: 2.1.1.
+          item-14 at level 5: inline: group group
+            item-15 at level 6: text: We consider a quark–antiquark pa ...  time-dependent effective reduced mass
+            item-16 at level 6: formula: \mu (t)
+            item-17 at level 6: text: in spherical coordinates, governed by a central potential
+            item-18 at level 6: formula: g(t)r^{2}-\frac{Z(t)}{r}
+            item-19 at level 6: text: where
+            item-20 at level 6: formula: g(t)
+            item-21 at level 6: text: and
+            item-22 at level 6: formula: Z(t)
+            item-23 at level 6: text: are coefficients that depend on time. While
+            item-24 at level 6: formula: g(t)r^{2}
+            item-25 at level 6: text: represents a confining trap potential with adjustable strength,
+            item-26 at level 6: formula: -\frac{Z(t)}{r}
+            item-27 at level 6: text: is a Coulomb perturbation with the constraint
+            item-28 at level 6: formula: Z(t)\gt 0
+            item-29 at level 6: text: . As the distance between quarks ... force between the quark and antiquark.
+          item-30 at level 5: text: Time-dependent Hamiltonians natu ... s within a quantum-mechanical setting.
+          item-31 at level 5: text: Based on the above description,  ... of the pair of quarks is expressed as:
+          item-32 at level 5: formula: \begin{eqnarray}
+H(t)=\frac{p^{2 ... )r^{2}-\frac{Z(t)}{r} .
+\end{eqnarray}
+          item-33 at level 5: inline: group group
+            item-34 at level 6: text: This Hamiltonian enables the cal ... pherical coordinates is represented as
+            item-35 at level 6: formula: p^{2}=p_{r}^{2}+\frac{L^{2}}{r^{2}}
+            item-36 at level 6: text: , where
+            item-37 at level 6: formula: p_{r}=-i\hbar (\frac{\partial }{\partial r}+\frac{1}{r})
+            item-38 at level 6: text: and
+            item-39 at level 6: text: L
+            item-40 at level 6: text: is the total angular momentum, the formula for which is given by
+          item-41 at level 5: formula: \begin{eqnarray}
+L^{2}=-\hbar ^{ ... \theta }\bigg )\bigg ].
+\end{eqnarray}
+          item-42 at level 5: inline: group group
+            item-43 at level 6: text: To investigate the dynamical fea ... we denote the system’s state vector as
+            item-44 at level 6: formula: |\Psi (t)\rangle
+            item-45 at level 6: text: , the corresponding Schrödinger equation is of the form
+          item-46 at level 5: formula: \begin{eqnarray}
+i\hbar \frac{\p ... =H(t)|\Psi (t)\rangle .
+\end{eqnarray}
+          item-47 at level 5: text: The time dependence of the Hamil ... on, as will be presented subsequently.
+        item-48 at level 4: section_header: 2.1.2.
+          item-49 at level 5: inline: group group
+            item-50 at level 6: text: Because
+            item-51 at level 6: formula: H(t)
+            item-52 at level 6: text: in Eq. (1) is represented in ter ... rms of a nontrivial invariant operator
+            item-53 at level 6: formula: I(t)
+            item-54 at level 6: text: rather than
+            item-55 at level 6: formula: H(t)
+            item-56 at level 6: text: in Eq. (1), where
+            item-57 at level 6: formula: I(t)
+            item-58 at level 6: text: does not involve time-derivative operators. Moreover,
+            item-59 at level 6: formula: I(t)
+            item-60 at level 6: text: is closely related to the concep ...  the quantum–classical correspondence.
+          item-61 at level 5: inline: group group
+            item-62 at level 6: text: By the definition of the invariant operator,
+            item-63 at level 6: formula: I(t)
+            item-64 at level 6: text: satisfies the equation:
+          item-65 at level 5: formula: \begin{eqnarray}
+\frac{dI}{dt}=\ ... rac{1}{i\hbar }[I,H]=0.
+\end{eqnarray}
+          item-66 at level 5: inline: group group
+            item-67 at level 6: text: If such an invariant exists, it  ... tion (3) in terms of its eigenfunction
+            item-68 at level 6: formula: \Phi (\vec{r},t)
+            item-69 at level 6: text: , such that
+          item-70 at level 5: formula: \begin{eqnarray}
+\Psi (\vec{r},t ... a (t)}\Phi (\vec{r},t),
+\end{eqnarray}
+          item-71 at level 5: inline: group group
+            item-72 at level 6: text: where
+            item-73 at level 6: formula: \alpha (t)
+            item-74 at level 6: text: is a phase function that can be obtained from
+          item-75 at level 5: formula: \begin{eqnarray}
+\hbar \frac{d\a ... ht|\Phi \right\rangle .
+\end{eqnarray}
+          item-76 at level 5: inline: group group
+            item-77 at level 6: text: To find the expression of the invariant
+            item-78 at level 6: formula: I(t)
+            item-79 at level 6: text: utilizing Eq. (4), we set
+          item-80 at level 5: formula: \begin{eqnarray}
+I(t)=A(t)p^{2}+ ... t)r^{2}-\frac{D(t)}{r},
+\end{eqnarray}
+          item-81 at level 5: inline: group group
+            item-82 at level 6: text: where
+            item-83 at level 6: formula: A(t)
+            item-84 at level 6: text: ,
+            item-85 at level 6: formula: B(t)
+            item-86 at level 6: text: ,
+            item-87 at level 6: formula: C(t)
+            item-88 at level 6: text: , and
+            item-89 at level 6: formula: D(t)
+            item-90 at level 6: text: are time-dependent functions to  ... procedure with this assumed formula of
+            item-91 at level 6: formula: I(t)
+            item-92 at level 6: text: after substituting Eqs. (1) and (7) into Eq. (4) yields
+          item-93 at level 5: formula: \begin{eqnarray}
+A(t) =A_{0}\rho ^{2}(t),
+\end{eqnarray}
+          item-94 at level 5: formula: \begin{eqnarray}
+B(t) =-A_{0}\mu (t)\rho (t)\dot{\rho }(t),
+\end{eqnarray}
+          item-95 at level 5: formula: \begin{eqnarray}
+C(t) =A_{0}\big ... {4\rho ^{2}(t)}\bigg ),
+\end{eqnarray}
+          item-96 at level 5: formula: \begin{eqnarray}
+D(t) =2A_{0}\mu (t)Z(t)\rho ^{2}(t),
+\end{eqnarray}
+          item-97 at level 5: inline: group group
+            item-98 at level 6: text: where
+            item-99 at level 6: formula: A_{0}
+            item-100 at level 6: text: is an arbitrary real constant and
+            item-101 at level 6: formula: \rho (t)
+            item-102 at level 6: text: is a solution of the following equation
+          item-103 at level 5: formula: \begin{eqnarray}
+\ddot{\rho }(t) ... u ^{2}(t)\rho ^{3}(t)},
+\end{eqnarray}
+          item-104 at level 5: inline: group group
+            item-105 at level 6: text: with
+            item-106 at level 6: formula: \Omega
+            item-107 at level 6: text: being a real constant. The above ... iant is valid under the condition that
+            item-108 at level 6: formula: Z(t)
+            item-109 at level 6: text: follows the relation
+          item-110 at level 5: formula: \begin{eqnarray}
+\dot{Z}(t)+\big ... \rho (t)}\bigg )Z(t)=0.
+\end{eqnarray}
+          item-111 at level 5: text: Equation (7) with Eqs. (8)–(11)  ... l methodology for obtaining solutions.
+        item-112 at level 4: section_header: 2.1.3.
+          item-113 at level 5: inline: group group
+            item-114 at level 6: text: Because the quantum wave functio ... nted in terms of the eigenfunctions of
+            item-115 at level 6: formula: I(t)
+            item-116 at level 6: text: , it is now necessary to evaluat ... e eigenvalue equation of the invariant
+            item-117 at level 6: formula: I(t)
+            item-118 at level 6: text: as
+          item-119 at level 5: formula: \begin{eqnarray}
+I(t)\Phi _{n}(\ ... n}\Phi _{n}(\vec{r},t),
+\end{eqnarray}
+          item-120 at level 5: inline: group group
+            item-121 at level 6: text: where
+            item-122 at level 6: formula: \Lambda _{n}
+            item-123 at level 6: text: are the eigenvalues and
+            item-124 at level 6: formula: \Phi _{n}(\vec{r},t)
+            item-125 at level 6: text: are time-dependent eigenfunctions. Given that
+            item-126 at level 6: formula: I(t)
+            item-127 at level 6: text: , as defined in Eq. (7) along wi ... r a unitary transformation of the form
+          item-128 at level 5: formula: \begin{eqnarray}
+\Phi _{n}^{\pri ... t)\Phi _{n}(\vec{r},t),
+\end{eqnarray}
+          item-129 at level 5: inline: group group
+            item-130 at level 6: text: where
+            item-131 at level 6: formula: U(t)
+            item-132 at level 6: text: is a time-dependent unitary operator given by
+          item-133 at level 5: formula: \begin{eqnarray}
+U(t)=\exp \left ... \rho (t)}r^{2}\right] .
+\end{eqnarray}
+          item-134 at level 5: inline: group group
+            item-135 at level 6: text: Then, if we write the transformed invariant operator as
+            item-136 at level 6: formula: I_0
+            item-137 at level 6: text: , the eigenvalue equation in the ... ormed frame is represented in terms of
+            item-138 at level 6: formula: \Phi _{n}^{\prime }(\vec{r})
+            item-139 at level 6: text: , such that
+          item-140 at level 5: formula: \begin{eqnarray}
+UIU^{-1}\Phi _{ ... {n}^{\prime }(\vec{r}).
+\end{eqnarray}
+          item-141 at level 5: text: Now, from a mathematical procedure using Eq. (16), we obtain that
+          item-142 at level 5: formula: \begin{eqnarray}
+\left[ A_{0}p^{ ...  }(r,\theta ,\varphi ),
+\end{eqnarray}
+          item-143 at level 5: inline: group group
+            item-144 at level 6: text: where
+            item-145 at level 6: formula: D_{0} = 2A_{0}\mu (t)Z(t)\rho (t)
+            item-146 at level 6: text: while
+            item-147 at level 6: formula: n=0,1,2,\cdots
+            item-148 at level 6: text: . An infinite number of bound st ... the way, the direct differentiation of
+            item-149 at level 6: formula: D_0
+            item-150 at level 6: text: with respect to
+            item-151 at level 6: text: t
+            item-152 at level 6: text: , followed by the application of Eq. (13), yields
+            item-153 at level 6: formula: d D_0/dt=0
+            item-154 at level 6: text: . This means that
+            item-155 at level 6: formula: D_0
+            item-156 at level 6: text: is in fact a constant of motion, ... rmed version of the original invariant
+            item-157 at level 6: formula: I(t)
+            item-158 at level 6: text: . It is worth noting that Eq. (1 ... alue equation represented in Eq. (14).
+          item-159 at level 5: text: The existence of a perturbation  ... alue equation (18) can be rewritten as
+          item-160 at level 5: formula: \begin{eqnarray}
+\begin{bmatrix} ...  }(r,\theta ,\varphi ).
+\end{eqnarray}
+          item-161 at level 5: inline: group group
+            item-162 at level 6: text: According to the invariant opera ... med system are represented in terms of
+            item-163 at level 6: formula: \Phi _{nlm}^{\prime }(r,\theta ,\varphi )
+            item-164 at level 6: text: . Because this equation is indep ... to solve it. Considering this, we take
+          item-165 at level 5: formula: \begin{eqnarray}
+\Phi _{nlm}^{\p ... (\theta ,\varphi )}{r},
+\end{eqnarray}
+          item-166 at level 5: inline: group group
+            item-167 at level 6: text: where we have introduced
+            item-168 at level 6: formula: u_{nl}(r) = r R_{nl}(r)
+            item-169 at level 6: text: , whereas
+            item-170 at level 6: formula: Y_{lm}(\theta ,\varphi )
+            item-171 at level 6: text: are the spherical harmonics. The ... t of the eigenfunctions takes the form
+          item-172 at level 5: formula: \begin{eqnarray}
+Y_{lm}(\theta , ... _{l}^{m}(\cos \theta ),
+\end{eqnarray}
+          item-173 at level 5: inline: group group
+            item-174 at level 6: text: where
+            item-175 at level 6: formula: P_{l}^{m}(x)
+            item-176 at level 6: text: are the associated Legendre poly ...  spherical normalization constants are
+            item-177 at level 6: formula: N_{lm}=(-1)^m \lbrace [(2l+1)/(4\pi )](l-m)!/(l+m)! \rbrace ^{1/2}
+            item-178 at level 6: text: . The allowed orbital and magnetic quantum numbers are
+            item-179 at level 6: formula: l=0,1,2,\cdots
+            item-180 at level 6: text: and
+            item-181 at level 6: formula: m=-l,-l+1,\cdots ,l
+            item-182 at level 6: text: , respectively.
+          item-183 at level 5: text: Some algebraic manipulation, aft ... eads to the following radial equation:
+          item-184 at level 5: formula: \begin{eqnarray}
+\frac{d^{2}u_{n ... 2}}\right) u_{nl}(r)=0.
+\end{eqnarray}
+          item-185 at level 5: inline: group group
+            item-186 at level 6: text: The equation is analytically intractable unless
+            item-187 at level 6: formula: \Omega = 0
+            item-188 at level 6: text: owing to the coexistence of
+            item-189 at level 6: formula: r^{2}
+            item-190 at level 6: text: and
+            item-191 at level 6: formula: -\frac{1}{r^{2}}
+            item-192 at level 6: text: terms. To resolve this difficult ... proximation scheme of the form [36–39]
+          item-193 at level 5: formula: \begin{eqnarray}
+\frac{1}{r^{2}} ... lta }{1-e^{-\delta r}},
+\end{eqnarray}
+          item-194 at level 5: inline: group group
+            item-195 at level 6: text: together with a coordinate transformation
+            item-196 at level 6: formula: y=e^{-\delta r}
+            item-197 at level 6: text: . This type of approximation is  ... creened potential, where the parameter
+            item-198 at level 6: formula: \delta
+            item-199 at level 6: text: is typically chosen to be equal  ... n our system is not screened, choosing
+            item-200 at level 6: formula: \delta
+            item-201 at level 6: text: to be similar to the typical scr ... istances comparable to or smaller than
+            item-202 at level 6: formula: 1/\delta
+            item-203 at level 6: text: . For example, in quarkonium models,
+            item-204 at level 6: formula: \delta
+            item-205 at level 6: text: is usually taken to be in the ra ... 00 to 900 MeV [40,41]. Thus, selecting
+            item-206 at level 6: formula: \delta
+            item-207 at level 6: text: within this range is a reasonable choice.
+          item-208 at level 5: inline: group group
+            item-209 at level 6: text: Then, by rewriting the notation as
+            item-210 at level 6: formula: u_{nl}(r)\rightarrow U_{nl}(y)
+            item-211 at level 6: text: , the differential equation (22) becomes
+          item-212 at level 5: formula: \begin{eqnarray}
+\frac{d^{2}U_{n ... d{bmatrix} U_{nl}(y)=0,
+\end{eqnarray}
+          item-213 at level 5: text: where
+          item-214 at level 5: formula: \begin{eqnarray}
+\varepsilon _{n ... ta },~~~\gamma =l(l+1).
+\end{eqnarray}
+          item-215 at level 5: inline: group group
+            item-216 at level 6: text: In the representation of Eq. (24 ... ed higher-order terms corresponding to
+            item-217 at level 6: formula: y^{3}
+            item-218 at level 6: text: and
+            item-219 at level 6: formula: y^{4}
+            item-220 at level 6: text: . To solve this equation, we use ...  [29] outlined in the next subsection.
+      item-221 at level 3: section_header: 2.2.
+        item-222 at level 4: text: A second-order differential equa ...  consider the following equation [31]:
+        item-223 at level 4: formula: \begin{eqnarray}
+\left[ \frac{d^ ... {2}}\right] \phi (s)=0,
+\end{eqnarray}
+        item-224 at level 4: inline: group group
+          item-225 at level 5: text: where
+          item-226 at level 5: formula: \alpha _{i}
+          item-227 at level 5: formula: (i=1,2,3)
+          item-228 at level 5: text: and
+          item-229 at level 5: formula: \zeta _{i}
+          item-230 at level 5: text: are parameters appropriately cho ... this equation has two singularities at
+          item-231 at level 5: formula: s\rightarrow 0
+          item-232 at level 5: text: and
+          item-233 at level 5: formula: s\rightarrow 1/\alpha _{3}
+          item-234 at level 5: text: , it is possible to take the solution in the form
+        item-235 at level 4: formula: \begin{eqnarray}
+\phi (s)=s^{\la ... _{3}s)^{\upsilon }f(s).
+\end{eqnarray}
+        item-236 at level 4: text: By substituting this formula int ...  (26) along with the following choice,
+        item-237 at level 4: formula: \begin{eqnarray}
+\lambda =\frac{ ... ta _{3}]^{1/2}\rbrace ,
+\end{eqnarray}
+        item-238 at level 4: formula: \begin{eqnarray}
+\upsilon &=&\fr ... a _{3})]^{1/2}\rbrace ,
+\end{eqnarray}
+        item-239 at level 4: text: we have [29]
+        item-240 at level 4: formula: \begin{eqnarray}
+s(1-\alpha _{3} ... pa _+ \kappa _- f(s)=0,
+\end{eqnarray}
+        item-241 at level 4: text: where
+        item-242 at level 4: formula: \begin{eqnarray}
+\kappa = \alpha ... pha _{3}+\alpha _{2})s,
+\end{eqnarray}
+        item-243 at level 4: formula: \begin{eqnarray}
+\kappa _\pm = \ ... {3}^{2}} \bigg ]^{1/2}.
+\end{eqnarray}
+        item-244 at level 4: text: Thus, the equation is reduced to a tractable form.
+        item-245 at level 4: inline: group group
+          item-246 at level 5: text: We now examine a simple case where
+          item-247 at level 5: formula: \alpha _3=1
+          item-248 at level 5: text: , which meets the equation assoc ... rincipal quantum number takes the form
+        item-249 at level 4: formula: \begin{eqnarray}
+n=- \kappa _- ,
+\end{eqnarray}
+        item-250 at level 4: inline: group group
+          item-251 at level 5: text: the function
+          item-252 at level 5: formula: f(s)
+          item-253 at level 5: text: is represented by the Gauss hypergeometric function as [29]
+        item-254 at level 4: formula: \begin{eqnarray}
+f (s) = {_{2}F_{1}}(a,b;c;s),
+\end{eqnarray}
+        item-255 at level 4: inline: group group
+          item-256 at level 5: text: where
+          item-257 at level 5: formula: a=\kappa _-
+          item-258 at level 5: text: ,
+          item-259 at level 5: formula: b=\kappa _+
+          item-260 at level 5: text: , and
+          item-261 at level 5: formula: c=\alpha _{1}+2\lambda
+          item-262 at level 5: text: . The mathematical formula of this hypergeometric function is as follows:
+          item-263 at level 5: formula: _{2}F_{1}(a,b;c;s)=\sum _{k=0}^{ ... ht) _{k}}{\left( c\right) _{k}k!}s^{k}
+          item-264 at level 5: text: , where
+          item-265 at level 5: formula: \left( a\right) _{k}=a(a+1)(a+2)\cdots (a+k-1)
+          item-266 at level 5: text: for
+          item-267 at level 5: formula: k\ge 1
+          item-268 at level 5: text: and
+          item-269 at level 5: formula: \left( a\right) _{0}=1
+          item-270 at level 5: text: .
+        item-271 at level 4: inline: group group
+          item-272 at level 5: text: The Gauss hypergeometric function
+          item-273 at level 5: formula: _{2}F_{1}(a,b;c;s)
+          item-274 at level 5: text: serves as a fundamental and unif ... n Eq. (34) with Eq. (33), the function
+          item-275 at level 5: formula: _{2}F_{1}(a,b;c;s)
+          item-276 at level 5: text: terminates and reduces to a polynomial when
+          item-277 at level 5: text: a
+          item-278 at level 5: text: is zero or a negative integer, a ... h Laguerre polynomials. In particular,
+          item-279 at level 5: formula: _{2}F_{1}(a,b;c;s)
+          item-280 at level 5: text: is a generalization of Kummer’s confluent hypergeometric function
+          item-281 at level 5: formula: _{1}F_{1}(a;c;s)
+          item-282 at level 5: text: . Hence, in the limiting case where
+          item-283 at level 5: formula: b \rightarrow \infty
+          item-284 at level 5: text: ,
+          item-285 at level 5: formula: _{2}F_{1}(a,b;c;s)
+          item-286 at level 5: text: converges to
+          item-287 at level 5: formula: _{1}F_{1}(a;c;s)
+          item-288 at level 5: text: . This convergence is rooted in the fact that, while
+          item-289 at level 5: formula: {}_2F_1
+          item-290 at level 5: text: has two regular singular points, ... rges the singularities, giving rise to
+          item-291 at level 5: formula: {}_1F_1
+          item-292 at level 5: text: [44]. Additionally, the Jacobi p ...  see formula 15.9.1 of Ref. [45]). The
+          item-293 at level 5: formula: {}_2F_1
+          item-294 at level 5: text: function thus plays a major role ... turally leads to the appearance of the
+          item-295 at level 5: formula: {}_2F_1
+          item-296 at level 5: text: function as a solution, is appli ... rse, well suited to handling Eq. (24).
+      item-297 at level 3: section_header: 2.3.
+        item-298 at level 4: section_header: 2.3.1.
+          item-299 at level 5: inline: group group
+            item-300 at level 6: text: We now proceed to derive the wav ... are described by the eigenfunctions of
+            item-301 at level 6: formula: I(t)
+            item-302 at level 6: text: (instead of
+            item-303 at level 6: formula: H(t)
+            item-304 at level 6: text: ), we need to determine the eigenfunctions
+            item-305 at level 6: formula: \Phi _n
+            item-306 at level 6: text: of Eq. (14). However, directly solving for
+            item-307 at level 6: formula: \Phi _n
+            item-308 at level 6: text: is likely to be a formidable tas ... mvent this difficulty, we first derive
+            item-309 at level 6: formula: \Phi _n^{\prime }
+            item-310 at level 6: text: from Eq. (17), and then reconstruct the desired eigenfunctions
+            item-311 at level 6: formula: \Phi _n
+            item-312 at level 6: text: by inversely transforming the obtained
+            item-313 at level 6: formula: \Phi _n^{\prime }
+            item-314 at level 6: text: , utilizing the inverse relation ... e Eq. (46), which appears later). Once
+            item-315 at level 6: formula: \Phi _n
+            item-316 at level 6: text: are obtained, the wave functions
+            item-317 at level 6: formula: \Psi _n
+            item-318 at level 6: text: can be expressed in terms of them accordingly.
+          item-319 at level 5: inline: group group
+            item-320 at level 6: text: To obtain
+            item-321 at level 6: formula: \Phi _n^{\prime }
+            item-322 at level 6: text: , we need to solve Eq. (24) by s ... tions, in accordance with Eq. (27), as
+          item-323 at level 5: formula: \begin{eqnarray}
+U_{nl}(y)=N_{nl ... )^{\upsilon }f_{nl}(y),
+\end{eqnarray}
+          item-324 at level 5: inline: group group
+            item-325 at level 6: text: where
+            item-326 at level 6: formula: N_{nl}
+            item-327 at level 6: text: are normalization constants for the final wave functions. We applied
+            item-328 at level 6: formula: \alpha _{3}=1
+            item-329 at level 6: text: in this equation. In addition, f ... ire the following parameter relations:
+          item-330 at level 5: formula: \begin{eqnarray}
+&&\alpha _{1}=\ ... {nl}-P+Q+\gamma .~~~~~~
+\end{eqnarray}
+          item-331 at level 5: text: Furthermore, the singularity exponents reduce to
+          item-332 at level 5: formula: \begin{eqnarray}
+\lambda =\sqrt{ ... \right) ^{2}-3P}.~~~~~~
+\end{eqnarray}
+          item-333 at level 5: inline: group group
+            item-334 at level 6: text: Although the original NUFA representations of
+            item-335 at level 6: formula: \lambda
+            item-336 at level 6: text: and
+            item-337 at level 6: formula: \upsilon
+            item-338 at level 6: text: , given in Eqs. (28) and (29), include both positive and negative signs (
+            item-339 at level 6: formula: \pm
+            item-340 at level 6: text: ) from a purely mathematical per ...  finite throughout the entire range of
+            item-341 at level 6: text: r
+            item-342 at level 6: text: and must vanish as
+            item-343 at level 6: formula: r \rightarrow 0
+            item-344 at level 6: text: and
+            item-345 at level 6: formula: r \rightarrow \infty
+            item-346 at level 6: text: .
+          item-347 at level 5: text: The expansion of Eq. (33) under the first condition in Eq. (36) yields
+          item-348 at level 5: formula: \begin{eqnarray}
+n+\lambda +\upsilon = \sqrt{\zeta _1}.
+\end{eqnarray}
+          item-349 at level 5: inline: group group
+            item-350 at level 6: text: By squaring both sides of this e ...  Eq. (36) together with the formula of
+            item-351 at level 6: formula: \lambda
+            item-352 at level 6: text: given in Eq. (37), the equation  ... ith the eigenvalues can be obtained as
+          item-353 at level 5: formula: \begin{eqnarray}
+2[\varepsilon _ ... n )^{2}+5P+Q+\gamma =0.
+\end{eqnarray}
+          item-354 at level 5: inline: group group
+            item-355 at level 6: text: It is possible to rearrange this equation into a formula for
+            item-356 at level 6: formula: \varepsilon _{nl}
+            item-357 at level 6: text: by first isolating the square ro ... sides. Substituting the expression for
+            item-358 at level 6: formula: \upsilon
+            item-359 at level 6: text: from Eq. (37) into the resulting ... 5), we finally obtain the eigenvalues:
+          item-360 at level 5: formula: \begin{eqnarray}
+\Lambda _{nl} & ... \upsilon }\right] ^{2}.
+\end{eqnarray}
+          item-361 at level 5: text: The eigenvalues obtained in Eq.  ... parameter-dependent quantum mechanics.
+          item-362 at level 5: inline: group group
+            item-363 at level 6: text: In addition, by considering Eq.  ... e functions can be derived in terms of
+            item-364 at level 6: formula: \Lambda _{nl}
+            item-365 at level 6: text: to be
+          item-366 at level 5: formula: \begin{eqnarray}
+U_{nl}(y) &=& N ... {a},\bar{b};\bar{c};y),
+\end{eqnarray}
+          item-367 at level 5: text: where the parameters are defined as
+          item-368 at level 5: formula: \begin{eqnarray}
+\bar{a}=\lambda ... {\varepsilon _{nl}-6P},
+\end{eqnarray}
+          item-369 at level 5: formula: \begin{eqnarray}
+\bar{b}=\lambda ... {\varepsilon _{nl}-6P},
+\end{eqnarray}
+          item-370 at level 5: formula: \begin{eqnarray}
+\bar{c}=1+2\lambda .
+\end{eqnarray}
+          item-371 at level 5: inline: group group
+            item-372 at level 6: text: From a mathematical standpoint, it is possible to define the parameter
+            item-373 at level 6: formula: \bar{a}
+            item-374 at level 6: text: interchangeably with
+            item-375 at level 6: formula: \bar{b}
+            item-376 at level 6: text: . However, by choosing
+            item-377 at level 6: formula: \bar{a}
+            item-378 at level 6: text: as in Eq. (42), we allow the possibility for
+            item-379 at level 6: formula: \bar{a}
+            item-380 at level 6: text: to take on negative values. When
+            item-381 at level 6: formula: \bar{a}
+            item-382 at level 6: text: is a nonpositive integer (i.e. a ... nction in Eq. (41) terminates at the (
+            item-383 at level 6: formula: n+1
+            item-384 at level 6: text: )th term and reduces to a polyno ... genfunctions of the invariant operator
+            item-385 at level 6: formula: I_{0}
+            item-386 at level 6: text: are represented in the form
+          item-387 at level 5: formula: \begin{eqnarray}
+\Phi _{nlm}^{\p ... {lm}(\theta ,\varphi ).
+\end{eqnarray}
+          item-388 at level 5: inline: group group
+            item-389 at level 6: text: The complete eigenfunctions of the invariant
+            item-390 at level 6: text: I
+            item-391 at level 6: text: that belongs to the original sys ... rmed system, are given by the relation
+          item-392 at level 5: formula: \begin{eqnarray}
+\Phi _{nlm}(\ve ... lm}^{\prime }(\vec{r}).
+\end{eqnarray}
+          item-393 at level 5: text: The evaluation of this using Eqs. (16) and (45) results in
+          item-394 at level 5: formula: \begin{eqnarray}
+\Phi _{nlm}(r,\ ... {lm}(\theta ,\varphi ).
+\end{eqnarray}
+          item-395 at level 5: inline: group group
+            item-396 at level 6: text: Meanwhile,
+            item-397 at level 6: formula: N_{nl}
+            item-398 at level 6: text: are derived by normalizing these ...  Appendix A for a detailed evaluation)
+          item-399 at level 5: formula: \begin{eqnarray}
+N_{nl}=\sqrt{\d ... rime }) \Bigg ]^{-1/2},
+\end{eqnarray}
+          item-400 at level 5: text: where
+          item-401 at level 5: formula: \begin{eqnarray}
+\mathcal {N}_{n ... \lambda ,2\upsilon +1),
+\end{eqnarray}
+          item-402 at level 5: inline: group group
+            item-403 at level 6: text: whereas
+            item-404 at level 6: formula: {\mathrm{B}}(a_1,a_2)
+            item-405 at level 6: text: denotes the Beta function [48].  ... functions in the following subsection.
+        item-406 at level 4: section_header: 2.3.2.
+          item-407 at level 5: inline: group group
+            item-408 at level 6: text: According to Lewis–Riesenfeld th ... esented in terms of the eigenfunctions
+            item-409 at level 6: formula: \Phi _{nlm}(\vec{r},t)
+            item-410 at level 6: text: of the invariant operator, which ... . Another required factor is the phase
+            item-411 at level 6: formula: \alpha (t)
+            item-412 at level 6: text: associated with each quantum sta ... in terms of the transformed eigenstate
+            item-413 at level 6: formula: \vert \Phi ^\prime \rangle
+            item-414 at level 6: text: instead of
+            item-415 at level 6: formula: \vert \Phi \rangle
+            item-416 at level 6: text: , such that
+          item-417 at level 5: formula: \begin{eqnarray}
+\hbar \frac{d\a ... \prime }\right\rangle .
+\end{eqnarray}
+          item-418 at level 5: text: Then, a minor evaluation using Eq. (18) yields the phases in the form
+          item-419 at level 5: formula: \begin{eqnarray}
+\alpha _{nl}(t) ... rime }+\alpha _{nl}(0),
+\end{eqnarray}
+          item-420 at level 5: inline: group group
+            item-421 at level 6: text: where
+            item-422 at level 6: formula: \Lambda _{nl}
+            item-423 at level 6: text: are given by Eq. (40). These pha ... riptions to experimental observations.
+          item-424 at level 5: text: The solutions of the original Sc ... w be written in configuration space as
+          item-425 at level 5: formula: \begin{eqnarray}
+\Psi _{nlm}(r,\ ... (r,\theta ,\varphi ,t),
+\end{eqnarray}
+          item-426 at level 5: inline: group group
+            item-427 at level 6: text: where the explicit forms of
+            item-428 at level 6: formula: \alpha _{nl}(t)
+            item-429 at level 6: text: and
+            item-430 at level 6: formula: \Phi _{nlm}(r,\theta ,\varphi ,t)
+            item-431 at level 6: text: are given in Eqs. (51) and (47), ... ing wave functions (52), together with
+            item-432 at level 6: formula: \Lambda _{nl}
+            item-433 at level 6: text: in Eq. (40), serve as fundamenta ... roperties of the quark–antiquark pair.
+    item-434 at level 2: section_header: 3.
+      item-435 at level 3: text: In this study, we investigated t ... tood special functions in mathematics.
+      item-436 at level 3: inline: group group
+        item-437 at level 4: text: Our solutions are essential for  ...  strong CP problem and the role of the
+        item-438 at level 4: formula: \theta
+        item-439 at level 4: text: -term, as well as the difficulty ... nd decay modes of heavy mesons such as
+        item-440 at level 4: formula: J/\psi
+        item-441 at level 4: text: [5,55]. The analytical solutions ...  addressing these longstanding issues.
+    item-442 at level 2: section_header: Funding
+      item-443 at level 3: inline: group group
+        item-444 at level 4: text: Open Access funding: SCOAP
+        item-445 at level 4: text: 3
+        item-446 at level 4: text: .
+      item-447 at level 3: text: Although normalization is formal ... n associated with Eq. (47) is given by
+      item-448 at level 3: formula: \begin{eqnarray}
+\int _0^{2\pi } ... dr d\theta d\varphi =1.
+\end{eqnarray}
+      item-449 at level 3: inline: group group
+        item-450 at level 4: text: Because the angular part
+        item-451 at level 4: formula: Y_{lm} (\theta ,\varphi )
+        item-452 at level 4: text: , defined in Eq. (21), is alread ... q. (47), Eq. (A.1) can be rewritten as
+      item-453 at level 3: formula: \begin{eqnarray}
+\frac{\left|N_{ ... t)}})\right] ^{2}dr =1.
+\end{eqnarray}
+      item-454 at level 3: text: To simplify the integral, we introduce the substitution
+      item-455 at level 3: formula: \begin{eqnarray}
+z=e^{-\delta \frac{r}{\rho (t)}},
+\end{eqnarray}
+      item-456 at level 3: inline: group group
+        item-457 at level 4: text: and consider the fact that
+        item-458 at level 4: formula: \bar{a}
+        item-459 at level 4: text: and
+        item-460 at level 4: formula: \bar{b}
+        item-461 at level 4: text: in this case can be expressed in terms of
+        item-462 at level 4: text: n
+        item-463 at level 4: text: as
+      item-464 at level 3: formula: \begin{eqnarray}
+\bar{a}=-n,~~~~ ... (\upsilon +\lambda )+n,
+\end{eqnarray}
+      item-465 at level 3: inline: group group
+        item-466 at level 4: text: along with Eq. (44) as the formula of
+        item-467 at level 4: formula: \bar{c}
+        item-468 at level 4: text: . Then, Eq. (A.2) becomes
+      item-469 at level 3: formula: \begin{eqnarray}
+\frac{\left|N_{ ... {\delta }g_{\rm int}=1,
+\end{eqnarray}
+      item-470 at level 3: inline: group group
+        item-471 at level 4: text: where
+        item-472 at level 4: formula: g_{\rm int}
+        item-473 at level 4: text: is the integral part:
+      item-474 at level 3: formula: \begin{eqnarray}
+g_{\rm int}=\in ... a +1;z)\right] ^{2}dz .
+\end{eqnarray}
+      item-475 at level 3: inline: group group
+        item-476 at level 4: text: To evaluate the integration
+        item-477 at level 4: formula: g_{\rm int}
+        item-478 at level 4: text: , we use the expansion formula f ... ion (see formula 15.2.4 of Ref. [45]):
+      item-479 at level 3: formula: \begin{eqnarray}
+{_{2}F_{1}}(-n, ... \frac{(b)_k}{(c)_k}s^k,
+\end{eqnarray}
+      item-480 at level 3: inline: group group
+        item-481 at level 4: text: which holds when
+        item-482 at level 4: formula: n=0,1,2,\cdots
+        item-483 at level 4: text: and
+        item-484 at level 4: formula: c \ne 0,-1,-2,\cdots
+        item-485 at level 4: text: . This relation also holds when
+        item-486 at level 4: formula: c=-n-j
+        item-487 at level 4: text: , where
+        item-488 at level 4: formula: j=0,1,2,\cdots
+        item-489 at level 4: text: . Substituting this series expansion into Eq. (A.6), we obtain
+      item-490 at level 3: formula: \begin{eqnarray}
+g_{\rm int}&=&\ ... ight) ^{2\upsilon }dz .
+\end{eqnarray}
+      item-491 at level 3: text: The integral in the above equati ... eta function, which is defined as [48]
+      item-492 at level 3: formula: \begin{eqnarray}
+\mathrm{B}(a_1, ... _1-1} (1-s)^{a_2-1} ds,
+\end{eqnarray}
+      item-493 at level 3: inline: group group
+        item-494 at level 4: text: under the conditions
+        item-495 at level 4: formula: {\rm Re}a_1\gt 0
+        item-496 at level 4: text: and
+        item-497 at level 4: formula: {\rm Re}a_2\gt 0
+        item-498 at level 4: text: . The two shape parameters of this function, in our case, are
+        item-499 at level 4: formula: a_1=k+k^{\prime }+2\lambda
+        item-500 at level 4: text: and
+        item-501 at level 4: formula: a_2=2\upsilon +1
+        item-502 at level 4: text: . Thus, considering that the Pochhammer number is given by
+        item-503 at level 4: formula: (a)_k=\Gamma (a+k)/\Gamma (a)
+        item-504 at level 4: text: , where
+        item-505 at level 4: formula: a \ne 0,-1,-2,\cdots
+        item-506 at level 4: text: , a rearrangement of Eq. (A.5) w ... ession for the normalization constants
+        item-507 at level 4: formula: N_{nl}
+        item-508 at level 4: text: , as presented in Eq. (48) of the text.
+    item-509 at level 2: section_header: References
+      item-510 at level 3: list: group list
+        item-511 at level 4: list_item: H.-T. Ding, O. Kaczmarek, A.-L.  ... (2019).10.1016/j.nuclphysa.2018.09.075
+        item-512 at level 4: list_item: É. Chapon et al., Prog. Part. Nu ... 3906 (2022).10.1016/j.ppnp.2021.103906
+        item-513 at level 4: list_item: H. Bahl, S. Koren, L.-T. Wang, E ... (2024).10.1140/epjc/s10052-024-13411-3
+        item-514 at level 4: list_item: M. Doser, G. Farrar, G. Kornakov ... (2023).10.1140/epjc/s10052-023-12319-8
+        item-515 at level 4: list_item: T. Li, X.-D. Ma, M. A. Schmidt,  ... 024 (2021).10.1103/PhysRevD.104.035024
+        item-516 at level 4: list_item: E. Oks, New Astron. Rev. 93, 101632 (2021).10.1016/j.newar.2021.101632
+        item-517 at level 4: list_item: Q. Bonnefoy, L. Hall, C. A. Manz ... 045 (2024).10.1103/PhysRevD.109.055045
+        item-518 at level 4: list_item: S. Catto, F. Gürsey, Nuovo Cimento A. 99, 685 (1988).10.1007/BF02730633
+        item-519 at level 4: list_item: S. Catto, H. Y. Cheung, F. Gürse ...  3485 (1991).10.1142/S0217732391004024
+        item-520 at level 4: list_item: A. S. de Castro, Phys. Lett. A.  ...  (2005).10.1016/j.physleta.2005.07.065
+        item-521 at level 4: list_item: Y.-S. Choun, S.-J. Sin, Prog. Th ... 21, 013A01 (2021).10.1093/ptep/ptaa157
+        item-522 at level 4: list_item: H. S. Vieira, V. B. Bezerra, J.  ... s. 56, 092501 (2015).10.1063/1.4930871
+        item-523 at level 4: list_item: D. M. Reyna-Muñoz, M. A. Reyes,  ... , Rev. Mex. Fis. E. 21, 010209 (2024).
+        item-524 at level 4: list_item: A. Ishkhanyan, K.-A. Suominen, J ... 301 (2001).10.1088/0305-4470/34/32/309
+        item-525 at level 4: list_item: F. Caruso, J. Martins, V. Oguri, ... , 130 (2014).10.1016/j.aop.2014.04.023
+        item-526 at level 4: list_item: J. Karwowski, H. A. Witek, Theor ...  1494 (2014).10.1007/s00214-014-1494-5
+        item-527 at level 4: list_item: A. Roseau, Bull. Belg. Math. Soc. 9, 321 (2002).
+        item-528 at level 4: list_item: E. R. Arriola, A. Zarzo, J. S. D ... 61 (1991).10.1016/0377-0427(91)90114-Y
+        item-529 at level 4: list_item: E. S. Cheb-Terrab, J. Phys. A: M ... 923 (2004).10.1088/0305-4470/37/42/007
+        item-530 at level 4: list_item: P. Bagchi, A. Das, A. P. Mishra, ... 50051 (2026).10.1142/S0217732326500513
+        item-531 at level 4: list_item: Y. Akamatsu, Prog. Part. Nucl. P ... 3932 (2022).10.1016/j.ppnp.2021.103932
+        item-532 at level 4: list_item: T. Hayata, K. Nawa, T. Hatsuda,  ... 1(R) (2013).10.1103/PhysRevD.87.101901
+        item-533 at level 4: list_item: H. R. Lewis Jr, Phys. Rev. Lett. 18, 510 (1967).10.1103/PhysRevLett.18.510
+        item-534 at level 4: list_item: H. R. Lewis Jr, W. B. Riesenfeld ... hys. 10, 1458 (1969).10.1063/1.1664991
+        item-535 at level 4: list_item: S. Menouar, J. R. Choi, AIP Adv. 6, 095110 (2016).10.1063/1.4962995
+        item-536 at level 4: list_item: J. R. Choi, Chin. Phys. C. 35, 233 (2011).10.1088/1674-1137/35/3/005
+        item-537 at level 4: list_item: J.-H. Mun, H. Sakai, D.-E. Kim,  ... . 22, 8514 (2021).10.3390/ijms22168514
+        item-538 at level 4: list_item: S. Menouar, J. R. Choi, Ann. Phy ... , 307 (2015).10.1016/j.aop.2014.11.014
+        item-539 at level 4: list_item: A. N. Ikot, U. S. Okorie, P. O.  ... R. Sever, Few-Body Syst. 62, 1 (2021).
+        item-540 at level 4: list_item: A. F. Nikiforov, V. B. Uvarov, S ... 988), p. 205.10.1007/978-1-4757-1595-8
+        item-541 at level 4: list_item: C. Tezcan, R. Sever, Int. J. The ... , 337 (2009).10.1007/s10773-008-9806-y
+        item-542 at level 4: list_item: S. Medjber, H. Bekkar, S. Menoua ... 6, 3693572 (2016).10.1155/2016/3693572
+        item-543 at level 4: list_item: J. R. Choi, S. Menouar, S. Medjb ... 052001 (2017).10.1088/2399-6528/aa83f6
+        item-544 at level 4: list_item: S. Menouar, J. R. Choi, R. Sever ... , 659 (2018).10.1007/s11071-018-4081-9
+        item-545 at level 4: list_item: M. Abramowitz, I. A. Stegun, Han ... atical Tables (Dover, New York, 1972).
+        item-546 at level 4: list_item: R. L. Greene, C. Aldrich, Phys.  ... , 2363 (1976).10.1103/PhysRevA.14.2363
+        item-547 at level 4: list_item: R. Horchani, E. Omugbe, I. J. Nj ... 8582 (2024).10.1038/s41598-024-80123-9
+        item-548 at level 4: list_item: C. Ertugay, C. O. Edet, A. N. Ik ... 7 (2025).10.1080/00268976.2024.2411327
+        item-549 at level 4: list_item: A. N. Ikot, U. S. Okorie, R. Sev ... , Eur. Phys. J. Plus, 134, 386 (2019).
+        item-550 at level 4: list_item: D.-H. Lin, F.-X. Xie, Acta Phys. Sin. 33, 1569 (1984).10.7498/aps.33.1569
+        item-551 at level 4: list_item: B.-Q. Li, K.-T. Chao, Commun. Th ... , 653 (2009).10.1088/0253-6102/52/4/20
+        item-552 at level 4: list_item: J. Dereziński, Ann. Henri Poinca ...  1569 (2014).10.1007/s00023-013-0282-4
+        item-553 at level 4: list_item: W. Koepf, Hypergeometric Summati ... ondon, 2014).10.1007/978-1-4471-6464-7
+        item-554 at level 4: list_item: G. Kristensson, Confluent hyperg ...  7, p. 123.10.1007/978-1-4419-7020-6_7
+        item-555 at level 4: list_item: F. W. J. Olver, D. W. Lozier, R. ... a 15.2.4) and p. 393 (formula 15.9.1).
+        item-556 at level 4: list_item: H. Hellmann, Einführung in die Quantenchemie (F. Deuticke, Leipzig, 1937).
+        item-557 at level 4: list_item: R. P. Feynman, Phys. Rev. 56, 340 (1939).10.1103/PhysRev.56.340
+        item-558 at level 4: list_item: I. S. Gradshteyn, I. M. Ryzhik,  ... .380(1)) or p. 315 (formula 3.191(3)).
+        item-559 at level 4: list_item: S. Banerjee, M. Dorband, J. Erdm ... 23, 026 (2023).10.1007/JHEP10(2023)026
+        item-560 at level 4: list_item: T. Asselmeyer-Maluga, M. Lulli,  ... 408.15986v3 [hep-th] [Search inSPIRE].
+        item-561 at level 4: list_item: M. Alberg, G. A. Miller, Phys. R ... 01 (2024).10.1103/PhysRevC.110.L042201
+        item-562 at level 4: list_item: G. Ganbold, EPJ Web Conf. 3, 03014 (2010).10.1051/epjconf/20100303014
+        item-563 at level 4: list_item: G. F. de Téramond, S. J. Brodsky ... . J. Mod. Phys. A. 39, 2441007 (2024).
+        item-564 at level 4: list_item: N. Hüsken, E. S. Norella, I. Pol ... od. Phys. Lett. A. 40, 2530002 (2025).
+        item-565 at level 4: list_item: ALICE Collaboration, Eur. Phys. J. C. 84, 813 (2024).

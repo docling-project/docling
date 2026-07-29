@@ -14,7 +14,7 @@ import tempfile
 import time
 import warnings
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Iterator
+from collections.abc import AsyncGenerator, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -51,8 +51,10 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
-    BatchSourceRequestItem,
+    BatchSourceRequestInput,
+    BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    GenericTargetRequest,
     HttpSourceRequest,
 )
 from docling.datamodel.service.responses import (
@@ -108,7 +110,7 @@ StorageTarget: TypeAlias = (
     S3Target | AzureBlobTarget | GoogleCloudStorageTarget | GoogleDriveTarget
 )
 SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | StorageTarget
-BatchSubmitTarget: TypeAlias = StorageTarget | PresignedUrlTarget
+BatchSubmitTarget: TypeAlias = BatchTargetRequestInput
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -131,6 +133,7 @@ _STORAGE_TARGET_TYPES = (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
     GoogleDriveTarget,
+    GenericTargetRequest,
 )
 
 
@@ -373,7 +376,7 @@ class _BaseDoclingServiceClient:
         self,
         options: ConvertDocumentsRequestOptions,
         output_formats: list[OutputFormat] | None,
-        target: SubmitTarget,
+        target: SubmitTarget | GenericTargetRequest,
     ) -> ConvertDocumentsRequestOptions:
         effective = options
         if output_formats is not None:
@@ -1052,8 +1055,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def submit_batch(
         self,
-        sources: list[BatchSourceRequestItem],
-        target: BatchSubmitTarget,
+        sources: Sequence[BatchSourceRequestInput],
+        target: BatchTargetRequestInput,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -1061,6 +1064,9 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
+        request = BatchConvertSourcesRequest.model_validate(
+            {"sources": sources, "target": target}
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -1070,12 +1076,12 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=target,
+            target=request.target,
         )
         return self._submit_batch_conversion_job(
-            sources=sources,
+            sources=request.sources,
             options=submit_options,
-            target=target,
+            target=request.target,
             request_headers=headers,
         )
 
@@ -1415,7 +1421,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_conversion_job(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         request_headers: dict[str, str] | None = None,
@@ -1465,15 +1471,13 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_task(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest(
-            options=options,
-            sources=sources,
-            target=target,
+        request = BatchConvertSourcesRequest.model_validate(
+            {"options": options, "sources": sources, "target": target}
         )
         response = self._request_with_retry(
             method="POST",

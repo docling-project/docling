@@ -1923,18 +1923,38 @@ def test_submit_batch_posts_batch_request() -> None:
                 HttpSourceRequest(
                     url="https://example.org/sample.pdf",
                     headers={"Authorization": "Bearer source-token"},
-                )
+                ),
+                {
+                    "kind": "filenet",
+                    "base_url": "https://filenet.example.com/graphql",
+                    "api_key": "filenet-secret",
+                    "repository_id": "OS1",
+                },
             ],
             output_formats=[OutputFormat.MARKDOWN],
-            target=PresignedUrlTarget(),
+            target={
+                "kind": "plugin_artifact_store",
+                "bucket": "out",
+                "api_key": "target-secret",
+            },
         )
 
     assert job.task_id == "task-batch"
     assert captured["path"] == "/v1/convert/source/batch"
-    assert '"kind":"presigned_url"' in str(captured["payload"])
+    assert json.loads(str(captured["payload"]))["target"] == {
+        "kind": "plugin_artifact_store",
+        "bucket": "out",
+        "api_key": "target-secret",
+    }
     assert '"headers":{"Authorization":"Bearer source-token"}' in str(
         captured["payload"]
     )
+    assert json.loads(str(captured["payload"]))["sources"][1] == {
+        "kind": "filenet",
+        "base_url": "https://filenet.example.com/graphql",
+        "api_key": "filenet-secret",
+        "repository_id": "OS1",
+    }
 
 
 def test_submit_batch_serializes_inline_gcs_secrets_without_redaction() -> None:
@@ -2121,6 +2141,40 @@ def test_submit_batch_returns_counts_result_for_s3_target() -> None:
         result = job.result(timeout=1.0)
 
     assert result is s3_result
+
+
+def test_submit_batch_returns_counts_result_for_generic_target() -> None:
+    storage_result = PresignedUrlConvertDocumentResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, request_headers=None: (
+                _status_response("task-plugin-target", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_document_result = MethodType(
+            lambda self, task_id, last_status: storage_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target={"kind": "plugin_artifact_store", "bucket": "out"},
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is storage_result
 
 
 def test_submit_returns_counts_result_for_storage_target() -> None:
@@ -3552,14 +3606,18 @@ async def test_async_submit_batch_posts_batch_request() -> None:
 
     async with _make_async_http_client(handler) as client:
         job = await client.submit_batch(
-            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            sources=[{"kind": "filenet", "repository_id": "OS1"}],
             output_formats=[OutputFormat.MARKDOWN],
-            target=PresignedUrlTarget(),
+            target={"kind": "plugin_artifact_store", "bucket": "out"},
         )
 
     assert job.task_id == "task-batch"
     assert "/v1/convert/source/batch" in str(captured["url"])
-    assert captured["json"] is not None
+    assert captured["json"]["sources"] == [{"kind": "filenet", "repository_id": "OS1"}]
+    assert captured["json"]["target"] == {
+        "kind": "plugin_artifact_store",
+        "bucket": "out",
+    }
 
 
 @pytest.mark.anyio

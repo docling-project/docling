@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterator
 from io import BytesIO
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
+from openpyxl.worksheet.merge import MergedCellRange
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import (
@@ -36,6 +38,16 @@ from .verify_utils import verify_document, verify_export
 _log = logging.getLogger(__name__)
 
 GENERATE = GEN_TEST_DATA
+
+
+class _TrackingMergedRanges(set[MergedCellRange]):
+    def __init__(self, ranges: set[MergedCellRange]) -> None:
+        super().__init__(ranges)
+        self.iteration_count = 0
+
+    def __iter__(self) -> Iterator[MergedCellRange]:
+        self.iteration_count += 1
+        return super().__iter__()
 
 
 @pytest.fixture(scope="module")
@@ -629,6 +641,39 @@ def test_merged_section_label_above_table_preserves_column_headers() -> None:
     assert '<th colspan="2">Reading List</th>' not in html
     assert "<th>#</th>" in html
     assert "<th>Genre</th>" in html
+
+
+def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in range(1, 11):
+        sheet.append([f"row-{row}", None, None, row])
+        sheet.merge_cells(f"A{row}:C{row}")
+    sheet["D4"].comment = Comment("Synthetic note", "Codex")
+    file_path = tmp_path / "merged-cells.xlsx"
+    workbook.save(file_path)
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    loaded_sheet = backend.workbook.active
+    tracked_ranges = _TrackingMergedRanges(loaded_sheet.merged_cells.ranges)
+    loaded_sheet.merged_cells.ranges = tracked_ranges
+
+    tables, comment_map = backend._find_data_tables(loaded_sheet)
+
+    assert tracked_ranges.iteration_count == 1
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.anchor, table.num_rows, table.num_cols) == ((0, 0), 10, 4)
+    assert len(table.data) == 20
+    assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
+        (1, 3)
+    ] * 10
+    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
 
 
 def test_split_leading_section_label_helper() -> None:

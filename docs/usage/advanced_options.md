@@ -14,14 +14,24 @@ Downloading layout model...
 Downloading tableformer model...
 Downloading picture classifier model...
 Downloading code formula model...
-Downloading easyocr models...
+Downloading rapidocr torch chinese models...
+Downloading rapidocr torch english models...
+Downloading rapidocr onnxruntime chinese models...
+Downloading rapidocr onnxruntime english models...
 Models downloaded into $HOME/.cache/docling/models.
 ```
 
-To download models using a Hugging Face token, you can either set the `HF_TOKEN` environment variable or pass the `--hf-token` option:
+To download models using a HuggingFace token, you can either set the `HF_TOKEN` environment variable or pass the `--hf-token` option:
 
 ```sh
 $ docling-tools models download --hf-token YOUR_HF_TOKEN
+```
+
+To prefetch EasyOCR recognition models for specific languages, repeat
+`--easyocr-lang` with the same language codes used by `EasyOcrOptions.lang`:
+
+```sh
+$ docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
 ```
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
@@ -32,9 +42,8 @@ Also, you can use `download-hf-repo` parameter to download arbitrary models from
 $ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
 Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
 ```
-```
 
-To download with authentication, add `--hf-token`:
+Again, to download with authentication using a HuggingFace token, either set the `HF_TOKEN` environment variable or add `--hf-token`:
 
 ```sh
 $ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview --hf-token YOUR_HF_TOKEN
