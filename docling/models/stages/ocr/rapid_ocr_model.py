@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
@@ -21,10 +22,11 @@ from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
 if TYPE_CHECKING:
-    from rapidocr.inference_engine.base import FileInfo
     from rapidocr.utils.typings import EngineType, OCRVersion
 
 _log = logging.getLogger(__name__)
+
+_RAPIDOCR_DEFAULT_LANGUAGE = "ch"
 
 # Recognition/detection model size for the PP-OCRv6 path; v4/v5 use "mobile".
 _RAPIDOCR_DET_MODEL_LANG = "ch"
@@ -34,6 +36,11 @@ _RAPIDOCR_V4V5_MODEL_TYPE = "mobile"
 
 # Docling's default language names -> rapidocr language codes.
 _DOCLING_LANG_NORMALIZE: dict[str, str] = {"chinese": "ch", "english": "en"}
+
+# Inference backends docling supports. Must stay in sync with the `backend` Literal of
+# RapidOcrOptions in docling/datamodel/pipeline_options.py and with the mapping built in
+# _backend_to_engine_type().
+_RAPIDOCR_BACKENDS: tuple[str, ...] = ("onnxruntime", "openvino", "paddle", "torch")
 
 # Recognition languages served by the PP-OCRv4 backbone
 _PPOCRV4_LANGS = frozenset(
@@ -58,24 +65,95 @@ _PPOCRV5_LANGS = frozenset(
 )
 
 
-def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]":
-    """Map a requested language + backend onto a (PP-OCR version, rec language).
+@dataclass(frozen=True)
+class _RapidOcrArtifact:
+    """One resolved checkpoint: where it lives locally and where it comes from"""
+
+    # What gets handed to RapidOCR: the checkpoint file, or its directory for paddle.
+    model_path: Path
+
+    # Every local file the checkpoint needs, mapped to the URL it is downloaded from.
+    files: dict[Path, str]
+
+    # Recognition-keys file, for the entries that ship one (v6/v5 onnx embed the charset).
+    dict_path: Path | None
+
+
+@dataclass(frozen=True)
+class _RapidOcrModelSpec:
+    """One RapidOCR checkpoint set, as requested or as resolved.
+
+    `_parse_rapidocr_model_spec` yields the requested form, carrying only what the user
+    supplied; `_resolve_rapidocr` yields the resolved form with every field populated.
+    """
+
+    # Docling inference backend name, one of _RAPIDOCR_BACKENDS.
+    backend: str
+
+    # Language exactly as the user wrote it, echoed back in error messages.
+    user_lang: str | None = None
+
+    # Language code the rapidocr registry expects, after normalization and aliasing.
+    rapidocr_lang_token: str | None = None
+
+    # PP-OCR backbone that the (backend, language) pair resolves to.
+    ppocr_version: "OCRVersion | None" = None
+
+
+def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
+    """Parse a `<backend>:<lang>` prefetch spec into its requested form.
+
+    The pair is routed through _resolve_rapidocr so the prefetcher can never accept a
+    combination the runtime would reject, but only the user's own values are kept.
+    """
+    backend, separator, lang = value.partition(":")
+    if not separator or not backend or not lang or ":" in lang:
+        raise ValueError(
+            f"Invalid RapidOCR model spec {value!r}. "
+            "Expected '<backend>:<lang>', e.g. 'onnxruntime:th'."
+        )
+    if backend not in _RAPIDOCR_BACKENDS:
+        raise ValueError(
+            f"Unknown RapidOCR backend {backend!r} in {value!r}. "
+            f"Supported: {list(_RAPIDOCR_BACKENDS)}."
+        )
+    try:
+        _resolve_rapidocr(lang, backend)
+    except ValueError as err:
+        raise ValueError(f"Invalid RapidOCR model spec {value!r}: {err}") from err
+    return _RapidOcrModelSpec(backend=backend, user_lang=lang)
+
+
+def _backend_to_engine_type(backend: str) -> "EngineType":
+    """Map a docling backend name onto the rapidocr EngineType it stands for."""
+    from rapidocr.utils.typings import EngineType
+
+    engine_types = {
+        "onnxruntime": EngineType.ONNXRUNTIME,
+        "openvino": EngineType.OPENVINO,
+        "paddle": EngineType.PADDLE,
+        "torch": EngineType.TORCH,
+    }
+    if backend not in engine_types:
+        raise ValueError(
+            f"Unknown RapidOCR backend {backend!r}. Supported: {list(_RAPIDOCR_BACKENDS)}."
+        )
+    return engine_types[backend]
+
+
+def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
+    """Map one requested language + backend onto a fully populated _RapidOcrModelSpec.
 
     - Prefer PP-OCRv6 (whose recognizer is multilingual and covers ~52 codes)
     - Otherwise fall back to PP-OCRv4 for the torch backend or PP-OCRv5 for the others.
     - Raises when the language cannot be served by the resolved backbone.
+
+    Callers pass a single language; reducing a multi-language request is up to them.
     """
     from rapidocr.utils.model_resolver import COMMON_LANG_ALIASES, PP_OCRV6_LANGS
     from rapidocr.utils.typings import OCRVersion
 
-    langs = lang or ["ch"]
-    if len(langs) > 1:
-        _log.warning(
-            "RapidOCR uses a single language; using %r and ignoring %r.",
-            langs[0],
-            langs[1:],
-        )
-    code = langs[0].strip().lower()
+    code = lang.strip().lower()
     code = _DOCLING_LANG_NORMALIZE.get(code, code)
     aliased = COMMON_LANG_ALIASES.get(code, code)
 
@@ -84,7 +162,7 @@ def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]"
     elif backend == "torch":
         if aliased not in _PPOCRV4_LANGS:
             raise ValueError(
-                f"RapidOCR torch backend does not support language {langs[0]!r}. "
+                f"RapidOCR torch backend does not support language {lang!r}. "
                 f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV4_LANGS)}."
             )
         version = OCRVersion.PPOCRV4
@@ -92,7 +170,7 @@ def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]"
         version = OCRVersion.PPOCRV5
     else:
         raise ValueError(
-            f"RapidOCR {backend} backend does not support language {langs[0]!r}. "
+            f"RapidOCR {backend} backend does not support language {lang!r}. "
             f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV5_LANGS)}."
         )
 
@@ -103,65 +181,15 @@ def _resolve_rapidocr(lang: list[str], backend: str) -> "tuple[OCRVersion, str]"
         version.value,
         aliased,
     )
-    return version, aliased
+    return _RapidOcrModelSpec(
+        backend=backend,
+        user_lang=lang,
+        rapidocr_lang_token=aliased,
+        ppocr_version=version,
+    )
 
 
-def _download_if_missing(url: str, dest: Path, *, force: bool, progress: bool) -> Path:
-    if dest.exists() and not force:
-        return dest
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    buf = download_url_with_progress(url, progress=progress)
-    with dest.open("wb") as fw:
-        fw.write(buf.read())
-    return dest
-
-
-def _download_rapidocr_model(
-    target_dir: Path,
-    file_info: "FileInfo",
-    engine: "EngineType",
-    *,
-    force: bool,
-    progress: bool,
-) -> tuple[Path, Path | None]:
-    """Resolve a checkpoint URL from rapidocr's registry and download it.
-
-    Returns the local model path and the recognition-keys path when the entry ships a dict_url
-    (v6/v5 onnx embed the charset, so this is None for them).
-    """
-    from rapidocr.inference_engine.base import InferSession
-    from rapidocr.utils.typings import EngineType
-
-    info = InferSession.get_model_url(file_info)
-    model_url = info["model_dir"]
-
-    if engine == EngineType.PADDLE:
-        # paddle ships a directory bundle; the "model path" is that directory.
-        model_url = model_url.rstrip("/")
-        model_path = target_dir / Path(model_url).name
-        for name, sha in info.items():
-            if name in ("model_dir", "dict_url"):
-                continue
-            _download_if_missing(
-                f"{model_url}/{name}",
-                model_path / name,
-                force=force,
-                progress=progress,
-            )
-    else:
-        model_path = target_dir / Path(model_url).name
-        _download_if_missing(model_url, model_path, force=force, progress=progress)
-
-    dict_path: Path | None = None
-    dict_url = info.get("dict_url")
-    if dict_url:
-        dict_path = _download_if_missing(
-            dict_url, target_dir / Path(dict_url).name, force=force, progress=progress
-        )
-    return model_path, dict_path
-
-
-def _ensure_rapidocr_models(
+def _rapidocr_artifacts(
     target_dir: Path,
     engine: "EngineType",
     version: "OCRVersion",
@@ -170,15 +198,13 @@ def _ensure_rapidocr_models(
     need_det: bool = True,
     need_cls: bool = True,
     need_rec: bool = True,
-    force: bool = False,
-    progress: bool = False,
-) -> dict[str, Path | None]:
-    """Ensure the requested det/cls/rec checkpoints exist locally, downloading if needed"""
-    from rapidocr.inference_engine.base import FileInfo
-    from rapidocr.utils.typings import ModelType, OCRVersion, TaskType
+) -> dict[str, _RapidOcrArtifact]:
+    """Resolve the det/cls/rec checkpoints for RapidOCR keyed by their task.
 
-    target_dir = Path(target_dir)
-    target_dir.mkdir(parents=True, exist_ok=True)
+    This is a pure registry lookup: no network and no filesystem I/O
+    """
+    from rapidocr.inference_engine.base import FileInfo, InferSession
+    from rapidocr.utils.typings import EngineType, ModelType, OCRVersion, TaskType
 
     size = ModelType(
         _RAPIDOCR_MODEL_TYPE
@@ -187,81 +213,48 @@ def _ensure_rapidocr_models(
     )
     cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
 
-    det_path: Path | None = None
-    cls_path: Path | None = None
-    rec_path: Path | None = None
-    rec_keys_path: Path | None = None
-
+    file_infos: dict[str, FileInfo] = {}
     if need_det:
-        det_path, _ = _download_rapidocr_model(
-            target_dir,
-            FileInfo(engine, version, TaskType.DET, _RAPIDOCR_DET_MODEL_LANG, size),
-            engine,
-            force=force,
-            progress=progress,
+        file_infos["det"] = FileInfo(
+            engine, version, TaskType.DET, _RAPIDOCR_DET_MODEL_LANG, size
         )
     if need_cls:
-        cls_path, _ = _download_rapidocr_model(
-            target_dir,
-            FileInfo(
-                engine,
-                OCRVersion.PPOCRV4,
-                TaskType.CLS,
-                _RAPIDOCR_CLS_MODEL_LANG,
-                cls_size,
-            ),
-            engine,
-            force=force,
-            progress=progress,
+        file_infos["cls"] = FileInfo(
+            engine, OCRVersion.PPOCRV4, TaskType.CLS, _RAPIDOCR_CLS_MODEL_LANG, cls_size
         )
     if need_rec:
-        rec_path, rec_keys_path = _download_rapidocr_model(
-            target_dir,
-            FileInfo(engine, version, TaskType.REC, rec_lang, size),
-            engine,
-            force=force,
-            progress=progress,
+        file_infos["rec"] = FileInfo(engine, version, TaskType.REC, rec_lang, size)
+
+    artifacts: dict[str, _RapidOcrArtifact] = {}
+    for task, file_info in file_infos.items():
+        # Use RapidOCR's InferSession to get the URL for that FileInfo
+        info = InferSession.get_model_url(file_info)
+        model_url = info["model_dir"]
+
+        files: dict[Path, str] = {}
+        if engine == EngineType.PADDLE:
+            # paddle ships a directory bundle; the "model path" is that directory.
+            model_url = model_url.rstrip("/")
+            model_path = target_dir / Path(model_url).name
+            for name in info:
+                if name in ("model_dir", "dict_url"):
+                    continue
+                files[model_path / name] = f"{model_url}/{name}"
+        else:
+            model_path = target_dir / Path(model_url).name
+            files[model_path] = model_url
+
+        dict_path: Path | None = None
+        dict_url = info.get("dict_url")
+        if dict_url:
+            # v6/v5 onnx embed the charset, so only some entries ship a keys file.
+            dict_path = target_dir / Path(dict_url).name
+            files[dict_path] = dict_url
+
+        artifacts[task] = _RapidOcrArtifact(
+            model_path=model_path, files=files, dict_path=dict_path
         )
-    return {
-        "det_model_path": det_path,
-        "cls_model_path": cls_path,
-        "rec_model_path": rec_path,
-        "rec_keys_path": rec_keys_path,
-    }
-
-
-def _rapidocr_model_params(
-    version: "OCRVersion",
-    rec_lang: str,
-    *,
-    det_pinned: bool,
-    cls_pinned: bool,
-    rec_pinned: bool,
-) -> dict[str, object]:
-    """Params that let RapidOCR resolve/download the models itself"""
-    from rapidocr.utils.typings import ModelType, OCRVersion
-
-    size = (
-        ModelType(_RAPIDOCR_MODEL_TYPE)
-        if version == OCRVersion.PPOCRV6
-        else ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
-    )
-    cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
-
-    params: dict[str, object] = {}
-    if not det_pinned:
-        params["Det.ocr_version"] = version
-        params["Det.lang_type"] = _RAPIDOCR_DET_MODEL_LANG
-        params["Det.model_type"] = size
-    if not cls_pinned:
-        params["Cls.ocr_version"] = OCRVersion.PPOCRV4
-        params["Cls.lang_type"] = _RAPIDOCR_CLS_MODEL_LANG
-        params["Cls.model_type"] = cls_size
-    if not rec_pinned:
-        params["Rec.ocr_version"] = version
-        params["Rec.lang_type"] = rec_lang
-        params["Rec.model_type"] = size
-    return params
+    return artifacts
 
 
 class RapidOcrModel(BaseOcrModel):
@@ -286,7 +279,7 @@ class RapidOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from rapidocr import EngineType, RapidOCR  # type: ignore
+                from rapidocr import ModelType, OCRVersion, RapidOCR  # type: ignore
             except ImportError:
                 raise ImportError(
                     "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
@@ -301,17 +294,27 @@ class RapidOcrModel(BaseOcrModel):
             gpu_id = 0
             if use_cuda and ":" in device:
                 gpu_id = int(device.split(":")[1])
-            _ALIASES = {
-                "onnxruntime": EngineType.ONNXRUNTIME,
-                "openvino": EngineType.OPENVINO,
-                "paddle": EngineType.PADDLE,
-                "torch": EngineType.TORCH,
-            }
-            backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
+            backend_enum = _backend_to_engine_type(self.options.backend)
 
-            ppocr_version, rec_lang = _resolve_rapidocr(
-                self.options.lang, self.options.backend
+            # Reduce the user provided language list to one language
+            lang = (
+                self.options.lang[0]
+                if self.options.lang
+                else _RAPIDOCR_DEFAULT_LANGUAGE
             )
+            if len(self.options.lang) > 1:
+                _log.warning(
+                    "RapidOCR uses a single language; using %r and ignoring %r.",
+                    lang,
+                    self.options.lang[1:],
+                )
+            resolved = _resolve_rapidocr(lang, self.options.backend)
+            # _resolve_rapidocr always populates these; the fields are optional only so the
+            # same type can carry an unresolved prefetch request.
+            assert resolved.ppocr_version is not None
+            assert resolved.rapidocr_lang_token is not None
+            ppocr_version = resolved.ppocr_version
+            rec_lang = resolved.rapidocr_lang_token
 
             det_model_path = self.options.det_model_path
             cls_model_path = self.options.cls_model_path
@@ -319,15 +322,33 @@ class RapidOcrModel(BaseOcrModel):
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
 
+            # A pinned path that does not exist is a configuration error with or without
+            # artifacts_path, so fail here instead of letting RapidOCR crash later.
+            missing_pinned = [
+                model_path
+                for model_path in (
+                    det_model_path,
+                    cls_model_path,
+                    rec_model_path,
+                    rec_keys_path,
+                    font_path,
+                )
+                if model_path is not None and not Path(model_path).exists()
+            ]
+            if missing_pinned:
+                listed = "\n".join(f"  - {path}" for path in missing_pinned)
+                raise FileNotFoundError(
+                    f"The following RapidOCR paths do not exist:\n{listed}"
+                )
+
             # Params forwarded to RapidOCR only in the library-managed flow (no
             # artifacts_path); empty when we hand RapidOCR explicit model paths.
             lang_params: dict[str, object] = {}
 
             if artifacts_path is not None:
+                # artifacts_path means fully-offline operation
                 target_dir = artifacts_path / self._model_repo_folder
-
-                # Explicitly download the required model artifacts
-                resolved = _ensure_rapidocr_models(
+                artifacts: dict[str, _RapidOcrArtifact] = _rapidocr_artifacts(
                     target_dir,
                     backend_enum,
                     ppocr_version,
@@ -336,35 +357,56 @@ class RapidOcrModel(BaseOcrModel):
                     need_cls=cls_model_path is None,
                     need_rec=rec_model_path is None,
                 )
-                if det_model_path is None:
-                    det_model_path = str(resolved["det_model_path"])
-                if rec_model_path is None:
-                    rec_model_path = str(resolved["rec_model_path"])
-                if cls_model_path is None and resolved["cls_model_path"] is not None:
-                    cls_model_path = str(resolved["cls_model_path"])
-                if rec_keys_path is None and resolved["rec_keys_path"] is not None:
-                    rec_keys_path = str(resolved["rec_keys_path"])
-            else:
-                # Populate the rapidocr parameters only. RapidOCR downloads by itself
-                lang_params = _rapidocr_model_params(
-                    ppocr_version,
-                    rec_lang,
-                    det_pinned=det_model_path is not None,
-                    cls_pinned=cls_model_path is not None,
-                    rec_pinned=rec_model_path is not None,
-                )
+                missing = [
+                    dest
+                    for artifact in artifacts.values()
+                    for dest in artifact.files
+                    if not dest.is_file()
+                ]
+                if missing:
+                    listed = "\n".join(f"  - {path}" for path in missing)
+                    # `lang` is the user's own token, so the hint mirrors their config.
+                    raise FileNotFoundError(
+                        "RapidOCR artifacts not found or incomplete in artifacts_path.\n"
+                        f"Expected under: {target_dir}\n"
+                        f"Resolved: backend={self.options.backend} "
+                        f"ppocr_version={ppocr_version.value} rec_lang={rec_lang}\n"
+                        f"Missing files:\n{listed}\n"
+                        "Prefetch them with:\n"
+                        f"  docling-tools models download rapidocr "
+                        f"--rapidocr-backend-lang {self.options.backend}:{lang} "
+                        f"-o {artifacts_path}\n"
+                        "Or unset artifacts_path to let RapidOCR resolve and download "
+                        "the checkpoints itself."
+                    )
 
-            for model_path in (
-                det_model_path,
-                rec_keys_path,
-                cls_model_path,
-                rec_model_path,
-                font_path,
-            ):
-                if model_path is None:
-                    continue
-                if not Path(model_path).exists():
-                    _log.warning(f"The provided model path {model_path} is not found.")
+                if "det" in artifacts:
+                    det_model_path = str(artifacts["det"].model_path)
+                if "cls" in artifacts:
+                    cls_model_path = str(artifacts["cls"].model_path)
+                if "rec" in artifacts:
+                    rec_model_path = str(artifacts["rec"].model_path)
+                    if rec_keys_path is None and artifacts["rec"].dict_path is not None:
+                        rec_keys_path = str(artifacts["rec"].dict_path)
+            else:
+                # Let RapidOCR resolve and cache the checkpoints itself
+                size = ModelType(
+                    _RAPIDOCR_MODEL_TYPE
+                    if ppocr_version == OCRVersion.PPOCRV6
+                    else _RAPIDOCR_V4V5_MODEL_TYPE
+                )
+                if det_model_path is None:
+                    lang_params["Det.ocr_version"] = ppocr_version
+                    lang_params["Det.lang_type"] = _RAPIDOCR_DET_MODEL_LANG
+                    lang_params["Det.model_type"] = size
+                if cls_model_path is None:
+                    lang_params["Cls.ocr_version"] = OCRVersion.PPOCRV4
+                    lang_params["Cls.lang_type"] = _RAPIDOCR_CLS_MODEL_LANG
+                    lang_params["Cls.model_type"] = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
+                if rec_model_path is None:
+                    lang_params["Rec.ocr_version"] = ppocr_version
+                    lang_params["Rec.lang_type"] = rec_lang
+                    lang_params["Rec.model_type"] = size
 
             params = {
                 # Global settings (these are still correct)
@@ -423,24 +465,32 @@ class RapidOcrModel(BaseOcrModel):
         local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
-        lang: str = "ch",
+        lang: str = _RAPIDOCR_DEFAULT_LANGUAGE,
     ) -> Path:
-        from rapidocr import EngineType  # type: ignore
-
         if local_dir is None:
             local_dir = settings.cache_dir / "models" / cls._model_repo_folder
         local_dir = Path(local_dir)
         local_dir.mkdir(parents=True, exist_ok=True)
 
-        version, rec_lang = _resolve_rapidocr([lang], backend)
-        _ensure_rapidocr_models(
+        resolved = _resolve_rapidocr(lang, backend)
+        assert resolved.ppocr_version is not None
+        assert resolved.rapidocr_lang_token is not None
+
+        engine = _backend_to_engine_type(backend)
+        for artifact in _rapidocr_artifacts(
             local_dir,
-            EngineType(backend),
-            version,
-            rec_lang,
-            force=force,
-            progress=progress,
-        )
+            engine,
+            resolved.ppocr_version,
+            resolved.rapidocr_lang_token,
+        ).values():
+            for dest, url in artifact.files.items():
+                if dest.exists() and not force:
+                    continue
+                # paddle checkpoints are directory bundles, so dest may be nested.
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                buf = download_url_with_progress(url, progress=progress)
+                with dest.open("wb") as fw:
+                    fw.write(buf.read())
         return local_dir
 
     def __call__(

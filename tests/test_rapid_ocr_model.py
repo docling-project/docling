@@ -14,7 +14,10 @@ def _capture_params(
     monkeypatch: pytest.MonkeyPatch, options: RapidOcrOptions, artifacts_path: Path
 ) -> dict[str, object]:
     """Build a RapidOcrModel with real rapidocr resolution but faked inference
-    and downloading, returning the params dict handed to RapidOCR."""
+    and downloading, returning the params dict handed to RapidOCR.
+
+    artifacts_path is strictly offline, so the checkpoints are prefetched first.
+    """
     import rapidocr
 
     captured: dict[str, object] = {}
@@ -27,6 +30,11 @@ def _capture_params(
     monkeypatch.setattr(
         "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
         lambda url, *, progress: BytesIO(b"dummy content"),
+    )
+    RapidOcrModel.download_models(
+        backend=options.backend,
+        lang=options.lang[0],
+        local_dir=artifacts_path / RapidOcrModel._model_repo_folder,
     )
 
     RapidOcrModel(
