@@ -127,6 +127,9 @@ class TableFormerMode(str, Enum):
     ACCURATE = "accurate"
 
 
+DEFAULT_RICH_CELL_ELEMENT_COVERAGE_THRESHOLD: float = 0.8
+
+
 class BaseTableStructureOptions(BaseOptions):
     """Base options for table structure extraction models.
 
@@ -137,6 +140,18 @@ class BaseTableStructureOptions(BaseOptions):
     See Also:
         `TableStructureOptions`: Default TableFormer-based implementation.
     """
+
+    rich_cell_element_coverage_threshold: Annotated[
+        float,
+        Field(
+            gt=0.0,
+            le=1.0,
+            description=(
+                "Minimum fraction of a child element that must overlap its containing table or cell "
+                "to be represented in a rich table cell."
+            ),
+        ),
+    ] = DEFAULT_RICH_CELL_ELEMENT_COVERAGE_THRESHOLD
 
 
 class TableStructureOptions(BaseTableStructureOptions):

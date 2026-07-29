@@ -397,12 +397,27 @@ class TableStructureModelV2(BaseTableStructureModel):
                     predictions.append(table_prediction)
                     continue
 
-                page_image = numpy.asarray(page.get_image(scale=self.scale))
+                page_image = page.get_image(scale=self.scale)
+                assert page_image is not None
+                page_array = numpy.asarray(page_image)
+                table_clusters = [cluster for cluster, _ in in_tables]
 
                 for table_cluster, tbl_box in in_tables:
+                    input_image, text_cells, nested_tables = self._prepare_table_input(
+                        page_image,
+                        table_cluster=table_cluster,
+                        table_clusters=table_clusters,
+                        text_cells=table_cluster.cells,
+                    )
+
                     # Crop table region
                     x1, y1, x2, y2 = [int(v) for v in tbl_box]
-                    table_image = page_image[y1:y2, x1:x2]
+                    input_array = (
+                        page_array
+                        if input_image is page_image
+                        else numpy.asarray(input_image)
+                    )
+                    table_image = input_array[y1:y2, x1:x2]
 
                     # Convert to PIL and preprocess
                     pil_image = Image.fromarray(table_image).convert("RGB")
@@ -440,13 +455,18 @@ class TableStructureModelV2(BaseTableStructureModel):
                     for element in cell_data:
                         if element["bbox"] is not None:
                             bbox = BoundingBox.model_validate(element["bbox"])
+                            overlaps_nested_table = any(
+                                bbox.get_intersection_bbox(nested_table.bbox)
+                                is not None
+                                for nested_table in nested_tables
+                            )
                             if self.do_cell_matching:
                                 # Prefer text from cluster cells (includes OCR-assigned cells),
                                 # then fall back to backend text extraction.
                                 text_piece = self._match_text(
-                                    bbox, table_cluster.cells, textcell_overlap=0.3
+                                    bbox, text_cells, textcell_overlap=0.3
                                 )
-                                if not text_piece.strip():
+                                if not text_piece.strip() and not overlaps_nested_table:
                                     text_piece = page._backend.get_text_in_rect(bbox)
                             else:
                                 text_piece = page._backend.get_text_in_rect(bbox)

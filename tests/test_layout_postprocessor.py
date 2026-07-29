@@ -2,7 +2,7 @@ from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster
-from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.layout_postprocessor import LayoutPostprocessor, SpatialClusterIndex
 
 
 def _cluster(
@@ -89,3 +89,16 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
 
     ids = {c.id for c in result}
     assert ids == {1, 2}
+
+
+def test_wrapper_overlaps_keeps_nested_table_and_deduplicates_duplicate() -> None:
+    processor = object.__new__(LayoutPostprocessor)
+    parent = _cluster(1, DocItemLabel.TABLE, (0, 0, 400, 400))
+    nested = _cluster(2, DocItemLabel.TABLE, (100, 100, 200, 200))
+    nested_duplicate = _cluster(3, DocItemLabel.TABLE, (101, 101, 201, 201))
+    tables = [parent, nested, nested_duplicate]
+    processor.wrapper_index = SpatialClusterIndex(tables)
+
+    result = processor._remove_overlapping_clusters(tables, "wrapper")
+
+    assert {cluster.id for cluster in result} == {1, 2}

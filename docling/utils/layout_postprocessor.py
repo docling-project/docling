@@ -531,12 +531,24 @@ class LayoutPostprocessor:
             candidates.discard(cluster.id)
 
             for other_id in candidates:
-                if spatial_index.check_overlap(
-                    cluster.bbox,
-                    valid_clusters[other_id].bbox,
-                    overlap_threshold,
-                    containment_threshold,
+                other = valid_clusters[other_id]
+                if (
+                    cluster_type == "wrapper"
+                    and cluster.label == other.label == DocItemLabel.TABLE
                 ):
+                    # Containment is meaningful for nested tables; only merge duplicates.
+                    overlaps = (
+                        cluster.bbox.intersection_over_union(other.bbox)
+                        > overlap_threshold
+                    )
+                else:
+                    overlaps = spatial_index.check_overlap(
+                        cluster.bbox,
+                        other.bbox,
+                        overlap_threshold,
+                        containment_threshold,
+                    )
+                if overlaps:
                     uf.union(cluster.id, other_id)
 
         result = []

@@ -21,7 +21,7 @@ from docling_ibm_models.reading_order.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
     ReadingOrderPredictor,
 )
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from docling.datamodel.base_models import (
     BasePageElement,
@@ -32,6 +32,9 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import (
+    DEFAULT_RICH_CELL_ELEMENT_COVERAGE_THRESHOLD,
+)
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
@@ -39,11 +42,14 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    rich_cell_element_coverage_threshold: float = Field(
+        default=DEFAULT_RICH_CELL_ELEMENT_COVERAGE_THRESHOLD,
+        gt=0.0,
+        le=1.0,
+    )
 
 
 class ReadingOrderModel:
-    _RICH_CELL_PICTURE_COVERAGE_THRESHOLD = 0.8
-
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
@@ -158,67 +164,72 @@ class ReadingOrderModel:
     def _element_ref(element: BasePageElement) -> str:
         return f"#/{element.page_no}/{element.cluster.id}"
 
-    @classmethod
-    def _match_table_pictures(
-        cls,
+    def _match_table_children(
+        self,
         elements: list[BasePageElement],
-        excluded_picture_refs: set[str],
-    ) -> dict[str, dict[int, list[FigureElement]]]:
+        excluded_child_refs: set[str],
+    ) -> dict[str, dict[int, list[FigureElement | Table]]]:
         tables = [element for element in elements if isinstance(element, Table)]
-        matches: dict[str, dict[int, list[FigureElement]]] = {}
+        matches: dict[str, dict[int, list[FigureElement | Table]]] = {}
 
-        for picture in (
-            element for element in elements if isinstance(element, FigureElement)
+        for child in (
+            element
+            for element in elements
+            if isinstance(element, (FigureElement, Table))
         ):
-            if cls._element_ref(picture) in excluded_picture_refs:
+            if self._element_ref(child) in excluded_child_refs:
                 continue
 
-            best_match: tuple[float, Table, int] | None = None
+            best_match: tuple[tuple[float, float], Table, int] | None = None
             for table in tables:
-                if table.page_no != picture.page_no:
+                if table is child or table.page_no != child.page_no:
                     continue
                 if (
-                    picture.cluster.bbox.intersection_over_self(table.cluster.bbox)
-                    < cls._RICH_CELL_PICTURE_COVERAGE_THRESHOLD
+                    isinstance(child, Table)
+                    and table.cluster.bbox.area() <= child.cluster.bbox.area()
+                ):
+                    continue
+                if (
+                    child.cluster.bbox.intersection_over_self(table.cluster.bbox)
+                    < self.options.rich_cell_element_coverage_threshold
                 ):
                     continue
 
-                cell_match = cls._match_picture_to_table_cell(table, picture)
-                if cell_match is not None and (
-                    best_match is None or cell_match[0] > best_match[0]
-                ):
-                    best_match = (cell_match[0], table, cell_match[1])
+                cell_match = self._match_element_to_table_cell(table, child)
+                if cell_match is None:
+                    continue
+                score = (-table.cluster.bbox.area(), cell_match[0])
+                if best_match is None or score > best_match[0]:
+                    best_match = (score, table, cell_match[1])
 
             if best_match is None:
                 continue
 
             _, table, cell_index = best_match
-            matches.setdefault(cls._element_ref(table), {}).setdefault(
+            matches.setdefault(self._element_ref(table), {}).setdefault(
                 cell_index, []
-            ).append(picture)
+            ).append(child)
 
         return matches
 
-    @classmethod
-    def _match_picture_to_table_cell(
-        cls, table: Table, picture: FigureElement
+    def _match_element_to_table_cell(
+        self, table: Table, element: BasePageElement
     ) -> tuple[float, int] | None:
         eligible = [
             (
-                picture.cluster.bbox.intersection_over_self(cell.bbox),
+                element.cluster.bbox.intersection_over_self(cell.bbox),
                 cell_index,
-                cell,
             )
             for cell_index, cell in enumerate(table.table_cells)
             if cell.bbox is not None
-            and picture.cluster.bbox.intersection_over_self(cell.bbox)
-            >= cls._RICH_CELL_PICTURE_COVERAGE_THRESHOLD
+            and element.cluster.bbox.intersection_over_self(cell.bbox)
+            >= self.options.rich_cell_element_coverage_threshold
         ]
-        if not eligible:
+        if not eligible and not isinstance(element, Table):
             return None
 
         # Cell boxes can overlap across logical rows and columns. Infer the
-        # picture's grid position before choosing among containing cells.
+        # element's grid position before choosing among containing cells.
         row_centers: dict[int, list[float]] = {}
         column_centers: dict[int, list[float]] = {}
         for cell in table.table_cells:
@@ -231,34 +242,48 @@ class ReadingOrderModel:
                     (cell.bbox.l + cell.bbox.r) / 2
                 )
 
-        picture_x = (picture.cluster.bbox.l + picture.cluster.bbox.r) / 2
-        picture_y = (picture.cluster.bbox.t + picture.cluster.bbox.b) / 2
+        if not row_centers or not column_centers:
+            return None
+
+        element_x = (element.cluster.bbox.l + element.cluster.bbox.r) / 2
+        element_y = (element.cluster.bbox.t + element.cluster.bbox.b) / 2
         row = min(
             row_centers,
-            key=lambda index: abs(median(row_centers[index]) - picture_y),
+            key=lambda index: abs(median(row_centers[index]) - element_y),
         )
         column = min(
             column_centers,
-            key=lambda index: abs(median(column_centers[index]) - picture_x),
+            key=lambda index: abs(median(column_centers[index]) - element_x),
         )
-        logical_matches = [
-            match
-            for match in eligible
-            if match[2].start_row_offset_idx <= row < match[2].end_row_offset_idx
-            and match[2].start_col_offset_idx <= column < match[2].end_col_offset_idx
+        logical_cell_indices = [
+            cell_index
+            for cell_index, cell in enumerate(table.table_cells)
+            if cell.start_row_offset_idx <= row < cell.end_row_offset_idx
+            and cell.start_col_offset_idx <= column < cell.end_col_offset_idx
         ]
-        coverage, cell_index, _ = max(logical_matches or eligible)
-        return coverage, cell_index
+        logical_matches = [
+            match for match in eligible if match[1] in logical_cell_indices
+        ]
+        if eligible:
+            coverage, cell_index = max(logical_matches or eligible)
+            return coverage, cell_index
+        if logical_cell_indices:
+            coverage = element.cluster.bbox.intersection_over_self(table.cluster.bbox)
+            return coverage, logical_cell_indices[0]
+        return None
 
-    def _add_rich_table_pictures(
+    def _add_rich_table_children(
         self,
         *,
+        table: Table,
         table_item: TableItem,
-        pictures_by_cell: dict[int, list[FigureElement]],
+        table_children: dict[str, dict[int, list[FigureElement | Table]]],
         doc: DoclingDocument,
         page_height: float,
     ) -> None:
-        for cell_index, pictures in pictures_by_cell.items():
+        for cell_index, children in table_children.get(
+            self._element_ref(table), {}
+        ).items():
             cell = table_item.data.table_cells[cell_index]
             group = doc.add_group(
                 label=GroupLabel.UNSPECIFIED,
@@ -271,30 +296,46 @@ class ReadingOrderModel:
 
             if cell.text:
                 cell_bbox = (
-                    cell.bbox if cell.bbox is not None else pictures[0].cluster.bbox
+                    cell.bbox if cell.bbox is not None else children[0].cluster.bbox
                 )
                 doc.add_text(
                     label=DocItemLabel.TEXT,
                     text=cell.text,
                     prov=ProvenanceItem(
-                        page_no=pictures[0].page_no,
+                        page_no=children[0].page_no,
                         charspan=(0, len(cell.text)),
                         bbox=cell_bbox.to_bottom_left_origin(page_height),
                     ),
                     parent=group,
                 )
 
-            for picture in pictures:
-                picture_item = doc.add_picture(
-                    annotations=picture.annotations,
-                    prov=ProvenanceItem(
-                        page_no=picture.page_no,
-                        charspan=(0, 0),
-                        bbox=picture.cluster.bbox.to_bottom_left_origin(page_height),
-                    ),
-                    parent=group,
+            for child in children:
+                prov = ProvenanceItem(
+                    page_no=child.page_no,
+                    charspan=(0, 0),
+                    bbox=child.cluster.bbox.to_bottom_left_origin(page_height),
                 )
-                self._add_child_elements(picture, picture_item, doc)
+                if isinstance(child, FigureElement):
+                    child_item = doc.add_picture(
+                        annotations=child.annotations,
+                        prov=prov,
+                        parent=group,
+                    )
+                    self._add_child_elements(child, child_item, doc)
+                else:
+                    child_item = doc.add_table(
+                        data=self._table_data_from_table(child),
+                        prov=prov,
+                        label=child.cluster.label,
+                        parent=group,
+                    )
+                    self._add_rich_table_children(
+                        table=child,
+                        table_item=child_item,
+                        table_children=table_children,
+                        doc=doc,
+                        page_height=page_height,
+                    )
 
             table_item.data.table_cells[cell_index] = RichTableCell(
                 **cell.model_dump(exclude={"ref"}),
@@ -313,20 +354,20 @@ class ReadingOrderModel:
             self._element_ref(elem): elem for elem in conv_res.assembled.elements
         }
         cid_to_rels = {rel.cid: rel for rel in ro_elements}
-        excluded_picture_refs = {
+        excluded_child_refs = {
             rel.ref.cref
             for rel in ro_elements
             if rel.cid in el_to_captions_mapping or rel.cid in el_to_footnotes_mapping
         }
-        rich_table_pictures = self._match_table_pictures(
+        rich_table_children = self._match_table_children(
             conv_res.assembled.elements,
-            excluded_picture_refs=excluded_picture_refs,
+            excluded_child_refs=excluded_child_refs,
         )
-        rich_picture_refs = {
-            self._element_ref(picture)
-            for cells in rich_table_pictures.values()
-            for pictures in cells.values()
-            for picture in pictures
+        rich_child_refs = {
+            self._element_ref(child)
+            for cells in rich_table_children.values()
+            for children in cells.values()
+            for child in children
         }
 
         origin = DocumentOrigin(
@@ -357,7 +398,7 @@ class ReadingOrderModel:
             for cid in lst
         }
         skippable_cids.update(
-            rel.cid for rel in ro_elements if rel.ref.cref in rich_picture_refs
+            rel.cid for rel in ro_elements if rel.ref.cref in rich_child_refs
         )
 
         page_no_to_pages = {p.page_no: p for p in conv_res.pages}
@@ -423,13 +464,13 @@ class ReadingOrderModel:
                 tbl = out_doc.add_table(
                     data=tbl_data, prov=prov, label=element.cluster.label
                 )
-                if rel.ref.cref in rich_table_pictures:
-                    self._add_rich_table_pictures(
-                        table_item=tbl,
-                        pictures_by_cell=rich_table_pictures[rel.ref.cref],
-                        doc=out_doc,
-                        page_height=page_height,
-                    )
+                self._add_rich_table_children(
+                    table=element,
+                    table_item=tbl,
+                    table_children=rich_table_children,
+                    doc=out_doc,
+                    page_height=page_height,
+                )
 
                 if rel.cid in el_to_captions_mapping.keys():
                     for caption_cid in el_to_captions_mapping[rel.cid]:
