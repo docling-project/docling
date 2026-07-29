@@ -1,3 +1,24 @@
+## [v2.116.0](https://github.com/docling-project/docling/releases/tag/v2.116.0) - 2026-07-29
+
+### Feature
+
+* **package:** Expose docling.__version__ (#3733) ([#3905](https://github.com/docling-project/docling/issues/3905)) ([`5d5a2b8`](https://github.com/docling-project/docling/commit/5d5a2b87996221f37c337eaac621b7014b631706))
+* Make StandardPdfPipeline stage shutdown timeout configurable ([#3871](https://github.com/docling-project/docling/issues/3871)) ([`fce704d`](https://github.com/docling-project/docling/commit/fce704deb9b93c7bbad61ce8d245d77981bf29c7))
+* Layout-driven OCR pipeline with configurable OCR modes and refactoring of the OCR GT dir structures ([#3710](https://github.com/docling-project/docling/issues/3710)) ([`9c742b2`](https://github.com/docling-project/docling/commit/9c742b27e85869fa7f2d16c87916dfabb2e485d9))
+
+### Fix
+
+* **asr:** Auto-detect language instead of forcing English (#3892) ([#3893](https://github.com/docling-project/docling/issues/3893)) ([`a1ee78a`](https://github.com/docling-project/docling/commit/a1ee78a4c39ad95e58b83e6e732146adb9b2e546))
+* **docx:** Add timeout and isolated profile to LibreOffice conversions ([#3820](https://github.com/docling-project/docling/issues/3820)) ([`2093ad3`](https://github.com/docling-project/docling/commit/2093ad3ba058b946c31455f095e7e4d5b825d4c4))
+* **uspto:** Guard out-of-range namest in CALS table spans ([#3822](https://github.com/docling-project/docling/issues/3822)) ([`873f990`](https://github.com/docling-project/docling/commit/873f990203ac3195b0142f5564eea13e59c1a312))
+* Guard scipy import in to avoid crash in docling-slim[service-client] ([#3860](https://github.com/docling-project/docling/issues/3860)) ([`9b51f4f`](https://github.com/docling-project/docling/commit/9b51f4f857176cdd95cef53e2ec7f5f32ffbc6a5))
+
+### Documentation
+
+* Added section to docs/usage for google cloud storage usage in jobkit ([#3851](https://github.com/docling-project/docling/issues/3851)) ([`12540ab`](https://github.com/docling-project/docling/commit/12540abaa0eb48f8b32765f7b0414628494a996c))
+* Cleanup removed examples from nav and fix rendering of Surya OCR example ([#3870](https://github.com/docling-project/docling/issues/3870)) ([`f8d4528`](https://github.com/docling-project/docling/commit/f8d452819fa52715011b64291d0dcce86c98dd83))
+* **chunking:** Extend notebook for chunking with OCR text ([#3865](https://github.com/docling-project/docling/issues/3865)) ([`507cbc0`](https://github.com/docling-project/docling/commit/507cbc00c594a7248c9a72896ebe036a1624d7c0))
+
 ## [v2.115.0](https://github.com/docling-project/docling/releases/tag/v2.115.0) - 2026-07-23
 
 ### Feature

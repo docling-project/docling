@@ -41,6 +41,7 @@ pytest.importorskip("odfdo")
 from odfdo import (
     Document as OdfDocument,
     DrawPage,
+    Element,
     Frame,
     Header,
     List as OdfList,
@@ -555,6 +556,27 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(1, 0)] == "Row 1"
     assert cell_texts[(1, 1)] == "9.1"
     assert cell_texts[(4, 3)] == "6.2"
+
+
+def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):
+    """A draw:object whose part is missing must not abort the conversion."""
+    path = tmp_path / "dangling_object.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(Paragraph("Before the dangling object."))
+    frame = Frame(name="dangling", size=("6cm", "4cm"))
+    frame.append(Element.from_tag('<draw:object xlink:href="./Object 1"/>'))
+    body.append(frame)
+    body.append(Paragraph("After the dangling object."))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    texts = [item.text for item in result.document.texts]
+    assert "Before the dangling object." in texts
+    assert "After the dangling object." in texts
+    assert result.document.pictures == []
 
 
 def test_odt_text_document_embedded_bitmap_image():

@@ -252,6 +252,7 @@ def api_image_request(
                 num_tokens=num_tokens,
                 stop_reason=stop_reason,
                 usage=usage,
+                logprobs=api_resp.choices[0].logprobs,
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
