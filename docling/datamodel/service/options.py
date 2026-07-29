@@ -490,19 +490,32 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = True
 
+    do_pdf_heading_hierarchy: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, section-header levels are inferred for PDF and image "
+                "inputs processed by the standard pipeline, from the PDF bookmarks / "
+                "table of contents, from outline numbering and from font style. When "
+                "disabled, every detected heading stays at level 1 and the document "
+                "hierarchy is flat. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
     pdf_heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(
             description=(
-                "Options for inferring section-header levels, for PDF and image inputs "
-                "processed by the standard pipeline. Disabled by default, in which case "
-                "every detected heading stays at level 1 and the document hierarchy is "
-                "flat. When enabled, levels are inferred from the PDF bookmarks / table "
-                "of contents, from outline numbering and from font style."
+                "Fine-tuning of the section-header level inference, applied when "
+                "do_pdf_heading_hierarchy is enabled. The nested enabled flag is set "
+                "automatically from do_pdf_heading_hierarchy and does not need to be "
+                "provided."
             ),
             examples=[
-                HeadingHierarchyOptions(enabled=True),
-                HeadingHierarchyOptions(enabled=True, use_bookmarks=False, max_level=4),
+                HeadingHierarchyOptions(use_bookmarks=False, max_level=4),
+                HeadingHierarchyOptions(use_style=False),
             ],
         ),
     ] = HeadingHierarchyOptions()
@@ -1054,6 +1067,26 @@ class ConvertDocumentsOptions(BaseModel):
                 "Cannot specify both picture_classification_preset and "
                 "picture_classification_custom_config."
             )
+        return self
+
+    @model_validator(mode="after")
+    def sync_pdf_heading_hierarchy_options(self) -> Self:
+        """Drive the nested `enabled` flag from the top-level toggle.
+
+        `do_pdf_heading_hierarchy` is the switch, consistent with the other `do_*`
+        options, while `pdf_heading_hierarchy_options` only carries the fine-tuning.
+        Deriving `enabled` here keeps the two from ever disagreeing, and lets the
+        nested options be sent without repeating the toggle.
+        """
+        if self.pdf_heading_hierarchy_options.enabled != self.do_pdf_heading_hierarchy:
+            object.__setattr__(
+                self,
+                "pdf_heading_hierarchy_options",
+                self.pdf_heading_hierarchy_options.model_copy(
+                    update={"enabled": self.do_pdf_heading_hierarchy}
+                ),
+            )
+
         return self
 
     @model_validator(mode="after")
