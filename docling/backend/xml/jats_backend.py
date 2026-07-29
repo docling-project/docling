@@ -696,13 +696,25 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return base.model_copy(update=_JATS_FORMAT_TAG_MAP[tag])
 
     @staticmethod
-    def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
-        stripped: list[InlineSegment] = []
-        for segment in segments:
-            text = segment.text.strip()
-            if text:
-                stripped.append(replace(segment, text=text))
-        return stripped
+    def _trim_segment_edges(segments: list[InlineSegment]) -> list[InlineSegment]:
+        """Trim the outer edges of a segment sequence, keeping interior whitespace.
+
+        Stripping *every* segment destroyed the run boundaries, forcing the serializers to
+        invent a separator. Adjacent equal-format runs are already coalesced by
+        ``_append_run``, so only the block edges need trimming (as in the ODF backend).
+        """
+        trimmed = list(segments)
+        while trimmed and not trimmed[0].text.strip():
+            trimmed.pop(0)
+        if trimmed:
+            trimmed[0] = replace(trimmed[0], text=trimmed[0].text.lstrip())
+
+        while trimmed and not trimmed[-1].text.strip():
+            trimmed.pop()
+        if trimmed:
+            trimmed[-1] = replace(trimmed[-1], text=trimmed[-1].text.rstrip())
+
+        return [segment for segment in trimmed if segment.text]
 
     @staticmethod
     def _walk_inline_formula(
@@ -780,7 +792,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
     ) -> None:
         """Emit inline segments under ``parent``, wrapping many in an inline group."""
-        segments = JatsDocumentBackend._strip_segments(segments)
+        segments = JatsDocumentBackend._trim_segment_edges(segments)
         if not segments:
             return
         container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent

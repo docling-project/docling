@@ -24,7 +24,7 @@ The main contributions of the present work can be summarized as follows. First, 
 
 #### 2.1.1.
 
-We consider a quark–antiquark pair with a time-dependent effective reduced mass $\mu (t)$ in spherical coordinates, governed by a central potential $g(t)r^{2}-\frac{Z(t)}{r}$ where $g(t)$ and $Z(t)$ are coefficients that depend on time. While $g(t)r^{2}$ represents a confining trap potential with adjustable strength, $-\frac{Z(t)}{r}$ is a Coulomb perturbation with the constraint $Z(t)\gt 0$ . As the distance between quarks increases, the harmonic potential rises sharply, effectively prohibiting their free separation within a bound state. This potential acts as a simplified representation of the QCD confinement mechanism and dominates at large separations. Meanwhile, the Coulomb term represents the electromagnetic or color interaction mediated by the color charge of one quark acting on the other, effectively serving as a short-range attractive force between the quark and antiquark.
+We consider a quark–antiquark pair with a time-dependent effective reduced mass $\mu (t)$ in spherical coordinates, governed by a central potential $g(t)r^{2}-\frac{Z(t)}{r}$ where $g(t)$ and $Z(t)$ are coefficients that depend on time. While $g(t)r^{2}$ represents a confining trap potential with adjustable strength, $-\frac{Z(t)}{r}$ is a Coulomb perturbation with the constraint $Z(t)\gt 0$. As the distance between quarks increases, the harmonic potential rises sharply, effectively prohibiting their free separation within a bound state. This potential acts as a simplified representation of the QCD confinement mechanism and dominates at large separations. Meanwhile, the Coulomb term represents the electromagnetic or color interaction mediated by the color charge of one quark acting on the other, effectively serving as a short-range attractive force between the quark and antiquark.
 
 Time-dependent Hamiltonians naturally arise in hadron physics when quark–antiquark systems are embedded in dynamical environments, such as quark–gluon plasma or nonequilibrium hadronic media produced in high-energy collisions [20–22]. In such situations, the effective interaction between quarks may vary with time due to medium evolution, color-screening effects, confinement modifications, or changes in the effective quark mass. Consequently, the parameters appearing in phenomenological quarkonium potentials, including the confining strength and Coulomb-like coupling terms, can acquire explicit time dependence. The present model therefore provides an effective framework for investigating dynamical quark–antiquark systems within a quantum-mechanical setting.
 
@@ -34,13 +34,13 @@ $$\begin{eqnarray}
 H(t)=\frac{p^{2}}{2\mu (t)}+g(t)r^{2}-\frac{Z(t)}{r} .
 \end{eqnarray}$$
 
-This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as $p^{2}=p_{r}^{2}+\frac{L^{2}}{r^{2}}$ , where $p_{r}=-i\hbar (\frac{\partial }{\partial r}+\frac{1}{r})$ and *L* is the total angular momentum, the formula for which is given by
+This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as $p^{2}=p_{r}^{2}+\frac{L^{2}}{r^{2}}$, where $p_{r}=-i\hbar (\frac{\partial }{\partial r}+\frac{1}{r})$ and *L* is the total angular momentum, the formula for which is given by
 
 $$\begin{eqnarray}
 L^{2}=-\hbar ^{2}\bigg [\frac{1}{\sin ^{2}\theta }\frac{\partial ^{2}}{\partial \varphi ^{2}}+\frac{1}{\sin \theta }\frac{\partial }{\partial \theta }\bigg (\sin \theta \frac{\partial }{\partial \theta }\bigg )\bigg ].
 \end{eqnarray}$$
 
-To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as $|\Psi (t)\rangle$ , the corresponding Schrödinger equation is of the form
+To investigate the dynamical features of the system, we must solve the Schrödinger equation for the Hamiltonian in Eq. (1). If we denote the system’s state vector as $|\Psi (t)\rangle$, the corresponding Schrödinger equation is of the form
 
 $$\begin{eqnarray}
 i\hbar \frac{\partial }{\partial t}|\Psi (t)\rangle =H(t)|\Psi (t)\rangle .
@@ -58,7 +58,7 @@ $$\begin{eqnarray}
 \frac{dI}{dt}=\frac{\partial I}{\partial t}+\frac{1}{i\hbar }[I,H]=0.
 \end{eqnarray}$$
 
-If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction $\Phi (\vec{r},t)$ , such that
+If such an invariant exists, it is possible to put the solution of the Schrödinger equation (3) in terms of its eigenfunction $\Phi (\vec{r},t)$, such that
 
 $$\begin{eqnarray}
 \Psi (\vec{r},t)=e^{i\alpha (t)}\Phi (\vec{r},t),
@@ -76,7 +76,7 @@ $$\begin{eqnarray}
 I(t)=A(t)p^{2}+B(t)\left( rp_{r}+p_{r}r\right) +C(t)r^{2}-\frac{D(t)}{r},
 \end{eqnarray}$$
 
-where $A(t)$ , $B(t)$ , $C(t)$ , and $D(t)$ are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of $I(t)$ after substituting Eqs. (1) and (7) into Eq. (4) yields
+where $A(t)$, $B(t)$, $C(t)$, and $D(t)$ are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of $I(t)$ after substituting Eqs. (1) and (7) into Eq. (4) yields
 
 $$\begin{eqnarray}
 A(t) =A_{0}\rho ^{2}(t),
@@ -110,13 +110,13 @@ Equation (7) with Eqs. (8)–(11) constitutes the complete quadratic invariant
 
 #### 2.1.3.
 
-Because the quantum wave functions of the system are represented in terms of the eigenfunctions of $I(t)$ , it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant $I(t)$ as
+Because the quantum wave functions of the system are represented in terms of the eigenfunctions of $I(t)$, it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation of the invariant $I(t)$ as
 
 $$\begin{eqnarray}
 I(t)\Phi _{n}(\vec{r},t)=\Lambda _{n}\Phi _{n}(\vec{r},t),
 \end{eqnarray}$$
 
-where $\Lambda _{n}$ are the eigenvalues and $\Phi _{n}(\vec{r},t)$ are time-dependent eigenfunctions. Given that $I(t)$ , as defined in Eq. (7) along with Eqs. (8)–(11), has a complicated form, it is favorable to solve Eq. (14) after we transform it mathematically into a simple form. To do this, we consider a unitary transformation of the form
+where $\Lambda _{n}$ are the eigenvalues and $\Phi _{n}(\vec{r},t)$ are time-dependent eigenfunctions. Given that $I(t)$, as defined in Eq. (7) along with Eqs. (8)–(11), has a complicated form, it is favorable to solve Eq. (14) after we transform it mathematically into a simple form. To do this, we consider a unitary transformation of the form
 
 $$\begin{eqnarray}
 \Phi _{n}^{\prime }(\vec{r})=U(t)\Phi _{n}(\vec{r},t),
@@ -128,7 +128,7 @@ $$\begin{eqnarray}
 U(t)=\exp \left[ \frac{i\ln \rho (t)}{2\hbar }\left( rp_{r}+p_{r}r\right) \right] \exp \left[ -i\frac{\mu (t)\dot{\rho }(t)}{2\hbar \rho (t)}r^{2}\right] .
 \end{eqnarray}$$
 
-Then, if we write the transformed invariant operator as $I_0$ , the eigenvalue equation in the transformed frame is represented in terms of $\Phi _{n}^{\prime }(\vec{r})$ , such that
+Then, if we write the transformed invariant operator as $I_0$, the eigenvalue equation in the transformed frame is represented in terms of $\Phi _{n}^{\prime }(\vec{r})$, such that
 
 $$\begin{eqnarray}
 UIU^{-1}\Phi _{n}^{\prime }(\vec{r})=I_{0}\Phi _{n}^{\prime }(\vec{r})=\Lambda _{n}\Phi _{n}^{\prime }(\vec{r}).
@@ -140,7 +140,7 @@ $$\begin{eqnarray}
 \left[ A_{0}p^{2}+A_{0}\frac{\Omega ^{2}}{4}r^{2}-D_{0}\frac{1}{r}\right] \Phi _{nlm}^{\prime }(r,\theta ,\varphi )=\Lambda _{nl}\Phi _{nlm}^{\prime }(r,\theta ,\varphi ),
 \end{eqnarray}$$
 
-where $D_{0} = 2A_{0}\mu (t)Z(t)\rho (t)$ while $n=0,1,2,\cdots$ . An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of $D_0$ with respect to *t* , followed by the application of Eq. (13), yields $d D_0/dt=0$ . This means that $D_0$ is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant $I(t)$ . It is worth noting that Eq. (18) is very simple compared to the original eigenvalue equation represented in Eq. (14).
+where $D_{0} = 2A_{0}\mu (t)Z(t)\rho (t)$ while $n=0,1,2,\cdots$. An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of $D_0$ with respect to *t*, followed by the application of Eq. (13), yields $d D_0/dt=0$. This means that $D_0$ is in fact a constant of motion, as expected—since the operator on the left-hand side of Eq. (18) is the transformed version of the original invariant $I(t)$. It is worth noting that Eq. (18) is very simple compared to the original eigenvalue equation represented in Eq. (14).
 
 The existence of a perturbation of Coulomb potential may make the problem much more difficult. In what follows, the eigenvalue equation (18) can be rewritten as
 
@@ -148,19 +148,19 @@ $$\begin{eqnarray}
 \begin{bmatrix}-\hbar ^{2}A_{0}\Big [\frac{1}{r^{2}}\frac{\partial }{\partial r}\left( r^{2}\frac{\partial }{\partial r}\right) +\frac{1}{r^{2}\sin ^{2}\theta }\frac{\partial ^{2}}{\partial \varphi ^{2}} \\+\frac{1}{r^{2}\sin \theta }\frac{\partial }{\partial \theta }(\sin \theta \frac{\partial }{\partial \theta })\Big ]+A_{0}\frac{\Omega ^{2}}{4}r^{2}-\frac{D_{0}}{r} \end{bmatrix} \Phi _{nlm}^{\prime }(r,\theta ,\varphi )=\Lambda _{nl}\Phi _{nlm}^{\prime }(r,\theta ,\varphi ).
 \end{eqnarray}$$
 
-According to the invariant operator theory, the wave functions of the transformed system are represented in terms of $\Phi _{nlm}^{\prime }(r,\theta ,\varphi )$ . Because this equation is independent of time, we can apply the method of separation of variables in order to solve it. Considering this, we take
+According to the invariant operator theory, the wave functions of the transformed system are represented in terms of $\Phi _{nlm}^{\prime }(r,\theta ,\varphi )$. Because this equation is independent of time, we can apply the method of separation of variables in order to solve it. Considering this, we take
 
 $$\begin{eqnarray}
 \Phi _{nlm}^{\prime }(r,\theta ,\varphi )=R_{nl}(r)Y_{lm}(\theta ,\varphi )=\frac{u_{nl}(r)Y_{lm}(\theta ,\varphi )}{r},
 \end{eqnarray}$$
 
-where we have introduced $u_{nl}(r) = r R_{nl}(r)$ , whereas $Y_{lm}(\theta ,\varphi )$ are the spherical harmonics. The angular part of the eigenfunctions takes the form
+where we have introduced $u_{nl}(r) = r R_{nl}(r)$, whereas $Y_{lm}(\theta ,\varphi )$ are the spherical harmonics. The angular part of the eigenfunctions takes the form
 
 $$\begin{eqnarray}
 Y_{lm}(\theta ,\varphi )= N_{lm}e^{im\varphi }P_{l}^{m}(\cos \theta ),
 \end{eqnarray}$$
 
-where $P_{l}^{m}(x)$ are the associated Legendre polynomials, while the spherical normalization constants are $N_{lm}=(-1)^m \lbrace [(2l+1)/(4\pi )](l-m)!/(l+m)! \rbrace ^{1/2}$ . The allowed orbital and magnetic quantum numbers are $l=0,1,2,\cdots$ and $m=-l,-l+1,\cdots ,l$ , respectively.
+where $P_{l}^{m}(x)$ are the associated Legendre polynomials, while the spherical normalization constants are $N_{lm}=(-1)^m \lbrace [(2l+1)/(4\pi )](l-m)!/(l+m)! \rbrace ^{1/2}$. The allowed orbital and magnetic quantum numbers are $l=0,1,2,\cdots$ and $m=-l,-l+1,\cdots ,l$, respectively.
 
 Some algebraic manipulation, after substituting Eq. (20) into Eq. (19), leads to the following radial equation:
 
@@ -174,9 +174,9 @@ $$\begin{eqnarray}
 \frac{1}{r^{2}} \simeq \frac{\delta ^{2}}{\left( 1-e^{-\delta r}\right) ^{2}},~~~~~\frac{1}{r} \simeq \frac{\delta }{1-e^{-\delta r}},
 \end{eqnarray}$$
 
-together with a coordinate transformation $y=e^{-\delta r}$ . This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter $\delta$ is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing $\delta$ to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than $1/\delta$ . For example, in quarkonium models, $\delta$ is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting $\delta$ within this range is a reasonable choice.
+together with a coordinate transformation $y=e^{-\delta r}$. This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter $\delta$ is typically chosen to be equal to the screening mass [29,36]. Though the potential in our system is not screened, choosing $\delta$ to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than $1/\delta$. For example, in quarkonium models, $\delta$ is usually taken to be in the range of approximately 200 to 900 MeV [40,41]. Thus, selecting $\delta$ within this range is a reasonable choice.
 
-Then, by rewriting the notation as $u_{nl}(r)\rightarrow U_{nl}(y)$ , the differential equation (22) becomes
+Then, by rewriting the notation as $u_{nl}(r)\rightarrow U_{nl}(y)$, the differential equation (22) becomes
 
 $$\begin{eqnarray}
 \frac{d^{2}U_{nl}(y)}{dy^{2}}+\frac{\left( 1-y\right) }{y(1-y)}\frac{dU_{nl}(y)}{dy}+\frac{1}{y^{2}(1-y)^{2}}\begin{bmatrix}-\left( \varepsilon _{nl}-6P\right) y^{2} \\+\left( 2\varepsilon _{nl}-4P+Q\right) y \\-\left( \varepsilon _{nl}-P+Q+\gamma \right) \end{bmatrix} U_{nl}(y)=0,
@@ -188,7 +188,7 @@ $$\begin{eqnarray}
 \varepsilon _{nl}=\frac{-\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}},~~~P=-\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}},~~~Q=-\frac{D_{0}}{\hbar ^{2}A_{0}\delta },~~~\gamma =l(l+1).
 \end{eqnarray}$$
 
-In the representation of Eq. (24), we neglected higher-order terms corresponding to $y^{3}$ and $y^{4}$ . To solve this equation, we use the NUFA method [29] outlined in the next subsection.
+In the representation of Eq. (24), we neglected higher-order terms corresponding to $y^{3}$ and $y^{4}$. To solve this equation, we use the NUFA method [29] outlined in the next subsection.
 
 ### 2.2.
 
@@ -198,7 +198,7 @@ $$\begin{eqnarray}
 \left[ \frac{d^{2}}{ds^{2}}+\frac{\alpha _{1}-\alpha _{2}s}{s(1-\alpha _{3}s)}\frac{d}{ds}+\frac{-\zeta _{1}s^{2}+\zeta _{2}s-\zeta _{3}}{s^{2}(1-\alpha _{3}s)^{2}}\right] \phi (s)=0,
 \end{eqnarray}$$
 
-where $\alpha _{i}$ $(i=1,2,3)$ and $\zeta _{i}$ are parameters appropriately chosen depending on a given system. Because this equation has two singularities at $s\rightarrow 0$ and $s\rightarrow 1/\alpha _{3}$ , it is possible to take the solution in the form
+where $\alpha _{i}$$(i=1,2,3)$ and $\zeta _{i}$ are parameters appropriately chosen depending on a given system. Because this equation has two singularities at $s\rightarrow 0$ and $s\rightarrow 1/\alpha _{3}$, it is possible to take the solution in the form
 
 $$\begin{eqnarray}
 \phi (s)=s^{\lambda }(1-\alpha _{3}s)^{\upsilon }f(s).
@@ -232,7 +232,7 @@ $$\begin{eqnarray}
 
 Thus, the equation is reduced to a tractable form.
 
-We now examine a simple case where $\alpha _3=1$ , which meets the equation associated with our considered system. Under the condition that the principal quantum number takes the form
+We now examine a simple case where $\alpha _3=1$, which meets the equation associated with our considered system. Under the condition that the principal quantum number takes the form
 
 $$\begin{eqnarray}
 n=- \kappa _- ,
@@ -244,17 +244,17 @@ $$\begin{eqnarray}
 f (s) = {_{2}F_{1}}(a,b;c;s),
 \end{eqnarray}$$
 
-where $a=\kappa _-$ , $b=\kappa _+$ , and $c=\alpha _{1}+2\lambda$ . The mathematical formula of this hypergeometric function is as follows: $_{2}F_{1}(a,b;c;s)=\sum _{k=0}^{\infty }\frac{\left( a\right) _{k}\left( b\right) _{k}}{\left( c\right) _{k}k!}s^{k}$ , where $\left( a\right) _{k}=a(a+1)(a+2)\cdots (a+k-1)$ for $k\ge 1$ and $\left( a\right) _{0}=1$ .
+where $a=\kappa _-$, $b=\kappa _+$, and $c=\alpha _{1}+2\lambda$. The mathematical formula of this hypergeometric function is as follows: $_{2}F_{1}(a,b;c;s)=\sum _{k=0}^{\infty }\frac{\left( a\right) _{k}\left( b\right) _{k}}{\left( c\right) _{k}k!}s^{k}$, where $\left( a\right) _{k}=a(a+1)(a+2)\cdots (a+k-1)$ for $k\ge 1$ and $\left( a\right) _{0}=1$.
 
-The Gauss hypergeometric function $_{2}F_{1}(a,b;c;s)$ serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function $_{2}F_{1}(a,b;c;s)$ terminates and reduces to a polynomial when *a* is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, $_{2}F_{1}(a,b;c;s)$ is a generalization of Kummer’s confluent hypergeometric function $_{1}F_{1}(a;c;s)$ . Hence, in the limiting case where $b \rightarrow \infty$ , $_{2}F_{1}(a,b;c;s)$ converges to $_{1}F_{1}(a;c;s)$ . This convergence is rooted in the fact that, while ${}_2F_1$ has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to ${}_1F_1$ [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The ${}_2F_1$ function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the ${}_2F_1$ function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24).
+The Gauss hypergeometric function $_{2}F_{1}(a,b;c;s)$ serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [42–45]. As defined in Eq. (34) with Eq. (33), the function $_{2}F_{1}(a,b;c;s)$ terminates and reduces to a polynomial when *a* is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, $_{2}F_{1}(a,b;c;s)$ is a generalization of Kummer’s confluent hypergeometric function $_{1}F_{1}(a;c;s)$. Hence, in the limiting case where $b \rightarrow \infty$, $_{2}F_{1}(a,b;c;s)$ converges to $_{1}F_{1}(a;c;s)$. This convergence is rooted in the fact that, while ${}_2F_1$ has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to ${}_1F_1$ [44]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [45]). The ${}_2F_1$ function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the ${}_2F_1$ function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (24).
 
 ### 2.3.
 
 #### 2.3.1.
 
-We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of $I(t)$ (instead of $H(t)$ ), we need to determine the eigenfunctions $\Phi _n$ of Eq. (14). However, directly solving for $\Phi _n$ is likely to be a formidable task. To circumvent this difficulty, we first derive $\Phi _n^{\prime }$ from Eq. (17), and then reconstruct the desired eigenfunctions $\Phi _n$ by inversely transforming the obtained $\Phi _n^{\prime }$ , utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once $\Phi _n$ are obtained, the wave functions $\Psi _n$ can be expressed in terms of them accordingly.
+We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of $I(t)$ (instead of $H(t)$), we need to determine the eigenfunctions $\Phi _n$ of Eq. (14). However, directly solving for $\Phi _n$ is likely to be a formidable task. To circumvent this difficulty, we first derive $\Phi _n^{\prime }$ from Eq. (17), and then reconstruct the desired eigenfunctions $\Phi _n$ by inversely transforming the obtained $\Phi _n^{\prime }$, utilizing the inverse relation of Eq. (15) (for the inverse relation, see Eq. (46), which appears later). Once $\Phi _n$ are obtained, the wave functions $\Psi _n$ can be expressed in terms of them accordingly.
 
-To obtain $\Phi _n^{\prime }$ , we need to solve Eq. (24) by setting the associated functions, in accordance with Eq. (27), as
+To obtain $\Phi _n^{\prime }$, we need to solve Eq. (24) by setting the associated functions, in accordance with Eq. (27), as
 
 $$\begin{eqnarray}
 U_{nl}(y)=N_{nl}y^{\lambda }(1-y)^{\upsilon }f_{nl}(y),
@@ -272,7 +272,7 @@ $$\begin{eqnarray}
 \lambda =\sqrt{\varepsilon _{nl}-P+Q+\gamma },\quad\quad\upsilon =\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}-3P}.~~~~~~
 \end{eqnarray}$$
 
-Although the original NUFA representations of $\lambda$ and $\upsilon$ , given in Eqs. (28) and (29), include both positive and negative signs ( $\pm$ ) from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of *r* and must vanish as $r \rightarrow 0$ and $r \rightarrow \infty$ .
+Although the original NUFA representations of $\lambda$ and $\upsilon$, given in Eqs. (28) and (29), include both positive and negative signs ($\pm$) from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq. (37). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of *r* and must vanish as $r \rightarrow 0$ and $r \rightarrow \infty$.
 
 The expansion of Eq. (33) under the first condition in Eq. (36) yields
 
@@ -314,7 +314,7 @@ $$\begin{eqnarray}
 \bar{c}=1+2\lambda .
 \end{eqnarray}$$
 
-From a mathematical standpoint, it is possible to define the parameter $\bar{a}$ interchangeably with $\bar{b}$ . However, by choosing $\bar{a}$ as in Eq. (42), we allow the possibility for $\bar{a}$ to take on negative values. When $\bar{a}$ is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the ( $n+1$ )th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator $I_{0}$ are represented in the form
+From a mathematical standpoint, it is possible to define the parameter $\bar{a}$ interchangeably with $\bar{b}$. However, by choosing $\bar{a}$ as in Eq. (42), we allow the possibility for $\bar{a}$ to take on negative values. When $\bar{a}$ is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (41) terminates at the ($n+1$)th term and reduces to a polynomial. Through the use of Eq. (20) with Eq. (41), the full eigenfunctions of the invariant operator $I_{0}$ are represented in the form
 
 $$\begin{eqnarray}
 \Phi _{nlm}^{\prime }(r,\theta ,\varphi ) &=& N_{nl}\frac{1}{r}e^{-\left( \sqrt{-\frac{\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}}+\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}-\frac{D_{0}}{\hbar ^{2}A_{0}\delta }+l(l+1)}\right) \delta r} \\&&\times \left( 1-e^{-\delta r}\right) ^{\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}+\frac{3\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}}}{_{2}F_{1}}(\bar{a},\bar{b};\bar{c};e^{-\delta r})Y_{lm}(\theta ,\varphi ).
@@ -348,7 +348,7 @@ whereas ${\mathrm{B}}(a_1,a_2)$ denotes the Beta function [48]. The eigenfunctio
 
 #### 2.3.2.
 
-According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions $\Phi _{nlm}(\vec{r},t)$ of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase $\alpha (t)$ associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate $\vert \Phi ^\prime \rangle$ instead of $\vert \Phi \rangle$ , such that
+According to Lewis–Riesenfeld theory [24], the wave functions of our time-dependent system are represented in terms of the eigenfunctions $\Phi _{nlm}(\vec{r},t)$ of the invariant operator, which are given in Eq. (47). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase $\alpha (t)$ associated with each quantum state. We begin from Eq. (6) to derive this factor. Based on the unitary relation given in Eq. (46), Eq. (6) can be expressed in terms of the transformed eigenstate $\vert \Phi ^\prime \rangle$ instead of $\vert \Phi \rangle$, such that
 
 $$\begin{eqnarray}
 \hbar \frac{d\alpha (t)}{dt}=\left\langle \Phi ^{\prime }\left|\Bigg ( i \hbar \frac{\partial }{\partial t}-\frac{I_{0}}{2A_{0}\mu (t)\rho ^{2}(t)} \Bigg ) \right|\Phi ^{\prime }\right\rangle .
@@ -374,11 +374,11 @@ where the explicit forms of $\alpha _{nl}(t)$ and $\Phi _{nlm}(r,\theta ,\varphi
 
 In this study, we investigated the interaction between a quark and an antiquark by modeling its mechanical behavior using a nonstationary 3D harmonic oscillator coupled with a Coulomb potential. To solve the associated Schrödinger equation, we employed the recently refined NUFA method, together with the invariant operator method and the unitary transformation approach. The NUFA method, based on a novel conceptual framework, allowed us to bypass the complex mathematical manipulations commonly encountered in other techniques. As a result, we obtained the wave functions of the system in closed form, expressed in terms of the Gauss hypergeometric function. These solutions offer advantages over previous ones that employed biconfluent Heun functions, as Gauss hypergeometric functions are among the most thoroughly characterized and best understood special functions in mathematics.
 
-Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the $\theta$ -term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as $J/\psi$ [5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues.
+Our solutions are essential for analyzing quark–antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark–antiquark configurations [53,54]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the $\theta$-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as $J/\psi$ [5,55]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues.
 
 ## Funding
 
-Open Access funding: SCOAP 3 .
+Open Access funding: SCOAP3.
 
 Although normalization is formally defined for the full wave functions, the phase factors do not affect the outcome. Therefore, in the normalization process, it suffices to consider only Eq. (47), which corresponds to the eigenfunctions. The normalization condition associated with Eq. (47) is given by
 
@@ -386,7 +386,7 @@ $$\begin{eqnarray}
 \int _0^{2\pi } \int _0^\pi \int _0^\infty \left|\Phi _{nlm} (r,\theta ,\varphi ,t) \right|^{2}r^{2} \sin \theta dr d\theta d\varphi =1.
 \end{eqnarray}$$
 
-Because the angular part $Y_{lm} (\theta ,\varphi )$ , defined in Eq. (21), is already normalized, we only need to consider the radial part in this evaluation. Thus, based on the radial part of Eq. (47), Eq. (A.1) can be rewritten as
+Because the angular part $Y_{lm} (\theta ,\varphi )$, defined in Eq. (21), is already normalized, we only need to consider the radial part in this evaluation. Thus, based on the radial part of Eq. (47), Eq. (A.1) can be rewritten as
 
 $$\begin{eqnarray}
 \frac{\left|N_{nl}\right|^{2}}{\rho (t) }\int _{0}^{\infty }e^{-2\lambda \delta \frac{r}{\rho (t)}}\left( 1-e^{-\delta \frac{r}{\rho (t)}}\right) ^{2\upsilon }\left[ {_{2}F_{1}}(\bar{a},\bar{b};\bar{c};e^{-\delta \frac{r}{\rho (t)}})\right] ^{2}dr =1.
@@ -404,7 +404,7 @@ $$\begin{eqnarray}
 \bar{a}=-n,~~~~~~~ \bar{b}=2(\upsilon +\lambda )+n,
 \end{eqnarray}$$
 
-along with Eq. (44) as the formula of $\bar{c}$ . Then, Eq. (A.2) becomes
+along with Eq. (44) as the formula of $\bar{c}$. Then, Eq. (A.2) becomes
 
 $$\begin{eqnarray}
 \frac{\left|N_{nl}\right|^{2}}{\delta }g_{\rm int}=1,
@@ -416,13 +416,13 @@ $$\begin{eqnarray}
 g_{\rm int}=\int _{0}^{1}z^{2\lambda -1} \left( 1-z\right) ^{2\upsilon }\left[ {_{2}F_{1}}(-n,2(\upsilon +\lambda )+n;2\lambda +1;z)\right] ^{2}dz .
 \end{eqnarray}$$
 
-To evaluate the integration $g_{\rm int}$ , we use the expansion formula for the hypergeometric function (see formula 15.2.4 of Ref. [45]):
+To evaluate the integration $g_{\rm int}$, we use the expansion formula for the hypergeometric function (see formula 15.2.4 of Ref. [45]):
 
 $$\begin{eqnarray}
 {_{2}F_{1}}(-n,b;c;s)=\sum _{k=0}^n (-1)^k \binom{n}{k} \frac{(b)_k}{(c)_k}s^k,
 \end{eqnarray}$$
 
-which holds when $n=0,1,2,\cdots$ and $c \ne 0,-1,-2,\cdots$ . This relation also holds when $c=-n-j$ , where $j=0,1,2,\cdots$ . Substituting this series expansion into Eq. (A.6), we obtain
+which holds when $n=0,1,2,\cdots$ and $c \ne 0,-1,-2,\cdots$. This relation also holds when $c=-n-j$, where $j=0,1,2,\cdots$. Substituting this series expansion into Eq. (A.6), we obtain
 
 $$\begin{eqnarray}
 g_{\rm int}&=&\sum _{k=0}^n\sum _{k^{\prime }=0}^n(-1)^{k+k^{\prime }}\binom{n}{k} \binom{n}{k^{\prime }} \frac{(2(\upsilon +\lambda )+n)_k (2(\upsilon +\lambda )+n)_{k^{\prime }}}{(2\lambda +1)_k(2\lambda +1)_{k^{\prime }}} \\&&\times \int _{0}^{1}z^{k+k^{\prime }+2\lambda -1} \left( 1-z\right) ^{2\upsilon }dz .
@@ -434,7 +434,7 @@ $$\begin{eqnarray}
 \mathrm{B}(a_1,a_2)= \int _0^1 s^{a_1-1} (1-s)^{a_2-1} ds,
 \end{eqnarray}$$
 
-under the conditions ${\rm Re}a_1\gt 0$ and ${\rm Re}a_2\gt 0$ . The two shape parameters of this function, in our case, are $a_1=k+k^{\prime }+2\lambda$ and $a_2=2\upsilon +1$ . Thus, considering that the Pochhammer number is given by $(a)_k=\Gamma (a+k)/\Gamma (a)$ , where $a \ne 0,-1,-2,\cdots$ , a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants $N_{nl}$ , as presented in Eq. (48) of the text.
+under the conditions ${\rm Re}a_1\gt 0$ and ${\rm Re}a_2\gt 0$. The two shape parameters of this function, in our case, are $a_1=k+k^{\prime }+2\lambda$ and $a_2=2\upsilon +1$. Thus, considering that the Pochhammer number is given by $(a)_k=\Gamma (a+k)/\Gamma (a)$, where $a \ne 0,-1,-2,\cdots$, a rearrangement of Eq. (A.5) with Eq. (A.8) leads directly to the expression for the normalization constants $N_{nl}$, as presented in Eq. (48) of the text.
 
 ## References
 

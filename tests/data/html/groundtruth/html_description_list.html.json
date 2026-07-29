@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "html_description_list",
   "origin": {
     "mimetype": "text/html",
@@ -685,8 +685,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "HyperText Markup Language - used for",
-      "text": "HyperText Markup Language - used for"
+      "orig": "HyperText Markup Language - used for ",
+      "text": "HyperText Markup Language - used for "
     },
     {
       "self_ref": "#/texts/18",
@@ -697,8 +697,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "structuring",
-      "text": "structuring",
+      "orig": "structuring ",
+      "text": "structuring ",
       "formatting": {
         "bold": false,
         "italic": true,

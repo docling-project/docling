@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "pone.0234687",
   "origin": {
     "mimetype": "application/xml",
@@ -1946,8 +1946,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "equivalents (CO",
-      "text": "equivalents (CO"
+      "orig": " equivalents (CO",
+      "text": " equivalents (CO"
     },
     {
       "self_ref": "#/texts/9",
@@ -2082,8 +2082,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions from enteric fermentation represents around 34% of total emissions from livestock sector, which is the largest source [2]. Increasing proportions of concentrate and digestibility of forages in the diet have been proposed as mitigation strategies [1,5]. In contrast, some life cycle assessment (LCA) studies of dairy systems in temperate regions [8–11] have identified that increasing concentrate proportion may increase carbon (C) footprint due to greater resource use and pollutants from the production of feed compared to forage. Thus, increasing pasture proportion on dairy cattle systems may be an alternative management to mitigate the C footprint.",
-      "text": "emissions from enteric fermentation represents around 34% of total emissions from livestock sector, which is the largest source [2]. Increasing proportions of concentrate and digestibility of forages in the diet have been proposed as mitigation strategies [1,5]. In contrast, some life cycle assessment (LCA) studies of dairy systems in temperate regions [8–11] have identified that increasing concentrate proportion may increase carbon (C) footprint due to greater resource use and pollutants from the production of feed compared to forage. Thus, increasing pasture proportion on dairy cattle systems may be an alternative management to mitigate the C footprint."
+      "orig": " emissions from enteric fermentation represents around 34% of total emissions from livestock sector, which is the largest source [2]. Increasing proportions of concentrate and digestibility of forages in the diet have been proposed as mitigation strategies [1,5]. In contrast, some life cycle assessment (LCA) studies of dairy systems in temperate regions [8–11] have identified that increasing concentrate proportion may increase carbon (C) footprint due to greater resource use and pollutants from the production of feed compared to forage. Thus, increasing pasture proportion on dairy cattle systems may be an alternative management to mitigate the C footprint.",
+      "text": " emissions from enteric fermentation represents around 34% of total emissions from livestock sector, which is the largest source [2]. Increasing proportions of concentrate and digestibility of forages in the diet have been proposed as mitigation strategies [1,5]. In contrast, some life cycle assessment (LCA) studies of dairy systems in temperate regions [8–11] have identified that increasing concentrate proportion may increase carbon (C) footprint due to greater resource use and pollutants from the production of feed compared to forage. Thus, increasing pasture proportion on dairy cattle systems may be an alternative management to mitigate the C footprint."
     },
     {
       "self_ref": "#/texts/18",
@@ -2312,8 +2312,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The individual feed requirements, as well as the milk production responses based on feed strategies were based on data recorded from the herd described above and two experiments performed using lactating cows from the same herd. Due to the variation on herbage production throughout the year, feed requirements were estimated taking into consideration that livestock systems have a calving period in April, which represents the beginning of fall season in the southern Hemisphere. The experiments have shown a 10% reduction in ECM production in dairy cows that received both 75 and 50% of",
-      "text": "The individual feed requirements, as well as the milk production responses based on feed strategies were based on data recorded from the herd described above and two experiments performed using lactating cows from the same herd. Due to the variation on herbage production throughout the year, feed requirements were estimated taking into consideration that livestock systems have a calving period in April, which represents the beginning of fall season in the southern Hemisphere. The experiments have shown a 10% reduction in ECM production in dairy cows that received both 75 and 50% of"
+      "orig": "The individual feed requirements, as well as the milk production responses based on feed strategies were based on data recorded from the herd described above and two experiments performed using lactating cows from the same herd. Due to the variation on herbage production throughout the year, feed requirements were estimated taking into consideration that livestock systems have a calving period in April, which represents the beginning of fall season in the southern Hemisphere. The experiments have shown a 10% reduction in ECM production in dairy cows that received both 75 and 50% of ",
+      "text": "The individual feed requirements, as well as the milk production responses based on feed strategies were based on data recorded from the herd described above and two experiments performed using lactating cows from the same herd. Due to the variation on herbage production throughout the year, feed requirements were estimated taking into consideration that livestock systems have a calving period in April, which represents the beginning of fall season in the southern Hemisphere. The experiments have shown a 10% reduction in ECM production in dairy cows that received both 75 and 50% of "
     },
     {
       "self_ref": "#/texts/32",
@@ -2343,8 +2343,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake with access to grazing a tropical pasture (pearl-millet,",
-      "text": "TMR intake with access to grazing a tropical pasture (pearl-millet,"
+      "orig": " TMR intake with access to grazing a tropical pasture (pearl-millet, ",
+      "text": " TMR intake with access to grazing a tropical pasture (pearl-millet, "
     },
     {
       "self_ref": "#/texts/34",
@@ -2374,8 +2374,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "‘Campeiro’) compared to cows receiving",
-      "text": "‘Campeiro’) compared to cows receiving"
+      "orig": " ‘Campeiro’) compared to cows receiving ",
+      "text": " ‘Campeiro’) compared to cows receiving "
     },
     {
       "self_ref": "#/texts/36",
@@ -2405,8 +2405,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake. Cows grazing on a temperate pasture (ryegrass,",
-      "text": "TMR intake. Cows grazing on a temperate pasture (ryegrass,"
+      "orig": " TMR intake. Cows grazing on a temperate pasture (ryegrass, ",
+      "text": " TMR intake. Cows grazing on a temperate pasture (ryegrass, "
     },
     {
       "self_ref": "#/texts/38",
@@ -2436,8 +2436,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "‘Maximus’) did not need changes to ECM production compared to the",
-      "text": "‘Maximus’) did not need changes to ECM production compared to the"
+      "orig": " ‘Maximus’) did not need changes to ECM production compared to the ",
+      "text": " ‘Maximus’) did not need changes to ECM production compared to the "
     },
     {
       "self_ref": "#/texts/40",
@@ -2467,8 +2467,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake group.",
-      "text": "TMR intake group."
+      "orig": " TMR intake group.",
+      "text": " TMR intake group."
     },
     {
       "self_ref": "#/texts/42",
@@ -2479,8 +2479,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Using experimental data, three scenarios were evaluated during the lactation period:",
-      "text": "Using experimental data, three scenarios were evaluated during the lactation period:"
+      "orig": "Using experimental data, three scenarios were evaluated during the lactation period: ",
+      "text": "Using experimental data, three scenarios were evaluated during the lactation period: "
     },
     {
       "self_ref": "#/texts/43",
@@ -2510,8 +2510,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake, and 75, and 50% of",
-      "text": "TMR intake, and 75, and 50% of"
+      "orig": " TMR intake, and 75, and 50% of ",
+      "text": " TMR intake, and 75, and 50% of "
     },
     {
       "self_ref": "#/texts/45",
@@ -2541,8 +2541,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake with access to grazing either an annual tropical or temperate pasture as a function of month ([26], Civiero et al.,",
-      "text": "TMR intake with access to grazing either an annual tropical or temperate pasture as a function of month ([26], Civiero et al.,"
+      "orig": " TMR intake with access to grazing either an annual tropical or temperate pasture as a function of month ([26], Civiero et al., ",
+      "text": " TMR intake with access to grazing either an annual tropical or temperate pasture as a function of month ([26], Civiero et al., "
     },
     {
       "self_ref": "#/texts/47",
@@ -2694,8 +2694,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and N",
-      "text": "and N"
+      "orig": " and N",
+      "text": " and N"
     },
     {
       "self_ref": "#/texts/57",
@@ -2787,8 +2787,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are 1, 28 and 265 for CO",
-      "text": "are 1, 28 and 265 for CO"
+      "orig": " are 1, 28 and 265 for CO",
+      "text": " are 1, 28 and 265 for CO"
     },
     {
       "self_ref": "#/texts/63",
@@ -2849,8 +2849,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and N",
-      "text": "and N"
+      "orig": " and N",
+      "text": " and N"
     },
     {
       "self_ref": "#/texts/67",
@@ -2932,8 +2932,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The DM intake of each ingredient throughout the entire life of animals during lactation periods was calculated for each scenario: cows receiving only TMR, cows receiving 75% of TMR with annual pastures and cows receiving 50% of TMR with annual pastures (Table 2). In each of other phases of life (calf, heifer, dry cow), animals received the same diet, including a perennial tropical pasture (kikuyu grass,",
-      "text": "The DM intake of each ingredient throughout the entire life of animals during lactation periods was calculated for each scenario: cows receiving only TMR, cows receiving 75% of TMR with annual pastures and cows receiving 50% of TMR with annual pastures (Table 2). In each of other phases of life (calf, heifer, dry cow), animals received the same diet, including a perennial tropical pasture (kikuyu grass,"
+      "orig": "The DM intake of each ingredient throughout the entire life of animals during lactation periods was calculated for each scenario: cows receiving only TMR, cows receiving 75% of TMR with annual pastures and cows receiving 50% of TMR with annual pastures (Table 2). In each of other phases of life (calf, heifer, dry cow), animals received the same diet, including a perennial tropical pasture (kikuyu grass, ",
+      "text": "The DM intake of each ingredient throughout the entire life of animals during lactation periods was calculated for each scenario: cows receiving only TMR, cows receiving 75% of TMR with annual pastures and cows receiving 50% of TMR with annual pastures (Table 2). In each of other phases of life (calf, heifer, dry cow), animals received the same diet, including a perennial tropical pasture (kikuyu grass, "
     },
     {
       "self_ref": "#/texts/72",
@@ -3502,8 +3502,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha",
-      "text": "was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha"
+      "orig": " was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha",
+      "text": " was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha"
     },
     {
       "self_ref": "#/texts/109",
@@ -3533,8 +3533,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(disking) for annual tropical and temperate pastures, respectively [40]. The CO",
-      "text": "(disking) for annual tropical and temperate pastures, respectively [40]. The CO"
+      "orig": " (disking) for annual tropical and temperate pastures, respectively [40]. The CO",
+      "text": " (disking) for annual tropical and temperate pastures, respectively [40]. The CO"
     },
     {
       "self_ref": "#/texts/111",
@@ -3564,8 +3564,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "from fuel combustion was 2.7 kg CO",
-      "text": "from fuel combustion was 2.7 kg CO"
+      "orig": " from fuel combustion was 2.7 kg CO",
+      "text": " from fuel combustion was 2.7 kg CO"
     },
     {
       "self_ref": "#/texts/113",
@@ -3595,8 +3595,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "L",
-      "text": "L"
+      "orig": " L",
+      "text": " L"
     },
     {
       "self_ref": "#/texts/115",
@@ -3626,8 +3626,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42].",
-      "text": "[41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42]."
+      "orig": " [41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42].",
+      "text": " [41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42]."
     },
     {
       "self_ref": "#/texts/117",
@@ -3698,8 +3698,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions from enteric fermentation intensity (g (kg ECM)",
-      "text": "emissions from enteric fermentation intensity (g (kg ECM)"
+      "orig": " emissions from enteric fermentation intensity (g (kg ECM)",
+      "text": " emissions from enteric fermentation intensity (g (kg ECM)"
     },
     {
       "self_ref": "#/texts/122",
@@ -3760,8 +3760,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "yield (g (kg DM intake)",
-      "text": "yield (g (kg DM intake)"
+      "orig": " yield (g (kg DM intake)",
+      "text": " yield (g (kg DM intake)"
     },
     {
       "self_ref": "#/texts/126",
@@ -3822,8 +3822,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "yield was estimated as a function of neutral detergent fiber (NDF) concentration on total DM intake, as proposed by Niu et al. [43], where: CH",
-      "text": "yield was estimated as a function of neutral detergent fiber (NDF) concentration on total DM intake, as proposed by Niu et al. [43], where: CH"
+      "orig": " yield was estimated as a function of neutral detergent fiber (NDF) concentration on total DM intake, as proposed by Niu et al. [43], where: CH",
+      "text": " yield was estimated as a function of neutral detergent fiber (NDF) concentration on total DM intake, as proposed by Niu et al. [43], where: CH"
     },
     {
       "self_ref": "#/texts/130",
@@ -3853,8 +3853,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "yield (g (kg DM intake)",
-      "text": "yield (g (kg DM intake)"
+      "orig": " yield (g (kg DM intake)",
+      "text": " yield (g (kg DM intake)"
     },
     {
       "self_ref": "#/texts/132",
@@ -3950,8 +3950,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emission from manure (kg (kg ECM)",
-      "text": "emission from manure (kg (kg ECM)"
+      "orig": " emission from manure (kg (kg ECM)",
+      "text": " emission from manure (kg (kg ECM)"
     },
     {
       "self_ref": "#/texts/138",
@@ -4012,8 +4012,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emission from manure (kg cow",
-      "text": "emission from manure (kg cow"
+      "orig": " emission from manure (kg cow",
+      "text": " emission from manure (kg cow"
     },
     {
       "self_ref": "#/texts/142",
@@ -4105,8 +4105,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emission from manure was estimated according to IPCC [38], which considered daily volatile solid (VS) excreted (kg DM cow",
-      "text": "emission from manure was estimated according to IPCC [38], which considered daily volatile solid (VS) excreted (kg DM cow"
+      "orig": " emission from manure was estimated according to IPCC [38], which considered daily volatile solid (VS) excreted (kg DM cow",
+      "text": " emission from manure was estimated according to IPCC [38], which considered daily volatile solid (VS) excreted (kg DM cow"
     },
     {
       "self_ref": "#/texts/148",
@@ -4532,8 +4532,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "stored in a pit below animal confinements, and 0.02 kg N",
-      "text": "stored in a pit below animal confinements, and 0.02 kg N"
+      "orig": " stored in a pit below animal confinements, and 0.02 kg N",
+      "text": " stored in a pit below animal confinements, and 0.02 kg N"
     },
     {
       "self_ref": "#/texts/176",
@@ -4594,8 +4594,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "deposited on pasture [38]. The indirect N",
-      "text": "deposited on pasture [38]. The indirect N"
+      "orig": " deposited on pasture [38]. The indirect N",
+      "text": " deposited on pasture [38]. The indirect N"
     },
     {
       "self_ref": "#/texts/180",
@@ -4919,8 +4919,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "× 10",
-      "text": "× 10"
+      "orig": " × 10",
+      "text": " × 10"
     },
     {
       "self_ref": "#/texts/201",
@@ -5012,8 +5012,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[42].",
-      "text": "[42]."
+      "orig": " [42].",
+      "text": " [42]."
     },
     {
       "self_ref": "#/texts/207",
@@ -5055,8 +5055,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "kWh",
-      "text": "kWh"
+      "orig": " kWh",
+      "text": " kWh"
     },
     {
       "self_ref": "#/texts/210",
@@ -5117,8 +5117,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[47]. The annual electricity use for lighting was 75 kWh cow",
-      "text": "[47]. The annual electricity use for lighting was 75 kWh cow"
+      "orig": " [47]. The annual electricity use for lighting was 75 kWh cow",
+      "text": " [47]. The annual electricity use for lighting was 75 kWh cow"
     },
     {
       "self_ref": "#/texts/214",
@@ -5208,8 +5208,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "= 1–6.04 × BMR, where",
-      "text": "= 1–6.04 × BMR, where"
+      "orig": " = 1–6.04 × BMR, where",
+      "text": " = 1–6.04 × BMR, where"
     },
     {
       "self_ref": "#/texts/220",
@@ -5239,8 +5239,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "AR",
-      "text": "AR"
+      "orig": " AR",
+      "text": " AR"
     },
     {
       "self_ref": "#/texts/222",
@@ -5270,8 +5270,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the allocation ratio for milk and BMR is cow BW at the time of slaughter (kg) + calf BW sold (kg) divided by the total ECM produced during cow`s entire life (kg). The AR",
-      "text": "is the allocation ratio for milk and BMR is cow BW at the time of slaughter (kg) + calf BW sold (kg) divided by the total ECM produced during cow`s entire life (kg). The AR"
+      "orig": " is the allocation ratio for milk and BMR is cow BW at the time of slaughter (kg) + calf BW sold (kg) divided by the total ECM produced during cow`s entire life (kg). The AR",
+      "text": " is the allocation ratio for milk and BMR is cow BW at the time of slaughter (kg) + calf BW sold (kg) divided by the total ECM produced during cow`s entire life (kg). The AR"
     },
     {
       "self_ref": "#/texts/224",
@@ -5301,8 +5301,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "were 0.854 and 0.849 for TMR and TMR with both pasture scenarios, respectively. The AR",
-      "text": "were 0.854 and 0.849 for TMR and TMR with both pasture scenarios, respectively. The AR"
+      "orig": " were 0.854 and 0.849 for TMR and TMR with both pasture scenarios, respectively. The AR",
+      "text": " were 0.854 and 0.849 for TMR and TMR with both pasture scenarios, respectively. The AR"
     },
     {
       "self_ref": "#/texts/226",
@@ -5332,8 +5332,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "was applied to the whole emissions, except for the electricity consumed for milking (milking parlor) and refrigerant loss, which was directly assigned to milk production.",
-      "text": "was applied to the whole emissions, except for the electricity consumed for milking (milking parlor) and refrigerant loss, which was directly assigned to milk production."
+      "orig": " was applied to the whole emissions, except for the electricity consumed for milking (milking parlor) and refrigerant loss, which was directly assigned to milk production.",
+      "text": " was applied to the whole emissions, except for the electricity consumed for milking (milking parlor) and refrigerant loss, which was directly assigned to milk production."
     },
     {
       "self_ref": "#/texts/228",
@@ -5511,8 +5511,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(Fig 2C and 2D) in scenarios that included pastures compared to",
-      "text": "(Fig 2C and 2D) in scenarios that included pastures compared to"
+      "orig": " (Fig 2C and 2D) in scenarios that included pastures compared to ",
+      "text": " (Fig 2C and 2D) in scenarios that included pastures compared to "
     },
     {
       "self_ref": "#/texts/238",
@@ -5542,8 +5542,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake. Due to differences in emission factors, the overall GHG emission values ranged from 0.92 to 1.04 kg CO",
-      "text": "TMR intake. Due to differences in emission factors, the overall GHG emission values ranged from 0.92 to 1.04 kg CO"
+      "orig": " TMR intake. Due to differences in emission factors, the overall GHG emission values ranged from 0.92 to 1.04 kg CO",
+      "text": " TMR intake. Due to differences in emission factors, the overall GHG emission values ranged from 0.92 to 1.04 kg CO"
     },
     {
       "self_ref": "#/texts/240",
@@ -5604,8 +5604,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO",
-      "text": "for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO"
+      "orig": " for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO",
+      "text": " for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO"
     },
     {
       "self_ref": "#/texts/244",
@@ -5666,8 +5666,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for cows with access to pasture. Using IPCC emission factors [38], manure emissions increased as TMR intake went down (Fig 2A and 2B). However, using local emission factors for estimating N",
-      "text": "for cows with access to pasture. Using IPCC emission factors [38], manure emissions increased as TMR intake went down (Fig 2A and 2B). However, using local emission factors for estimating N"
+      "orig": " for cows with access to pasture. Using IPCC emission factors [38], manure emissions increased as TMR intake went down (Fig 2A and 2B). However, using local emission factors for estimating N",
+      "text": " for cows with access to pasture. Using IPCC emission factors [38], manure emissions increased as TMR intake went down (Fig 2A and 2B). However, using local emission factors for estimating N"
     },
     {
       "self_ref": "#/texts/248",
@@ -6124,8 +6124,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[8,55]. Thus, even though differences between studies may be partially explained by various assumptions (e.g., emission factors, co-product allocation, methane emissions estimation, sequestered CO",
-      "text": "[8,55]. Thus, even though differences between studies may be partially explained by various assumptions (e.g., emission factors, co-product allocation, methane emissions estimation, sequestered CO"
+      "orig": " [8,55]. Thus, even though differences between studies may be partially explained by various assumptions (e.g., emission factors, co-product allocation, methane emissions estimation, sequestered CO",
+      "text": " [8,55]. Thus, even though differences between studies may be partially explained by various assumptions (e.g., emission factors, co-product allocation, methane emissions estimation, sequestered CO"
     },
     {
       "self_ref": "#/texts/278",
@@ -6198,8 +6198,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO",
-      "text": "(5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO"
+      "orig": " (5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO",
+      "text": " (5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO"
     },
     {
       "self_ref": "#/texts/283",
@@ -6334,8 +6334,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "O emissions from urine and dung and for feed production (Table 4), may also be partially attributed to the small negative effect of pasture on ECM production. Nevertheless, local emission factors for urine and dung had a great impact on scenarios including pastures compared to",
-      "text": "O emissions from urine and dung and for feed production (Table 4), may also be partially attributed to the small negative effect of pasture on ECM production. Nevertheless, local emission factors for urine and dung had a great impact on scenarios including pastures compared to"
+      "orig": "O emissions from urine and dung and for feed production (Table 4), may also be partially attributed to the small negative effect of pasture on ECM production. Nevertheless, local emission factors for urine and dung had a great impact on scenarios including pastures compared to ",
+      "text": "O emissions from urine and dung and for feed production (Table 4), may also be partially attributed to the small negative effect of pasture on ECM production. Nevertheless, local emission factors for urine and dung had a great impact on scenarios including pastures compared to "
     },
     {
       "self_ref": "#/texts/292",
@@ -6365,8 +6365,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N",
-      "text": "TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N"
+      "orig": " TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N",
+      "text": " TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N"
     },
     {
       "self_ref": "#/texts/294",
@@ -6427,8 +6427,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for urine and dung from grazing animals, experimental evidence shows that it may be up to five times lower, averaging 0.004 kg N",
-      "text": "for urine and dung from grazing animals, experimental evidence shows that it may be up to five times lower, averaging 0.004 kg N"
+      "orig": " for urine and dung from grazing animals, experimental evidence shows that it may be up to five times lower, averaging 0.004 kg N",
+      "text": " for urine and dung from grazing animals, experimental evidence shows that it may be up to five times lower, averaging 0.004 kg N"
     },
     {
       "self_ref": "#/texts/298",
@@ -6489,8 +6489,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[37].",
-      "text": "[37]."
+      "orig": " [37].",
+      "text": " [37]."
     },
     {
       "self_ref": "#/texts/302",
@@ -6555,8 +6555,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "intensity was similar between different scenarios (Fig 2), showing the greatest sensitivity index, with values ranging from 0.53 to 0.62, which indicate that for a 10% change in this source, the C footprint may change between 5.3 and 6.2% (Fig 3). The large effect of enteric CH",
-      "text": "intensity was similar between different scenarios (Fig 2), showing the greatest sensitivity index, with values ranging from 0.53 to 0.62, which indicate that for a 10% change in this source, the C footprint may change between 5.3 and 6.2% (Fig 3). The large effect of enteric CH"
+      "orig": " intensity was similar between different scenarios (Fig 2), showing the greatest sensitivity index, with values ranging from 0.53 to 0.62, which indicate that for a 10% change in this source, the C footprint may change between 5.3 and 6.2% (Fig 3). The large effect of enteric CH",
+      "text": " intensity was similar between different scenarios (Fig 2), showing the greatest sensitivity index, with values ranging from 0.53 to 0.62, which indicate that for a 10% change in this source, the C footprint may change between 5.3 and 6.2% (Fig 3). The large effect of enteric CH"
     },
     {
       "self_ref": "#/texts/306",
@@ -6586,8 +6586,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions on the whole C footprint was expected, because the impact of enteric CH",
-      "text": "emissions on the whole C footprint was expected, because the impact of enteric CH"
+      "orig": " emissions on the whole C footprint was expected, because the impact of enteric CH",
+      "text": " emissions on the whole C footprint was expected, because the impact of enteric CH"
     },
     {
       "self_ref": "#/texts/308",
@@ -6617,8 +6617,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "on GHG emissions of milk production in different dairy systems has been estimated to range from 44 to 60% of the total CO",
-      "text": "on GHG emissions of milk production in different dairy systems has been estimated to range from 44 to 60% of the total CO"
+      "orig": " on GHG emissions of milk production in different dairy systems has been estimated to range from 44 to 60% of the total CO",
+      "text": " on GHG emissions of milk production in different dairy systems has been estimated to range from 44 to 60% of the total CO"
     },
     {
       "self_ref": "#/texts/310",
@@ -6710,8 +6710,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[59], which did not happen in this study.",
-      "text": "[59], which did not happen in this study."
+      "orig": " [59], which did not happen in this study.",
+      "text": " [59], which did not happen in this study."
     },
     {
       "self_ref": "#/texts/316",
@@ -6765,8 +6765,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions in different systems can be explained by the narrow range of NDF content in diets (<4% difference). This non-difference is due to the lower NDF content of annual temperate pastures (495 g (kg DM)",
-      "text": "emissions in different systems can be explained by the narrow range of NDF content in diets (<4% difference). This non-difference is due to the lower NDF content of annual temperate pastures (495 g (kg DM)"
+      "orig": " emissions in different systems can be explained by the narrow range of NDF content in diets (<4% difference). This non-difference is due to the lower NDF content of annual temperate pastures (495 g (kg DM)",
+      "text": " emissions in different systems can be explained by the narrow range of NDF content in diets (<4% difference). This non-difference is due to the lower NDF content of annual temperate pastures (495 g (kg DM)"
     },
     {
       "self_ref": "#/texts/320",
@@ -6858,8 +6858,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions may decrease with inclusion of temperate pastures in cows receiving corn silage and soybean meal [60] or increase enteric CH",
-      "text": "emissions may decrease with inclusion of temperate pastures in cows receiving corn silage and soybean meal [60] or increase enteric CH"
+      "orig": " emissions may decrease with inclusion of temperate pastures in cows receiving corn silage and soybean meal [60] or increase enteric CH",
+      "text": " emissions may decrease with inclusion of temperate pastures in cows receiving corn silage and soybean meal [60] or increase enteric CH"
     },
     {
       "self_ref": "#/texts/326",
@@ -6889,8 +6889,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions when dairy cows grazing a temperate pasture was supplemented with corn silage [61]. Additionally, enteric CH",
-      "text": "emissions when dairy cows grazing a temperate pasture was supplemented with corn silage [61]. Additionally, enteric CH"
+      "orig": " emissions when dairy cows grazing a temperate pasture was supplemented with corn silage [61]. Additionally, enteric CH",
+      "text": " emissions when dairy cows grazing a temperate pasture was supplemented with corn silage [61]. Additionally, enteric CH"
     },
     {
       "self_ref": "#/texts/328",
@@ -6920,8 +6920,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions did not differ between dairy cows receiving TMR exclusively or grazing a tropical pasture in the same scenarios as in this study [26].",
-      "text": "emissions did not differ between dairy cows receiving TMR exclusively or grazing a tropical pasture in the same scenarios as in this study [26]."
+      "orig": " emissions did not differ between dairy cows receiving TMR exclusively or grazing a tropical pasture in the same scenarios as in this study [26].",
+      "text": " emissions did not differ between dairy cows receiving TMR exclusively or grazing a tropical pasture in the same scenarios as in this study [26]."
     },
     {
       "self_ref": "#/texts/330",
@@ -7020,8 +7020,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions from manure decreased 0.07 kg CO",
-      "text": "emissions from manure decreased 0.07 kg CO"
+      "orig": " emissions from manure decreased 0.07 kg CO",
+      "text": " emissions from manure decreased 0.07 kg CO"
     },
     {
       "self_ref": "#/texts/336",
@@ -7175,8 +7175,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", as TMR intake was restricted to 50%",
-      "text": ", as TMR intake was restricted to 50%"
+      "orig": ", as TMR intake was restricted to 50% ",
+      "text": ", as TMR intake was restricted to 50% "
     },
     {
       "self_ref": "#/texts/346",
@@ -7206,8 +7206,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(Fig 4A). Emissions for pastures increased by 0.06 kg CO",
-      "text": "(Fig 4A). Emissions for pastures increased by 0.06 kg CO"
+      "orig": " (Fig 4A). Emissions for pastures increased by 0.06 kg CO",
+      "text": " (Fig 4A). Emissions for pastures increased by 0.06 kg CO"
     },
     {
       "self_ref": "#/texts/348",
@@ -7454,8 +7454,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "on TMR system to 198 g (kg DM)",
-      "text": "on TMR system to 198 g (kg DM)"
+      "orig": " on TMR system to 198 g (kg DM)",
+      "text": " on TMR system to 198 g (kg DM)"
     },
     {
       "self_ref": "#/texts/364",
@@ -7485,8 +7485,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "on 50% TMR with pasture. Additionally, greater urine N excretion is expected with greater use of pasture. This occurs because protein utilization in pastures is inefficient, as the protein in fresh forages is highly degradable in the rumen and may not be captured by microbes [65].",
-      "text": "on 50% TMR with pasture. Additionally, greater urine N excretion is expected with greater use of pasture. This occurs because protein utilization in pastures is inefficient, as the protein in fresh forages is highly degradable in the rumen and may not be captured by microbes [65]."
+      "orig": " on 50% TMR with pasture. Additionally, greater urine N excretion is expected with greater use of pasture. This occurs because protein utilization in pastures is inefficient, as the protein in fresh forages is highly degradable in the rumen and may not be captured by microbes [65].",
+      "text": " on 50% TMR with pasture. Additionally, greater urine N excretion is expected with greater use of pasture. This occurs because protein utilization in pastures is inefficient, as the protein in fresh forages is highly degradable in the rumen and may not be captured by microbes [65]."
     },
     {
       "self_ref": "#/texts/366",
@@ -7571,8 +7571,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emissions from stocked manure, when pastures were included on diets, did not offset by increases in N",
-      "text": "emissions from stocked manure, when pastures were included on diets, did not offset by increases in N"
+      "orig": " emissions from stocked manure, when pastures were included on diets, did not offset by increases in N",
+      "text": " emissions from stocked manure, when pastures were included on diets, did not offset by increases in N"
     },
     {
       "self_ref": "#/texts/372",
@@ -7751,8 +7751,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[46]) is much lower than that in a LCA study conducted in US (0.73 kg CO",
-      "text": "[46]) is much lower than that in a LCA study conducted in US (0.73 kg CO"
+      "orig": " [46]) is much lower than that in a LCA study conducted in US (0.73 kg CO",
+      "text": " [46]) is much lower than that in a LCA study conducted in US (0.73 kg CO"
     },
     {
       "self_ref": "#/texts/384",
@@ -7813,8 +7813,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[42]). This apparent discrepancy is explained because in 2016, almost 66% of the electricity generated in Brazil was from hydropower, which has an emission factor of 0.074 kg CO",
-      "text": "[42]). This apparent discrepancy is explained because in 2016, almost 66% of the electricity generated in Brazil was from hydropower, which has an emission factor of 0.074 kg CO"
+      "orig": " [42]). This apparent discrepancy is explained because in 2016, almost 66% of the electricity generated in Brazil was from hydropower, which has an emission factor of 0.074 kg CO",
+      "text": " [42]). This apparent discrepancy is explained because in 2016, almost 66% of the electricity generated in Brazil was from hydropower, which has an emission factor of 0.074 kg CO"
     },
     {
       "self_ref": "#/texts/388",
@@ -7875,8 +7875,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "against 0.382 and 0.926 kg CO",
-      "text": "against 0.382 and 0.926 kg CO"
+      "orig": " against 0.382 and 0.926 kg CO",
+      "text": " against 0.382 and 0.926 kg CO"
     },
     {
       "self_ref": "#/texts/392",
@@ -7937,8 +7937,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "produced by natural gas and hard coal, respectively [46].",
-      "text": "produced by natural gas and hard coal, respectively [46]."
+      "orig": " produced by natural gas and hard coal, respectively [46].",
+      "text": " produced by natural gas and hard coal, respectively [46]."
     },
     {
       "self_ref": "#/texts/396",
@@ -8028,8 +8028,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emitted from lime and urea application was estimated from IPCC default values, which may not represent emissions in subtropical conditions. This LCA may be improved by reducing the uncertainty of factors for estimating emissions from excreta and feed production, including the C sequestration or emissions as a function of soil management.",
-      "text": "emitted from lime and urea application was estimated from IPCC default values, which may not represent emissions in subtropical conditions. This LCA may be improved by reducing the uncertainty of factors for estimating emissions from excreta and feed production, including the C sequestration or emissions as a function of soil management."
+      "orig": " emitted from lime and urea application was estimated from IPCC default values, which may not represent emissions in subtropical conditions. This LCA may be improved by reducing the uncertainty of factors for estimating emissions from excreta and feed production, including the C sequestration or emissions as a function of soil management.",
+      "text": " emitted from lime and urea application was estimated from IPCC default values, which may not represent emissions in subtropical conditions. This LCA may be improved by reducing the uncertainty of factors for estimating emissions from excreta and feed production, including the C sequestration or emissions as a function of soil management."
     },
     {
       "self_ref": "#/texts/402",
@@ -8246,8 +8246,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in subclinical ketosis [71] and by 0.02 kg CO",
-      "text": "in subclinical ketosis [71] and by 0.02 kg CO"
+      "orig": " in subclinical ketosis [71] and by 0.02 kg CO",
+      "text": " in subclinical ketosis [71] and by 0.02 kg CO"
     },
     {
       "self_ref": "#/texts/416",
@@ -8308,8 +8308,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in case of foot lesions [72].",
-      "text": "in case of foot lesions [72]."
+      "orig": " in case of foot lesions [72].",
+      "text": " in case of foot lesions [72]."
     },
     {
       "self_ref": "#/texts/420",
@@ -8351,8 +8351,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha",
-      "text": "[75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha"
+      "orig": " [75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha",
+      "text": " [75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha"
     },
     {
       "self_ref": "#/texts/423",
@@ -8382,8 +8382,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "would be sequestered, further reducing the C footprint by 0.015 and 0.025 kg CO",
-      "text": "would be sequestered, further reducing the C footprint by 0.015 and 0.025 kg CO"
+      "orig": " would be sequestered, further reducing the C footprint by 0.015 and 0.025 kg CO",
+      "text": " would be sequestered, further reducing the C footprint by 0.015 and 0.025 kg CO"
     },
     {
       "self_ref": "#/texts/425",
@@ -8444,8 +8444,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for the scenarios using 75 and 50% TMR, respectively. Eliminating tillage, the reduction on total GHG emissions would be 0.03 and 0.05 kg CO",
-      "text": "for the scenarios using 75 and 50% TMR, respectively. Eliminating tillage, the reduction on total GHG emissions would be 0.03 and 0.05 kg CO"
+      "orig": " for the scenarios using 75 and 50% TMR, respectively. Eliminating tillage, the reduction on total GHG emissions would be 0.03 and 0.05 kg CO",
+      "text": " for the scenarios using 75 and 50% TMR, respectively. Eliminating tillage, the reduction on total GHG emissions would be 0.03 and 0.05 kg CO"
     },
     {
       "self_ref": "#/texts/429",
@@ -8506,8 +8506,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for 75 and 50% TMR, respectively. However, this approach may be controversial because lands which have been consistently managed for decades have approached steady state C storage, so that net exchange of CO",
-      "text": "for 75 and 50% TMR, respectively. However, this approach may be controversial because lands which have been consistently managed for decades have approached steady state C storage, so that net exchange of CO"
+      "orig": " for 75 and 50% TMR, respectively. However, this approach may be controversial because lands which have been consistently managed for decades have approached steady state C storage, so that net exchange of CO",
+      "text": " for 75 and 50% TMR, respectively. However, this approach may be controversial because lands which have been consistently managed for decades have approached steady state C storage, so that net exchange of CO"
     },
     {
       "self_ref": "#/texts/433",
@@ -8537,8 +8537,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "would be negligible [76].",
-      "text": "would be negligible [76]."
+      "orig": " would be negligible [76].",
+      "text": " would be negligible [76]."
     },
     {
       "self_ref": "#/texts/435",
@@ -8628,8 +8628,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "intensity was the largest source of CO",
-      "text": "intensity was the largest source of CO"
+      "orig": " intensity was the largest source of CO",
+      "text": " intensity was the largest source of CO"
     },
     {
       "self_ref": "#/texts/441",

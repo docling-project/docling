@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "csv-too-many-columns",
   "origin": {
     "mimetype": "text/csv",
@@ -319,6 +319,7 @@
         ],
         "num_rows": 5,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
