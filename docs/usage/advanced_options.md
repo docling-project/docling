@@ -25,7 +25,13 @@ To prefetch EasyOCR recognition models for specific languages, repeat
 `--easyocr-lang` with the same language codes used by `EasyOcrOptions.lang`:
 
 ```sh
-$ docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
+docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
+```
+
+To download models using a HuggingFace token, you can either set the `HF_TOKEN` environment variable or pass the `--hf-token` option:
+
+```sh
+docling-tools models download --hf-token YOUR_HF_TOKEN
 ```
 
 To download models using a Hugging Face token, you can either set the `HF_TOKEN` environment variable or pass the `--hf-token` option:
@@ -39,14 +45,14 @@ Alternatively, models can be programmatically downloaded using `docling.utils.mo
 Also, you can use `download-hf-repo` parameter to download arbitrary models from HuggingFace by specifying repo id:
 
 ```sh
-$ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
+docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
 Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
 ```
 
 To download with authentication, add `--hf-token`:
 
 ```sh
-$ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview --hf-token YOUR_HF_TOKEN
+docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview --hf-token YOUR_HF_TOKEN
 ```
 
 **Step 2: Use the prefetched models**
@@ -109,7 +115,6 @@ The options in this list require the explicit `enable_remote_services=True` when
 
 - `PictureDescriptionApiOptions`: Using vision models via API calls.
 
-
 ## Adjust pipeline features
 
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
@@ -119,7 +124,6 @@ one can adjust the conversion pipeline and features.
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.
 This can improve output quality if you find that multiple columns in extracted tables are erroneously merged into one.
-
 
 ```python
 from docling.datamodel.base_models import InputFormat
@@ -152,7 +156,6 @@ doc_converter = DocumentConverter(
     }
 )
 ```
-
 
 ## Impose limits on the document size
 

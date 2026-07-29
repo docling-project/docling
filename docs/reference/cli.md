@@ -224,4 +224,4 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-| `--hf-token` | `string` OR `flag` OR `None` | `None` |HuggingFace token to authenticate and accelerate model downloads. If `HF_TOKEN` environment variable is set, it will automatically use it. If a string is used, it will take precedence over `HF_TOKEN` (if set). |
+| `--hf-token` | `string` OR `None` | `None` |HuggingFace token to authenticate and accelerate model downloads. If `HF_TOKEN` environment variable is set, it will automatically use it. If a string is used, it will take precedence over `HF_TOKEN` (if set). |
