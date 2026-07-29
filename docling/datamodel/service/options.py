@@ -1070,26 +1070,6 @@ class ConvertDocumentsOptions(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def sync_pdf_heading_hierarchy_options(self) -> Self:
-        """Drive the nested `enabled` flag from the top-level toggle.
-
-        `do_pdf_heading_hierarchy` is the switch, consistent with the other `do_*`
-        options, while `pdf_heading_hierarchy_options` only carries the fine-tuning.
-        Deriving `enabled` here keeps the two from ever disagreeing, and lets the
-        nested options be sent without repeating the toggle.
-        """
-        if self.pdf_heading_hierarchy_options.enabled != self.do_pdf_heading_hierarchy:
-            object.__setattr__(
-                self,
-                "pdf_heading_hierarchy_options",
-                self.pdf_heading_hierarchy_options.model_copy(
-                    update={"enabled": self.do_pdf_heading_hierarchy}
-                ),
-            )
-
-        return self
-
-    @model_validator(mode="after")
     def validate_ocr_options(self) -> Self:
         """Handle deprecated ocr_engine and sync to ocr_preset."""
         # If ocr_engine is explicitly set (not default), sync to ocr_preset
