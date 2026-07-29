@@ -168,7 +168,7 @@ depends_on = [
 [[modules]]
 path = "docling.models.utils"
 layer = "foundation"
-depends_on = []
+depends_on = ["docling.exceptions"]
 
 [[modules]]
 path = "docling.utils"
