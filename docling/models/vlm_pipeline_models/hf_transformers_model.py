@@ -10,7 +10,6 @@ from typing import Any, Optional, Union
 import numpy as np
 from packaging import version
 from PIL.Image import Image
-from docling.exceptions import DoclingModelDownloadError
 from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
 
 from docling.datamodel.accelerator_options import (
@@ -23,6 +22,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import (

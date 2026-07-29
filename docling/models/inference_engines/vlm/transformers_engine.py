@@ -8,7 +8,6 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
-from docling.exceptions import DoclingModelDownloadError
 import torch
 from packaging import version
 from PIL.Image import Image
@@ -30,6 +29,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,

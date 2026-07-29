@@ -6,7 +6,6 @@ from itertools import groupby
 from pathlib import Path
 from typing import Any, ClassVar, Literal, Optional, cast
 
-from docling.exceptions import DoclingModelDownloadError
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
 from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -15,6 +14,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy
-from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
@@ -22,6 +21,7 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

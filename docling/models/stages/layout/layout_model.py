@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
-from docling.exceptions import DoclingModelDownloadError
 from docling_core.types.doc import BoundingBox, DocItemLabel
 from PIL import Image
 
@@ -15,6 +14,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

@@ -1,8 +1,8 @@
-from docling.exceptions import DoclingModelDownloadError
 import pytest
 
-from docling.models.vlm_pipeline_models.vllm_model import VllmVlmModel, InlineVlmOptions
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
+from docling.models.vlm_pipeline_models.vllm_model import InlineVlmOptions, VllmVlmModel
 
 
 def test_vllm_model_download_failure(monkeypatch, caplog):

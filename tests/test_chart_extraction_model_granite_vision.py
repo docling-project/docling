@@ -1,12 +1,12 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
     ChartExtractionModelGraniteVisionV4,
     ChartExtractionModelOptions,
 )
-from docling.datamodel.accelerator_options import AcceleratorOptions
 
 
 def test_chart_extraction_model_granite_vision_download_failure(monkeypatch, caplog):

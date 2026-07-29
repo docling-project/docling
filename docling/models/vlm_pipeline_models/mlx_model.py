@@ -8,7 +8,6 @@ from typing import Optional, Union
 
 import numpy as np
 from PIL.Image import Image
-from docling.exceptions import DoclingModelDownloadError
 from transformers import StoppingCriteria
 
 from docling.datamodel.accelerator_options import (
@@ -22,6 +21,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import (

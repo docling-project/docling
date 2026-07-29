@@ -1,11 +1,12 @@
 import logging
 from pathlib import Path
 from typing import Optional
-from huggingface_hub import snapshot_download
-from huggingface_hub.utils import disable_progress_bars
-from huggingface_hub.errors import HfHubHTTPError
-from docling.exceptions import DoclingModelDownloadError
 
+from huggingface_hub import snapshot_download
+from huggingface_hub.errors import HfHubHTTPError
+from huggingface_hub.utils import disable_progress_bars
+
+from docling.exceptions import DoclingModelDownloadError
 
 _log = logging.getLogger(__name__)
 

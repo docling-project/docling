@@ -1,12 +1,12 @@
-from docling.exceptions import DoclingModelDownloadError
-from docling.models import inference_engines
 import pytest
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
+from docling.models import inference_engines
 from docling.models.vlm_pipeline_models.mlx_model import (
     HuggingFaceMlxModel,
     InlineVlmOptions,
 )
-from docling.datamodel.accelerator_options import AcceleratorOptions
 
 
 def test_mlx_model_download_failure(monkeypatch, caplog):

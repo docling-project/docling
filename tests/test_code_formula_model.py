@@ -1,11 +1,11 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.code_formula.code_formula_model import (
     CodeFormulaModel,
     CodeFormulaModelOptions,
 )
-from docling.datamodel.accelerator_options import AcceleratorOptions
 
 
 def test_table_structure_model_download_failure(monkeypatch, caplog):
@@ -34,4 +34,3 @@ def test_table_structure_model_download_failure(monkeypatch, caplog):
         assert any(
             "failed to download" in record.message.lower() for record in caplog.records
         ), "Expected a warning/error about the download failure in the logs."
-

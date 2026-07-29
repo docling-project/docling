@@ -1,11 +1,11 @@
 import pytest
-from docling.exceptions import DoclingModelDownloadError
 
-from docling.models.extraction.nuextract_transformers_model import (
-    NuExtractTransformersModel,
-    InlineVlmOptions,
-)
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.exceptions import DoclingModelDownloadError
+from docling.models.extraction.nuextract_transformers_model import (
+    InlineVlmOptions,
+    NuExtractTransformersModel,
+)
 
 
 def test_nuextract_transformers_model_download_failure(monkeypatch, caplog):

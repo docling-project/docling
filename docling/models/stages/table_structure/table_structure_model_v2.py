@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy
-from docling.exceptions import DoclingModelDownloadError
 import torch
 import torchvision.transforms as T  # type: ignore[import-untyped]
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -20,6 +19,7 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device

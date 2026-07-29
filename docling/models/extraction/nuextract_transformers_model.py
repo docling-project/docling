@@ -7,7 +7,6 @@ from typing import Any, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
-from docling.exceptions import DoclingModelDownloadError
 from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
 
 from docling.datamodel.accelerator_options import (
@@ -15,6 +14,7 @@ from docling.datamodel.accelerator_options import (
 )
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmModel
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
