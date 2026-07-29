@@ -33,13 +33,11 @@ class AcceleratorDeviceNotAvailableError(BaseError):
 class DoclingError(Exception):
     """Base exception for all Docling-related errors."""
 
-    pass
-
 
 class DoclingModelDownloadError(DoclingError):
     """Raised when download a model fails (e.g. connection issues, invalid token)."""
 
-    def __init__(self, message: str, original_exception: Exception = None):
+    def __init__(self, message: str, original_exception: Exception | None = None):
         super().__init__(message)
         self.original_exception = original_exception
 
