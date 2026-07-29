@@ -383,6 +383,7 @@ class ApiImageStreamingRequestResult:
     text: str
     num_tokens: int | None
     usage: Any | None = None
+    logprobs: Any | None = None
 
 
 class ContainerElement(
