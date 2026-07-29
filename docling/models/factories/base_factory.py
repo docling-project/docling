@@ -118,30 +118,33 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             plugin_name,
             allow_external_plugins=allow_external_plugins,
         ):
-            # Plugin hook names are the documented third-party interface.
-            hook = getattr(plugin.module, self.plugin_attr_name, None)
-
-            if hook is None:
-                continue
-            if not callable(hook):
-                raise self._configuration_error(
-                    plugin.name,
-                    f"the {self.plugin_attr_name!r} hook must be callable",
-                )
-
-            logger.info("Loading plugin %r", plugin.name)
             try:
-                config = hook()
-            except Exception as exc:
-                raise PluginHookError(
-                    f"Plugin {plugin.name!r} failed while running its "
-                    f"{self.plugin_attr_name!r} hook: {exc}"
-                ) from exc
-            self.process_plugin(
-                config,
-                plugin.name,
-                plugin.module_name,
-            )
+                # Plugin hook names are the documented third-party interface.
+                hook = getattr(plugin.module, self.plugin_attr_name, None)
+
+                if hook is None:
+                    continue
+                if not callable(hook):
+                    raise self._configuration_error(
+                        plugin.name,
+                        f"the {self.plugin_attr_name!r} hook must be callable",
+                    )
+
+                logger.info("Loading plugin %r", plugin.name)
+                try:
+                    config = hook()
+                except Exception as exc:
+                    raise PluginHookError(
+                        f"Plugin {plugin.name!r} failed while running its "
+                        f"{self.plugin_attr_name!r} hook: {exc}"
+                    ) from exc
+                self.process_plugin(
+                    config,
+                    plugin.name,
+                    plugin.module_name,
+                )
+            except PluginConfigurationError as exc:
+                logger.warning("%s Skipping this plugin.", exc)
 
     def process_plugin(
         self,

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from dataclasses import dataclass
 from importlib import metadata
@@ -308,15 +309,22 @@ def test_plugin_import_failure_identifies_the_entry_point(
     assert exc_info.value.__cause__ is import_error
 
 
-def test_malformed_plugin_configuration_identifies_the_contract(
+def test_malformed_plugin_configuration_warns_and_skips_plugin(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     plugin_module = ModuleType("malformed_docling_plugin")
+    valid_plugin_module = ModuleType("valid_docling_plugin")
 
     def ocr_engines() -> object:
         return {"ocr_engines": ["not-a-model-class"]}
 
     setattr(plugin_module, "ocr_engines", ocr_engines)
+    setattr(
+        valid_plugin_module,
+        "ocr_engines",
+        lambda: {"ocr_engines": [_FirstModel]},
+    )
     distribution = _FakeDistribution(
         entry_points=(
             _FakeEntryPoint(
@@ -324,19 +332,57 @@ def test_malformed_plugin_configuration_identifies_the_contract(
                 module=plugin_module.__name__,
                 loader=lambda: plugin_module,
             ),
+            _FakeEntryPoint(
+                name="valid-plugin",
+                module=valid_plugin_module.__name__,
+                loader=lambda: valid_plugin_module,
+            ),
+        )
+    )
+    monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
+    factory = BaseFactory[_PluginModelBase]("ocr_engines")
+
+    with caplog.at_level(logging.WARNING):
+        factory.load_from_plugins(allow_external_plugins=True)
+
+    assert factory.registered_kind == ["shared-kind"]
+    assert (
+        "Plugin 'malformed-plugin' has an invalid 'ocr_engines' contract"
+    ) in caplog.text
+    assert "Skipping this plugin." in caplog.text
+
+
+def test_noncallable_plugin_hook_warns_and_skips_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    plugin_module = ModuleType("noncallable_hook_docling_plugin")
+    setattr(plugin_module, "ocr_engines", "not-callable")
+    distribution = _FakeDistribution(
+        entry_points=(
+            _FakeEntryPoint(
+                name="noncallable-hook-plugin",
+                module=plugin_module.__name__,
+                loader=lambda: plugin_module,
+            ),
         )
     )
     monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
 
-    with pytest.raises(
-        PluginConfigurationError,
-        match=r"malformed-plugin.*ocr_engines.*model class",
-    ):
-        get_ocr_factory(allow_external_plugins=True)
+    with caplog.at_level(logging.WARNING):
+        factory = get_ocr_factory(allow_external_plugins=True)
+
+    assert factory.registered_kind == []
+    assert (
+        "Plugin 'noncallable-hook-plugin' has an invalid 'ocr_engines' contract: the "
+        "'ocr_engines' hook must be callable"
+    ) in caplog.text
+    assert "Skipping this plugin." in caplog.text
 
 
-def test_plugin_model_kinds_must_be_unique(
+def test_duplicate_plugin_model_kinds_warn_and_skip_plugin(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     plugin_module = ModuleType("duplicate_kind_docling_plugin")
 
@@ -356,13 +402,16 @@ def test_plugin_model_kinds_must_be_unique(
     monkeypatch.setattr(metadata, "distributions", lambda: [distribution])
     factory = BaseFactory[_PluginModelBase]("ocr_engines")
 
-    with pytest.raises(
-        PluginConfigurationError,
-        match=r"duplicate-kind-plugin.*shared-kind.*_FirstModel.*_SecondModel",
-    ):
+    with caplog.at_level(logging.WARNING):
         factory.load_from_plugins(allow_external_plugins=True)
 
     assert factory.registered_kind == []
+    assert (
+        "Plugin 'duplicate-kind-plugin' has an invalid 'ocr_engines' contract: model "
+        "kind 'shared-kind' is already registered to _FirstModel, so it cannot "
+        "also register _SecondModel"
+    ) in caplog.text
+    assert "Skipping this plugin." in caplog.text
 
 
 def test_model_constructor_key_errors_are_not_reported_as_missing_models() -> None:
