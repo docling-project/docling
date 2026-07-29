@@ -131,15 +131,6 @@ def download(
             help="EasyOCR language code to prefetch. Repeat for multiple languages.",
         ),
     ] = None,
-    hf_token: Annotated[
-        str | None,
-        typer.Option(
-            ...,
-            "--hf-token",
-            envvar="HF_TOKEN",
-            help="HuggingFace Token token to authenticate and accelerate model downloads. If not provided, reads from HF_TOKEN environment variable (if set). Else runs unauthenticated.",
-        ),
-    ] = None,
 ):
     if models and all:
         raise typer.BadParameter(
