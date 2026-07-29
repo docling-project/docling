@@ -1,0 +1,2589 @@
+<doclang version="0.7">
+  <page_header>
+    <layer value="furniture"/>
+    <location value="15"/>
+    <location value="136"/>
+    <location value="30"/>
+    <location value="358"/>
+    arXiv:2305.03393v1 [cs.CV] 5 May 2023
+  </page_header>
+  <heading level="2">
+    <location value="113"/>
+    <location value="75"/>
+    <location value="401"/>
+    <location value="95"/>
+    Optimized Table Tokenization for Table Structure Recognition
+  </heading>
+  <text>
+    <location value="117"/>
+    <location value="110"/>
+    <location value="398"/>
+    <location value="130"/>
+    Maksym Lysak[0000 − 0002 − 3723 − 6960] , Ahmed Nassar[0000 − 0002 − 9468 − 0822] , Nikolaos Livathinos[0000 − 0001 − 8513 − 3491] , Christoph Auer[0000 − 0001 − 5761 − 0422] , − 0002 − 8088 − 0823]
+  </text>
+  <text>
+    <location value="192"/>
+    <location value="125"/>
+    <location value="265"/>
+    <location value="131"/>
+    and Peter Staar[0000
+  </text>
+  <text>
+    <location value="234"/>
+    <location value="140"/>
+    <location value="281"/>
+    <location value="144"/>
+    IBM Research
+  </text>
+  <text>
+    <location value="187"/>
+    <location value="147"/>
+    <location value="328"/>
+    <location value="153"/>
+    {mly,ahn,nli,cau,taa}@zurich.ibm.com
+  </text>
+  <text>
+    <location value="137"/>
+    <location value="175"/>
+    <location value="378"/>
+    <location value="300"/>
+    Abstract. Extracting tables from documents is a crucial task in any document conversion pipeline. Recently, transformer-based models have demonstrated that table-structure can be recognized with impressive accuracy using Image-to-Markup-Sequence (Im2Seq) approaches. Taking only the image of a table, such models predict a sequence of tokens (e.g. in HTML, LaTeX) which represent the structure of the table. Since the token representation of the table structure has a significant impact on the accuracy and run-time performance of any Im2Seq model, we investigate in this paper how table-structure representation can be optimised. We propose a new, optimised table-structure language (OTSL) with a minimized vocabulary and specific rules. The benefits of OTSL are that it reduces the number of tokens to 5 (HTML needs 28+) and shortens the sequence length to half of HTML on average. Consequently, model accuracy improves significantly, inference time is halved compared to HTML-based models, and the predicted table structures are always syntactically correct. This in turn eliminates most post-processing needs. Popular table structure data-sets will be published in OTSL format to the community.
+  </text>
+  <text>
+    <location value="137"/>
+    <location value="309"/>
+    <location value="378"/>
+    <location value="322"/>
+    Keywords: Table Structure Recognition· Data Representation· Transformers · Optimization.
+  </text>
+  <heading level="2">
+    <location value="114"/>
+    <location value="337"/>
+    <location value="191"/>
+    <location value="343"/>
+    1 Introduction
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="354"/>
+    <location value="402"/>
+    <location value="407"/>
+    Tables are ubiquitous in documents such as scientific papers, patents, reports, manuals, specification sheets or marketing material. They often encode highly valuable information and therefore need to be extracted with high accuracy. Unfortunately, tables appear in documents in various sizes, styling and structure, making it difficult to recover their correct structure with simple analytical methods. Therefore, accurate table extraction is achieved these days with machine-learning based methods.
+  </text>
+  <text>
+    <thread thread_id="1"/>
+    <location value="113"/>
+    <location value="408"/>
+    <location value="402"/>
+    <location value="430"/>
+    In modern document understanding systems [1,15], table extraction is typically a two-step process. Firstly, every table on a page is located with a bounding box, and secondly, their logical row and column structure is recognized. As of
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="1"/>
+    <location value="113"/>
+    <location value="292"/>
+    <location value="402"/>
+    <location value="337"/>
+    today, table detection in documents is a well understood problem, and the latest state-of-the-art (SOTA) object detection methods provide an accuracy comparable to human observers [7,8,10,14,23]. On the other hand, the problem of table structure recognition (TSR) is a lot more challenging and remains a very active area of research, in which many novel machine learning algorithms are being explored [3,4,5,9,11,12,13,14,17,18,21,22].
+  </text>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    2 M. Lysak, et al.
+  </page_header>
+  <picture>
+    <location value="125"/>
+    <location value="134"/>
+    <location value="388"/>
+    <location value="275"/>
+    <caption>
+      <location value="113"/>
+      <location value="81"/>
+      <location value="402"/>
+      <location value="130"/>
+      Fig. 1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL).
+    </caption>
+    <text>
+      <location value="332"/>
+      <location value="182"/>
+      <location value="337"/>
+      <location value="186"/>
+      C
+    </text>
+    <text>
+      <location value="351"/>
+      <location value="182"/>
+      <location value="355"/>
+      <location value="186"/>
+      C
+    </text>
+    <text>
+      <location value="331"/>
+      <location value="196"/>
+      <location value="346"/>
+      <location value="200"/>
+      C C
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="203"/>
+      <location value="346"/>
+      <location value="208"/>
+      C
+    </text>
+    <text>
+      <location value="351"/>
+      <location value="189"/>
+      <location value="374"/>
+      <location value="193"/>
+      C C C
+    </text>
+    <text>
+      <location value="351"/>
+      <location value="196"/>
+      <location value="374"/>
+      <location value="200"/>
+      C C C
+    </text>
+    <text>
+      <location value="351"/>
+      <location value="203"/>
+      <location value="374"/>
+      <location value="208"/>
+      C C C
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="210"/>
+      <location value="374"/>
+      <location value="215"/>
+      C C C C
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="181"/>
+      <location value="388"/>
+      <location value="185"/>
+      NL
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="189"/>
+      <location value="388"/>
+      <location value="193"/>
+      NL
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="196"/>
+      <location value="388"/>
+      <location value="200"/>
+      NL
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="203"/>
+      <location value="388"/>
+      <location value="207"/>
+      NL
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="210"/>
+      <location value="388"/>
+      <location value="215"/>
+      NL
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="203"/>
+      <location value="336"/>
+      <location value="208"/>
+      U
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="210"/>
+      <location value="336"/>
+      <location value="215"/>
+      U
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="189"/>
+      <location value="336"/>
+      <location value="193"/>
+      U
+    </text>
+    <text>
+      <location value="342"/>
+      <location value="182"/>
+      <location value="346"/>
+      <location value="186"/>
+      L
+    </text>
+    <text>
+      <location value="361"/>
+      <location value="181"/>
+      <location value="373"/>
+      <location value="186"/>
+      L L
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="189"/>
+      <location value="346"/>
+      <location value="193"/>
+      X
+    </text>
+    <text>
+      <location value="370"/>
+      <location value="266"/>
+      <location value="379"/>
+      <location value="270"/>
+      NL
+    </text>
+    <text>
+      <location value="329"/>
+      <location value="258"/>
+      <location value="387"/>
+      <location value="263"/>
+      vocabulary: 5 tokens
+    </text>
+    <text>
+      <location value="322"/>
+      <location value="167"/>
+      <location value="346"/>
+      <location value="171"/>
+      D OTSL
+    </text>
+    <text>
+      <location value="330"/>
+      <location value="172"/>
+      <location value="386"/>
+      <location value="177"/>
+      sequence length: 30
+    </text>
+    <text>
+      <location value="127"/>
+      <location value="258"/>
+      <location value="225"/>
+      <location value="263"/>
+      vocabulary for this table: 12 tokens
+    </text>
+    <text>
+      <location value="129"/>
+      <location value="138"/>
+      <location value="134"/>
+      <location value="142"/>
+      A
+    </text>
+    <text>
+      <location value="269"/>
+      <location value="138"/>
+      <location value="273"/>
+      <location value="142"/>
+      B
+    </text>
+    <text>
+      <location value="128"/>
+      <location value="181"/>
+      <location value="147"/>
+      <location value="184"/>
+<![CDATA[<table>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="186"/>
+      <location value="144"/>
+      <location value="189"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="190"/>
+      <location value="294"/>
+      <location value="194"/>
+<![CDATA[<td colspan=“2” rowspan=“2” > </td> <td colspan=“3” > </td>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="194"/>
+      <location value="146"/>
+      <location value="198"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="199"/>
+      <location value="144"/>
+      <location value="202"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="203"/>
+      <location value="222"/>
+      <location value="206"/>
+<![CDATA[<td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="208"/>
+      <location value="146"/>
+      <location value="211"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="212"/>
+      <location value="144"/>
+      <location value="215"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="216"/>
+      <location value="312"/>
+      <location value="221"/>
+<![CDATA[<td rowspan=“3” > </td> <td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="221"/>
+      <location value="146"/>
+      <location value="224"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="225"/>
+      <location value="144"/>
+      <location value="229"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="230"/>
+      <location value="249"/>
+      <location value="233"/>
+<![CDATA[<td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="234"/>
+      <location value="146"/>
+      <location value="237"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="239"/>
+      <location value="144"/>
+      <location value="242"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="243"/>
+      <location value="249"/>
+      <location value="246"/>
+<![CDATA[<td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="135"/>
+      <location value="247"/>
+      <location value="146"/>
+      <location value="251"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="128"/>
+      <location value="252"/>
+      <location value="148"/>
+      <location value="255"/>
+<![CDATA[</table>]]>    </text>
+    <text>
+      <location value="331"/>
+      <location value="266"/>
+      <location value="336"/>
+      <location value="270"/>
+      C
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="266"/>
+      <location value="345"/>
+      <location value="270"/>
+      L
+    </text>
+    <text>
+      <location value="128"/>
+      <location value="265"/>
+      <location value="365"/>
+      <location value="270"/>
+      <content><![CDATA[C L U X
+<table> <tr> </tr> <td> </td> <td colspan="2" colspan="3"
+/]]></content>
+    </text>
+    <text>
+      <location value="128"/>
+      <location value="270"/>
+      <location value="225"/>
+      <location value="274"/>
+<![CDATA[rowspan="2" rowspan="3" > </table>]]>    </text>
+    <text>
+      <location value="130"/>
+      <location value="167"/>
+      <location value="155"/>
+      <location value="171"/>
+      C HTML
+    </text>
+    <text>
+      <location value="138"/>
+      <location value="172"/>
+      <location value="194"/>
+      <location value="177"/>
+      sequence length: 55
+    </text>
+  </picture>
+  <text>
+    <location value="113"/>
+    <location value="339"/>
+    <location value="402"/>
+    <location value="430"/>
+    Recently emerging SOTA methods for table structure recognition employ transformer-based models, in which an image of the table is provided to the network in order to predict the structure of the table as a sequence of tokens. These image-to-sequence (Im2Seq) models are extremely powerful, since they allow for a purely data-driven solution. The tokens of the sequence typically belong to a markup language such as HTML, Latex or Markdown, which allow to describe table structure as rows, columns and spanning cells in various configurations. In Figure 1, we illustrate how HTML is used to represent the table-structure of a particular example table. Public table-structure data sets such as PubTabNet [22], and FinTabNet [21], which were created in a semi-automated way from paired PDF and HTML sources (e.g. PubMed Central), popularized primarily the use of HTML as ground-truth representation format for TSR.
+  </text>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="402"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 3
+  </page_header>
+  <text>
+    <location value="113"/>
+    <location value="77"/>
+    <location value="402"/>
+    <location value="137"/>
+    While the majority of research in TSR is currently focused on the development and application of novel neural model architectures, the table structure representation language (e.g. HTML in PubTabNet and FinTabNet) is usually adopted as is for the sequence tokenization in Im2Seq models. In this paper, we aim for the opposite and investigate the impact of the table structure representation language with an otherwise unmodified Im2Seq transformer-based architecture. Since the current state-of-the-art Im2Seq model is TableFormer [9], we select this model to perform our experiments.
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="139"/>
+    <location value="402"/>
+    <location value="213"/>
+    The main contribution of this paper is the introduction of a new optimised table structure language (OTSL), specifically designed to describe table-structure in an compact and structured way for Im2Seq models. OTSL has a number of key features, which make it very attractive to use in Im2Seq models. Specifically, compared to other languages such as HTML, OTSL has a minimized vocabulary which yields short sequence length, strong inherent structure (e.g. strict rectangular layout) and a strict syntax with rules that only look backwards. The latter allows for syntax validation during inference and ensures a syntactically correct table-structure. These OTSL features are illustrated in Figure 1, in comparison to HTML.
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="216"/>
+    <location value="402"/>
+    <location value="284"/>
+    The paper is structured as follows. In section 2, we give an overview of the latest developments in table-structure reconstruction. In section 3 we review the current HTML table encoding (popularised by PubTabNet and FinTabNet) and discuss its flaws. Subsequently, we introduce OTSL in section 4, which includes the language definition, syntax rules and error-correction procedures. In section 5, we apply OTSL on the TableFormer architecture, compare it to TableFormer models trained on HTML and ultimately demonstrate the advantages of using OTSL. Finally, in section 6 we conclude our work and outline next potential steps.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="299"/>
+    <location value="198"/>
+    <location value="304"/>
+    2 Related Work
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="316"/>
+    <location value="404"/>
+    <location value="430"/>
+    Approaches to formalize the logical structure and layout of tables in electronic documents date back more than two decades [16]. In the recent past, a wide variety of computer vision methods have been explored to tackle the problem of table structure recognition, i.e. the correct identification of columns, rows and spanning cells in a given table. Broadly speaking, the current deeplearning based approaches fall into three categories: object detection (OD) methods, Graph-Neural-Network (GNN) methods and Image-to-Markup-Sequence (Im2Seq) methods. Object-detection based methods [11,12,13,14,21] rely on tablestructure annotation using (overlapping) bounding boxes for training, and produce bounding-box predictions to define table cells, rows, and columns on a table image. Graph Neural Network (GNN) based methods [3,6,17,18], as the name suggests, represent tables as graph structures. The graph nodes represent the content of each table cell, an embedding vector from the table image, or geometric coordinates of the table cell. The edges of the graph define the relationship between the nodes, e.g. if they belong to the same column, row, or table cell.
+  </text>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    4 M. Lysak, et al.
+  </page_header>
+  <text>
+    <location value="113"/>
+    <location value="76"/>
+    <location value="402"/>
+    <location value="168"/>
+    Other work [20] aims at predicting a grid for each table and deciding which cells must be merged using an attention network. Im2Seq methods cast the problem as a sequence generation task [4,5,9,22], and therefore need an internal tablestructure representation language, which is often implemented with standard markup languages (e.g. HTML, LaTeX, Markdown). In theory, Im2Seq methods have a natural advantage over the OD and GNN methods by virtue of directly predicting the table-structure. As such, no post-processing or rules are needed in order to obtain the table-structure, which is necessary with OD and GNN approaches. In practice, this is not entirely true, because a predicted sequence of table-structure markup does not necessarily have to be syntactically correct. Hence, depending on the quality of the predicted sequence, some post-processing needs to be performed to ensure a syntactically valid (let alone correct) sequence.
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="170"/>
+    <location value="402"/>
+    <location value="313"/>
+<![CDATA[Within the Im2Seq method, we find several popular models, namely the encoder-dual-decoder model (EDD) [22], TableFormer [9], Tabsplitter[2] and Ye et. al. [19]. EDD uses two consecutive long short-term memory (LSTM) decoders to predict a table in HTML representation. The tag decoder predicts a sequence of HTML tags. For each decoded table cell (<td>), the attention is passed to the cell decoder to predict the content with an embedded OCR approach. The latter makes it susceptible to transcription errors in the cell content of the table. TableFormer address this reliance on OCR and uses two transformer decoders for HTML structure and cell bounding box prediction in an end-to-end architecture. The predicted cell bounding box is then used to extract text tokens from an originating (digital) PDF page, circumventing any need for OCR. TabSplitter [2] proposes a compact double-matrix representation of table rows and columns to do error detection and error correction of HTML structure sequences based on predictions from [19]. This compact double-matrix representation can not be used directly by the Img2seq model training, so the model uses HTML as an intermediate form. Chi et. al. [4] introduce a data set and a baseline method using bidirectional LSTMs to predict LaTeX code. Kayal [5] introduces Gated ResNet transformers to predict LaTeX code, and a separate OCR module to extract content.]]>  </text>
+  <text>
+    <location value="113"/>
+    <location value="317"/>
+    <location value="402"/>
+    <location value="375"/>
+    Im2Seq approaches have shown to be well-suited for the TSR task and allow a full end-to-end network design that can output the final table structure without pre- or post-processing logic. Furthermore, Im2Seq models have demonstrated to deliver state-of-the-art prediction accuracy [9]. This motivated the authors to investigate if the performance (both in accuracy and inference time) can be further improved by optimising the table structure representation language. We believe this is a necessary step before further improving neural network architectures for this task.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="391"/>
+    <location value="225"/>
+    <location value="397"/>
+    3 Problem Statement
+  </heading>
+  <text>
+    <thread thread_id="2"/>
+    <location value="113"/>
+    <location value="408"/>
+    <location value="402"/>
+    <location value="430"/>
+    All known Im2Seq based models for TSR fundamentally work in similar ways. Given an image of a table, the Im2Seq model predicts the structure of the table by generating a sequence of tokens. These tokens originate from a finite vocab-
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="2"/>
+    <location value="113"/>
+    <location value="77"/>
+    <location value="402"/>
+    <location value="121"/>
+<![CDATA[ulary and can be interpreted as a table structure. For example, with the HTML tokens <table> , </table> , <tr> , </tr> , <td> and </td>, one can construct simple table structures without any spanning cells. In reality though, one needs at least 28 HTML tokens to describe the most common complex tables observed in real-world documents [21,22], due to a variety of spanning cells definitions in the HTML token vocabulary.]]>  </text>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="401"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 5
+  </page_header>
+  <picture>
+    <location value="114"/>
+    <location value="151"/>
+    <location value="399"/>
+    <location value="220"/>
+    <caption>
+      <location value="122"/>
+      <location value="143"/>
+      <location value="392"/>
+      <location value="148"/>
+      Fig. 2. Frequency of tokens in HTML and OTSL as they appear in PubTabNet.
+    </caption>
+  </picture>
+  <text>
+    <location value="113"/>
+    <location value="238"/>
+    <location value="402"/>
+    <location value="343"/>
+<![CDATA[Obviously, HTML and other general-purpose markup languages were not designed for Im2Seq models. As such, they have some serious drawbacks. First, the token vocabulary needs to be artificially large in order to describe all plausible tabular structures. Since most Im2Seq models use an autoregressive approach, they generate the sequence token by token. Therefore, to reduce inference time, a shorter sequence length is critical. Every table-cell is represented by at least two tokens (<td> and </td>). Furthermore, when tokenizing the HTML structure, one needs to explicitly enumerate possible column-spans and row-spans as words. In practice, this ends up requiring 28 different HTML tokens (when including column- and row-spans up to 10 cells) just to describe every table in the PubTabNet dataset. Clearly, not every token is equally represented, as is depicted in Figure 2. This skewed distribution of tokens in combination with variable token row-length makes it challenging for models to learn the HTML structure.]]>  </text>
+  <text>
+    <location value="113"/>
+    <location value="346"/>
+    <location value="402"/>
+    <location value="375"/>
+    Additionally, it would be desirable if the representation would easily allow an early detection of invalid sequences on-the-go, before the prediction of the entire table structure is completed. HTML is not well-suited for this purpose as the verification of incomplete sequences is non-trivial or even impossible.
+  </text>
+  <text>
+    <thread thread_id="3"/>
+    <location value="113"/>
+    <location value="378"/>
+    <location value="402"/>
+    <location value="430"/>
+    In a valid HTML table, the token sequence must describe a 2D grid of table cells, serialised in row-major ordering, where each row and each column have the same length (while considering row- and column-spans). Furthermore, every opening tag in HTML needs to be matched by a closing tag in a correct hierarchical manner. Since the number of tokens for each table row and column can vary significantly, especially for large tables with many row- and column-spans, it is complex to verify the consistency of predicted structures during sequence
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="3"/>
+    <location value="113"/>
+    <location value="77"/>
+    <location value="402"/>
+    <location value="90"/>
+    generation. Implicitly, this also means that Im2Seq models need to learn these complex syntax rules, simply to deliver valid output.
+  </text>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    6 M. Lysak, et al.
+  </page_header>
+  <text>
+    <location value="113"/>
+    <location value="93"/>
+    <location value="402"/>
+    <location value="190"/>
+    In practice, we observe two major issues with prediction quality when training Im2Seq models on HTML table structure generation from images. On the one hand, we find that on large tables, the visual attention of the model often starts to drift and is not accurately moving forward cell by cell anymore. This manifests itself in either in an increasing location drift for proposed table-cells in later rows on the same column or even complete loss of vertical alignment, as illustrated in Figure 5. Addressing this with post-processing is partially possible, but clearly undesired. On the other hand, we find many instances of predictions with structural inconsistencies or plain invalid HTML output, as shown in Figure 6, which are nearly impossible to properly correct. Both problems seriously impact the TSR model performance, since they reflect not only in the task of pure structure recognition but also in the equally crucial recognition or matching of table cell content.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="207"/>
+    <location value="311"/>
+    <location value="214"/>
+    4 Optimised Table Structure Language
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="226"/>
+    <location value="402"/>
+    <location value="284"/>
+    To mitigate the issues with HTML in Im2Seq-based TSR models laid out before, we propose here our Optimised Table Structure Language (OTSL). OTSL is designed to express table structure with a minimized vocabulary and a simple set of rules, which are both significantly reduced compared to HTML. At the same time, OTSL enables easy error detection and correction during sequence generation. We further demonstrate how the compact structure representation and minimized sequence length improves prediction accuracy and inference time in the TableFormer architecture.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="301"/>
+    <location value="219"/>
+    <location value="307"/>
+    4.1 Language Definition
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="316"/>
+    <location value="402"/>
+    <location value="337"/>
+    In Figure 3, we illustrate how the OTSL is defined. In essence, the OTSL defines only 5 tokens that directly describe a tabular structure based on an atomic 2D grid.
+  </text>
+  <text>
+    <location value="126"/>
+    <location value="340"/>
+    <location value="341"/>
+    <location value="345"/>
+    The OTSL vocabulary is comprised of the following tokens:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="118"/>
+    <location value="354"/>
+    <location value="385"/>
+    <location value="359"/>
+<![CDATA[– "C" cell - a new table cell that either has or does not have cell content]]>    <ldiv/>
+    <location value="118"/>
+    <location value="362"/>
+    <location value="402"/>
+    <location value="376"/>
+<![CDATA[– "L" cell - left-looking cell, merging with the left neighbor cell to create a span]]>    <ldiv/>
+    <location value="118"/>
+    <location value="378"/>
+    <location value="402"/>
+    <location value="392"/>
+<![CDATA[– "U" cell - up-looking cell, merging with the upper neighbor cell to create a span]]>    <ldiv/>
+    <location value="118"/>
+    <location value="394"/>
+    <location value="380"/>
+    <location value="400"/>
+<![CDATA[– "X" cell - cross cell, to merge with both left and upper neighbor cells]]>    <ldiv/>
+    <location value="118"/>
+    <location value="402"/>
+    <location value="274"/>
+    <location value="408"/>
+<![CDATA[– "NL" - new-line, switch to the next row.]]>  </list>
+  <text>
+    <location value="113"/>
+    <location value="416"/>
+    <location value="401"/>
+    <location value="429"/>
+    A notable attribute of OTSL is that it has the capability of achieving lossless conversion to HTML.
+  </text>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="402"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 7
+  </page_header>
+  <picture>
+    <location value="137"/>
+    <location value="106"/>
+    <location value="376"/>
+    <location value="181"/>
+    <caption>
+      <location value="113"/>
+      <location value="81"/>
+      <location value="402"/>
+      <location value="101"/>
+      Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding
+    </caption>
+    <text>
+      <location value="314"/>
+      <location value="109"/>
+      <location value="319"/>
+      <location value="114"/>
+      C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="109"/>
+      <location value="339"/>
+      <location value="114"/>
+      C
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="125"/>
+      <location value="329"/>
+      <location value="130"/>
+      C C
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="133"/>
+      <location value="329"/>
+      <location value="137"/>
+      C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="117"/>
+      <location value="359"/>
+      <location value="122"/>
+      C C C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="125"/>
+      <location value="360"/>
+      <location value="130"/>
+      C C C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="133"/>
+      <location value="360"/>
+      <location value="137"/>
+      C C C
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="140"/>
+      <location value="359"/>
+      <location value="145"/>
+      C C C C
+    </text>
+    <text>
+      <location value="365"/>
+      <location value="108"/>
+      <location value="374"/>
+      <location value="113"/>
+      NL
+    </text>
+    <text>
+      <location value="365"/>
+      <location value="116"/>
+      <location value="375"/>
+      <location value="121"/>
+      NL
+    </text>
+    <text>
+      <location value="365"/>
+      <location value="124"/>
+      <location value="375"/>
+      <location value="129"/>
+      NL
+    </text>
+    <text>
+      <location value="365"/>
+      <location value="132"/>
+      <location value="375"/>
+      <location value="137"/>
+      NL
+    </text>
+    <text>
+      <location value="365"/>
+      <location value="140"/>
+      <location value="375"/>
+      <location value="145"/>
+      NL
+    </text>
+    <text>
+      <location value="314"/>
+      <location value="133"/>
+      <location value="318"/>
+      <location value="137"/>
+      U
+    </text>
+    <text>
+      <location value="314"/>
+      <location value="140"/>
+      <location value="318"/>
+      <location value="145"/>
+      U
+    </text>
+    <text>
+      <location value="314"/>
+      <location value="117"/>
+      <location value="319"/>
+      <location value="122"/>
+      U
+    </text>
+    <text>
+      <location value="325"/>
+      <location value="109"/>
+      <location value="329"/>
+      <location value="114"/>
+      L
+    </text>
+    <text>
+      <location value="345"/>
+      <location value="109"/>
+      <location value="358"/>
+      <location value="113"/>
+      L L
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="117"/>
+      <location value="329"/>
+      <location value="122"/>
+      X
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="158"/>
+      <location value="242"/>
+      <location value="163"/>
+      C
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="166"/>
+      <location value="241"/>
+      <location value="171"/>
+      U
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="174"/>
+      <location value="242"/>
+      <location value="179"/>
+      U
+    </text>
+    <text>
+      <location value="248"/>
+      <location value="158"/>
+      <location value="252"/>
+      <location value="163"/>
+      L
+    </text>
+    <text>
+      <location value="258"/>
+      <location value="158"/>
+      <location value="271"/>
+      <location value="163"/>
+      L L
+    </text>
+    <text>
+      <location value="247"/>
+      <location value="166"/>
+      <location value="272"/>
+      <location value="171"/>
+      X X X
+    </text>
+    <text>
+      <location value="164"/>
+      <location value="174"/>
+      <location value="179"/>
+      <location value="178"/>
+      C L
+    </text>
+    <text>
+      <location value="186"/>
+      <location value="174"/>
+      <location value="199"/>
+      <location value="178"/>
+      L L
+    </text>
+    <text>
+      <location value="247"/>
+      <location value="174"/>
+      <location value="272"/>
+      <location value="179"/>
+      X X X
+    </text>
+    <text>
+      <location value="165"/>
+      <location value="158"/>
+      <location value="170"/>
+      <location value="163"/>
+      C
+    </text>
+    <text>
+      <location value="210"/>
+      <location value="158"/>
+      <location value="215"/>
+      <location value="163"/>
+      C
+    </text>
+    <text>
+      <location value="210"/>
+      <location value="166"/>
+      <location value="215"/>
+      <location value="171"/>
+      U
+    </text>
+    <text>
+      <location value="210"/>
+      <location value="174"/>
+      <location value="215"/>
+      <location value="178"/>
+      U
+    </text>
+    <text>
+      <location value="280"/>
+      <location value="157"/>
+      <location value="327"/>
+      <location value="161"/>
+<![CDATA[1 - simple cells: "C"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="163"/>
+      <location value="353"/>
+      <location value="168"/>
+<![CDATA[2 - horizontal merges: "C", "L"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="170"/>
+      <location value="347"/>
+      <location value="174"/>
+<![CDATA[3 - vertical merges: "C", "U"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="176"/>
+      <location value="357"/>
+      <location value="180"/>
+<![CDATA[4 - 2d merges: "C", "L", "U", "X"]]>    </text>
+    <text>
+      <location value="156"/>
+      <location value="158"/>
+      <location value="157"/>
+      <location value="161"/>
+      1
+    </text>
+    <text>
+      <location value="156"/>
+      <location value="173"/>
+      <location value="158"/>
+      <location value="177"/>
+      2
+    </text>
+    <text>
+      <location value="200"/>
+      <location value="157"/>
+      <location value="203"/>
+      <location value="161"/>
+      3
+    </text>
+    <text>
+      <location value="227"/>
+      <location value="157"/>
+      <location value="230"/>
+      <location value="161"/>
+      4
+    </text>
+    <text>
+      <location value="192"/>
+      <location value="108"/>
+      <location value="195"/>
+      <location value="111"/>
+      2
+    </text>
+    <text>
+      <location value="216"/>
+      <location value="123"/>
+      <location value="217"/>
+      <location value="126"/>
+      1
+    </text>
+    <text>
+      <location value="157"/>
+      <location value="115"/>
+      <location value="159"/>
+      <location value="118"/>
+      3
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="109"/>
+      <location value="147"/>
+      <location value="112"/>
+      A
+    </text>
+    <text>
+      <location value="164"/>
+      <location value="109"/>
+      <location value="167"/>
+      <location value="112"/>
+      4
+    </text>
+    <text>
+      <location value="143"/>
+      <location value="134"/>
+      <location value="147"/>
+      <location value="138"/>
+      B
+    </text>
+    <text>
+      <location value="230"/>
+      <location value="109"/>
+      <location value="234"/>
+      <location value="113"/>
+      C
+    </text>
+    <text>
+      <location value="301"/>
+      <location value="109"/>
+      <location value="305"/>
+      <location value="113"/>
+      D
+    </text>
+    <text>
+      <location value="143"/>
+      <location value="157"/>
+      <location value="146"/>
+      <location value="161"/>
+      E
+    </text>
+  </picture>
+  <heading level="2">
+    <location value="113"/>
+    <location value="197"/>
+    <location value="206"/>
+    <location value="203"/>
+    4.2 Language Syntax
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="210"/>
+    <location value="303"/>
+    <location value="216"/>
+    The OTSL representation follows these syntax rules:
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="224"/>
+    <location value="402"/>
+    <location value="237"/>
+<![CDATA[Left-looking cell rule: The left neighbour of an "L" cell must be either another "L" cell or a "C" cell.]]>    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="240"/>
+    <location value="402"/>
+    <location value="252"/>
+<![CDATA[Up-looking cell rule: The upper neighbour of a "U" cell must be either another "U" cell or a "C" cell.]]>    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="255"/>
+    <location value="188"/>
+    <location value="260"/>
+    Cross cell rule:
+  </list>
+  <text>
+    <location value="127"/>
+    <location value="263"/>
+    <location value="402"/>
+    <location value="283"/>
+<![CDATA[The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.]]>  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>4.</marker>
+    </ldiv>
+    <location value="116"/>
+    <location value="286"/>
+    <location value="396"/>
+    <location value="292"/>
+<![CDATA[First row rule: Only "L" cells and "C" cells are allowed in the first row.]]>    <ldiv>
+      <marker>5.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="294"/>
+    <location value="401"/>
+    <location value="306"/>
+<![CDATA[First column rule: Only "U" cells and "C" cells are allowed in the first column.]]>    <ldiv>
+      <marker>6.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="309"/>
+    <location value="402"/>
+    <location value="323"/>
+<![CDATA[Rectangular rule: The table representation is always rectangular - all rows must have an equal number of tokens, terminated with "NL" token.]]>  </list>
+  <text>
+    <location value="113"/>
+    <location value="331"/>
+    <location value="402"/>
+    <location value="414"/>
+<![CDATA[The application of these rules gives OTSL a set of unique properties. First of all, the OTSL enforces a strictly rectangular structure representation, where every new-line token starts a new row. As a consequence, all rows and all columns have exactly the same number of tokens, irrespective of cell spans. Secondly, the OTSL representation is unambiguous: Every table structure is represented in one way. In this representation every table cell corresponds to a "C"-cell token, which in case of spans is always located in the top-left corner of the table cell definition. Third, OTSL syntax rules are only backward-looking. As a consequence, every predicted token can be validated straight during sequence generation by looking at the previously predicted sequence. As such, OTSL can guarantee that every predicted sequence is syntactically valid.]]>  </text>
+  <text>
+    <thread thread_id="4"/>
+    <location value="113"/>
+    <location value="416"/>
+    <location value="402"/>
+    <location value="430"/>
+    These characteristics can be easily learned by sequence generator networks, as we demonstrate further below. We find strong indications that this pattern
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="4"/>
+    <location value="113"/>
+    <location value="76"/>
+    <location value="401"/>
+    <location value="91"/>
+    reduces significantly the column drift seen in the HTML based models (see Figure 5).
+  </text>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    8 M. Lysak, et al.
+  </page_header>
+  <heading level="2">
+    <location value="113"/>
+    <location value="104"/>
+    <location value="267"/>
+    <location value="110"/>
+    4.3 Error-detection and -mitigation
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="118"/>
+    <location value="402"/>
+    <location value="193"/>
+    The design of OTSL allows to validate a table structure easily on an unfinished sequence. The detection of an invalid sequence token is a clear indication of a prediction mistake, however a valid sequence by itself does not guarantee prediction correctness. Different heuristics can be used to correct token errors in an invalid sequence and thus increase the chances for accurate predictions. Such heuristics can be applied either after the prediction of each token, or at the end on the entire predicted sequence. For example a simple heuristic which can correct the predicted OTSL sequence on-the-fly is to verify if the token with the highest prediction confidence invalidates the predicted sequence, and replace it by the token with the next highest confidence until OTSL rules are satisfied.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="208"/>
+    <location value="191"/>
+    <location value="214"/>
+    5 Experiments
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="224"/>
+    <location value="402"/>
+    <location value="292"/>
+    To evaluate the impact of OTSL on prediction accuracy and inference times, we conducted a series of experiments based on the TableFormer model (Figure 4) with two objectives: Firstly we evaluate the prediction quality and performance of OTSL vs. HTML after performing Hyper Parameter Optimization (HPO) on the canonical PubTabNet data set. Secondly we pick the best hyper-parameters found in the first step and evaluate how OTSL impacts the performance of TableFormer after training on other publicly available data sets (FinTabNet, PubTables-1M [14]). The ground truth (GT) from all data sets has been converted into OTSL format for this purpose, and will be made publicly available.
+  </text>
+  <picture>
+    <location value="118"/>
+    <location value="328"/>
+    <location value="396"/>
+    <location value="384"/>
+    <caption>
+      <location value="113"/>
+      <location value="313"/>
+      <location value="402"/>
+      <location value="326"/>
+      Fig. 4. Architecture sketch of the TableFormer model, which is a representative for the Im2Seq approach.
+    </caption>
+    <text>
+      <location value="123"/>
+      <location value="350"/>
+      <location value="125"/>
+      <location value="351"/>
+      1.
+    </text>
+    <text>
+      <location value="126"/>
+      <location value="350"/>
+      <location value="130"/>
+      <location value="351"/>
+      Item
+    </text>
+    <text>
+      <location value="124"/>
+      <location value="346"/>
+      <location value="130"/>
+      <location value="347"/>
+      Names
+    </text>
+    <text>
+      <location value="136"/>
+      <location value="346"/>
+      <location value="144"/>
+      <location value="347"/>
+      Amount
+    </text>
+    <text>
+      <location value="133"/>
+      <location value="350"/>
+      <location value="137"/>
+      <location value="351"/>
+      1000
+    </text>
+    <text>
+      <location value="133"/>
+      <location value="352"/>
+      <location value="136"/>
+      <location value="353"/>
+      500
+    </text>
+    <text>
+      <location value="133"/>
+      <location value="355"/>
+      <location value="137"/>
+      <location value="356"/>
+      3500
+    </text>
+    <text>
+      <location value="133"/>
+      <location value="358"/>
+      <location value="136"/>
+      <location value="359"/>
+      150
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="350"/>
+      <location value="145"/>
+      <location value="351"/>
+      unit
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="352"/>
+      <location value="145"/>
+      <location value="353"/>
+      unit
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="355"/>
+      <location value="145"/>
+      <location value="356"/>
+      unit
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="358"/>
+      <location value="145"/>
+      <location value="359"/>
+      unit
+    </text>
+    <text>
+      <location value="123"/>
+      <location value="352"/>
+      <location value="125"/>
+      <location value="353"/>
+      2.
+    </text>
+    <text>
+      <location value="126"/>
+      <location value="352"/>
+      <location value="130"/>
+      <location value="353"/>
+      Item
+    </text>
+    <text>
+      <location value="123"/>
+      <location value="355"/>
+      <location value="130"/>
+      <location value="356"/>
+      3. Item
+    </text>
+    <text>
+      <location value="123"/>
+      <location value="358"/>
+      <location value="125"/>
+      <location value="359"/>
+      4.
+    </text>
+    <text>
+      <location value="126"/>
+      <location value="358"/>
+      <location value="130"/>
+      <location value="359"/>
+      Item
+    </text>
+    <text>
+      <location value="128"/>
+      <location value="334"/>
+      <location value="143"/>
+      <location value="336"/>
+      Extracted
+    </text>
+    <text>
+      <location value="124"/>
+      <location value="338"/>
+      <location value="146"/>
+      <location value="340"/>
+      Table Images
+    </text>
+    <text>
+      <location value="162"/>
+      <location value="339"/>
+      <location value="184"/>
+      <location value="341"/>
+      Standardized
+    </text>
+    <text>
+      <location value="167"/>
+      <location value="343"/>
+      <location value="179"/>
+      <location value="345"/>
+      Images
+    </text>
+    <text>
+      <location value="229"/>
+      <location value="330"/>
+      <location value="238"/>
+      <location value="332"/>
+      BBox
+    </text>
+    <text>
+      <location value="227"/>
+      <location value="332"/>
+      <location value="241"/>
+      <location value="334"/>
+      Decoder
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="329"/>
+      <location value="291"/>
+      <location value="331"/>
+      BBoxes
+    </text>
+    <text>
+      <location value="315"/>
+      <location value="337"/>
+      <location value="341"/>
+      <location value="339"/>
+      BBoxes can be
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="340"/>
+      <location value="343"/>
+      <location value="342"/>
+      traced back to the
+    </text>
+    <text>
+      <location value="314"/>
+      <location value="343"/>
+      <location value="342"/>
+      <location value="346"/>
+      original image to
+    </text>
+    <text>
+      <location value="316"/>
+      <location value="346"/>
+      <location value="340"/>
+      <location value="348"/>
+      extract content
+    </text>
+    <text>
+      <location value="321"/>
+      <location value="364"/>
+      <location value="363"/>
+      <location value="367"/>
+      Structure Tags sequence
+    </text>
+    <text>
+      <location value="321"/>
+      <location value="367"/>
+      <location value="363"/>
+      <location value="370"/>
+      provide full description of
+    </text>
+    <text>
+      <location value="327"/>
+      <location value="370"/>
+      <location value="357"/>
+      <location value="372"/>
+      the table structure
+    </text>
+    <text>
+      <location value="246"/>
+      <location value="374"/>
+      <location value="270"/>
+      <location value="376"/>
+      Structure Tags
+    </text>
+    <text>
+      <location value="246"/>
+      <location value="376"/>
+      <location value="272"/>
+      <location value="379"/>
+      in OTSL format
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="350"/>
+      <location value="305"/>
+      <location value="353"/>
+      <content>BBoxes in sync 
+ith t</content>
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="353"/>
+      <location value="309"/>
+      <location value="355"/>
+      <content>y
+with tag sequence</content>
+    </text>
+    <text>
+      <location value="195"/>
+      <location value="333"/>
+      <location value="209"/>
+      <location value="335"/>
+      Encoder
+    </text>
+    <text>
+      <location value="226"/>
+      <location value="353"/>
+      <location value="241"/>
+      <location value="355"/>
+      Structure
+    </text>
+    <text>
+      <location value="227"/>
+      <location value="355"/>
+      <location value="241"/>
+      <location value="358"/>
+      Decoder
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="334"/>
+      <location value="299"/>
+      <location value="336"/>
+      [x1, y2, x2, y2]
+    </text>
+    <text>
+      <location value="278"/>
+      <location value="337"/>
+      <location value="302"/>
+      <location value="340"/>
+<![CDATA[[x1', y2', x2', y2']]]>    </text>
+    <text>
+      <location value="278"/>
+      <location value="341"/>
+      <location value="305"/>
+      <location value="344"/>
+<![CDATA[[x1'', y2'', x2'', y2'']]]>    </text>
+    <text>
+      <location value="278"/>
+      <location value="347"/>
+      <location value="281"/>
+      <location value="347"/>
+      ...
+    </text>
+    <text>
+      <location value="274"/>
+      <location value="334"/>
+      <location value="275"/>
+      <location value="336"/>
+      1
+    </text>
+    <text>
+      <location value="274"/>
+      <location value="338"/>
+      <location value="276"/>
+      <location value="340"/>
+      2
+    </text>
+    <text>
+      <location value="274"/>
+      <location value="342"/>
+      <location value="276"/>
+      <location value="344"/>
+      3
+    </text>
+    <text>
+      <location value="355"/>
+      <location value="341"/>
+      <location value="357"/>
+      <location value="343"/>
+      3
+    </text>
+    <text>
+      <location value="355"/>
+      <location value="334"/>
+      <location value="356"/>
+      <location value="336"/>
+      1
+    </text>
+    <text>
+      <location value="379"/>
+      <location value="335"/>
+      <location value="381"/>
+      <location value="337"/>
+      2
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="360"/>
+      <location value="288"/>
+      <location value="363"/>
+      <content>C C
+2</content>
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="364"/>
+      <location value="293"/>
+      <location value="367"/>
+      C C C
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="369"/>
+      <location value="293"/>
+      <location value="371"/>
+      C C C
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="373"/>
+      <location value="293"/>
+      <location value="376"/>
+      C C C
+    </text>
+    <text>
+      <location value="279"/>
+      <location value="377"/>
+      <location value="293"/>
+      <location value="380"/>
+      C C C
+    </text>
+    <text>
+      <location value="296"/>
+      <location value="360"/>
+      <location value="301"/>
+      <location value="363"/>
+      NL
+    </text>
+    <text>
+      <location value="296"/>
+      <location value="364"/>
+      <location value="301"/>
+      <location value="367"/>
+      NL
+    </text>
+    <text>
+      <location value="296"/>
+      <location value="369"/>
+      <location value="301"/>
+      <location value="371"/>
+      NL
+    </text>
+    <text>
+      <location value="296"/>
+      <location value="373"/>
+      <location value="301"/>
+      <location value="375"/>
+      NL
+    </text>
+    <text>
+      <location value="296"/>
+      <location value="377"/>
+      <location value="301"/>
+      <location value="380"/>
+      NL
+    </text>
+    <text>
+      <location value="291"/>
+      <location value="360"/>
+      <location value="293"/>
+      <location value="363"/>
+      L
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="365"/>
+      <location value="279"/>
+      <location value="367"/>
+      3
+    </text>
+    <text>
+      <location value="277"/>
+      <location value="359"/>
+      <location value="278"/>
+      <location value="361"/>
+      1
+    </text>
+    <text>
+      <location value="285"/>
+      <location value="359"/>
+      <location value="287"/>
+      <location value="361"/>
+      <content>C
+2</content>
+    </text>
+  </picture>
+  <text>
+    <thread thread_id="5"/>
+    <location value="113"/>
+    <location value="401"/>
+    <location value="402"/>
+    <location value="430"/>
+    We rely on standard metrics such as Tree Edit Distance score (TEDs) for table structure prediction, and Mean Average Precision (mAP) with 0.75 Intersection Over Union (IOU) threshold for the bounding-box predictions of table cells. The predicted OTSL structures were converted back to HTML format in
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="5"/>
+    <location value="113"/>
+    <location value="77"/>
+    <location value="402"/>
+    <location value="97"/>
+    order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.
+  </text>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="402"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 9
+  </page_header>
+  <heading level="2">
+    <location value="113"/>
+    <location value="109"/>
+    <location value="266"/>
+    <location value="115"/>
+    5.1 Hyper Parameter Optimization
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="120"/>
+    <location value="402"/>
+    <location value="164"/>
+    We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML.
+  </text>
+  <table>
+    <location value="117"/>
+    <location value="218"/>
+    <location value="397"/>
+    <location value="304"/>
+    <caption>
+      <location value="113"/>
+      <location value="178"/>
+      <location value="402"/>
+      <location value="211"/>
+      Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart.
+    </caption>
+    <ched/>
+    # enc-layers
+    <ched/>
+    # dec-layers
+    <ched/>
+    Language
+    <ched/>
+    TEDs
+    <lcel/>
+    <lcel/>
+    <ched/>
+    mAP (0.75)
+    <ched/>
+    Inference
+    <nl/>
+    <ucel/>
+    <ucel/>
+    <ucel/>
+    <ecel/>
+    <ched/>
+    (0.75)time (secs) simple complex all complex
+    <ched/>
+    all
+    <ucel/>
+    <ucel/>
+    <nl/>
+    <fcel/>
+    6
+    <fcel/>
+    6
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.965  0.969
+    <fcel/>
+    0.934  0.927
+    <fcel/>
+    0.955  0.955
+    <fcel/>
+    0.88  0.857
+    <fcel/>
+    2.73 5.39
+    <nl/>
+    <fcel/>
+    4
+    <fcel/>
+    4
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.938  0.952
+    <fcel/>
+    0.904  0.909
+    <fcel/>
+    0.927  0.938
+    <fcel/>
+    0.853  0.843
+    <fcel/>
+    1.97 3.77
+    <nl/>
+    <fcel/>
+    2
+    <fcel/>
+    4
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.923  0.945
+    <fcel/>
+    0.897  0.901
+    <fcel/>
+    0.915  0.931
+    <fcel/>
+    0.859  0.834
+    <fcel/>
+    1.91 3.81
+    <nl/>
+    <fcel/>
+    4
+    <fcel/>
+    2
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.952  0.944
+    <fcel/>
+    0.92  0.903
+    <fcel/>
+    0.942  0.931
+    <fcel/>
+    0.857  0.824
+    <fcel/>
+    1.22 2
+    <nl/>
+  </table>
+  <heading level="2">
+    <location value="113"/>
+    <location value="328"/>
+    <location value="221"/>
+    <location value="334"/>
+    5.2 Quantitative Results
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="339"/>
+    <location value="402"/>
+    <location value="399"/>
+    We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="401"/>
+    <location value="402"/>
+    <location value="430"/>
+    Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.
+  </text>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    10 M. Lysak, et al.
+  </page_header>
+  <table>
+    <location value="120"/>
+    <location value="101"/>
+    <location value="394"/>
+    <location value="170"/>
+    <caption>
+      <location value="113"/>
+      <location value="75"/>
+      <location value="402"/>
+      <location value="94"/>
+      Table 2. TSR and cell detection results compared between OTSL and HTML on the PubTabNet [22], FinTabNet [21] and PubTables-1M [14] data sets using TableFormer [9] (with enc=6, dec=6, heads=8).
+    </caption>
+    <ched/>
+    Data set
+    <ched/>
+    Language
+    <ched/>
+    TEDs
+    <lcel/>
+    <lcel/>
+    <ched/>
+    mAP(0.75)
+    <ched/>
+    Inference
+    <nl/>
+    <ucel/>
+    <ucel/>
+    <ecel/>
+    <ched/>
+    <content>mAP(0.75) 
+time (secs) simple complex all complex</content>
+    <ched/>
+    all
+    <ucel/>
+    <ucel/>
+    <nl/>
+    <fcel/>
+    PubTabNet
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.965  0.969
+    <fcel/>
+    0.934  0.927
+    <fcel/>
+    0.955  0.955
+    <fcel/>
+    0.88  0.857
+    <fcel/>
+    2.73 5.39
+    <nl/>
+    <fcel/>
+    FinTabNet
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.955  0.917
+    <fcel/>
+    0.961  0.922
+    <fcel/>
+    0.959  0.92
+    <fcel/>
+    0.862  0.722
+    <fcel/>
+    1.85 3.26
+    <nl/>
+    <fcel/>
+    PubTables-1M
+    <fcel/>
+    OTSL  HTML
+    <fcel/>
+    0.987  0.983
+    <fcel/>
+    0.964  0.944
+    <fcel/>
+    0.977  0.966
+    <fcel/>
+    0.896  0.889
+    <fcel/>
+    1.79 3.26
+    <nl/>
+  </table>
+  <heading level="2">
+    <location value="113"/>
+    <location value="187"/>
+    <location value="215"/>
+    <location value="192"/>
+    5.3 Qualitative Results
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="200"/>
+    <location value="402"/>
+    <location value="236"/>
+    To illustrate the qualitative differences between OTSL and HTML, Figure 5 demonstrates less overlap and more accurate bounding boxes with OTSL. In Figure 6, OTSL proves to be more effective in handling tables with longer token sequences, resulting in even more precise structure prediction and bounding boxes.
+  </text>
+  <picture>
+    <location value="136"/>
+    <location value="287"/>
+    <location value="378"/>
+    <location value="429"/>
+    <caption>
+      <location value="113"/>
+      <location value="257"/>
+      <location value="401"/>
+      <location value="284"/>
+<![CDATA[Fig. 5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). "PMC2807444_006_00.png" PubTabNet. μ]]>    </caption>
+    <text>
+      <location value="151"/>
+      <location value="334"/>
+      <location value="159"/>
+      <location value="335"/>
+<![CDATA[<table>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="336"/>
+      <location value="255"/>
+      <location value="338"/>
+<![CDATA[<tr><td></td><td colspan="4"></td><td colspan="6"></td><td colspan="3"></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="339"/>
+      <location value="325"/>
+      <location value="341"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="341"/>
+      <location value="325"/>
+      <location value="343"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="344"/>
+      <location value="325"/>
+      <location value="346"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="346"/>
+      <location value="325"/>
+      <location value="348"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="349"/>
+      <location value="325"/>
+      <location value="351"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="351"/>
+      <location value="325"/>
+      <location value="353"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="354"/>
+      <location value="325"/>
+      <location value="356"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="153"/>
+      <location value="356"/>
+      <location value="325"/>
+      <location value="358"/>
+<![CDATA[<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>]]>    </text>
+    <text>
+      <location value="151"/>
+      <location value="359"/>
+      <location value="160"/>
+      <location value="361"/>
+<![CDATA[</table>]]>    </text>
+    <text>
+      <location value="341"/>
+      <location value="335"/>
+      <location value="377"/>
+      <location value="336"/>
+      C C L L L C L L L L L C L L NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="338"/>
+      <location value="377"/>
+      <location value="339"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="340"/>
+      <location value="377"/>
+      <location value="342"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="343"/>
+      <location value="377"/>
+      <location value="344"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="345"/>
+      <location value="377"/>
+      <location value="347"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="348"/>
+      <location value="377"/>
+      <location value="349"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="350"/>
+      <location value="377"/>
+      <location value="352"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="353"/>
+      <location value="377"/>
+      <location value="354"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="341"/>
+      <location value="355"/>
+      <location value="377"/>
+      <location value="357"/>
+      C C C C C C C C C C C C C C NL
+    </text>
+    <text>
+      <location value="138"/>
+      <location value="329"/>
+      <location value="185"/>
+      <location value="332"/>
+      HTML # tokens: 258
+    </text>
+    <text>
+      <location value="327"/>
+      <location value="329"/>
+      <location value="373"/>
+      <location value="332"/>
+      OTSL # tokens: 135
+    </text>
+    <text>
+      <location value="140"/>
+      <location value="336"/>
+      <location value="144"/>
+      <location value="339"/>
+      B
+    </text>
+    <text>
+      <location value="157"/>
+      <location value="290"/>
+      <location value="161"/>
+      <location value="294"/>
+      A
+    </text>
+    <text>
+      <location value="141"/>
+      <location value="366"/>
+      <location value="144"/>
+      <location value="370"/>
+      D
+    </text>
+    <text>
+      <location value="208"/>
+      <location value="402"/>
+      <location value="212"/>
+      <location value="406"/>
+      E
+    </text>
+    <text>
+      <location value="332"/>
+      <location value="336"/>
+      <location value="336"/>
+      <location value="339"/>
+      C
+    </text>
+    <text>
+      <location value="144"/>
+      <location value="375"/>
+      <location value="147"/>
+      <location value="386"/>
+      HTML
+    </text>
+    <text>
+      <location value="210"/>
+      <location value="410"/>
+      <location value="214"/>
+      <location value="420"/>
+      OTSL
+    </text>
+    <text>
+      <location value="312"/>
+      <location value="389"/>
+      <location value="357"/>
+      <location value="392"/>
+      HTML model shows
+    </text>
+    <text>
+      <location value="312"/>
+      <location value="393"/>
+      <location value="359"/>
+      <location value="397"/>
+      bounding box drifting
+    </text>
+    <text>
+      <location value="148"/>
+      <location value="416"/>
+      <location value="193"/>
+      <location value="419"/>
+      OTSL model shows
+    </text>
+    <text>
+      <location value="148"/>
+      <location value="420"/>
+      <location value="193"/>
+      <location value="424"/>
+      clean bounding box
+    </text>
+    <text>
+      <location value="148"/>
+      <location value="424"/>
+      <location value="171"/>
+      <location value="428"/>
+      alignment
+    </text>
+    <text>
+      <location value="181"/>
+      <location value="365"/>
+      <location value="194"/>
+      <location value="367"/>
+      ≤ μ
+    </text>
+    <text>
+      <location value="219"/>
+      <location value="290"/>
+      <location value="318"/>
+      <location value="292"/>
+      SI R
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="293"/>
+      <location value="336"/>
+      <location value="295"/>
+      ST 0.03 0.06 0.12 0.25 0.5 1 2 4 8 16 32 64
+    </text>
+    <text>
+      <location value="345"/>
+      <location value="293"/>
+      <location value="353"/>
+      <location value="295"/>
+      ≥ 128
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="300"/>
+      <location value="171"/>
+      <location value="302"/>
+      63
+    </text>
+    <text>
+      <location value="308"/>
+      <location value="300"/>
+      <location value="334"/>
+      <location value="302"/>
+      113
+    </text>
+    <text>
+      <location value="169"/>
+      <location value="303"/>
+      <location value="321"/>
+      <location value="305"/>
+      199 5 1 2 4 1 1
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="306"/>
+      <location value="223"/>
+      <location value="308"/>
+      416 4
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="309"/>
+      <location value="272"/>
+      <location value="311"/>
+      230 1 9 1
+    </text>
+    <text>
+      <location value="333"/>
+      <location value="309"/>
+      <location value="334"/>
+      <location value="311"/>
+      1
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="313"/>
+      <location value="173"/>
+      <location value="314"/>
+      276
+    </text>
+    <text>
+      <location value="320"/>
+      <location value="313"/>
+      <location value="346"/>
+      <location value="314"/>
+      212 1
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="316"/>
+      <location value="173"/>
+      <location value="317"/>
+      320
+    </text>
+    <text>
+      <location value="308"/>
+      <location value="316"/>
+      <location value="336"/>
+      <location value="317"/>
+      1420
+    </text>
+    <text>
+      <location value="168"/>
+      <location value="319"/>
+      <location value="222"/>
+      <location value="321"/>
+      2013 3
+    </text>
+  </picture>
+  <text>
+    <location value="191"/>
+    <location value="434"/>
+    <location value="192"/>
+    <location value="436"/>
+    μ
+  </text>
+  <text>
+    <location value="252"/>
+    <location value="446"/>
+    <location value="253"/>
+    <location value="447"/>
+    ≥
+  </text>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="401"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 11
+  </page_header>
+  <picture>
+    <location value="140"/>
+    <location value="118"/>
+    <location value="373"/>
+    <location value="410"/>
+    <caption>
+      <location value="113"/>
+      <location value="81"/>
+      <location value="402"/>
+      <location value="115"/>
+<![CDATA[Fig. 6. Visualization of predicted structure and detected bounding boxes on a complex table with many rows. The OTSL model (B) captured repeating pattern of horizontally merged cells from the GT (A), unlike the HTML model (C). The HTML model also didn't complete the HTML sequence correctly and displayed a lot more of drift and overlap of bounding boxes. "PMC5406406_003_01.png" PubTabNet.]]>    </caption>
+    <text>
+      <location value="144"/>
+      <location value="202"/>
+      <location value="148"/>
+      <location value="206"/>
+      B
+    </text>
+    <text>
+      <location value="143"/>
+      <location value="318"/>
+      <location value="148"/>
+      <location value="323"/>
+      C
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="406"/>
+      <location value="313"/>
+      <location value="409"/>
+      Incorrect end of HTML sequence
+    </text>
+    <text>
+      <location value="237"/>
+      <location value="399"/>
+      <location value="333"/>
+      <location value="403"/>
+      Horizontally merged cells are not present
+    </text>
+    <text>
+      <location value="246"/>
+      <location value="301"/>
+      <location value="366"/>
+      <location value="305"/>
+      Repeating pattern is well represented in predictions
+    </text>
+    <text>
+      <location value="153"/>
+      <location value="186"/>
+      <location value="200"/>
+      <location value="190"/>
+      Repeating pattern of
+    </text>
+    <text>
+      <location value="153"/>
+      <location value="191"/>
+      <location value="210"/>
+      <location value="194"/>
+      horizontally merged cells
+    </text>
+    <text>
+      <location value="207"/>
+      <location value="121"/>
+      <location value="212"/>
+      <location value="125"/>
+      A
+    </text>
+    <text>
+      <location value="245"/>
+      <location value="393"/>
+      <location value="319"/>
+      <location value="397"/>
+      Bounding box drifting at the end
+    </text>
+    <text>
+      <location value="144"/>
+      <location value="247"/>
+      <location value="149"/>
+      <location value="261"/>
+      OTSL
+    </text>
+    <text>
+      <location value="144"/>
+      <location value="359"/>
+      <location value="149"/>
+      <location value="374"/>
+      HTML
+    </text>
+  </picture>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    12 M. Lysak, et al.
+  </page_header>
+  <heading level="2">
+    <location value="113"/>
+    <location value="76"/>
+    <location value="183"/>
+    <location value="81"/>
+    6 Conclusion
+  </heading>
+  <text>
+    <location value="113"/>
+    <location value="95"/>
+    <location value="402"/>
+    <location value="132"/>
+    We demonstrated that representing tables in HTML for the task of table structure recognition with Im2Seq models is ill-suited and has serious limitations. Furthermore, we presented in this paper an Optimized Table Structure Language (OTSL) which, when compared to commonly used general purpose languages, has several key benefits.
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="134"/>
+    <location value="402"/>
+    <location value="210"/>
+    First and foremost, given the same network configuration, inference time for a table-structure prediction is about 2 times faster compared to the conventional HTML approach. This is primarily owed to the shorter sequence length of the OTSL representation. Additional performance benefits can be obtained with HPO (hyper parameter optimization). As we demonstrate in our experiments, models trained on OTSL can be significantly smaller, e.g. by reducing the number of encoder and decoder layers, while preserving comparatively good prediction quality. This can further improve inference performance, yielding 5-6 times faster inference speed in OTSL with prediction quality comparable to models trained on HTML (see Table 1).
+  </text>
+  <text>
+    <location value="113"/>
+    <location value="212"/>
+    <location value="402"/>
+    <location value="303"/>
+    Secondly, OTSL has more inherent structure and a significantly restricted vocabulary size. This allows autoregressive models to perform better in the TED metric, but especially with regards to prediction accuracy of the table-cell bounding boxes (see Table 2). As shown in Figure 5, we observe that the OTSL drastically reduces the drift for table cell bounding boxes at high row count and in sparse tables. This leads to more accurate predictions and a significant reduction in post-processing complexity, which is an undesired necessity in HTML-based Im2Seq models. Significant novelty lies in OTSL syntactical rules, which are few, simple and always backwards looking. Each new token can be validated only by analyzing the sequence of previous tokens, without requiring the entire sequence to detect mistakes. This in return allows to perform structural error detection and correction on-the-fly during sequence generation.
+  </text>
+  <heading level="2">
+    <location value="113"/>
+    <location value="319"/>
+    <location value="165"/>
+    <location value="325"/>
+    References
+  </heading>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="338"/>
+    <location value="401"/>
+    <location value="365"/>
+    Auer, C., Dolfi, M., Carvalho, A., Ramis, C.B., Staar, P.W.J.: Delivering document conversion as a cloud service with high throughput and responsiveness. CoRR abs/2206.00785 (2022). https://doi.org/10.48550/arXiv.2206.00785 , https://doi.org/10.48550/arXiv.2206.00785
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="367"/>
+    <location value="402"/>
+    <location value="394"/>
+    Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Fornés, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545– 561. Springer International Publishing, Cham (2022)
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="396"/>
+    <location value="402"/>
+    <location value="408"/>
+    Chi, Z., Huang, H., Xu, H.D., Yu, H., Yin, W., Mao, X.L.: Complicated table structure recognition. arXiv preprint arXiv:1908.04729 (2019)
+    <ldiv>
+      <marker>4.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="410"/>
+    <location value="402"/>
+    <location value="430"/>
+    Deng, Y., Rosenberg, D., Mann, G.: Challenges in end-to-end neural scientific table recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 894–901. IEEE (2019)
+  </list>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="163"/>
+    <location value="60"/>
+    <location value="402"/>
+    <location value="66"/>
+    Optimized Table Tokenization for Table Structure Recognition 13
+  </page_header>
+  <list class="ordered">
+    <ldiv>
+      <marker>5.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="77"/>
+    <location value="402"/>
+    <location value="97"/>
+    Kayal, P., Anand, M., Desai, H., Singh, M.: Tables to latex: structure and content extraction from scientific tables. International Journal on Document Analysis and Recognition (IJDAR) pp. 1–10 (2022)
+    <ldiv>
+      <marker>6.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="98"/>
+    <location value="402"/>
+    <location value="125"/>
+    Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 1868– 1873. IEEE (2022)
+    <ldiv>
+      <marker>7.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="127"/>
+    <location value="402"/>
+    <location value="139"/>
+    Li, M., Cui, L., Huang, S., Wei, F., Zhou, M., Li, Z.: Tablebank: A benchmark dataset for table detection and recognition (2019)
+    <ldiv>
+      <marker>8.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="141"/>
+    <location value="402"/>
+    <location value="174"/>
+    Livathinos, N., Berrospi, C., Lysak, M., Kuropiatnyk, V., Nassar, A., Carvalho, A., Dolfi, M., Auer, C., Dinkla, K., Staar, P.: Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence 35(17), 15137–15145 (May 2021), https://ojs.aaai.org/index.php/ AAAI/article/view/17777
+    <ldiv>
+      <marker>9.</marker>
+    </ldiv>
+    <location value="117"/>
+    <location value="176"/>
+    <location value="402"/>
+    <location value="196"/>
+    Nassar, A., Livathinos, N., Lysak, M., Staar, P.: Tableformer: Table structure understanding with transformers. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4614–4623 (June 2022)
+    <ldiv>
+      <marker>10.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="198"/>
+    <location value="402"/>
+    <location value="239"/>
+<![CDATA[Pfitzmann, B., Auer, C., Dolfi, M., Nassar, A.S., Staar, P.W.J.: Doclaynet: A large human-annotated dataset for document-layout segmentation. In: Zhang, A., Rangwala, H. (eds.) KDD '22: The 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, Washington, DC, USA, August 14 - 18, 2022. pp. 3743–3751. ACM (2022). https://doi.org/10.1145/3534678.3539043 , https:// doi.org/10.1145/3534678.3539043]]>    <ldiv>
+      <marker>11.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="240"/>
+    <location value="402"/>
+    <location value="267"/>
+    Prasad, D., Gadpal, A., Kapadni, K., Visave, M., Sultanpure, K.: Cascadetabnet: An approach for end to end table detection and structure recognition from imagebased documents. In: Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops. pp. 572–573 (2020)
+    <ldiv>
+      <marker>12.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="269"/>
+    <location value="402"/>
+    <location value="295"/>
+    Schreiber, S., Agne, S., Wolf, I., Dengel, A., Ahmed, S.: Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In: 2017 14th IAPR international conference on document analysis and recognition (ICDAR). vol. 1, pp. 1162–1167. IEEE (2017)
+    <ldiv>
+      <marker>13.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="297"/>
+    <location value="402"/>
+    <location value="324"/>
+    Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403–1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226
+    <ldiv>
+      <marker>14.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="325"/>
+    <location value="401"/>
+    <location value="352"/>
+    Smock, B., Pesala, R., Abraham, R.: PubTables-1M: Towards comprehensive table extraction from unstructured documents. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4634–4642 (June 2022)
+    <ldiv>
+      <marker>15.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="354"/>
+    <location value="402"/>
+    <location value="394"/>
+<![CDATA[Staar, P.W.J., Dolfi, M., Auer, C., Bekas, C.: Corpus conversion service: A machine learning platform to ingest documents at scale. In: Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. pp. 774–782. KDD '18, Association for Computing Machinery, New York, NY, USA (2018). https://doi.org/10.1145/3219819.3219834 , https://doi.org/10. 1145/3219819.3219834]]>    <ldiv>
+      <marker>16.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="396"/>
+    <location value="401"/>
+    <location value="409"/>
+    Wang, X.: Tabular Abstraction, Editing, and Formatting. Ph.D. thesis, CAN (1996), aAINN09397
+    <ldiv>
+      <marker>17.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="410"/>
+    <location value="402"/>
+    <location value="430"/>
+    Xue, W., Li, Q., Tao, D.: Res2tim: Reconstruct syntactic structures from table images. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 749–755. IEEE (2019)
+  </list>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="113"/>
+    <location value="61"/>
+    <location value="193"/>
+    <location value="66"/>
+    14 M. Lysak, et al.
+  </page_header>
+  <list class="ordered">
+    <ldiv>
+      <marker>18.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="77"/>
+    <location value="401"/>
+    <location value="97"/>
+    Xue, W., Yu, B., Wang, W., Tao, D., Li, Q.: Tgrnet: A table graph reconstruction network for table structure recognition. In: Proceedings of the IEEE/CVF International Conference on Computer Vision. pp. 1295–1304 (2021)
+    <ldiv>
+      <marker>19.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="98"/>
+    <location value="402"/>
+    <location value="125"/>
+<![CDATA[Ye, J., Qi, X., He, Y., Chen, Y., Gu, D., Gao, P., Xiao, R.: Pingan-vcgroup's solution for icdar 2021 competition on scientific literature parsing task b: Table recognition to html (2021). https://doi.org/10.48550/ARXIV.2105.01848 , https://arxiv.org/abs/2105.01848]]>    <ldiv>
+      <marker>20.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="127"/>
+    <location value="402"/>
+    <location value="139"/>
+    Zhang, Z., Zhang, J., Du, J., Wang, F.: Split, embed and merge: An accurate table structure recognizer. Pattern Recognition 126, 108565 (2022)
+    <ldiv>
+      <marker>21.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="141"/>
+    <location value="402"/>
+    <location value="173"/>
+    Zheng, X., Burdick, D., Popa, L., Zhong, X., Wang, N.X.R.: Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. In: 2021 IEEE Winter Conference on Applications of Computer Vision (WACV). pp. 697–706 (2021). https://doi.org/10.1109/WACV48630.2021. 00074
+    <ldiv>
+      <marker>22.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="176"/>
+    <location value="401"/>
+    <location value="203"/>
+    Zhong, X., ShafieiBavani, E., Jimeno Yepes, A.: Image-based table recognition: Data, model, and evaluation. In: Vedaldi, A., Bischof, H., Brox, T., Frahm, J.M. (eds.) Computer Vision – ECCV 2020. pp. 564–580. Springer International Publishing, Cham (2020)
+    <ldiv>
+      <marker>23.</marker>
+    </ldiv>
+    <location value="113"/>
+    <location value="205"/>
+    <location value="401"/>
+    <location value="224"/>
+    Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015–1022. IEEE (2019)
+  </list>
+</doclang>

@@ -57,7 +57,7 @@ def test_convert_path(converter: DocumentConverter):
     # Avoid heavy torch-dependent models by not instantiating layout models here in coverage run
     doc_result = converter.convert(pdf_path)
     verify_conversion_result_v2(
-        gt=get_regular_groundtruth_paths(pdf_path),
+        gt=get_regular_groundtruth_paths(pdf_path, tag="docling_parse"),
         doc_result=doc_result,
         generate=GENERATE,
     )
@@ -72,7 +72,7 @@ def test_convert_stream(converter: DocumentConverter):
 
     doc_result = converter.convert(stream)
     verify_conversion_result_v2(
-        gt=get_regular_groundtruth_paths(pdf_path),
+        gt=get_regular_groundtruth_paths(pdf_path, tag="docling_parse"),
         doc_result=doc_result,
         generate=GENERATE,
     )

@@ -4,7 +4,30 @@ from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
-from tests.verify_utils import verify_docitems
+from tests.verify_utils import verify_docitems, verify_doclang
+
+
+def test_verify_doclang_allows_small_location_variance() -> None:
+    verify_doclang(
+        '<doclang version="0.7"><location value="450"/></doclang>',
+        '<doclang version="0.7"><location value="449"/></doclang>',
+    )
+
+
+def test_verify_doclang_rejects_large_location_variance() -> None:
+    with pytest.raises(AssertionError, match="DocLang location mismatch"):
+        verify_doclang(
+            '<doclang version="0.7"><location value="450"/></doclang>',
+            '<doclang version="0.7"><location value="447"/></doclang>',
+        )
+
+
+def test_verify_doclang_still_rejects_non_location_changes() -> None:
+    with pytest.raises(AssertionError, match="DocLang text mismatch"):
+        verify_doclang(
+            '<doclang version="0.7"><text>abc</text></doclang>',
+            '<doclang version="0.7"><text>abd</text></doclang>',
+        )
 
 
 def _make_doc_with_bbox(

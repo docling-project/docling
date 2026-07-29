@@ -1,0 +1,2126 @@
+<doclang version="0.7">
+  <text>
+    <location value="241"/>
+    <location value="18"/>
+    <location value="350"/>
+    <location value="33"/>
+    Front cover
+  </text>
+  <heading level="2">
+    <location value="30"/>
+    <location value="55"/>
+    <location value="492"/>
+    <location value="107"/>
+    Row and Column Access Control Support in IBM DB2 for i
+  </heading>
+  <text>
+    <location value="30"/>
+    <location value="191"/>
+    <location value="181"/>
+    <location value="210"/>
+    Implement roles and separation of duties
+  </text>
+  <picture>
+    <location value="40"/>
+    <location value="200"/>
+    <location value="485"/>
+    <location value="453"/>
+    <text>
+      <location value="416"/>
+      <location value="372"/>
+      <location value="486"/>
+      <location value="451"/>
+      Jim Bainbridge Hernando Bedoya Rob Bestgen Mike Cain Dan Cruikshank Jim Denton Doug Mack Tom McKinley Kent Milligan
+    </text>
+    <text>
+      <location value="30"/>
+      <location value="226"/>
+      <location value="169"/>
+      <location value="245"/>
+      Leverage row permissions on the database
+    </text>
+    <text>
+      <location value="30"/>
+      <location value="261"/>
+      <location value="163"/>
+      <location value="280"/>
+      Protect columns by defining column masks
+    </text>
+  </picture>
+  <picture>
+    <location value="265"/>
+    <location value="459"/>
+    <location value="486"/>
+    <location value="501"/>
+    <text>
+      <location value="263"/>
+      <location value="460"/>
+      <location value="486"/>
+      <location value="500"/>
+      Redpaper
+    </text>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="31"/>
+    <location value="486"/>
+    <location value="138"/>
+    <location value="495"/>
+    ibm.com /redbooks
+  </page_footer>
+  <page_break/>
+  <heading level="2">
+    <location value="54"/>
+    <location value="48"/>
+    <location value="141"/>
+    <location value="62"/>
+    Contents
+  </heading>
+  <index>
+    <location value="114"/>
+    <location value="85"/>
+    <location value="458"/>
+    <location value="462"/>
+    <fcel/>
+    Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . vii
+    <nl/>
+    <fcel/>
+    Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    viii
+    <nl/>
+    <fcel/>
+    DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . ix
+    <nl/>
+    <ecel/>
+    <srow/>
+    .
+    <nl/>
+    <rhed/>
+    Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xi
+    <nl/>
+    <rhed/>
+    Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . xi
+    <nl/>
+    <rhed/>
+    Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiii
+    <nl/>
+    <rhed/>
+    Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiii
+    <nl/>
+    <rhed/>
+    Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiv
+    <nl/>
+    <srow/>
+    Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    . 1
+    <nl/>
+    <rhed/>
+    . .
+    <ecel/>
+    <nl/>
+    <rhed/>
+    1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 2
+    <nl/>
+    <rhed/>
+    1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 2
+    <nl/>
+    <rhed/>
+    1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 3
+    <nl/>
+    <rhed/>
+    1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 4
+    <nl/>
+    <rhed/>
+    1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 5
+    <nl/>
+    <srow/>
+    Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    . 7
+    <nl/>
+    <rhed/>
+    2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    10
+    <nl/>
+    <rhed/>
+    2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view
+    <fcel/>
+    10
+    <nl/>
+    <rhed/>
+    2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    10
+    <nl/>
+    <srow/>
+    Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    13
+    <nl/>
+    <rhed/>
+    3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . .
+    <fcel/>
+    14
+    <nl/>
+    <rhed/>
+    3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    14
+    <nl/>
+    <rhed/>
+    3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    16
+    <nl/>
+    <rhed/>
+    3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    18
+    <nl/>
+    <rhed/>
+    3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    18
+    <nl/>
+    <rhed/>
+    3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    19
+    <nl/>
+    <rhed/>
+    3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    20
+    <nl/>
+    <rhed/>
+    3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .
+    <fcel/>
+    21
+    <nl/>
+    <rhed/>
+    3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    22
+    <nl/>
+    <srow/>
+    3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    22
+    <nl/>
+    <rhed/>
+    3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . .
+    <fcel/>
+    23
+    <nl/>
+    <rhed/>
+    3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . .
+    <fcel/>
+    23
+    <nl/>
+    <rhed/>
+    3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    24
+    <nl/>
+    <rhed/>
+    3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    25
+    <nl/>
+    <rhed/>
+    3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    26
+    <nl/>
+    <rhed/>
+    3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    28
+    <nl/>
+    <rhed/>
+    3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    29
+    <nl/>
+    <rhed/>
+    3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . .
+    <fcel/>
+    32
+    <nl/>
+  </index>
+  <footnote>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="215"/>
+    <location value="494"/>
+    © Copyright IBM Corp. 2014. All rights reserved.
+  </footnote>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="451"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    iii
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="54"/>
+    <location value="48"/>
+    <location value="197"/>
+    <location value="55"/>
+    DB2 for i Center of Excellence
+  </text>
+  <text>
+    <location value="79"/>
+    <location value="90"/>
+    <location value="196"/>
+    <location value="100"/>
+    Solution Brief IBM Systems Lab Services and Training
+  </text>
+  <heading level="2">
+    <location value="121"/>
+    <location value="212"/>
+    <location value="158"/>
+    <location value="218"/>
+    Highlights
+  </heading>
+  <list>
+    <ldiv/>
+    <location value="121"/>
+    <location value="222"/>
+    <location value="203"/>
+    <location value="232"/>
+    /g115/g3 /g40/g81/g75/g68/g81/g70/g72/g3 /g87/g75/g72/g3 /g83/g72/g85/g73/g82/g85/g80/g68/g81/g70/g72/g3 /g82/g73/g3 /g92/g82/g88/g85/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g82/g83/g72/g85/g68/g87/g76/g82/g81/g86
+    <ldiv/>
+    <location value="121"/>
+    <location value="237"/>
+    <location value="217"/>
+    <location value="252"/>
+    /g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86
+    <ldiv/>
+    <location value="121"/>
+    <location value="256"/>
+    <location value="209"/>
+    <location value="266"/>
+    /g115/g3 /g53/g72/g79/g92/g3 /g82/g81/g3 /g44/g37/g48/g3 /g72/g91/g83/g72/g85/g87/g3 /g70/g82/g81/g86/g88/g79/g87/g76/g81/g74/g15/g3 /g86/g78/g76/g79/g79/g86/g3 /g86/g75/g68/g85/g76/g81/g74/g3 /g68/g81/g71/g3 /g85/g72/g81/g82/g90/g81/g3 /g86/g72/g85/g89/g76/g70/g72/g86
+    <ldiv/>
+    <location value="121"/>
+    <location value="271"/>
+    <location value="196"/>
+    <location value="281"/>
+    /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72
+  </list>
+  <picture>
+    <location value="54"/>
+    <location value="391"/>
+    <location value="216"/>
+    <location value="445"/>
+  </picture>
+  <text>
+    <location value="386"/>
+    <location value="89"/>
+    <location value="424"/>
+    <location value="94"/>
+    Power Services
+  </text>
+  <heading level="2">
+    <location value="234"/>
+    <location value="151"/>
+    <location value="388"/>
+    <location value="179"/>
+    DB2 for i Center of Excellence
+  </heading>
+  <text>
+    <location value="234"/>
+    <location value="177"/>
+    <location value="404"/>
+    <location value="186"/>
+    Expert help to achieve your business requirements
+  </text>
+  <heading level="2">
+    <location value="234"/>
+    <location value="204"/>
+    <location value="371"/>
+    <location value="209"/>
+    We build confident, satisfied clients
+  </heading>
+  <text>
+    <location value="234"/>
+    <location value="212"/>
+    <location value="408"/>
+    <location value="223"/>
+    No one else has the vast consulting experiences, skills sharing and renown service offerings to do what we can do for you.
+  </text>
+  <text>
+    <location value="234"/>
+    <location value="231"/>
+    <location value="308"/>
+    <location value="236"/>
+    Because no one else is IBM.
+  </text>
+  <text>
+    <location value="234"/>
+    <location value="244"/>
+    <location value="419"/>
+    <location value="275"/>
+<![CDATA[With combined experiences and direct access to development groups, we're the experts in IBM DB2® for i. The DB2 for i Center of Excellence (CoE) can help you achieve-perhaps reexamine and exceed-your business requirements and gain more confidence and satisfaction in IBM product data management products and solutions.]]>  </text>
+  <heading level="2">
+    <location value="234"/>
+    <location value="283"/>
+    <location value="364"/>
+    <location value="288"/>
+    Who we are, some of what we do
+  </heading>
+  <text>
+    <location value="234"/>
+    <location value="290"/>
+    <location value="364"/>
+    <location value="295"/>
+    Global CoE engagements cover topics including:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="234"/>
+    <location value="303"/>
+    <location value="336"/>
+    <location value="308"/>
+    r Database performance and scalability
+    <ldiv/>
+    <location value="234"/>
+    <location value="310"/>
+    <location value="356"/>
+    <location value="315"/>
+    r Advanced SQL knowledge and skills transfer
+    <ldiv/>
+    <location value="234"/>
+    <location value="316"/>
+    <location value="328"/>
+    <location value="321"/>
+    r Business intelligence and analytics
+    <ldiv/>
+    <location value="234"/>
+    <location value="323"/>
+    <location value="284"/>
+    <location value="328"/>
+    r DB2 Web Query
+    <ldiv/>
+    <location value="234"/>
+    <location value="330"/>
+    <location value="422"/>
+    <location value="334"/>
+    r Query/400 modernization for better reporting and analysis capabilities
+    <ldiv/>
+    <location value="234"/>
+    <location value="336"/>
+    <location value="354"/>
+    <location value="341"/>
+    r Database modernization and re-engineering
+    <ldiv/>
+    <location value="234"/>
+    <location value="343"/>
+    <location value="334"/>
+    <location value="348"/>
+    r Data-centric architecture and design
+    <ldiv/>
+    <location value="234"/>
+    <location value="349"/>
+    <location value="391"/>
+    <location value="354"/>
+    r Extremely large database and overcoming limits to growth
+    <ldiv/>
+    <location value="234"/>
+    <location value="356"/>
+    <location value="320"/>
+    <location value="361"/>
+    r ISV education and enablement
+  </list>
+  <page_break/>
+  <heading level="2">
+    <location value="54"/>
+    <location value="48"/>
+    <location value="127"/>
+    <location value="62"/>
+    Preface
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="86"/>
+    <location value="458"/>
+    <location value="130"/>
+    This IBM® Redpaper™ publication provides information about the IBM i 7.2 feature of IBM DB2® for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="139"/>
+    <location value="457"/>
+    <location value="168"/>
+    This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="207"/>
+    <location value="458"/>
+    <location value="221"/>
+    This paper was produced by the IBM DB2 for i Center of Excellence team in partnership with the International Technical Support Organization (ITSO), Rochester, Minnesota US.
+  </text>
+  <picture>
+    <location value="119"/>
+    <location value="243"/>
+    <location value="210"/>
+    <location value="326"/>
+  </picture>
+  <picture>
+    <location value="121"/>
+    <location value="340"/>
+    <location value="211"/>
+    <location value="411"/>
+  </picture>
+  <text>
+    <location value="220"/>
+    <location value="243"/>
+    <location value="453"/>
+    <location value="334"/>
+    Jim Bainbridge is a senior DB2 consultant on the DB2 for i Center of Excellence team in the IBM Lab Services and Training organization. His primary role is training and implementation services for IBM DB2 Web Query for i and business analytics. Jim began his career with IBM 30 years ago in the IBM Rochester Development Lab, where he developed cooperative processing products that paired IBM PCs with IBM S/36 and AS/.400 systems. In the years since, Jim has held numerous technical roles, including independent software vendors technical support on a broad range of IBM technologies and products, and supporting customers in the IBM Executive Briefing Center and IBM Project Office.
+  </text>
+  <text>
+    <location value="220"/>
+    <location value="341"/>
+    <location value="453"/>
+    <location value="440"/>
+<![CDATA[Hernando Bedoya is a Senior IT Specialist at STG Lab Services and Training in Rochester, Minnesota. He writes extensively and teaches IBM classes worldwide in all areas of DB2 for i. Before joining STG Lab Services, he worked in the ITSO for nine years writing multiple IBM Redbooks® publications. He also worked for IBM Colombia as an IBM AS/400® IT Specialist doing presales support for the Andean countries. He has 28 years of experience in the computing field and has taught database classes in Colombian universities. He holds a Master's degree in Computer Science from EAFIT, Colombia. His areas of expertise are database technology, performance, and data warehousing. Hernando can be contacted at hbedoya@us.ibm.com .]]>  </text>
+  <heading level="2">
+    <location value="54"/>
+    <location value="186"/>
+    <location value="105"/>
+    <location value="196"/>
+    Authors
+  </heading>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="215"/>
+    <location value="494"/>
+    © Copyright IBM Corp. 2014. All rights reserved.
+  </page_footer>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="451"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    xi
+  </page_footer>
+  <page_break/>
+  <picture>
+    <location value="27"/>
+    <location value="46"/>
+    <location value="201"/>
+    <location value="154"/>
+  </picture>
+  <text>
+    <location value="68"/>
+    <location value="174"/>
+    <location value="96"/>
+    <location value="178"/>
+    Chapter 1.
+  </text>
+  <heading level="2">
+    <location value="419"/>
+    <location value="60"/>
+    <location value="437"/>
+    <location value="84"/>
+    1
+  </heading>
+  <heading level="2">
+    <location value="114"/>
+    <location value="165"/>
+    <location value="459"/>
+    <location value="200"/>
+    Securing and protecting IBM DB2 data
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="225"/>
+    <location value="458"/>
+    <location value="278"/>
+    Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center 1  reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute 2 revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="286"/>
+    <location value="441"/>
+    <location value="315"/>
+    Businesses must make a serious effort to secure their data and recognize that securing information assets is a cost of doing business. In many parts of the world and in many industries, securing the data is required by law and subject to audits. Data security is no longer an option; it is a requirement.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="324"/>
+    <location value="458"/>
+    <location value="337"/>
+    This chapter describes how you can secure and protect data in DB2 for i. The following topics are covered in this chapter:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="114"/>
+    <location value="342"/>
+    <location value="209"/>
+    <location value="348"/>
+    /SM590000 Security fundamentals
+    <ldiv/>
+    <location value="114"/>
+    <location value="350"/>
+    <location value="237"/>
+    <location value="356"/>
+    /SM590000 Current state of IBM i security
+    <ldiv/>
+    <location value="114"/>
+    <location value="358"/>
+    <location value="222"/>
+    <location value="364"/>
+    /SM590000 DB2 for i security controls
+  </list>
+  <footnote>
+    <location value="114"/>
+    <location value="463"/>
+    <location value="216"/>
+    <location value="469"/>
+    1   http://www.idtheftcenter.org
+  </footnote>
+  <footnote>
+    <location value="114"/>
+    <location value="469"/>
+    <location value="196"/>
+    <location value="475"/>
+    2 http://www.ponemon.org /
+  </footnote>
+  <footnote>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="215"/>
+    <location value="494"/>
+    © Copyright IBM Corp. 2014. All rights reserved.
+  </footnote>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="453"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    1
+  </page_footer>
+  <page_break/>
+  <heading level="2">
+    <location value="54"/>
+    <location value="48"/>
+    <location value="224"/>
+    <location value="58"/>
+    1.1  Security fundamentals
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="69"/>
+    <location value="456"/>
+    <location value="83"/>
+    Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="114"/>
+    <location value="88"/>
+    <location value="458"/>
+    <location value="117"/>
+<![CDATA[/SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.]]>  </list>
+  <text>
+    <location value="126"/>
+    <location value="122"/>
+    <location value="458"/>
+    <location value="174"/>
+    The monitoring and assessment of adherence to the security policy determines whether your security strategy is working. Often, IBM security consultants are asked to perform security assessments for companies without regard to the security policy. Although these assessments can be useful for observing how the system is defined and how data is being accessed, they cannot determine the level of security without a security policy. Without a security policy, it really is not an assessment as much as it is a baseline for monitoring the changes in the security settings that are captured.
+  </text>
+  <text>
+    <location value="126"/>
+    <location value="179"/>
+    <location value="453"/>
+    <location value="185"/>
+    A security policy is what defines whether the system and its settings are secure (or not).
+  </text>
+  <list>
+    <ldiv/>
+    <location value="114"/>
+    <location value="190"/>
+    <location value="458"/>
+    <location value="243"/>
+    /SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.
+  </list>
+  <text>
+    <location value="114"/>
+    <location value="251"/>
+    <location value="448"/>
+    <location value="265"/>
+    With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.
+  </text>
+  <heading level="2">
+    <location value="54"/>
+    <location value="283"/>
+    <location value="271"/>
+    <location value="293"/>
+    1.2  Current state of IBM i security
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="304"/>
+    <location value="458"/>
+    <location value="333"/>
+    Because of the inherently secure nature of IBM i, many clients rely on the default system settings to protect their business data that is stored in DB2 for i. In most cases, this means no data protection because the default setting for the Create default public authority (QCRTAUT) system value is *CHANGE.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="342"/>
+    <location value="458"/>
+    <location value="379"/>
+<![CDATA[Even more disturbing is that many IBM i clients remain in this state, despite the news headlines and the significant costs that are involved with databases being compromised. This default security configuration makes it quite challenging to implement basic security policies. A tighter implementation is required if you really want to protect one of your company's most valuable assets, which is the data.]]>  </text>
+  <text>
+    <location value="114"/>
+    <location value="387"/>
+    <location value="458"/>
+    <location value="440"/>
+<![CDATA[Traditionally, IBM i applications have employed menu-based security to counteract this default configuration that gives all users access to the data. The theory is that data is protected by the menu options controlling what database operations that the user can perform. This approach is ineffective, even if the user profile is restricted from running interactive commands. The reason is that in today's connected world there are a multitude of interfaces into the system, from web browsers to PC clients, that bypass application menus. If there are no object-level controls, users of these newer interfaces have an open door to your data.]]>  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="275"/>
+    <location value="494"/>
+    2 Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="455"/>
+    <location value="99"/>
+    Many businesses are trying to limit data access to a need-to-know basis. This security goal means that users should be given access only to the minimum set of data that is required to perform their job. Often, users with object-level access are given access to row and column values that are beyond what their business task requires because that object-level security provides an all-or-nothing solution. For example, object-level controls allow a manager to access data about all employees. Most security policies limit a manager to accessing data only for the employees that they manage.
+  </text>
+  <heading level="2">
+    <location value="54"/>
+    <location value="112"/>
+    <location value="252"/>
+    <location value="120"/>
+    1.3.1  Existing row and column control
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="129"/>
+    <location value="453"/>
+    <location value="166"/>
+    Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="174"/>
+    <location value="458"/>
+    <location value="203"/>
+    Using SQL views to limit access to a subset of the data in a table also has its own set of challenges. First, there is the complexity of managing all of the SQL view objects that are used for securing data access. Second, scaling a view-based security solution can be difficult as the amount of data grows and the number of users increases.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="212"/>
+    <location value="458"/>
+    <location value="233"/>
+    Even if you are willing to live with these performance and management issues, a user with *ALLOBJ access still can directly access all of the data in the underlying DB2 table and easily bypass the security controls that are built into an SQL view.
+  </text>
+  <picture>
+    <location value="109"/>
+    <location value="246"/>
+    <location value="452"/>
+    <location value="442"/>
+    <caption>
+      <location value="114"/>
+      <location value="447"/>
+      <location value="265"/>
+      <location value="453"/>
+      Figure 1-2   Existing row and column controls
+    </caption>
+    <text>
+      <location value="151"/>
+      <location value="248"/>
+      <location value="178"/>
+      <location value="252"/>
+      User with
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="253"/>
+      <location value="190"/>
+      <location value="257"/>
+      *ALLOBJ access
+    </text>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="275"/>
+    <location value="494"/>
+    4 Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <heading level="2">
+    <location value="54"/>
+    <location value="46"/>
+    <location value="281"/>
+    <location value="54"/>
+    2.1.6  Change Function Usage CL command
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="63"/>
+    <location value="458"/>
+    <location value="69"/>
+    The following CL commands can be used to work with, display, or change function usage IDs:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="114"/>
+    <location value="74"/>
+    <location value="252"/>
+    <location value="80"/>
+    /SM590000 Work Function Usage ( WRKFCNUSG )
+    <ldiv/>
+    <location value="114"/>
+    <location value="82"/>
+    <location value="262"/>
+    <location value="88"/>
+    /SM590000 Change Function Usage ( CHGFCNUSG )
+    <ldiv/>
+    <location value="114"/>
+    <location value="90"/>
+    <location value="260"/>
+    <location value="96"/>
+    /SM590000 Display Function Usage ( DSPFCNUSG )
+  </list>
+  <text>
+    <location value="114"/>
+    <location value="104"/>
+    <location value="429"/>
+    <location value="117"/>
+    For example, the following CHGFCNUSG command shows granting authorization to user HBEDOYA to administer and manage RCAC rules:
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="123"/>
+    <location value="369"/>
+    <location value="128"/>
+    CHGFCNUSG FCNID(QIBM_DB_SECADM) USER(HBEDOYA) USAGE(*ALLOWED)
+  </text>
+  <heading level="2">
+    <location value="54"/>
+    <location value="142"/>
+    <location value="455"/>
+    <location value="150"/>
+    2.1.7  Verifying function usage IDs for RCAC with the FUNCTION_USAGE view
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="159"/>
+    <location value="435"/>
+    <location value="172"/>
+    The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.
+  </text>
+  <table>
+    <location value="118"/>
+    <location value="190"/>
+    <location value="453"/>
+    <location value="282"/>
+    <caption>
+      <location value="114"/>
+      <location value="181"/>
+      <location value="238"/>
+      <location value="186"/>
+      Table 2-1   FUNCTION_USAGE view
+    </caption>
+    <ched/>
+    Column name
+    <ched/>
+    Data type
+    <ched/>
+    Description
+    <nl/>
+    <fcel/>
+    FUNCTION_ID
+    <fcel/>
+    VARCHAR(30)
+    <fcel/>
+    ID of the function.
+    <nl/>
+    <fcel/>
+    USER_NAME
+    <fcel/>
+    VARCHAR(10)
+    <fcel/>
+    Name of the user profile that has a usage setting for this function.
+    <nl/>
+    <fcel/>
+    USAGE
+    <fcel/>
+    VARCHAR(7)
+    <fcel/>
+    Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function.
+    <nl/>
+    <fcel/>
+    USER_TYPE
+    <fcel/>
+    VARCHAR(5)
+    <fcel/>
+    Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.
+    <nl/>
+  </table>
+  <text>
+    <location value="114"/>
+    <location value="293"/>
+    <location value="458"/>
+    <location value="306"/>
+    To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
+  </text>
+  <code>
+    <location value="114"/>
+    <location value="326"/>
+    <location value="277"/>
+    <location value="378"/>
+<![CDATA[SELECT     function_id, user_name, usage, user_type FROM       function_usage WHERE      function_id='QIBM_DB_SECADM' ORDER BY   user_name;]]><![CDATA[<caption><location value="114"/><location value="315"/><location value="387"/><location value="320"/>Example 2-1   Query to determine who has authority to define and manage RCAC</caption>]]>  </code>
+  <heading level="2">
+    <location value="54"/>
+    <location value="401"/>
+    <location value="209"/>
+    <location value="410"/>
+    2.2  Separation of duties
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="422"/>
+    <location value="458"/>
+    <location value="459"/>
+    Separation of duties helps businesses comply with industry regulations or organizational requirements and simplifies the management of authorities. Separation of duties is commonly used to prevent fraudulent activities or errors by a single person. It provides the ability for administrative functions to be divided across individuals without overlapping responsibilities, so that one user does not possess unlimited authority, such as with the *ALLOBJ authority.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="280"/>
+    <location value="494"/>
+    10 Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="454"/>
+    <location value="91"/>
+<![CDATA[For example, assume that a business has assigned the duty to manage security on IBM i to Theresa. Before release IBM i 7.2, to grant privileges, Theresa had to have the same privileges Theresa was granting to others. Therefore, to grant *USE privileges to the PAYROLL table, Theresa had to have *OBJMGT and *USE authority (or a higher level of authority, such as *ALLOBJ). This requirement allowed Theresa to access the data in the PAYROLL table even though Theresa's job description was only to manage its security.]]>  </text>
+  <text>
+    <location value="114"/>
+    <location value="99"/>
+    <location value="458"/>
+    <location value="128"/>
+    In IBM i 7.2, the QIBM_DB_SECADM function usage grants authorities, revokes authorities, changes ownership, or changes the primary group without giving access to the object or, in the case of a database table, to the data that is in the table or allowing other operations on the table.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="137"/>
+    <location value="451"/>
+    <location value="150"/>
+    QIBM_DB_SECADM function usage can be granted only by a user with *SECADM special authority and can be given to a user or a group.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="159"/>
+    <location value="457"/>
+    <location value="180"/>
+    QIBM_DB_SECADM also is responsible for administering RCAC, which restricts which rows a user is allowed to access in a table and whether a user is allowed to see information in certain columns of a table.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="188"/>
+    <location value="452"/>
+    <location value="218"/>
+    A preferred practice is that the RCAC administrator has the QIBM_DB_SECADM function usage ID, but absolutely no other data privileges. The result is that the RCAC administrator can deploy and maintain the RCAC constructs, but cannot grant themselves unauthorized access to data itself.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="226"/>
+    <location value="454"/>
+    <location value="240"/>
+    Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.
+  </text>
+  <table>
+    <location value="58"/>
+    <location value="260"/>
+    <location value="449"/>
+    <location value="463"/>
+    <caption>
+      <location value="54"/>
+      <location value="248"/>
+      <location value="328"/>
+      <location value="253"/>
+      Table 2-2    Comparison of the different function usage IDs and *JOBCTL authority
+    </caption>
+    <fcel/>
+    User action
+    <ched/>
+    *JOBCTL
+    <ched/>
+    QIBM_DB_SECADM
+    <ched/>
+    QIBM_DB_SQLADM
+    <ched/>
+    QIBM_DB_SYSMON
+    <ched/>
+    No Authority
+    <nl/>
+    <rhed/>
+    SET CURRENT DEGREE (SQL statement)
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+<![CDATA[CHGQRYA command targeting a different user's job]]>    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+<![CDATA[STRDBMON or ENDDBMON commands targeting a different user's job]]>    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    STRDBMON or ENDDBMON commands targeting a job that matches the current user
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <fcel/>
+    X
+    <fcel/>
+    X
+    <nl/>
+    <rhed/>
+<![CDATA[QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job]]>    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <fcel/>
+    X
+    <ecel/>
+    <nl/>
+    <rhed/>
+    Visual Explain within Run SQL scripts
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <fcel/>
+    X
+    <fcel/>
+    X
+    <nl/>
+    <rhed/>
+    Visual Explain outside of Run SQL scripts
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    ANALYZE PLAN CACHE procedure
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    DUMP PLAN CACHE procedure
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    MODIFY PLAN CACHE procedure
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority)
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+    <rhed/>
+    CHANGE PLAN CACHE SIZE procedure (currently does not check authority)
+    <fcel/>
+    X
+    <ecel/>
+    <fcel/>
+    X
+    <ecel/>
+    <ecel/>
+    <nl/>
+  </table>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="297"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    Chapter 2. Roles and separation of duties 11
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="442"/>
+    <location value="60"/>
+    The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.
+  </text>
+  <text>
+    <location value="290"/>
+    <location value="79"/>
+    <location value="444"/>
+    <location value="84"/>
+    Names the row permission for row access control
+  </text>
+  <heading level="2">
+    <location value="124"/>
+    <location value="91"/>
+    <location value="287"/>
+    <location value="97"/>
+<![CDATA[CREATE PERMISSION < permission name >]]>  </heading>
+  <text>
+    <location value="260"/>
+    <location value="108"/>
+    <location value="443"/>
+    <location value="113"/>
+    Identifies the table on which the row permission is created
+  </text>
+  <text>
+    <location value="124"/>
+    <location value="117"/>
+    <location value="195"/>
+    <location value="123"/>
+<![CDATA[ON < table name >]]>  </text>
+  <text>
+    <location value="197"/>
+    <location value="132"/>
+    <location value="446"/>
+    <location value="137"/>
+    Specifies an optional correlation name that can be used within search-condition
+  </text>
+  <text>
+    <location value="124"/>
+    <location value="144"/>
+    <location value="215"/>
+    <location value="150"/>
+<![CDATA[AS < correlation name >]]>  </text>
+  <text>
+    <location value="124"/>
+    <location value="171"/>
+    <location value="167"/>
+    <location value="177"/>
+    FOR ROWS
+  </text>
+  <text>
+    <location value="269"/>
+    <location value="159"/>
+    <location value="399"/>
+    <location value="164"/>
+    Indicates that a row permission is created
+  </text>
+  <text>
+    <location value="269"/>
+    <location value="172"/>
+    <location value="444"/>
+    <location value="177"/>
+    Specifies a condition that can be true, false, or unknown
+  </text>
+  <text>
+    <location value="124"/>
+    <location value="189"/>
+    <location value="370"/>
+    <location value="195"/>
+<![CDATA[WHERE < logic to test: user and/or group and/or column value >]]>  </text>
+  <text>
+    <location value="227"/>
+    <location value="204"/>
+    <location value="445"/>
+    <location value="208"/>
+    Specifies that the row permission applies to all references of the table
+  </text>
+  <heading level="2">
+    <location value="124"/>
+    <location value="215"/>
+    <location value="233"/>
+    <location value="221"/>
+    ENFORCED FOR ALL ACCESS ENFORCED FOR ALL ACCESS
+  </heading>
+  <heading level="2">
+    <location value="124"/>
+    <location value="242"/>
+    <location value="155"/>
+    <location value="248"/>
+    ENABLE ENABLE
+  </heading>
+  <text>
+    <location value="124"/>
+    <location value="251"/>
+    <location value="160"/>
+    <location value="257"/>
+    DISABLE ;
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="268"/>
+    <location value="286"/>
+    <location value="273"/>
+    Figure 3-1   CREATE PERMISSION SQL statement
+  </text>
+  <heading level="2">
+    <location value="114"/>
+    <location value="284"/>
+    <location value="180"/>
+    <location value="292"/>
+    Column mask
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="294"/>
+    <location value="454"/>
+    <location value="323"/>
+    A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.
+  </text>
+  <text>
+    <location value="261"/>
+    <location value="230"/>
+    <location value="441"/>
+    <location value="235"/>
+    Specifies that the row permission is to be initially enabled
+  </text>
+  <text>
+    <thread thread_id="1"/>
+    <location value="261"/>
+    <location value="244"/>
+    <location value="441"/>
+    <location value="249"/>
+    S ifi th t th i i i t b i iti ll di bl d Specifies that the row permission is to be initially disabled
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="1"/>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="345"/>
+    <location value="52"/>
+    Table 3-1 summarizes these special registers and their values.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="289"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    Chapter 3. Row and Column Access Control 15
+  </page_footer>
+  <table>
+    <location value="119"/>
+    <location value="71"/>
+    <location value="449"/>
+    <location value="128"/>
+    <caption>
+      <location value="114"/>
+      <location value="60"/>
+      <location value="312"/>
+      <location value="66"/>
+      Table 3-1   Special registers and their corresponding values
+    </caption>
+    <ched/>
+    Special register
+    <ched/>
+    Corresponding value
+    <nl/>
+    <fcel/>
+    USER or SESSION_USER
+    <fcel/>
+    The effective user of the thread excluding adopted authority.
+    <nl/>
+    <fcel/>
+    CURRENT_USER
+    <fcel/>
+    The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER.
+    <nl/>
+    <fcel/>
+    SYSTEM_USER
+    <fcel/>
+    The authorization ID that initiated the connection.
+    <nl/>
+  </table>
+  <text>
+    <location value="114"/>
+    <location value="139"/>
+    <location value="451"/>
+    <location value="152"/>
+    Figure 3-5 shows the difference in the special register values when an adopted authority is used:
+  </text>
+  <list>
+    <ldiv/>
+    <location value="114"/>
+    <location value="157"/>
+    <location value="344"/>
+    <location value="163"/>
+    /SM590000 A user connects to the server using the user profile ALICE.
+    <ldiv/>
+    <location value="114"/>
+    <location value="168"/>
+    <location value="379"/>
+    <location value="174"/>
+    /SM590000 USER and CURRENT USER initially have the same value of ALICE.
+    <ldiv/>
+    <location value="114"/>
+    <location value="179"/>
+    <location value="453"/>
+    <location value="193"/>
+<![CDATA[/SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.]]>    <ldiv/>
+    <location value="114"/>
+    <location value="198"/>
+    <location value="458"/>
+    <location value="220"/>
+    /SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.
+    <ldiv/>
+    <location value="114"/>
+    <location value="225"/>
+    <location value="458"/>
+    <location value="238"/>
+    /SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.
+  </list>
+  <heading level="2">
+    <location value="118"/>
+    <location value="250"/>
+    <location value="181"/>
+    <location value="256"/>
+    Signed on as ALICE
+  </heading>
+  <text>
+    <location value="116"/>
+    <location value="266"/>
+    <location value="195"/>
+    <location value="279"/>
+    USER = ALICE CURRENT USER = ALICE
+  </text>
+  <text>
+    <location value="116"/>
+    <location value="289"/>
+    <location value="153"/>
+    <location value="294"/>
+    CALL proc1
+  </text>
+  <code>
+    <location value="116"/>
+    <location value="306"/>
+    <location value="236"/>
+    <location value="371"/>
+    P roc1: Owner = JOE SET OPTION USRPRF=*OWNER USER = ALICE CURRENT USER = JOE USER = ALICE
+  </code>
+  <text>
+    <location value="116"/>
+    <location value="374"/>
+    <location value="195"/>
+    <location value="379"/>
+    CURRENT USER = ALICE
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="386"/>
+    <location value="286"/>
+    <location value="391"/>
+    Figure 3-5   Special registers and adopted authority
+  </text>
+  <heading level="2">
+    <location value="54"/>
+    <location value="404"/>
+    <location value="207"/>
+    <location value="412"/>
+    3.2.2  Built-in global variables
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="421"/>
+    <location value="433"/>
+    <location value="435"/>
+    Built-in global variables are provided with the database manager and are used in SQL statements to retrieve scalar values that are associated with the variables.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="443"/>
+    <location value="445"/>
+    <location value="465"/>
+    IBM DB2 for i supports nine different built-in global variables that are read only and maintained by the system. These global variables can be used to identify attributes of the database connection and used as part of the RCAC logic.
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="289"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    Chapter 3. Row and Column Access Control 19
+  </page_footer>
+  <page_break/>
+  <text>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="287"/>
+    <location value="52"/>
+    Table 3-2 lists the nine built-in global variables.
+  </text>
+  <table>
+    <location value="58"/>
+    <location value="70"/>
+    <location value="446"/>
+    <location value="188"/>
+    <caption>
+      <location value="54"/>
+      <location value="60"/>
+      <location value="168"/>
+      <location value="66"/>
+      Table 3-2   Built-in global variables
+    </caption>
+    <ched/>
+    Global variable
+    <ched/>
+    Type
+    <ched/>
+    Description
+    <nl/>
+    <fcel/>
+    CLIENT_HOST
+    <fcel/>
+    VARCHAR(255)
+    <fcel/>
+    Host name of the current client as returned by the system
+    <nl/>
+    <fcel/>
+    CLIENT_IPADDR
+    <fcel/>
+    VARCHAR(128)
+    <fcel/>
+    IP address of the current client as returned by the system
+    <nl/>
+    <fcel/>
+    CLIENT_PORT
+    <fcel/>
+    INTEGER
+    <fcel/>
+    Port used by the current client to communicate with the server
+    <nl/>
+    <fcel/>
+    PACKAGE_NAME
+    <fcel/>
+    VARCHAR(128)
+    <fcel/>
+    Name of the currently running package
+    <nl/>
+    <fcel/>
+    PACKAGE_SCHEMA
+    <fcel/>
+    VARCHAR(128)
+    <fcel/>
+    Schema name of the currently running package
+    <nl/>
+    <fcel/>
+    PACKAGE_VERSION
+    <fcel/>
+    VARCHAR(64)
+    <fcel/>
+    Version identifier of the currently running package
+    <nl/>
+    <fcel/>
+    ROUTINE_SCHEMA
+    <fcel/>
+    VARCHAR(128)
+    <fcel/>
+    Schema name of the currently running routine
+    <nl/>
+    <fcel/>
+    ROUTINE_SPECIFIC_NAME
+    <fcel/>
+    VARCHAR(128)
+    <fcel/>
+    Name of the currently running routine
+    <nl/>
+    <fcel/>
+    ROUTINE_TYPE
+    <fcel/>
+    CHAR(1)
+    <fcel/>
+    Type of the currently running routine
+    <nl/>
+  </table>
+  <heading level="2">
+    <location value="54"/>
+    <location value="208"/>
+    <location value="322"/>
+    <location value="218"/>
+    3.3  VERIFY_GROUP_FOR_USER function
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="229"/>
+    <location value="458"/>
+    <location value="282"/>
+    The VERIFY_GROUP_FOR_USER function was added in IBM i 7.2. Although it is primarily intended for use with RCAC permissions and masks, it can be used in other SQL statements. The first parameter must be one of these three special registers: SESSION_USER, USER, or CURRENT_USER. The second and subsequent parameters are a list of user or group profiles. Each of these values must be 1 - 10 characters in length. These values are not validated for their existence, which means that you can specify the names of user profiles that do not exist without receiving any kind of error.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="290"/>
+    <location value="458"/>
+    <location value="311"/>
+    If a special register value is in the list of user profiles or it is a member of a group profile included in the list, the function returns a long integer value of 1. Otherwise, it returns a value of 0. It never returns the null value.
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="320"/>
+    <location value="384"/>
+    <location value="326"/>
+    Here is an example of using the VERIFY_GROUP_FOR_USER function:
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="331"/>
+    <location value="340"/>
+    <location value="337"/>
+    There are user profiles for MGR, JANE, JUDY, and TONY.
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="342"/>
+    <location value="332"/>
+    <location value="348"/>
+    The user profile JANE specifies a group profile of MGR.
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="353"/>
+    <location value="449"/>
+    <location value="366"/>
+    If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:
+  </list>
+  <text>
+    <location value="126"/>
+    <location value="372"/>
+    <location value="377"/>
+    <location value="393"/>
+<![CDATA[VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE')]]>  </text>
+  <text>
+    <location value="126"/>
+    <location value="398"/>
+    <location value="323"/>
+    <location value="404"/>
+    The following function invocation returns a value of 0:
+  </text>
+  <text>
+    <location value="126"/>
+    <location value="409"/>
+    <location value="344"/>
+    <location value="415"/>
+<![CDATA[VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JUDY', 'TONY')]]>  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="280"/>
+    <location value="494"/>
+    20 Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <code>
+    <location value="114"/>
+    <location value="47"/>
+    <location value="436"/>
+    <location value="168"/>
+<![CDATA[RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' ||  MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-'     || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE  ;]]>  </code>
+  <list class="ordered">
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="178"/>
+    <location value="458"/>
+    <location value="192"/>
+    The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:
+    <ldiv/>
+    <location value="127"/>
+    <location value="197"/>
+    <location value="392"/>
+    <location value="203"/>
+    -Human Resources can see the unmasked TAX_ID of the employees.
+    <ldiv/>
+    <location value="127"/>
+    <location value="208"/>
+    <location value="338"/>
+    <location value="214"/>
+    -Employees can see only their own unmasked TAX_ID.
+    <ldiv/>
+    <location value="127"/>
+    <location value="219"/>
+    <location value="456"/>
+    <location value="233"/>
+    -Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
+    <ldiv/>
+    <location value="127"/>
+    <location value="238"/>
+    <location value="443"/>
+    <location value="244"/>
+    -Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.
+  </list>
+  <text>
+    <location value="126"/>
+    <location value="249"/>
+    <location value="443"/>
+    <location value="255"/>
+    To implement this column mask, run the SQL statement that is shown in Example 3-9.
+  </text>
+  <code>
+    <location value="114"/>
+    <location value="274"/>
+    <location value="441"/>
+    <location value="442"/>
+<![CDATA[CREATE MASK   HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON            HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN    TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE  ;]]><![CDATA[<caption><location value="114"/><location value="263"/><location value="294"/><location value="268"/>Example 3-9   Creating a mask on the TAX_ID column</caption>]]>  </code>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="289"/>
+    <location value="488"/>
+    <location value="438"/>
+    <location value="494"/>
+    Chapter 3. Row and Column Access Control
+  </page_footer>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="449"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    27
+  </page_footer>
+  <page_break/>
+  <list class="ordered">
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="376"/>
+    <location value="52"/>
+    Figure 3-10 shows the masks that are created in the HR_SCHEMA.
+  </list>
+  <picture>
+    <location value="53"/>
+    <location value="62"/>
+    <location value="460"/>
+    <location value="111"/>
+    <caption>
+      <location value="54"/>
+      <location value="112"/>
+      <location value="245"/>
+      <location value="118"/>
+      Figure 3-10   Column masks shown in System i Navigator
+    </caption>
+  </picture>
+  <heading level="2">
+    <location value="54"/>
+    <location value="131"/>
+    <location value="171"/>
+    <location value="139"/>
+    3.6.6  Activating RCAC
+  </heading>
+  <text>
+    <location value="114"/>
+    <location value="148"/>
+    <location value="458"/>
+    <location value="169"/>
+    Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>1.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="174"/>
+    <location value="343"/>
+    <location value="180"/>
+    Run the SQL statements that are shown in Example 3-10.
+  </list>
+  <text>
+    <location value="114"/>
+    <location value="188"/>
+    <location value="314"/>
+    <location value="194"/>
+    Example 3-10   Activating RCAC on the EMPLOYEES table
+  </text>
+  <text>
+    <location value="114"/>
+    <location value="200"/>
+    <location value="315"/>
+    <location value="236"/>
+    /*   Active Row Access Control (permissions)  */ /*   Active Column Access Control (masks)     */ ALTER TABLE HR_SCHEMA.EMPLOYEES ACTIVATE ROW ACCESS CONTROL ACTIVATE COLUMN ACCESS CONTROL;
+  </text>
+  <list class="ordered">
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="246"/>
+    <location value="452"/>
+    <location value="267"/>
+    Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .
+  </list>
+  <picture>
+    <location value="50"/>
+    <location value="276"/>
+    <location value="446"/>
+    <location value="426"/>
+    <text>
+      <location value="54"/>
+      <location value="420"/>
+      <location value="291"/>
+      <location value="425"/>
+      Figure 3-11   Selecting the EMPLOYEES table from System i Navigator
+    </text>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="280"/>
+    <location value="494"/>
+    28 Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <list class="ordered">
+    <ldiv>
+      <marker>2.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="430"/>
+    <location value="68"/>
+    Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
+    <ldiv>
+      <marker>3.</marker>
+    </ldiv>
+    <location value="114"/>
+    <location value="327"/>
+    <location value="458"/>
+    <location value="349"/>
+    Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
+  </list>
+  <picture>
+    <location value="120"/>
+    <location value="81"/>
+    <location value="448"/>
+    <location value="305"/>
+    <caption>
+      <location value="114"/>
+      <location value="311"/>
+      <location value="274"/>
+      <location value="316"/>
+      Figure 4-68   Visual Explain with RCAC enabled
+    </caption>
+  </picture>
+  <picture>
+    <location value="53"/>
+    <location value="358"/>
+    <location value="425"/>
+    <location value="430"/>
+    <caption>
+      <location value="54"/>
+      <location value="432"/>
+      <location value="190"/>
+      <location value="437"/>
+      Figure 4-69   Index advice with no RCAC
+    </caption>
+  </picture>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="180"/>
+    <location value="488"/>
+    <location value="458"/>
+    <location value="494"/>
+    Chapter 4. Implementing Row and Column Access Control: Banking example 77
+  </page_footer>
+  <page_break/>
+  <code>
+    <location value="54"/>
+    <location value="47"/>
+    <location value="419"/>
+    <location value="457"/>
+<![CDATA[THEN C . CUSTOMER_TAX_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( C . CUSTOMER_TAX_ID , 8 , 4 ) ) WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_DRIVERS_LICENSE_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_DRIVERS_LICENSE_NUMBER RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER ELSE '*************' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_LOGIN_ID_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_LOGIN_ID RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_LOGIN_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_LOGIN_ID ELSE '*****' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION ELSE '*****' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ANSWER_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION_ANSWER RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER ELSE '*****' END ENABLE  ; ALTER TABLE BANK_SCHEMA.CUSTOMERS ACTIVATE ROW ACCESS CONTROL ACTIVATE COLUMN ACCESS CONTROL ;]]>  </code>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="54"/>
+    <location value="488"/>
+    <location value="70"/>
+    <location value="494"/>
+    124
+  </page_footer>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="83"/>
+    <location value="488"/>
+    <location value="284"/>
+    <location value="494"/>
+    Row and Column Access Control Support in IBM DB2 for i
+  </page_footer>
+  <page_break/>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="467"/>
+    <location value="29"/>
+    <location value="473"/>
+    <location value="35"/>
+    ®
+  </page_header>
+  <text>
+    <location value="240"/>
+    <location value="18"/>
+    <location value="347"/>
+    <location value="33"/>
+    Back cover
+  </text>
+  <heading level="2">
+    <location value="23"/>
+    <location value="48"/>
+    <location value="374"/>
+    <location value="91"/>
+    Row and Column Access Control Support in IBM DB2 for i
+  </heading>
+  <text>
+    <location value="22"/>
+    <location value="157"/>
+    <location value="107"/>
+    <location value="172"/>
+    Implement roles and separation of duties
+  </text>
+  <text>
+    <location value="22"/>
+    <location value="184"/>
+    <location value="101"/>
+    <location value="209"/>
+    Leverage row permissions on the database
+  </text>
+  <text>
+    <thread thread_id="2"/>
+    <location value="22"/>
+    <location value="220"/>
+    <location value="102"/>
+    <location value="245"/>
+    Protect columns by defining column masks
+  </text>
+  <text>
+    <thread thread_id="2"/>
+    <location value="128"/>
+    <location value="157"/>
+    <location value="347"/>
+    <location value="209"/>
+    This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.
+  </text>
+  <text>
+    <location value="128"/>
+    <location value="214"/>
+    <location value="347"/>
+    <location value="251"/>
+    This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.
+  </text>
+  <text>
+    <location value="143"/>
+    <location value="408"/>
+    <location value="194"/>
+    <location value="414"/>
+    REDP-5110-00
+  </text>
+  <picture>
+    <location value="397"/>
+    <location value="52"/>
+    <location value="496"/>
+    <location value="123"/>
+    <text>
+      <location value="397"/>
+      <location value="106"/>
+      <location value="486"/>
+      <location value="122"/>
+      Redpaper
+    </text>
+    <text>
+      <location value="487"/>
+      <location value="111"/>
+      <location value="495"/>
+      <location value="117"/>
+      ™
+    </text>
+  </picture>
+  <text>
+    <location value="391"/>
+    <location value="160"/>
+    <location value="468"/>
+    <location value="168"/>
+    INTERNATIONAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="169"/>
+    <location value="443"/>
+    <location value="177"/>
+    TECHNICAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="178"/>
+    <location value="434"/>
+    <location value="186"/>
+    SUPPORT
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="187"/>
+    <location value="461"/>
+    <location value="195"/>
+    ORGANIZATION
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="227"/>
+    <location value="478"/>
+    <location value="234"/>
+    BUILDING TECHNICAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="235"/>
+    <location value="492"/>
+    <location value="242"/>
+    INFORMATION BASED ON
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="243"/>
+    <location value="487"/>
+    <location value="250"/>
+    PRACTICAL EXPERIENCE
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="258"/>
+    <location value="492"/>
+    <location value="265"/>
+    IBM Redbooks are developed
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="266"/>
+    <location value="474"/>
+    <location value="272"/>
+    by the IBM International
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="273"/>
+    <location value="454"/>
+    <location value="279"/>
+    Technical Support
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="280"/>
+    <location value="483"/>
+    <location value="286"/>
+    Organization. Experts from
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="287"/>
+    <location value="492"/>
+    <location value="293"/>
+    IBM, Customers and Partners
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="294"/>
+    <location value="492"/>
+    <location value="300"/>
+    from around the world create
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="301"/>
+    <location value="487"/>
+    <location value="307"/>
+    timely technical information
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="308"/>
+    <location value="490"/>
+    <location value="315"/>
+    based on realistic scenarios.
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="315"/>
+    <location value="483"/>
+    <location value="322"/>
+    Specific recommendations
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="322"/>
+    <location value="475"/>
+    <location value="329"/>
+    are provided to help you
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="330"/>
+    <location value="490"/>
+    <location value="336"/>
+    implement IT solutions more
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="337"/>
+    <location value="453"/>
+    <location value="343"/>
+    effectively in your
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="344"/>
+    <location value="436"/>
+    <location value="350"/>
+    environment.
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="374"/>
+    <location value="478"/>
+    <location value="381"/>
+    For more information:
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="382"/>
+    <location value="425"/>
+    <location value="389"/>
+    ibm.com
+  </text>
+  <text>
+    <location value="425"/>
+    <location value="382"/>
+    <location value="462"/>
+    <location value="389"/>
+    /redbooks
+  </text>
+</doclang>
