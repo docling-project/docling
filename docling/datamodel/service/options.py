@@ -490,7 +490,7 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = True
 
-    heading_hierarchy_options: Annotated[
+    pdf_heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(
             description=(
