@@ -216,6 +216,20 @@ class OcrOptions(BaseOptions):
         ),
     ]
 
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Image scale multiplier applied before running OCR. The page is "
+                "rendered at 72 DPI times this factor, so the default 3 yields "
+                "216 DPI. Lower it when the source image is already high "
+                "resolution and upscaling degrades recognition."
+            ),
+            examples=[1.0, 3.0],
+            gt=0.0,
+        ),
+    ] = 3.0
+
     # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
     # When set to True it forces `mode` to FULL_PAGE
     force_full_page_ocr: Annotated[
