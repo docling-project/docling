@@ -55,29 +55,38 @@ Collabo ... vention measures at all school levels.
   item-49 at level 1: text: 
   item-50 at level 1: text: 
   item-51 at level 1: picture
-  item-52 at level 1: picture
-  item-53 at level 1: text: 
-  item-54 at level 1: picture
-  item-55 at level 1: picture
-  item-56 at level 1: section: group textbox
-    item-57 at level 2: text: Whether the test results are pos ... legally designated infectious disease.
-    item-58 at level 2: text: No
-  item-59 at level 1: picture
+  item-52 at level 1: section: group textbox
+    item-53 at level 2: inline: group group
+      item-54 at level 3: text: The Health Bureau will handle
+      item-55 at level 3: text: reporting and specimen collection
+      item-56 at level 3: text: .
+    item-57 at level 2: text: 
+  item-58 at level 1: picture
+  item-59 at level 1: text: 
   item-60 at level 1: picture
   item-61 at level 1: section: group textbox
-    item-62 at level 2: text: Yes
-  item-63 at level 1: picture
-  item-64 at level 1: section: group textbox
-    item-65 at level 2: text: Yes
-  item-66 at level 1: picture
-  item-67 at level 1: text: 
-  item-68 at level 1: section: group textbox
-    item-69 at level 2: text: Case closed.
-    item-70 at level 2: text: 
-    item-71 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
+    item-62 at level 2: text: Whether the epidemic has eased.
+    item-63 at level 2: text: 
+  item-64 at level 1: picture
+  item-65 at level 1: section: group textbox
+    item-66 at level 2: text: Whether the test results are pos ... legally designated infectious disease.
+    item-67 at level 2: text: No
+  item-68 at level 1: picture
+  item-69 at level 1: picture
+  item-70 at level 1: section: group textbox
+    item-71 at level 2: text: Yes
   item-72 at level 1: picture
   item-73 at level 1: section: group textbox
-    item-74 at level 2: text: No
+    item-74 at level 2: text: Yes
   item-75 at level 1: picture
-  item-76 at level 1: picture
-  item-77 at level 1: text: 
+  item-76 at level 1: text: 
+  item-77 at level 1: section: group textbox
+    item-78 at level 2: text: Case closed.
+    item-79 at level 2: text: 
+    item-80 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
+  item-81 at level 1: picture
+  item-82 at level 1: section: group textbox
+    item-83 at level 2: text: No
+  item-84 at level 1: picture
+  item-85 at level 1: picture
+  item-86 at level 1: text: 

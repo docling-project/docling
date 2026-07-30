@@ -46,9 +46,13 @@ Collaborate with the Health Bureau in conducting epidemiological investigations 
 
 <!-- image -->
 
+The Health Bureau will handle **reporting and specimen collection** .
+
 <!-- image -->
 
 <!-- image -->
+
+**Whether the epidemic has eased.**
 
 <!-- image -->
 
