@@ -81,16 +81,12 @@ class _RapidOcrArtifact:
 
 @dataclass(frozen=True)
 class _RapidOcrModelSpec:
-    """One RapidOCR checkpoint set, as requested or as resolved.
-
-    `_parse_rapidocr_model_spec` yields the requested form, carrying only what the user
-    supplied; `_resolve_rapidocr` yields the resolved form with every field populated.
-    """
+    """One RapidOCR checkpoint set, as requested or as resolved"""
 
     # Docling inference backend name, one of _RAPIDOCR_BACKENDS.
     backend: str
 
-    # Language exactly as the user wrote it, echoed back in error messages.
+    # Language exactly as the user wrote it
     user_lang: str | None = None
 
     # Language code the rapidocr registry expects, after normalization and aliasing.
@@ -308,9 +304,7 @@ class RapidOcrModel(BaseOcrModel):
                     lang,
                     self.options.lang[1:],
                 )
-            resolved = _resolve_rapidocr(lang, self.options.backend)
-            # _resolve_rapidocr always populates these; the fields are optional only so the
-            # same type can carry an unresolved prefetch request.
+            resolved: _RapidOcrModelSpec = _resolve_rapidocr(lang, self.options.backend)
             assert resolved.ppocr_version is not None
             assert resolved.rapidocr_lang_token is not None
             ppocr_version = resolved.ppocr_version
@@ -322,8 +316,7 @@ class RapidOcrModel(BaseOcrModel):
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
 
-            # A pinned path that does not exist is a configuration error with or without
-            # artifacts_path, so fail here instead of letting RapidOCR crash later.
+            # A pinned path that does not exist is a configuration error
             missing_pinned = [
                 model_path
                 for model_path in (
@@ -341,8 +334,7 @@ class RapidOcrModel(BaseOcrModel):
                     f"The following RapidOCR paths do not exist:\n{listed}"
                 )
 
-            # Params forwarded to RapidOCR only in the library-managed flow (no
-            # artifacts_path); empty when we hand RapidOCR explicit model paths.
+            # Params forwarded to RapidOCR only in the library-managed flow (no artifacts_path)
             lang_params: dict[str, object] = {}
 
             if artifacts_path is not None:

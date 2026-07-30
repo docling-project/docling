@@ -129,7 +129,7 @@ def download(
             "--rapidocr-backend-lang",
             help=(
                 "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
-                "(e.g. 'onnxruntime:th'). Repeat for multiple. Replaces the default set."
+                "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
             ),
         ),
     ] = None,
