@@ -73,6 +73,7 @@ nav:
       - Model catalog: usage/model_catalog.md
       - GPU support: usage/gpu.md
       - MCP server: usage/mcp.md
+      - Agent skills: usage/agent_skills.md
       - Jobkit: usage/jobkit.md
       - API server:
         - Overview: usage/api_server/index.md
@@ -95,7 +96,6 @@ nav:
     # and emitted to docs/_generated/examples/. The nav entries below point at
     # the generated markdown.
     - Examples: examples/index.md
-    - "🤝 Agent skill (Cursor / assistants)": examples/agent_skill/docling-document-intelligence/README.md
     - 🔀 Conversion:
       - "Simple conversion": _generated/examples/minimal.md
       - "Custom conversion": _generated/examples/custom_convert.md
