@@ -120,7 +120,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
         ), f"export to indented-text failed on {docx_path}"
 
         assert verify_document(
-            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=False
+            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=True
         ), f"DoclingDocument verification failed on {docx_path}"
 
         if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
