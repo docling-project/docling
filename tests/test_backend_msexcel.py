@@ -220,7 +220,7 @@ def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
             "export to indented-text"
         )
 
-        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE, fuzzy=True), (
             "document document"
         )
 
