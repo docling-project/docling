@@ -209,7 +209,6 @@ def download(
           typer.echo(output_dir)
       else:
           typer.secho(f"\nModels downloaded into: {output_dir}.", fg="green")
-
           console.print(
               "\n",
               "Docling can now be configured for running offline using the local artifacts.\n\n",
