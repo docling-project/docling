@@ -47,8 +47,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    LayoutObjectDetectionOptions,
-    LayoutOptions,
     LayoutPostprocessorOptions,
     ThreadedPdfPipelineOptions,
 )
@@ -618,16 +616,11 @@ class StandardPdfPipeline(ConvertPipeline):
 
         # Interim solution: Create LayoutPostprocessorOptions from the layout_option parameters
         lo = self.pipeline_options.layout_options
-        create_orphan = (
-            lo.create_orphan_clusters
-            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
-            else False
-        )
         self.layout_postprocessing_model = LayoutPostprocessingModel(
             options=LayoutPostprocessorOptions(
                 skip_cell_assignment=lo.skip_cell_assignment,
                 keep_empty_clusters=lo.keep_empty_clusters,
-                create_orphan_clusters=create_orphan,
+                create_orphan_clusters=lo.create_orphan_clusters,
                 run_postprocessor=self.layout_model.requires_layout_postprocessing,
             )
         )
