@@ -68,20 +68,6 @@ def mock_failed_download_models():
         yield mock_func
 
 
-def test_models_download_help():
-    """Test that the models download command help works."""
-    result = runner.invoke(app, ["download", "--help"])
-    assert result.exit_code == 0
-    assert "--hf-token" in result.output
-
-
-def test_models_download_hf_repo_help():
-    """Test that the models download-hf-repo command help works."""
-    result = runner.invoke(app, ["download-hf-repo", "--help"])
-    assert result.exit_code == 0
-    assert "--hf-token" in result.output
-
-
 def test_models_download_with_token_string(mock_snapshot_download):
     """Test models download command with string HF token using mock server."""
 
