@@ -167,7 +167,6 @@ def download(
             _resolve_easyocr_recognition_models(easyocr_lang)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
-            
     if rapidocr_backend_lang is not None:
         if _AvailableModels.RAPIDOCR not in to_download:
             raise typer.BadParameter(
@@ -181,7 +180,6 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-backend-lang"
             ) from error
-    
     try:
         output_dir = download_models(
             output_dir=output_dir,
@@ -209,7 +207,6 @@ def download(
             with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
             hf_token=hf_token,
         )
-        
         if quiet:
             typer.echo(output_dir)
         else:
