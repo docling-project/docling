@@ -22,6 +22,7 @@ from docling.datamodel.pipeline_options import (
     LayoutOptions,
     PdfPipelineOptions,
 )
+from docling.datamodel.settings import InferenceSettings, scoped
 from docling.models.factories import get_layout_factory
 from docling.models.stages.layout.layout_model import LayoutModel, _translate
 from docling.models.stages.layout.layout_object_detection_model import (
@@ -55,8 +56,11 @@ def test_layout_options_construction_warns():
 
 
 def test_default_pipeline_uses_object_detection_options():
-    options = PdfPipelineOptions()
+    with scoped(inference=InferenceSettings(compile_torch_models=False)):
+        options = PdfPipelineOptions()
+
     assert isinstance(options.layout_options, LayoutObjectDetectionOptions)
+    assert options.layout_options.engine_options.compile_model is False
     assert (
         options.layout_options.model_spec.repo_id
         == "docling-project/docling-layout-heron"

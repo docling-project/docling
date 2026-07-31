@@ -1981,7 +1981,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
                 "Specifies which layout model to use (default: Heron)."
             )
         ),
-    ] = LayoutObjectDetectionOptions()
+    ] = Field(default_factory=LayoutObjectDetectionOptions)
     code_formula_options: Annotated[
         CodeFormulaVlmOptions,
         Field(
