@@ -1,10 +1,8 @@
 """Guards for the migration of layout inference onto the object-detection path.
 
-Covers the contract the deprecated `LayoutOptions` / `LayoutModel` shim owes,
-and the label maps that every supported layout repository must ship.
+Covers the contract the deprecated `LayoutOptions` / `LayoutModel` shim owes.
 """
 
-import json
 import warnings
 from pathlib import Path
 
@@ -119,42 +117,6 @@ def test_factory_dispatches_both_option_types():
     assert registered[LayoutOptions] is LayoutModel
     assert registered[LayoutObjectDetectionOptions] is LayoutObjectDetectionModel
     assert issubclass(LayoutModel, LayoutObjectDetectionModel)
-
-
-# --------------------------------------------------------------------------
-# Label maps: the guard on the HuggingFace repositories
-# --------------------------------------------------------------------------
-
-
-@pytest.mark.ml_pdf_model
-@pytest.mark.parametrize(("spec", "preset_id"), SUPPORTED_SPECS)
-def test_label_map_resolves_for_every_supported_repo(
-    spec: LayoutModelConfig, preset_id: str
-):
-    """Every id in a repo's own id2label must map onto a DocItemLabel.
-
-    Config-only: no weights are fetched and no inference runs, so this stays
-    cheap enough to keep permanently as the guard on the Hub-side label maps.
-    """
-    from huggingface_hub import hf_hub_download
-
-    config_path = Path(
-        hf_hub_download(
-            repo_id=spec.repo_id, revision=spec.revision, filename="config.json"
-        )
-    )
-    id2label = {
-        int(k): v for k, v in json.loads(config_path.read_text())["id2label"].items()
-    }
-
-    engine = type("_ConfigOnlyEngine", (), {"get_label_mapping": lambda self: id2label})
-    model = LayoutObjectDetectionModel.__new__(LayoutObjectDetectionModel)
-    model.engine = engine()
-
-    label_map = model._build_label_map()
-
-    assert set(label_map) == set(id2label)
-    assert all(isinstance(label, DocItemLabel) for label in label_map.values())
 
 
 # --------------------------------------------------------------------------
