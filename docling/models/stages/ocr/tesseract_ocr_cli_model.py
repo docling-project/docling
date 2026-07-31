@@ -52,7 +52,8 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         self.options: TesseractCliOcrOptions
 
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None

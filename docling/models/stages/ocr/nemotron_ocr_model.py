@@ -120,7 +120,8 @@ class NemotronOcrModel(BaseOcrModel):
             accelerator_options=accelerator_options,
         )
         self.options: NemotronOcrOptions
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         if self.enabled:
             self.validate_runtime(accelerator_options=accelerator_options)
@@ -246,7 +247,7 @@ class NemotronOcrModel(BaseOcrModel):
         ocr_rect: BoundingBox,
         image_width: int,
         image_height: int,
-        scale: int,
+        scale: float,
     ) -> TextCell:
         # `nemotron_ocr` returns normalized `left/right` and an inverted
         # pair `lower/upper`, where `lower` is the top Y and `upper` is the

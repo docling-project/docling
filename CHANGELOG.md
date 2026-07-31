@@ -1,3 +1,22 @@
+## [v2.117.0](https://github.com/docling-project/docling/releases/tag/v2.117.0) - 2026-07-30
+
+### Feature
+
+* **service datamodels:** Chunking options and targets ([#3857](https://github.com/docling-project/docling/issues/3857)) ([`0877ac0`](https://github.com/docling-project/docling/commit/0877ac0b47248506d43a1c720ee930d15ec68e6b))
+* **vlm:** Expose OpenAI logprobs as generated tokens ([#3903](https://github.com/docling-project/docling/issues/3903)) ([`c18bdf8`](https://github.com/docling-project/docling/commit/c18bdf8d574673a35ac147aa4d070f7f6859fd9c))
+
+### Fix
+
+* **tests:** Increase tolerance for fuzzy test on bbox ([#3912](https://github.com/docling-project/docling/issues/3912)) ([`8f9f2c8`](https://github.com/docling-project/docling/commit/8f9f2c86b2a934bcc60fb770b463a0ff129e39ab))
+* **ocr:** Make the OCR render scale configurable instead of hardcoded ([#3877](https://github.com/docling-project/docling/issues/3877)) ([`e7f9e60`](https://github.com/docling-project/docling/commit/e7f9e605fdcbfbd30405970953acae34353631f0))
+* **pdf-outline:** Use iterative walk to avoid RecursionError on deep outlines ([#3855](https://github.com/docling-project/docling/issues/3855)) ([`81a0149`](https://github.com/docling-project/docling/commit/81a0149fd95d8304133a600dae4b5a8210d5fb9a))
+* Skip image enrichment without pages ([#3875](https://github.com/docling-project/docling/issues/3875)) ([`00acb59`](https://github.com/docling-project/docling/commit/00acb59c29f1302085ff8d5f3582ffa1fe10b798))
+* **odf:** Skip a draw:object whose embedded part is missing ([#3876](https://github.com/docling-project/docling/issues/3876)) ([`2c3e55b`](https://github.com/docling-project/docling/commit/2c3e55b35114b3f76e999b5eb22412e0fcf535df))
+
+### Documentation
+
+* Add trivial (pass-through) chunker example ([#3861](https://github.com/docling-project/docling/issues/3861)) ([`ba8251e`](https://github.com/docling-project/docling/commit/ba8251e9cda84bab44cebe3b884119d3f50cb12a))
+
 ## [v2.116.0](https://github.com/docling-project/docling/releases/tag/v2.116.0) - 2026-07-29
 
 ### Feature
