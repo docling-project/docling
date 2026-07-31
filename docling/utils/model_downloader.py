@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple
 
 from docling.datamodel.pipeline_options import (
-    LayoutOptions,
+    LayoutObjectDetectionOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
@@ -17,7 +17,6 @@ from docling.datamodel.vlm_model_specs import (
 )
 from docling.exceptions import DoclingModelDownloadError, DoclingMultiModelDownloadError
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
-from docling.models.stages.layout.layout_model import LayoutModel
 from docling.models.stages.ocr.easyocr_model import (
     EasyOcrModel,
     _resolve_easyocr_recognition_models,
@@ -118,13 +117,25 @@ def download_models(
     token_kwargs = {**common_kwargs, "token": hf_token}
 
     if with_layout:
-        _safe_download(
-            "LayoutModel",
-            LayoutModel.download_models,
-            failed_downloads,
-            local_dir=output_dir / LayoutOptions().model_spec.model_repo_folder,
-            **hf_kwargs,
-        )
+        _log.info("Downloading layout model...")
+        layout_spec = LayoutObjectDetectionOptions().model_spec
+        # Fetch every engine variant: e.g. the ONNX engine reads from its own repo.
+        layout_repos = {layout_spec.repo_id: layout_spec.revision}
+        for override in layout_spec.engine_overrides.values():
+            merged = override.merge_with(layout_spec.repo_id, layout_spec.revision)
+            assert merged.repo_id is not None and merged.revision is not None
+            layout_repos[merged.repo_id] = merged.revision
+        for repo_id, revision in layout_repos.items():
+            _safe_download(
+                model_name=repo_id,
+                download_hf_model,
+                failed_downloads,
+                repo_id=repo_id,
+                revision=revision,
+                local_dir=output_dir / repo_id.replace("/", "--"),
+                **token_kwargs,
+            )
+
     if with_tableformer:
         _safe_download(
             "TableStructureModel",

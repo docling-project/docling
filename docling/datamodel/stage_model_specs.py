@@ -1005,6 +1005,55 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
 )
 
+# Only Heron has an ONNX export, hence no engine_overrides on the variants below.
+OBJECT_DETECTION_LAYOUT_HERON_101 = ObjectDetectionStagePreset(
+    preset_id="layout_heron_101",
+    name="Layout Heron 101",
+    description="RT-DETR layout-heron model (ResNet101)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron_101",
+        repo_id="docling-project/docling-layout-heron-101",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM = ObjectDetectionStagePreset(
+    preset_id="layout_egret_medium",
+    name="Layout Egret Medium",
+    description="D-FINE layout-egret model (medium)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_medium",
+        repo_id="docling-project/docling-layout-egret-medium",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_LARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_large",
+    name="Layout Egret Large",
+    description="D-FINE layout-egret model (large)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_large",
+        repo_id="docling-project/docling-layout-egret-large",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_XLARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_xlarge",
+    name="Layout Egret XLarge",
+    description="D-FINE layout-egret model (xlarge)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_xlarge",
+        repo_id="docling-project/docling-layout-egret-xlarge",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
 
 # -----------------------------------------------------------------------------
 # IMAGE CLASSIFICATION PRESETS

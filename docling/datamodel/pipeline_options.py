@@ -1459,9 +1459,9 @@ class BaseLayoutOptions(BaseOptions):
     for empty-cluster retention and cell-assignment skipping.
 
     See Also:
-        `LayoutOptions`: Default layout model configuration (Heron).
-        `LayoutObjectDetectionOptions`: Object-detection runtime layout
-            with preset support.
+        `LayoutObjectDetectionOptions`: Default layout options; object-detection
+            runtime with preset support.
+        `LayoutOptions`: Deprecated predecessor, translated onto the above.
     """
 
     keep_empty_clusters: Annotated[
@@ -1482,22 +1482,6 @@ class BaseLayoutOptions(BaseOptions):
             )
         ),
     ] = False
-
-
-class LayoutOptions(BaseLayoutOptions):
-    """Options for layout processing using Docling's built-in layout model.
-
-    Provides configuration for the default layout analysis path, including
-    model selection (e.g., Heron, Egret variants) and orphan cluster
-    creation for elements not assigned to any detected structure.
-
-    Notes:
-        The default model is ``DOCLING_LAYOUT_HERON``. For higher accuracy
-        on complex documents, consider ``DOCLING_LAYOUT_EGRET_LARGE`` or
-        ``DOCLING_LAYOUT_EGRET_XLARGE``.
-    """
-
-    kind: ClassVar[str] = "docling_layout_default"
     create_orphan_clusters: Annotated[
         bool,
         Field(
@@ -1507,6 +1491,30 @@ class LayoutOptions(BaseLayoutOptions):
             )
         ),
     ] = True
+
+
+class LayoutOptions(BaseLayoutOptions):
+    """Deprecated. Use `LayoutObjectDetectionOptions` instead.
+
+    Retained so existing code keeps working: it still constructs, still
+    selects any of the supported layout models, and is translated onto
+    `LayoutObjectDetectionOptions` by the `LayoutModel` shim.
+
+    Notes:
+        ``DOCLING_LAYOUT_V2`` is no longer supported and falls back to
+        ``DOCLING_LAYOUT_HERON`` with a warning.
+
+        Removing this class also retires `layout_model_specs` (including every
+        ``DOCLING_LAYOUT_*`` constant and `LayoutModelConfig`) and the
+        `models/stages/layout/layout_model.py` shim, which exist solely to
+        serve it.
+
+    Example:
+        >>> LayoutObjectDetectionOptions.from_preset("layout_heron_default")
+    """
+
+    kind: ClassVar[str] = "docling_layout_default"
+
     model_spec: Annotated[
         LayoutModelConfig,
         Field(
@@ -1517,6 +1525,16 @@ class LayoutOptions(BaseLayoutOptions):
         ),
     ] = DOCLING_LAYOUT_HERON
 
+    def model_post_init(self, context: Any, /) -> None:
+        super().model_post_init(context)
+        warnings.warn(
+            "LayoutOptions is deprecated and will be removed in a future release. "
+            "Use LayoutObjectDetectionOptions, e.g. "
+            'LayoutObjectDetectionOptions.from_preset("layout_heron_default").',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
 
 class LayoutObjectDetectionOptions(
     ObjectDetectionStagePresetMixin,
@@ -1525,27 +1543,20 @@ class LayoutObjectDetectionOptions(
 ):
     """Options for layout detection using object-detection runtimes.
 
-    Alternative to `LayoutOptions` that uses the pluggable object-detection
-    engine system with preset support via `ObjectDetectionStagePresetMixin`.
-    Use ``from_preset()`` to create instances from registered model presets.
+    The default layout options. Uses the pluggable object-detection engine
+    system with preset support via `ObjectDetectionStagePresetMixin`; use
+    ``from_preset()`` to create instances from registered model presets.
 
     Notes:
-        Orphan cluster creation is disabled by default (unlike
-        `LayoutOptions`). Enable ``create_orphan_clusters`` if unassigned
-        elements must be preserved.
+        The default model is ``layout_heron_default``. For higher accuracy on
+        complex documents, consider the ``layout_egret_large`` or
+        ``layout_egret_xlarge`` presets.
+
+    Example:
+        >>> LayoutObjectDetectionOptions.from_preset("layout_egret_large")
     """
 
     kind: ClassVar[str] = "layout_object_detection"
-
-    create_orphan_clusters: Annotated[
-        bool,
-        Field(
-            description=(
-                "Create clusters for orphaned elements not assigned to any structure. When True, isolated text or "
-                "elements are grouped into their own clusters. Recommended for complete document coverage."
-            )
-        ),
-    ] = False
 
     model_spec: ObjectDetectionModelSpec = Field(
         default_factory=lambda: (
@@ -1559,6 +1570,18 @@ class LayoutObjectDetectionOptions(
 
 LayoutObjectDetectionOptions.register_preset(
     stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON_101
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_LARGE
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_XLARGE
 )
 
 
@@ -1958,7 +1981,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
                 "Specifies which layout model to use (default: Heron)."
             )
         ),
-    ] = LayoutOptions()
+    ] = Field(default_factory=LayoutObjectDetectionOptions)
     code_formula_options: Annotated[
         CodeFormulaVlmOptions,
         Field(

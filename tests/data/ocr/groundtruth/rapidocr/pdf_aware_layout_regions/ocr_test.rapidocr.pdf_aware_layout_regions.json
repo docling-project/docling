@@ -39,20 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 71.67,
-            "t": 765.59,
-            "r": 506.33,
-            "b": 689.92,
+            "l": 68.33,
+            "t": 771.59,
+            "r": 509.0,
+            "b": 688.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            95
+            94
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in ane easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in ane easy self contained package"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

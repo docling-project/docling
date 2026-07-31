@@ -4,10 +4,32 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from typing import Type
 
+from docling_core.types.doc import DocItemLabel
+
 from docling.datamodel.base_models import LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseLayoutOptions
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
+
+# Cluster-label groupings shared by layout models and page assembly.
+TEXT_ELEM_LABELS = [
+    DocItemLabel.TEXT,
+    DocItemLabel.FOOTNOTE,
+    DocItemLabel.CAPTION,
+    DocItemLabel.CHECKBOX_UNSELECTED,
+    DocItemLabel.CHECKBOX_SELECTED,
+    DocItemLabel.SECTION_HEADER,
+    DocItemLabel.PAGE_HEADER,
+    DocItemLabel.PAGE_FOOTER,
+    DocItemLabel.CODE,
+    DocItemLabel.LIST_ITEM,
+    DocItemLabel.FORMULA,
+]
+PAGE_HEADER_LABELS = [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]
+TABLE_LABELS = [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
+FIGURE_LABEL = DocItemLabel.PICTURE
+FORMULA_LABEL = DocItemLabel.FORMULA
+CONTAINER_LABELS = [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]
 
 
 class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
