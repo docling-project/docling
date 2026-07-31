@@ -23,16 +23,18 @@ import json
 import logging
 from typing import Optional
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    ImageRef,
-    ProvenanceItem,
     Size,
 )
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
+    ImageRef,
+    ProvenanceItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import _parse_table_html

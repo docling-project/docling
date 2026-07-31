@@ -5,7 +5,12 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Set, Union
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.table.table_data import (
+    TableCell,
+    TableData,
+)
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat

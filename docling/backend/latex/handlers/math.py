@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.latex.constants import ENV_MATH_CLEAN, ENV_MATH_DISPLAY_PREFIXES
 

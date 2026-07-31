@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal, cast
 
 import torch
-from docling_core.types.doc import DocItemLabel, TableCell
+from docling_core.types.doc.items.table.table_data import TableCell
+from docling_core.types.doc.labels import DocItemLabel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions

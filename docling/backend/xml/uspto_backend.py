@@ -50,16 +50,16 @@ from xml.sax import SAXParseException
 from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
 from xml.sax.xmlreader import AttributesImpl
 
-from docling_core.types.doc import (
-    DocItem,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.scalars import LevelNumber
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
-    TextItem,
 )
-from docling_core.types.doc.document import LevelNumber
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import DocItemLabel
 from pydantic import NonNegativeInt
 from typing_extensions import Self, TypedDict, override
 

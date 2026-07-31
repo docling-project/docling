@@ -3,7 +3,9 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
+from docling_core.types.doc.items.code import CodeItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend

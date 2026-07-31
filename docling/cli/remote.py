@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
-from docling_core.types.doc import ImageRefMode
+from docling_core.types.doc.base import ImageRefMode
 
 from docling.cli.export_utils import _export_flags_from_formats, _split_list
 from docling.cli.main import ChunkerType

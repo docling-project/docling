@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
-from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+    Size,
+)
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfPageBoundaryType,

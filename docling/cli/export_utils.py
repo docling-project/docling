@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from docling_core.types.doc import ImageRefMode
+from docling_core.types.doc.base import ImageRefMode
 
 from docling.datamodel.base_models import OutputFormat
 

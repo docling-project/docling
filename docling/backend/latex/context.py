@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from docling_core.types.doc.document import (
-    DocItemLabel,
-    DoclingDocument,
-    Formatting,
-    NodeItem,
-)
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.labels import DocItemLabel
 
 
 @dataclass

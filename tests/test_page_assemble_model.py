@@ -4,7 +4,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    Size,
+)
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfHyperlink,

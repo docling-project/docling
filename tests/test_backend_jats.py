@@ -53,8 +53,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
-from docling_core.types.doc.document import Script
+from docling_core.types.doc.common.formatting import Script
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+)
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc.base import BoundingBox
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (

@@ -38,7 +38,7 @@ from docling_core.transforms.serializer.html import (
     HTMLParams,
 )
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
-from docling_core.types.doc import ImageRefMode
+from docling_core.types.doc.base import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console

@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import List, Optional, Type
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 from PIL import Image
 

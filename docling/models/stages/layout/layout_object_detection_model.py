@@ -6,7 +6,11 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set
 
-from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

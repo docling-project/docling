@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc.base import BoundingBox
 
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,

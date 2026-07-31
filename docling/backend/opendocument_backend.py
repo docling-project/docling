@@ -22,30 +22,42 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, cast
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
-    ContentLayer,
     CoordOrigin,
-    DocItem,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
+    Size,
+)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.formatting import (
     Formatting,
-    GroupLabel,
+    Script,
+)
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ImageRef,
+    ProvenanceItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import (
+    DocItem,
     NodeItem,
-    PictureClassificationLabel,
+)
+from docling_core.types.doc.items.picture.meta import (
     PictureClassificationMetaField,
     PictureClassificationPrediction,
     PictureMeta,
-    ProvenanceItem,
+    TabularChartMetaField,
+)
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.table.table_data import (
     RichTableCell,
-    Script,
-    Size,
     TableCell,
     TableData,
-    TableItem,
-    TabularChartMetaField,
+)
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+    PictureClassificationLabel,
 )
 from PIL import Image as PILImage
 from typing_extensions import override

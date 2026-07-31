@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc.document import DoclingDocument
 
 from docling.datamodel.backend_options import (
     BackendOptions,

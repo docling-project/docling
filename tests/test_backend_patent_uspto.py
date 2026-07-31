@@ -7,7 +7,9 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from docling_core.types import DoclingDocument
-from docling_core.types.doc import DocItemLabel, TableData, TextItem
+from docling_core.types.doc.items.table.table_data import TableData
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
 from docling.datamodel.base_models import InputFormat

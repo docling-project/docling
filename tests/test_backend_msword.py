@@ -4,14 +4,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import (
-    CodeItem,
-    ContentLayer,
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.items.code import CodeItem
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.labels import (
     DocItemLabel,
-    GroupItem,
     PictureClassificationLabel,
-    PictureItem,
-    TableItem,
 )
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE

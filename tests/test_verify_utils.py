@@ -1,6 +1,10 @@
 import pytest
-from docling_core.types.doc import DoclingDocument, ImageRef, ProvenanceItem
 from docling_core.types.doc.base import BoundingBox, Size
+from docling_core.types.doc.common.reference import (
+    ImageRef,
+    ProvenanceItem,
+)
+from docling_core.types.doc.document import DoclingDocument
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 

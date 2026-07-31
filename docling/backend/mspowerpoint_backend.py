@@ -8,25 +8,33 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupLabel,
+    Size,
+)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ImageRef,
-    PictureClassificationLabel,
+    ProvenanceItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.picture.meta import (
     PictureClassificationMetaField,
     PictureClassificationPrediction,
     PictureMeta,
-    ProvenanceItem,
-    Size,
-    TableCell,
-    TableData,
     TabularChartMetaField,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.items.table.table_data import (
+    TableCell,
+    TableData,
+)
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+    PictureClassificationLabel,
+)
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from typing_extensions import override

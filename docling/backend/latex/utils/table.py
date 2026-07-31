@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from docling_core.types.doc.document import TableCell, TableData
+from docling_core.types.doc.items.table.table_data import (
+    TableCell,
+    TableData,
+)
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,

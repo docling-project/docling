@@ -4,7 +4,8 @@ from collections.abc import Iterable
 from typing import ClassVar, List, Type
 
 import pytest
-from docling_core.types.doc import DoclingDocument, PictureItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.picture.picture import PictureItem
 from PIL import Image
 
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement

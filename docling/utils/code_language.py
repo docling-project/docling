@@ -10,7 +10,7 @@ than ``UNKNOWN``.
 import json
 import re
 
-from docling_core.types.doc import CodeLanguageLabel
+from docling_core.types.doc.labels import CodeLanguageLabel
 
 _LABEL_BY_VALUE: dict[str, CodeLanguageLabel] = {
     label.value.lower(): label for label in CodeLanguageLabel

@@ -4,14 +4,17 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DoclingDocument,
-    ProvenanceItem,
     Size,
 )
-from docling_core.types.doc.document import ListItem, SectionHeaderItem
+from docling_core.types.doc.common.reference import ProvenanceItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.text import (
+    ListItem,
+    SectionHeaderItem,
+)
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat

@@ -5,7 +5,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
-from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+    Size,
+)
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_parse.pdf_parser import (
     ContentConfig,

@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, TextItem
+from docling_core.types.doc.items.code import CodeItem
+from docling_core.types.doc.items.text import TextItem
 from docling_core.types.doc.labels import CodeLanguageLabel, DocItemLabel
 
 from docling.datamodel.base_models import InputFormat

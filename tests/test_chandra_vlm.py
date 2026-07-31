@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, Size
+from docling_core.types.doc.base import Size
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.utils.chandra_utils import parse_chandra_html
 

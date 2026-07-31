@@ -7,13 +7,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 import pypdfium2
-from docling_core.types.doc.document import (
-    DocItemLabel,
-    DoclingDocument,
-    Formatting,
-    ImageRef,
-    NodeItem,
-)
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.common.reference import ImageRef
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
 from docling.backend.latex.constants import (

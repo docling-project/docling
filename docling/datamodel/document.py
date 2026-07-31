@@ -24,15 +24,15 @@ from typing import (
 import filetype
 
 # DO NOT REMOVE; explicitly exposed from this location
-from docling_core.types.doc import (
-    DocItem,
-    DocItemLabel,
-    DoclingDocument,
-    PictureItem,
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.text import (
     SectionHeaderItem,
-    TableItem,
     TextItem,
 )
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.utils.file import (
     FileSizeLimitExceededError,
     resolve_remote_filename,

@@ -3,14 +3,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import (
-    ContentLayer,
-    GroupItem,
-    NodeItem,
-    PictureClassificationLabel,
-    PictureItem,
-    TextItem,
-)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import PictureClassificationLabel
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend

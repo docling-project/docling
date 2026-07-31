@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy
-from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.items.table.table_data import TableCell
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc.page import (
     BoundingRectangle,
     TextCellUnit,

@@ -1,6 +1,6 @@
 from pathlib import Path, PurePath
 
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 

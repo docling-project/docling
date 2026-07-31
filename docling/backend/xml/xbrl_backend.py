@@ -26,13 +26,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Final
 
-from docling_core.types.doc import (
-    DoclingDocument,
-    DocumentOrigin,
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.key_value import (
     GraphCell,
-    GraphCellLabel,
     GraphData,
     GraphLink,
+)
+from docling_core.types.doc.labels import (
+    GraphCellLabel,
     GraphLinkLabel,
 )
 from typing_extensions import override

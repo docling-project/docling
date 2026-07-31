@@ -10,18 +10,20 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
-from docling_core.types.doc import (
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    Formatting,
-    ImageRef,
-    ListItem,
-    NodeItem,
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import ImageRef
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
+)
+from docling_core.types.doc.items.text import (
+    ListItem,
     TextItem,
 )
+from docling_core.types.doc.labels import DocItemLabel
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated, override
 

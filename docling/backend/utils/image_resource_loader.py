@@ -24,7 +24,7 @@ from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
-from docling_core.types.doc.document import ImageRef
+from docling_core.types.doc.common.reference import ImageRef
 from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
 

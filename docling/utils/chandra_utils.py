@@ -12,18 +12,22 @@ import re
 from html.parser import HTMLParser
 from typing import Optional, Union
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
+    Size,
+)
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ImageRef,
     ProvenanceItem,
-    Size,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
 )
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image as PILImage
 
 _log = logging.getLogger(__name__)

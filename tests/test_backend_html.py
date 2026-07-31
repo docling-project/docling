@@ -9,8 +9,9 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem, RichTableCell
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table_data import RichTableCell
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import (

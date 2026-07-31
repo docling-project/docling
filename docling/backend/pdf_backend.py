@@ -4,7 +4,10 @@ from io import BytesIO
 from pathlib import Path
 from typing import ClassVar, Optional, Set, Union
 
-from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    Size,
+)
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from PIL import Image
 

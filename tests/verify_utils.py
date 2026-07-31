@@ -4,16 +4,16 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from docling_core.types.doc import (
-    CodeItem,
-    DocItem,
-    DoclingDocument,
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.code import CodeItem
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.text import (
     FormulaItem,
-    PictureItem,
-    TableItem,
     TextItem,
 )
-from docling_core.types.doc.base import BoundingBox
 from PIL import Image as PILImage
 from pydantic import BaseModel, TypeAdapter
 

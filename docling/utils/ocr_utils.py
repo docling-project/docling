@@ -1,6 +1,9 @@
 from typing import Optional, Tuple
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import BoundingRectangle
 
 from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box

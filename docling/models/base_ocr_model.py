@@ -6,7 +6,11 @@ from enum import Enum
 from pathlib import Path
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+    Size,
+)
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index

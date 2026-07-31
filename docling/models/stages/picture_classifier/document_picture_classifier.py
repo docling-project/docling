@@ -3,16 +3,18 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import (
-    DoclingDocument,
-    NodeItem,
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.classification import (
     PictureClassificationClass,
     PictureClassificationData,
+)
+from docling_core.types.doc.items.picture.meta import (
     PictureClassificationMetaField,
-    PictureItem,
+    PictureClassificationPrediction,
     PictureMeta,
 )
-from docling_core.types.doc.document import PictureClassificationPrediction
+from docling_core.types.doc.items.picture.picture import PictureItem
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

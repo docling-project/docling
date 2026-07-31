@@ -12,36 +12,51 @@ from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import urlparse
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
-    CodeLanguageLabel,
     CoordOrigin,
-    DocItem,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GraphCell,
-    GraphCellLabel,
-    GraphData,
-    GraphLink,
-    GraphLinkLabel,
-    GroupItem,
-    GroupLabel,
-    PictureClassificationLabel,
-    PictureClassificationMetaField,
-    PictureClassificationPrediction,
-    PictureItem,
-    PictureMeta,
+    Size,
+)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.formatting import (
+    Formatting,
+    Script,
+)
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
+    ImageRef,
     ProvenanceItem,
     RefItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.key_value import (
+    GraphCell,
+    GraphData,
+    GraphLink,
+)
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.picture.meta import (
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
+)
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.table.table_data import (
     RichTableCell,
-    Size,
     TableCell,
     TableData,
-    TableItem,
-    TextItem,
 )
-from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import (
+    CodeLanguageLabel,
+    DocItemLabel,
+    GraphCellLabel,
+    GraphLinkLabel,
+    GroupLabel,
+    PictureClassificationLabel,
+)
 from PIL import Image
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override

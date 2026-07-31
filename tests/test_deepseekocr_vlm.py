@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument, Size
+from docling_core.types.doc.base import Size
+from docling_core.types.doc.document import DoclingDocument
 from PIL import Image as PILImage
 
 from docling.datamodel import vlm_model_specs

@@ -7,7 +7,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-from docling_core.types.doc.document import ImageRef
+from docling_core.types.doc.common.reference import ImageRef
 from PIL import Image, ImageChops
 
 from docling.backend.latex.engines.base import RenderEngine
