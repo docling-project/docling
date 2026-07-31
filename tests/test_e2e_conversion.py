@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel, PictureItem, TextItem
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
@@ -61,6 +62,21 @@ def test_e2e_pdfs_conversions():
         print(f"converting {pdf_path}")
 
         doc_result: ConversionResult = converter.convert(pdf_path)
+
+        if pdf_path.name == "amt_handbook_sample.pdf":
+            pictures = [
+                item
+                for item, _ in doc_result.document.iterate_items()
+                if isinstance(item, PictureItem)
+            ]
+            assert pictures, "expected the sample to contain pictures"
+            assert any(
+                isinstance(item, TextItem) and item.label != DocItemLabel.CAPTION
+                for picture in pictures
+                for item, _ in doc_result.document.iterate_items(
+                    root=picture, traverse_pictures=True
+                )
+            ), "pictures lost all of their non-caption text descendants"
 
         # Decide if to skip doctags comparison
         verify_doctags = pdf_path.name not in SKIP_DOCTAGS_COMPARISON

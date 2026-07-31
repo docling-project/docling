@@ -7,7 +7,6 @@ import warnings
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel
 
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -209,49 +208,6 @@ def test_predict_layout_skips_unusable_pages_without_shifting_results():
     assert len(predictions) == len(pages)
     for page, prediction in zip(pages, predictions):
         assert page.predictions.layout is prediction
-
-
-# --------------------------------------------------------------------------
-# Picture-internal text: the regression that barely moves default markdown
-# --------------------------------------------------------------------------
-
-
-@pytest.mark.ml_pdf_model
-def test_pictures_keep_their_non_caption_text_children():
-    """Orphan clusters and unclamped boxes both show up as lost picture text.
-
-    A `create_orphan_clusters` or bbox-clamping regression strips most text
-    nodes out of pictures while moving the default markdown by ~0.2%, so the
-    end-to-end markdown diff alone does not catch it.
-    """
-    from docling_core.types.doc import PictureItem, TextItem
-
-    from docling.datamodel.accelerator_options import AcceleratorDevice
-    from docling.datamodel.base_models import InputFormat
-    from docling.document_converter import DocumentConverter, PdfFormatOption
-
-    options = PdfPipelineOptions()
-    options.do_ocr = False
-    options.accelerator_options.device = AcceleratorDevice.CPU
-
-    converter = DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
-    )
-    source = Path(__file__).parent / "data/pdf/sources/amt_handbook_sample.pdf"
-    doc = converter.convert(source).document
-
-    pictures = [
-        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
-    ]
-    assert pictures, "expected the sample to contain pictures"
-
-    text_children = [
-        item
-        for picture in pictures
-        for item, _ in doc.iterate_items(root=picture, traverse_pictures=True)
-        if isinstance(item, TextItem) and item.label != DocItemLabel.CAPTION
-    ]
-    assert text_children, "pictures lost all of their non-caption text descendants"
 
 
 # --------------------------------------------------------------------------
