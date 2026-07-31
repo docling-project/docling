@@ -127,7 +127,7 @@ def download_models(
             layout_repos[merged.repo_id] = merged.revision
         for repo_id, revision in layout_repos.items():
             _safe_download(
-                model_name=repo_id,
+                repo_id,
                 download_hf_model,
                 failed_downloads,
                 repo_id=repo_id,
