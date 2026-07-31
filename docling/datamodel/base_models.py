@@ -1,3 +1,4 @@
+import mimetypes
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -123,6 +124,7 @@ class InputFormat(str, Enum):
     EMAIL = "email"
     EPUB = "epub"
     BOXNOTE = "boxnote"
+    EBCDIC = "ebcdic"
 
 
 class OutputFormat(str, Enum):
@@ -169,6 +171,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EMAIL: ["eml"],
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
+    InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -251,6 +254,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.EMAIL: ["message/rfc822"],
     InputFormat.EPUB: ["application/epub+zip"],
     InputFormat.BOXNOTE: ["application/vnd.box.boxnote"],
+    InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -258,6 +262,12 @@ MimeTypeToFormat: dict[str, list[InputFormat]] = {
     for value in FormatToMimeType.values()
     for mime in value
 }
+
+# EBCDIC data files have no IANA-registered media type, so the one used above is
+# registered here. DocumentOrigin validates mimetypes against the mimetypes
+# registry, and this keeps mimetypes.guess_type consistent with FormatToMimeType.
+for _ebcdic_ext in FormatToExtensions[InputFormat.EBCDIC]:
+    mimetypes.add_type(FormatToMimeType[InputFormat.EBCDIC][0], f".{_ebcdic_ext}")
 
 
 class DocInputType(str, Enum):
