@@ -279,14 +279,16 @@ class VideoPipeline(BasePipeline):
                             image=ImageRef.from_pil(frame.image, dpi=72),
                             content_layer=ContentLayer.BODY,
                         )
-                        picture.source = TrackSource(
-                            start_time=frame.timestamp,
-                            end_time=frame.timestamp + 0.001,
-                            identifier=(
-                                f"scene:{frame.scene_id}"
-                                if frame.scene_id is not None
-                                else None
-                            ),
+                        picture.source.append(
+                            TrackSource(
+                                start_time=frame.timestamp,
+                                end_time=frame.timestamp + 0.001,
+                                identifier=(
+                                    f"scene:{frame.scene_id}"
+                                    if frame.scene_id is not None
+                                    else None
+                                ),
+                            )
                         )
                     except Exception as exc:
                         _log.warning(
