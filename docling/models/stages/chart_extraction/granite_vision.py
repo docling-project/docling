@@ -25,7 +25,6 @@ from docling_core.types.doc.items.table.table_data import (
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -201,6 +200,8 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
     _model_repo_revision = "6e1fbaae4604ecc85f4f371416d82154ca49ad67"
 
     def _load_model(self, artifacts_path: Path) -> None:
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
         self._processor = AutoProcessor.from_pretrained(
             artifacts_path,
             trust_remote_code=True,
@@ -347,6 +348,9 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
     _model_repo_revision = "dd48e97503de471803850df70843cf9eb5da8712"
 
     def _load_model(self, artifacts_path: Path) -> None:
+        import torch
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -358,6 +362,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 message=".*incorrect regex pattern.*",
                 category=UserWarning,
             )
+
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=True,

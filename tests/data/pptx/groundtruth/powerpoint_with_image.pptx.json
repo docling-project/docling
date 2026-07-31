@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_with_image",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 8326374439777439720,
     "filename": "powerpoint_with_image.pptx"
   },

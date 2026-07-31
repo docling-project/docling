@@ -55,7 +55,8 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         self.options: TesseractCliOcrOptions
 
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None
@@ -391,7 +392,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                             all_ocr_cells.append(cell)
 
                     # Post-process the cells
-                    self.post_process_cells(all_ocr_cells, page)
+                    self.post_process_cells(all_ocr_cells, page, conv_res)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

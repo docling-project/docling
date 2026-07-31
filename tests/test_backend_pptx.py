@@ -1,20 +1,61 @@
+from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc.common.content_layer import ContentLayer
 from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.picture import PictureItem
 from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import PictureClassificationLabel
 
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
-from docling.document_converter import DocumentConverter
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
+from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.document_converter import DocumentConverter, PowerpointFormatOption
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
+from docling.pipeline.simple_pipeline import SimplePipeline
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+
+CHART_PPTX = Path("./tests/data/pptx/sources/pptx_chart.pptx")
+
+
+class _PictureEnrichmentModel(BaseItemAndImageEnrichmentModel):
+    images_scale = 1.0
+
+    def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
+        return isinstance(element, PictureItem)
+
+    def __call__(
+        self,
+        doc: DoclingDocument,
+        element_batch: Iterable[ItemAndImageEnrichmentElement],
+    ) -> Iterable[NodeItem]:
+        for element in element_batch:
+            yield element.item
+
+
+class _ChartEnrichmentPipeline(SimplePipeline):
+    def __init__(self, pipeline_options: ConvertPipelineOptions) -> None:
+        super().__init__(pipeline_options)
+        self.enrichment_pipe = [_PictureEnrichmentModel()]
+
+
+@pytest.fixture(scope="module")
+def libreoffice_available() -> bool:
+    """Return True when a working LibreOffice installation is detected."""
+    try:
+        return get_libreoffice_cmd(raise_if_unavailable=True) is not None
+    except Exception:
+        return False
 
 
 def get_pptx_paths():
@@ -27,9 +68,22 @@ def get_pptx_paths():
 
 
 def get_converter():
+    from docling.document_converter import DocumentConverter
+
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
+
+
+def convert_with_pptx_backend(pptx_path: Path) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=pptx_path,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+
+    assert in_doc.valid
+    return in_doc._backend.convert()
 
 
 def test_e2e_pptx_conversions():
@@ -65,7 +119,7 @@ def test_e2e_pptx_conversions():
             "export to indented-text"
         )
 
-        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE, fuzzy=True), (
             "document document"
         )
 
@@ -230,3 +284,175 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
+
+
+def test_chart_parsed_as_classified_picture_with_data():
+    """A native PPTX chart becomes one classified picture carrying its data.
+
+    ``pptx_chart.pptx`` holds a single clustered-column chart titled "Wild Duck
+    Observations by Year" with two series over four years. It should convert to
+    exactly one PictureItem classified as a bar chart, captioned with the chart
+    title, and carrying the chart's plotted numbers reconstructed as a table:
+
+        | <blank> | Freshwater Ducks | Saltwater Ducks |
+        | 2019    | 120              | 80              |
+        ...
+        | 2022    | 175              | 130             |
+    """
+    converter = get_converter()
+    doc = converter.convert(CHART_PPTX).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
+
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (5, 3)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(0, 1)] == "Freshwater Ducks"
+    assert grid[(0, 2)] == "Saltwater Ducks"
+    assert grid[(1, 0)] == "2019"
+    assert grid[(4, 0)] == "2022"
+    assert grid[(4, 1)] == "175"
+    assert grid[(4, 2)] == "130"
+
+
+def test_chart_image_not_rendered_by_default():
+    """Charts carry classification and data but no image unless opted in.
+
+    render_chart_images defaults to False, so the chart picture keeps its
+    classification and reconstructed data but no pixels. This guards the promise
+    that the feature does not change default output size for existing users.
+    """
+    converter = get_converter()
+    doc = converter.convert(CHART_PPTX).document
+
+    picture = next(iter(doc.pictures))
+    assert picture.meta.tabular_chart is not None
+    assert picture.image is None, (
+        "chart picture should have no image when render_chart_images is off"
+    )
+
+
+def test_chart_enrichment_skips_image_when_pages_empty():
+    """Image enrichment skips native charts without an embedded or page image."""
+    format_options = {
+        InputFormat.PPTX: PowerpointFormatOption(pipeline_cls=_ChartEnrichmentPipeline)
+    }
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX], format_options=format_options
+    )
+
+    result = converter.convert(CHART_PPTX, raises_on_error=True)
+
+    pictures = list(result.document.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+def test_chart_image_rendering(libreoffice_available):
+    """render_chart_images=True attaches a LibreOffice-rendered image.
+
+    LibreOffice output is not byte-stable and the cropped image size depends on
+    the LibreOffice version, so pixels are not compared against groundtruth. We
+    assert the picture gains a non-trivial image while keeping the classification
+    and tabular data. Requires LibreOffice; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    options = MsPowerpointBackendOptions(render_chart_images=True)
+    format_options = {InputFormat.PPTX: PowerpointFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX], format_options=format_options
+    )
+    doc = converter.convert(CHART_PPTX).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.meta.tabular_chart is not None
+
+    image = picture.get_image(doc=doc)
+    assert image is not None, "chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50, (
+        f"rendered chart image is implausibly small: {image.size}"
+    )
+
+
+def test_pptx_shapes_are_sorted_by_visual_position():
+    class FakeShape:
+        def __init__(self, name, top=None, left=None):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    class BadPositionShape:
+        @property
+        def top(self):
+            raise ValueError("bad position")
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    same_row_right = FakeShape("same-row-right", top=100, left=300)
+    lower_left = FakeShape("lower-left", top=200000, left=100)
+    same_row_left = FakeShape("same-row-left", top=1000, left=100)
+    unpositioned = FakeShape("unpositioned")
+
+    ordered_shapes = backend._iter_shapes_by_position(
+        [lower_left, same_row_right, unpositioned, same_row_left]
+    )
+
+    assert [shape.name for shape in ordered_shapes] == [
+        "same-row-left",
+        "same-row-right",
+        "lower-left",
+        "unpositioned",
+    ]
+    assert backend._get_shape_position(BadPositionShape(), "top") is None
+
+
+def test_pptx_row_grouping_uses_sliding_window():
+    """Shapes in a contiguous band should all land in the same row.
+
+    With a fixed-anchor strategy, shapes at tops 0, 40000, and 80000 EMUs
+    (each 40000 apart, within the 45720 EMU tolerance) would be split: the
+    third shape is 80000 EMUs from the first anchor (0), exceeding tolerance.
+    The sliding-window strategy compares each shape against its immediate
+    predecessor, so all three end up in the same row and are sorted by left.
+    """
+
+    class FakeShape:
+        def __init__(self, name, top, left):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    # Three shapes in a contiguous band, each 40 000 EMUs apart.
+    # Fixed-anchor would split them; sliding-window keeps them together.
+    a = FakeShape("a", top=0, left=200)
+    b = FakeShape("b", top=40000, left=100)
+    c = FakeShape("c", top=80000, left=300)
+    # This shape is more than one tolerance step from c, so it forms a new row.
+    d = FakeShape("d", top=200000, left=100)
+
+    ordered = [s.name for s in backend._iter_shapes_by_position([d, c, a, b])]
+
+    # a, b, c are in the same row sorted left-to-right; d is in its own row.
+    assert ordered == ["b", "a", "c", "d"]

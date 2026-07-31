@@ -13,6 +13,8 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
     """Shared interface for layout models."""
 
+    requires_layout_postprocessing: bool = True
+
     @classmethod
     @abstractmethod
     def get_options_type(cls) -> Type[BaseLayoutOptions]:

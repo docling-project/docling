@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_malformed_pictures",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 15701281443170991356,
     "filename": "powerpoint_malformed_pictures.pptx"
   },

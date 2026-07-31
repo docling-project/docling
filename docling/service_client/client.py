@@ -14,7 +14,7 @@ import tempfile
 import time
 import warnings
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Iterator
+from collections.abc import AsyncGenerator, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -30,7 +30,7 @@ from docling_core.types.doc.document import DoclingDocument
 from docling_core.types.doc.items.picture.picture import PictureItem
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
-from pydantic import AnyHttpUrl, TypeAdapter, ValidationError
+from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
@@ -53,8 +53,11 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
-    BatchSourceRequestItem,
+    BatchSourceRequestInput,
+    BatchTargetRequest,
+    BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    GenericTargetRequest,
     HttpSourceRequest,
 )
 from docling.datamodel.service.responses import (
@@ -70,6 +73,9 @@ from docling.datamodel.service.responses import (
     UsageLimitExceededResponse,
 )
 from docling.datamodel.service.targets import (
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
     InBodyTarget,
     PresignedUrlTarget,
     S3Target,
@@ -103,8 +109,11 @@ if TYPE_CHECKING:
     from docling.service_client._async_client import AsyncDoclingServiceClient
 
 SourceType: TypeAlias = Path | str | DocumentStream | HttpSourceRequest
-SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget
-BatchSubmitTarget: TypeAlias = S3Target | PresignedUrlTarget
+StorageTarget: TypeAlias = (
+    S3Target | AzureBlobTarget | GoogleCloudStorageTarget | GoogleDriveTarget
+)
+SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | StorageTarget
+BatchSubmitTarget: TypeAlias = BatchTargetRequestInput
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -121,6 +130,18 @@ TRANSPORT_RETRYABLE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 DEFAULT_ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS = 60.0
 DEFAULT_MAX_ARTIFACT_DOWNLOAD_BYTES = 512 * 1024 * 1024
 MAX_ARTIFACT_DOWNLOAD_REDIRECTS = 5
+
+_STORAGE_TARGET_TYPES = (
+    S3Target,
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
+    GoogleDriveTarget,
+    GenericTargetRequest,
+)
+
+
+def _is_storage_target(target: object) -> bool:
+    return isinstance(target, _STORAGE_TARGET_TYPES)
 
 
 def _is_safe_artifact_url(url: str) -> bool:
@@ -302,8 +323,25 @@ class _BaseDoclingServiceClient:
         request: ConvertDocumentsRequest | BatchConvertSourcesRequest,
     ) -> dict[str, Any]:
         payload = request.model_dump(mode="json", exclude_none=True)
+        raw_payload = request.model_dump(mode="python", exclude_none=True)
+        payload = self._restore_secret_values(raw_payload, payload)
         payload["options"] = self._serialize_convert_options(request.options)
         return payload
+
+    def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
+        if isinstance(raw, (SecretStr, SecretBytes)):
+            return raw.get_secret_value()
+        if isinstance(raw, dict) and isinstance(dumped, dict):
+            return {
+                key: self._restore_secret_values(raw[key], dumped[key])
+                for key in dumped
+            }
+        if isinstance(raw, list) and isinstance(dumped, list):
+            return [
+                self._restore_secret_values(raw_item, dumped_item)
+                for raw_item, dumped_item in zip(raw, dumped)
+            ]
+        return dumped
 
     def _resolve_options(
         self,
@@ -341,7 +379,7 @@ class _BaseDoclingServiceClient:
         self,
         options: ConvertDocumentsRequestOptions,
         output_formats: list[OutputFormat] | None,
-        target: InBodyTarget | ZipTarget | S3Target | PresignedUrlTarget,
+        target: SubmitTarget | GenericTargetRequest,
     ) -> ConvertDocumentsRequestOptions:
         effective = options
         if output_formats is not None:
@@ -909,11 +947,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         """Yield one outcome per submitted item.
@@ -937,11 +980,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
         *,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         warnings.warn(
@@ -976,6 +1024,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     ) -> (
         ConversionJob[ConversionResult]
         | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
         descriptor = self._describe_source(source)
@@ -1009,30 +1058,47 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def submit_batch(
         self,
-        sources: list[BatchSourceRequestItem],
-        target: BatchSubmitTarget,
+        sources: Sequence[BatchSourceRequestInput],
+        target: BatchTargetRequestInput | None = None,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         headers: dict[str, str] | None = None,
+        *,
+        targets: list[BatchTargetRequestInput] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
+        if target is None and targets is None:
+            raise ValueError("submit_batch() requires either 'target' or 'targets'.")
+        if target is not None and targets is not None:
+            raise ValueError(
+                "submit_batch() received both 'target' and 'targets'; supply only one."
+            )
+        payload: dict[str, Any] = {"sources": sources}
+        if targets is not None:
+            payload["targets"] = targets
+        else:
+            payload["target"] = target
+        request = BatchConvertSourcesRequest.model_validate(payload)
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
             max_file_size=None,
             page_range=None,
         )
+        # Use the first effective target for output-format hint.
+        first_target = (request.targets or [request.target])[0]
         submit_options = self._options_for_output_formats(
             resolved.options,
             output_formats=output_formats,
-            target=target,
+            target=first_target,
         )
         return self._submit_batch_conversion_job(
-            sources=sources,
+            sources=request.sources,
             options=submit_options,
-            target=target,
+            target=request.target,
+            targets=request.targets,
             request_headers=headers,
         )
 
@@ -1122,6 +1188,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     ) -> (
         ConversionJob[ConversionResult]
         | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
     ):
         descriptor = descriptor or self._describe_source(source)
@@ -1355,6 +1422,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 task_id=task_id,
                 last_status=last_status,
             )
+        if _is_storage_target(target):
+            return lambda task_id, last_status: self._fetch_presigned_document_result(
+                task_id=task_id,
+                last_status=last_status,
+            )
         return lambda task_id, last_status: self._build_conversion_result(
             payload=self._fetch_convert_result_payload(
                 task_id=task_id,
@@ -1366,9 +1438,10 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_conversion_job(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
-        target: BatchSubmitTarget,
+        target: BatchSubmitTarget | None,
+        targets: list[BatchTargetRequest] | None = None,
         request_headers: dict[str, str] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
@@ -1378,9 +1451,13 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             sources=sources,
             options=options,
             target=target,
+            targets=targets,
             request_headers=request_headers,
         )
-        if isinstance(target, S3Target):
+        all_targets = (
+            targets if targets is not None else ([target] if target is not None else [])
+        )
+        if any(_is_storage_target(t) for t in all_targets):
 
             def fetch_result(
                 task_id: str,
@@ -1416,16 +1493,18 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_batch_task(
         self,
-        sources: list[BatchSourceRequestItem],
+        sources: Sequence[BatchSourceRequestInput],
         options: ConvertDocumentsRequestOptions,
-        target: BatchSubmitTarget,
+        target: BatchSubmitTarget | None,
+        targets: list[BatchTargetRequest] | None = None,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        request = BatchConvertSourcesRequest(
-            options=options,
-            sources=sources,
-            target=target,
-        )
+        payload: dict[str, Any] = {"options": options, "sources": sources}
+        if targets is not None:
+            payload["targets"] = targets
+        else:
+            payload["target"] = target
+        request = BatchConvertSourcesRequest.model_validate(payload)
         response = self._request_with_retry(
             method="POST",
             path="/v1/convert/source/batch",
@@ -1930,11 +2009,16 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         self._ensure_sync_bridge_allowed()
@@ -1950,17 +2034,27 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget | None = None,
+        target: SubmitTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
-            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+            (
+                ConvertDocumentResponse
+                | PresignedUrlConvertDocumentResponse
+                | PresignedUrlConvertResponse
+                | Exception
+            ),
         ]
     ]:
         async def run() -> AsyncGenerator[
             tuple[
                 ConversionItem,
-                ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+                (
+                    ConvertDocumentResponse
+                    | PresignedUrlConvertDocumentResponse
+                    | PresignedUrlConvertResponse
+                    | Exception
+                ),
             ],
             None,
         ]:

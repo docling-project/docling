@@ -81,6 +81,7 @@ try:  # pragma: no cover - import-time guard
         List as OdfList,
         ListItem,
         Paragraph,
+        Section,
         Table as OdfTable,
     )
 
@@ -913,6 +914,14 @@ def _add_odf_child(
             content_layer=content_layer,
             odf_obj=odf_obj,
         )
+    elif isinstance(element, Section):
+        _add_odf_children(
+            doc,
+            element.children,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+        )
     elif isinstance(element, Frame):
         chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
         _add_odf_images(
@@ -932,6 +941,38 @@ def _add_odf_child(
                 "Ignoring ODF element with tag: %s", getattr(element, "tag", None)
             )
     return None
+
+
+def _add_odf_children(
+    doc: DoclingDocument,
+    elements: list[Any],
+    *,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> None:
+    previous_list_state: _OdfListState | None = None
+    for element in elements:
+        if isinstance(element, OdfList):
+            previous_list_state = _add_odf_list(
+                doc,
+                element,
+                parent=parent,
+                content_layer=content_layer,
+                odf_obj=odf_obj,
+                enumerated=False,
+                continued_state=previous_list_state,
+                flatten_nested_text=False,
+            )
+        else:
+            previous_list_state = None
+            _add_odf_child(
+                doc,
+                element,
+                parent=parent,
+                content_layer=content_layer,
+                odf_obj=odf_obj,
+            )
 
 
 def _embedded_odf_content_path(href: str) -> str:
@@ -968,10 +1009,16 @@ def _chart_data_from_frame(
 
     try:
         chart_content = odf_obj.get_part(_embedded_odf_content_path(object_href))
-    except Exception:
+        # odfdo resolves XML parts lazily, so a reference to a part that is missing
+        # from the package only fails once the part is actually read.
+        chart_classification = _odf_chart_classification(chart_content)
+        chart_tables = chart_content.get_elements("descendant::table:table")
+    except Exception as e:
+        _log.warning(
+            "Could not read embedded OpenDocument object %s: %s", object_href, e
+        )
         return None
-    chart_classification = _odf_chart_classification(chart_content)
-    for table in chart_content.get_elements("descendant::table:table"):
+    for table in chart_tables:
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
@@ -1392,28 +1439,13 @@ class OdtDocumentBackend(_OdfBaseBackend):
         parent: NodeItem | None,
         doc: DoclingDocument,
     ) -> None:
-        previous_list_state: _OdfListState | None = None
-        for el in elements:
-            if isinstance(el, OdfList):
-                previous_list_state = _add_odf_list(
-                    doc,
-                    el,
-                    parent=parent,
-                    content_layer=None,
-                    odf_obj=self.odf_obj,
-                    enumerated=False,
-                    continued_state=previous_list_state,
-                    flatten_nested_text=False,
-                )
-            else:
-                previous_list_state = None
-                _add_odf_child(
-                    doc,
-                    el,
-                    parent=parent,
-                    odf_obj=self.odf_obj,
-                    content_layer=None,
-                )
+        _add_odf_children(
+            doc,
+            elements,
+            parent=parent,
+            content_layer=None,
+            odf_obj=self.odf_obj,
+        )
 
 
 class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):

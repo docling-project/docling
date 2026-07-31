@@ -190,6 +190,10 @@
 <table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th><th></th><th></th></tr><tr><td>Cell 1.0</td><td rowspan="2">Merged Cell 1.1 2.1</td><td>Cell 1.2</td><td></td><td></td></tr><tr><td>Cell 2.0</td><td>Cell 2.2</td><td></td><td></td></tr><tr><td>Cell 3.0</td><td rowspan="2">Merged Cell 3.1 4.1</td><td>Cell 3.2</td><td rowspan="3"></td><td></td></tr><tr><td>Cell 4.0</td><td>Cell 4.2</td><td rowspan="2">Merged Cell 4.4 5.4</td></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td colspan="5"></td></tr><tr><td></td><td></td><td></td><td></td><td>Cell 8.4</td></tr></tbody></table>
 <p></p>
 <p></p>
+<p>A non-uniform table with a row starting late</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th></tr><tr><td></td><td>Cell 1.1</td></tr></tbody></table>
+<p>A non-uniform table with a vertical span over a row starting late</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th rowspan="2">Merged Cell 0.2 1.2</th></tr><tr><td></td><td></td></tr></tbody></table>
 </div>
 </body>
 </html>

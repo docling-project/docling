@@ -14,7 +14,12 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import LayoutModelConfig
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
+    LayoutPostprocessorOptions,
+    PdfPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.factories import (
@@ -28,6 +33,9 @@ from docling.models.stages.code_formula.code_formula_model import (
 )
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
+)
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
 )
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
@@ -88,6 +96,22 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             enable_remote_services=pipeline_options.enable_remote_services,
         )
 
+        # Standalone layout post-processing stage (see StandardPdfPipeline).
+        lo = pipeline_options.layout_options
+        create_orphan = (
+            lo.create_orphan_clusters
+            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
+            else False
+        )
+        layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=create_orphan,
+                run_postprocessor=layout_model.requires_layout_postprocessing,
+            )
+        )
+
         self.build_pipe = [
             # Pre-processing
             PagePreprocessingModel(
@@ -99,6 +123,8 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             ocr_model,
             # Layout model
             layout_model,
+            # Layout post-processing
+            layout_postprocessing_model,
             # Table structure model
             table_model,
             # Page assemble

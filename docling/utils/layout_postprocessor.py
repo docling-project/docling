@@ -12,10 +12,7 @@ from docling_core.types.doc.page import TextCell
 from rtree import index
 
 from docling.datamodel.base_models import Cluster, Page
-from docling.datamodel.pipeline_options import (
-    LayoutObjectDetectionOptions,
-    LayoutOptions,
-)
+from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
 
 _log = logging.getLogger(__name__)
 
@@ -205,7 +202,7 @@ class LayoutPostprocessor:
         self,
         page: Page,
         clusters: list[Cluster],
-        options: LayoutOptions | LayoutObjectDetectionOptions,
+        options: BaseLayoutPostprocessorOptions,
     ) -> None:
         """Initialize processor with page and clusters."""
 
@@ -228,7 +225,7 @@ class LayoutPostprocessor:
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
 
-    def postprocess(self) -> tuple[list[Cluster], list[TextCell]]:
+    def postprocess(self) -> list[Cluster]:
         """Main processing pipeline."""
         self.regular_clusters = self._process_regular_clusters()
         self.special_clusters = self._process_special_clusters()
@@ -261,7 +258,7 @@ class LayoutPostprocessor:
             self.page.parsed_page.textline_cells = self.cells
             self.page.parsed_page.has_lines = len(self.cells) > 0
 
-        return final_clusters, self.cells
+        return final_clusters
 
     def _process_regular_clusters(self) -> list[Cluster]:
         """Process regular clusters with iterative refinement."""

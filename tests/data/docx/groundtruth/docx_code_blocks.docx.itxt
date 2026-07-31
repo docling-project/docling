@@ -1,0 +1,24 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Code-detection fixture
+      item-3 at level 3: section_header: Case A - normal prose
+        item-4 at level 4: text: This is an ordinary paragraph of ... ont and must remain a plain text item.
+      item-5 at level 3: section_header: Case B - prose with one inline monospaced word
+        item-6 at level 4: text: Call the printf function to print formatted output to standard out.
+      item-7 at level 3: section_header: Case C - paragraph in 'Source Code' style
+        item-8 at level 4: code: import sys
+print(sys.argv)
+      item-9 at level 3: section_header: Case D - fully monospaced paragraph, no code style
+        item-10 at level 4: code: SELECT * FROM users WHERE active = 1;
+      item-11 at level 3: section_header: Case E - multi-line monospaced block
+        item-12 at level 4: code: def fib(n):
+    a, b = 0, 1
+     ... :
+        a, b = b, a + b
+    return a
+      item-13 at level 3: section_header: Case F - 'Source Reference' style (substring trap)
+        item-14 at level 4: text: See the original source for details.
+      item-15 at level 3: section_header: Case G - 'Listing Number' style, no code chars (substring trap)
+        item-16 at level 4: text: Listing 3.2
+      item-17 at level 3: section_header: Case H - pure-Courier prose, no code-indicative characters
+        item-18 at level 4: text: This memo is set in a typewriter ... or a vintage look and feel throughout.

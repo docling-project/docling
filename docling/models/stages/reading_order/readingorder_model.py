@@ -430,8 +430,13 @@ class ReadingOrderModel:
             ),
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        if new_item.text.endswith("\u00ad"):
-            # Soft hyphen (U+00AD): strip it and join without space (hyphenated word split across lines)
+        continuation_text = merged_elem.text.lstrip()
+        if new_item.text.endswith("\u00ad") or (
+            new_item.text.endswith("-")
+            and continuation_text
+            and continuation_text[0].islower()
+        ):
+            # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
             new_item.text = new_item.text[:-1] + merged_elem.text
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
