@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    DocItemLabel,
     ImageRefMode,
     PictureClassificationLabel,
     PictureItem,
@@ -322,7 +323,9 @@ def test_odf_preserves_text_after_inline_children(
     doc.save(str(path))
 
     result = DocumentConverter(allowed_formats=[input_format]).convert(path)
-    text_items = [item.text for item in result.document.texts if item.label == "text"]
+    text_items = [
+        item.text for item in result.document.texts if item.label == DocItemLabel.TEXT
+    ]
 
     assert text_items == ["Lead connective prose here bookmarked tail\nnext line"]
 
