@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Set
 
 from docling_core.types.doc.base import (
     BoundingBox,
@@ -17,6 +17,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import LayoutObjectDetectionOptions
+from docling.datamodel.settings import settings
 from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.inference_engines.object_detection import (
     BaseObjectDetectionEngine,
@@ -25,6 +26,7 @@ from docling.models.inference_engines.object_detection import (
     create_object_detection_engine,
 )
 from docling.utils.profiling import TimeRecorder
+from docling.utils.visualization import draw_clusters_and_cells_side_by_side
 
 _log = logging.getLogger(__name__)
 
@@ -52,6 +54,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
 
         # Convert engine's string labels to DocItemLabel enums
         self._label_map = self._build_label_map()
+        self._unmapped_label_ids: Set[int] = set()
 
     def _build_label_map(self) -> Dict[int, DocItemLabel]:
         """Build label mapping from engine's label names to DocItemLabel enums.
@@ -85,42 +88,57 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         pages: Sequence[Page],
     ) -> Sequence[LayoutPrediction]:
         pages = list(pages)
-        predictions: list[LayoutPrediction] = []
 
-        for page in pages:
+        # Collect the pages that can actually be run, keeping their position so
+        # results can be zipped back onto the original page order.
+        batch: List[ObjectDetectionEngineInput] = []
+        batch_indices: List[int] = []
+        for idx, page in enumerate(pages):
             assert page._backend is not None
             if not page._backend.is_valid():
-                existing_prediction = page.predictions.layout or LayoutPrediction()
-                page.predictions.layout = existing_prediction
-                predictions.append(existing_prediction)
                 continue
 
             page_image = page.get_image(scale=1.0)
             if page_image is None:
-                empty_prediction = page.predictions.layout or LayoutPrediction()
-                page.predictions.layout = empty_prediction
-                predictions.append(empty_prediction)
                 continue
 
-            with TimeRecorder(conv_res, "layout"):
-                engine_input = ObjectDetectionEngineInput(
+            batch.append(
+                ObjectDetectionEngineInput(
                     image=page_image,
                     metadata={"page_no": page.page_no},
                 )
-                engine_output = self.engine.predict(engine_input)
+            )
+            batch_indices.append(idx)
 
-                clusters = self._predictions_to_clusters(
-                    page=page,
-                    image=page_image,
-                    engine_output=engine_output,
+        engine_outputs: List[ObjectDetectionEngineOutput] = []
+        if batch:
+            with TimeRecorder(conv_res, "layout"):
+                engine_outputs = self.engine.predict_batch(batch)
+
+        predictions: List[LayoutPrediction] = [
+            page.predictions.layout or LayoutPrediction() for page in pages
+        ]
+        for idx, engine_input, engine_output in zip(
+            batch_indices, batch, engine_outputs
+        ):
+            page = pages[idx]
+            clusters = self._predictions_to_clusters(
+                page=page,
+                image=engine_input.image,
+                engine_output=engine_output,
+            )
+
+            if settings.debug.visualize_raw_layout:
+                draw_clusters_and_cells_side_by_side(
+                    conv_res.input.file, page, clusters, mode_prefix="raw"
                 )
 
-                # Emit raw clusters; post-processing and layout_score are
-                # handled by the downstream LayoutPostprocessingModel stage.
-                layout_prediction = LayoutPrediction(clusters=clusters)
-                page.predictions.layout = layout_prediction
+            # Emit raw clusters; post-processing and layout_score are
+            # handled by the downstream LayoutPostprocessingModel stage.
+            predictions[idx] = LayoutPrediction(clusters=clusters)
 
-                predictions.append(layout_prediction)
+        for page, prediction in zip(pages, predictions):
+            page.predictions.layout = prediction
 
         return predictions
 
@@ -131,19 +149,33 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         engine_output: ObjectDetectionEngineOutput,
     ) -> List[Cluster]:
         assert page.size is not None
-        scale_x = page.size.width / image.width
-        scale_y = page.size.height / image.height
+        page_width = page.size.width
+        page_height = page.size.height
+        scale_x = page_width / image.width
+        scale_y = page_height / image.height
 
         clusters: List[Cluster] = []
         for idx, (label_id, score, bbox_coords) in enumerate(
             zip(engine_output.label_ids, engine_output.scores, engine_output.bboxes)
         ):
-            label = self._label_map.get(label_id, DocItemLabel.TEXT)
+            label = self._label_map.get(label_id)
+            if label is None:
+                if label_id not in self._unmapped_label_ids:
+                    self._unmapped_label_ids.add(label_id)
+                    _log.warning(
+                        "Dropping detections with label id %s: the model emitted an "
+                        "id that is absent from its own config id2label map.",
+                        label_id,
+                    )
+                continue
+
+            # Detections can overshoot the page; downstream area ratios in
+            # LayoutPostprocessor assume page-bounded boxes.
             bbox = BoundingBox(
-                l=bbox_coords[0] * scale_x,
-                t=bbox_coords[1] * scale_y,
-                r=bbox_coords[2] * scale_x,
-                b=bbox_coords[3] * scale_y,
+                l=min(max(bbox_coords[0] * scale_x, 0.0), page_width),
+                t=min(max(bbox_coords[1] * scale_y, 0.0), page_height),
+                r=min(max(bbox_coords[2] * scale_x, 0.0), page_width),
+                b=min(max(bbox_coords[3] * scale_y, 0.0), page_height),
                 coord_origin=CoordOrigin.TOPLEFT,
             )
             clusters.append(

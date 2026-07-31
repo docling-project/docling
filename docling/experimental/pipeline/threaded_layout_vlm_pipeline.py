@@ -25,8 +25,6 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    LayoutObjectDetectionOptions,
-    LayoutOptions,
     LayoutPostprocessorOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -39,7 +37,7 @@ from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import 
     ThreadedLayoutVlmPipelineOptions,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.stages.layout.layout_model import LayoutModel
+from docling.models.factories import get_layout_factory
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
@@ -91,25 +89,24 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         art_path = self._resolve_artifacts_path()
 
         # Layout model
-        self.layout_model = LayoutModel(
+        layout_factory = get_layout_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        self.layout_model = layout_factory.create_instance(
+            options=self.pipeline_options.layout_options,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
-            options=self.pipeline_options.layout_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
 
         # Standalone layout post-processing stage; the VLM prompt augmentation
         # reads processed clusters from page.predictions.layout.
         lo = self.pipeline_options.layout_options
-        create_orphan = (
-            lo.create_orphan_clusters
-            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
-            else False
-        )
         self.layout_postprocessing_model = LayoutPostprocessingModel(
             options=LayoutPostprocessorOptions(
                 skip_cell_assignment=lo.skip_cell_assignment,
                 keep_empty_clusters=lo.keep_empty_clusters,
-                create_orphan_clusters=create_orphan,
+                create_orphan_clusters=lo.create_orphan_clusters,
                 run_postprocessor=self.layout_model.requires_layout_postprocessing,
             )
         )

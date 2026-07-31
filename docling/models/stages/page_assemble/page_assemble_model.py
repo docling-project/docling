@@ -18,8 +18,14 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.models.base_layout_model import (
+    CONTAINER_LABELS,
+    FIGURE_LABEL,
+    PAGE_HEADER_LABELS,
+    TABLE_LABELS,
+    TEXT_ELEM_LABELS,
+)
 from docling.models.base_model import BasePageModel
-from docling.models.stages.layout.layout_model import LayoutModel
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -169,7 +175,7 @@ class PageAssembleModel(BasePageModel):
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
-                        if cluster.label in LayoutModel.TEXT_ELEM_LABELS:
+                        if cluster.label in TEXT_ELEM_LABELS:
                             textlines = [
                                 cell.text.replace("\x02", "-").strip()
                                 for cell in cluster.cells
@@ -187,11 +193,11 @@ class PageAssembleModel(BasePageModel):
                             )
                             elements.append(text_el)
 
-                            if cluster.label in LayoutModel.PAGE_HEADER_LABELS:
+                            if cluster.label in PAGE_HEADER_LABELS:
                                 headers.append(text_el)
                             else:
                                 body.append(text_el)
-                        elif cluster.label in LayoutModel.TABLE_LABELS:
+                        elif cluster.label in TABLE_LABELS:
                             tbl = None
                             if page.predictions.tablestructure:
                                 tbl = page.predictions.tablestructure.table_map.get(
@@ -210,7 +216,7 @@ class PageAssembleModel(BasePageModel):
 
                             elements.append(tbl)
                             body.append(tbl)
-                        elif cluster.label == LayoutModel.FIGURE_LABEL:
+                        elif cluster.label == FIGURE_LABEL:
                             fig = None
                             if page.predictions.figures_classification:
                                 fig = page.predictions.figures_classification.figure_map.get(
@@ -227,7 +233,7 @@ class PageAssembleModel(BasePageModel):
                                 )
                             elements.append(fig)
                             body.append(fig)
-                        elif cluster.label in LayoutModel.CONTAINER_LABELS:
+                        elif cluster.label in CONTAINER_LABELS:
                             container_el = ContainerElement(
                                 label=cluster.label,
                                 id=cluster.id,

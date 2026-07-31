@@ -13,10 +13,7 @@ from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import (
-    LayoutObjectDetectionOptions,
-    LayoutOptions,
     LayoutPostprocessorOptions,
     PdfPipelineOptions,
 )
@@ -98,16 +95,11 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
 
         # Standalone layout post-processing stage (see StandardPdfPipeline).
         lo = pipeline_options.layout_options
-        create_orphan = (
-            lo.create_orphan_clusters
-            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
-            else False
-        )
         layout_postprocessing_model = LayoutPostprocessingModel(
             options=LayoutPostprocessorOptions(
                 skip_cell_assignment=lo.skip_cell_assignment,
                 keep_empty_clusters=lo.keep_empty_clusters,
-                create_orphan_clusters=create_orphan,
+                create_orphan_clusters=lo.create_orphan_clusters,
                 run_postprocessor=layout_model.requires_layout_postprocessing,
             )
         )
