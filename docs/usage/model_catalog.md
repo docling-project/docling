@@ -197,16 +197,12 @@ The following table shows all processing stages in Docling, their model families
 
 ### Object Detection Models (Layout)
 
-| Preset ID | Model | Inference Engine | Supported Devices |
-|-----------|-------|------------------|-------------------|
-| `layout_heron_default` ⭐ | `docling-layout-heron` | Transformers, ONNXRuntime | CPU, CUDA, MPS, XPU |
-| `layout_heron_101` | `docling-layout-heron-101` | Transformers | CPU, CUDA, MPS, XPU |
-| `layout_egret_medium` | `docling-layout-egret-medium` | Transformers | CPU, CUDA, MPS, XPU |
-| `layout_egret_large` | `docling-layout-egret-large` | Transformers | CPU, CUDA, MPS, XPU |
-| `layout_egret_xlarge` | `docling-layout-egret-xlarge` | Transformers | CPU, CUDA, MPS, XPU |
+| Model | Inference Engine | Supported Devices |
+|-------|------------------|-------------------|
+| All layout models | Transformers | CPU, CUDA, MPS, XPU |
 
 **Note:** Layout models run through `AutoModelForObjectDetection`, reading their label map
-from the model repository's own `config.json`. Only `docling-layout-heron` ships an ONNX export.
+from the model repository's own `config.json`. Only `docling-layout-heron` also supports ONNXRuntime.
 
 **Deprecated:** `LayoutOptions` and `docling-layout-v2` are superseded by
 `LayoutObjectDetectionOptions`. `LayoutOptions` still works — it is translated onto the
