@@ -2428,6 +2428,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         It determines whether to open a new list, continue an existing one, handle
         indentation changes, or close lists based on the numbering context.
 
+        Contract with interleaved blocks: Word numbers list items continuously
+        per ``w:numId``, so items sharing a numId belong to the same list even
+        when paragraphs of a different numId (for example a bullet list placed
+        between two ordered items) appear in between. Counters are therefore
+        reset only the first time a numId is opened -- tracked in
+        ``self.started_numids`` -- so a numId that reappears after an
+        intervening block resumes its numbering instead of restarting at 1
+        (see #3896).
+
         Args:
             doc: The DoclingDocument being constructed.
             numid: The numbering ID from the DOCX paragraph properties.
