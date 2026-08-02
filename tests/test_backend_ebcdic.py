@@ -20,7 +20,7 @@ from docling.document_converter import DocumentConverter, EbcdicFormatOption
 from docling.exceptions import DocumentLoadError
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document, verify_export
+from .verify_utils import verify_export
 
 GENERATE = GEN_TEST_DATA
 ENCODING = "cp037"

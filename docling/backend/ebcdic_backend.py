@@ -221,10 +221,12 @@ class EbcdicDocumentBackend(DeclarativeDocumentBackend):
 
         self.layout = self._resolve_layout()
         try:
+            # Read from the argument rather than self.path_or_stream, which
+            # unload() clears to None.
             self.content = (
-                self.path_or_stream.getvalue()
-                if isinstance(self.path_or_stream, BytesIO)
-                else self.path_or_stream.read_bytes()
+                path_or_stream.getvalue()
+                if isinstance(path_or_stream, BytesIO)
+                else path_or_stream.read_bytes()
             )
         except (OSError, ValueError) as exc:
             raise DocumentLoadError(
