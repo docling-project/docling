@@ -445,37 +445,27 @@ def test_add_header_footer_distinct_per_section(tmp_path):
     )
 
 
-def test_add_header_footer_first_page_and_regular(tmp_path):
+def test_add_header_footer_first_page_and_regular(documents):
     """The regular header/footer (pages after the first) must survive alongside
     the first-page one.
 
     Regression test: whenever different_first_page_header_footer was set, only the
     first-page header/footer used to be parsed and the regular header/footer used
-    on every other page was dropped entirely.
+    on every other page was dropped entirely. Fixture: docx_page_header_footer_first_page.docx
+    (named with "page_header_footer", not bare "header", since unit_test_headers.docx
+    is actually about paragraph Heading styles rather than page headers).
     """
-    from docx import Document
+    name = "docx_page_header_footer_first_page.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+    header_texts, footer_texts = _header_footer_texts(doc)
 
-    docx_path = tmp_path / "first_page_and_regular.docx"
-    d = Document()
-    s0 = d.sections[0]
-    s0.different_first_page_header_footer = True
-    s0.header.paragraphs[0].text = "REGULAR HEADER"
-    s0.footer.paragraphs[0].text = "REGULAR FOOTER"
-    s0.first_page_header.paragraphs[0].text = "FIRST PAGE HEADER"
-    s0.first_page_footer.paragraphs[0].text = "FIRST PAGE FOOTER"
-
-    d.save(docx_path)
-
-    conv_result = get_converter().convert(docx_path)
-    header_texts, footer_texts = _header_footer_texts(conv_result.document)
-
-    assert "FIRST PAGE HEADER" in header_texts
-    assert "REGULAR HEADER" in header_texts, (
+    assert "FIRST PAGE HEADER (page 1 only)" in header_texts
+    assert "REGULAR HEADER (page 2 onward)" in header_texts, (
         "regular header (pages after the first) was dropped when "
         "different_first_page_header_footer is set"
     )
-    assert "FIRST PAGE FOOTER" in footer_texts
-    assert "REGULAR FOOTER" in footer_texts, (
+    assert "FIRST PAGE FOOTER (page 1 only)" in footer_texts
+    assert "REGULAR FOOTER (page 2 onward)" in footer_texts, (
         "regular footer (pages after the first) was dropped when "
         "different_first_page_header_footer is set"
     )

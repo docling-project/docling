@@ -3484,7 +3484,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: A DoclingDocument object to add the header and footer from docx_obj.
         """
         current_layer = self.content_layer
-        base_parent = self.parents[0]
+        base_parents = dict(self.parents)
+        base_level = self.level
         self.content_layer = ContentLayer.FURNITURE
 
         txbx_xpath = etree.XPath(
@@ -3507,6 +3508,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             if not (par or tables or has_blip or has_txbx):
                 return
+
+            # A header/footer part is parsed in isolation: reset the whole heading
+            # hierarchy first, otherwise a heading left over from the body (whose
+            # level is still "open") silently steals this content instead of the
+            # group below, since _get_level() picks the first open level, not
+            # necessarily level 0.
+            for i in range(-1, self.max_levels):
+                self.parents[i] = None
+            self.level = 0
 
             self.parents[0] = doc.add_group(
                 label=GroupLabel.SECTION,
@@ -3532,7 +3542,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._force_new_code_block = True
         self._pending_code_blank_lines = 0
         self.content_layer = current_layer
-        self.parents[0] = base_parent
+        self.parents = base_parents
+        self.level = base_level
 
     def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add document comments (reviewer annotations) and link to annotated items.
