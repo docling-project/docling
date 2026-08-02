@@ -388,7 +388,8 @@ class LayoutPostprocessor:
 
         In particular, KEY_VALUE_REGION proposals that are almost identical to a TABLE
         should be removed. A PICTURE proposal that nearly coincides with a TABLE is also
-        removed, keeping the structured TABLE.
+        removed, keeping the structured TABLE, unless
+        ``remove_pictures_coinciding_with_tables`` is disabled.
         """
         clusters_to_remove = set()
 
@@ -415,14 +416,15 @@ class LayoutPostprocessor:
         # When a PICTURE nearly coincides with a TABLE (high IoU), keep the structured
         # TABLE and drop the PICTURE. IoU (not containment) is used so a genuine small
         # figure fully inside a large table region is not removed.
-        tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
-        for picture in special_clusters:
-            if picture.label != DocItemLabel.PICTURE:
-                continue
-            for table in tables:
-                if picture.bbox.intersection_over_union(table.bbox) > 0.8:
-                    clusters_to_remove.add(picture.id)
-                    break
+        if self.options.remove_pictures_coinciding_with_tables:
+            tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
+            for picture in special_clusters:
+                if picture.label != DocItemLabel.PICTURE:
+                    continue
+                for table in tables:
+                    if picture.bbox.intersection_over_union(table.bbox) > 0.8:
+                        clusters_to_remove.add(picture.id)
+                        break
 
         # Filter out the identified clusters
         special_clusters = [
