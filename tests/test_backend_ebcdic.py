@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DoclingDocument
 from pydantic import ValidationError
 
 from docling.backend.ebcdic_backend import EbcdicDecodeError, EbcdicDocumentBackend
@@ -18,7 +19,12 @@ from docling.datamodel.document import ConversionResult, InputDocument
 from docling.document_converter import DocumentConverter, EbcdicFormatOption
 from docling.exceptions import DocumentLoadError
 
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
+
+GENERATE = GEN_TEST_DATA
 ENCODING = "cp037"
+SOURCES = Path("./tests/data/ebcdic/sources/")
 
 
 def _text(value: str, size: int) -> bytes:
@@ -91,6 +97,47 @@ def _employee(name: str, wages: int, balance: int, ident: int) -> bytes:
         + _zoned(balance, 6)
         + ident.to_bytes(4, "big", signed=True)
     )
+
+
+def _converter(layout_file: Path) -> DocumentConverter:
+    return DocumentConverter(
+        format_options={
+            InputFormat.EBCDIC: EbcdicFormatOption(
+                backend_options=EbcdicBackendOptions(layout_file=layout_file)
+            )
+        }
+    )
+
+
+@pytest.mark.parametrize("source", sorted(SOURCES.glob("*.ebc")), ids=lambda p: p.stem)
+def test_e2e_ebcdic_conversions(source: Path):
+    """Convert the mainframe samples and compare against the groundtruth."""
+    gt_path = source.parent.parent / "groundtruth" / source.name
+
+    result = _converter(source.with_suffix(".layout.json")).convert(source)
+    doc: DoclingDocument = result.document
+
+    # Markdown alone is the groundtruth here: these documents are nothing but
+    # tables of decoded field values, so the serialized DoclingDocument would
+    # add megabytes of cell scaffolding without covering anything the tables do
+    # not already show. Structure is asserted separately, below.
+    pred_md = doc.export_to_markdown(escape_html=False, compact_tables=True)
+    assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
+        "export to md"
+    )
+
+
+def test_ola013k_splits_records_across_schemas():
+    """The multi-schema sample fans out into one table per record type."""
+    source = SOURCES / "ola013k.ebc"
+
+    result = _converter(source.with_suffix(".layout.json")).convert(source)
+
+    doc = result.document
+    assert len(doc.tables) == 4
+    # Each schema carries the same five records, but its own set of columns.
+    assert [table.data.num_rows for table in doc.tables] == [6, 6, 6, 6]
+    assert [table.data.num_cols for table in doc.tables] == [209, 307, 360, 489]
 
 
 def test_single_schema_decodes_cobol_field_types(employee_layout):

@@ -1,4 +1,3 @@
-import mimetypes
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -262,12 +261,6 @@ MimeTypeToFormat: dict[str, list[InputFormat]] = {
     for value in FormatToMimeType.values()
     for mime in value
 }
-
-# EBCDIC data files have no IANA-registered media type, so the one used above is
-# registered here. DocumentOrigin validates mimetypes against the mimetypes
-# registry, and this keeps mimetypes.guess_type consistent with FormatToMimeType.
-for _ebcdic_ext in FormatToExtensions[InputFormat.EBCDIC]:
-    mimetypes.add_type(FormatToMimeType[InputFormat.EBCDIC][0], f".{_ebcdic_ext}")
 
 
 class DocInputType(str, Enum):
