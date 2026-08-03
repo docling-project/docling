@@ -128,6 +128,8 @@ pipeline_options = VlmPipelineOptions(
 Additionally to local models, the `VlmPipeline` allows to offload the inference to a remote service hosting the models.
 Many remote inference services are provided, the key requirement is to offer an OpenAI-compatible API. This includes vLLM, Ollama, etc.
 
+> **Tip:** The same OpenAI-compatible endpoint pattern also works with multi-model gateways when you are not self-hosting — for example [DaoXE](https://daoxe.com/?utm_source=github&utm_medium=organic&utm_campaign=docling&utm_content=vlm) at `https://api.daoxe.com/v1`.
+
 More examples on how to connect with the remote inference services can be found in the following examples:
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
