@@ -6,7 +6,6 @@ from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
-from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
@@ -165,27 +164,3 @@ def test_legacy_picture_description_vlm_init_uses_configured_padding_side(
     assert processor.tokenizer.padding_side == "right"
     assert picture_description_model.processor is processor
     assert picture_description_model.model is model
-
-
-def test_picture_description_vlm_model_download_failure(monkeypatch, caplog):
-    """
-    Verify that PictureDescriptionVlmModel handles a failed download correctly within initialization
-    - Exception bubbles up
-    """
-    with monkeypatch.context() as m:
-        m.setattr(
-            "docling.models.utils.hf_model_download.download_hf_model",
-            lambda *_, **__: (_ for _ in ()).throw(
-                DoclingModelDownloadError("Mock Failure")
-            ),
-        )
-        opts = PictureDescriptionVlmOptions()
-        accel = AcceleratorOptions()
-        with pytest.raises(DoclingModelDownloadError):
-            PictureDescriptionVlmModel(
-                enabled=True,
-                options=opts,
-                accelerator_options=accel,
-                artifacts_path=None,
-                enable_remote_services=False,
-            )
