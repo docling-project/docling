@@ -1,3 +1,22 @@
+## [v2.118.0](https://github.com/docling-project/docling/releases/tag/v2.118.0) - 2026-08-03
+
+### Feature
+
+* Add the ebcdic backend ([#3926](https://github.com/docling-project/docling/issues/3926)) ([`9bdb2af`](https://github.com/docling-project/docling/commit/9bdb2af94e93cab47fe96105850438eb663d7953))
+* **service datamodel:** Expose PDF heading-level inference in the service API ([#3874](https://github.com/docling-project/docling/issues/3874)) ([`a47f76a`](https://github.com/docling-project/docling/commit/a47f76a871b678321b54c8aa37a7d1490d6e4849))
+* **skills:** Add agent skills for using docling ([#3913](https://github.com/docling-project/docling/issues/3913)) ([`5dc8c19`](https://github.com/docling-project/docling/commit/5dc8c1989c8e14323b723b20b9287bf32b5c90ca))
+* Refactor RapidOcrModel to support all PP-OCR languages via version/backbone resolution ([#3863](https://github.com/docling-project/docling/issues/3863)) ([`f7eb9b4`](https://github.com/docling-project/docling/commit/f7eb9b4e32daf32fc0f0b60600e4dde239efa106))
+
+### Fix
+
+* **docx:** Stop dropping section header/footer content in Docx ([#3843](https://github.com/docling-project/docling/issues/3843)) ([`2ec4f64`](https://github.com/docling-project/docling/commit/2ec4f64b073018c1a1132639029e49fe9021cff8))
+* **docx:** Resume ordered-list numbering after an intervening list (#3896) ([#3897](https://github.com/docling-project/docling/issues/3897)) ([`62f6a51`](https://github.com/docling-project/docling/commit/62f6a51694c8e41d690001716c06bbb289a0fdbf))
+* **docx:** Keep body text after a blank spacer inside a list (#3898) ([#3902](https://github.com/docling-project/docling/issues/3902)) ([`7883aaa`](https://github.com/docling-project/docling/commit/7883aaade00981b49a363db29c2da31c80938a10))
+* **pdf:** Rewind stream inputs in docling-parse ([#3895](https://github.com/docling-project/docling/issues/3895)) ([`995ae2a`](https://github.com/docling-project/docling/commit/995ae2a452b2c804d318f2990eecb2bc69185474))
+* **odf:** Preserve text after inline elements ([#3850](https://github.com/docling-project/docling/issues/3850)) ([`955d579`](https://github.com/docling-project/docling/commit/955d5797a0211852b66ff4351d380c5f8d608804))
+* **reading-order:** Dehyphenate hard continuations ([#3888](https://github.com/docling-project/docling/issues/3888)) ([`52d8a6f`](https://github.com/docling-project/docling/commit/52d8a6f24de7318a9ad4be2a7361ba93fc81a5c1))
+* **pptx:** Process slide shapes in visual reading order ([#3393](https://github.com/docling-project/docling/issues/3393)) ([`91fa745`](https://github.com/docling-project/docling/commit/91fa745b3228fa0df0510d76eb94956b063054e1))
+
 ## [v2.117.0](https://github.com/docling-project/docling/releases/tag/v2.117.0) - 2026-07-30
 
 ### Feature
