@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.86.0,<3.0.0',
+  'docling-core>=2.90.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -370,7 +370,7 @@ docling = { workspace = true }
 # docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
 # TODO: revert to the released docling-core once the EBCDIC media type is out.
 # https://github.com/docling-project/docling-core/pull/707
-docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "feat/add-ebcdic-mimetype" }
+# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "feat/add-ebcdic-mimetype" }
 
 [tool.uv]
 package = true
