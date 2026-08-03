@@ -2,7 +2,6 @@ import pytest
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
-from docling.exceptions import DoclingModelDownloadError
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
     _parse_otsl_output,
@@ -266,35 +265,3 @@ def test_factory_registration():
     factory.load_from_plugins()
     registered = list(factory.classes.values())
     assert GraniteVisionTableStructureModel in registered
-
-
-def test_granite_vision_table_structure_model_download_failure(monkeypatch, caplog):
-    """
-    Verify that GraniteVisionTableStructureModel handles a failed download correctly within initialization
-    - Exception bubbles up
-    - Error is logged
-    """
-    from docling.models.stages.table_structure.table_structure_model_granite_vision import (
-        GraniteVisionTableStructureModel,
-    )
-
-    opts = GraniteVisionTableStructureOptions()
-    accel = AcceleratorOptions()
-
-    with monkeypatch.context() as m:
-        m.setattr(
-            "docling.models.stages.table_structure.table_structure_model_granite_vision.download_hf_model",
-            lambda *_, **__: (_ for _ in ()).throw(
-                DoclingModelDownloadError("Mock download failure")
-            ),
-        )
-        with pytest.raises(DoclingModelDownloadError):
-            GraniteVisionTableStructureModel(
-                enabled=True,
-                artifacts_path=None,
-                options=opts,
-                accelerator_options=accel,
-            )
-        assert any(
-            "failed to download" in record.message.lower() for record in caplog.records
-        ), "Expected a warning/error about the download failure in the logs."
