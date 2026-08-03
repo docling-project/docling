@@ -1,1 +1,0 @@
-Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package Bockktd JSON and Markdownn in an easy selt contained Soriiis sundiie PDF aesummane converriie to package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package

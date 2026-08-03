@@ -6,7 +6,7 @@ import warnings
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Callable, Final, Optional, Union
+from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -115,6 +115,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
         "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     }
+    _SHAPE_ROW_TOLERANCE_EMU: Final[int] = 45720
+    """Row-grouping tolerance used by ``_iter_shapes_by_position``, in EMUs.
+
+    0.05 inch expressed in EMUs (1 inch = 914400 EMUs). This threshold is
+    intentionally small — roughly half a typical title line-height — so that
+    icon-label pairs and other tightly aligned objects on the same visual row
+    are grouped together, while shapes in separate rows (which are normally at
+    least one line-height apart) are not.
+    """
+
     # XML relationship types
     COMMENT_REL = (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
@@ -579,6 +589,102 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "detail": None,
             "level": lvl,
         }
+
+    def _get_shape_position(self, shape: object, attr: str) -> Optional[int]:
+        """Return a shape position attribute as an integer for ordering.
+
+        Args:
+            shape: A python-pptx shape object. Position attributes such as
+                ``top`` and ``left`` are accessed via ``getattr``; property
+                getters that raise are silently treated as absent.
+            attr: Name of the position attribute to read, typically ``"top"``
+                or ``"left"``.
+
+        Returns:
+            The attribute value cast to ``int``, or ``None`` if the attribute
+            is missing, ``None``-valued, or its getter raises
+            ``AttributeError``, ``ValueError``, or ``TypeError``.
+        """
+        try:
+            value = getattr(shape, attr)
+        except (AttributeError, ValueError, TypeError):
+            return None
+
+        if value is None:
+            return None
+
+        return int(value)
+
+    def _iter_shapes_by_position(self, shapes: Iterable[object]) -> Iterator[object]:
+        """Iterate shapes in visual top-to-bottom, left-to-right order.
+
+        PowerPoint stores shapes in creation/z-order, which can differ from the
+        way content is visually read on a slide. Sorting by position keeps split
+        text boxes, such as a subheading followed by its bullet text box, adjacent
+        in the extracted document.
+
+        Shapes that share a top-edge within ``row_tolerance`` EMUs of their
+        immediate predecessor (after sorting by ``top``) are placed in the same
+        row and then sorted left-to-right within that row. Adjacency is evaluated
+        against the previous shape's ``top``, not the row's first anchor, so that
+        a row can span more than one tolerance step when shapes form a contiguous
+        band. Shapes whose position attributes are unavailable or raise an
+        exception are placed at the end in their original relative order.
+
+        Args:
+            shapes: Iterable of python-pptx shape objects to sort. May be a
+                slide's top-level shape collection or the children of a group
+                shape.
+
+        Yields:
+            Shapes from ``shapes`` in visual reading order (top-to-bottom,
+            left-to-right).
+        """
+        from typing import NamedTuple
+
+        class _ShapeInfo(NamedTuple):
+            index: int
+            shape: object
+            top: int
+            left: int
+
+        row_tolerance = self._SHAPE_ROW_TOLERANCE_EMU
+        fallback_position = 2**63 - 1
+
+        entries: list[_ShapeInfo] = []
+        for index, shape in enumerate(shapes):
+            top = self._get_shape_position(shape, "top")
+            left = self._get_shape_position(shape, "left")
+            entries.append(
+                _ShapeInfo(
+                    index=index,
+                    shape=shape,
+                    top=top if top is not None else fallback_position,
+                    left=left if left is not None else fallback_position,
+                )
+            )
+
+        entries.sort(key=lambda si: (si.top, si.index))
+
+        rows: list[list[_ShapeInfo]] = []
+        current_row: list[_ShapeInfo] = []
+        prev_top = None
+
+        for entry in entries:
+            if prev_top is None or entry.top - prev_top <= row_tolerance:
+                current_row.append(entry)
+                prev_top = entry.top
+            else:
+                rows.append(current_row)
+                current_row = [entry]
+                prev_top = entry.top
+
+        if current_row:
+            rows.append(current_row)
+
+        for row in rows:
+            for si in sorted(row, key=lambda si: (si.left, si.index)):
+                yield si.shape
 
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
@@ -1177,13 +1283,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
-                    for groupedshape in shape.shapes:
+                    for groupedshape in self._iter_shapes_by_position(shape.shapes):
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
                         )
 
             # Loop through each shape in the slide
-            for shape in slide.shapes:
+            for shape in self._iter_shapes_by_position(slide.shapes):
                 handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
             # Handle notes slide

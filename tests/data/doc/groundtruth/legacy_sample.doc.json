@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "legacy_sample",
   "origin": {
-    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "mimetype": "application/msword",
     "binary_hash": 12690458760934200020,
     "filename": "legacy_sample.doc"
   },

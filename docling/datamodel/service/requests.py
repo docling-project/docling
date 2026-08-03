@@ -1,14 +1,20 @@
 import enum
+from collections.abc import Mapping
 from functools import cache
-from typing import Annotated, Generic, Literal
+from typing import Annotated, Any, Generic, Literal, TypeAlias, get_args
 
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    field_validator,
+)
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
-from docling.datamodel.service.chunking import (
-    BaseChunkerOptions,
-)
+from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
@@ -76,7 +82,7 @@ class TargetName(str, enum.Enum):
 
 
 ## Aliases
-BatchSourceRequestItem = Annotated[
+KnownBatchSourceRequestItem = Annotated[
     AnyHttpSourceRequest
     | S3SourceRequest
     | AzureBlobSourceRequest
@@ -84,6 +90,46 @@ BatchSourceRequestItem = Annotated[
     | GoogleDriveSourceRequest,
     Field(discriminator="kind"),
 ]
+
+
+class GenericSourceRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    kind: str = Field(min_length=1)
+
+
+_KNOWN_BATCH_SOURCE_MODELS = {
+    source_type.model_fields["kind"].default: source_type
+    for source_type in (
+        *get_args(get_args(KnownBatchSourceRequestItem)[0]),
+        FileSourceRequest,
+    )
+}
+_KNOWN_BATCH_SOURCE_TYPES = tuple(_KNOWN_BATCH_SOURCE_MODELS.values())
+
+
+def _validate_batch_source(value: Any) -> Any:
+    if isinstance(value, _KNOWN_BATCH_SOURCE_TYPES):
+        return value
+    if isinstance(value, BaseModel):
+        payload = value.model_dump()
+    elif isinstance(value, Mapping):
+        payload = value
+    else:
+        return value
+
+    kind = payload.get("kind")
+    source_type = (
+        _KNOWN_BATCH_SOURCE_MODELS.get(kind) if isinstance(kind, str) else None
+    )
+    return source_type.model_validate(payload) if source_type is not None else value
+
+
+BatchSourceRequestItem = Annotated[
+    KnownBatchSourceRequestItem | GenericSourceRequest,
+    BeforeValidator(_validate_batch_source),
+]
+BatchSourceRequestInput: TypeAlias = BatchSourceRequestItem | Mapping[str, Any]
 
 SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")
@@ -101,7 +147,7 @@ TargetRequest = Annotated[
     Field(discriminator="kind"),
 ]
 
-BatchTargetRequest = Annotated[
+KnownBatchTargetRequest = Annotated[
     S3Target
     | AzureBlobTarget
     | GoogleCloudStorageTarget
@@ -111,11 +157,49 @@ BatchTargetRequest = Annotated[
 ]
 
 
+class GenericTargetRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    kind: str = Field(min_length=1)
+
+
+_KNOWN_TARGET_MODELS = {
+    target_type.model_fields["kind"].default: target_type
+    for target_type in get_args(get_args(TargetRequest)[0])
+}
+_KNOWN_TARGET_TYPES = tuple(_KNOWN_TARGET_MODELS.values())
+
+
+def _validate_batch_target(value: Any) -> Any:
+    if isinstance(value, _KNOWN_TARGET_TYPES):
+        return value
+    if isinstance(value, BaseModel):
+        payload = value.model_dump()
+    elif isinstance(value, Mapping):
+        payload = value
+    else:
+        return value
+
+    kind = payload.get("kind")
+    target_type = _KNOWN_TARGET_MODELS.get(kind) if isinstance(kind, str) else None
+    return target_type.model_validate(payload) if target_type is not None else value
+
+
+BatchTargetRequest = Annotated[
+    KnownBatchTargetRequest | GenericTargetRequest,
+    BeforeValidator(_validate_batch_target),
+]
+BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
+
+
 ## Complete Source request
 class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
-    target: BatchTargetRequest
+    # Singular convenience alias — normalised to targets=[target] downstream.
+    # Mutually exclusive with targets; neither is deprecated.
+    target: BatchTargetRequest | None = None
+    targets: list[BatchTargetRequest] | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -157,6 +241,13 @@ ChunkingOptT = TypeVar("ChunkingOptT", bound=BaseChunkerOptions)
 
 class GenericChunkDocumentsRequest(BaseChunkDocumentsRequest, Generic[ChunkingOptT]):
     chunking_options: ChunkingOptT
+
+    @field_validator("convert_options", mode="after")
+    @classmethod
+    def sync_convert_chunking_options(cls, value: ConvertDocumentsOptions):
+        value.chunking_options = None
+        value.chunking_preset = None
+        return value
 
 
 @cache
