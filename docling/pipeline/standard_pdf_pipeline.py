@@ -636,7 +636,11 @@ class StandardPdfPipeline(ConvertPipeline):
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(
+            options=ReadingOrderOptions(
+                rich_cell_element_coverage_threshold=self.pipeline_options.table_structure_options.rich_cell_element_coverage_threshold
+            )
+        )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )

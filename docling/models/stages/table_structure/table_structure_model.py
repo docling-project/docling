@@ -3,7 +3,7 @@ import logging
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -218,11 +218,15 @@ class TableStructureModel(BaseTableStructureModel):
                     predictions.append(table_prediction)
                     continue
 
-                page_input = {
+                page_image = page.get_image(scale=self.scale)
+                assert page_image is not None
+                page_array = numpy.asarray(page_image)
+                page_input: dict[str, Any] = {
                     "width": page.size.width * self.scale,
                     "height": page.size.height * self.scale,
-                    "image": numpy.asarray(page.get_image(scale=self.scale)),
+                    "image": page_array,
                 }
+                table_clusters = [cluster for cluster, _ in in_tables]
 
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
@@ -238,6 +242,17 @@ class TableStructureModel(BaseTableStructureModel):
                     else:
                         # Otherwise - we use normal (line/phrase) cells
                         tcells = table_cluster.cells
+                    table_image, tcells, _ = self._prepare_table_input(
+                        page_image,
+                        table_cluster=table_cluster,
+                        table_clusters=table_clusters,
+                        text_cells=tcells,
+                    )
+                    page_input["image"] = (
+                        page_array
+                        if table_image is page_image
+                        else numpy.asarray(table_image)
+                    )
                     tokens = []
                     for c in tcells:
                         # Only allow non empty strings (spaces) into the cells of a table
