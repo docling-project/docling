@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
@@ -21,9 +22,11 @@ from docling.datamodel.image_classification_engine_options import (
     ApiKserveV2ImageClassificationEngineOptions,
 )
 from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
     NemotronOcrOptions,
     PdfPipelineOptions,
     TableFormerMode,
+    TesseractCliOcrOptions,
 )
 from docling.document_converter import (
     ConversionError,
@@ -31,7 +34,9 @@ from docling.document_converter import (
     PdfFormatOption,
 )
 from docling.models.factories import get_ocr_factory
+from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
+from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 
@@ -453,6 +458,33 @@ def test_page_error_carries_page_no(test_doc_path):
         assert isinstance(err, ErrorItem)
         assert err.page_no >= 1
         assert not err.error_message.startswith("Page ")
+
+
+def test_ocr_scale_is_configurable():
+    """The OCR render scale comes from the options instead of a hardcoded 3."""
+    assert TesseractCliOcrOptions().scale == 3.0
+    assert EasyOcrOptions().scale == 3.0
+
+    accelerator_options = AcceleratorOptions()
+
+    tesseract_model = TesseractOcrCliModel(
+        enabled=False,
+        artifacts_path=None,
+        options=TesseractCliOcrOptions(scale=1.0),
+        accelerator_options=accelerator_options,
+    )
+    assert tesseract_model.scale == 1.0
+
+    easyocr_model = EasyOcrModel(
+        enabled=False,
+        artifacts_path=None,
+        options=EasyOcrOptions(scale=1.5),
+        accelerator_options=accelerator_options,
+    )
+    assert easyocr_model.scale == 1.5
+
+    with pytest.raises(ValidationError):
+        TesseractCliOcrOptions(scale=0)
 
 
 def test_nemotron_ocr_backend_registration():

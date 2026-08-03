@@ -191,7 +191,7 @@ class BaseItemAndImageEnrichmentModel(
             embedded_im = element.get_image(conv_res.document)
             if embedded_im is not None:
                 return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
-            elif len(element.prov) == 0:
+            elif len(element.prov) == 0 or not conv_res.pages:
                 return None
 
         # Crop the image form the page

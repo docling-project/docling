@@ -89,8 +89,19 @@ class BaseObjectDetectionEngineOptions(BaseModel):
             BaseObjectDetectionEngineOptions._registry[engine_type] = cls
 
 
+def _default_engine_options() -> BaseObjectDetectionEngineOptions:
+    # Local import: object_detection_engine_options sits above this module in
+    # the import graph.
+    from docling.datamodel.object_detection_engine_options import (
+        TransformersObjectDetectionEngineOptions,
+    )
+
+    return TransformersObjectDetectionEngineOptions()
+
+
 class ObjectDetectionEngineOptionsMixin(BaseModel):
     engine_options: BaseObjectDetectionEngineOptions = Field(
+        default_factory=_default_engine_options,
         description="Runtime configuration for the object-detection engine",
     )
 

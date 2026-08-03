@@ -303,32 +303,31 @@ def _odf_text_runs(
     odf_obj: OdfDocument | None,
     inherited_formatting: Formatting | None = None,
 ) -> list[_OdfTextRun]:
-    style_name = getattr(element, "attributes", {}).get("text:style-name")
+    style_name = element.attributes.get("text:style-name")
     formatting = _formatting_from_odf_text_style(
         odf_obj, style_name, inherited_formatting
     )
-    tag = getattr(element, "tag", None)
+    tag = element.tag
     if tag == "text:line-break":
-        text = getattr(element, "text", "\n") or "\n"
-        text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive.startswith(text):
-            text = text_recursive
-        return [_OdfTextRun(text=text, formatting=formatting)]
+        return [_OdfTextRun(text=element.text or "\n", formatting=formatting)]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting)]
 
     runs: list[_OdfTextRun] = []
-    text = getattr(element, "text", "")
+    children = element.children
+    text = element.text
     if text:
         runs.append(_OdfTextRun(text=text, formatting=formatting))
 
-    for child in getattr(element, "children", []):
+    for child in children:
         runs.extend(_odf_text_runs(child, odf_obj, formatting))
+        if child.tail:
+            runs.append(_OdfTextRun(text=child.tail, formatting=formatting))
 
-    if not runs and not getattr(element, "children", []):
-        text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive:
-            runs.append(_OdfTextRun(text=text_recursive, formatting=formatting))
+    if not runs and not children:
+        inner_text = element.inner_text
+        if inner_text:
+            runs.append(_OdfTextRun(text=inner_text, formatting=formatting))
 
     return runs
 
@@ -997,10 +996,16 @@ def _chart_data_from_frame(
 
     try:
         chart_content = odf_obj.get_part(_embedded_odf_content_path(object_href))
-    except Exception:
+        # odfdo resolves XML parts lazily, so a reference to a part that is missing
+        # from the package only fails once the part is actually read.
+        chart_classification = _odf_chart_classification(chart_content)
+        chart_tables = chart_content.get_elements("descendant::table:table")
+    except Exception as e:
+        _log.warning(
+            "Could not read embedded OpenDocument object %s: %s", object_href, e
+        )
         return None
-    chart_classification = _odf_chart_classification(chart_content)
-    for table in chart_content.get_elements("descendant::table:table"):
+    for table in chart_tables:
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:

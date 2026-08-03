@@ -65,7 +65,6 @@ def _get_whisper_tiny_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-tiny-mlx",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -108,7 +107,6 @@ def _get_whisper_small_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-small-mlx",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -151,7 +149,6 @@ def _get_whisper_medium_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-medium-mlx-8bit",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -194,7 +191,6 @@ def _get_whisper_base_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-base-mlx",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -237,7 +233,6 @@ def _get_whisper_large_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-large-mlx-8bit",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -280,7 +275,6 @@ def _get_whisper_turbo_model():
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-turbo",
             inference_framework=InferenceAsrFramework.MLX,
-            language="en",
             task="transcribe",
             word_timestamps=True,
             no_speech_threshold=0.6,
@@ -311,7 +305,6 @@ WHISPER_TURBO = _get_whisper_turbo_model()
 WHISPER_TINY_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-tiny-mlx",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -322,7 +315,6 @@ WHISPER_TINY_MLX = InlineAsrMlxWhisperOptions(
 WHISPER_SMALL_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-small-mlx",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -333,7 +325,6 @@ WHISPER_SMALL_MLX = InlineAsrMlxWhisperOptions(
 WHISPER_MEDIUM_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-medium-mlx-8bit",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -344,7 +335,6 @@ WHISPER_MEDIUM_MLX = InlineAsrMlxWhisperOptions(
 WHISPER_BASE_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-base-mlx",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -355,7 +345,6 @@ WHISPER_BASE_MLX = InlineAsrMlxWhisperOptions(
 WHISPER_LARGE_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-large-mlx-8bit",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -366,7 +355,6 @@ WHISPER_LARGE_MLX = InlineAsrMlxWhisperOptions(
 WHISPER_TURBO_MLX = InlineAsrMlxWhisperOptions(
     repo_id="mlx-community/whisper-turbo",
     inference_framework=InferenceAsrFramework.MLX,
-    language="en",
     task="transcribe",
     word_timestamps=True,
     no_speech_threshold=0.6,
@@ -497,6 +485,7 @@ WHISPER_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
 WHISPER_DISTIL_SMALL_EN_NATIVE = InlineAsrNativeWhisperOptions(
     repo_id="distil-small.en",
     inference_framework=InferenceAsrFramework.WHISPER,
+    language="en",
     verbose=True,
     timestamps=True,
     word_timestamps=True,
@@ -508,6 +497,7 @@ WHISPER_DISTIL_SMALL_EN_NATIVE = InlineAsrNativeWhisperOptions(
 WHISPER_DISTIL_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
     repo_id="distil-medium.en",
     inference_framework=InferenceAsrFramework.WHISPER,
+    language="en",
     verbose=True,
     timestamps=True,
     word_timestamps=True,
@@ -519,6 +509,7 @@ WHISPER_DISTIL_MEDIUM_EN_NATIVE = InlineAsrNativeWhisperOptions(
 WHISPER_DISTIL_LARGE_V3_NATIVE = InlineAsrNativeWhisperOptions(
     repo_id="distil-large-v3",
     inference_framework=InferenceAsrFramework.WHISPER,
+    language="en",
     verbose=True,
     timestamps=True,
     word_timestamps=True,
@@ -530,6 +521,7 @@ WHISPER_DISTIL_LARGE_V3_NATIVE = InlineAsrNativeWhisperOptions(
 WHISPER_DISTIL_LARGE_V3_5_NATIVE = InlineAsrNativeWhisperOptions(
     repo_id="distil-large-v3.5",
     inference_framework=InferenceAsrFramework.WHISPER,
+    language="en",
     verbose=True,
     timestamps=True,
     word_timestamps=True,
