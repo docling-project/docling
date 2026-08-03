@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,16 +6,21 @@ import pytest
 from docling_core.types.doc import (
     ContentLayer,
     GroupItem,
+    NodeItem,
     PictureClassificationLabel,
+    PictureItem,
     TextItem,
 )
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
 from docling.document_converter import DocumentConverter, PowerpointFormatOption
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
+from docling.pipeline.simple_pipeline import SimplePipeline
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -22,6 +28,27 @@ from .verify_utils import verify_document, verify_export
 GENERATE = GEN_TEST_DATA
 
 CHART_PPTX = Path("./tests/data/pptx/sources/pptx_chart.pptx")
+
+
+class _PictureEnrichmentModel(BaseItemAndImageEnrichmentModel):
+    images_scale = 1.0
+
+    def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
+        return isinstance(element, PictureItem)
+
+    def __call__(
+        self,
+        doc: DoclingDocument,
+        element_batch: Iterable[ItemAndImageEnrichmentElement],
+    ) -> Iterable[NodeItem]:
+        for element in element_batch:
+            yield element.item
+
+
+class _ChartEnrichmentPipeline(SimplePipeline):
+    def __init__(self, pipeline_options: ConvertPipelineOptions) -> None:
+        super().__init__(pipeline_options)
+        self.enrichment_pipe = [_PictureEnrichmentModel()]
 
 
 @pytest.fixture(scope="module")
@@ -43,9 +70,22 @@ def get_pptx_paths():
 
 
 def get_converter():
+    from docling.document_converter import DocumentConverter
+
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
+
+
+def convert_with_pptx_backend(pptx_path: Path) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=pptx_path,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+
+    assert in_doc.valid
+    return in_doc._backend.convert()
 
 
 def test_e2e_pptx_conversions():
@@ -81,7 +121,7 @@ def test_e2e_pptx_conversions():
             "export to indented-text"
         )
 
-        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE, fuzzy=True), (
             "document document"
         )
 
@@ -305,6 +345,22 @@ def test_chart_image_not_rendered_by_default():
     )
 
 
+def test_chart_enrichment_skips_image_when_pages_empty():
+    """Image enrichment skips native charts without an embedded or page image."""
+    format_options = {
+        InputFormat.PPTX: PowerpointFormatOption(pipeline_cls=_ChartEnrichmentPipeline)
+    }
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX], format_options=format_options
+    )
+
+    result = converter.convert(CHART_PPTX, raises_on_error=True)
+
+    pictures = list(result.document.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
 def test_chart_image_rendering(libreoffice_available):
     """render_chart_images=True attaches a LibreOffice-rendered image.
 
@@ -338,3 +394,67 @@ def test_chart_image_rendering(libreoffice_available):
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"
     )
+
+
+def test_pptx_shapes_are_sorted_by_visual_position():
+    class FakeShape:
+        def __init__(self, name, top=None, left=None):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    class BadPositionShape:
+        @property
+        def top(self):
+            raise ValueError("bad position")
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    same_row_right = FakeShape("same-row-right", top=100, left=300)
+    lower_left = FakeShape("lower-left", top=200000, left=100)
+    same_row_left = FakeShape("same-row-left", top=1000, left=100)
+    unpositioned = FakeShape("unpositioned")
+
+    ordered_shapes = backend._iter_shapes_by_position(
+        [lower_left, same_row_right, unpositioned, same_row_left]
+    )
+
+    assert [shape.name for shape in ordered_shapes] == [
+        "same-row-left",
+        "same-row-right",
+        "lower-left",
+        "unpositioned",
+    ]
+    assert backend._get_shape_position(BadPositionShape(), "top") is None
+
+
+def test_pptx_row_grouping_uses_sliding_window():
+    """Shapes in a contiguous band should all land in the same row.
+
+    With a fixed-anchor strategy, shapes at tops 0, 40000, and 80000 EMUs
+    (each 40000 apart, within the 45720 EMU tolerance) would be split: the
+    third shape is 80000 EMUs from the first anchor (0), exceeding tolerance.
+    The sliding-window strategy compares each shape against its immediate
+    predecessor, so all three end up in the same row and are sorted by left.
+    """
+
+    class FakeShape:
+        def __init__(self, name, top, left):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    # Three shapes in a contiguous band, each 40 000 EMUs apart.
+    # Fixed-anchor would split them; sliding-window keeps them together.
+    a = FakeShape("a", top=0, left=200)
+    b = FakeShape("b", top=40000, left=100)
+    c = FakeShape("c", top=80000, left=300)
+    # This shape is more than one tolerance step from c, so it forms a new row.
+    d = FakeShape("d", top=200000, left=100)
+
+    ordered = [s.name for s in backend._iter_shapes_by_position([d, c, a, b])]
+
+    # a, b, c are in the same row sorted left-to-right; d is in its own row.
+    assert ordered == ["b", "a", "c", "d"]

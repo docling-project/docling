@@ -42,10 +42,10 @@
           "$ref": "#/texts/0"
         },
         {
-          "$ref": "#/texts/1"
+          "$ref": "#/tables/0"
         },
         {
-          "$ref": "#/tables/0"
+          "$ref": "#/texts/1"
         }
       ],
       "content_layer": "body",
@@ -65,10 +65,10 @@
           "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/groups/2"
         },
         {
           "$ref": "#/texts/8"
@@ -85,13 +85,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/4"
-        },
-        {
           "$ref": "#/texts/5"
         },
         {
           "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
         }
       ],
       "content_layer": "body",
@@ -328,6 +328,33 @@
         {
           "page_no": 2,
           "bbox": {
+            "l": 6180120.0,
+            "t": 5221440.0,
+            "r": 10256760.0,
+            "b": 1344600.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "A rectangle shape with this text inside.",
+      "text": "A rectangle shape with this text inside."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
             "l": 838080.0,
             "t": 3962520.0,
             "r": 4462560.0,
@@ -344,7 +371,7 @@
       "text": "Let’s introduce a list"
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -373,7 +400,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -402,7 +429,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -429,33 +456,6 @@
       "text": "And baz things",
       "enumerated": false,
       "marker": ""
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [
-        {
-          "page_no": 2,
-          "bbox": {
-            "l": 6180120.0,
-            "t": 5221440.0,
-            "r": 10256760.0,
-            "b": 1344600.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            40
-          ]
-        }
-      ],
-      "orig": "A rectangle shape with this text inside.",
-      "text": "A rectangle shape with this text inside."
     },
     {
       "self_ref": "#/texts/8",
@@ -496,9 +496,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 2425680.0,
+            "l": 2392200.0,
             "t": 3352320.0,
-            "r": 3927600.0,
+            "r": 3961080.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -525,9 +525,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 2425680.0,
+            "l": 2392200.0,
             "t": 3352320.0,
-            "r": 3927600.0,
+            "r": 3961080.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -554,9 +554,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 2425680.0,
+            "l": 2392200.0,
             "t": 3352320.0,
-            "r": 3927600.0,
+            "r": 3961080.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -583,9 +583,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 4452840.0,
+            "l": 4444200.0,
             "t": 3648600.0,
-            "r": 5110200.0,
+            "r": 5118840.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -612,9 +612,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 4452840.0,
+            "l": 4444200.0,
             "t": 3648600.0,
-            "r": 5110200.0,
+            "r": 5118840.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -641,9 +641,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 4452840.0,
+            "l": 4444200.0,
             "t": 3648600.0,
-            "r": 5110200.0,
+            "r": 5118840.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -670,9 +670,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 4452840.0,
+            "l": 4444200.0,
             "t": 3648600.0,
-            "r": 5110200.0,
+            "r": 5118840.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -699,9 +699,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 5622120.0,
+            "l": 5596200.0,
             "t": 3374280.0,
-            "r": 6895800.0,
+            "r": 6921360.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -726,9 +726,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 5622120.0,
+            "l": 5596200.0,
             "t": 3374280.0,
-            "r": 6895800.0,
+            "r": 6921360.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -755,9 +755,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 5622120.0,
+            "l": 5596200.0,
             "t": 3374280.0,
-            "r": 6895800.0,
+            "r": 6921360.0,
             "b": 2457360.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -784,9 +784,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 7506360.0,
+            "l": 7490880.0,
             "t": 3650400.0,
-            "r": 9033840.0,
+            "r": 9049680.0,
             "b": 2459160.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -811,9 +811,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 7506360.0,
+            "l": 7490880.0,
             "t": 3650400.0,
-            "r": 9033840.0,
+            "r": 9049680.0,
             "b": 2459160.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -840,9 +840,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 7506360.0,
+            "l": 7490880.0,
             "t": 3650400.0,
-            "r": 9033840.0,
+            "r": 9049680.0,
             "b": 2459160.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -869,9 +869,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 7506360.0,
+            "l": 7490880.0,
             "t": 3650400.0,
-            "r": 9033840.0,
+            "r": 9049680.0,
             "b": 2459160.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -899,7 +899,7 @@
           "page_no": 3,
           "bbox": {
             "l": 9404280.0,
-            "t": 3352320.0,
+            "t": 4175280.0,
             "r": 10059840.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"
@@ -928,7 +928,7 @@
           "page_no": 3,
           "bbox": {
             "l": 9404280.0,
-            "t": 3352320.0,
+            "t": 4175280.0,
             "r": 10059840.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"
@@ -957,7 +957,7 @@
           "page_no": 3,
           "bbox": {
             "l": 9404280.0,
-            "t": 3352320.0,
+            "t": 4175280.0,
             "r": 10059840.0,
             "b": 2435400.0,
             "coord_origin": "BOTTOMLEFT"

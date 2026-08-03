@@ -12,7 +12,12 @@ from pathlib import Path
 from PIL import Image as PILImage
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
+from docling.datamodel.base_models import (
+    Page,
+    VlmPrediction,
+    VlmPredictionToken,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.models.base_model import BasePageModel
@@ -35,12 +40,26 @@ def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
         stop_reason = VlmStopReason(output.stop_reason)
 
     metadata = output.metadata or {}
+
+    generated_tokens = []
+
+    logprobs = metadata.get("logprobs")
+    if logprobs and logprobs.content:
+        generated_tokens = [
+            VlmPredictionToken(
+                text=token.token,
+                logprob=token.logprob,
+            )
+            for token in logprobs.content
+        ]
+
     return VlmPrediction(
         text=output.text,
         stop_reason=stop_reason,
         generation_time=metadata.get("generation_time", -1),
         num_tokens=metadata.get("num_tokens"),
         usage=metadata.get("usage"),
+        generated_tokens=generated_tokens,
     )
 
 

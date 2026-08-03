@@ -196,6 +196,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     "generation_time": generation_time,
                     "num_tokens": num_tokens,
                     "usage": api_response.usage,
+                    "logprobs": api_response.logprobs,
                 },
             )
 

@@ -14,9 +14,7 @@ from pydantic import (
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
-from docling.datamodel.service.chunking import (
-    BaseChunkerOptions,
-)
+from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
@@ -198,7 +196,10 @@ BatchTargetRequestInput: TypeAlias = BatchTargetRequest | Mapping[str, Any]
 class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
-    target: BatchTargetRequest
+    # Singular convenience alias — normalised to targets=[target] downstream.
+    # Mutually exclusive with targets; neither is deprecated.
+    target: BatchTargetRequest | None = None
+    targets: list[BatchTargetRequest] | None = None
     callbacks: list[CallbackSpec] = []
 
 
@@ -240,6 +241,13 @@ ChunkingOptT = TypeVar("ChunkingOptT", bound=BaseChunkerOptions)
 
 class GenericChunkDocumentsRequest(BaseChunkDocumentsRequest, Generic[ChunkingOptT]):
     chunking_options: ChunkingOptT
+
+    @field_validator("convert_options", mode="after")
+    @classmethod
+    def sync_convert_chunking_options(cls, value: ConvertDocumentsOptions):
+        value.chunking_options = None
+        value.chunking_preset = None
+        return value
 
 
 @cache

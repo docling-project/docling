@@ -75,6 +75,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
                 AcceleratorDevice.CPU,
                 AcceleratorDevice.CUDA,
                 AcceleratorDevice.MPS,
+                AcceleratorDevice.XPU,
             ],
         )
 
@@ -83,6 +84,8 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             return torch.device(device_str)
         elif device_str == AcceleratorDevice.MPS.value:
             return torch.device("mps")
+        elif device_str == AcceleratorDevice.XPU.value:
+            return torch.device("xpu")
         else:
             return torch.device("cpu")
 
