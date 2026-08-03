@@ -21,6 +21,7 @@ from docling.datamodel.base_models import InputFormat, OutputFormat
 # Import new engine system (available in docling>=2.73.0)
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
+    HeadingHierarchyOptions,
     PdfBackend,
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
@@ -489,6 +490,36 @@ class ConvertDocumentsOptions(BaseModel):
             examples=[True],
         ),
     ] = True
+
+    do_pdf_heading_hierarchy: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, section-header levels are inferred for PDF and image "
+                "inputs processed by the standard pipeline, from the PDF bookmarks / "
+                "table of contents, from outline numbering and from font style. When "
+                "disabled, every detected heading stays at level 1 and the document "
+                "hierarchy is flat. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
+    pdf_heading_hierarchy_options: Annotated[
+        HeadingHierarchyOptions,
+        Field(
+            description=(
+                "Fine-tuning of the section-header level inference, applied when "
+                "do_pdf_heading_hierarchy is enabled. The nested enabled flag is set "
+                "automatically from do_pdf_heading_hierarchy and does not need to be "
+                "provided."
+            ),
+            examples=[
+                HeadingHierarchyOptions(use_bookmarks=False, max_level=4),
+                HeadingHierarchyOptions(use_style=False),
+            ],
+        ),
+    ] = HeadingHierarchyOptions()
 
     include_images: Annotated[
         bool,

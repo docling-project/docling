@@ -1,4 +1,5 @@
 import sys
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -301,6 +302,42 @@ def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     parser = _FakeThreadedParser.created
     assert parser is not None
     assert parser.load_calls == [[2, 3, 4, 5]]
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_rewinds_stream_before_deriving_document_key(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    """Resolving a page range must leave a stream input rewound.
+
+    The threaded parser derives its document key by hashing from the current stream
+    offset, so a page-count probe that consumes the stream would key the document on a
+    partial read. A stream left at EOF hashes identically for every document.
+    """
+    stream_positions: list[int] = []
+
+    class _StreamPositionRecordingParser(_FakeThreadedParser):
+        def load(self, path_or_stream, password=None, page_numbers=None) -> str:
+            stream_positions.append(path_or_stream.tell())
+            return super().load(
+                path_or_stream, password=password, page_numbers=page_numbers
+            )
+
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _StreamPositionRecordingParser,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(test_doc_path.read_bytes()),
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        filename=test_doc_path.name,
+        limits=DocumentLimits(page_range=(2, 3)),
+    )
+
+    assert stream_positions == [0]
 
     in_doc._backend.unload()
 

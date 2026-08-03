@@ -1,0 +1,6061 @@
+{
+  "description": "Oil and gas well production, four schemas with packed decimals",
+  "records": [
+    {
+      "name": "1",
+      "fields": [
+        {
+          "name": "DIST",
+          "size": 3
+        },
+        {
+          "name": "FIELD",
+          "size": 8
+        },
+        {
+          "name": "OPR",
+          "size": 6
+        },
+        {
+          "name": "LEASE",
+          "size": 5
+        },
+        {
+          "name": "LSE-FILLER",
+          "size": 2
+        },
+        {
+          "name": "OFFSHORE",
+          "size": 1
+        },
+        {
+          "name": "F-NAME",
+          "size": 32
+        },
+        {
+          "name": "COUNTY",
+          "size": 18
+        },
+        {
+          "name": "DISC-DATE",
+          "size": 8
+        },
+        {
+          "name": "F-DEPTH",
+          "size": 5
+        },
+        {
+          "name": "O-GRAV",
+          "size": 3
+        },
+        {
+          "name": "F-TYPE",
+          "size": 1
+        },
+        {
+          "name": "MULT-RES",
+          "size": 1
+        },
+        {
+          "name": "F-LPB",
+          "size": 1
+        },
+        {
+          "name": "F-XMT",
+          "size": 1
+        },
+        {
+          "name": "PRT-AS-IS",
+          "size": 1
+        },
+        {
+          "name": "YARD",
+          "size": 1
+        },
+        {
+          "name": "T-CODES",
+          "size": 12
+        },
+        {
+          "name": "ALLOCATION",
+          "size": 12
+        },
+        {
+          "name": "RES-AMT",
+          "size": 6
+        },
+        {
+          "name": "F-GOR",
+          "size": 6
+        },
+        {
+          "name": "F-TOP",
+          "size": 5
+        },
+        {
+          "name": "F-NET",
+          "size": 6
+        },
+        {
+          "name": "UNET",
+          "size": 3
+        },
+        {
+          "name": "TOL",
+          "size": 4
+        },
+        {
+          "name": "SPAC",
+          "size": 8
+        },
+        {
+          "name": "DIAG",
+          "size": 4
+        },
+        {
+          "name": "CUM-PROD",
+          "size": 7,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "CASING",
+          "size": 21
+        },
+        {
+          "name": "COL-HEAD",
+          "size": 1
+        },
+        {
+          "name": "ALO-CODE",
+          "size": 1
+        },
+        {
+          "name": "F-RMK1",
+          "size": 66
+        },
+        {
+          "name": "F-RMK2",
+          "size": 66
+        },
+        {
+          "name": "PERM-NO",
+          "size": 5
+        },
+        {
+          "name": "SP-FHC",
+          "size": 1
+        },
+        {
+          "name": "AN-A",
+          "size": 90
+        },
+        {
+          "name": "AN-B",
+          "size": 35
+        },
+        {
+          "name": "F-OOIP",
+          "size": 8
+        },
+        {
+          "name": "FILLER-1",
+          "size": 7
+        },
+        {
+          "name": "FILLER-2",
+          "size": 15
+        },
+        {
+          "name": "FILLER-3",
+          "size": 13
+        },
+        {
+          "name": "FM-DATE1",
+          "size": 6
+        },
+        {
+          "name": "FM-PW1",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC1",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-1",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC1",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG1",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT1",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT1",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE1",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN1",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH1",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-1",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE2",
+          "size": 6
+        },
+        {
+          "name": "FM-PW2",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC2",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-2",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC2",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG2",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT2",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT2",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE2",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN2",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH2",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-2",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE3",
+          "size": 6
+        },
+        {
+          "name": "FM-PW3",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC3",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-3",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC3",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG3",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT3",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT3",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE3",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN3",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH3",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-3",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE4",
+          "size": 6
+        },
+        {
+          "name": "FM-PW4",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC4",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-4",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC4",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG4",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT4",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT4",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE4",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN4",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH4",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-4",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE5",
+          "size": 6
+        },
+        {
+          "name": "FM-PW5",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC5",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-5",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC5",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG5",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT5",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT5",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE5",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN5",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH5",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-5",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE6",
+          "size": 6
+        },
+        {
+          "name": "FM-PW6",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC6",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-6",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC6",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG6",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT6",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT6",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE6",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN6",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH6",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-6",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE7",
+          "size": 6
+        },
+        {
+          "name": "FM-PW7",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC7",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-7",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC7",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG7",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT7",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT7",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE7",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN7",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH7",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-7",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE8",
+          "size": 6
+        },
+        {
+          "name": "FM-PW8",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC8",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-8",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC8",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG8",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT8",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT8",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE8",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN8",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH8",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-8",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE9",
+          "size": 6
+        },
+        {
+          "name": "FM-PW9",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC9",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-9",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC9",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG9",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT9",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT9",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE9",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN9",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH9",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-9",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE10",
+          "size": 6
+        },
+        {
+          "name": "FM-PW10",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC10",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-10",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC10",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG10",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT10",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT10",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE10",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN10",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH10",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-10",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE11",
+          "size": 6
+        },
+        {
+          "name": "FM-PW11",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC11",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-11",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC11",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG11",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT11",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT11",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE11",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN11",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH11",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-11",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE12",
+          "size": 6
+        },
+        {
+          "name": "FM-PW12",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC12",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-12",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC12",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG12",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT12",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT12",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE12",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN12",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH12",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-12",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE13",
+          "size": 6
+        },
+        {
+          "name": "FM-PW13",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC13",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-13",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC13",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG13",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT13",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT13",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE13",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN13",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH13",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-13",
+          "size": 15
+        },
+        {
+          "name": "FM-DATE14",
+          "size": 6
+        },
+        {
+          "name": "FM-PW14",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "FM-AC14",
+          "size": 4,
+          "type": "packed_decimal",
+          "scale": 4
+        },
+        {
+          "name": "FILLER-4-14",
+          "size": 4
+        },
+        {
+          "name": "FM-OTHC14",
+          "size": 1
+        },
+        {
+          "name": "FM-CHG14",
+          "size": 1
+        },
+        {
+          "name": "FM-PROD-FACT14",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT14",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 3
+        },
+        {
+          "name": "FM-SPLIT-PROD-FACT-DATE14",
+          "size": 2
+        },
+        {
+          "name": "FM-JOHN14",
+          "size": 1
+        },
+        {
+          "name": "FM-OTH14",
+          "size": 8,
+          "type": "packed_decimal",
+          "scale": 7
+        },
+        {
+          "name": "FILLER-5-14",
+          "size": 15
+        }
+      ],
+      "selector": "1"
+    },
+    {
+      "name": "3",
+      "fields": [
+        {
+          "name": "LEASE-REC-DIST",
+          "size": 3
+        },
+        {
+          "name": "LEASE-REC-FIELD",
+          "size": 8
+        },
+        {
+          "name": "LEASE-REC-OPR",
+          "size": 6
+        },
+        {
+          "name": "LEASE-REC-LEASE",
+          "size": 5
+        },
+        {
+          "name": "LEASE-REC-FILLER",
+          "size": 2
+        },
+        {
+          "name": "LEASE-REC-OFFSHORE",
+          "size": 1
+        },
+        {
+          "name": "L-NAME",
+          "size": 32
+        },
+        {
+          "name": "LSE-CO",
+          "size": 6
+        },
+        {
+          "name": "POGATH",
+          "size": 5
+        },
+        {
+          "name": "PGGATH",
+          "size": 5
+        },
+        {
+          "name": "OSPLIT",
+          "size": 1
+        },
+        {
+          "name": "GSPLIT",
+          "size": 1
+        },
+        {
+          "name": "OOGATH",
+          "size": 5
+        },
+        {
+          "name": "OGGATH",
+          "size": 5
+        },
+        {
+          "name": "OOPR",
+          "size": 6
+        },
+        {
+          "name": "BO-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "BG-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MOVE-BAL",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "PO-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "PG-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "SEC-REC",
+          "size": 1
+        },
+        {
+          "name": "CERT",
+          "size": 2
+        },
+        {
+          "name": "BATCH",
+          "size": 1
+        },
+        {
+          "name": "L-LPB",
+          "size": 1
+        },
+        {
+          "name": "COMMINGLE-CD",
+          "size": 1
+        },
+        {
+          "name": "COMMINGLE",
+          "size": 4
+        },
+        {
+          "name": "L-INFO",
+          "size": 54
+        },
+        {
+          "name": "AD-BO-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "AD-BG-STATUS",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "COMMINGLE-DATE",
+          "size": 6
+        },
+        {
+          "name": "L-RMCD",
+          "size": 1
+        },
+        {
+          "name": "L-RMDT",
+          "size": 6
+        },
+        {
+          "name": "SEV-CD-13",
+          "size": 1
+        },
+        {
+          "name": "SEV-CD-14",
+          "size": 1
+        },
+        {
+          "name": "L-CAS-SI-LTR-DTE",
+          "size": 6
+        },
+        {
+          "name": "L-RED-RTE-DTE",
+          "size": 6
+        },
+        {
+          "name": "L-EXC-TST",
+          "size": 1
+        },
+        {
+          "name": "L-RLTYCD",
+          "size": 1
+        },
+        {
+          "name": "L-ONE-WELL-LEASE",
+          "size": 1
+        },
+        {
+          "name": "L-PANHANDLE-GOR-EXC",
+          "size": 1
+        },
+        {
+          "name": "L-PANHANDLE-GOR-AMT",
+          "size": 5,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "FILLER-1",
+          "size": 4
+        },
+        {
+          "name": "L-MONTH-DATE1",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV1",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO1",
+          "size": 1
+        },
+        {
+          "name": "LM-REC1",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG1",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW1",
+          "size": 3
+        },
+        {
+          "name": "LM-OW1",
+          "size": 3
+        },
+        {
+          "name": "LM-PL1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC1",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC1",
+          "size": 1
+        },
+        {
+          "name": "LM-STO1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL1",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD1",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL1",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN1",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE1",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-1",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-1",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE2",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV2",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO2",
+          "size": 1
+        },
+        {
+          "name": "LM-REC2",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG2",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW2",
+          "size": 3
+        },
+        {
+          "name": "LM-OW2",
+          "size": 3
+        },
+        {
+          "name": "LM-PL2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC2",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC2",
+          "size": 1
+        },
+        {
+          "name": "LM-STO2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL2",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD2",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL2",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN2",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE2",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-2",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-2",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE3",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV3",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO3",
+          "size": 1
+        },
+        {
+          "name": "LM-REC3",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG3",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW3",
+          "size": 3
+        },
+        {
+          "name": "LM-OW3",
+          "size": 3
+        },
+        {
+          "name": "LM-PL3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC3",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC3",
+          "size": 1
+        },
+        {
+          "name": "LM-STO3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL3",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD3",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL3",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN3",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE3",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-3",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-3",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE4",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV4",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO4",
+          "size": 1
+        },
+        {
+          "name": "LM-REC4",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG4",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW4",
+          "size": 3
+        },
+        {
+          "name": "LM-OW4",
+          "size": 3
+        },
+        {
+          "name": "LM-PL4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC4",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC4",
+          "size": 1
+        },
+        {
+          "name": "LM-STO4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL4",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD4",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL4",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN4",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE4",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-4",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-4",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE5",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV5",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO5",
+          "size": 1
+        },
+        {
+          "name": "LM-REC5",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG5",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW5",
+          "size": 3
+        },
+        {
+          "name": "LM-OW5",
+          "size": 3
+        },
+        {
+          "name": "LM-PL5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC5",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC5",
+          "size": 1
+        },
+        {
+          "name": "LM-STO5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL5",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD5",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL5",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN5",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE5",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-5",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-5",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE6",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV6",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO6",
+          "size": 1
+        },
+        {
+          "name": "LM-REC6",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG6",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW6",
+          "size": 3
+        },
+        {
+          "name": "LM-OW6",
+          "size": 3
+        },
+        {
+          "name": "LM-PL6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC6",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC6",
+          "size": 1
+        },
+        {
+          "name": "LM-STO6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL6",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD6",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL6",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN6",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE6",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-6",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-6",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE7",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV7",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO7",
+          "size": 1
+        },
+        {
+          "name": "LM-REC7",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG7",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW7",
+          "size": 3
+        },
+        {
+          "name": "LM-OW7",
+          "size": 3
+        },
+        {
+          "name": "LM-PL7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC7",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC7",
+          "size": 1
+        },
+        {
+          "name": "LM-STO7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL7",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD7",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL7",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN7",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE7",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-7",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-7",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE8",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV8",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO8",
+          "size": 1
+        },
+        {
+          "name": "LM-REC8",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG8",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW8",
+          "size": 3
+        },
+        {
+          "name": "LM-OW8",
+          "size": 3
+        },
+        {
+          "name": "LM-PL8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC8",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC8",
+          "size": 1
+        },
+        {
+          "name": "LM-STO8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL8",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD8",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL8",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN8",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE8",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-8",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-8",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE9",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV9",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO9",
+          "size": 1
+        },
+        {
+          "name": "LM-REC9",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG9",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW9",
+          "size": 3
+        },
+        {
+          "name": "LM-OW9",
+          "size": 3
+        },
+        {
+          "name": "LM-PL9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC9",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC9",
+          "size": 1
+        },
+        {
+          "name": "LM-STO9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL9",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD9",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL9",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN9",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE9",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-9",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-9",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE10",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV10",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO10",
+          "size": 1
+        },
+        {
+          "name": "LM-REC10",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG10",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW10",
+          "size": 3
+        },
+        {
+          "name": "LM-OW10",
+          "size": 3
+        },
+        {
+          "name": "LM-PL10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC10",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC10",
+          "size": 1
+        },
+        {
+          "name": "LM-STO10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL10",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD10",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL10",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN10",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE10",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-10",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-10",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE11",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV11",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO11",
+          "size": 1
+        },
+        {
+          "name": "LM-REC11",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG11",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW11",
+          "size": 3
+        },
+        {
+          "name": "LM-OW11",
+          "size": 3
+        },
+        {
+          "name": "LM-PL11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC11",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC11",
+          "size": 1
+        },
+        {
+          "name": "LM-STO11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL11",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD11",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL11",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN11",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE11",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-11",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-11",
+          "size": 13
+        },
+        {
+          "name": "L-MONTH-DATE12",
+          "size": 6
+        },
+        {
+          "name": "LM-SEV12",
+          "size": 1
+        },
+        {
+          "name": "LM-RETRO12",
+          "size": 1
+        },
+        {
+          "name": "LM-REC12",
+          "size": 1
+        },
+        {
+          "name": "LM-CHG12",
+          "size": 1
+        },
+        {
+          "name": "LM-ALLOW12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PROD12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-FW12",
+          "size": 3
+        },
+        {
+          "name": "LM-OW12",
+          "size": 3
+        },
+        {
+          "name": "LM-PL12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-PLC12",
+          "size": 1
+        },
+        {
+          "name": "LM-OTH12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-OTHC12",
+          "size": 1
+        },
+        {
+          "name": "LM-STO12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GL12",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GPROD12",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-GLIFT12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "LM-CSIL12",
+          "size": 1
+        },
+        {
+          "name": "LM-JOHN12",
+          "size": 1
+        },
+        {
+          "name": "LM-LTR-CODE12",
+          "size": 1
+        },
+        {
+          "name": "FILLER-2-12",
+          "size": 13
+        },
+        {
+          "name": "FILLER-3-12",
+          "size": 13
+        },
+        {
+          "name": "FILLER-4",
+          "size": 4
+        }
+      ],
+      "selector": "3"
+    },
+    {
+      "name": "4",
+      "fields": [
+        {
+          "name": "MULTI-W-REC-DIST",
+          "size": 3
+        },
+        {
+          "name": "MULTI-W-REC-FIELD",
+          "size": 8
+        },
+        {
+          "name": "MULTI-W-REC-OPR",
+          "size": 6
+        },
+        {
+          "name": "MULTI-W-REC-LEASE",
+          "size": 5
+        },
+        {
+          "name": "MULTI-W-REC-FILLER",
+          "size": 2
+        },
+        {
+          "name": "MULTI-W-REC-OFFSHORE",
+          "size": 1
+        },
+        {
+          "name": "M-RECORD",
+          "size": 6
+        },
+        {
+          "name": "TYPEW",
+          "size": 1
+        },
+        {
+          "name": "RESER",
+          "size": 5
+        },
+        {
+          "name": "M-COUNTY",
+          "size": 6
+        },
+        {
+          "name": "M-TST-EFF",
+          "size": 1
+        },
+        {
+          "name": "M-PNTR-1ST",
+          "size": 6
+        },
+        {
+          "name": "CAP",
+          "size": 1
+        },
+        {
+          "name": "PROD-WELL",
+          "size": 6
+        },
+        {
+          "name": "MARG-WELL",
+          "size": 6
+        },
+        {
+          "name": "M-DEPTH",
+          "size": 1
+        },
+        {
+          "name": "M-PNTR-LST",
+          "size": 6
+        },
+        {
+          "name": "M-EXC-TEST",
+          "size": 1
+        },
+        {
+          "name": "FILLER-1",
+          "size": 6
+        },
+        {
+          "name": "M-WATER",
+          "size": 6
+        },
+        {
+          "name": "M-REMARK",
+          "size": 55
+        },
+        {
+          "name": "MM-PRCNT",
+          "size": 3
+        },
+        {
+          "name": "FILLER-2",
+          "size": 11
+        },
+        {
+          "name": "FILLER-3",
+          "size": 11
+        },
+        {
+          "name": "M-MONTH-DATE1",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG1",
+          "size": 1
+        },
+        {
+          "name": "MM-NO1",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE1",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE1",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT1",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW21",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE21",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE21",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT21",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE21",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW31",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE31",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE31",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT31",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE31",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK1",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE21",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE21",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN1",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-1",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-1",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE2",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG2",
+          "size": 1
+        },
+        {
+          "name": "MM-NO2",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE2",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE2",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT2",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW22",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE22",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE22",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT22",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE22",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW32",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE32",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE32",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT32",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE32",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK2",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE22",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE22",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN2",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-2",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-2",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE3",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG3",
+          "size": 1
+        },
+        {
+          "name": "MM-NO3",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE3",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE3",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT3",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW23",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE23",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE23",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT23",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE23",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW33",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE33",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE33",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT33",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE33",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK3",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE13",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE23",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE23",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN3",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-3",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-3",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE4",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG4",
+          "size": 1
+        },
+        {
+          "name": "MM-NO4",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE4",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE4",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT4",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW24",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE24",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE24",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT24",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE24",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW34",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE34",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE34",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT34",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE34",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK4",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE14",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE24",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE24",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN4",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-4",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-4",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE5",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG5",
+          "size": 1
+        },
+        {
+          "name": "MM-NO5",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE5",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE5",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT5",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW25",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE25",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE25",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT25",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE25",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW35",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE35",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE35",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT35",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE35",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK5",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE15",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE25",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE25",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN5",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-5",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-5",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE6",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG6",
+          "size": 1
+        },
+        {
+          "name": "MM-NO6",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE6",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE6",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT6",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW26",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE26",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE26",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT26",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE26",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW36",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE36",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE36",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT36",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE36",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK6",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE16",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE26",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE26",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN6",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-6",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-6",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE7",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG7",
+          "size": 1
+        },
+        {
+          "name": "MM-NO7",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE7",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE7",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT7",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW27",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE27",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE27",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT27",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE27",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW37",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE37",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE37",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT37",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE37",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK7",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE17",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE27",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE27",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN7",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-7",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-7",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE8",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG8",
+          "size": 1
+        },
+        {
+          "name": "MM-NO8",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE8",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE8",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT8",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW28",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE28",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE28",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT28",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE28",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW38",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE38",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE38",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT38",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE38",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK8",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE18",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE28",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE28",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN8",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-8",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-8",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE9",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG9",
+          "size": 1
+        },
+        {
+          "name": "MM-NO9",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE9",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE9",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT9",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW29",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE29",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE29",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT29",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE29",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW39",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE39",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE39",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT39",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE39",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK9",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE19",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE29",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE29",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN9",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-9",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-9",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE10",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG10",
+          "size": 1
+        },
+        {
+          "name": "MM-NO10",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE10",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE10",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT10",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW210",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE210",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE210",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT210",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE210",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW310",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE310",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE310",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT310",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE310",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK10",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE110",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE210",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE210",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN10",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-10",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-10",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE11",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG11",
+          "size": 1
+        },
+        {
+          "name": "MM-NO11",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE11",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE11",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT11",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW211",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE211",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE211",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT211",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE211",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW311",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE311",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE311",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT311",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE311",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK11",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE111",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE211",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE211",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN11",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-11",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-11",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE12",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG12",
+          "size": 1
+        },
+        {
+          "name": "MM-NO12",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE12",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE12",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT12",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW212",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE212",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE212",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT212",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE212",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW312",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE312",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE312",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT312",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE312",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK12",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE112",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE212",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE212",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN12",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-12",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-12",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE13",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG13",
+          "size": 1
+        },
+        {
+          "name": "MM-NO13",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW13",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE13",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE13",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT13",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW213",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE213",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE213",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT213",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE213",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW313",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE313",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE313",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT313",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE313",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK13",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE113",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE213",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE213",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN13",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-13",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-13",
+          "size": 9
+        },
+        {
+          "name": "M-MONTH-DATE14",
+          "size": 6
+        },
+        {
+          "name": "MM-CHG14",
+          "size": 1
+        },
+        {
+          "name": "MM-NO14",
+          "size": 1
+        },
+        {
+          "name": "MM-ALLOW14",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE14",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE14",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT14",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ALLOW214",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE214",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE214",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT214",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE214",
+          "size": 2
+        },
+        {
+          "name": "MM-ALLOW314",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-ACODE314",
+          "size": 1
+        },
+        {
+          "name": "MM-TCODE314",
+          "size": 1
+        },
+        {
+          "name": "MM-LIMIT314",
+          "size": 5,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-DATE314",
+          "size": 2
+        },
+        {
+          "name": "MM-FORM-LCK14",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE114",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-KODE214",
+          "size": 1
+        },
+        {
+          "name": "MM-SPACE214",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "MM-JOHN14",
+          "size": 1
+        },
+        {
+          "name": "FILLER-4-14",
+          "size": 9
+        },
+        {
+          "name": "FILLER-5-14",
+          "size": 9
+        }
+      ],
+      "selector": "4"
+    },
+    {
+      "name": "5",
+      "fields": [
+        {
+          "name": "WELL-REC-DIST",
+          "size": 3
+        },
+        {
+          "name": "WELL-REC-FIELD",
+          "size": 8
+        },
+        {
+          "name": "WELL-REC-OPR",
+          "size": 6
+        },
+        {
+          "name": "WELL-REC-LEASE",
+          "size": 5
+        },
+        {
+          "name": "WELL-REC-FILLER",
+          "size": 2
+        },
+        {
+          "name": "WELL-REC-OFFSHORE",
+          "size": 1
+        },
+        {
+          "name": "WELL-NO",
+          "size": 6
+        },
+        {
+          "name": "W-TYPE-WELL",
+          "size": 1
+        },
+        {
+          "name": "W-UNIT-NO",
+          "size": 1
+        },
+        {
+          "name": "W-UNIT-VALUE",
+          "size": 4
+        },
+        {
+          "name": "W-KEY",
+          "size": 1
+        },
+        {
+          "name": "W-COUNTY",
+          "size": 3
+        },
+        {
+          "name": "PUMP",
+          "size": 1
+        },
+        {
+          "name": "W-SP",
+          "size": 5
+        },
+        {
+          "name": "W-NET",
+          "size": 6
+        },
+        {
+          "name": "W-DEPTH",
+          "size": 5
+        },
+        {
+          "name": "SAND",
+          "size": 3
+        },
+        {
+          "name": "FROZEN",
+          "size": 5
+        },
+        {
+          "name": "PERF",
+          "size": 5
+        },
+        {
+          "name": "W-DATE",
+          "size": 8
+        },
+        {
+          "name": "EX-14B-CD",
+          "size": 1
+        },
+        {
+          "name": "W-SUB-WELL",
+          "size": 1
+        },
+        {
+          "name": "W-NO-PROD-CD",
+          "size": 1
+        },
+        {
+          "name": "W-DELQ-FORM",
+          "size": 1
+        },
+        {
+          "name": "W-TST-EFF",
+          "size": 1
+        },
+        {
+          "name": "W-EXC-TST",
+          "size": 1
+        },
+        {
+          "name": "W-WATER",
+          "size": 4
+        },
+        {
+          "name": "EX-14B-DATE",
+          "size": 6
+        },
+        {
+          "name": "W-RMKS",
+          "size": 15
+        },
+        {
+          "name": "BONUS-AMT",
+          "size": 4
+        },
+        {
+          "name": "FROZTSF",
+          "size": 3
+        },
+        {
+          "name": "W-WLSD",
+          "size": 1
+        },
+        {
+          "name": "W-TST-DT",
+          "size": 8
+        },
+        {
+          "name": "W-DTE-LST-UTL",
+          "size": 6
+        },
+        {
+          "name": "W-NEW-WB-EXC",
+          "size": 1
+        },
+        {
+          "name": "W-NEW-WB-CONNECT-DATE",
+          "size": 8
+        },
+        {
+          "name": "W-14B2-TYPE-COVERAGE",
+          "size": 1
+        },
+        {
+          "name": "W-14B2-APP-NO",
+          "size": 6
+        },
+        {
+          "name": "FILLER-1",
+          "size": 4
+        },
+        {
+          "name": "FILLER-2",
+          "size": 18
+        },
+        {
+          "name": "FILLER-3",
+          "size": 7
+        },
+        {
+          "name": "W-MONTH-DATE1",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG1",
+          "size": 1
+        },
+        {
+          "name": "WM-NO1",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW1",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE1",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE1",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT1",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW21",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE21",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE21",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT21",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE21",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW31",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE31",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE31",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT31",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE31",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK1",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT1",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA1",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT1",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA1",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE1",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE1",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT1",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR1",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD1",
+          "size": 1
+        },
+        {
+          "name": "WM-POT1",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT1",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN1",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP1",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-1",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE2",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG2",
+          "size": 1
+        },
+        {
+          "name": "WM-NO2",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW2",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE2",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE2",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT2",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW22",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE22",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE22",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT22",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE22",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW32",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE32",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE32",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT32",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE32",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK2",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT2",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA2",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT2",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA2",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE2",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE2",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT2",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR2",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD2",
+          "size": 1
+        },
+        {
+          "name": "WM-POT2",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT2",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN2",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP2",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-2",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE3",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG3",
+          "size": 1
+        },
+        {
+          "name": "WM-NO3",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW3",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE3",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE3",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT3",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW23",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE23",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE23",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT23",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE23",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW33",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE33",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE33",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT33",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE33",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK3",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT3",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA3",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT3",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA3",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE3",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE3",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT3",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR3",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD3",
+          "size": 1
+        },
+        {
+          "name": "WM-POT3",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT3",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN3",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP3",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-3",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE4",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG4",
+          "size": 1
+        },
+        {
+          "name": "WM-NO4",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW4",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE4",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE4",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT4",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW24",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE24",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE24",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT24",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE24",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW34",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE34",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE34",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT34",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE34",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK4",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT4",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA4",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT4",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA4",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE4",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE4",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT4",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR4",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD4",
+          "size": 1
+        },
+        {
+          "name": "WM-POT4",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT4",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN4",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP4",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-4",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE5",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG5",
+          "size": 1
+        },
+        {
+          "name": "WM-NO5",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW5",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE5",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE5",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT5",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW25",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE25",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE25",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT25",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE25",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW35",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE35",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE35",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT35",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE35",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK5",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT5",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA5",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT5",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA5",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE5",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE5",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT5",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR5",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD5",
+          "size": 1
+        },
+        {
+          "name": "WM-POT5",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT5",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN5",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP5",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-5",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE6",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG6",
+          "size": 1
+        },
+        {
+          "name": "WM-NO6",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW6",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE6",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE6",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT6",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW26",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE26",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE26",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT26",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE26",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW36",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE36",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE36",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT36",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE36",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK6",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT6",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA6",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT6",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA6",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE6",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE6",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT6",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR6",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD6",
+          "size": 1
+        },
+        {
+          "name": "WM-POT6",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT6",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN6",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP6",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-6",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE7",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG7",
+          "size": 1
+        },
+        {
+          "name": "WM-NO7",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW7",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE7",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE7",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT7",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW27",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE27",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE27",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT27",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE27",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW37",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE37",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE37",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT37",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE37",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK7",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT7",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA7",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT7",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA7",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE7",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE7",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT7",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR7",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD7",
+          "size": 1
+        },
+        {
+          "name": "WM-POT7",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT7",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN7",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP7",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-7",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE8",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG8",
+          "size": 1
+        },
+        {
+          "name": "WM-NO8",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW8",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE8",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE8",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT8",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW28",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE28",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE28",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT28",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE28",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW38",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE38",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE38",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT38",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE38",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK8",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT8",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA8",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT8",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA8",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE8",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE8",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT8",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR8",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD8",
+          "size": 1
+        },
+        {
+          "name": "WM-POT8",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT8",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN8",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP8",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-8",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE9",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG9",
+          "size": 1
+        },
+        {
+          "name": "WM-NO9",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW9",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE9",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE9",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT9",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW29",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE29",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE29",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT29",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE29",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW39",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE39",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE39",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT39",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE39",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK9",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT9",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA9",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT9",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA9",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE9",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE9",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT9",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR9",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD9",
+          "size": 1
+        },
+        {
+          "name": "WM-POT9",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT9",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN9",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP9",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-9",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE10",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG10",
+          "size": 1
+        },
+        {
+          "name": "WM-NO10",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW10",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE10",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE10",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT10",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW210",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE210",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE210",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT210",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE210",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW310",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE310",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE310",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT310",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE310",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK10",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT10",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA10",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT10",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA10",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE10",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE10",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT10",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR10",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD10",
+          "size": 1
+        },
+        {
+          "name": "WM-POT10",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT10",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN10",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP10",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-10",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE11",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG11",
+          "size": 1
+        },
+        {
+          "name": "WM-NO11",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW11",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE11",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE11",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT11",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW211",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE211",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE211",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT211",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE211",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW311",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE311",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE311",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT311",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE311",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK11",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT11",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA11",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT11",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA11",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE11",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE11",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT11",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR11",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD11",
+          "size": 1
+        },
+        {
+          "name": "WM-POT11",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT11",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN11",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP11",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-11",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE12",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG12",
+          "size": 1
+        },
+        {
+          "name": "WM-NO12",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW12",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE12",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE12",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT12",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW212",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE212",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE212",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT212",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE212",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW312",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE312",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE312",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT312",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE312",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK12",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT12",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA12",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT12",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA12",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE12",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE12",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT12",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR12",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD12",
+          "size": 1
+        },
+        {
+          "name": "WM-POT12",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT12",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN12",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP12",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-12",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE13",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG13",
+          "size": 1
+        },
+        {
+          "name": "WM-NO13",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW13",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE13",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE13",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT13",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW213",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE213",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE213",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT213",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE213",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW313",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE313",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE313",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT313",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE313",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK13",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT13",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA13",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT13",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA13",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE13",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE13",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT13",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR13",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD13",
+          "size": 1
+        },
+        {
+          "name": "WM-POT13",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT13",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN13",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP13",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-13",
+          "size": 3
+        },
+        {
+          "name": "W-MONTH-DATE14",
+          "size": 6
+        },
+        {
+          "name": "WM-CHG14",
+          "size": 1
+        },
+        {
+          "name": "WM-NO14",
+          "size": 1
+        },
+        {
+          "name": "WM-ALLOW14",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE14",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE14",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT14",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ALLOW214",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE214",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE214",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT214",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE214",
+          "size": 2
+        },
+        {
+          "name": "WM-ALLOW314",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ACODE314",
+          "size": 1
+        },
+        {
+          "name": "WM-TCODE314",
+          "size": 1
+        },
+        {
+          "name": "WM-LIMIT314",
+          "size": 4,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-DATE314",
+          "size": 2
+        },
+        {
+          "name": "WM-FORM-LCK14",
+          "size": 1
+        },
+        {
+          "name": "WM-PGT14",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-TSWA14",
+          "size": 1
+        },
+        {
+          "name": "WM-EGT14",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-ESWA14",
+          "size": 1
+        },
+        {
+          "name": "WM-ACRE14",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 2
+        },
+        {
+          "name": "WM-POTE14",
+          "size": 3,
+          "type": "packed_decimal",
+          "scale": 1
+        },
+        {
+          "name": "WM-ACFT14",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-GOR14",
+          "size": 3,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-OTRAN-CD14",
+          "size": 1
+        },
+        {
+          "name": "WM-POT14",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-EOT14",
+          "size": 2,
+          "type": "packed_decimal"
+        },
+        {
+          "name": "WM-JOHN14",
+          "size": 1
+        },
+        {
+          "name": "WM-OOIP14",
+          "size": 6
+        },
+        {
+          "name": "FILLER-4-14",
+          "size": 3
+        }
+      ],
+      "selector": "5"
+    }
+  ],
+  "record_type_field": {
+    "name": "TYPE-REC",
+    "size": 1
+  }
+}

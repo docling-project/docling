@@ -303,32 +303,31 @@ def _odf_text_runs(
     odf_obj: OdfDocument | None,
     inherited_formatting: Formatting | None = None,
 ) -> list[_OdfTextRun]:
-    style_name = getattr(element, "attributes", {}).get("text:style-name")
+    style_name = element.attributes.get("text:style-name")
     formatting = _formatting_from_odf_text_style(
         odf_obj, style_name, inherited_formatting
     )
-    tag = getattr(element, "tag", None)
+    tag = element.tag
     if tag == "text:line-break":
-        text = getattr(element, "text", "\n") or "\n"
-        text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive.startswith(text):
-            text = text_recursive
-        return [_OdfTextRun(text=text, formatting=formatting)]
+        return [_OdfTextRun(text=element.text or "\n", formatting=formatting)]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting)]
 
     runs: list[_OdfTextRun] = []
-    text = getattr(element, "text", "")
+    children = element.children
+    text = element.text
     if text:
         runs.append(_OdfTextRun(text=text, formatting=formatting))
 
-    for child in getattr(element, "children", []):
+    for child in children:
         runs.extend(_odf_text_runs(child, odf_obj, formatting))
+        if child.tail:
+            runs.append(_OdfTextRun(text=child.tail, formatting=formatting))
 
-    if not runs and not getattr(element, "children", []):
-        text_recursive = getattr(element, "text_recursive", "")
-        if text_recursive:
-            runs.append(_OdfTextRun(text=text_recursive, formatting=formatting))
+    if not runs and not children:
+        inner_text = element.inner_text
+        if inner_text:
+            runs.append(_OdfTextRun(text=inner_text, formatting=formatting))
 
     return runs
 
