@@ -368,9 +368,7 @@ members = ["packages/docling"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
-# TODO: revert to the released docling-core once the EBCDIC media type is out.
-# https://github.com/docling-project/docling-core/pull/707
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "feat/add-ebcdic-mimetype" }
+# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 
 [tool.uv]
 package = true
