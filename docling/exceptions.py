@@ -30,11 +30,7 @@ class AcceleratorDeviceNotAvailableError(BaseError):
     """Raised when an explicitly requested accelerator device is not available."""
 
 
-class DoclingError(Exception):
-    """Base exception for all Docling-related errors."""
-
-
-class DoclingModelDownloadError(DoclingError):
+class DoclingModelDownloadError(BaseError):
     """Raised when download a model fails (e.g. connection issues, invalid token)."""
 
     def __init__(self, message: str, original_exception: Exception | None = None):
@@ -42,7 +38,7 @@ class DoclingModelDownloadError(DoclingError):
         self.original_exception = original_exception
 
 
-class DoclingMultiModelDownloadError(DoclingError):
+class DoclingMultiModelDownloadError(BaseError):
     """Raised when one or more models fail during batch download"""
 
     def __init__(self, failures: List[Tuple[str, Exception]]):
