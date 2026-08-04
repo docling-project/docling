@@ -124,6 +124,7 @@ class InputFormat(str, Enum):
     EPUB = "epub"
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
+    EBCDIC = "ebcdic"
 
 
 class OutputFormat(str, Enum):
@@ -171,6 +172,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -257,6 +259,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.apple.pages",
         "application/x-iwork-pages-sffpages",
     ],
+    InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -379,6 +382,7 @@ class ApiImageRequestResult:
     num_tokens: int | None
     stop_reason: VlmStopReason
     usage: Any | None = None
+    logprobs: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -388,6 +392,7 @@ class ApiImageStreamingRequestResult:
     text: str
     num_tokens: int | None
     usage: Any | None = None
+    logprobs: Any | None = None
 
 
 class ContainerElement(
@@ -534,10 +539,29 @@ class OpenAiChatMessage(BaseModel):
     tool_calls: list[dict[str, Any]] | None = None
 
 
+class OpenAiTopLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+
+
+class OpenAiTokenLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+    top_logprobs: list[OpenAiTopLogprob] | None = None
+
+
+class OpenAiResponseLogprobs(BaseModel):
+    content: list[OpenAiTokenLogprob] | None = None
+    refusal: list[OpenAiTokenLogprob] | None = None
+
+
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
     finish_reason: str | None
+    logprobs: OpenAiResponseLogprobs | None = None
 
 
 class OpenAiResponseUsage(BaseModel):

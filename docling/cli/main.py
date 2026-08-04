@@ -113,6 +113,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
     OcrAutoOptions,
+    OcrMode,
     OcrOptions,
     PdfBackend,
     PdfPipelineOptions,
@@ -359,6 +360,11 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
+    help=(
+        "Convert documents with Docling. At default verbosity a per-file "
+        "progress line is logged; pass -q/--quiet for fully silent output "
+        "(useful when calling docling from an AI agent or script)."
+    ),
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
@@ -814,9 +820,19 @@ def convert(  # noqa: C901
         bool,
         typer.Option(
             ...,
-            help="Replace any existing text with OCR generated text over the full content.",
+            help=(
+                "DEPRECATED: use `--ocr-mode full_page` instead. "
+                "Replace any existing text with OCR generated text over the full content."
+            ),
         ),
     ] = False,
+    ocr_mode: Annotated[
+        OcrMode,
+        typer.Option(
+            ...,
+            help="Which document regions are fed to the OCR engine.",
+        ),
+    ] = OcrMode.DEFAULT,
     tables: Annotated[
         bool,
         typer.Option(
@@ -929,6 +945,16 @@ def convert(  # noqa: C901
             help="Set the verbosity level. -v for info logging, -vv for debug logging.",
         ),
     ] = 0,
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet",
+            "-q",
+            help="Suppress the per-file progress log emitted at default verbosity, "
+            "restoring fully silent output (warnings and errors only). Has no "
+            "effect when -v/--verbose is given.",
+        ),
+    ] = False,
     debug_visualize_cells: Annotated[
         bool,
         typer.Option(..., help="Enable debug output which visualizes the PDF cells"),
@@ -1037,6 +1063,13 @@ def convert(  # noqa: C901
 
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
+        if not quiet:
+            # Keep per-file progress visible at default verbosity so users running
+            # long-running conversions (e.g. directories of audio files) can see
+            # which input is currently in flight. --quiet opts back out for callers
+            # (e.g. AI agents) that need fully silent output.
+            logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
+            logging.getLogger("docling.document_converter").setLevel(logging.INFO)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:
@@ -1142,9 +1175,20 @@ def convert(  # noqa: C901
         export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
+        # Deprecated --force-ocr wins over --ocr-mode; warn when used.
+        if force_ocr:
+            warnings.warn(
+                "`--force-ocr` is deprecated; use "
+                f"`--ocr-mode {OcrMode.FULL_PAGE.value}` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            resolved_ocr_mode = OcrMode.FULL_PAGE
+        else:
+            resolved_ocr_mode = ocr_mode
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
             kind=ocr_engine,
-            force_full_page_ocr=force_ocr,
+            mode=resolved_ocr_mode,
         )
 
         ocr_lang_list = _split_list(ocr_lang)

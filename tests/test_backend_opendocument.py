@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    DocItemLabel,
     ImageRefMode,
     PictureClassificationLabel,
     PictureItem,
@@ -39,13 +40,18 @@ from .verify_utils import verify_document, verify_export
 
 pytest.importorskip("odfdo")
 from odfdo import (
+    Bookmark,
     Document as OdfDocument,
     DrawPage,
+    Element,
     Frame,
     Header,
+    LineBreak,
     List as OdfList,
     ListItem,
     Paragraph,
+    Section,
+    Spacer,
     Span,
     Style,
     Table,
@@ -176,6 +182,70 @@ def test_odt_conversion(odt_path: Path):
     assert cell_texts == {(0, 0): "h1", (0, 1): "h2", (1, 0): "v1", (1, 1): "v2"}
 
 
+def test_odt_section_content(tmp_path: Path):
+    path = tmp_path / "section.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    section = Section(name="Section1")
+    section.append(Header(1, "Heading inside section"))
+    section.append(Paragraph("Paragraph inside section."))
+    table = Table("Nested", width=2, height=1)
+    table.set_value("A1", "left")
+    table.set_value("B1", "right")
+    section.append(table)
+    body.append(section)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [
+        item.text for item in result.document.texts if item.label == "section_header"
+    ] == ["Heading inside section"]
+    assert any(
+        item.text == "Paragraph inside section." for item in result.document.texts
+    )
+    assert len(result.document.tables) == 1
+    assert [cell.text for cell in result.document.tables[0].data.table_cells] == [
+        "left",
+        "right",
+    ]
+
+
+def test_odt_section_preserves_split_list_continuation(tmp_path: Path):
+    path = tmp_path / "section_split_list.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    section = Section(name="Section1")
+    first = OdfList()
+    first.append(ListItem("Outer"))
+    section.append(first)
+
+    continuation = OdfList()
+    bridge = ListItem()
+    nested = OdfList()
+    nested.append(ListItem("Nested"))
+    bridge.append(nested)
+    continuation.append(bridge)
+    section.append(continuation)
+    body.append(section)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item
+        for item, _level in result.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [item.text for item in list_items] == ["Outer", "Nested"]
+    nested_group = list_items[1].parent.resolve(result.document)
+    assert nested_group.parent == list_items[0].get_ref()
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
@@ -208,6 +278,57 @@ def test_odp_conversion(odp_path: Path):
         "Second bullet",
         "Second Slide Heading",
     } <= body_texts
+
+
+@pytest.mark.parametrize(
+    ("input_format", "document_type", "suffix"),
+    [
+        (InputFormat.ODT, "text", ".odt"),
+        (InputFormat.ODP, "presentation", ".odp"),
+    ],
+)
+def test_odf_preserves_text_after_inline_children(
+    tmp_path: Path,
+    input_format: InputFormat,
+    document_type: str,
+    suffix: str,
+):
+    path = tmp_path / f"inline_tail{suffix}"
+    doc = OdfDocument(document_type)
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Lead")
+    span = Span()
+    span.append(Spacer())
+    span.append("connective prose here")
+    paragraph.append(span)
+    paragraph.append(Bookmark("inline-marker"))
+    paragraph.append(" bookmarked tail")
+    paragraph.append(LineBreak())
+    paragraph.append("next line")
+
+    if input_format == InputFormat.ODT:
+        body.append(paragraph)
+    else:
+        page = DrawPage("page1", name="Slide One")
+        page.append(
+            Frame.text_frame(
+                paragraph,
+                size=("10cm", "5cm"),
+                position=("1cm", "1cm"),
+            )
+        )
+        body.append(page)
+
+    doc.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[input_format]).convert(path)
+    text_items = [
+        item.text for item in result.document.texts if item.label == DocItemLabel.TEXT
+    ]
+
+    assert text_items == ["Lead connective prose here bookmarked tail\nnext line"]
 
 
 def test_ods_merged_cells(tmp_path: Path):
@@ -490,6 +611,27 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(1, 0)] == "Row 1"
     assert cell_texts[(1, 1)] == "9.1"
     assert cell_texts[(4, 3)] == "6.2"
+
+
+def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):
+    """A draw:object whose part is missing must not abort the conversion."""
+    path = tmp_path / "dangling_object.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(Paragraph("Before the dangling object."))
+    frame = Frame(name="dangling", size=("6cm", "4cm"))
+    frame.append(Element.from_tag('<draw:object xlink:href="./Object 1"/>'))
+    body.append(frame)
+    body.append(Paragraph("After the dangling object."))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    texts = [item.text for item in result.document.texts]
+    assert "Before the dangling object." in texts
+    assert "After the dangling object." in texts
+    assert result.document.pictures == []
 
 
 def test_odt_text_document_embedded_bitmap_image():

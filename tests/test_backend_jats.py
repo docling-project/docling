@@ -1,9 +1,60 @@
+"""Test module for the JATS backend parser.
+
+Third-party test data notice
+-----------------------------------------------------------------------
+The JATS source files in tests/data/jats/sources/ and their derived
+groundtruth files (*.itxt, *.json, *.md) are based on the following
+open-access articles:
+
+1. ptag100.xml  —  CC BY 4.0
+   Choi JR, Medjber S, Menouar S, Sever R (2026). "Time-Dependent 3D
+   Oscillator with Coulomb Interaction: An Alternative Approach for
+   Analyzing Quark-Antiquark Systems." Progress of Theoretical and
+   Experimental Physics, 2026(7), 073A01.
+   https://doi.org/10.1093/ptep/ptag100
+   Copyright © 2026 The Author(s). Published by Oxford University Press
+   on behalf of the Physical Society of Japan.
+   Originally obtained from SCOAP3 (https://scoap3.org), the Sponsoring
+   Consortium for Open Access Publishing in Particle Physics:
+     https://scoap3-prod-backend.s3.cern.ch/media/harvested_files/10.1093/ptep/ptag100/ptag100.xml
+   License: https://creativecommons.org/licenses/by/4.0/
+   The derived groundtruth files are adaptations of the original work.
+
+2. elife-56337.nxml  —  CC0 1.0 (public domain)
+   Wolf G, de Iaco A, Sun M-A, Bruno M, Tinkham M, Hoang D, et al.
+   (2020). "KRAB-zinc finger protein gene expansion in response to
+   active retrotransposons in the murine lineage." eLife, 9, e56337.
+   https://doi.org/10.7554/eLife.56337
+   Originally obtained from PubMed Central (PMC7289599).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+
+3. pone.0234687.nxml  —  CC0 1.0 (public domain)
+   Ribeiro-Filho HMN, Civiero M, Kebreab E, Sainju UM, et al. (2020).
+   "Potential to reduce greenhouse gas emissions through different dairy
+   cattle systems in subtropical regions." PLoS ONE, 15(6), e0234687.
+   https://doi.org/10.1371/journal.pone.0234687
+   Originally obtained from PubMed Central (PMC7302504).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+
+4. pntd.0008301.nxml  —  CC0 1.0 (public domain)
+   Burgert-Brucker CR, Zoerhoff KL, Headland M, Shoemaker EA,
+   Stelmach R, Karim MJ, et al. (2020). "Risk factors associated with
+   failing pre-transmission assessment surveys (pre-TAS) in lymphatic
+   filariasis elimination programs: Results of a multi-country
+   analysis." PLoS Neglected Tropical Diseases, 14(6), e0008301.
+   https://doi.org/10.1371/journal.pntd.0008301
+   Originally obtained from PubMed Central (PMC7289444).
+   License: https://creativecommons.org/publicdomain/zero/1.0/
+-----------------------------------------------------------------------
+"""
+
 import os
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
+from docling_core.types.doc.document import Script
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -17,13 +68,46 @@ GENERATE = GEN_TEST_DATA
 
 def get_jats_paths():
     directory = Path(os.path.dirname(__file__) + "/data/jats/")
-    xml_files = sorted(directory.rglob("*.nxml"))
-    return xml_files
+    nxml_files = list(directory.rglob("*.nxml"))
+    nxml_stems = {p.stem for p in nxml_files}
+    # Avoid running duplicate conversions of the same content.
+    xml_files = [p for p in directory.rglob("*.xml") if p.stem not in nxml_stems]
+    return sorted(nxml_files + xml_files)
 
 
 def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.XML_JATS])
     return converter
+
+
+def _formatting_tuple(item) -> tuple:
+    """Compact, comparable view of a text item's formatting."""
+    f = item.formatting
+    if f is None:
+        return (item.label, item.text, None)
+    return (
+        item.label,
+        item.text,
+        (f.bold, f.italic, f.underline, f.strikethrough, f.script),
+    )
+
+
+def convert_jats_body(body: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <body>
+    {body}
+  </body>
+</article>
+"""
+    stream = DocumentStream(
+        name="body-test.nxml",
+        stream=BytesIO(xml.encode()),
+    )
+
+    conv_result: ConversionResult = get_converter().convert(stream)
+    return conv_result.document
 
 
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
@@ -151,32 +235,102 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
         pytest.param(
             "The mass energy relation <inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula> is famous.",
             [
-                (DocItemLabel.TEXT, "The mass energy relation"),
-                (DocItemLabel.FORMULA, "E=mc^2"),
-                (DocItemLabel.TEXT, "is famous."),
+                (DocItemLabel.TEXT, "The mass energy relation", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "is famous.", None),
             ],
             id="text-formula-text",
         ),
         pytest.param(
             "Given <inline-formula><tex-math>$$a^2$$</tex-math></inline-formula> and <inline-formula><tex-math>$$b^2$$</tex-math></inline-formula> we sum.",
             [
-                (DocItemLabel.TEXT, "Given"),
-                (DocItemLabel.FORMULA, "a^2"),
-                (DocItemLabel.TEXT, "and"),
-                (DocItemLabel.FORMULA, "b^2"),
-                (DocItemLabel.TEXT, "we sum."),
+                (DocItemLabel.TEXT, "Given", None),
+                (DocItemLabel.FORMULA, "a^2", None),
+                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.FORMULA, "b^2", None),
+                (DocItemLabel.TEXT, "we sum.", None),
             ],
             id="multiple-formulas",
+        ),
+        pytest.param(
+            # loose text inside <inline-formula> around the <tex-math> is preserved
+            # (adjacent unstyled runs are coalesced into one segment)
+            "The relation <inline-formula>foo <tex-math>$$E=mc^2$$</tex-math> bar</inline-formula> holds.",
+            [
+                (DocItemLabel.TEXT, "The relation foo", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "bar holds.", None),
+            ],
+            id="text-inside-inline-formula",
         ),
         pytest.param(
             # tex-math is not always wrapped in $$...$$ in real JATS files
             "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation"),
-                (DocItemLabel.FORMULA, "E=mc^2"),
-                (DocItemLabel.TEXT, "holds."),
+                (DocItemLabel.TEXT, "The relation", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "holds.", None),
             ],
             id="bare-tex-math",
+        ),
+        pytest.param(
+            "We use <inline-formula><italic>x</italic> <tex-math>$$a^2$$</tex-math></inline-formula> here.",
+            [
+                (DocItemLabel.TEXT, "We use", None),
+                (DocItemLabel.TEXT, "x", (False, True, False, False, Script.BASELINE)),
+                (DocItemLabel.FORMULA, "a^2", None),
+                (DocItemLabel.TEXT, "here.", None),
+            ],
+            id="italic-inside-formula",
+        ),
+        pytest.param(
+            "Index <inline-formula>x<sub>i</sub> <tex-math>$$x_i$$</tex-math></inline-formula> shown.",
+            [
+                (DocItemLabel.TEXT, "Index x", None),
+                (DocItemLabel.TEXT, "i", (False, False, False, False, Script.SUB)),
+                (DocItemLabel.FORMULA, "x_i", None),
+                (DocItemLabel.TEXT, "shown.", None),
+            ],
+            id="subscript-inside-formula",
+        ),
+        pytest.param(
+            "Take <inline-formula><bold><italic>v</italic></bold> <tex-math>$$v$$</tex-math></inline-formula> next.",
+            [
+                (DocItemLabel.TEXT, "Take", None),
+                (DocItemLabel.TEXT, "v", (True, True, False, False, Script.BASELINE)),
+                (DocItemLabel.FORMULA, "v", None),
+                (DocItemLabel.TEXT, "next.", None),
+            ],
+            id="nested-emphasis-inside-formula",
+        ),
+        pytest.param(
+            # a tex-math nested inside an emphasis tag is still parsed as a
+            # formula (not leaked as raw ``$$...$$`` text)
+            "Val <inline-formula><italic><tex-math>$$x^2$$</tex-math></italic></inline-formula> shown.",
+            [
+                (DocItemLabel.TEXT, "Val", None),
+                (DocItemLabel.FORMULA, "x^2", None),
+                (DocItemLabel.TEXT, "shown.", None),
+            ],
+            id="tex-math-inside-emphasis",
+        ),
+        pytest.param(
+            # emphasis outside the formula is now preserved (general text styling),
+            # and adjacent unstyled runs are coalesced
+            "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
+            [
+                (DocItemLabel.TEXT, "Compare", None),
+                (
+                    DocItemLabel.TEXT,
+                    "lhs",
+                    (False, True, False, False, Script.BASELINE),
+                ),
+                (DocItemLabel.FORMULA, "a", None),
+                (DocItemLabel.TEXT, "rhs and", None),
+                (DocItemLabel.FORMULA, "b", None),
+                (DocItemLabel.TEXT, "now.", None),
+            ],
+            id="formula-with-surrounding-elements",
         ),
     ],
 )
@@ -185,7 +339,7 @@ def test_jats_inline_formula_is_grouped(paragraph, expected):
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    assert [(item.label, item.text) for item in groups[0]] == expected
+    assert [_formatting_tuple(item) for item in groups[0]] == expected
 
 
 @pytest.mark.parametrize(
@@ -196,6 +350,12 @@ def test_jats_inline_formula_is_grouped(paragraph, expected):
             "<inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula>",
             ["E=mc^2"],
             id="standalone-formula",
+        ),
+        pytest.param(
+            # per the JATS spec tex-math is bare; a stray single-$ pair is stripped
+            "<inline-formula><tex-math>$x^2$</tex-math></inline-formula>",
+            ["x^2"],
+            id="single-dollar-delimiters",
         ),
         pytest.param(
             # an inline-formula with no usable tex-math is dropped
@@ -211,6 +371,64 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert _inline_group_items(doc) == []
     formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
     assert formulas == expected_formulas
+
+
+def test_jats_paragraph_emphasis_is_preserved():
+    doc = convert_jats_body(
+        "<sec><title>T</title>"
+        "<p>The species <italic>Homo sapiens</italic> is <bold>common</bold>.</p>"
+        "</sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.TEXT, "The species", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "is", None),
+        (DocItemLabel.TEXT, "common", (True, False, False, False, Script.BASELINE)),
+        (DocItemLabel.TEXT, ".", None),
+    ]
+
+
+def test_jats_plain_paragraph_stays_a_single_text_item():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Plain text with a <xref>1</xref> citation.</p></sec>"
+    )
+
+    # no emphasis (and coalesced xref) → a single TEXT item, no inline group
+    assert _inline_group_items(doc) == []
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == ["Plain text with a 1 citation."]
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        pytest.param(
+            "<disp-formula><tex-math>$$E=mc^2$$</tex-math></disp-formula>",
+            "E=mc^2",
+            id="direct-tex-math",
+        ),
+        pytest.param(
+            "<disp-formula><alternatives><tex-math>$$a+b$$</tex-math>"
+            "</alternatives></disp-formula>",
+            "a+b",
+            id="tex-math-under-alternatives",
+        ),
+    ],
+)
+def test_jats_disp_formula_is_block_formula(body, expected):
+    doc = convert_jats_body(f"<sec><title>T</title>{body}</sec>")
+
+    formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert formulas == [expected]
+    # a block formula is emitted standalone, not inside an inline group
+    assert _inline_group_items(doc) == []
 
 
 def test_jats_empty_display_formula_does_not_drop_following_content():

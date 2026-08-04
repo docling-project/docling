@@ -34,7 +34,7 @@ The following table shows all processing stages in Docling, their model families
           <li><code>docling-layout-egret-medium</code></li>
           <li><code>docling-layout-egret-large</code></li>
           <li><code>docling-layout-egret-xlarge</code></li>
-          <li><code>docling-layout-v2</code> (legacy)</li>
+          <li><code>docling-layout-v2</code> (legacy, no longer supported)</li>
         </ul>
       </td>
     </tr>
@@ -199,9 +199,14 @@ The following table shows all processing stages in Docling, their model families
 
 | Model | Inference Engine | Supported Devices |
 |-------|------------------|-------------------|
-| All Layout models | docling-ibm-models | CPU, CUDA, MPS, XPU |
+| All layout models | Transformers | CPU, CUDA, MPS, XPU |
 
-**Note:** Layout models use a specialized RT-DETR-based object detection framework from `docling-ibm-models`.
+**Note:** Layout models run through `AutoModelForObjectDetection`, reading their label map
+from the model repository's own `config.json`. Only `docling-layout-heron` also supports ONNXRuntime.
+
+**Deprecated:** `LayoutOptions` and `docling-layout-v2` are superseded by
+`LayoutObjectDetectionOptions`. `LayoutOptions` still works — it is translated onto the
+object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back to Heron.
 
 ### TableFormer Models (Table Structure)
 
@@ -271,11 +276,13 @@ The following table shows all processing stages in Docling, their model families
 ### Layout Detection
 
 ```python
-from docling.datamodel.pipeline_options import LayoutOptions
-from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_HERON
+from docling.datamodel.pipeline_options import LayoutObjectDetectionOptions
 
 # Use Heron layout model (default)
-layout_options = LayoutOptions(model_spec=DOCLING_LAYOUT_HERON)
+layout_options = LayoutObjectDetectionOptions.from_preset("layout_heron_default")
+
+# Or a higher-accuracy variant
+layout_options = LayoutObjectDetectionOptions.from_preset("layout_egret_large")
 ```
 
 ### Table Structure Recognition

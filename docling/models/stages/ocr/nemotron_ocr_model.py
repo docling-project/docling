@@ -120,7 +120,8 @@ class NemotronOcrModel(BaseOcrModel):
             accelerator_options=accelerator_options,
         )
         self.options: NemotronOcrOptions
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         if self.enabled:
             self.validate_runtime(accelerator_options=accelerator_options)
@@ -146,7 +147,6 @@ class NemotronOcrModel(BaseOcrModel):
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=language,
-                detector_max_batch_size=self.options.batch_size,
             )
 
     @staticmethod
@@ -247,7 +247,7 @@ class NemotronOcrModel(BaseOcrModel):
         ocr_rect: BoundingBox,
         image_width: int,
         image_height: int,
-        scale: int,
+        scale: float,
     ) -> TextCell:
         # `nemotron_ocr` returns normalized `left/right` and an inverted
         # pair `lower/upper`, where `lower` is the top Y and `upper` is the
@@ -340,7 +340,7 @@ class NemotronOcrModel(BaseOcrModel):
                 if state.needs_ocr:
                     assert state.recorder is not None
                     state.recorder.resume()
-                    self.post_process_cells(state.cells, state.page)
+                    self.post_process_cells(state.cells, state.page, conv_res)
                     state.recorder.pause()
                     # One "ocr" sample per page (rects + image prep + this page's
                     # inference share + post-processing), so count == valid pages.

@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import pytest
 
@@ -12,6 +11,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
+    OcrMode,
     OcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
@@ -20,7 +20,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
-from .groundtruth_paths import get_regular_groundtruth_paths
+from .groundtruth_paths import get_ocr_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -30,7 +30,7 @@ pytestmark = pytest.mark.ml_ocr
 
 def get_pdf_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/scanned/sources")
+    directory = Path("./tests/data/ocr/sources")
 
     # List all PDF files in the directory and its subdirectories
     pdf_files = sorted(directory.rglob("ocr_test*.pdf"))
@@ -61,16 +61,23 @@ def get_converter(ocr_options: OcrOptions):
 def test_e2e_conversions():
     pdf_paths = get_pdf_paths()
 
-    engines: List[Tuple[OcrOptions, bool]] = [
+    # Each config is (OcrOptions, supports_rotation)
+    configs: list[tuple[OcrOptions, bool]] = [
+        # Default OCR mode
         (TesseractOcrOptions(), True),
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
-        (TesseractOcrOptions(force_full_page_ocr=True), True),
-        (TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        (TesseractCliOcrOptions(force_full_page_ocr=True), True),
-        (TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        (EasyOcrOptions(force_full_page_ocr=True), False),
+        # Layout-regions OCR
+        (TesseractOcrOptions(mode=OcrMode.LAYOUT_REGIONS), True),
+        (TesseractCliOcrOptions(mode=OcrMode.LAYOUT_REGIONS), True),
+        (EasyOcrOptions(mode=OcrMode.LAYOUT_REGIONS), False),
+        # Full page OCR
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE), True),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (EasyOcrOptions(mode=OcrMode.FULL_PAGE), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
@@ -78,15 +85,18 @@ def test_e2e_conversions():
             # skip onnxruntime backend on Python 3.14
             continue
 
-        engines.append((RapidOcrOptions(backend=rapidocr_backend), False))
-        engines.append(
-            (RapidOcrOptions(backend=rapidocr_backend, force_full_page_ocr=True), False)
+        configs.append((RapidOcrOptions(backend=rapidocr_backend), False))
+        configs.append(
+            (
+                RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE),
+                False,
+            )
         )
-        engines.append(
+        configs.append(
             (
                 RapidOcrOptions(
                     backend=rapidocr_backend,
-                    force_full_page_ocr=True,
+                    mode=OcrMode.FULL_PAGE,
                     rec_font_path="test",
                     rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
                 ),
@@ -96,10 +106,10 @@ def test_e2e_conversions():
 
     # only works on mac
     if "darwin" == sys.platform:
-        engines.append((OcrMacOptions(), True))
-        engines.append((OcrMacOptions(force_full_page_ocr=True), True))
+        configs.append((OcrMacOptions(), True))
+        configs.append((OcrMacOptions(mode=OcrMode.FULL_PAGE), True))
 
-    for ocr_options, supports_rotation in engines:
+    for ocr_options, supports_rotation in configs:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"
         )
@@ -112,7 +122,9 @@ def test_e2e_conversions():
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                gt=get_regular_groundtruth_paths(pdf_path),
+                gt=get_ocr_groundtruth_paths(
+                    pdf_path, mode=ocr_options.mode, engine=ocr_options.kind
+                ),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
                 fuzzy=True,

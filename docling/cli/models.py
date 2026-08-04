@@ -26,6 +26,10 @@ except ImportError as e:
     sys.exit(1)
 
 from docling.datamodel.settings import settings
+from docling.models.stages.ocr.easyocr_model import (
+    _resolve_easyocr_recognition_models,
+)
+from docling.models.stages.ocr.rapid_ocr_model import _parse_rapidocr_model_spec
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.model_downloader import download_models
 
@@ -110,6 +114,25 @@ def download(
             help="No extra output is generated, the CLI prints only the directory with the cached models.",
         ),
     ] = False,
+    easyocr_lang: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            ...,
+            "--easyocr-lang",
+            help="EasyOCR language code to prefetch. Repeat for multiple languages.",
+        ),
+    ] = None,
+    rapidocr_backend_lang: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            ...,
+            "--rapidocr-backend-lang",
+            help=(
+                "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
+                "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
+            ),
+        ),
+    ] = None,
 ):
     if models and all:
         raise typer.BadParameter(
@@ -123,6 +146,29 @@ def download(
             handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
         )
     to_download = models or (list(_AvailableModels) if all else _default_models)
+    if easyocr_lang is not None:
+        if _AvailableModels.EASYOCR not in to_download:
+            raise typer.BadParameter(
+                "--easyocr-lang requires the 'easyocr' model",
+                param_hint="--easyocr-lang",
+            )
+        try:
+            _resolve_easyocr_recognition_models(easyocr_lang)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
+    if rapidocr_backend_lang is not None:
+        if _AvailableModels.RAPIDOCR not in to_download:
+            raise typer.BadParameter(
+                "--rapidocr-backend-lang requires the 'rapidocr' model",
+                param_hint="--rapidocr-backend-lang",
+            )
+        try:
+            for value in rapidocr_backend_lang:
+                _parse_rapidocr_model_spec(value)
+        except ValueError as error:
+            raise typer.BadParameter(
+                str(error), param_hint="--rapidocr-backend-lang"
+            ) from error
     output_dir = download_models(
         output_dir=output_dir,
         force=force,
@@ -143,7 +189,9 @@ def download(
         with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
+        rapidocr_models=rapidocr_backend_lang,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
+        easyocr_languages=easyocr_lang,
         with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
     )
 
