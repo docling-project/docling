@@ -144,7 +144,16 @@ doc_converter = DocumentConverter(
 
 ### Convert Apple Pages documents
 
-Apple Pages (`.pages`) documents convert like any other format:
+!!! warning "iWork '09 and earlier only"
+
+    Documents written by **Pages 5 or later (2013 onwards) cannot be converted**.
+    They store their content in `Index/*.iwa` — Snappy-compressed protobuf whose
+    schemas Apple has never published — and embed no PDF render. Docling rejects
+    them with an explanatory error; export the document to PDF, DOCX or EPUB from
+    Pages and convert that instead.
+
+Apple Pages (`.pages`) documents from iWork '09 and earlier convert like any
+other format:
 
 ```python
 from docling.document_converter import DocumentConverter
@@ -153,14 +162,13 @@ doc = DocumentConverter().convert("report.pages").document
 print(doc.export_to_markdown())
 ```
 
-Docling reads the `QuickLook/Preview.pdf` that Pages embeds in the document and
-runs it through the regular PDF pipeline, so layout analysis, table structure and
-OCR all behave as they do for a PDF. Two consequences are worth knowing:
+Docling reads the `QuickLook/Preview.pdf` that those releases embedded and runs
+it through the regular PDF pipeline, so layout analysis, table structure and OCR
+all behave as they do for a PDF. Two consequences are worth knowing:
 
 - The document must have been saved with **"Include preview in document"**
-  enabled (the default). Without it there is nothing to convert, and Docling
-  raises an error saying so. Re-save the document with that setting on, or export
-  it to PDF or DOCX.
+  enabled. Without it there is nothing to convert, and Docling raises an error
+  saying so. Re-save with that setting on, or export to PDF or DOCX.
 - Structure is inferred by layout analysis rather than read from the Pages
   document model, so heading levels and list nesting are recovered the same way
   they are for a PDF.

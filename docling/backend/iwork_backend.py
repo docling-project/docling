@@ -1,21 +1,21 @@
 """Backends for Apple iWork documents.
 
-Currently limited to Pages (``.pages``). A ``.pages`` file is a ZIP container whose
-layout depends on when it was written:
+Currently limited to Pages (``.pages``). A ``.pages`` file is a ZIP container, but
+what is inside changed completely with Pages 5:
 
-* iWork '13 and later store the document in ``Index/*.iwa`` — Snappy-compressed
-  protobuf streams whose schemas Apple has never published.
-* iWork '09 stored it in a plain ``index.xml`` (optionally gzipped).
+* **iWork '09 and earlier** stored the document as ``index.xml`` (optionally
+  gzipped) and, when "Include preview in document" was enabled, a full
+  ``QuickLook/Preview.pdf`` render alongside it.
+* **Pages 5 and later (2013 onwards)** store the document as ``Index/*.iwa`` —
+  Snappy-compressed protobuf whose schemas Apple has never published. The
+  QuickLook PDF is gone; the only previews are root-level ``preview.jpg``,
+  ``preview-micro.jpg`` and ``preview-web.jpg``, which cover just the top of the
+  first page at roughly 720x552 and are useless as a document render.
 
-Rather than decode either representation, this backend converts the
-``QuickLook/Preview.pdf`` that Pages embeds in the container and hands it to the
-regular PDF pipeline. Layout analysis, table structure and OCR therefore behave
-exactly as they do for a PDF, at the cost of losing the semantics Pages itself
-knows about (real heading levels, list nesting, alt text).
-
-The preview is written whenever "Include preview in document" is enabled, which is
-the default, but it is not guaranteed: documents saved with that setting off carry
-no preview and are rejected with an explanatory error.
+This backend converts the '09-era preview PDF through the regular PDF pipeline.
+Modern documents carry nothing convertible, so they are rejected with an error
+that says why rather than offering advice the user cannot act on. Supporting them
+requires decoding the IWA archives, which is not implemented here.
 """
 
 import logging
@@ -45,7 +45,7 @@ _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 
 
 class IWorkPagesDocumentBackend(PdfDocumentBackend):
-    """Convert Apple Pages documents via their embedded QuickLook preview PDF.
+    """Convert iWork '09-era Pages documents via their embedded preview PDF.
 
     The backend validates the container, extracts ``QuickLook/Preview.pdf`` and
     delegates every paginated operation to a nested PDF backend, so the document
@@ -53,7 +53,10 @@ class IWorkPagesDocumentBackend(PdfDocumentBackend):
     unchanged.
 
     Known limitations:
-        * Documents saved without an embedded preview cannot be converted.
+        * **Pages 5+ (2013 onwards) documents cannot be converted.** They store
+          their content in ``Index/*.iwa`` and embed no PDF render. This covers
+          effectively every Pages document written in the last decade.
+        * '09 documents saved without an embedded preview cannot be converted.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
           input document.
@@ -148,12 +151,23 @@ class IWorkPagesDocumentBackend(PdfDocumentBackend):
             (info for info in infos if info.filename == _PREVIEW_MEMBER), None
         )
         if preview_info is None:
+            # Distinguish the two ways a preview can be absent. Telling a Pages 5+
+            # user to enable "Include preview in document" would be useless advice:
+            # that option, and the PDF it produced, no longer exist.
+            if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
+                raise DocumentLoadError(
+                    f"Pages document with hash {self.document_hash} was written by "
+                    "Pages 5 or later (2013 onwards), which stores its content in "
+                    "Index/*.iwa archives and embeds no PDF render. Docling cannot "
+                    "decode that format yet. Export the document to PDF, DOCX or "
+                    "EPUB from Pages and convert that instead."
+                )
             raise DocumentLoadError(
                 f"Pages document with hash {self.document_hash} contains no "
-                f"'{_PREVIEW_MEMBER}'. Docling converts Pages documents through "
-                "their embedded preview, which Pages only writes when 'Include "
-                "preview in document' is enabled. Re-save the document with that "
-                "setting on, or export it to PDF or DOCX."
+                f"'{_PREVIEW_MEMBER}'. Docling converts iWork '09 Pages documents "
+                "through their embedded preview, which Pages only wrote when "
+                "'Include preview in document' was enabled. Re-save with that "
+                "setting on, or export the document to PDF or DOCX."
             )
         if preview_info.file_size > self.options.max_file_bytes:
             raise DocumentLoadError(

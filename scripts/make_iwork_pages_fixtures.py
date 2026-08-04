@@ -191,11 +191,27 @@ def _write_pages_file(
             zf.writestr(info, data)
 
 
-def _modern_index_members() -> dict[str, bytes]:
+def _modern_members() -> dict[str, bytes]:
+    """Members of a Pages 5+ (2013 onwards) container.
+
+    The layout mirrors a real modern document, member for member: content lives
+    in ``Index/*.iwa``, previews are root-level JPEGs, and there is **no**
+    ``QuickLook/Preview.pdf`` — Apple dropped that after iWork '09.
+    """
     return {
+        "Data/1129414749_329x494-small-14.jpeg": _THUMBNAIL_JPEG,
         # 10000 is TP.DocumentArchive in the reverse-engineered iWork mapping.
         "Index/Document.iwa": build_iwa(1, 10000, b"\x0a\x0cPages fixture"),
-        "Index/Metadata.iwa": build_iwa(2, 11006, b"\x0a\x08metadata"),
+        "Index/ViewState.iwa": build_iwa(2, 11000, b"\x0a\x04view"),
+        "Index/DocumentStylesheet.iwa": build_iwa(3, 2034, b"\x0a\x06styles"),
+        "Index/DocumentMetadata.iwa": build_iwa(4, 10011, b"\x0a\x04meta"),
+        "Index/Metadata.iwa": build_iwa(5, 11006, b"\x0a\x08metadata"),
+        "Metadata/Properties.plist": (
+            b'<?xml version="1.0" encoding="UTF-8"?>\n'
+            b'<plist version="1.0"><dict>'
+            b"<key>fileFormatVersion</key><string>14.2</string>"
+            b"</dict></plist>\n"
+        ),
         "Metadata/DocumentIdentifier": b"00000000-0000-0000-0000-00000000FEED",
         "Metadata/BuildVersionHistory.plist": (
             b'<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -203,6 +219,9 @@ def _modern_index_members() -> dict[str, bytes]:
             b"<string>Pages 14.2 (Fixture)</string>"
             b"</array></plist>\n"
         ),
+        "preview.jpg": _THUMBNAIL_JPEG,
+        "preview-micro.jpg": _THUMBNAIL_JPEG,
+        "preview-web.jpg": _THUMBNAIL_JPEG,
     }
 
 
@@ -214,23 +233,12 @@ def main() -> None:
         ]
     )
 
-    # Happy path: modern IWA container carrying the QuickLook preview.
-    _write_pages_file(
-        OUT_DIR / "pages_modern.pages",
-        members={
-            **_modern_index_members(),
-            "QuickLook/Preview.pdf": preview,
-            "QuickLook/Thumbnail.jpg": _THUMBNAIL_JPEG,
-        },
-    )
+    # Pages 5+ (2013 onwards): IWA content, root-level JPEG previews, no PDF.
+    # This is what essentially every Pages document in the wild looks like.
+    _write_pages_file(OUT_DIR / "pages_modern.pages", members=_modern_members())
 
-    # Saved with "Include preview in document" disabled: no preview to fall back on.
-    _write_pages_file(
-        OUT_DIR / "pages_no_preview.pages",
-        members=_modern_index_members(),
-    )
-
-    # iWork '09 container: gzipped index.xml, preview still present.
+    # iWork '09: gzipped index.xml plus the QuickLook preview PDF that Apple
+    # stopped writing after this release.
     _write_pages_file(
         OUT_DIR / "pages_legacy09.pages",
         members={
@@ -238,6 +246,12 @@ def main() -> None:
             "QuickLook/Preview.pdf": preview,
             "QuickLook/Thumbnail.jpg": _THUMBNAIL_JPEG,
         },
+    )
+
+    # iWork '09 saved with "Include preview in document" unchecked.
+    _write_pages_file(
+        OUT_DIR / "pages_legacy09_no_preview.pages",
+        members={"index.xml.gz": gzip.compress(_LEGACY_INDEX_XML, mtime=0)},
     )
 
     for path in sorted(OUT_DIR.glob("*.pages")):
