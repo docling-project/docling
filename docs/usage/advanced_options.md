@@ -132,6 +132,46 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Convert Apple Pages documents
+
+Apple Pages (`.pages`) documents convert like any other format:
+
+```python
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("report.pages").document
+print(doc.export_to_markdown())
+```
+
+Docling reads the `QuickLook/Preview.pdf` that Pages embeds in the document and
+runs it through the regular PDF pipeline, so layout analysis, table structure and
+OCR all behave as they do for a PDF. Two consequences are worth knowing:
+
+- The document must have been saved with **"Include preview in document"**
+  enabled (the default). Without it there is nothing to convert, and Docling
+  raises an error saying so. Re-save the document with that setting on, or export
+  it to PDF or DOCX.
+- Structure is inferred by layout analysis rather than read from the Pages
+  document model, so heading levels and list nesting are recovered the same way
+  they are for a PDF.
+
+The archive limits applied while reading the container can be tuned with
+`IWorkBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkPagesFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+            backend_options=IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
+        )
+    }
+)
+```
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:

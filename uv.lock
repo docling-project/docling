@@ -1788,6 +1788,10 @@ format-html = [
 format-html-render = [
     { name = "playwright" },
 ]
+format-iwork = [
+    { name = "docling-parse" },
+    { name = "pypdfium2" },
+]
 format-latex = [
     { name = "pylatexenc" },
 ]
@@ -2010,7 +2014,8 @@ requires-dist = [
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-jats'" },
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-uspto'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
-    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["format-pdf"], marker = "extra == 'format-iwork'" },
+    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "format-iwork", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },
     { name = "docling-slim", extras = ["standard", "models-vlm-inline", "format-audio", "format-html-render", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "models-remote", "models-onnxruntime", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'feat-ocr-easyocr'", specifier = ">=1.7,<2.0" },
@@ -2072,7 +2077,7 @@ requires-dist = [
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
     { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.6.3,<2" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-iwork", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [
