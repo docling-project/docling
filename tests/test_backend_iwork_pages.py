@@ -2,18 +2,15 @@
 
 Test Data Attribution
 ---------------------
-The ``.pages`` fixtures are synthetic. Apple Pages runs only on macOS and iOS, so
-the containers are built by ``scripts/make_iwork_pages_fixtures.py``.
+``pages_2013.pages`` and ``pages_iwork09.pages`` are ``testPages2013.pages`` and
+``testPages.pages`` from the Apache Tika test corpus, licensed under the Apache
+License 2.0. They are genuine Apple Pages output, and between them cover both
+container generations: ``pages_2013.pages`` stores its content as ``Index/*.iwa``
+with no PDF render, while ``pages_iwork09.pages`` uses the iWork '09 ``index.xml``
+layout. Conveniently, both hold the same source document, so the two code paths
+can be checked against each other.
 
-``pages_modern.pages`` mirrors, member for member, the layout of a real Pages 5+
-document reported by a maintainer on the pull request: ``Index/*.iwa`` content,
-``Metadata/*`` plists, root-level ``preview.jpg`` / ``preview-micro.jpg`` /
-``preview-web.jpg``, and **no** ``QuickLook/Preview.pdf``. The IWA chunk framing
-and Snappy payload are real; only the protobuf inside is a stand-in, and nothing
-here decodes it.
-
-The two ``pages_legacy09*`` fixtures reproduce the iWork '09 layout, which is the
-only generation that embedded a convertible PDF render.
+See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 """
 
 import zipfile
@@ -23,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
-from docling.backend.noop_backend import NoOpBackend
+from docling.backend.iwork_iwa import iter_objects, read_fields
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
@@ -31,36 +28,36 @@ from docling.document_converter import DocumentConverter
 from docling.exceptions import DocumentLoadError
 
 SOURCES = Path("./tests/data/pages/sources")
-MODERN = SOURCES / "pages_modern.pages"
-LEGACY = SOURCES / "pages_legacy09.pages"
-LEGACY_NO_PREVIEW = SOURCES / "pages_legacy09_no_preview.pages"
+PAGES_2013 = SOURCES / "pages_2013.pages"
+PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
+
+# Present in the body of both fixtures.
+_BODY_SENTENCE = "Some plain text to parse."
 
 
 def _backend(
     path: Path, options: IWorkBackendOptions | None = None
 ) -> IWorkPagesDocumentBackend:
-    """Instantiate the backend directly.
-
-    ``InputDocument`` converts a ``DocumentLoadError`` raised during backend init
-    into a rejection, so going through it would hide the failure modes these
-    tests are about. ``NoOpBackend`` is only used to build a well-formed
-    ``InputDocument`` (hash, limits, filename) for the backend under test.
-    """
     in_doc = InputDocument(
         path_or_stream=path,
         format=InputFormat.IWORK_PAGES,
-        backend=NoOpBackend,
+        backend=IWorkPagesDocumentBackend,
+        backend_options=options,
     )
-    return IWorkPagesDocumentBackend(in_doc, path, options)
+    backend = in_doc._backend
+    assert isinstance(backend, IWorkPagesDocumentBackend)
+    return backend
 
 
 def test_detects_pages_from_path_and_named_stream():
     """`.pages` is a ZIP, so detection must not stop at ``application/zip``."""
     conv_input = _DocumentConversionInput(path_or_stream_iterator=[])
 
-    assert conv_input._guess_format(MODERN) == InputFormat.IWORK_PAGES
+    assert conv_input._guess_format(PAGES_2013) == InputFormat.IWORK_PAGES
 
-    stream = DocumentStream(name="report.pages", stream=BytesIO(MODERN.read_bytes()))
+    stream = DocumentStream(
+        name="report.pages", stream=BytesIO(PAGES_2013.read_bytes())
+    )
     assert conv_input._guess_format(stream) == InputFormat.IWORK_PAGES
 
 
@@ -68,60 +65,87 @@ def test_extensionless_pages_stream_is_not_claimed():
     """Without the extension a Pages container is indistinguishable from Keynote
     and Numbers, so the backend must not claim it rather than guess wrong."""
     conv_input = _DocumentConversionInput(path_or_stream_iterator=[])
-    stream = DocumentStream(name="blob", stream=BytesIO(MODERN.read_bytes()))
+    stream = DocumentStream(name="blob", stream=BytesIO(PAGES_2013.read_bytes()))
 
     assert conv_input._guess_format(stream) is None
 
 
-def test_legacy_pages_are_read_through_the_embedded_preview():
-    """iWork '09 containers embed a full PDF render, which converts normally."""
-    backend = _backend(LEGACY)
-    try:
-        assert backend.is_valid()
-        assert backend.page_count() == 2
+def test_modern_pages_body_text_is_extracted():
+    """Pages 5+ keeps its body in Index/*.iwa with no PDF render, so this is the
+    path that matters for essentially every Pages document in circulation."""
+    doc = _backend(PAGES_2013).convert()
 
-        page = backend.load_page(0)
-        text = " ".join(cell.text for cell in page.get_text_cells())
-        assert "Docling Pages fixture" in text
-    finally:
-        backend.unload()
+    text = doc.export_to_markdown()
+    assert "Sample pages document" in text
+    assert _BODY_SENTENCE in text
+    assert "Both Pages 1.x and Keynote 2.x" in text
 
 
-def test_legacy_pages_backend_accepts_a_stream():
-    stream = BytesIO(LEGACY.read_bytes())
+def test_legacy_pages_body_text_is_extracted():
+    doc = _backend(PAGES_IWORK09).convert()
+
+    assert _BODY_SENTENCE in doc.export_to_markdown()
+
+
+def test_both_generations_agree_on_the_shared_body_text():
+    """The two fixtures are the same source document saved by different Pages
+    releases, so the independent IWA and XML readers must agree on its text."""
+    modern = _backend(PAGES_2013).convert().export_to_markdown()
+    legacy = _backend(PAGES_IWORK09).convert().export_to_markdown()
+
+    for sentence in ("Sample pages document", _BODY_SENTENCE):
+        assert sentence in modern
+        assert sentence in legacy
+
+
+def test_legacy_placeholder_text_is_not_emitted():
+    """iWork '09 templates carry sf:ghost-text placeholders. That is what the
+    template displays before the author types, not document content."""
+    raw = zipfile.ZipFile(PAGES_IWORK09).read("index.xml").decode("utf-8", "replace")
+    assert "ghost-text" in raw, "fixture no longer exercises the placeholder path"
+
+    text = _backend(PAGES_IWORK09).convert().export_to_markdown()
+    assert "Lorem ipsum dolor sit amet" not in text
+
+
+def test_pages_backend_accepts_a_stream():
+    stream = BytesIO(PAGES_2013.read_bytes())
     in_doc = InputDocument(
         path_or_stream=stream,
         format=InputFormat.IWORK_PAGES,
-        backend=NoOpBackend,
+        backend=IWorkPagesDocumentBackend,
         filename="report.pages",
     )
-    backend = IWorkPagesDocumentBackend(in_doc, stream)
-    try:
-        assert backend.is_valid()
-        assert backend.page_count() == 2
-    finally:
-        backend.unload()
+    backend = in_doc._backend
+    assert isinstance(backend, IWorkPagesDocumentBackend)
+
+    assert _BODY_SENTENCE in backend.convert().export_to_markdown()
 
 
-def test_modern_pages_are_rejected_without_impossible_advice():
-    """Pages 5+ (2013 onwards) embeds no PDF render at all — the QuickLook PDF was
-    an iWork '08/'09 feature. Telling such a user to enable "Include preview in
-    document" would be advice they cannot act on, so the error must instead name
-    the real cause and point at export."""
-    with pytest.raises(DocumentLoadError) as exc_info:
-        _backend(MODERN)
+def test_object_replacement_characters_are_dropped():
+    """Apple marks inline attachments with U+FFFC inside the text run; it carries
+    no text and must not leak into the output."""
+    doc = _backend(PAGES_2013).convert()
 
-    message = str(exc_info.value)
-    assert "Pages 5 or later" in message
-    assert "Index/*.iwa" in message
-    assert "Export the document to PDF" in message
-    assert "Include preview in document" not in message
+    assert "￼" not in doc.export_to_markdown()
 
 
-def test_legacy_missing_preview_reports_the_save_setting():
-    """For iWork '09 the save-setting advice is genuinely actionable, so it stays."""
-    with pytest.raises(DocumentLoadError, match="Include preview in document"):
-        _backend(LEGACY_NO_PREVIEW)
+def test_iwa_reader_walks_the_real_object_graph():
+    """Guards the container layer itself: chunk framing, raw Snappy and the
+    TSP.ArchiveInfo walk, against genuine Apple output."""
+    archive = zipfile.ZipFile(PAGES_2013)
+    objects = {}
+    for name in archive.namelist():
+        if name.endswith(".iwa"):
+            for obj in iter_objects(archive.read(name)):
+                objects[obj.identifier] = obj
+
+    assert len(objects) > 100
+
+    # TP.DocumentArchive must be present and reference a TSWP.StorageArchive.
+    document = next(o for o in objects.values() if o.message_type == 10000)
+    body_ref = read_fields(document.payload)[4][0]
+    assert isinstance(body_ref, bytes)
 
 
 def test_zip_without_pages_index_is_rejected(tmp_path: Path):
@@ -130,7 +154,14 @@ def test_zip_without_pages_index_is_rejected(tmp_path: Path):
         zf.writestr("word/document.xml", "<w:document/>")
 
     with pytest.raises(DocumentLoadError, match="does not look like a Pages document"):
-        _backend(other_zip)
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=other_zip,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            other_zip,
+        )
 
 
 def test_non_zip_input_is_rejected(tmp_path: Path):
@@ -138,63 +169,49 @@ def test_non_zip_input_is_rejected(tmp_path: Path):
     broken.write_bytes(b"this is not a zip archive")
 
     with pytest.raises(DocumentLoadError, match="not a readable ZIP container"):
-        _backend(broken)
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=broken,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            broken,
+        )
 
 
 def test_archive_limits_are_enforced():
-    """The container is attacker-controlled, so the limits must bite before the
-    preview is read into memory."""
-    with pytest.raises(DocumentLoadError, match="max_file_bytes"):
-        _backend(LEGACY, IWorkBackendOptions(max_file_bytes=64))
-
+    """The container is attacker-controlled, so limits must bite before the IWA
+    archives are decompressed."""
     with pytest.raises(DocumentLoadError, match="max_member_count"):
-        _backend(LEGACY, IWorkBackendOptions(max_member_count=1))
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=PAGES_2013,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            PAGES_2013,
+            IWorkBackendOptions(max_member_count=1),
+        )
 
     with pytest.raises(DocumentLoadError, match="max_total_bytes"):
-        _backend(LEGACY, IWorkBackendOptions(max_total_bytes=32))
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=PAGES_2013,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            PAGES_2013,
+            IWorkBackendOptions(max_total_bytes=1024),
+        )
 
 
-def test_pdf_backend_options_are_widened():
-    """PdfFormatOption (used by the CLI) passes plain PDF backend options; the
-    backend must still come up with usable archive limits."""
-    from docling.datamodel.backend_options import PdfBackendOptions
-
-    in_doc = InputDocument(
-        path_or_stream=LEGACY,
-        format=InputFormat.IWORK_PAGES,
-        backend=NoOpBackend,
-    )
-    backend = IWorkPagesDocumentBackend(
-        in_doc, LEGACY, PdfBackendOptions(enforce_same_font=False)
-    )
-    try:
-        assert backend.is_valid()
-        assert backend.options.enforce_same_font is False
-        assert backend.options.max_member_count > 0
-    finally:
-        backend.unload()
-
-
-def test_unloaded_backend_refuses_page_access():
-    backend = _backend(LEGACY)
-    backend.unload()
-
-    assert not backend.is_valid()
-    with pytest.raises(RuntimeError, match="already been unloaded"):
-        backend.page_count()
-
-
-@pytest.mark.ml_pdf_model
 def test_end_to_end_conversion():
+    """No models involved: the backend is declarative, so this runs in CI without
+    the PDF pipeline."""
     converter = DocumentConverter(allowed_formats=[InputFormat.IWORK_PAGES])
-    result = converter.convert(LEGACY)
+    result = converter.convert(PAGES_2013)
 
-    markdown = result.document.export_to_markdown()
-    assert "Docling Pages fixture" in markdown
-    assert "Second page body text." in markdown
-
-    # StandardPdfPipeline stamps every document it produces with the PDF mimetype
-    # (image and METS-GBS inputs behave the same way), so only the filename
-    # identifies the document as Pages.
+    assert _BODY_SENTENCE in result.document.export_to_markdown()
     assert result.document.origin is not None
-    assert result.document.origin.filename == "pages_legacy09.pages"
+    assert result.document.origin.mimetype == "application/vnd.apple.pages"
+    assert result.document.origin.filename == "pages_2013.pages"

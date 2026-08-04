@@ -233,10 +233,10 @@ class MetsGbsBackendOptions(PdfBackendOptions):
     ] = 1000
 
 
-class IWorkBackendOptions(PdfBackendOptions):
+class IWorkBackendOptions(BaseBackendOptions):
     """Options specific to the Apple iWork document backends."""
 
-    kind: Annotated[Literal["iwork"], Field(exclude=True, repr=False)] = "iwork"  # type: ignore[assignment]
+    kind: Annotated[Literal["iwork"], Field(exclude=True, repr=False)] = "iwork"
     max_total_bytes: Annotated[
         PositiveInt,
         Field(

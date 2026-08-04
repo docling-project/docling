@@ -224,9 +224,9 @@ class PdfFormatOption(FormatOption):
 
 
 class IWorkPagesFormatOption(FormatOption):
-    """Format option for Apple Pages input, converted via its embedded preview PDF."""
+    """Format option for Apple Pages input."""
 
-    pipeline_cls: Type = StandardPdfPipeline
+    pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
     backend_options: IWorkBackendOptions | None = None
 

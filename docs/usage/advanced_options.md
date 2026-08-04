@@ -144,16 +144,8 @@ doc_converter = DocumentConverter(
 
 ### Convert Apple Pages documents
 
-!!! warning "iWork '09 and earlier only"
-
-    Documents written by **Pages 5 or later (2013 onwards) cannot be converted**.
-    They store their content in `Index/*.iwa` — Snappy-compressed protobuf whose
-    schemas Apple has never published — and embed no PDF render. Docling rejects
-    them with an explanatory error; export the document to PDF, DOCX or EPUB from
-    Pages and convert that instead.
-
-Apple Pages (`.pages`) documents from iWork '09 and earlier convert like any
-other format:
+Apple Pages (`.pages`) documents convert like any other format, and both
+container generations are read (requires the `format-iwork` extra):
 
 ```python
 from docling.document_converter import DocumentConverter
@@ -162,16 +154,21 @@ doc = DocumentConverter().convert("report.pages").document
 print(doc.export_to_markdown())
 ```
 
-Docling reads the `QuickLook/Preview.pdf` that those releases embedded and runs
-it through the regular PDF pipeline, so layout analysis, table structure and OCR
-all behave as they do for a PDF. Two consequences are worth knowing:
+Pages changed its container completely in 2013, so Docling reads whichever one
+the document uses:
 
-- The document must have been saved with **"Include preview in document"**
-  enabled. Without it there is nothing to convert, and Docling raises an error
-  saying so. Re-save with that setting on, or export to PDF or DOCX.
-- Structure is inferred by layout analysis rather than read from the Pages
-  document model, so heading levels and list nesting are recovered the same way
-  they are for a PDF.
+- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
+  Snappy-framed protobuf archives. Docling walks that object graph directly.
+- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
+  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
+  template yields no spurious content.
+
+!!! note "Body text only"
+
+    Only the document body is extracted, as a flat sequence of paragraphs.
+    Heading levels, lists and tables are carried by the paragraph style runs and
+    are not yet mapped, and text boxes, headers, footers, footnotes and comments
+    are not included. Password-protected documents cannot be read.
 
 The archive limits applied while reading the container can be tuned with
 `IWorkBackendOptions`:

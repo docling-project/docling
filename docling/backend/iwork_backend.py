@@ -3,143 +3,124 @@
 Currently limited to Pages (``.pages``). A ``.pages`` file is a ZIP container, but
 what is inside changed completely with Pages 5:
 
-* **iWork '09 and earlier** stored the document as ``index.xml`` (optionally
-  gzipped) and, when "Include preview in document" was enabled, a full
-  ``QuickLook/Preview.pdf`` render alongside it.
 * **Pages 5 and later (2013 onwards)** store the document as ``Index/*.iwa`` —
-  Snappy-compressed protobuf whose schemas Apple has never published. The
-  QuickLook PDF is gone; the only previews are root-level ``preview.jpg``,
-  ``preview-micro.jpg`` and ``preview-web.jpg``, which cover just the top of the
-  first page at roughly 720x552 and are useless as a document render.
+  Snappy-framed protobuf whose schemas Apple has never published. This is what
+  essentially every Pages document in circulation looks like.
+* **iWork '09 and earlier** stored it as a plain ``index.xml``, optionally
+  gzipped, alongside a ``QuickLook/Preview.pdf`` render that Apple stopped
+  writing after that release.
 
-This backend converts the '09-era preview PDF through the regular PDF pipeline.
-Modern documents carry nothing convertible, so they are rejected with an error
-that says why rather than offering advice the user cannot act on. Supporting them
-requires decoding the IWA archives, which is not implemented here.
+Both generations are read for their text here, so the backend is declarative: it
+builds a :class:`~docling_core.types.doc.DoclingDocument` directly rather than
+rendering pages and running layout analysis over them.
+
+Only body text is extracted. Heading levels, lists and tables are carried by the
+paragraph style runs (IWA) and style attributes (XML) and are not yet mapped.
 """
 
+import gzip
 import logging
+import mimetypes
 import zipfile
-from collections.abc import Iterator
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Set, Union
 
+import defusedxml.ElementTree as ET
+from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 from typing_extensions import override
 
-from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
-from docling.datamodel.backend_options import IWorkBackendOptions, PdfBackendOptions
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.iwork_iwa import iter_objects, read_fields, read_reference
+from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
-from docling.utils.pdf_outline import _PdfOutlineItem
 
 _log = logging.getLogger(__name__)
 
-_PREVIEW_MEMBER = "QuickLook/Preview.pdf"
+_PAGES_MIMETYPE = "application/vnd.apple.pages"
 
-# Members that identify a container as a Pages document. Modern documents carry an
-# Index/ directory of IWA archives; iWork '09 carried a single index.xml.
+# DocumentOrigin only accepts a mimetype that the stdlib knows or that
+# docling-core allow-lists, and Python ships no mapping for ".pages". Teaching
+# the stdlib the real Apple type keeps the origin honest without waiting on a
+# docling-core release; it also makes mimetypes.guess_type() correct for callers.
+mimetypes.add_type(_PAGES_MIMETYPE, ".pages")
+
 _MODERN_INDEX_PREFIX = "Index/"
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 
+# Message type numbers from the reverse-engineered iWork schemas. Only these two
+# are needed to reach the body text.
+_TP_DOCUMENT_ARCHIVE = 10000
+_TSWP_STORAGE_ARCHIVE = 2001
 
-class IWorkPagesDocumentBackend(PdfDocumentBackend):
-    """Convert iWork '09-era Pages documents via their embedded preview PDF.
+# TP.DocumentArchive field 4 references the body TSWP.StorageArchive, whose
+# field 3 holds the text. Verified against Pages 5+ documents.
+_DOCUMENT_BODY_FIELD = 4
+_STORAGE_TEXT_FIELD = 3
 
-    The backend validates the container, extracts ``QuickLook/Preview.pdf`` and
-    delegates every paginated operation to a nested PDF backend, so the document
-    flows through :class:`~docling.pipeline.standard_pdf_pipeline.StandardPdfPipeline`
-    unchanged.
+_SF_NAMESPACE = "http://developer.apple.com/namespaces/sf"
+_SF_PARAGRAPH = f"{{{_SF_NAMESPACE}}}p"
+# iWork '09 placeholder text. It is what the template shows before the author
+# types anything, so it must never be emitted as document content.
+_SF_GHOST_TEXT = f"{{{_SF_NAMESPACE}}}ghost-text"
+
+# Apple marks inline attachments (images, footnote anchors) with U+FFFC inside
+# the text run. There is no text there to emit.
+_OBJECT_REPLACEMENT = "￼"
+
+
+class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
+    """Extract text from Apple Pages documents of either generation.
 
     Known limitations:
-        * **Pages 5+ (2013 onwards) documents cannot be converted.** They store
-          their content in ``Index/*.iwa`` and embed no PDF render. This covers
-          effectively every Pages document written in the last decade.
-        * '09 documents saved without an embedded preview cannot be converted.
+        * Only body text is produced. Heading levels, lists and tables are not
+          yet recovered, so the output is a flat sequence of paragraphs.
+        * Text boxes, headers, footers, footnotes and comments are not included;
+          only the main body storage is read.
+        * Password-protected documents cannot be read.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
           input document.
-        * Structure comes from layout analysis of the preview, not from the Pages
-          document model, so heading levels and list nesting are inferred.
-        * The converted document's ``origin.mimetype`` reads ``application/pdf``,
-          because StandardPdfPipeline stamps that on everything it produces. The
-          original filename is preserved. Image and METS-GBS inputs behave the
-          same way.
-        * The nested PDF backend is fixed; ``--pdf-backend`` does not apply to the
-          preview.
     """
 
-    #: PDF backend used for the extracted preview. Overridable by subclasses and
-    #: swapped in tests; resolved lazily so importing this module does not require
-    #: the PDF extras to be installed.
-    pdf_backend_cls: Optional[type[PdfDocumentBackend]] = None
-
+    @override
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: Optional[PdfBackendOptions] = None,
+        options: Optional[IWorkBackendOptions] = None,
     ):
-        # The CLI and any caller reusing PdfFormatOption hand this backend plain
-        # PDF backend options; widen them so the archive limits always exist while
-        # password and font settings still reach the nested PDF backend.
         if options is None:
-            iwork_options = IWorkBackendOptions()
-        elif isinstance(options, IWorkBackendOptions):
-            iwork_options = options
-        else:
-            iwork_options = IWorkBackendOptions(**options.model_dump())
+            options = IWorkBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: IWorkBackendOptions = options
 
-        super().__init__(in_doc, path_or_stream, iwork_options)
-        self.options: IWorkBackendOptions = iwork_options
-
-        self._archive: Optional[zipfile.ZipFile] = None
-        self._preview_stream: Optional[BytesIO] = None
-        self._inner: Optional[PdfDocumentBackend] = None
+        self._paragraphs: list[str] = []
+        self._valid = False
 
         try:
-            self._archive = zipfile.ZipFile(path_or_stream)
-            preview = self._read_preview(self._archive)
+            with zipfile.ZipFile(path_or_stream) as archive:
+                self._paragraphs = self._read_paragraphs(archive)
         except DocumentLoadError:
-            self._close_archive()
             raise
         except (zipfile.BadZipFile, OSError) as exc:
-            self._close_archive()
             raise DocumentLoadError(
                 f"Could not open Pages document with hash {self.document_hash}: "
                 "the file is not a readable ZIP container."
             ) from exc
 
-        self._preview_stream = BytesIO(preview)
-        self._inner = self._build_inner_backend(in_doc, self._preview_stream)
+        self._valid = True
 
-    @staticmethod
-    def _resolve_pdf_backend_cls() -> type[PdfDocumentBackend]:
-        from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-
-        return DoclingParseDocumentBackend
-
-    def _read_preview(self, archive: zipfile.ZipFile) -> bytes:
-        """Locate and read the QuickLook preview, enforcing archive limits."""
+    def _read_paragraphs(self, archive: zipfile.ZipFile) -> list[str]:
+        """Dispatch to the reader for whichever generation wrote the container."""
         infos = archive.infolist()
         if len(infos) > self.options.max_member_count:
             raise DocumentLoadError(
                 f"Pages archive has {len(infos)} members, exceeding the "
                 f"max_member_count limit of {self.options.max_member_count}."
             )
-
-        names = {info.filename for info in infos}
-        is_pages_container = any(
-            name.startswith(_MODERN_INDEX_PREFIX) for name in names
-        ) or any(name in names for name in _LEGACY_INDEX_MEMBERS)
-        if not is_pages_container:
-            raise DocumentLoadError(
-                f"Document with hash {self.document_hash} is a ZIP archive but does "
-                "not look like a Pages document: it has neither an Index/ directory "
-                "nor an index.xml."
-            )
-
         total_bytes = sum(info.file_size for info in infos)
         if total_bytes > self.options.max_total_bytes:
             raise DocumentLoadError(
@@ -147,127 +128,158 @@ class IWorkPagesDocumentBackend(PdfDocumentBackend):
                 f"max_total_bytes limit of {self.options.max_total_bytes}."
             )
 
-        preview_info = next(
-            (info for info in infos if info.filename == _PREVIEW_MEMBER), None
+        names = {info.filename for info in infos}
+        if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
+            return self._read_iwa_paragraphs(archive, infos)
+
+        legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
+        if legacy is not None:
+            return self._read_legacy_paragraphs(archive, legacy)
+
+        raise DocumentLoadError(
+            f"Document with hash {self.document_hash} is a ZIP archive but does "
+            "not look like a Pages document: it has neither an Index/ directory "
+            "nor an index.xml."
         )
-        if preview_info is None:
-            # Distinguish the two ways a preview can be absent. Telling a Pages 5+
-            # user to enable "Include preview in document" would be useless advice:
-            # that option, and the PDF it produced, no longer exist.
-            if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
+
+    def _read_iwa_paragraphs(
+        self, archive: zipfile.ZipFile, infos: list[zipfile.ZipInfo]
+    ) -> list[str]:
+        """Read body text from the IWA object graph of a Pages 5+ document."""
+        objects = {}
+        for info in infos:
+            if not info.filename.endswith(".iwa"):
+                continue
+            if info.file_size > self.options.max_file_bytes:
                 raise DocumentLoadError(
-                    f"Pages document with hash {self.document_hash} was written by "
-                    "Pages 5 or later (2013 onwards), which stores its content in "
-                    "Index/*.iwa archives and embeds no PDF render. Docling cannot "
-                    "decode that format yet. Export the document to PDF, DOCX or "
-                    "EPUB from Pages and convert that instead."
+                    f"Pages archive member {info.filename} is {info.file_size} "
+                    f"bytes, exceeding the max_file_bytes limit of "
+                    f"{self.options.max_file_bytes}."
                 )
-            raise DocumentLoadError(
-                f"Pages document with hash {self.document_hash} contains no "
-                f"'{_PREVIEW_MEMBER}'. Docling converts iWork '09 Pages documents "
-                "through their embedded preview, which Pages only wrote when "
-                "'Include preview in document' was enabled. Re-save with that "
-                "setting on, or export the document to PDF or DOCX."
-            )
-        if preview_info.file_size > self.options.max_file_bytes:
-            raise DocumentLoadError(
-                f"Pages preview is {preview_info.file_size} bytes, exceeding the "
-                f"max_file_bytes limit of {self.options.max_file_bytes}."
-            )
+            for obj in iter_objects(archive.read(info)):
+                objects[obj.identifier] = obj
 
-        preview = archive.read(preview_info)
-        if not preview:
-            raise DocumentLoadError(
-                f"Pages document with hash {self.document_hash} has an empty "
-                f"'{_PREVIEW_MEMBER}'."
-            )
-        return preview
-
-    def _build_inner_backend(
-        self, in_doc: InputDocument, stream: BytesIO
-    ) -> PdfDocumentBackend:
-        backend_cls = self.pdf_backend_cls or self._resolve_pdf_backend_cls()
-
-        # The nested backend must see a PDF InputDocument: PdfDocumentBackend
-        # rejects any format outside its supported set. Reusing the outer limits
-        # keeps page-count and size policy consistent across the two layers.
-        pdf_options = PdfBackendOptions(
-            enable_remote_fetch=self.options.enable_remote_fetch,
-            enable_local_fetch=self.options.enable_local_fetch,
-            password=self.options.password,
-            enforce_same_font=self.options.enforce_same_font,
+        document = next(
+            (o for o in objects.values() if o.message_type == _TP_DOCUMENT_ARCHIVE),
+            None,
         )
-        preview_doc = InputDocument(
-            path_or_stream=stream,
-            format=InputFormat.PDF,
-            backend=backend_cls,
-            filename=f"{in_doc.file.stem or 'document'}.pdf",
-            backend_options=pdf_options,
-            limits=in_doc.limits,
-        )
-        if not preview_doc.valid:
+        if document is None:
             raise DocumentLoadError(
-                f"The preview PDF embedded in Pages document with hash "
-                f"{self.document_hash} could not be loaded."
+                f"Pages document with hash {self.document_hash} has no "
+                "TP.DocumentArchive; the container may be corrupt or "
+                "password-protected."
             )
 
-        inner = preview_doc._backend
-        if not isinstance(inner, PdfDocumentBackend):
+        body_ref = read_fields(document.payload).get(_DOCUMENT_BODY_FIELD, [None])[0]
+        target = read_reference(body_ref) if isinstance(body_ref, bytes) else None
+        storage = objects.get(target) if target is not None else None
+        if storage is None or storage.message_type != _TSWP_STORAGE_ARCHIVE:
             raise DocumentLoadError(
-                f"{backend_cls.__name__} is not a PDF document backend."
+                f"Pages document with hash {self.document_hash} does not reference "
+                "a body text storage."
             )
-        return inner
 
-    def _require_inner(self) -> PdfDocumentBackend:
-        if self._inner is None:
-            raise RuntimeError(
-                f"Pages backend for document with hash {self.document_hash} has "
-                "already been unloaded."
+        chunks = [
+            value.decode("utf-8", errors="replace")
+            for value in read_fields(storage.payload).get(_STORAGE_TEXT_FIELD, [])
+            if isinstance(value, bytes)
+        ]
+        return _split_paragraphs("".join(chunks))
+
+    def _read_legacy_paragraphs(
+        self, archive: zipfile.ZipFile, member: str
+    ) -> list[str]:
+        """Read body text from the ``index.xml`` of an iWork '09 document."""
+        raw = archive.read(member)
+        if member.endswith(".gz"):
+            try:
+                raw = gzip.decompress(raw)
+            except OSError as exc:
+                raise DocumentLoadError(
+                    f"Could not decompress '{member}' in Pages document with hash "
+                    f"{self.document_hash}."
+                ) from exc
+
+        try:
+            root = ET.fromstring(raw)
+        except Exception as exc:
+            raise DocumentLoadError(
+                f"Could not parse '{member}' in Pages document with hash "
+                f"{self.document_hash}."
+            ) from exc
+
+        paragraphs = []
+        for para in root.iter(_SF_PARAGRAPH):
+            text = "".join(
+                # itertext() would pull in the template placeholder text, which is
+                # not document content.
+                part
+                for part in _iter_text_excluding_ghosts(para)
             )
-        return self._inner
+            text = _clean(text)
+            if text:
+                paragraphs.append(text)
+        return paragraphs
 
     @override
     def is_valid(self) -> bool:
-        return self._inner is not None and self._inner.is_valid()
+        return self._valid
 
+    @classmethod
     @override
-    def page_count(self) -> int:
-        return self._require_inner().page_count()
-
-    @override
-    def load_page(self, page_no: int) -> PdfPageBackend:
-        return self._require_inner().load_page(page_no)
-
-    @override
-    def iter_pages(self) -> Iterator[PdfPageBackend]:
-        return self._require_inner().iter_pages()
-
-    @override
-    def get_document_outline(self) -> list[_PdfOutlineItem]:
-        return self._require_inner().get_document_outline()
+    def supports_pagination(cls) -> bool:
+        return False
 
     @classmethod
     @override
     def supported_formats(cls) -> Set[InputFormat]:
         return {InputFormat.IWORK_PAGES}
 
-    @classmethod
     @override
-    def supports_pagination(cls) -> bool:
-        return True
+    def convert(self) -> DoclingDocument:
+        if not self.is_valid():
+            raise RuntimeError(
+                f"Cannot convert Pages document with hash {self.document_hash} "
+                "because the backend failed to init."
+            )
 
-    def _close_archive(self) -> None:
-        if self._archive is not None:
-            self._archive.close()
-            self._archive = None
+        origin = DocumentOrigin(
+            filename=self.file.name or "file",
+            mimetype=_PAGES_MIMETYPE,
+            binary_hash=self.document_hash,
+        )
+        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+        for paragraph in self._paragraphs:
+            doc.add_text(label=DocItemLabel.TEXT, text=paragraph)
+        return doc
 
-    @override
-    def unload(self):
-        if self._inner is not None:
-            self._inner.unload()
-            self._inner = None
-        self._close_archive()
-        if self._preview_stream is not None:
-            self._preview_stream.close()
-            self._preview_stream = None
-        super().unload()
+
+def _iter_text_excluding_ghosts(element) -> list[str]:
+    """Collect text under ``element``, skipping ``sf:ghost-text`` subtrees."""
+    parts: list[str] = []
+    if element.text:
+        parts.append(element.text)
+    for child in element:
+        if child.tag != _SF_GHOST_TEXT:
+            parts.extend(_iter_text_excluding_ghosts(child))
+        if child.tail:
+            parts.append(child.tail)
+    return parts
+
+
+def _clean(text: str) -> str:
+    return text.replace(_OBJECT_REPLACEMENT, "").strip()
+
+
+def _split_paragraphs(text: str) -> list[str]:
+    """Split a TSWP text run into paragraphs.
+
+    Apple separates paragraphs with newlines and pads empty ones, so blank
+    results are dropped rather than emitted as empty text items.
+    """
+    paragraphs = []
+    for line in text.split("\n"):
+        cleaned = _clean(line)
+        if cleaned:
+            paragraphs.append(cleaned)
+    return paragraphs
