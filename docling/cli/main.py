@@ -1013,6 +1013,7 @@ def convert(  # noqa: C901
         ThreadedDoclingParseDocumentBackend,
     )
     from docling.backend.image_backend import ImageDocumentBackend
+    from docling.backend.iwork_backend import IWorkPagesDocumentBackend
     from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
     from docling.backend.pdf_backend import PdfDocumentBackend
     from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -1219,6 +1220,12 @@ def convert(  # noqa: C901
                 pipeline_options=mets_gbs_options,
                 backend=MetsGbsDocumentBackend,
             )
+            # Pages runs the PDF pipeline over the preview embedded in the
+            # container, so it reuses the PDF pipeline options as-is.
+            iwork_pages_format_option = PdfFormatOption(
+                pipeline_options=pipeline_options,
+                backend=IWorkPagesDocumentBackend,
+            )
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
@@ -1252,6 +1259,7 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.IWORK_PAGES: iwork_pages_format_option,
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option
                 ),

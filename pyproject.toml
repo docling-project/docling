@@ -149,6 +149,12 @@ format-email = [
   'mail-parser>=4.1.4,<5.0.0',
 ]
 
+# Apple iWork (.pages). Converted through the QuickLook preview PDF embedded in
+# the container, so the PDF stack is the only requirement.
+format-iwork = [
+  'docling-slim[format-pdf]',
+]
+
 format-xml-jats = [
   'docling-slim[format-html]',
   'lxml>=4.0.0,<7.0.0',
@@ -279,7 +285,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [

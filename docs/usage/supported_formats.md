@@ -13,6 +13,7 @@ Below you can find a listing of all supported input and output formats.
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
+| Pages | Apple Pages documents (`.pages`); converted through the QuickLook preview PDF that Pages embeds, so the document must have been saved with "Include preview in document" enabled |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |

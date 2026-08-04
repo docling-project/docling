@@ -223,6 +223,27 @@ class MetsGbsBackendOptions(PdfBackendOptions):
     ] = 1000
 
 
+class IWorkBackendOptions(PdfBackendOptions):
+    """Options specific to the Apple iWork document backends."""
+
+    kind: Annotated[Literal["iwork"], Field(exclude=True, repr=False)] = "iwork"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data read from the iWork archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single member read from the iWork archive"
+        ),
+    ] = 100 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to inspect")
+    ] = 5000
+
+
 class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
@@ -408,6 +429,7 @@ BackendOptions = Annotated[
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
+        IWorkBackendOptions,
         MsExcelBackendOptions,
         MsPowerpointBackendOptions,
         MsWordBackendOptions,
