@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -37,9 +38,15 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    recover_orphaned_table_text: bool = False
 
 
 class ReadingOrderModel:
+    # Overlap share (of a child cluster's own area) above which it is considered
+    # bound to the table's predicted grid; mirrors the threshold
+    # TableStructureModelV2._match_text uses to bind OCR text into cells.
+    _TABLE_CHILD_ABSORBED_OVERLAP = 0.3
+
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
@@ -75,10 +82,14 @@ class ReadingOrderModel:
         return elements
 
     def _add_child_elements(
-        self, element: BasePageElement, doc_item: NodeItem, doc: DoclingDocument
+        self,
+        element: BasePageElement,
+        doc_item: NodeItem,
+        doc: DoclingDocument,
+        children: Optional[list[Cluster]] = None,
     ):
         child: Cluster
-        for child in element.cluster.children:
+        for child in element.cluster.children if children is None else children:
             c_label = child.label
             c_bbox = child.bbox.to_bottom_left_origin(
                 doc.pages[element.page_no].size.height
@@ -130,6 +141,39 @@ class ReadingOrderModel:
         self._add_child_elements(element, group_element, doc)
 
         return group_element.get_ref()
+
+    @classmethod
+    def _unmatched_table_children(cls, element: Table) -> list[Cluster]:
+        """Return the table's child clusters whose text never made it into a grid cell."""
+        matched_bboxes = [
+            tc.bbox
+            for tc in element.table_cells
+            if tc.bbox is not None and tc.text.strip()
+        ]
+        return [
+            child
+            for child in element.cluster.children
+            if not any(
+                child.bbox.intersection_over_self(bbox)
+                > cls._TABLE_CHILD_ABSORBED_OVERLAP
+                for bbox in matched_bboxes
+            )
+        ]
+
+    def _add_unmatched_table_text(self, element: Table, doc: DoclingDocument) -> None:
+        """Re-emit table-region text the grid didn't absorb as body text after the table."""
+        if not self.options.recover_orphaned_table_text:
+            return
+
+        unmatched = self._unmatched_table_children(element)
+        if not unmatched:
+            return
+
+        group = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=f"orphaned_table_text_{element.cluster.id}",
+        )
+        self._add_child_elements(element, group, doc, children=unmatched)
 
     @staticmethod
     def _table_data_from_table(element: Table) -> TableData:
@@ -297,8 +341,8 @@ class ReadingOrderModel:
                         ref=rich_cell_ref,
                     )
                     out_doc.add_table_cell(table_item=tbl, cell=rich_cell)
-
-                # TODO: Consider adding children of Table.
+                elif element.cluster.children:
+                    self._add_unmatched_table_text(element, out_doc)
 
             elif isinstance(element, FigureElement):
                 cap_text = ""
