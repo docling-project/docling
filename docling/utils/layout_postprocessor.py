@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import defaultdict
 
-from docling_core.types.doc import BoundingBox, DocItemLabel, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
 from rtree import index
 
@@ -589,15 +589,45 @@ class LayoutPostprocessor:
 
         return current_best if current_best else clusters[0]
 
+    _OVERLAPPING_CELL_IOU_THRESHOLD = 0.5
+
     def _deduplicate_cells(self, cells: list[TextCell]) -> list[TextCell]:
-        """Ensure each cell appears only once, maintaining order of first appearance."""
+        """Ensure each cell appears only once, maintaining order of first appearance.
+
+        Two passes: exact `cell.index` repeats (the same cell reappearing in a
+        combined list, e.g. after a cluster merge), then bbox-IoU overlap. The
+        second pass matters because two different OCR detection passes over the
+        same cluster (e.g. a low-confidence-region retry) index their cells
+        independently of each other — an index-only check never catches a retry
+        pass re-detecting a line the first pass already got, and the cluster's
+        assembled text ends up with that line's content twice.
+        """
         seen_ids = set()
         unique_cells = []
         for cell in cells:
             if cell.index not in seen_ids:
                 seen_ids.add(cell.index)
                 unique_cells.append(cell)
-        return unique_cells
+
+        keep = [True] * len(unique_cells)
+        for i in range(len(unique_cells)):
+            if not keep[i]:
+                continue
+            for j in range(i + 1, len(unique_cells)):
+                if not keep[j]:
+                    continue
+                iou = (
+                    unique_cells[i]
+                    .rect.to_bounding_box()
+                    .intersection_over_union(unique_cells[j].rect.to_bounding_box())
+                )
+                if iou > self._OVERLAPPING_CELL_IOU_THRESHOLD:
+                    if unique_cells[i].confidence >= unique_cells[j].confidence:
+                        keep[j] = False
+                    else:
+                        keep[i] = False
+                        break
+        return [cell for cell, k in zip(unique_cells, keep) if k]
 
     def _assign_cells_to_clusters(
         self, clusters: list[Cluster], min_overlap: float = 0.2
@@ -669,8 +699,67 @@ class LayoutPostprocessor:
         return clusters
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
-        """Sort cells in native reading order."""
-        return sorted(cells, key=lambda c: c.index)
+        """Sort cells in reading order: top-to-bottom rows, left-to-right within a row.
+
+        A cluster's cells aren't necessarily the product of one OCR pass — an engine's
+        low-confidence-region retry (e.g. a rescan of text over a busy background) can
+        emit a second, independently-indexed batch of cells overlapping the same
+        cluster. `c.index` is detection order *within whichever pass produced a cell*,
+        not reading order across passes, so sorting by it can interleave passes
+        nonsensically: an earlier pass's partial-line fragment sorting ahead of (or
+        alongside) the fuller text a later pass recovered for those same lines,
+        assembling into a paragraph with a fragment duplicated at the front and the
+        real text truncated where the fragment's content began.
+
+        Sorting by raw (top, left) position fixes that but overcorrects: two cells on
+        the same visual line almost never share the exact same top coordinate (normal
+        per-glyph/per-word bbox jitter), so a naive position sort can still place a
+        later word ahead of an earlier one on the same row. Cells are bucketed into
+        rows by vertical-center overlap first — same convention as _sort_clusters's
+        "tblr" mode, just tolerant of that jitter — then sorted left-to-right within
+        each row, with `index` only as the final tie-break for cells whose bboxes
+        coincide (or are degenerate), rather than a primary ordering key.
+
+        A bbox's `t`/`b` are only comparable as "top-to-bottom ascending" within one
+        `coord_origin`: TOPLEFT's `t` grows downward (smaller = higher on the page),
+        BOTTOMLEFT's grows upward (larger = higher on the page) — mixing them without
+        normalizing would treat a BOTTOMLEFT cell's top edge as its bottom. `_row_bounds`
+        below negates BOTTOMLEFT's t/b so the same "ascending, top <= bottom" comparisons
+        used for TOPLEFT work for either origin without needing page_height to fully
+        convert coordinate systems.
+        """
+        if not cells:
+            return []
+
+        def _row_bounds(cell: TextCell) -> tuple[float, float]:
+            bbox = cell.rect.to_bounding_box()
+            if bbox.coord_origin == CoordOrigin.BOTTOMLEFT:
+                return -bbox.t, -bbox.b
+            return bbox.t, bbox.b
+
+        by_top = sorted(
+            cells,
+            key=lambda c: (*_row_bounds(c), c.rect.to_bounding_box().l, c.index),
+        )
+
+        rows: list[list[TextCell]] = []
+        row_top = row_bottom = None
+        for cell in by_top:
+            top, bottom = _row_bounds(cell)
+            center = (top + bottom) / 2
+            if row_top is None or not (row_top <= center <= row_bottom):
+                rows.append([])
+                row_top, row_bottom = top, bottom
+            else:
+                row_top = min(row_top, top)
+                row_bottom = max(row_bottom, bottom)
+            rows[-1].append(cell)
+
+        sorted_cells: list[TextCell] = []
+        for row in rows:
+            row.sort(key=lambda c: (c.rect.to_bounding_box().l, c.index))
+            sorted_cells.extend(row)
+        return sorted_cells
 
     def _sort_clusters(
         self, clusters: list[Cluster], mode: str = "id"
