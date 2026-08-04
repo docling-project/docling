@@ -231,7 +231,10 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
             bitmap.close()
         # We resize the image from 1.5x the given scale to make it sharper.
         image = image.resize(
-            size=(round(cropbox.width * scale), round(cropbox.height * scale))
+            size=(
+                max(1, round(cropbox.width * scale)),
+                max(1, round(cropbox.height * scale)),
+            )
         )
 
         return image
