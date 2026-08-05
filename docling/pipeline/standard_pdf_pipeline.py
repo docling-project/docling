@@ -69,6 +69,9 @@ from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
 )
 from docling.models.stages.form_field.form_field_model import PdfFormFieldModel
+from docling.models.stages.code_formula.table_cell_formula_vlm_model import (
+    TableCellFormulaVlmModel,
+)
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
@@ -723,6 +726,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 accelerator_options=self.pipeline_options.accelerator_options,
                 enable_remote_services=self.pipeline_options.enable_remote_services,
             ),
+            TableCellFormulaVlmModel(
+                enabled=self.pipeline_options.do_table_cell_formula_enrichment,
+            ),
             *self.enrichment_pipe,
         ]
 
@@ -733,6 +739,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 self.pipeline_options.do_picture_classification,
                 self.pipeline_options.do_picture_description,
                 self.pipeline_options.do_chart_extraction,
+                self.pipeline_options.do_table_cell_formula_enrichment,
             )
         )
 
