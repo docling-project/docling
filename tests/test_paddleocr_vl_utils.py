@@ -1,9 +1,9 @@
 """Contract tests for the dependency-free PaddleOCR-VL result adapter.
 
-The payloads in this module are deliberately synthetic mechanics fixtures. They
-exercise the audited PaddleOCR-VL 1.6 / PaddleX 3.7.2 serialization contract,
-but they are not represented as real model output. A separately generated,
-versioned raw result is still required before the pull request is fixture-ready.
+Most payloads in this module are deliberately synthetic mechanics fixtures.
+The final regression uses an unedited ``prunedResult`` produced by the official
+Baidu AI Studio PaddleOCR-VL 1.6 service; its provenance is recorded beside the
+fixture.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,6 +22,11 @@ from docling_core.types.doc import (
 )
 
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
+
+_PADDLEOCR_VL_DATA_DIR = Path(__file__).parent / "data" / "json_paddleocr_vl"
+_AISTUDIO_PRUNED_RESULT = (
+    _PADDLEOCR_VL_DATA_DIR / "self_authored_page.paddleocr-vl-1.6.aistudio-pruned.json"
+)
 
 
 def _block(
@@ -145,6 +151,54 @@ def test_maps_supported_textual_labels() -> None:
     assert [item.text for item in items] == [
         f"content-{index}" for index in range(len(expected))
     ]
+
+
+def test_normalizes_provider_markdown_wrappers_when_block_content_is_formatted() -> (
+    None
+):
+    payload = _payload(
+        [
+            _block("doc_title", "# Main title"),
+            _block("paragraph_title", "### Nested heading"),
+            _block(
+                "figure_title",
+                '<div style="text-align: center;">Figure caption</div>\n',
+            ),
+        ]
+    )
+    payload["model_settings"]["format_block_content"] = True
+
+    doc = parse_paddleocr_vl_result(payload)
+
+    assert doc.texts[0].text == "Main title"
+    assert doc.texts[1].text == "Nested heading"
+    assert doc.texts[1].level == 2
+    assert doc.texts[2].text == "Figure caption"
+    assert doc.export_to_markdown() == (
+        "# Main title\n\n### Nested heading\n\nFigure caption"
+    )
+
+
+def test_preserves_formatting_without_formatted_content_flag() -> None:
+    payload = _payload(
+        [
+            _block("doc_title", "# Literal title"),
+            _block("paragraph_title", "### Literal heading"),
+            _block(
+                "figure_title",
+                '<div style="text-align: center;">Literal caption</div>',
+            ),
+        ]
+    )
+
+    doc = parse_paddleocr_vl_result(payload)
+
+    assert doc.texts[0].text == "# Literal title"
+    assert doc.texts[1].text == "### Literal heading"
+    assert doc.texts[1].level == 1
+    assert doc.texts[2].text == (
+        '<div style="text-align: center;">Literal caption</div>'
+    )
 
 
 def test_parses_table_html_into_table_data() -> None:
@@ -398,3 +452,58 @@ def test_docling_json_round_trip_preserves_adapter_output() -> None:
         DocItemLabel.PICTURE,
         DocItemLabel.TEXT,
     ]
+
+
+def test_imports_official_aistudio_paddleocr_vl_1_6_pruned_result() -> None:
+    """Regress against a real hosted 1.6 result for the self-authored page."""
+    doc = parse_paddleocr_vl_result(
+        _AISTUDIO_PRUNED_RESULT.read_bytes(),
+        filename="self_authored_page.png",
+    )
+
+    assert doc.pages[1].size.width == 960
+    assert doc.pages[1].size.height == 1280
+
+    assert doc.origin is not None
+    assert doc.origin.filename == "self_authored_page.png"
+
+    items = [item for item, _ in doc.iterate_items()]
+    labels = [item.label for item in items]
+    assert labels.count(DocItemLabel.PAGE_HEADER) == 1
+    assert labels.count(DocItemLabel.SECTION_HEADER) == 2
+    assert labels.count(DocItemLabel.TEXT) == 4
+    assert labels.count(DocItemLabel.TABLE) == 1
+    assert labels.count(DocItemLabel.CAPTION) == 1
+    assert items[0].text == "PaddleOCR-VL Adapter Fixture"
+    assert items[1].text == "Quarterly Metrics"
+    assert items[3].text == "Profit = Revenue - Cost"
+    assert items[5].text == "Table 1. Synthetic values for adapter testing."
+    assert items[6].text == "Notes"
+
+    for item in items:
+        assert len(item.prov) == 1
+        prov = item.prov[0]
+        assert prov.page_no == 1
+        assert prov.bbox.coord_origin == CoordOrigin.TOPLEFT
+        assert 0 <= prov.bbox.l < prov.bbox.r <= 960
+        assert 0 <= prov.bbox.t < prov.bbox.b <= 1280
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (3, 4)
+    assert [cell.text for cell in table.table_cells[:8]] == [
+        "Region",
+        "Revenue",
+        "Cost",
+        "Profit",
+        "North",
+        "120",
+        "80",
+        "40",
+    ]
+
+    markdown = doc.export_to_markdown()
+    assert "## Quarterly Metrics" in markdown
+    assert "### Notes" in markdown
+    assert "## ##" not in markdown
+    assert "&lt;div" not in markdown

@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -128,6 +129,26 @@ _PICTURE_LABELS = {
     "seal",
 }
 
+_MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})[ \t]+(.*?)\s*$", re.DOTALL)
+_CENTERED_DIV_PATTERN = re.compile(
+    r'^\s*<div style="text-align: center;">(.*)</div>\s*$',
+    re.DOTALL,
+)
+
+
+def _parse_formatted_heading(text: str) -> tuple[str, int | None]:
+    """Undo Paddle's optional Markdown heading wrapper."""
+    match = _MARKDOWN_HEADING_PATTERN.match(text)
+    if match is None:
+        return text, None
+    return match.group(2), len(match.group(1))
+
+
+def _strip_formatted_centering(text: str) -> str:
+    """Undo Paddle's optional centered ``div`` around textual captions."""
+    match = _CENTERED_DIV_PATTERN.match(text)
+    return match.group(1) if match is not None else text
+
 
 def _load_page_payload(
     content: Mapping[str, Any] | str | bytes,
@@ -230,11 +251,21 @@ def _add_block(
     prov = _make_provenance(block, page=page, page_no=page_no)
     label = block.block_label
     text = block.block_content
+    formatted_content = page.model_settings.get("format_block_content", False) is True
 
     if label == "doc_title":
+        if formatted_content:
+            text, _ = _parse_formatted_heading(text)
         doc.add_title(text=text, prov=prov)
     elif label == "paragraph_title":
-        doc.add_heading(text=text, level=1, prov=prov)
+        heading_level = 1
+        if formatted_content:
+            text, markdown_level = _parse_formatted_heading(text)
+            if markdown_level is not None:
+                # Paddle reserves Markdown H1 for ``doc_title``. Docling's
+                # section level 1 is exported as H2, so remove that offset.
+                heading_level = max(1, markdown_level - 1)
+        doc.add_heading(text=text, level=heading_level, prov=prov)
     elif label == "table":
         table_data = _parse_table_html(text)
         if table_data.num_rows == 0 or table_data.num_cols == 0:
@@ -260,6 +291,8 @@ def _add_block(
                 label,
             )
             doc_label = DocItemLabel.TEXT
+        if formatted_content and doc_label == DocItemLabel.CAPTION:
+            text = _strip_formatted_centering(text)
         doc.add_text(label=doc_label, text=text, prov=prov)
 
 
