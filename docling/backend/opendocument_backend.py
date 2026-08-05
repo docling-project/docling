@@ -48,6 +48,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from PIL import Image as PILImage
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -105,6 +106,16 @@ class _OdfListState:
 class _OdfTextRun:
     text: str
     formatting: Formatting | None = None
+    hyperlink: AnyUrl | Path | None = None
+
+
+def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
+    if not href:
+        return None
+    try:
+        return AnyUrl(href)
+    except ValidationError:
+        return Path(href)
 
 
 def _load_odf_document(
@@ -302,32 +313,46 @@ def _odf_text_runs(
     element: Any,
     odf_obj: OdfDocument | None,
     inherited_formatting: Formatting | None = None,
+    inherited_hyperlink: AnyUrl | Path | None = None,
 ) -> list[_OdfTextRun]:
     style_name = element.attributes.get("text:style-name")
     formatting = _formatting_from_odf_text_style(
         odf_obj, style_name, inherited_formatting
     )
     tag = element.tag
+    hyperlink = (
+        _odf_hyperlink_from_href(element.attributes.get("xlink:href"))
+        if tag == "text:a"
+        else inherited_hyperlink
+    )
     if tag == "text:line-break":
-        return [_OdfTextRun(text=element.text or "\n", formatting=formatting)]
+        return [
+            _OdfTextRun(
+                text=element.text or "\n", formatting=formatting, hyperlink=hyperlink
+            )
+        ]
     if tag == "text:tab":
-        return [_OdfTextRun(text="\t", formatting=formatting)]
+        return [_OdfTextRun(text="\t", formatting=formatting, hyperlink=hyperlink)]
 
     runs: list[_OdfTextRun] = []
     children = element.children
     text = element.text
     if text:
-        runs.append(_OdfTextRun(text=text, formatting=formatting))
+        runs.append(_OdfTextRun(text=text, formatting=formatting, hyperlink=hyperlink))
 
     for child in children:
-        runs.extend(_odf_text_runs(child, odf_obj, formatting))
+        runs.extend(_odf_text_runs(child, odf_obj, formatting, hyperlink))
         if child.tail:
-            runs.append(_OdfTextRun(text=child.tail, formatting=formatting))
+            runs.append(
+                _OdfTextRun(text=child.tail, formatting=formatting, hyperlink=hyperlink)
+            )
 
     if not runs and not children:
         inner_text = element.inner_text
         if inner_text:
-            runs.append(_OdfTextRun(text=inner_text, formatting=formatting))
+            runs.append(
+                _OdfTextRun(text=inner_text, formatting=formatting, hyperlink=hyperlink)
+            )
 
     return runs
 
@@ -337,10 +362,18 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
     for run in runs:
         if run.text == "":
             continue
-        if merged_runs and merged_runs[-1].formatting == run.formatting:
+        if (
+            merged_runs
+            and merged_runs[-1].formatting == run.formatting
+            and merged_runs[-1].hyperlink == run.hyperlink
+        ):
             merged_runs[-1].text += run.text
         else:
-            merged_runs.append(_OdfTextRun(text=run.text, formatting=run.formatting))
+            merged_runs.append(
+                _OdfTextRun(
+                    text=run.text, formatting=run.formatting, hyperlink=run.hyperlink
+                )
+            )
 
     while merged_runs and merged_runs[0].text.strip() == "":
         merged_runs.pop(0)
@@ -378,6 +411,7 @@ def _add_odf_text_runs(
             text=runs[0].text,
             content_layer=content_layer,
             formatting=runs[0].formatting,
+            hyperlink=runs[0].hyperlink,
         )
 
     inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
@@ -388,6 +422,7 @@ def _add_odf_text_runs(
             text=run.text,
             content_layer=content_layer,
             formatting=run.formatting,
+            hyperlink=run.hyperlink,
         )
     return inline_group
 
@@ -413,6 +448,7 @@ def _add_odf_heading(
             level=max(1, level),
             content_layer=content_layer,
             formatting=runs[0].formatting,
+            hyperlink=runs[0].hyperlink,
         )
         return
 
@@ -424,6 +460,7 @@ def _add_odf_heading(
             level=max(1, level),
             content_layer=content_layer,
             formatting=run.formatting,
+            hyperlink=run.hyperlink,
         )
 
 

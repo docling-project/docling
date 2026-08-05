@@ -47,6 +47,7 @@ from odfdo import (
     Frame,
     Header,
     LineBreak,
+    Link,
     List as OdfList,
     ListItem,
     Paragraph,
@@ -555,6 +556,30 @@ def test_odt_text_document_text_formatting():
     assert "**Lorem Ipsum is not simply random text**" in markdown
     assert "*a Latin professor at Hampden-Sydney College in Virginia*" in markdown
     assert "~~The Extremes of Good and Evil~~" in markdown
+
+
+def test_odt_hyperlink_preserved(tmp_path: Path):
+    path = tmp_path / "hyperlink.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Watch ")
+    paragraph.append(Link(url="https://example.com/talk", text="the example talk"))
+    paragraph.append(Span(" for context."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    by_text = {item.text: item.hyperlink for item in res.document.texts}
+
+    assert str(by_text["the example talk"]) == "https://example.com/talk"
+    assert by_text["Watch "] is None
+    assert by_text[" for context."] is None
+
+    markdown = res.document.export_to_markdown()
+    assert "[the example talk](https://example.com/talk)" in markdown
+    assert "example.com/talk" in res.document.model_dump_json()
 
 
 def test_odt_text_document_script_formatting():
