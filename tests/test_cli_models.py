@@ -1,7 +1,5 @@
 """
 Tests for the `docling-tools models download` and `docling-tools models download-hf-repo` commands.
-These tests use a mock HTTP server to intercept HuggingFace Hub requests and verify
-that tokens are passed correctly.
 """
 
 import os
