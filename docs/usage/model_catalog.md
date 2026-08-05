@@ -252,8 +252,11 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
+| `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
+
+`unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 
 #### Picture Description Stage
 
