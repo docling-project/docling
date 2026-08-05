@@ -4,14 +4,17 @@ The external PaddleOCR-VL pipeline must already have run. This example neither
 imports Paddle/PaddleX nor downloads or executes a model. It targets the
 PaddleOCR-VL 1.6 result schema produced by PaddleX 3.7.2, accepting either a
 bare single-page payload or the ``{"res": payload}`` wrapper written by
-the ``result.json`` property. ``save_to_json()`` writes the bare payload.
+the ``result.json`` property. ``save_to_json()`` writes the bare payload, and
+the official hosted service's per-page ``prunedResult`` is also accepted.
 
 Current adapter boundaries:
 
 - geometry refers to the processed-page pixel canvas;
 - polygon shapes are represented by their rectangular ``block_bbox``;
 - one page is converted per call, without Paddle ``restructure_pages()`` parity;
-- ordinary saved JSON does not embed page or crop image bytes.
+- ordinary saved JSON does not embed page or crop image bytes;
+- provider-added Markdown heading and centered-caption wrappers are normalized
+  when ``model_settings.format_block_content`` is enabled;
 - nonempty picture/chart/seal ``block_content`` is preserved as adjacent text,
   because provider switches can make it OCR text, chart rows, or markup rather
   than a natural-language picture description.
