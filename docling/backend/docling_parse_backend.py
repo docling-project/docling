@@ -62,7 +62,7 @@ def _make_docling_parse_page_content_config(
     *,
     create_words: bool,
     create_textlines: bool,
-    compute_shapes: bool = False,
+    compute_shapes: bool = True,
 ) -> ContentConfig:
     compute = ContentLevel.COMPUTE
     materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
@@ -126,6 +126,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            compute_shapes=True
         )
 
         assert self._dp_doc is not None
