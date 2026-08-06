@@ -17,6 +17,8 @@ Known gaps to improve:
 from __future__ import annotations
 
 import logging
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -109,12 +111,23 @@ class _OdfTextRun:
     hyperlink: AnyUrl | Path | None = None
 
 
+_ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+
+
 def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
+    if href is None:
+        return None
+    href = href.strip()
     if not href:
         return None
     try:
         return AnyUrl(href)
     except ValidationError:
+        if _ODF_HREF_SCHEME_RE.match(href):
+            # Looks like an attempted absolute URL (has a scheme) that failed
+            # to parse, e.g. a malformed host. Don't guess by treating it as
+            # a filesystem path.
+            return None
         return Path(href)
 
 
@@ -368,12 +381,18 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
             and merged_runs[-1].hyperlink == run.hyperlink
         ):
             merged_runs[-1].text += run.text
-        else:
-            merged_runs.append(
-                _OdfTextRun(
-                    text=run.text, formatting=run.formatting, hyperlink=run.hyperlink
-                )
-            )
+            continue
+
+        text = run.text
+        if merged_runs and merged_runs[-1].hyperlink != run.hyperlink:
+            # A hyperlink boundary is a hard edge: strip the whitespace right
+            # at the boundary so it doesn't double up with the separator the
+            # markdown/inline serializer already inserts between runs.
+            merged_runs[-1].text = merged_runs[-1].text.rstrip()
+            text = text.lstrip()
+        merged_runs.append(
+            _OdfTextRun(text=text, formatting=run.formatting, hyperlink=run.hyperlink)
+        )
 
     while merged_runs and merged_runs[0].text.strip() == "":
         merged_runs.pop(0)
@@ -427,6 +446,47 @@ def _add_odf_text_runs(
     return inline_group
 
 
+def _add_odf_rich_block(
+    doc: DoclingDocument,
+    runs: list[_OdfTextRun],
+    *,
+    add_block: Callable[..., NodeItem],
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+) -> NodeItem | None:
+    """Add a heading/title-like block from text runs.
+
+    A single run becomes the block directly. Multiple runs (e.g. a heading
+    with a hyperlink or mixed formatting in the middle) become one empty
+    block wrapping an InlineGroup of TEXT runs, so the block stays a single
+    semantic item instead of fragmenting into several headings/titles.
+    """
+    runs = _normalize_odf_text_runs(runs)
+    if not runs:
+        return None
+    if len(runs) == 1:
+        return add_block(
+            text=runs[0].text,
+            parent=parent,
+            content_layer=content_layer,
+            formatting=runs[0].formatting,
+            hyperlink=runs[0].hyperlink,
+        )
+
+    block = add_block(text="", parent=parent, content_layer=content_layer)
+    inline_group = doc.add_inline_group(parent=block, content_layer=content_layer)
+    for run in runs:
+        doc.add_text(
+            label=DocItemLabel.TEXT,
+            parent=inline_group,
+            text=run.text,
+            content_layer=content_layer,
+            formatting=run.formatting,
+            hyperlink=run.hyperlink,
+        )
+    return block
+
+
 def _add_odf_heading(
     doc: DoclingDocument,
     element: Header,
@@ -435,33 +495,15 @@ def _add_odf_heading(
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
 ) -> None:
-    level = element.get_attribute_integer("text:outline-level") or 1
+    level = max(1, element.get_attribute_integer("text:outline-level") or 1)
     runs = _odf_text_runs(element, odf_obj)
-    runs = _normalize_odf_text_runs(runs)
-    text = _odf_text_from_runs(runs)
-    if not text:
-        return
-    if len(runs) == 1:
-        doc.add_heading(
-            parent=parent,
-            text=text,
-            level=max(1, level),
-            content_layer=content_layer,
-            formatting=runs[0].formatting,
-            hyperlink=runs[0].hyperlink,
-        )
-        return
-
-    inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
-    for run in runs:
-        doc.add_heading(
-            parent=inline_group,
-            text=run.text,
-            level=max(1, level),
-            content_layer=content_layer,
-            formatting=run.formatting,
-            hyperlink=run.hyperlink,
-        )
+    _add_odf_rich_block(
+        doc,
+        runs,
+        add_block=lambda **kwargs: doc.add_heading(level=level, **kwargs),
+        parent=parent,
+        content_layer=content_layer,
+    )
 
 
 def _odf_paragraph_style_names(
@@ -520,23 +562,21 @@ def _add_odf_paragraph(
 
     style_names = _odf_paragraph_style_names(odf_obj, element)
     if "Title" in style_names:
-        _add_odf_text_runs(
+        _add_odf_rich_block(
             doc,
             runs,
-            label=DocItemLabel.TITLE,
+            add_block=lambda **kwargs: doc.add_text(label=DocItemLabel.TITLE, **kwargs),
             parent=parent,
             content_layer=content_layer,
         )
     elif "Subtitle" in style_names:
-        text = _odf_text_from_runs(runs)
-        if text:
-            doc.add_heading(
-                parent=parent,
-                text=text,
-                level=1,
-                content_layer=content_layer,
-                formatting=runs[0].formatting if len(runs) == 1 else None,
-            )
+        _add_odf_rich_block(
+            doc,
+            runs,
+            add_block=lambda **kwargs: doc.add_heading(level=1, **kwargs),
+            parent=parent,
+            content_layer=content_layer,
+        )
     else:
         _add_odf_text_runs(
             doc,
@@ -1193,9 +1233,13 @@ def _add_odf_list(
                 marker=marker,
                 enumerated=current_enumerated,
                 parent=list_group,
-                text=text,
+                # Prefer the run-derived text: odfdo's own text_recursive
+                # renders hyperlinked children as "[text](href)" markdown,
+                # which would otherwise leak into the plain item text.
+                text=runs[0].text if runs else text,
                 content_layer=content_layer,
                 formatting=runs[0].formatting if runs else None,
+                hyperlink=runs[0].hyperlink if runs else None,
             )
         else:
             item = doc.add_list_item(
@@ -1215,6 +1259,7 @@ def _add_odf_list(
                     text=run.text,
                     content_layer=content_layer,
                     formatting=run.formatting,
+                    hyperlink=run.hyperlink,
                 )
         previous_item = item
         for nested_list in nested:
