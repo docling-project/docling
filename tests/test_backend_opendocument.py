@@ -679,6 +679,7 @@ def test_odt_preserves_linked_list_item_target(tmp_path: Path):
         ("   ", None, "linked text"),
         ("http://[::1", None, "linked text"),
         ("http://", None, "linked text"),
+        ("http:", None, "linked text"),
         ("guide.odt#part", "guide.odt#part", "[linked text](guide.odt#part)"),
         ("#part", "#part", "[linked text](#part)"),
     ],

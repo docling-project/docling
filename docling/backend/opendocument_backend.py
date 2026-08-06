@@ -111,7 +111,7 @@ class _OdfTextRun:
     hyperlink: AnyUrl | Path | None = None
 
 
-_ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+_ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
 def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
