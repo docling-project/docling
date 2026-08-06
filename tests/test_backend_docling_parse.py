@@ -476,7 +476,7 @@ def test_threaded_backend_uses_backend_option_thread_count(
     )
     assert (
         parser.parser_config.page_content_config.shapes_content_level
-        == ContentLevel.SKIP
+        == ContentLevel.COMPUTE
     )
     assert (
         parser.parser_config.page_content_config.bitmaps_content_level
