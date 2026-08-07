@@ -7,5 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class PictureDescriptionFactory(BaseFactory[PictureDescriptionBaseModel]):
-    def __init__(self, *args, **kwargs):
-        super().__init__("picture_description", *args, **kwargs)
+    model_type = PictureDescriptionBaseModel
+
+    def __init__(self, plugin_name: str = BaseFactory.default_plugin_name) -> None:
+        super().__init__("picture_description", plugin_name)
