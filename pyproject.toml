@@ -149,6 +149,14 @@ format-email = [
   'mail-parser>=4.1.4,<5.0.0',
 ]
 
+# Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
+# Index/*.iwa; cramjam supplies the raw-Snappy decoder as a pure-Rust wheel, so
+# no libsnappy system library is needed. iWork '09 documents are plain XML.
+format-iwork = [
+  'cramjam>=2.8.0,<3.0.0',
+  'defusedxml>=0.7.1,<0.8.0',
+]
+
 format-xml-jats = [
   'docling-slim[format-html]',
   'lxml>=4.0.0,<7.0.0',
@@ -279,7 +287,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [
@@ -462,6 +470,7 @@ include = ["docling", ".github/scripts"]
 [tool.ty.analysis]
 allowed-unresolved-imports = [
   "arelle.**",
+  "cramjam.**",
   "docling_ibm_models.**",
   "docling_parse.**",
   "easyocr.**",

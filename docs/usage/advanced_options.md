@@ -142,6 +142,51 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Convert Apple Pages documents
+
+Apple Pages (`.pages`) documents convert like any other format, and both
+container generations are read (requires the `format-iwork` extra):
+
+```python
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("report.pages").document
+print(doc.export_to_markdown())
+```
+
+Pages changed its container completely in 2013, so Docling reads whichever one
+the document uses:
+
+- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
+  Snappy-framed protobuf archives. Docling walks that object graph directly.
+- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
+  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
+  template yields no spurious content.
+
+!!! note "Body text only"
+
+    Only the document body is extracted, as a flat sequence of paragraphs.
+    Heading levels, lists and tables are carried by the paragraph style runs and
+    are not yet mapped, and text boxes, headers, footers, footnotes and comments
+    are not included. Password-protected documents cannot be read.
+
+The archive limits applied while reading the container can be tuned with
+`IWorkBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkPagesFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+            backend_options=IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
+        )
+    }
+)
+```
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
