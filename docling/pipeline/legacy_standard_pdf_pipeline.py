@@ -12,6 +12,7 @@ from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     LayoutPostprocessorOptions,
+    OcrMode,
     PdfPipelineOptions,
 )
 from docling.datamodel.settings import settings
@@ -106,6 +107,10 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             PagePreprocessingModel(
                 options=PagePreprocessingOptions(
                     images_scale=pipeline_options.images_scale,
+                    allow_empty_cells_on_decode_error=(
+                        pipeline_options.do_ocr
+                        and pipeline_options.ocr_options.mode == OcrMode.FULL_PAGE
+                    ),
                 )
             ),
             # OCR
