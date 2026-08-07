@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import re
 from datetime import datetime
+from email.message import EmailMessage
+from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
 
@@ -30,24 +32,29 @@ try:  # pragma: no cover - import-time guard
 except ImportError as e:  # pragma: no cover - import-time guard
     _MAILPARSER_IMPORT_ERROR = e
 
-# aspose-email-foss (MIT, pure Python) reads Outlook .msg files and projects
-# them onto a standard email.message.EmailMessage, which mailparser then parses
-# through the same path as .eml input. It ships in the `format-email` extra, so
-# guard the import for the same slim-install reason as mailparser above.
-_ASPOSE_MSG_AVAILABLE: bool = False
-_ASPOSE_MSG_IMPORT_ERROR: ImportError | None = None
+# python-oxmsg (MIT, from the python-docx/python-pptx author, built on olefile)
+# reads Outlook .msg files. We assemble a standard email.message.EmailMessage
+# from the parsed message, which mailparser then parses through the same path as
+# .eml input. It ships in the `format-email` extra, so guard the import for the
+# same slim-install reason as mailparser above.
+_OXMSG_AVAILABLE: bool = False
+_OXMSG_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
-    from aspose.email_foss.cfb import CFBReader
-    from aspose.email_foss.msg import MapiMessage, MsgDocument, MsgReader
+    from oxmsg import Message as OxMsgMessage
 
-    _ASPOSE_MSG_AVAILABLE = True
+    _OXMSG_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
-    _ASPOSE_MSG_IMPORT_ERROR = e
+    _OXMSG_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
 
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
 _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+# MAPI PidTagRecipientType (0x0C15) values on each .msg recipient row.
+_RECIPIENT_TYPE_PROP_ID = 0x0C15
+_RECIPIENT_TYPE_CC = 2
+_RECIPIENT_TYPE_BCC = 3
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
@@ -55,7 +62,7 @@ _INSTALL_HINT = (
 )
 
 _MSG_INSTALL_HINT = (
-    "The 'aspose-email-foss' package is required to process Outlook .msg files. "
+    "The 'python-oxmsg' package is required to process Outlook .msg files. "
     "Install it with `pip install 'docling-slim[format-email]'`."
 )
 
@@ -104,22 +111,81 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         raise TypeError(f"Unsupported input type: {type(self.path_or_stream)}")
 
     @staticmethod
+    def _header_safe(value: str) -> str:
+        # Email header values must be single-line; collapse CR/LF to spaces so a
+        # crafted .msg cannot inject headers and EmailMessage does not reject it.
+        return value.replace("\r", " ").replace("\n", " ").strip()
+
+    @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
-        Reusing the RFC 822 output lets the ``.msg`` path share the exact body,
-        HTML, address, and attachment handling used for ``.eml`` input.
+        python-oxmsg reads the MAPI message; we assemble a standard
+        ``email.message.EmailMessage`` from it so the ``.msg`` path shares the
+        exact body, HTML, address, and attachment handling used for ``.eml``
+        input.
         """
-        if not _ASPOSE_MSG_AVAILABLE:
-            raise ImportError(_MSG_INSTALL_HINT) from _ASPOSE_MSG_IMPORT_ERROR
+        if not _OXMSG_AVAILABLE:
+            raise ImportError(_MSG_INSTALL_HINT) from _OXMSG_IMPORT_ERROR
 
-        reader = MsgReader(CFBReader(data))
-        try:
-            document = MsgDocument.from_reader(reader)
-            message = MapiMessage.from_msg_document(document)
-        finally:
-            reader.close()
-        return message.to_email_bytes()
+        message = OxMsgMessage.load(data)
+        email_message = EmailMessage()
+
+        if message.subject:
+            email_message["Subject"] = EmailDocumentBackend._header_safe(
+                message.subject
+            )
+        if message.sender:
+            email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
+
+        # Preserve the To/Cc/Bcc split from the recipient rows so downstream
+        # rendering (which shows only "To") matches the .eml behavior.
+        grouped: dict[str, list[str]] = {}
+        for recipient in message.recipients:
+            formatted = formataddr(
+                (recipient.name or "", recipient.email_address or "")
+            )
+            if not formatted:
+                continue
+            rtype = recipient.properties.int_prop_value(_RECIPIENT_TYPE_PROP_ID)
+            if rtype == _RECIPIENT_TYPE_CC:
+                header = "Cc"
+            elif rtype == _RECIPIENT_TYPE_BCC:
+                header = "Bcc"
+            else:
+                header = "To"
+            grouped.setdefault(header, []).append(formatted)
+        for header in ("To", "Cc", "Bcc"):
+            if grouped.get(header):
+                email_message[header] = EmailDocumentBackend._header_safe(
+                    ", ".join(grouped[header])
+                )
+
+        if isinstance(message.sent_date, datetime):
+            email_message["Date"] = format_datetime(message.sent_date)
+
+        plain_body = message.body
+        html_body = message.html_body
+        if plain_body:
+            email_message.set_content(plain_body)
+            if html_body:
+                email_message.add_alternative(html_body, subtype="html")
+        elif html_body:
+            email_message.set_content(html_body, subtype="html")
+        else:
+            email_message.set_content("")
+
+        for attachment in message.attachments:
+            mime_type = attachment.mime_type or "application/octet-stream"
+            maintype, _, subtype = mime_type.partition("/")
+            email_message.add_attachment(
+                attachment.file_bytes or b"",
+                maintype=maintype or "application",
+                subtype=subtype or "octet-stream",
+                filename=attachment.file_name,
+            )
+
+        return email_message.as_bytes()
 
     def is_valid(self) -> bool:
         return self.valid

@@ -49,7 +49,7 @@ def _run_with_blocked_module(
     "blocked_module",
     [
         "mailparser",
-        "aspose.email_foss",
+        "oxmsg",
         "marko",
         "docx",
         "pptx",
@@ -83,7 +83,7 @@ def test_converter_constructs_without_optional_backend_dependency(
             "format-email",
         ),
         (
-            "aspose.email_foss",
+            "oxmsg",
             "docling.backend.email_backend",
             "EmailDocumentBackend",
             _MSG_SAMPLE,
