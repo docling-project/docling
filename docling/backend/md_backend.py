@@ -97,6 +97,7 @@ _CreationPayload = Annotated[
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
+    _DELIMITER_CELL_RE = re.compile(r":?-+:?")
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -111,6 +112,42 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if cells and not cells[-1].strip():
             cells = cells[:-1]
         return [cell.strip() for cell in cells]
+
+    @staticmethod
+    def _is_delimiter_row(row: str) -> bool:
+        """Whether a row is a GFM table delimiter row, e.g. ``--- | :---:``."""
+        cells = MarkdownDocumentBackend._split_table_row(row)
+        return bool(cells) and all(
+            MarkdownDocumentBackend._DELIMITER_CELL_RE.fullmatch(cell) for cell in cells
+        )
+
+    @staticmethod
+    def _starts_pipeless_table(element: marko.block.Paragraph) -> bool:
+        """Whether a paragraph is a GFM table whose header has no leading pipe.
+
+        Tables that do start with a pipe are detected line by line and must not
+        go through here, so that their existing behaviour is left untouched.
+        Without a leading pipe the header is indistinguishable from prose, so
+        the delimiter row on the second line is the only reliable signal - hence
+        the lookahead at paragraph level, where all lines are visible at once.
+        """
+        lines = [
+            child.children
+            for child in element.children
+            if isinstance(child, marko.inline.RawText)
+            and isinstance(child.children, str)
+        ]
+        if len(lines) < 2 or lines[0].lstrip().startswith("|"):
+            return False
+        if "|" not in lines[0] or not MarkdownDocumentBackend._is_delimiter_row(
+            lines[1]
+        ):
+            return False
+        # GFM: "The delimiter row must match the header row in the number of
+        # cells. If not, a table will not be recognized."
+        return len(MarkdownDocumentBackend._split_table_row(lines[0])) == len(
+            MarkdownDocumentBackend._split_table_row(lines[1])
+        )
 
     @staticmethod
     def _unescape_except_pipe(text: str) -> str:
@@ -184,6 +221,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.markdown = ""  # To store original Markdown string
 
         self.in_table = False
+        self.in_pipeless_table = False
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
@@ -216,6 +254,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return
 
     def _close_table(self, doc: DoclingDocument):
+        self.in_pipeless_table = False
         if self.in_table:
             _log.debug("=== TABLE START ===")
             for md_table_row in self.md_table_buffer:
@@ -235,6 +274,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     for value in values:
                         data.append(value)
                     result_table.append(data)
+
+            # GFM: "The remainder of the table's rows may vary in the number of
+            # cells. If a row has fewer cells than the header row, empty cells
+            # are inserted. If it has greater, the excess is ignored."
+            if result_table and result_table[0]:
+                num_header_cells = len(result_table[0])
+                result_table = [
+                    row[:num_header_cells] + [""] * (num_header_cells - len(row))
+                    for row in result_table
+                ]
 
             for trow_ind, trow in enumerate(result_table):
                 for tcol_ind, cellval in enumerate(trow):
@@ -500,7 +549,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
             snippet_text = unescape(original_text.strip())
             is_table_row = "|" in snippet_text and (
-                self.in_table or original_text.lstrip().startswith("|")
+                self.in_table
+                or original_text.lstrip().startswith("|")
+                or self.in_pipeless_table
             )
             if is_table_row:
                 self.in_table = True
@@ -603,6 +654,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if not isinstance(element, str):
                 self._close_table(doc)
                 _log.debug("Some other element: %s", type(element).__name__)
+
+        if isinstance(element, marko.block.Paragraph):
+            # Set before descending: the RawText branch below reads this to let a
+            # header without a leading pipe open a table. _close_table clears it.
+            self.in_pipeless_table = MarkdownDocumentBackend._starts_pipeless_table(
+                element
+            )
 
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
