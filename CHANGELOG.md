@@ -1,3 +1,12 @@
+## [v2.118.1](https://github.com/docling-project/docling/releases/tag/v2.118.1) - 2026-08-07
+
+### Fix
+
+* **layout:** Normalize hyphenated labels in _build_label_map (#3936) ([#3937](https://github.com/docling-project/docling/issues/3937)) ([`5a14159`](https://github.com/docling-project/docling/commit/5a141593be89c41ee0fcd9722e5d36f2eec29ada))
+* Make sure the shapes are rendered in the threaded docling-parse ([#3947](https://github.com/docling-project/docling/issues/3947)) ([`c79b793`](https://github.com/docling-project/docling/commit/c79b793f5583e9007acbaa3e60bf36bad5802dad))
+* Fixed HTML render to stop implicit file requests. ([#3948](https://github.com/docling-project/docling/issues/3948)) ([`1612b88`](https://github.com/docling-project/docling/commit/1612b8875b0937447ce3122536fb5360a7102a0a))
+* **pdf:** Preserve pictures inside table cells ([#3906](https://github.com/docling-project/docling/issues/3906)) ([`8df76a5`](https://github.com/docling-project/docling/commit/8df76a5ab1c83b58b744d662d20fccf0c805d624))
+
 ## [v2.118.0](https://github.com/docling-project/docling/releases/tag/v2.118.0) - 2026-08-03
 
 ### Feature
