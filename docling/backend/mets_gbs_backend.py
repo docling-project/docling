@@ -53,7 +53,12 @@ def _get_pdf_page_geometry(
 
 
 class MetsGbsPageBackend(PdfPageBackend):
-    def __init__(self, parsed_page: SegmentedPdfPage, page_im: PILImage, page_no: int):
+    def __init__(
+        self,
+        parsed_page: Optional[SegmentedPdfPage],
+        page_im: Optional[PILImage],
+        page_no: int,
+    ):
         self._im = page_im
         self._dpage = parsed_page
         self._page_no = page_no
@@ -67,6 +72,7 @@ class MetsGbsPageBackend(PdfPageBackend):
         return self.valid
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
+        assert self._dpage is not None, "Page backend is invalid or was unloaded."
         # Find intersecting cells on the page
         text_piece = ""
         page_size = self.get_size()
@@ -95,9 +101,11 @@ class MetsGbsPageBackend(PdfPageBackend):
         return self._dpage
 
     def get_text_cells(self) -> Iterable[TextCell]:
+        assert self._dpage is not None, "Page backend is invalid or was unloaded."
         return self._dpage.textline_cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        assert self._dpage is not None, "Page backend is invalid or was unloaded."
         AREA_THRESHOLD = 0  # 32 * 32
 
         images = self._dpage.bitmap_resources
@@ -115,6 +123,7 @@ class MetsGbsPageBackend(PdfPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
+        assert self._im is not None, "Page backend is invalid or was unloaded."
         page_size = self.get_size()
         assert (
             page_size.width == self._im.size[0] and page_size.height == self._im.size[1]
@@ -135,6 +144,7 @@ class MetsGbsPageBackend(PdfPageBackend):
         return image
 
     def get_size(self) -> Size:
+        assert self._dpage is not None, "Page backend is invalid or was unloaded."
         return Size(
             width=self._dpage.dimension.width, height=self._dpage.dimension.height
         )
@@ -329,12 +339,23 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         _log.warning(f"The root element is not <mets:mets> with PROFILE='gbs': {root}")
         return None
 
-    def _parse_page(self, page_no: int) -> Tuple[SegmentedPdfPage, PILImage]:
-        # TODO: use better fallbacks...
+    def _parse_page(
+        self, page_no: int
+    ) -> Tuple[Optional[SegmentedPdfPage], Optional[PILImage]]:
+        # A page's fileGrp entries in the METS XML are independently optional (see
+        # _PageFiles), so a page can legitimately have no `image` or `coordOCR` fptr
+        # (e.g. a blank/cover page with no OCR layer). Report it as unparseable rather
+        # than asserting, so the caller can mark it invalid and skip it, consistent
+        # with how sibling PDF backends (e.g. DoclingParsePageBackend) handle a page
+        # they can't build.
         image_info = self.page_map[page_no].image
-        assert image_info is not None
         ocr_info = self.page_map[page_no].coordOCR
-        assert ocr_info is not None
+        if image_info is None or ocr_info is None:
+            _log.warning(
+                f"Page {page_no} is missing an 'image' or 'coordOCR' fileGrp entry; "
+                "skipping."
+            )
+            return None, None
 
         # Security: limit extraction size to prevent decompression bombs
         image_file = self._tar.extractfile(image_info.path)
