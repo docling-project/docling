@@ -45,6 +45,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
+    # A layout cluster is skipped for OCR only once native PDF text covers at least
+    # this fraction of its area. Below that, the cluster is treated as needing OCR
+    # even though some native text overlaps it (see `_find_pdf_aware_layout_ocr_rects`).
+    NATIVE_TEXT_COVERAGE_SKIP_THRESHOLD = 0.9
+
     def __init__(
         self,
         *,
@@ -108,10 +113,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
         1. Start from the layout clusters.
-        2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
-           The following clusters therefore remain:
-           - Clusters without any overlapping PDF cell.
+        2. Eliminate clusters that are (almost) fully covered by programmatic text PDF
+           cells. The following clusters therefore remain and get OCR'd:
+           - Clusters without any overlapping PDF text cell.
            - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
+           - Clusters where native PDF text covers only part of the cluster's area
+             (below `NATIVE_TEXT_COVERAGE_SKIP_THRESHOLD`) - e.g. a list item whose
+             bullet is native text but whose label is a separately rasterized or
+             stamped image with no native text of its own. Skipping the whole
+             cluster just because *some* native text overlaps it would silently
+             drop that image-only content, since it has no native text and would
+             never be OCR'd otherwise. Re-including such a cluster is safe:
+             `_merge_ocr_and_pdf_cells` already prefers native PDF cells over OCR
+             cells wherever they overlap, so this only recovers the gap.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -123,7 +137,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         p = index.Property()
         p.dimension = 2
         text_index = index.Index(properties=p)
-        for i, text_cell in enumerate(page._backend.get_text_cells()):
+        text_cells = list(page._backend.get_text_cells())
+        for i, text_cell in enumerate(text_cells):
             text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
 
         # Create index for the non-text PDF cells
@@ -135,14 +150,35 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_rects: list[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
             cluster_bbox_tuple = cluster.bbox.as_tuple()
-            text_overlaps = list(text_index.intersection(cluster_bbox_tuple))
+            text_overlap_ids = list(text_index.intersection(cluster_bbox_tuple))
             non_text_overlaps = list(non_text_index.intersection(cluster_bbox_tuple))
 
-            # Get the clusters that overlap with non-txt PDF cells
+            # Get the clusters that overlap with non-text PDF cells
             if len(non_text_overlaps) > 0:
                 ocr_rects.append(cluster.bbox)
-            # And the ones that don't overlap with any PDF cells
-            elif len(text_overlaps) == 0:
+                continue
+
+            # And the ones that don't overlap with any PDF text cells
+            if len(text_overlap_ids) == 0:
+                ocr_rects.append(cluster.bbox)
+                continue
+
+            # Some native PDF text overlaps this cluster. Only skip OCR once that
+            # text covers most of the cluster's area - otherwise any uncovered
+            # portion has no native text and no OCR, and is silently lost.
+            cluster_area = cluster.bbox.area()
+            if cluster_area <= 0:
+                continue
+            covered_area = sum(
+                cluster.bbox.intersection_area_with(
+                    text_cells[i].rect.to_bounding_box()
+                )
+                for i in text_overlap_ids
+            )
+            if (
+                covered_area / cluster_area
+                < BaseOcrModel.NATIVE_TEXT_COVERAGE_SKIP_THRESHOLD
+            ):
                 ocr_rects.append(cluster.bbox)
 
         # Deduplicate the surviving cluster bboxes.
