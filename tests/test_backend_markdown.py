@@ -362,6 +362,40 @@ North | 10
         assert [cell.text for cell in table_data.table_cells] == expected
 
 
+def test_convert_table_without_leading_pipes_formatted_header():
+    """
+    Regression test:
+    A header cell in bold or a link is an inline node of its own, so reading the
+    paragraph's RawText nodes alone splits one line into several and moves the
+    delimiter row out of second place. The header then measured one cell, and
+    since rows are trimmed to the header's cell count the data cells went with
+    it -- a 2x2 table silently arrived as 1x2, first column dropped to prose.
+    """
+    bold_first = """**Region** | Q1
+--- | ---
+North | 10
+"""
+    bold_last = """Region | **Q1**
+--- | ---
+North | 10
+"""
+    linked = """[Region](https://example.com) | Q1
+--- | ---
+North | 10
+"""
+    expected = ["Region", "Q1", "North", "10"]
+
+    for markdown in (bold_first, bold_last, linked):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        assert len(conv_result.document.tables) == 1
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+        assert conv_result.document.texts == []
+
+
 def test_convert_pipes_in_prose_stay_text():
     """
     A header without a leading pipe is indistinguishable from prose, so the

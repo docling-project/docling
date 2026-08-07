@@ -122,6 +122,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
+    def _inline_text(node) -> str:
+        """The text of an inline node, its markers dropped.
+
+        A pipe goes on delimiting cells inside emphasis, code spans and links,
+        so the markers can go but the text they wrap has to stay.
+        """
+        children = getattr(node, "children", None)
+        if isinstance(children, str):
+            return children
+        return "".join(
+            MarkdownDocumentBackend._inline_text(child) for child in children or []
+        )
+
+    @staticmethod
     def _starts_pipeless_table(element: marko.block.Paragraph) -> bool:
         """Whether a paragraph is a GFM table whose header has no leading pipe.
 
@@ -131,12 +145,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         the delimiter row on the second line is the only reliable signal - hence
         the lookahead at paragraph level, where all lines are visible at once.
         """
-        lines = [
-            child.children
-            for child in element.children
-            if isinstance(child, marko.inline.RawText)
-            and isinstance(child.children, str)
-        ]
+        # Rebuilt line by line rather than read off the RawText nodes: a header
+        # cell in bold or a link is a node of its own, so reading those alone
+        # would split one line into several and shift the delimiter row away.
+        lines = [""]
+        for child in element.children:
+            if isinstance(child, marko.inline.LineBreak):
+                if len(lines) == 2:
+                    break
+                lines.append("")
+            else:
+                lines[-1] += MarkdownDocumentBackend._inline_text(child)
         if len(lines) < 2 or lines[0].lstrip().startswith("|"):
             return False
         if "|" not in lines[0] or not MarkdownDocumentBackend._is_delimiter_row(
@@ -548,10 +567,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(original_text.strip())
-            is_table_row = "|" in snippet_text and (
-                self.in_table
-                or original_text.lstrip().startswith("|")
-                or self.in_pipeless_table
+            is_table_row = bool(snippet_text) and (
+                # A header cell in bold or a link arrives as its own node with
+                # no pipe in it, so once the paragraph is known to be a table,
+                # every piece of it belongs to that table, pipe or not.
+                self.in_pipeless_table
+                or (
+                    "|" in snippet_text
+                    and (self.in_table or original_text.lstrip().startswith("|"))
+                )
             )
             if is_table_row:
                 self.in_table = True
