@@ -42,7 +42,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 📜 Support for several application-specific XML schemas including [DocLang](https://doclang.ai), [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
 - 🔒 Local execution capabilities for sensitive data and air-gapped environments
 - 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
-- 🔍 Extensive OCR support for scanned PDFs and images
+- 🔍 Extensive [OCR support][ocr_engines] for scanned PDFs and images
 - 👓 Support for several Visual Language Models, such as ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
 - 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 - 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
@@ -90,3 +90,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: ./usage/supported_formats.md
 [docling_document]: ./concepts/docling_document.md
 [integrations]: ./integrations/index.md
+[ocr_engines]: ./concepts/OCR.md

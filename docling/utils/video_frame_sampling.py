@@ -23,7 +23,6 @@ from typing import Final
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
-from scipy.signal import find_peaks
 
 
 class VideoFrameSamplingMode(str, Enum):
@@ -445,6 +444,10 @@ class SimpleSceneChangeFrameSampler:
                 min_dist, int((60.0 / self.cuts_per_minute) * self.probe_fps)
             )
             noise_floor = float(np.percentile(smoothed, 75))
+            from scipy.signal import (
+                find_peaks,  # guarded: not available in slim installations
+            )
+
             peaks, _ = find_peaks(
                 smoothed, distance=target_interval, prominence=noise_floor
             )
@@ -460,6 +463,10 @@ class SimpleSceneChangeFrameSampler:
             else:
                 prominence = _auto_prominence(diffs)
             _log.debug("Prominence mode: prominence=%.4f", prominence)
+            from scipy.signal import (
+                find_peaks,  # guarded: not available in slim installations
+            )
+
             peaks, _ = find_peaks(smoothed, prominence=prominence, distance=min_dist)
 
         # Filter peaks too close to video start

@@ -42,7 +42,8 @@ class TesseractOcrModel(BaseOcrModel):
         )
         self.options: TesseractOcrOptions
         self._is_auto: bool = "auto" in self.options.lang
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
         self.reader = None
         self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
 
@@ -249,7 +250,7 @@ class TesseractOcrModel(BaseOcrModel):
                         all_ocr_cells.extend(cells)
 
                     # Post-process the cells
-                    self.post_process_cells(all_ocr_cells, page)
+                    self.post_process_cells(all_ocr_cells, page, conv_res)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

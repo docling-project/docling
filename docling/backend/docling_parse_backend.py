@@ -62,6 +62,7 @@ def _make_docling_parse_page_content_config(
     *,
     create_words: bool,
     create_textlines: bool,
+    compute_shapes: bool = True,
 ) -> ContentConfig:
     compute = ContentLevel.COMPUTE
     materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
@@ -73,7 +74,9 @@ def _make_docling_parse_page_content_config(
         else skip,
         word_cells_content_level=materialize if create_words else skip,
         line_cells_content_level=materialize if create_textlines else skip,
-        shapes_content_level=skip,
+        # The threaded parser renders the page image from this same decode, so
+        # shapes must be computed there or the render loses all vector content.
+        shapes_content_level=compute if compute_shapes else skip,
         bitmaps_content_level=materialize,
         include_bitmap_bytes=False,  # only need bitmap rectangles for OCR
     )
@@ -123,6 +126,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            compute_shapes=True,
         )
 
         assert self._dp_doc is not None
@@ -510,6 +514,10 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             ),
             decode_config=decode_config,
         )
+        # The threaded parser derives its document key by hashing from the current stream
+        # offset, so the stream has to be rewound for that key to cover the whole document.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
         self.doc_key = self.parser.load(
             self.path_or_stream,
             password=password,

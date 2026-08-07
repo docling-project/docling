@@ -1,0 +1,78 @@
+{
+  "description": "311 service requests, single schema of character fields",
+  "records": [
+    {
+      "name": "main",
+      "fields": [
+        {
+          "name": "service_request_id",
+          "size": 12
+        },
+        {
+          "name": "status",
+          "size": 6
+        },
+        {
+          "name": "status_notes",
+          "size": 126
+        },
+        {
+          "name": "service_name",
+          "size": 30
+        },
+        {
+          "name": "service_code",
+          "size": 10
+        },
+        {
+          "name": "description",
+          "size": 344
+        },
+        {
+          "name": "agency_responsible",
+          "size": 11
+        },
+        {
+          "name": "service_notice",
+          "size": 1
+        },
+        {
+          "name": "requested_datetime",
+          "size": 25
+        },
+        {
+          "name": "updated_datetime",
+          "size": 25
+        },
+        {
+          "name": "expected_datetime",
+          "size": 25
+        },
+        {
+          "name": "address",
+          "size": 130
+        },
+        {
+          "name": "address_id",
+          "size": 8
+        },
+        {
+          "name": "zipcode",
+          "size": 6
+        },
+        {
+          "name": "long",
+          "size": 14
+        },
+        {
+          "name": "lat",
+          "size": 14
+        },
+        {
+          "name": "media_url",
+          "size": 118
+        }
+      ]
+    }
+  ]
+}

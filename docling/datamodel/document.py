@@ -980,6 +980,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
         elif ext in FormatToExtensions[InputFormat.BOXNOTE]:
             mime = FormatToMimeType[InputFormat.BOXNOTE][0]
+        elif ext in FormatToExtensions[InputFormat.EBCDIC]:
+            mime = FormatToMimeType[InputFormat.EBCDIC][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:

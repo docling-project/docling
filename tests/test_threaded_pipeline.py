@@ -1,3 +1,4 @@
+import threading
 import time
 from pathlib import Path
 
@@ -8,12 +9,16 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat, Page
 from docling.datamodel.pipeline_options import (
     ThreadedPdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.pipeline.standard_pdf_pipeline import (
+    StandardPdfPipeline,
+    ThreadedItem,
+    ThreadedPipelineStage,
+)
 
 _TEST_FILES = [
     "tests/data/pdf/sources/2203.01017v2.pdf",
@@ -108,3 +113,42 @@ def test_threaded_pipeline_page_range():
 
     assert result.status == ConversionStatus.SUCCESS
     assert [p.page_no for p in result.pages] == [2, 3, 4]
+
+
+def test_threaded_pipeline_stage_shutdown_timeout():
+    """A stage stuck in a blocking model call is abandoned after
+    `shutdown_timeout`, not the hardcoded 15s the pipeline used to have."""
+    entered = threading.Event()
+    release = threading.Event()
+
+    class SlowModel:
+        def __call__(self, conv_res, pages):
+            entered.set()
+            release.wait()
+            return pages
+
+    stage = ThreadedPipelineStage(
+        name="slow",
+        model=SlowModel(),
+        batch_size=1,
+        batch_timeout=0.05,
+        queue_max_size=10,
+        shutdown_timeout=1.0,
+    )
+    stage.start()
+    try:
+        stage.input_queue.put(
+            ThreadedItem(payload=Page(page_no=1), run_id=1, page_no=1, conv_res=None)
+        )
+        assert entered.wait(timeout=5.0), "stage never entered the blocking call"
+
+        start = time.monotonic()
+        stage.stop()
+        elapsed = time.monotonic() - start
+
+        assert 1.0 <= elapsed < 5.0
+        assert stage._thread is not None and stage._thread.is_alive()
+    finally:
+        release.set()
+        if stage._thread is not None:
+            stage._thread.join(timeout=5.0)
