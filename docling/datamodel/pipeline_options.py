@@ -1944,6 +1944,18 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+
+    do_table_cell_formula_enrichment: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, formula recognition is run over table cells, "
+                "emitting rich table cells whose `ref` points to the recognised "
+                "content. Requires do_formula_enrichment. Disabled by default: "
+                "adds per-cell inference cost."
+            )
+        ),
+    ] = False
     force_backend_text: Annotated[
         bool,
         Field(
