@@ -198,6 +198,7 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
+| `--hf-token` | `string` OR `None` | `None` | HuggingFace token to authenticate and accelerate model downloads. If `HF_TOKEN` environment variable is set, it will automatically use it. If a string is used, it will take precedence over `HF_TOKEN` (if set). |
 | `--easyocr-lang` | `text` (repeatable) |  | EasyOCR language code to prefetch. Repeat for multiple languages. |
 | `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:th'). Repeat for multiple. Replaces the default set. |
 
@@ -222,4 +223,4 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-
+| `--hf-token` | `string` OR `None` | `None` |HuggingFace token to authenticate and accelerate model downloads. If `HF_TOKEN` environment variable is set, it will automatically use it. If a string is used, it will take precedence over `HF_TOKEN` (if set). |

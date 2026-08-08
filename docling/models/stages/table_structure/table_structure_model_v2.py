@@ -19,6 +19,7 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -51,7 +52,12 @@ class TableStructureModelV2(BaseTableStructureModel):
         if self.enabled:
             # Determine model path
             if artifacts_path is None:
-                model_path = self.download_models()
+                try:
+                    model_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download TableStructureModelV2")
+                    raise e
+
             elif (artifacts_path / self._model_repo_folder).exists():
                 model_path = artifacts_path / self._model_repo_folder
             else:
@@ -98,12 +104,14 @@ class TableStructureModelV2(BaseTableStructureModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=TableStructureModelV2._model_repo_id,
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     # FIXME: this method is here to test the quality and performance of the

@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
@@ -119,7 +120,12 @@ def resolve_model_artifacts_path(
 
     if artifacts_path is None:
         # No cache path provided - download
-        return download_fn(repo_id, revision)
+        # With exception handling and logging
+        try:
+            return download_fn(repo_id, revision)
+        except DoclingModelDownloadError as e:
+            _log.error(f"Failed to download {repo_id}")
+            raise e
     elif (artifacts_path / repo_cache_folder).exists():
         # Cache path with repo-specific subfolder exists
         return artifacts_path / repo_cache_folder

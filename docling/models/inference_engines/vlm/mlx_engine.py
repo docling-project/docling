@@ -6,11 +6,12 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 from PIL.Image import Image
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
@@ -105,7 +106,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self._initialized = True
         _log.info("MLX runtime initialized")
 
-    def _load_model_for_repo(self, repo_id: str, revision: str = "main") -> None:
+    def _load_model_for_repo(
+        self,
+        repo_id: str,
+        revision: str = "main",
+    ) -> None:
         """Load model and processor for a specific repository.
 
         Args:
@@ -118,7 +123,12 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Download or locate model artifacts
         repo_cache_folder = repo_id.replace("/", "--")
         if self.artifacts_path is None:
-            artifacts_path = self.download_models(repo_id, revision=revision)
+            try:
+                artifacts_path = self.download_models(repo_id, revision=revision)
+            except DoclingModelDownloadError as e:
+                _log.error("Failed to download {repo_id}")
+                raise e
+
         elif (self.artifacts_path / repo_cache_folder).exists():
             artifacts_path = self.artifacts_path / repo_cache_folder
         else:
