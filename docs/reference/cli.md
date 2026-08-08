@@ -72,6 +72,8 @@ docling convert [OPTIONS] source
 | `--enrich-picture-classes` / `--no-enrich-picture-classes` | flag | `false` | Enable the picture classification enrichment model in the pipeline. |
 | `--enrich-picture-description` / `--no-enrich-picture-description` | flag | `false` | Enable the picture description model in the pipeline. |
 | `--enrich-chart-extraction` / `--no-enrich-chart-extraction` | flag | `false` | Enable chart data extraction from bar, pie, and line charts. |
+| `--process-attachments` | flag | `false` | Convert embedded PDF attachments into separate Markdown files and link them from the parent. |
+| `--attachments-max-depth` | `integer range` | `1` | Recursion depth for attachment conversion (0 = list only). |
 | `--artifacts-path` | `path` |  | If provided, the location of the model artifacts. |
 | `--enable-remote-services` / `--no-enable-remote-services` | flag | `false` | Must be enabled when using models connecting to remote services. |
 | `--allow-external-plugins` / `--no-allow-external-plugins` | flag | `false` | Must be enabled for loading modules from third-party plugins. |
@@ -122,7 +124,7 @@ docling convert-remote [OPTIONS] source
 | --- | --- | --- | --- |
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
-| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
+| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
 | `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
@@ -194,12 +196,12 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `C:\Users\yonik\.cache\docling\models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 | `--easyocr-lang` | `text` (repeatable) |  | EasyOCR language code to prefetch. Repeat for multiple languages. |
-| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:th'). Repeat for multiple. Replaces the default set. |
+| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set. |
 
 #### `docling-tools models download-hf-repo`
 
@@ -219,7 +221,7 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `C:\Users\yonik\.cache\docling\models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 

@@ -2051,6 +2051,27 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         ),
     ] = HeadingHierarchyOptions()
 
+    process_attachments: Annotated[
+        bool,
+        Field(
+            description=(
+                "Process PDF embedded file attachments and convert each supported one "
+                "into a separate Markdown file. Off by default."
+            )
+        ),
+    ] = False
+    attachments_max_depth: Annotated[
+        int,
+        Field(
+            ge=0,
+            description=(
+                "Maximum recursion depth for attachment conversion. 0 means list "
+                "attachments without converting; 1 (default) converts top-level "
+                "attachments and lists their own attachments as depth_limited."
+            ),
+        ),
+    ] = 1
+
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
     # Batch sizes for different stages

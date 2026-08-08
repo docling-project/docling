@@ -81,3 +81,4 @@ uvx --from docling docling report.pdf --to md --output /tmp/
 - If the user does not specify a format, ask whether they want **Markdown** (readable) or **JSON / DoclingDocument** (structured, lossless).
 - For tables, prefer `export_to_markdown()` / `export_to_dataframe()` on the table item (Python) — see [references/python-sdk.md](references/python-sdk.md).
 - If a converted PDF comes back near-empty, repeated, or full of `�`, the source is likely scanned or complex layout — retry with OCR or `--pipeline vlm` (see [references/cli.md](references/cli.md)).
+- For PDFs with embedded file attachments, use `--process-attachments` (CLI) or `PdfPipelineOptions(process_attachments=True)` (SDK). Converted attachments become `AttachmentItem`s on `document.attachments` and sidecar Markdown files under `<stem>_attachments/`.

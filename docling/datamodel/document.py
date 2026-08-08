@@ -6,7 +6,7 @@ import re
 import sys
 import tarfile
 import zipfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
@@ -592,6 +592,15 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+
+    _attachment_results: list["ConversionResult"] = PrivateAttr(default_factory=list)
+
+    @property
+    def attachments(self) -> Sequence["ConversionResult"]:
+        # Return a shallow copy to avoid exposing the mutable private list
+        # directly; callers cannot mutate internal attachment state via the
+        # public accessor.
+        return list(self._attachment_results)
 
 
 class _DummyBackend(AbstractDocumentBackend):

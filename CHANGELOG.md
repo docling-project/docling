@@ -1,3 +1,9 @@
+## Unreleased
+
+### Feature
+
+* **pdf attachments:** Process embedded PDF file attachments into separate Markdown documents and link them from the parent ([#attachments](https://github.com/docling-project/docling/issues/attachments))
+
 ## [v2.118.0](https://github.com/docling-project/docling/releases/tag/v2.118.0) - 2026-08-03
 
 ### Feature
