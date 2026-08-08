@@ -2,6 +2,7 @@ from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster
+from docling.datamodel.pipeline_options import LayoutPostprocessorOptions
 from docling.utils.layout_postprocessor import LayoutPostprocessor
 
 
@@ -51,6 +52,7 @@ def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
     # The PICTURE (near-identical bbox, high IoU) must be removed; the TABLE kept.
     processor = object.__new__(LayoutPostprocessor)
     processor.regular_clusters = []
+    processor.options = LayoutPostprocessorOptions()
 
     table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150), confidence=0.72)
     picture = _cluster(2, DocItemLabel.PICTURE, (10, 10, 200, 150), confidence=0.81)
@@ -66,6 +68,7 @@ def test_cross_type_overlaps_keeps_picture_not_overlapping_table() -> None:
     # A genuine figure elsewhere on the page must be preserved.
     processor = object.__new__(LayoutPostprocessor)
     processor.regular_clusters = []
+    processor.options = LayoutPostprocessorOptions()
 
     table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150))
     picture = _cluster(2, DocItemLabel.PICTURE, (10, 300, 200, 450))
@@ -81,11 +84,31 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
     # must NOT be removed -- only a near-coinciding picture is a true mislabel.
     processor = object.__new__(LayoutPostprocessor)
     processor.regular_clusters = []
+    processor.options = LayoutPostprocessorOptions()
 
     table = _cluster(1, DocItemLabel.TABLE, (0, 0, 400, 400))
     small_picture = _cluster(2, DocItemLabel.PICTURE, (10, 10, 60, 60))
 
     result = processor._handle_cross_type_overlaps([table, small_picture])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_keeps_coinciding_picture_when_opted_out() -> None:
+    # With remove_pictures_coinciding_with_tables disabled, the coinciding PICTURE is
+    # kept alongside the TABLE so consumers can still use the rendered crop as a
+    # fallback when table extraction is poor.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+    processor.options = LayoutPostprocessorOptions(
+        remove_pictures_coinciding_with_tables=False
+    )
+
+    table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150), confidence=0.72)
+    picture = _cluster(2, DocItemLabel.PICTURE, (10, 10, 200, 150), confidence=0.81)
+
+    result = processor._handle_cross_type_overlaps([table, picture])
 
     ids = {c.id for c in result}
     assert ids == {1, 2}
