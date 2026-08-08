@@ -1356,6 +1356,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
             return "Code", None
 
+        # The style is not recognizable as a heading by name, but `w:outlineLvl`
+        # is OOXML's own heading marker and is language-independent: values 0-8
+        # denote heading levels 1-9, while 9 means "body text". Honoring it here
+        # keeps headings of localized styles (e.g. "Nadpis1") from being read as
+        # plain text. `Title` is excluded so it keeps reaching its own branch.
+        if label != "Title":
+            outline_level = self._get_outline_level_from_style(paragraph)
+            if outline_level is not None and 1 <= outline_level <= 9:
+                return "Heading", outline_level
+
         return label, None
 
     @classmethod
