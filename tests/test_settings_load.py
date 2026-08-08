@@ -54,6 +54,34 @@ def test_compile_model_defaults_from_settings(monkeypatch):
     assert TransformersVlmEngineOptions().compile_model is True
 
 
+def test_compile_model_defaults_to_false_on_windows(monkeypatch):
+    import importlib
+    import sys
+
+    import docling.datamodel.settings as settings_module
+    from docling.datamodel.object_detection_engine_options import (
+        TransformersObjectDetectionEngineOptions,
+    )
+
+    monkeypatch.delenv("DOCLING_INFERENCE_COMPILE_TORCH_MODELS", raising=False)
+    original_platform = sys.platform
+    monkeypatch.setattr(sys, "platform", "win32")
+    importlib.reload(settings_module)
+
+    try:
+        assert settings_module.settings.inference.compile_torch_models is False
+        assert TransformersObjectDetectionEngineOptions().compile_model is False
+
+        monkeypatch.setenv("DOCLING_INFERENCE_COMPILE_TORCH_MODELS", "True")
+        importlib.reload(settings_module)
+        assert settings_module.settings.inference.compile_torch_models is True
+        assert TransformersObjectDetectionEngineOptions().compile_model is True
+    finally:
+        monkeypatch.setattr(sys, "platform", original_platform)
+        monkeypatch.delenv("DOCLING_INFERENCE_COMPILE_TORCH_MODELS", raising=False)
+        importlib.reload(settings_module)
+
+
 def test_scoped_settings_restores_state():
     import importlib
 
