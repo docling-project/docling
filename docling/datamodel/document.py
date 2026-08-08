@@ -1007,7 +1007,11 @@ class _DocumentConversionInput(BaseModel):
         elif ext in FormatToExtensions[InputFormat.LATEX]:
             mime = FormatToMimeType[InputFormat.LATEX][0]
         elif ext in FormatToExtensions[InputFormat.EMAIL]:
-            mime = FormatToMimeType[InputFormat.EMAIL][0]
+            mime = (
+                "application/vnd.ms-outlook"
+                if ext == "msg"
+                else FormatToMimeType[InputFormat.EMAIL][0]
+            )
         return mime
 
     @staticmethod

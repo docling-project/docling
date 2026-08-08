@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 _EML_SAMPLE = Path(__file__).parent / "data" / "email" / "sources" / "eml_simple.eml"
+_MSG_SAMPLE = Path(__file__).parent / "data" / "email" / "sources" / "msg_simple.msg"
 _HTML_SAMPLE = Path(__file__).parent / "data" / "html" / "sources" / "hyperlink_01.html"
 _MD_SAMPLE = Path(__file__).parent / "data" / "md" / "sources" / "mixed.md"
 _DOCX_SAMPLE = Path(__file__).parent / "data" / "docx" / "sources" / "word_tables.docx"
@@ -46,7 +47,16 @@ def _run_with_blocked_module(
 
 @pytest.mark.parametrize(
     "blocked_module",
-    ["mailparser", "marko", "docx", "pptx", "openpyxl", "pylatexenc", "bs4"],
+    [
+        "mailparser",
+        "oxmsg",
+        "marko",
+        "docx",
+        "pptx",
+        "openpyxl",
+        "pylatexenc",
+        "bs4",
+    ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
     blocked_module: str,
@@ -69,6 +79,14 @@ def test_converter_constructs_without_optional_backend_dependency(
             "docling.backend.email_backend",
             "EmailDocumentBackend",
             _EML_SAMPLE,
+            "EMAIL",
+            "format-email",
+        ),
+        (
+            "oxmsg",
+            "docling.backend.email_backend",
+            "EmailDocumentBackend",
+            _MSG_SAMPLE,
             "EMAIL",
             "format-email",
         ),

@@ -390,6 +390,21 @@ class LatexBackendOptions(BaseBackendOptions):
     )
 
 
+class EmailBackendOptions(BaseBackendOptions):
+    """Options specific to the email backend (``.eml`` and ``.msg``)."""
+
+    kind: Literal["email"] = Field("email", exclude=True, repr=False)
+    list_attachments: bool = Field(
+        False,
+        description=(
+            "Whether to append a list of the email's attachment filenames to "
+            "the converted document. Only the attachment names (and content "
+            "types when available) are listed; the attachments' binary content "
+            "is never embedded. Opt-in (default False)."
+        ),
+    )
+
+
 class XBRLBackendOptions(BaseBackendOptions):
     """Options specific to the XBRL backend."""
 
@@ -603,6 +618,7 @@ BackendOptions = Annotated[
         MsWordBackendOptions,
         OdsBackendOptions,
         LatexBackendOptions,
+        EmailBackendOptions,
         XBRLBackendOptions,
     ],
     Field(discriminator="kind"),
