@@ -2682,6 +2682,36 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ref_for_rich_cell = group_element.get_ref()
         return ref_for_rich_cell
 
+    @staticmethod
+    def _row_cells(row_element: BaseOxmlElement) -> list[BaseOxmlElement]:
+        """Return a row's ``w:tc`` cells in document order.
+
+        Word wraps a cell in a content control (``w:sdt``) for date pickers and
+        for fields bound to document properties, so the cell then sits at
+        ``w:tr/w:sdt/w:sdtContent/w:tc``. ``CT_Row.tc_lst`` only yields direct
+        ``w:tc`` children, so such a cell would be skipped entirely and every
+        later cell in the row would take its grid column.
+
+        Args:
+            row_element: The ``w:tr`` element, or a ``w:sdtContent`` inside one.
+
+        Returns:
+            The row's cells, with content-control wrappers unwrapped.
+        """
+        cells: list[BaseOxmlElement] = []
+        for child in row_element:
+            tag_name = etree.QName(child).localname
+            if tag_name == "tc":
+                cells.append(child)
+            elif tag_name == "sdt":
+                sdt_content = child.find(
+                    "./w:sdtContent",
+                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                )
+                if sdt_content is not None:
+                    cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
+        return cells
+
     def _handle_tables(
         self,
         element: BaseOxmlElement,
@@ -2731,7 +2761,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         open_cells: dict[int, TableCell] = {}
         for row_idx, row in enumerate(table.rows):
             grid_col = row.grid_cols_before
-            for tc in row._tr.tc_lst:
+            for tc in MsWordDocumentBackend._row_cells(row._tr):
                 if grid_col >= num_cols:
                     break
                 col_span = tc.grid_span
