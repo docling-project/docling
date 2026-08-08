@@ -297,6 +297,9 @@ class VlmPipeline(PaginatedPipeline):
             elif response_format_legacy == ResponseFormat.DEEPSEEKOCR_MARKDOWN:
                 conv_res.document = self._parse_deepseekocr_markdown(conv_res)
 
+            elif response_format_legacy == ResponseFormat.UNLIMITED_OCR_MARKDOWN:
+                conv_res.document = self._parse_unlimited_ocr_markdown(conv_res)
+
             elif response_format_legacy == ResponseFormat.MARKDOWN:
                 conv_res.document = self._convert_text_with_backend(
                     conv_res, InputFormat.MD, MarkdownDocumentBackend
@@ -522,6 +525,36 @@ class VlmPipeline(PaginatedPipeline):
             page_docs.append(page_doc)
 
         # Add page metadata and concatenate
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
+
+    def _parse_unlimited_ocr_markdown(
+        self, conv_res: ConversionResult
+    ) -> DoclingDocument:
+        """Parse Unlimited-OCR grounding output into a DoclingDocument.
+
+        The model labels layout blocks the same way DeepSeek-OCR does, so the
+        annotations are normalised and parsed by the DeepSeek-OCR utility.
+        """
+        from docling.utils.deepseekocr_utils import parse_unlimited_ocr_markdown
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            assert page.size is not None
+
+            page_doc = parse_unlimited_ocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+            )
+            page_docs.append(page_doc)
+
         return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
     def _parse_chandra_html(self, conv_res: ConversionResult) -> DoclingDocument:
