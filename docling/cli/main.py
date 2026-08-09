@@ -427,7 +427,63 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
-def export_documents(  # noqa: C901
+def _export_attachment_sidecars(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+) -> None:
+    """Write attachment sidecars for one conversion result.
+
+    Extracted from ``export_documents`` to isolate the attachment export
+    concern (sanitization, collision handling, lazy mkdir) and keep the
+    per-format export loop readable. Failures are logged but do not abort
+    the overall export.
+    """
+    if not conv_res.document.attachments:
+        return
+    try:
+        from docling.utils.pdf_attachments import (
+            sanitize_attachment_filename,
+            unique_target,
+        )
+
+        attach_dir = output_dir / f"{doc_filename}_attachments"
+        seen: set[str] = set()
+        try:
+            conv_attachments = conv_res.attachments  # type: ignore[attr-defined]
+        except AttributeError:
+            conv_attachments = []
+        children_by_name: dict[str, list[ConversionResult]] = {}
+        for _child in conv_attachments:
+            children_by_name.setdefault(_child.input.file.name, []).append(_child)
+        dir_created = False
+        for att in conv_res.document.attachments:
+            if att.status != "converted":
+                continue
+            queue = children_by_name.get(att.name, [])
+            child = queue.pop(0) if queue else None
+            if child is None or child.status != ConversionStatus.SUCCESS:
+                continue
+            sanitized = sanitize_attachment_filename(att.name)
+            stem = Path(sanitized).stem  # always .md output
+            candidate = f"{stem}.md"
+            target_path = unique_target(attach_dir, candidate, seen)
+            if not dir_created:
+                attach_dir.mkdir(parents=True, exist_ok=True)
+                dir_created = True
+            child.document.save_as_markdown(target_path, image_mode=image_export_mode)
+            att.target = target_path.relative_to(output_dir).as_posix()
+    except Exception as exc:
+        _log.warning(
+            "failed to export attachments for %s: %s",
+            doc_filename,
+            exc,
+            exc_info=True,
+        )
+
+
+def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
     export_json: bool,
@@ -641,64 +697,9 @@ def export_documents(  # noqa: C901
                             )
                             + "\n"
                         )
-            # Export attachment sidecars — spec section 5: always when attachments
-            # are present, regardless of parent to_formats (sidecars always
-            # written when processing is on; target is relative POSIX path).
-            if conv_res.document.attachments:
-                try:
-                    from docling.utils.pdf_attachments import (
-                        sanitize_attachment_filename,
-                        unique_target,
-                    )
-
-                    attach_dir = output_dir / f"{doc_filename}_attachments"
-                    seen: set[str] = set()
-                    # Build queue per original name to handle sanitized collisions
-                    # and duplicate basenames (e.g. two "a.txt" attachments). Using
-                    # FIFO per name ensures each att consumes its own child even
-                    # when names collide after sanitization.
-                    # Narrowly scoped probe for ConversionResult.attachments.
-                    # Not all ConversionResult instances may have attachments
-                    # (older pickles/tests); use try/except AttributeError instead
-                    # of broad getattr with default.
-                    try:
-                        conv_attachments = conv_res.attachments  # type: ignore[attr-defined]
-                    except AttributeError:
-                        conv_attachments = []
-                    children_by_name: dict[str, list[ConversionResult]] = {}
-                    for _child in conv_attachments:
-                        children_by_name.setdefault(_child.input.file.name, []).append(
-                            _child
-                        )
-                    # Spec 5: mkdir only when we actually export a sidecar, and
-                    # create it once (not per file). Track lazily.
-                    dir_created = False
-                    for att in conv_res.document.attachments:
-                        if att.status != "converted":
-                            continue
-                        queue = children_by_name.get(att.name, [])
-                        child = queue.pop(0) if queue else None
-                        if child is None or child.status != ConversionStatus.SUCCESS:
-                            continue
-                        sanitized = sanitize_attachment_filename(att.name)
-                        stem = Path(sanitized).stem  # always .md output
-                        candidate = f"{stem}.md"
-                        target_path = unique_target(attach_dir, candidate, seen)
-                        if not dir_created:
-                            attach_dir.mkdir(parents=True, exist_ok=True)
-                            dir_created = True
-                        child.document.save_as_markdown(
-                            target_path, image_mode=image_export_mode
-                        )
-                        # Spec 5: relative POSIX path for serializer link
-                        att.target = target_path.relative_to(output_dir).as_posix()
-                except Exception as exc:
-                    _log.warning(
-                        "failed to export attachments for %s: %s",
-                        doc_filename,
-                        exc,
-                        exc_info=True,
-                    )
+            _export_attachment_sidecars(
+                conv_res, output_dir, doc_filename, image_export_mode
+            )
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")

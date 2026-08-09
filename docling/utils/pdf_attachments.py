@@ -12,11 +12,20 @@ import sys
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 _log = logging.getLogger(__name__)
 
-MAX_ATTACHMENT_BYTES = 200 * 1024 * 1024
+# Align with ``DocumentLimits.max_file_size`` to avoid drift (200 MB default).
+# Imported lazily to avoid circular import at module import time, but the
+# value is materialized here for the ``max_size`` contract with
+# ``PdfDocument.get_attachment_stream``.
+try:
+    from docling.datamodel.settings import DocumentLimits
+
+    MAX_ATTACHMENT_BYTES: int = int(DocumentLimits().max_file_size)
+except Exception:
+    MAX_ATTACHMENT_BYTES = 200 * 1024 * 1024
 
 _WINDOWS_RESERVED = {
     "con",
@@ -43,6 +52,14 @@ _WINDOWS_RESERVED = {
     "lpt9",
 }
 
+if TYPE_CHECKING:
+    from docling_parse.pdf_parser import FileAttachmentAnnotation, PdfDocument
+else:
+    # Runtime aliases — avoid hard dependency on docling-parse for type
+    # checking without installation; string annotations keep typing valid.
+    FileAttachmentAnnotation = object  # type: ignore[misc,assignment]
+    PdfDocument = object  # type: ignore[misc,assignment]
+
 
 @dataclass(frozen=True)
 class RawPdfAttachment:
@@ -52,13 +69,31 @@ class RawPdfAttachment:
     name: str
     mime_type: str | None
     size: int
-    annotations: list[Any]  # List[FileAttachmentAnnotation]
+    annotations: list[FileAttachmentAnnotation]
+
+    @classmethod
+    def from_parse_attachment(cls, index: int, att: object) -> RawPdfAttachment:
+        """Create from a ``docling-parse`` ``PdfAttachment`` object.
+
+        Centralizes the ``PdfAttachment -> RawPdfAttachment`` mapping so
+        both ``extract_pdf_attachments`` and the converter fast-path share
+        the same construction (avoids duplicated 20-line blocks).
+        """
+        # ``att`` is a ``PdfAttachment`` with ``name, mime_type, size,
+        # annotations`` — typed as object to avoid hard import.
+        return cls(
+            index=index,
+            name=att.name,  # type: ignore[attr-defined]
+            mime_type=att.mime_type,  # type: ignore[attr-defined]
+            size=att.size,  # type: ignore[attr-defined]
+            annotations=list(att.annotations),  # type: ignore[attr-defined]
+        )
 
 
 def extract_pdf_attachments(
     source: Path | BytesIO,
     password: str | None = None,
-) -> tuple[list[RawPdfAttachment], object | None]:
+) -> tuple[list[RawPdfAttachment], PdfDocument | None]:
     """Extract attachment metadata from a PDF source.
 
     Loads the PDF via ``DoclingPdfParser`` and calls ``get_attachments()``.
@@ -97,34 +132,25 @@ def extract_pdf_attachments(
 
     result: list[RawPdfAttachment] = []
     for idx, att in enumerate(raw):
-        result.append(
-            RawPdfAttachment(
-                index=idx,
-                name=att.name,
-                mime_type=att.mime_type,
-                size=att.size,
-                annotations=list(att.annotations),
-            )
-        )
+        result.append(RawPdfAttachment.from_parse_attachment(idx, att))
     return result, doc
 
 
-def open_attachment_stream(doc: object, index: int) -> BinaryIO:
+def open_attachment_stream(doc: PdfDocument, index: int) -> BinaryIO:
     """Open a readable stream for attachment ``index`` of ``doc``.
 
     Spec section 8 / docling-parse contract: ``max_size`` is required and
-    enforces ``MAX_ATTACHMENT_BYTES`` (200 MB). Returns ``BinaryIO`` — either
+    enforces ``MAX_ATTACHMENT_BYTES`` (200 MB, aligned with
+    ``DocumentLimits.max_file_size``). Returns ``BinaryIO`` — either
     ``BytesIO`` (small payloads) or a spooled
     ``NamedTemporaryFile``/``_AttachmentDeletingFile`` for larger payloads
     (threshold enforced inside ``PdfDocument.get_attachment_stream``).
     Caller must close the stream (see ``document_converter`` ``finally``).
     """
-
-    # doc is a PdfDocument
-    return doc.get_attachment_stream(index, max_size=MAX_ATTACHMENT_BYTES)  # type: ignore[union-attr]
+    return doc.get_attachment_stream(index, max_size=MAX_ATTACHMENT_BYTES)  # type: ignore[attr-defined]
 
 
-def sanitize_attachment_filename(raw_name: str, **kwargs: Any) -> str:
+def sanitize_attachment_filename(raw_name: str) -> str:
     """Sanitize attachment filename for filesystem use.
 
     Original ``AttachmentItem.name`` is preserved; this is only for the
@@ -133,11 +159,6 @@ def sanitize_attachment_filename(raw_name: str, **kwargs: Any) -> str:
     Spec section 5/8: Windows-safe sanitization — Windows reserved names,
     trailing dots/spaces, and 200-char limit.
     """
-    # Backward-compat for legacy ``name=`` keyword (renamed to ``raw_name``
-    # to avoid shadowing ``Path.name`` and clarify intent).
-    if kwargs:
-        # Pop legacy alias if caller used sanitize_attachment_filename(name=...)
-        raw_name = kwargs.pop("name", raw_name)  # type: ignore[assignment]
     # Basename only — strip directory components (use Path for platform-safe parsing)
     sanitized = Path(raw_name).name or "attachment"
     # Replace path separators and control chars
@@ -169,20 +190,13 @@ def sanitize_attachment_filename(raw_name: str, **kwargs: Any) -> str:
     return sanitized
 
 
-def unique_target(
-    base_dir: Path, candidate: str, seen: set[str], **kwargs: Any
-) -> Path:
+def unique_target(base_dir: Path, candidate: str, seen: set[str]) -> Path:
     """Return a unique path under ``base_dir`` for ``candidate``, using ``_1`` suffix on collision.
 
     Spec section 5: collision handling with ``_1``/``_2`` suffix. ``seen``
     tracks already-used filenames. Case-insensitive only on Windows
     (spec clarification); POSIX remains case-sensitive. Updated in place.
     """
-    # Backward-compat for legacy ``dir=`` keyword (renamed to ``base_dir``
-    # to avoid shadowing builtin ``dir`` and clarify Path semantics).
-    if kwargs and "dir" in kwargs:
-        base_dir = kwargs.pop("dir")  # type: ignore[assignment]
-
     # Spec 5: case-insensitive tracking only on Windows.
     # Prefer pathlib over os.path; OS detection uses sys.platform (pathlib
     # handles filesystem semantics, platform check handles case-sensitivity rule).

@@ -12,6 +12,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
+if TYPE_CHECKING:
+    from docling_core.types.doc import AttachmentStatus
+
+    from docling.utils.pdf_attachments import RawPdfAttachment
+
 from pydantic import ConfigDict, Field, model_validator, validate_call
 from typing_extensions import Self
 
@@ -866,55 +871,33 @@ class DocumentConverter:
             )
         return conv_res
 
-    def _process_pdf_attachments(  # noqa: C901
+    def _collect_raw_attachments(
         self,
-        parent_res: ConversionResult,
         in_doc: InputDocument,
-        pdf_opts: PdfPipelineOptions | None,
-        depth: int,
-    ) -> None:
+        password: str | None,
+    ) -> tuple[list["RawPdfAttachment"], Any | None, Any | None]:
+        """Collect raw attachments — fast-path via backend or fallback re-parse."""
+        from io import BytesIO
         from pathlib import Path as _Path
 
-        from docling_core.types.doc import AttachmentStatus
-        from docling_core.types.doc.common.reference import ProvenanceItem
-
-        from docling.datamodel.base_models import FormatToExtensions
-
-        # Build extension maps — reuse cached helpers to avoid rebuilding per attachment
-        # (see _get_supported_extensions / _get_extension_to_format_map)
-        supported_exts: frozenset[str] = _get_supported_extensions()
-        ext_to_format: dict[str, InputFormat] = _get_extension_to_format_map()
-
-        # Resolve password if available — delegate to narrowed helper that
-        # probes InputDocument.backend_options vs backend.options with
-        # third-party backend compat handling.
-        password = _resolve_pdf_password(in_doc)
-
-        # Collect raw attachments: prefer backend's PdfDocument to avoid re-parse
-        raw_attachments = None
-        pdf_document: Any | None = (
-            None  # PdfDocument when available; Any avoids hard dep on docling-parse
+        from docling.utils.pdf_attachments import (
+            RawPdfAttachment,
+            extract_pdf_attachments,
         )
-        # Narrowly scoped probe for backend's private _backend attr.
-        # InputDocument always creates _backend for valid docs, but invalid
-        # docs may lack it, so AttributeError is possible — probe narrowly.
+
+        raw_attachments: list[RawPdfAttachment] | None = None
+        pdf_document: Any | None = None
         try:
             backend = in_doc._backend  # type: ignore[attr-defined]
         except AttributeError:
             backend = None
+
         try:
-            # Try direct backend PdfDocument
             if backend is not None:
-                # DoclingParseDocumentBackend exposes .dp_doc (PdfDocument);
-                # PyPdfium backend does not. Probe narrowly with try/except
-                # — third-party backend compat.
                 try:
                     pdf_document_candidate = backend.dp_doc  # type: ignore[union-attr]
                 except AttributeError:
                     pdf_document_candidate = None
-                # PdfDocument from docling-parse exposes get_attachments();
-                # other document types do not. Narrow probe required for
-                # backend compat — use direct attribute access, not broad getattr.
                 has_get_attachments = False
                 if pdf_document_candidate is not None:
                     try:
@@ -922,25 +905,13 @@ class DocumentConverter:
                         has_get_attachments = True
                     except AttributeError:
                         has_get_attachments = False
-                # Optimization: reuse already-loaded PdfDocument to avoid re-parse.
-                # This fast-path avoids a second DoclingPdfParser load for the same file.
                 if pdf_document_candidate is not None and has_get_attachments:
                     try:
                         raw_list = pdf_document_candidate.get_attachments()
-                        # Convert to RawPdfAttachment-like objects
-                        from docling.utils.pdf_attachments import RawPdfAttachment
-
-                        raw_attachments = []
-                        for idx, attachment_meta in enumerate(raw_list):
-                            raw_attachments.append(
-                                RawPdfAttachment(
-                                    index=idx,
-                                    name=attachment_meta.name,
-                                    mime_type=attachment_meta.mime_type,
-                                    size=attachment_meta.size,
-                                    annotations=list(attachment_meta.annotations),
-                                )
-                            )
+                        raw_attachments = [
+                            RawPdfAttachment.from_parse_attachment(idx, meta)
+                            for idx, meta in enumerate(raw_list)
+                        ]
                         pdf_document = pdf_document_candidate
                     except Exception as exc:
                         _log.warning(
@@ -950,8 +921,6 @@ class DocumentConverter:
                         )
                         raw_attachments = None
         except Exception as exc:
-            # Narrowly scoped probe for InputDocument.file — in_doc always has file
-            # in normal flow, but fallback is needed for defensive logging.
             try:
                 _file = in_doc.file  # type: ignore[attr-defined]
             except AttributeError:
@@ -965,33 +934,21 @@ class DocumentConverter:
             raw_attachments = None
 
         if raw_attachments is None:
-            # Fallback: re-parse from source via extract_pdf_attachments (spec 3).
-            # This path handles PyPdfium, threaded, and BytesIO parents.
-            # For backends that do not expose dp_doc, log the spec warning but
-            # still attempt re-parse — the file may still be extractable.
             if backend is not None:
                 try:
                     _dp = backend.dp_doc  # type: ignore[union-attr]
                 except AttributeError:
                     _dp = None
                 if _dp is None:
-                    # Non-docling-parse backend — extraction via re-parse may still succeed
                     _log.warning(
                         "backend %s does not support extraction", type(backend).__name__
                     )
-            from docling.utils.pdf_attachments import extract_pdf_attachments
-
-            source = None
-            # Try backend's path_or_stream first. Different backends store
-            # source differently (Path vs BytesIO vs not at all). Narrow probe
-            # with direct attribute access for backend compat
-            # (DoclingParse vs PyPdfium vs threaded).
+            source: Path | BytesIO | None = None
             if backend is not None:
                 try:
                     _ = backend.path_or_stream  # type: ignore[union-attr]
                     has_path_or_stream = True
                 except AttributeError:
-                    # Backend compat: PyPdfium/threaded may not expose path_or_stream
                     has_path_or_stream = False
                 if has_path_or_stream:
                     try:
@@ -1007,15 +964,12 @@ class DocumentConverter:
                             pass
                         source = path_or_stream
                     elif path_or_stream is not None:
-                        # Handle BytesIO-like objects (e.g., SpooledTemporaryFile, _AttachmentDeletingFile)
-                        # Duck-typing: try seek/read
                         try:
                             path_or_stream.seek(0)  # type: ignore[union-attr]
                             source = path_or_stream  # type: ignore[assignment]
                         except Exception:
                             pass
             if source is None:
-                # Try file path on disk — may be PurePath for BytesIO inputs, so guard exists()
                 try:
                     p = _Path(str(in_doc.file))
                     if p.exists() and p.is_file():
@@ -1031,227 +985,241 @@ class DocumentConverter:
                 _log.warning(
                     "attachments skipped: cannot resolve source for %s", in_doc.file
                 )
-                return
+                return [], None, backend
             extracted, pdf_document = extract_pdf_attachments(source, password=password)
             raw_attachments = extracted
 
-        if not raw_attachments:
-            return
+        return raw_attachments or [], pdf_document, backend
 
-        for raw_attachment in raw_attachments:
-            ext = _Path(raw_attachment.name).suffix.lower().lstrip(".")
-            is_supported = ext in supported_exts
+    def _convert_single_attachment(
+        self,
+        raw_attachment: "RawPdfAttachment",
+        pdf_document: Any | None,
+        pdf_opts: PdfPipelineOptions | None,
+        depth: int,
+        parent_res: ConversionResult,
+        in_doc: InputDocument,
+        supported_exts: frozenset[str],
+        ext_to_format: dict[str, InputFormat],
+    ) -> tuple["AttachmentStatus", str | None]:
+        """Decide status and attempt conversion for one raw attachment."""
+        from io import BytesIO
 
-            status: AttachmentStatus | None = None
-            target: str | None = None
-            if depth <= 0:
-                status = "depth_limited"
-                # Still need to create AttachmentItem(s)
-            elif not is_supported:
-                status = "unsupported"
-                _log.warning("attachment %s unsupported .%s", raw_attachment.name, ext)
-            else:
-                # Attempt conversion
-                fmt = ext_to_format.get(ext)
-                if fmt is None or fmt not in self.format_to_options:
-                    status = "unsupported"
-                    _log.warning(
-                        "attachment %s unsupported .%s (no handler)",
-                        raw_attachment.name,
-                        ext,
-                    )
-                else:
-                    # Resolve backend before streaming; if no backend, mark unsupported per spec (remove NoOpBackend fallback)
-                    fmt_option = self.format_to_options.get(fmt)
-                    if fmt_option is not None:
-                        child_backend = fmt_option.backend
-                        child_backend_options = fmt_option.backend_options
-                    else:
-                        child_backend = None
-                        child_backend_options = None
-                    if child_backend is None:
-                        status = "unsupported"
-                        _log.warning(
-                            "attachment %s unsupported .%s (no backend)",
-                            raw_attachment.name,
-                            ext,
-                        )
-                    else:
-                        stream_raw = None
-                        child_res = None
-                        try:
-                            if pdf_document is None:
-                                raise RuntimeError(
-                                    "no PdfDocument available for streaming"
-                                )
-                            from docling.utils.pdf_attachments import (
-                                open_attachment_stream,
-                            )
+        from docling.datamodel.base_models import DocumentStream
 
-                            stream_raw = open_attachment_stream(
-                                pdf_document, raw_attachment.index
-                            )
-                            # Preserve docling-parse's spill optimization:
-                            # small payloads (≤8 MB) arrive as BytesIO and can be
-                            # passed directly to DocumentStream; larger payloads
-                            # arrive as a spooled temp file (BinaryIO) which
-                            # DocumentStream/InputDocument currently typing as
-                            # BytesIO-only — fall back to materializing into
-                            # BytesIO for that case to satisfy the type contract.
-                            try:
-                                stream_raw.seek(0)
-                            except Exception:
-                                pass
-                            if isinstance(stream_raw, BytesIO):
-                                doc_stream = DocumentStream(
-                                    name=raw_attachment.name, stream=stream_raw
-                                )
-                            else:
-                                # Spooled file (NamedTemporaryFile / _AttachmentDeletingFile):
-                                # copy into BytesIO to satisfy DocumentStream's
-                                # BytesIO-only type until core widens to BinaryIO.
-                                import shutil
+        ext = Path(raw_attachment.name).suffix.lower().lstrip(".")
+        is_supported = ext in supported_exts
 
-                                child_bytes = BytesIO()
-                                shutil.copyfileobj(stream_raw, child_bytes)
-                                child_bytes.seek(0)
-                                doc_stream = DocumentStream(
-                                    name=raw_attachment.name, stream=child_bytes
-                                )
-                            original_pdf_option = None
-                            if fmt == InputFormat.PDF:
-                                try:
-                                    child_pdf_opts = pdf_opts.model_copy(  # type: ignore[union-attr]
-                                        update={"attachments_max_depth": depth - 1}
-                                    )
-                                    original_pdf_option = self.format_to_options.get(
-                                        InputFormat.PDF
-                                    )
-                                    self.format_to_options[InputFormat.PDF] = (
-                                        PdfFormatOption(
-                                            pipeline_options=child_pdf_opts,
-                                            backend=child_backend,
-                                            backend_options=child_backend_options,
-                                        )
-                                    )
-                                except Exception as exc:
-                                    _log.warning(
-                                        "failed to copy pdf options for child %s: %s",
-                                        raw_attachment.name,
-                                        exc,
-                                    )
-                                    original_pdf_option = None
-                            try:
-                                child_input = InputDocument(
-                                    path_or_stream=doc_stream.stream,
-                                    format=fmt,
-                                    backend=child_backend,
-                                    backend_options=child_backend_options,
-                                    filename=raw_attachment.name,
-                                    limits=in_doc.limits,
-                                )
-                                child_res = self._process_document(
-                                    child_input, raises_on_error=False
-                                )
-                                if child_res.status == ConversionStatus.SUCCESS:
-                                    status = "converted"
-                                    parent_res._attachment_results.append(child_res)
-                                else:
-                                    status = "failed"
-                                    _log.warning(
-                                        "attachment %s conversion failed: %s",
-                                        raw_attachment.name,
-                                        child_res.errors,
-                                    )
-                            finally:
-                                if original_pdf_option is not None:
-                                    self.format_to_options[InputFormat.PDF] = (
-                                        original_pdf_option
-                                    )
-                        except Exception as e:
-                            status = "failed"
-                            _log.warning(
-                                "attachment %s failed: %s",
-                                raw_attachment.name,
-                                e,
-                                exc_info=True,
-                            )
-                        finally:
-                            if stream_raw is not None:
-                                try:
-                                    stream_raw.close()
-                                except Exception:
-                                    pass
-                        if status is None:
-                            status = "failed"
+        if depth <= 0:
+            return "depth_limited", None
+        if not is_supported:
+            _log.warning("attachment %s unsupported .%s", raw_attachment.name, ext)
+            return "unsupported", None
 
-            # Attach to parent document — prov drives inline vs section
-            # status is guaranteed AttachmentStatus after the guard above
-            assert status is not None
+        fmt = ext_to_format.get(ext)
+        if fmt is None or fmt not in self.format_to_options:
+            _log.warning(
+                "attachment %s unsupported .%s (no handler)",
+                raw_attachment.name,
+                ext,
+            )
+            return "unsupported", None
+
+        fmt_option = self.format_to_options.get(fmt)
+        if fmt_option is not None:
+            child_backend = fmt_option.backend
+            child_backend_options = fmt_option.backend_options
+        else:
+            child_backend = None
+            child_backend_options = None
+        if child_backend is None:
+            _log.warning(
+                "attachment %s unsupported .%s (no backend)",
+                raw_attachment.name,
+                ext,
+            )
+            return "unsupported", None
+
+        stream_raw = None
+        try:
+            if pdf_document is None:
+                raise RuntimeError("no PdfDocument available for streaming")
+            from docling.utils.pdf_attachments import open_attachment_stream
+
+            stream_raw = open_attachment_stream(pdf_document, raw_attachment.index)
             try:
-                if raw_attachment.annotations:
-                    for annotation in raw_attachment.annotations:
-                        # Narrowly scoped probe for bbox compat: docling-parse
-                        # FileAttachmentAnnotation bbox may expose
-                        # to_bounding_box() (converted bbox) or already be a
-                        # BoundingBox. Try/except AttributeError avoids broad
-                        # hasattr on third-party annotation types.
-                        try:
-                            bbox = annotation.bbox.to_bounding_box()  # type: ignore[union-attr]
-                        except AttributeError:
-                            bbox = annotation.bbox
-                        except Exception:
-                            bbox = annotation.bbox
-                        prov = ProvenanceItem(
-                            page_no=int(annotation.page_no) + 1,
-                            bbox=bbox,
-                            charspan=(0, 0),
-                        )
-                        parent_res.document.add_attachment(
-                            name=raw_attachment.name,
-                            mime_type=raw_attachment.mime_type,
-                            size=int(raw_attachment.size)
-                            if raw_attachment.size
-                            else None,
-                            target=target,
-                            status=status,
-                            prov=prov,
-                        )
-                else:
+                stream_raw.seek(0)
+            except Exception:
+                pass
+            if isinstance(stream_raw, BytesIO):
+                doc_stream = DocumentStream(name=raw_attachment.name, stream=stream_raw)
+            else:
+                import shutil
+
+                child_bytes = BytesIO()
+                shutil.copyfileobj(stream_raw, child_bytes)
+                child_bytes.seek(0)
+                doc_stream = DocumentStream(
+                    name=raw_attachment.name, stream=child_bytes
+                )
+
+            original_pdf_option = None
+            if fmt == InputFormat.PDF:
+                try:
+                    child_pdf_opts = pdf_opts.model_copy(  # type: ignore[union-attr]
+                        update={"attachments_max_depth": depth - 1}
+                    )
+                    original_pdf_option = self.format_to_options.get(InputFormat.PDF)
+                    self.format_to_options[InputFormat.PDF] = PdfFormatOption(
+                        pipeline_options=child_pdf_opts,
+                        backend=child_backend,
+                        backend_options=child_backend_options,
+                    )
+                except Exception as exc:
+                    _log.warning(
+                        "failed to copy pdf options for child %s: %s",
+                        raw_attachment.name,
+                        exc,
+                    )
+                    original_pdf_option = None
+            try:
+                child_input = InputDocument(
+                    path_or_stream=doc_stream.stream,
+                    format=fmt,
+                    backend=child_backend,
+                    backend_options=child_backend_options,
+                    filename=raw_attachment.name,
+                    limits=in_doc.limits,
+                )
+                child_res = self._process_document(child_input, raises_on_error=False)
+                if child_res.status == ConversionStatus.SUCCESS:
+                    parent_res._attachment_results.append(child_res)
+                    return "converted", None
+                _log.warning(
+                    "attachment %s conversion failed: %s",
+                    raw_attachment.name,
+                    child_res.errors,
+                )
+                return "failed", None
+            finally:
+                if original_pdf_option is not None:
+                    self.format_to_options[InputFormat.PDF] = original_pdf_option
+        except Exception as e:
+            _log.warning(
+                "attachment %s failed: %s",
+                raw_attachment.name,
+                e,
+                exc_info=True,
+            )
+            return "failed", None
+        finally:
+            if stream_raw is not None:
+                try:
+                    stream_raw.close()
+                except Exception:
+                    pass
+
+    def _create_attachment_items(
+        self,
+        parent_res: ConversionResult,
+        raw_attachment: "RawPdfAttachment",
+        status: "AttachmentStatus",
+        target: str | None,
+    ) -> None:
+        """Attach provenance-aware AttachmentItems to the parent document."""
+        from docling_core.types.doc.common.reference import ProvenanceItem
+
+        try:
+            if raw_attachment.annotations:
+                for annotation in raw_attachment.annotations:
+                    try:
+                        bbox = annotation.bbox.to_bounding_box()  # type: ignore[union-attr]
+                    except AttributeError:
+                        bbox = annotation.bbox
+                    except Exception:
+                        bbox = annotation.bbox
+                    prov = ProvenanceItem(
+                        page_no=int(annotation.page_no) + 1,
+                        bbox=bbox,
+                        charspan=(0, 0),
+                    )
                     parent_res.document.add_attachment(
                         name=raw_attachment.name,
                         mime_type=raw_attachment.mime_type,
                         size=int(raw_attachment.size) if raw_attachment.size else None,
                         target=target,
                         status=status,
+                        prov=prov,
                     )
-            except Exception as e:
-                _log.warning(
-                    "failed to create AttachmentItem for %s: %s",
-                    raw_attachment.name,
-                    e,
-                    exc_info=True,
+            else:
+                parent_res.document.add_attachment(
+                    name=raw_attachment.name,
+                    mime_type=raw_attachment.mime_type,
+                    size=int(raw_attachment.size) if raw_attachment.size else None,
+                    target=target,
+                    status=status,
                 )
+        except Exception as e:
+            _log.warning(
+                "failed to create AttachmentItem for %s: %s",
+                raw_attachment.name,
+                e,
+                exc_info=True,
+            )
 
-        # Cleanup fallback PdfDocument once, after all attachments are streamed,
-        # to avoid Windows file lock. Keep backend's own PdfDocument alive.
-        if pdf_document is not None:
-            try:
-                backend_dp = None
-                if backend is not None:
-                    try:
-                        backend_dp = backend.dp_doc  # type: ignore[union-attr]
-                    except AttributeError:
-                        backend_dp = None
-                if pdf_document is not backend_dp:
-                    try:
-                        pdf_document.unload()  # type: ignore[union-attr]
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+    def _cleanup_pdf_document(
+        self, pdf_document: Any | None, backend: Any | None
+    ) -> None:
+        """Unload fallback PdfDocument but keep backend document alive."""
+        if pdf_document is None:
+            return
+        try:
+            backend_dp = None
+            if backend is not None:
+                try:
+                    backend_dp = backend.dp_doc  # type: ignore[union-attr]
+                except AttributeError:
+                    backend_dp = None
+            if pdf_document is not backend_dp:
+                try:
+                    pdf_document.unload()  # type: ignore[union-attr]
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def _process_pdf_attachments(
+        self,
+        parent_res: ConversionResult,
+        in_doc: InputDocument,
+        pdf_opts: PdfPipelineOptions | None,
+        depth: int,
+    ) -> None:
+        supported_exts: frozenset[str] = _get_supported_extensions()
+        ext_to_format: dict[str, InputFormat] = _get_extension_to_format_map()
+        password = _resolve_pdf_password(in_doc)
+        raw_attachments, pdf_document, backend = self._collect_raw_attachments(
+            in_doc, password
+        )
+        if not raw_attachments:
+            self._cleanup_pdf_document(pdf_document, backend)
+            return
+        for raw_attachment in raw_attachments:
+            status, target = self._convert_single_attachment(
+                raw_attachment,
+                pdf_document,
+                pdf_opts,
+                depth,
+                parent_res,
+                in_doc,
+                supported_exts,
+                ext_to_format,
+            )
+            self._create_attachment_items(parent_res, raw_attachment, status, target)
+        self._cleanup_pdf_document(pdf_document, backend)
 
     def _unload_input_document(self, in_doc: InputDocument) -> None:
+
         # Narrowly scoped probe for private _backend attr; InputDocument
         # creates it during _init_doc but invalid docs may lack it.
         try:
