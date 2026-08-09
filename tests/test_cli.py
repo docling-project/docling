@@ -76,8 +76,16 @@ def test_cli_convert_help():
     assert "layour" not in result.output
     assert "input_sources" not in result.output
     # Spec section 6: new attachment flags appear in help (Rich may truncate long names)
-    assert "process-attachments" in result.output or "process-attac" in result.output or "Convert embedded PDF attachments" in result.output
-    assert "attachments-max-depth" in result.output or "attachments-max" in result.output or "Recursion depth" in result.output
+    assert (
+        "process-attachments" in result.output
+        or "process-attac" in result.output
+        or "Convert embedded PDF attachments" in result.output
+    )
+    assert (
+        "attachments-max-depth" in result.output
+        or "attachments-max" in result.output
+        or "Recursion depth" in result.output
+    )
 
 
 def test_cli_version():

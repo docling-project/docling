@@ -8,16 +8,28 @@ import pytest
 from docling_core.types.doc import DoclingDocument
 
 # Lazily import heavy modules inside tests to avoid collection-time deps (rtree, pypdfium2, docling-ibm-models)
-# ruff: noqa: E402
+
 
 def _lazy_imports():
+    from typer.testing import CliRunner
+
     from docling.cli.main import app
     from docling.datamodel.base_models import ConversionStatus, DocumentStream
     from docling.datamodel.document import ConversionResult, InputDocument
     from docling.datamodel.pipeline_options import PdfPipelineOptions
     from docling.document_converter import DocumentConverter
-    from typer.testing import CliRunner
-    return app, ConversionStatus, DocumentStream, ConversionResult, InputDocument, PdfPipelineOptions, DocumentConverter, CliRunner
+
+    return (
+        app,
+        ConversionStatus,
+        DocumentStream,
+        ConversionResult,
+        InputDocument,
+        PdfPipelineOptions,
+        DocumentConverter,
+        CliRunner,
+    )
+
 
 # No top-level runner; each cli test creates its own CliRunner lazily
 
@@ -145,6 +157,7 @@ def _fake_execute_success(monkeypatch):
 def test_attachments_disabled_is_silent(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("notes.txt", b"hello")])
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -165,6 +178,7 @@ def test_attachments_disabled_is_silent(tmp_path, monkeypatch):
 def test_attachments_enabled_converts_txt(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("notes.txt", b"# Hello from txt\n\nBody")])
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -187,6 +201,7 @@ def test_attachments_enabled_converts_txt(tmp_path, monkeypatch):
 def test_attachments_annotation_is_inline(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("doc.txt", b"hello")], with_annots=True)
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -206,6 +221,7 @@ def test_attachments_annotation_is_inline(tmp_path, monkeypatch):
 def test_attachments_embedded_only_is_section(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("doc.txt", b"hello")], with_annots=False)
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -222,6 +238,7 @@ def test_attachments_embedded_only_is_section(tmp_path, monkeypatch):
 def test_attachments_unsupported_msg(tmp_path, monkeypatch, caplog):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("weird.msg", b"binary")])
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -242,8 +259,9 @@ def test_attachments_unsupported_msg(tmp_path, monkeypatch, caplog):
 
 def test_attachments_failed_gracefully(tmp_path, monkeypatch, caplog):
     from docling.datamodel.base_models import ConversionStatus
-    from docling.document_converter import DocumentConverter
     from docling.datamodel.document import ConversionResult
+    from docling.document_converter import DocumentConverter
+
     # Corrupt attachment: data that will fail conversion when treated as PDF? Use binary that fails as md? md never fails.
     # Instead we embed a PDF attachment with corrupt bytes and ensure status failed.
     corrupt = b"%PDF-1.4 not a real pdf \x00\xff"
@@ -277,6 +295,7 @@ def test_attachments_failed_gracefully(tmp_path, monkeypatch, caplog):
 def test_attachments_depth_zero(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("a.txt", b"hello")])
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -294,6 +313,7 @@ def test_attachments_depth_zero(tmp_path, monkeypatch):
 def test_attachments_depth_limited(tmp_path, monkeypatch):
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
+
     # Parent PDF embeds inner PDF which itself embeds a txt
     inner_txt = b"inner text"
     inner_pdf = _build_pdf(
@@ -346,10 +366,12 @@ def test_attachments_collision(tmp_path):
 
 
 def test_attachments_cli_export_layout(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from docling.cli.main import app
     from docling.datamodel.base_models import ConversionStatus
     from docling.document_converter import DocumentConverter
-    from typer.testing import CliRunner
-    from docling.cli.main import app
+
     runner = CliRunner()
     pdf_bytes = _pdf_with_attachments([("notes.txt", b"hello")])
     pdf_path = tmp_path / "sample.pdf"
@@ -377,14 +399,22 @@ def test_attachments_cli_export_layout(tmp_path, monkeypatch):
         if out_files:
             # Sidecars were still written despite cleanup error — pass
             return
-        assert "PermissionError" in str(result.exception) or "PermissionError" in result.output or "being used by another process" in result.output.lower() or "process-attachments" not in result.output
+        assert (
+            "PermissionError" in str(result.exception)
+            or "PermissionError" in result.output
+            or "being used by another process" in result.output.lower()
+            or "process-attachments" not in result.output
+        )
         return
-    assert out_files, f"expected sidecar md, output: {list(output.rglob('*'))} output={result.output[:500]} | exception={result.exception}"
+    assert out_files, (
+        f"expected sidecar md, output: {list(output.rglob('*'))} output={result.output[:500]} | exception={result.exception}"
+    )
     assert result.exit_code == 0
 
 
 def test_attachments_json_includes_items(tmp_path, monkeypatch):
     from docling.document_converter import DocumentConverter
+
     pdf_bytes = _pdf_with_attachments([("notes.txt", b"hello"), ("bad.msg", b"bin")])
     pdf_path = tmp_path / "sample.pdf"
     pdf_path.write_bytes(pdf_bytes)
@@ -410,7 +440,9 @@ def test_attachments_json_includes_items(tmp_path, monkeypatch):
 
 def test_cli_convert_help_has_flags():
     from typer.testing import CliRunner
+
     from docling.cli.main import app
+
     runner = CliRunner()
     result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0

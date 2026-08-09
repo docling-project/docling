@@ -26,7 +26,9 @@ converter = DocumentConverter(
     }
 )
 
-source = Path("tests/data/pdf/2305.03393v1.pdf")  # replace with a PDF that has embedded files
+source = Path(
+    "tests/data/pdf/2305.03393v1.pdf"
+)  # replace with a PDF that has embedded files
 if source.exists():
     result = converter.convert(source)
     print(f"Status: {result.status}")
@@ -42,4 +44,6 @@ if source.exists():
     # and a trailing ## Attachments section for unanchored ones
     print(result.document.export_to_markdown()[:1000])
 else:
-    print(f"Demo file not found: {source} — create a PDF with embedded files to try this.")
+    print(
+        f"Demo file not found: {source} — create a PDF with embedded files to try this."
+    )
