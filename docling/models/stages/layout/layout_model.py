@@ -1,7 +1,5 @@
 """Deprecated layout stage kept as a thin shim over the object-detection model.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 This whole module is removable once `LayoutOptions` is dropped: it exists only
 so `PdfPipelineOptions(layout_options=LayoutOptions(...))` still resolves
 through `LayoutFactory`. Nothing here runs inference — `LayoutModel` inherits
@@ -25,6 +23,7 @@ from docling.datamodel.stage_model_specs import ObjectDetectionModelSpec
 from docling.models.stages.layout.layout_object_detection_model import (
     LayoutObjectDetectionModel,
 )
+
 
 def _translate(options: LayoutOptions) -> LayoutObjectDetectionOptions:
     """Map deprecated `LayoutOptions` onto `LayoutObjectDetectionOptions`.
@@ -75,11 +74,10 @@ class LayoutModel(LayoutObjectDetectionModel):
             accelerator_options=accelerator_options,
             options=_translate(options),
             enable_remote_services=enable_remote_services,
-       )
+        )
 
     @classmethod
     def get_options_type(cls) -> type[LayoutOptions]:  # ty: ignore[invalid-method-override]
         # LayoutFactory dispatches on the exact options type, so the shim must
         # keep claiming LayoutOptions rather than inheriting the parent's.
         return LayoutOptions
-

@@ -111,11 +111,9 @@ def download_models(
     # Track all failures
     failed_downloads: List[Tuple[str, Exception]] = []
 
-
     common_kwargs = {"force": force, "progress": progress}
     hf_kwargs = {**common_kwargs, "hf_token": hf_token}
     token_kwargs = {**common_kwargs, "token": hf_token}
-
 
     if with_layout:
         _log.info("Downloading layout model...")
@@ -150,6 +148,7 @@ def download_models(
         from docling.models.stages.table_structure.table_structure_model_v2 import (
             TableStructureModelV2,
         )
+
         _log.info("Downloading TableFormerV2 model...")
         _safe_download(
             "TableFormerV2",
@@ -266,6 +265,7 @@ def download_models(
         from docling.models.stages.chart_extraction.granite_vision import (
             ChartExtractionModelGraniteVision,
         )
+
         _log.info("Downloading Granite Vision Charts Extraction model...")
         _safe_download(
             "ChartExtractionModelGraniteVision",
@@ -279,6 +279,7 @@ def download_models(
         from docling.models.stages.chart_extraction.granite_vision import (
             ChartExtractionModelGraniteVisionV4,
         )
+
         _log.info("Downloading Granite Vision 4.1 Charts Extraction model...")
         _safe_download(
             "ChartExtractionModelGraniteVisionV4",
