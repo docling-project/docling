@@ -132,6 +132,7 @@ def download(
                 "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
                 "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
             ),
+        ),
     ] = None,
     hf_token: Annotated[
         str | None,
@@ -178,47 +179,46 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-backend-lang"
             ) from error
-    try: 
-      output_dir = download_models(
-          output_dir=output_dir,
-          force=force,
-          progress=(not quiet),
-          with_layout=_AvailableModels.LAYOUT in to_download,
-          with_tableformer=_AvailableModels.TABLEFORMER in to_download,
-          with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
-          with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
-          with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
-          with_smolvlm=_AvailableModels.SMOLVLM in to_download,
-          with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
-          with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
-          with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
-          with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
-          with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
-          with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
-          in to_download,
-          with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
-          in to_download,
-          with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
-          rapidocr_models=rapidocr_backend_lang,
-          with_easyocr=_AvailableModels.EASYOCR in to_download,
-          easyocr_languages=easyocr_lang,
-          with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
-          hf_token=hf_token,
-      )
-      if quiet:
-          typer.echo(output_dir)
-      else:
-          typer.secho(f"\nModels downloaded into: {output_dir}.", fg="green")
-          console.print(
-              "\n",
-              "Docling can now be configured for running offline using the local artifacts.\n\n",
-              "Using the CLI:",
-              f"`docling --artifacts-path={output_dir} FILE`",
-              "\n",
-              "Using Python: see the documentation at <https://docling-project.github.io/docling/usage>.",
-       )
-
-   except DoclingMultiModelDownloadError as e:
+    try:
+        output_dir = download_models(
+            output_dir=output_dir,
+            force=force,
+            progress=(not quiet),
+            with_layout=_AvailableModels.LAYOUT in to_download,
+            with_tableformer=_AvailableModels.TABLEFORMER in to_download,
+            with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
+            with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
+            with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
+            with_smolvlm=_AvailableModels.SMOLVLM in to_download,
+            with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
+            with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
+            with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
+            with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
+            with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
+            with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
+            in to_download,
+            with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
+            in to_download,
+            with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
+            rapidocr_models=rapidocr_backend_lang,
+            with_easyocr=_AvailableModels.EASYOCR in to_download,
+            easyocr_languages=easyocr_lang,
+            with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
+            hf_token=hf_token,
+        )
+        if quiet:
+            typer.echo(output_dir)
+        else:
+            typer.secho(f"\nModels downloaded into: {output_dir}.", fg="green")
+            console.print(
+                "\n",
+                "Docling can now be configured for running offline using the local artifacts.\n\n",
+                "Using the CLI:",
+                f"`docling --artifacts-path={output_dir} FILE`",
+                "\n",
+                "Using Python: see the documentation at <https://docling-project.github.io/docling/usage>.",
+            )
+    except DoclingMultiModelDownloadError as e:
         if quiet:
             typer.echo(output_dir)
         else:
