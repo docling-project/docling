@@ -4,3 +4,6 @@ item-0 at level 0: unspecified: group _root_
     item-3 at level 2: picture
       item-3 at level 3: caption: Wild Duck Observations by Year
   item-4 at level 1: caption: Wild Duck Observations by Year
+  item-5 at level 1: chapter: group slide-1
+    item-6 at level 2: title: Quarterly revenue
+    item-7 at level 2: picture

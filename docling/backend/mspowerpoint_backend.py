@@ -1056,7 +1056,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             chart_type = None
         classification = self._chart_type_to_classification(chart_type)
         caption_text = self._chart_title_text(chart)
-        table_data = self._chart_to_table_data(chart)
+        try:
+            table_data = self._chart_to_table_data(chart)
+        except (AttributeError, ValueError, KeyError) as exc:
+            _log.warning("Could not extract chart data: %s", exc)
+            table_data = None
 
         prov = self._generate_prov(shape, slide_ind, "", slide_size)
 
