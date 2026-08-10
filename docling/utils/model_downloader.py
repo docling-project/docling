@@ -128,10 +128,11 @@ def download_models(
             _safe_download(
                 repo_id,
                 download_hf_model,
+                failed_downloads,
                 repo_id=repo_id,
                 revision=revision,
                 local_dir=output_dir / repo_id.replace("/", "--"),
-                **hf_kwargs,
+                **token_kwargs,
             )
 
     if with_tableformer:
