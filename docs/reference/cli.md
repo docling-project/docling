@@ -194,7 +194,7 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/dol/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
@@ -219,7 +219,7 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/dol/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 
