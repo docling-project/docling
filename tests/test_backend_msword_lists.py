@@ -4,7 +4,9 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
-from docling_core.types.doc import ListItem
+from io import BytesIO
+
+from docling_core.types.doc import DoclingDocument, DocumentOrigin, ListGroup, ListItem
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -94,3 +96,69 @@ def test_ordered_list_resumes_numbering_after_intervening_list(tmp_path):
         ("bullet two", ""),
         ("Third ordered item", "3."),
     ]
+
+
+def test_manage_list_structure_no_keyerror_when_use_level_exceeds_parents(tmp_path):
+    """_manage_list_structure must not raise KeyError when use_level exceeds parents.
+
+    The pathological state is:
+      - parents has keys 0..11, with key 0 set to None (cleared) and others
+        holding NodeItems from headings / earlier lists.
+      - level_at_new_list is 11 (set by the previous list item of the same numId).
+      - A second item for the same numId arrives with ilevel=2, which triggers
+        the "New list sequence" branch and computes use_level = 11 + 2 = 13.
+      - parents.get(12) is not a key at all → previously raised KeyError: 12.
+    """
+
+    docx_io = _make_empty_docx()
+    docx_path = tmp_path / "empty.docx"
+    docx_path.write_bytes(docx_io.getvalue())
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    backend = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path)
+
+    out_doc = DoclingDocument(
+        name="test",
+        origin=DocumentOrigin(
+            filename="test.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            binary_hash="0",
+        ),
+    )
+
+    body_node = out_doc.body
+    first_list_gr = out_doc.add_list_group(name="list", parent=body_node)
+    backend.parents = dict.fromkeys(range(12), body_node)
+    backend.parents[0] = None  # gap that makes _get_level() return 0
+    backend.parents[11] = first_list_gr
+
+    # Simulate history: the immediately previous item was numid=27, ilevel=2.
+    backend.history = {
+        "names": [None, "list"],
+        "levels": [None, 11],
+        "numids": [None, 27],
+        "indents": [None, 2],
+    }
+    backend.level_at_new_list = 11
+    backend.last_numid = 27
+
+    # This must not raise KeyError.
+    elem_ref, use_level = backend._manage_list_structure(
+        doc=out_doc, numid=27, ilevel=2
+    )
+
+    assert isinstance(backend.parents.get(use_level), ListGroup)
+
+
+def _make_empty_docx():
+    """Return an in-memory .docx with no content."""
+
+    buf = BytesIO()
+    Document().save(buf)
+    buf.seek(0)
+    return buf

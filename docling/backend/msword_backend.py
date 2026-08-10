@@ -2543,7 +2543,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             list_gr = self._get_or_create_list_group(
                 doc=doc,
                 numid=numid,
-                parent=self.parents[use_level - 1],
+                parent=self.parents.get(use_level - 1),
                 elem_ref=elem_ref,
             )
 
