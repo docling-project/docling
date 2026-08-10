@@ -13,6 +13,7 @@ tests/data/**
 .plans/active/docling-slim.md
 CHANGELOG.md
 docling/backend/html_backend.py
+docling/backend/msexcel_backend.py
 docling/backend/msword_backend.py
 docling/backend/xml/uspto_backend.py
 docling/backend/opendocument_backend.py
@@ -26,3 +27,4 @@ docling/cli/main.py
 tests/test_service_client_sdk_unit.py
 tests/test_backend_opendocument.py
 tests/test_backend_html.py
+tests/test_backend_msword.py

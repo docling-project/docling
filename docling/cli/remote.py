@@ -18,6 +18,7 @@ import typer
 from docling_core.types.doc import ImageRefMode
 
 from docling.cli.export_utils import _export_flags_from_formats, _split_list
+from docling.cli.main import ChunkerType
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
@@ -170,6 +171,21 @@ def convert_remote(
             help="Output formats to produce and write locally. Defaults to Markdown.",
         ),
     ] = None,
+    chunker_type: ChunkerType = typer.Option(
+        ChunkerType.HYBRID,
+        "--chunks-type",
+        help="Chunker type for '--to chunks'.",
+    ),
+    chunk_max_tokens: int | None = typer.Option(
+        None,
+        "--chunks-max-tokens",
+        help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
+    ),
+    chunk_tokenizer: str = typer.Option(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "--chunks-tokenizer",
+        help="HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid.",
+    ),
     ocr: Annotated[
         bool,
         typer.Option(
@@ -361,6 +377,9 @@ def convert_remote(
                 print_timings=False,
                 export_timings=False,
                 image_export_mode=resolved_image_mode,
+                chunker_type=chunker_type,
+                chunk_max_tokens=chunk_max_tokens,
+                chunk_tokenizer=chunk_tokenizer,
             )
         except typer.Exit:
             raise

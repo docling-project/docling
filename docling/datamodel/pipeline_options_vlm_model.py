@@ -103,6 +103,7 @@ class ResponseFormat(str, Enum):
     DOCLANG = "doclang"
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
+    UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"

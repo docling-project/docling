@@ -15,6 +15,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.base_model import BaseVlmPageModel
 
+from .groundtruth_paths import get_regular_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -56,7 +57,9 @@ def test_convert_path(converter: DocumentConverter):
     # Avoid heavy torch-dependent models by not instantiating layout models here in coverage run
     doc_result = converter.convert(pdf_path)
     verify_conversion_result_v2(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
+        gt=get_regular_groundtruth_paths(pdf_path),
+        doc_result=doc_result,
+        generate=GENERATE,
     )
 
 
@@ -69,7 +72,9 @@ def test_convert_stream(converter: DocumentConverter):
 
     doc_result = converter.convert(stream)
     verify_conversion_result_v2(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
+        gt=get_regular_groundtruth_paths(pdf_path),
+        doc_result=doc_result,
+        generate=GENERATE,
     )
 
 

@@ -56,7 +56,7 @@ dprint-fix: ## Run dprint formatter.
 	uv run --no-sync dprint fmt --config .github/dprint.json --config-discovery=false
 
 test: ## Run the default test suite.
-	uv run pytest -v
+	uv run pytest -v tests
 
 docs-render: ## Pre-render notebooks and CLI reference for the docs site.
 	uv run --no-sync python scripts/render_notebooks.py

@@ -9,6 +9,7 @@ This module defines:
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
 from pydantic import BaseModel, Field
@@ -22,6 +23,7 @@ from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR_GROUNDING_PROMPT,
 )
 from docling.models.inference_engines.image_classification.base import (
     ImageClassificationEngineType,
@@ -163,14 +165,23 @@ class VlmModelSpec(BaseModel):
         default_factory=list, description="Stop strings for generation"
     )
 
+    temperature: float = Field(
+        default=0.0, description="Sampling temperature for generation"
+    )
+
     max_new_tokens: int = Field(
         default=4096, description="Maximum number of new tokens to generate"
     )
 
-    temperature: float = Field(
-        default=0.0,
-        description="Sampling temperature for generation. 0.0 uses greedy decoding.",
+    extra_generation_config: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional generation configuration"
     )
+
+    _RUNTIME_INPUT_OVERRIDE_KEYS: ClassVar[Set[str]] = {
+        "transformers_prompt_style",
+        "extra_processor_kwargs",
+        "custom_stopping_criteria",
+    }
 
     def get_repo_id(self, engine_type: VlmEngineType) -> str:
         """Get the repository ID for a specific engine.
@@ -259,6 +270,34 @@ class VlmModelSpec(BaseModel):
             torch_dtype=torch_dtype,
             extra_config=extra_config,
         )
+
+    def get_runtime_input_extra_config(
+        self, engine_type: VlmEngineType
+    ) -> Dict[str, Any]:
+        """Build runtime input config for a specific engine.
+
+        This returns only the subset of model/engine configuration that should
+        flow into ``VlmEngineInput.extra_generation_config``. Load-time engine
+        options such as ``torch_dtype`` or ``transformers_model_type`` remain in
+        ``EngineModelConfig.extra_config`` and are intentionally excluded.
+        """
+
+        runtime_config: Dict[str, Any] = deepcopy(self.extra_generation_config)
+
+        if engine_type not in self.engine_overrides:
+            return runtime_config
+
+        override_config = self.engine_overrides[engine_type].extra_config
+        nested_generation_config = override_config.get("extra_generation_config")
+
+        if isinstance(nested_generation_config, dict):
+            runtime_config.update(deepcopy(nested_generation_config))
+
+        for key in self._RUNTIME_INPUT_OVERRIDE_KEYS:
+            if key in override_config:
+                runtime_config[key] = deepcopy(override_config[key])
+
+        return runtime_config
 
     def has_explicit_engine_export(self, engine_type: VlmEngineType) -> bool:
         """Check if this model has an explicit export for the given engine.
@@ -967,6 +1006,55 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
 )
 
+# Only Heron has an ONNX export, hence no engine_overrides on the variants below.
+OBJECT_DETECTION_LAYOUT_HERON_101 = ObjectDetectionStagePreset(
+    preset_id="layout_heron_101",
+    name="Layout Heron 101",
+    description="RT-DETR layout-heron model (ResNet101)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron_101",
+        repo_id="docling-project/docling-layout-heron-101",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM = ObjectDetectionStagePreset(
+    preset_id="layout_egret_medium",
+    name="Layout Egret Medium",
+    description="D-FINE layout-egret model (medium)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_medium",
+        repo_id="docling-project/docling-layout-egret-medium",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_LARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_large",
+    name="Layout Egret Large",
+    description="D-FINE layout-egret model (large)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_large",
+        repo_id="docling-project/docling-layout-egret-large",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_XLARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_xlarge",
+    name="Layout Egret XLarge",
+    description="D-FINE layout-egret model (xlarge)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_xlarge",
+        repo_id="docling-project/docling-layout-egret-xlarge",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
 
 # -----------------------------------------------------------------------------
 # IMAGE CLASSIFICATION PRESETS
@@ -1529,6 +1617,33 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
 # -----------------------------------------------------------------------------
 # CHANDRA / DOTS VLM_CONVERT PRESETS
 # -----------------------------------------------------------------------------
+
+VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
+    preset_id="unlimited_ocr",
+    name="Unlimited-OCR",
+    description="Unlimited-OCR model for document layout parsing with bounding boxes (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR",
+        default_repo_id="baidu/Unlimited-OCR",
+        prompt=UNLIMITED_OCR_GROUNDING_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        max_new_tokens=8192,
+        api_overrides={
+            # The model has no chat template, and its grounding markers are special
+            # tokens: without skip_special_tokens=False the layout annotations are
+            # stripped from the completion and the page comes back as flat text.
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "unlimited-ocr",
+                    "max_tokens": 8192,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
 
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",

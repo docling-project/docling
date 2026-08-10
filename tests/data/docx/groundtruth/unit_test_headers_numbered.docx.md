@@ -56,3 +56,9 @@ Paragraph 2.1.2
             - 2.3.8.1. First sub-item at this level
             - 2.3.8.2. Second sub-item at this level
             - 2.3.8.3. Third sub-item at this level
+
+### REFERENCES
+
+This is the first reference.
+
+This is the second reference.

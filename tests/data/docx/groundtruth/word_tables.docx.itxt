@@ -17,3 +17,7 @@ item-0 at level 0: unspecified: group _root_
       item-16 at level 3: table with [9x5]
       item-17 at level 3: text: 
       item-18 at level 3: text: 
+      item-19 at level 3: text: A non-uniform table with a row starting late
+      item-20 at level 3: table with [2x2]
+      item-21 at level 3: text: A non-uniform table with a vertical span over a row starting late
+      item-22 at level 3: table with [2x3]

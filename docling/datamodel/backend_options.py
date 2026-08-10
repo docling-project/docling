@@ -1,7 +1,17 @@
+from enum import Enum
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr, conint
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    SecretStr,
+    conint,
+    model_validator,
+)
 
 
 class BaseBackendOptions(BaseModel):
@@ -134,6 +144,10 @@ class MarkdownBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the markdown document."
         ),
     )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
 
 
 class EpubBackendOptions(BaseBackendOptions):
@@ -165,6 +179,14 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+    enforce_same_font: bool = Field(
+        True,
+        description=(
+            "Whether docling-parse should split text cells at font boundaries. "
+            "Disable this when PDFs use separate fonts for base glyphs and "
+            "diacritics that should remain in the same text cell."
+        ),
+    )
 
 
 class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
@@ -222,6 +244,29 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "cells) as TextItem instead of TableItem."
         ),
     )
+
+    parse_charts: bool = Field(
+        True,
+        description=(
+            "Whether to parse native charts embedded in worksheets and chart "
+            "sheets. Each chart becomes a PictureItem classified by chart type "
+            "(bar, line, pie, scatter) and carrying the chart's underlying data "
+            "reconstructed as a table. Set to False to skip chart parsing."
+        ),
+    )
+
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart is isolated into a temporary "
+            "workbook and rasterized with LibreOffice, the same external tool "
+            "used for EMF/WMF images. Opt-in (default False) because it "
+            "requires a LibreOffice installation and inflates the output size. "
+            "Only takes effect when parse_charts is True."
+        ),
+    )
+
     gap_tolerance: int = Field(
         0,
         description=(
@@ -236,6 +281,44 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "When set, only sheets whose names appear in this list will be processed. "
             "Sheet names are matched case-sensitively. "
             "Set to None (default) to include all sheets."
+        ),
+    )
+
+
+class MsPowerpointBackendOptions(BaseBackendOptions):
+    """Options specific to the MS PowerPoint backend."""
+
+    kind: Literal["pptx"] = Field("pptx", exclude=True, repr=False)
+
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart's slide is isolated into a "
+            "temporary presentation and rasterized with LibreOffice, the same "
+            "external tool used for EMF/WMF images. Opt-in (default False) "
+            "because it requires a LibreOffice installation and inflates the "
+            "output size. Charts always keep their classification and "
+            "reconstructed tabular data regardless of this option."
+        ),
+    )
+
+
+class MsWordBackendOptions(BaseBackendOptions):
+    """Options specific to the MS Word backend."""
+
+    kind: Literal["docx"] = Field("docx", exclude=True, repr=False)
+
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart drawing is isolated into a "
+            "temporary document and rasterized with LibreOffice, the same "
+            "external tool used for EMF/WMF images. Opt-in (default False) "
+            "because it requires a LibreOffice installation and inflates the "
+            "output size. Charts always keep their classification and "
+            "reconstructed tabular data regardless of this option."
         ),
     )
 
@@ -326,9 +409,189 @@ class XBRLBackendOptions(BaseBackendOptions):
     ] = None
 
 
+class EbcdicFieldType(str, Enum):
+    """Storage type of a field inside an EBCDIC record.
+
+    The names map to the COBOL usages found in a copybook: `string` is
+    `USAGE DISPLAY` character data, `integer`/`unsigned_integer` are
+    `COMP`/`BINARY`, `packed_decimal` is `COMP-3`, and `zoned_decimal` is
+    signed `USAGE DISPLAY` numeric data. `skip` covers fillers whose bytes
+    are consumed but never decoded.
+    """
+
+    STRING = "string"
+    INTEGER = "integer"
+    UNSIGNED_INTEGER = "unsigned_integer"
+    PACKED_DECIMAL = "packed_decimal"
+    ZONED_DECIMAL = "zoned_decimal"
+    SKIP = "skip"
+
+
+class EbcdicField(BaseModel):
+    """A single fixed-width field of an EBCDIC record."""
+
+    name: Annotated[str, Field(description="Column name of the decoded field.")]
+    size: Annotated[PositiveInt, Field(description="Field width in bytes.")]
+    type: Annotated[
+        EbcdicFieldType, Field(description="How the bytes are decoded.")
+    ] = EbcdicFieldType.STRING
+    scale: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Number of implied decimal digits of a numeric field, i.e. the "
+                "digits after `V` in the COBOL picture clause."
+            )
+        ),
+    ] = 0
+
+
+class EbcdicRecordLayout(BaseModel):
+    """Field layout of one record schema, i.e. a single COBOL copybook."""
+
+    fields: Annotated[
+        list[EbcdicField],
+        Field(min_length=1, description="Fields in physical record order."),
+    ]
+    name: Annotated[
+        str, Field(description="Name of the schema, used as the table heading.")
+    ] = "record"
+    selector: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Value of the record-type prefix that selects this schema. "
+                "Required as soon as a layout defines more than one schema."
+            )
+        ),
+    ] = None
+
+    @property
+    def size(self) -> int:
+        """Length in bytes of a record following this layout."""
+        return sum(item.size for item in self.fields)
+
+
+class EbcdicLayout(BaseModel):
+    """Parsing rules for an EBCDIC data file.
+
+    A layout describes the bytes to ignore at the file boundaries, the optional
+    prefix carried by every record, and the record schemas themselves. Records
+    are fixed-length unless `record_length_field` declares a length prefix.
+    """
+
+    records: Annotated[
+        list[EbcdicRecordLayout],
+        Field(min_length=1, description="Record schemas present in the file."),
+    ]
+    description: Annotated[
+        str, Field(description="Free-text description of the layout.")
+    ] = ""
+    header_size: Annotated[
+        NonNegativeInt, Field(description="Bytes to skip at the start of the file.")
+    ] = 0
+    footer_size: Annotated[
+        NonNegativeInt, Field(description="Bytes to skip at the end of the file.")
+    ] = 0
+    record_length_field: Annotated[
+        Optional[EbcdicField],
+        Field(
+            description=(
+                "Prefix field holding the total record length, prefix included. "
+                "Set it for variable-length records; leave it unset when every "
+                "record has the fixed size of its schema."
+            )
+        ),
+    ] = None
+    record_type_field: Annotated[
+        Optional[EbcdicField],
+        Field(
+            description=(
+                "Prefix field whose value selects the record schema. Required "
+                "for multi-schema files."
+            )
+        ),
+    ] = None
+
+    @property
+    def prefix_fields(self) -> list[EbcdicField]:
+        """Prefix fields read ahead of every record, in physical order."""
+        return [
+            item
+            for item in (self.record_length_field, self.record_type_field)
+            if item is not None
+        ]
+
+    @property
+    def prefix_size(self) -> int:
+        """Length in bytes of the prefix read ahead of every record."""
+        return sum(item.size for item in self.prefix_fields)
+
+    def select(self, record_type: Optional[str]) -> Optional[EbcdicRecordLayout]:
+        """Return the schema matching a record-type value, if any."""
+        if self.record_type_field is None:
+            return self.records[0]
+        return next(
+            (item for item in self.records if item.selector == record_type), None
+        )
+
+    @model_validator(mode="after")
+    def _validate_records(self) -> "EbcdicLayout":
+        if len(self.records) > 1 and self.record_type_field is None:
+            raise ValueError(
+                "record_type_field is required for a layout with several records"
+            )
+        if self.record_type_field is not None:
+            selectors = [item.selector for item in self.records]
+            if None in selectors:
+                raise ValueError(
+                    "every record needs a selector when record_type_field is set"
+                )
+            if len(set(selectors)) != len(selectors):
+                raise ValueError("record selectors must be unique")
+        return self
+
+
+class EbcdicBackendOptions(BaseBackendOptions):
+    """Options specific to the EBCDIC backend."""
+
+    kind: Annotated[Literal["ebcdic"], Field(exclude=True, repr=False)] = "ebcdic"
+    encoding: Annotated[
+        str,
+        Field(
+            description=(
+                "Python codec used to decode character data, e.g. `cp037` "
+                "(US/Canada), `cp500` (international) or `cp1140` (euro)."
+            )
+        ),
+    ] = "cp037"
+    layout: Annotated[
+        Optional[EbcdicLayout], Field(description="Parsing rules for the file.")
+    ] = None
+    layout_file: Annotated[
+        Optional[Path],
+        Field(description="Path to a JSON file holding the parsing rules."),
+    ] = None
+    max_records: Annotated[
+        Optional[PositiveInt],
+        Field(description="Stop after this many records. Unset reads the whole file."),
+    ] = None
+    strip_control_characters: Annotated[
+        bool,
+        Field(description="Drop control characters from decoded character data."),
+    ] = True
+
+    @model_validator(mode="after")
+    def _validate_layout_source(self) -> "EbcdicBackendOptions":
+        if self.layout is not None and self.layout_file is not None:
+            raise ValueError("set either layout or layout_file, not both")
+        return self
+
+
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
@@ -336,6 +599,8 @@ BackendOptions = Annotated[
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
+        MsPowerpointBackendOptions,
+        MsWordBackendOptions,
         OdsBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,

@@ -71,7 +71,7 @@ item-0 at level 0: unspecified: group _root_
           item-70 at level 5: list: group list
             item-71 at level 6: list_item: Single item of a new list
           item-72 at level 5: text: 
-        item-73 at level 4: section_header: Style-based lists:
+        item-73 at level 4: section_header: Test 8: Style-based lists:
           item-74 at level 5: text: Docling should extract the list  ...  the formatting comes from the styles:
           item-75 at level 5: list: group list
             item-76 at level 6: list_item: First item
@@ -82,3 +82,28 @@ item-0 at level 0: unspecified: group _root_
               item-81 at level 7: list_item: Sub-item B
             item-82 at level 6: list_item: Fourth item
           item-83 at level 5: text: 
+        item-84 at level 4: section_header: Test 9: List continuity with non-empty text
+          item-85 at level 5: text: 
+          item-86 at level 5: list: group list
+            item-87 at level 6: list_item: ORCHARD MAP AND GARDEN NOTES
+            item-88 at level 6: list: group list
+              item-89 at level 7: list_item: Morning Walk
+          item-90 at level 5: text: The gravel path bent around a qu ... d where ducks drifted in slow circles.
+          item-91 at level 5: text: A wooden bench near the willow s ... d last week's newspaper under a stone.
+          item-92 at level 5: list: group list
+            item-93 at level 6: list_item: Greenhouse Shelves
+          item-94 at level 5: text: Tomato seedlings leaned toward t ... s as afternoon light warmed the trays.
+          item-95 at level 5: list: group list
+            item-96 at level 6: list_item: WEEKEND ERRAND LIST
+            item-97 at level 6: list: group list
+              item-98 at level 7: list_item: Market Stops
+              item-99 at level 7: list: group list
+                item-100 at level 8: list_item: Buy fresh bread from the corner bakery
+                item-101 at level 8: list_item: Pick up citrus and green onions
+                item-102 at level 8: list_item: Return the borrowed library novels
+              item-103 at level 7: list_item: Kitchen Tasks
+            item-104 at level 6: list_item: WORKSHOP AND TOOL SHED
+            item-105 at level 6: list: group list
+              item-106 at level 7: list_item: Bench Setup
+          item-107 at level 5: text: The spare clamps were sorted into labeled tins along the lower shelf.
+          item-108 at level 5: text: 

@@ -65,12 +65,14 @@ from docling.datamodel.base_models import (
     FailureCategory,
     FormatToExtensions,
     FormatToMimeType,
+    HttpSource,
     InputFormat,
     MimeTypeToFormat,
     Page,
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
+from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 
@@ -113,6 +115,11 @@ class InputRejection(NamedTuple):
 
     message: str
     category: FailureCategory
+    # The exception that caused the rejection, when one exists. Lets the
+    # converter re-raise ``ConversionError`` with ``from`` so applications can
+    # classify failures via ``__cause__`` (e.g. an encrypted PDF surfaces the
+    # underlying ``PdfiumError``). See issue #1920.
+    original_error: Optional[BaseException] = None
 
 
 class InputDocument(BaseModel):
@@ -219,6 +226,7 @@ class InputDocument(BaseModel):
             self._rejection = self._rejection or InputRejection(
                 message=f"File {self.file.name} not found or cannot be opened.",
                 category=FailureCategory.SOURCE_UNAVAILABLE,
+                original_error=e,
             )
             _log.exception(
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
@@ -234,6 +242,7 @@ class InputDocument(BaseModel):
                     f"{self.file.name}."
                 ),
                 category=FailureCategory.UNKNOWN,
+                original_error=e,
             )
             _log.exception(
                 "An unexpected error occurred while opening the document "
@@ -313,6 +322,7 @@ class InputDocument(BaseModel):
             self._rejection = InputRejection(
                 message=str(exc) or "The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
+                original_error=exc,
             )
             return
 
@@ -322,6 +332,20 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+
+def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
+    """Return the exception behind an invalid input document, if one exists.
+
+    Companion to ``build_invalid_input_errors``: lets the converter raise
+    ``ConversionError`` with ``from`` so the original backend exception (e.g.
+    ``PdfiumError`` for an encrypted PDF) stays reachable via ``__cause__``
+    for programmatic error classification. See issue #1920.
+    """
+    rejection = in_doc._rejection
+    if rejection is None:
+        return None
+    return rejection.original_error
 
 
 def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
@@ -564,6 +588,11 @@ class ConversionResult(ConversionAssets):
     input: InputDocument
     assembled: AssembledUnit = AssembledUnit()
 
+    # PDF bookmark/ToC outline, surfaced from the backend for the heading-hierarchy stage.
+    # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
+    # the heading stage resets it to None once consumed.
+    _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+
 
 class _DummyBackend(AbstractDocumentBackend):
     def __init__(self, *args, **kwargs):
@@ -585,7 +614,7 @@ class _DummyBackend(AbstractDocumentBackend):
 
 
 class _DocumentConversionInput(BaseModel):
-    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
+    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
     limits: Optional[DocumentLimits] = DocumentLimits()
 
@@ -594,11 +623,24 @@ class _DocumentConversionInput(BaseModel):
         format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
-            if isinstance(item, str):
+            # `backend_input` is what backend_options_for_input() sees: the raw
+            # URL string (not the HttpSource model) so HTML source_uri resolution
+            # keeps working unchanged.
+            backend_input: Union[Path, str, DocumentStream]
+            if isinstance(item, (str, HttpSource)):
+                if isinstance(item, HttpSource):
+                    source_uri = str(item.url)
+                    # Per-source headers override the batch-wide headers; the
+                    # batch dict stays the base so the `headers` arg keeps working.
+                    req_headers = {**(self.headers or {}), **item.headers}
+                else:
+                    source_uri = item
+                    req_headers = self.headers
+                backend_input = source_uri
                 try:
                     obj = resolve_source_to_stream(
-                        item,
-                        self.headers,
+                        source_uri,
+                        req_headers,
                         max_file_size=self.limits.max_file_size,
                     )
                 except FileSizeLimitExceededError as exc:
@@ -626,13 +668,14 @@ class _DocumentConversionInput(BaseModel):
                     # covers all HTTP fetch errors without importing requests here.
                     _log.error("Failed to resolve input source %r: %s", item, exc)
                     yield self._build_invalid_input_document(
-                        name=self._filename_from_source(item),
+                        name=self._filename_from_source(source_uri),
                         format_options=format_options,
                         rejection=self._classify_source_error(exc),
                     )
                     continue
             else:
                 obj = item
+                backend_input = item
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
@@ -645,7 +688,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                backend_options = options.backend_options_for_input(item)
+                backend_options = options.backend_options_for_input(backend_input)
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -725,13 +768,19 @@ class _DocumentConversionInput(BaseModel):
         if isinstance(obj, Path):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_dclx_extension(obj.name):
+                return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
             obj_ext = obj.suffix[1:] if obj.suffix else ""
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
-            if mime is None:  # must guess from content
+            needs_content_sniff = mime is None or (
+                mime is not None
+                and mime.lower() in {"application/xml", "application/xhtml+xml"}
+            )
+            if needs_content_sniff:
                 with obj.open("rb") as f:
-                    content = f.read(1024)  # Read first 1KB
+                    content = f.read(1024)
             if mime is not None and mime.lower() == "application/zip":
                 mime_root = "application/vnd.openxmlformats-officedocument"
                 suffix = obj.suffix.lower()
@@ -751,6 +800,8 @@ class _DocumentConversionInput(BaseModel):
         elif isinstance(obj, DocumentStream):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_dclx_extension(obj.name):
+                return InputFormat.DCLX
             content = obj.stream.read(8192)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
@@ -803,6 +854,10 @@ class _DocumentConversionInput(BaseModel):
         return lower_name.endswith((".dclg", ".dclg.xml"))
 
     @staticmethod
+    def _has_dclx_extension(name: str) -> bool:
+        return name.lower().endswith(".dclx")
+
+    @staticmethod
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
@@ -833,6 +888,15 @@ class _DocumentConversionInput(BaseModel):
         return None
 
     @staticmethod
+    def _has_doclang_root_element(content_str: str) -> bool:
+        """Return whether XML content starts with a DocLang root element."""
+        content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
+        content_str = content_str.lstrip()
+        if re.match(r"<\?xml", content_str):
+            content_str = re.sub(r"<\?xml[^>]*\?>", "", content_str, count=1).lstrip()
+        return re.match(r"<\s*doclang\b", content_str, re.IGNORECASE) is not None
+
+    @staticmethod
     def _guess_from_content(
         content: bytes,
         mime: str,
@@ -856,7 +920,7 @@ class _DocumentConversionInput(BaseModel):
             if match_doctype:
                 xml_doctype = match_doctype.group()
                 if InputFormat.XML_USPTO in formats and any(
-                    item in xml_doctype
+                    item in xml_doctype.lower()
                     for item in (
                         "us-patent-application-v4",
                         "us-patent-grant-v4",
@@ -872,9 +936,18 @@ class _DocumentConversionInput(BaseModel):
                 ):
                     input_format = InputFormat.XML_JATS
 
+            if (
+                input_format is None
+                and InputFormat.XML_DOCLANG in formats
+                and _DocumentConversionInput._has_doclang_root_element(content_str)
+            ):
+                input_format = InputFormat.XML_DOCLANG
+
         elif mime == "text/plain":
             content_str = content.decode("utf-8", errors="replace")
-            if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
+            if InputFormat.XML_USPTO in formats and content_str.startswith(
+                ("PATN\r\n", "PATN\n")
+            ):
                 input_format = InputFormat.XML_USPTO
             elif (
                 InputFormat.MD in formats
@@ -895,13 +968,9 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
-        elif (
-            ext in FormatToExtensions[InputFormat.XML_USPTO]
-            and ext in FormatToExtensions[InputFormat.MD]
-        ):
-            # "txt" appears in both XML_USPTO and MD extension lists.  Leave mime=None
-            # so the content-probing chain (_detect_html_xhtml, _detect_csv, then the
-            # "text/plain" fallback + _guess_from_content) can pick the right format.
+        elif ext in FormatToExtensions[InputFormat.XML_USPTO]:
+            # USPTO text files share the "txt" extension with Markdown. Leave mime=None
+            # so content probing can distinguish PATN text from plain Markdown text.
             pass
         elif ext in FormatToExtensions[InputFormat.MD]:
             mime = FormatToMimeType[InputFormat.MD][0]
@@ -909,14 +978,24 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.CSV][0]
         elif ext in FormatToExtensions[InputFormat.JSON_DOCLING]:
             mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
+        elif ext in FormatToExtensions[InputFormat.BOXNOTE]:
+            mime = FormatToMimeType[InputFormat.BOXNOTE][0]
+        elif ext in FormatToExtensions[InputFormat.EBCDIC]:
+            mime = FormatToMimeType[InputFormat.EBCDIC][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
             mime = FormatToMimeType[InputFormat.DOCX][0]
+        elif ext in FormatToExtensions[InputFormat.DOC]:
+            mime = FormatToMimeType[InputFormat.DOC][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
+        elif ext in FormatToExtensions[InputFormat.PPT]:
+            mime = FormatToMimeType[InputFormat.PPT][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.XLS]:
+            mime = FormatToMimeType[InputFormat.XLS][0]
         elif ext in FormatToExtensions[InputFormat.ODT]:
             mime = FormatToMimeType[InputFormat.ODT][0]
         elif ext in FormatToExtensions[InputFormat.ODS]:
@@ -966,6 +1045,11 @@ class _DocumentConversionInput(BaseModel):
             r"<!doctype\s+(?P<root>[a-zA-Z_:][a-zA-Z0-9_:.-]*)\s+.*>\s*<(?P=root)\b"
         )
         if p.search(content_str):
+            return "application/xml"
+
+        if _DocumentConversionInput._has_doclang_root_element(
+            content.decode("utf-8", errors="replace")
+        ):
             return "application/xml"
 
         return None

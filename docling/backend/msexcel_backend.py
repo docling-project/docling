@@ -1,11 +1,19 @@
+from __future__ import annotations
+
 import collections
 import logging
+import posixpath
+import shutil
+import warnings
+from copy import deepcopy
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Any, Optional, Union, cast
+from tempfile import mkdtemp
+from typing import Annotated, Any, Callable, Final, cast
 from zipfile import ZipFile
 
+import pypdfium2
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -14,21 +22,21 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GroupItem,
     GroupLabel,
     ImageRef,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
     TableCell,
     TableData,
+    TabularChartMetaField,
 )
 from lxml import etree
-from openpyxl import load_workbook
-from openpyxl.chartsheet.chartsheet import Chartsheet
-from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
-from openpyxl.styles import PatternFill
-from openpyxl.worksheet.worksheet import Worksheet
-from PIL import Image as PILImage
+from PIL import Image as PILImage, UnidentifiedImageError
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
 from pydantic.dataclasses import dataclass
 from typing_extensions import override
@@ -37,12 +45,81 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
+    crop_whitespace,
+    get_docx_to_pdf_converter,
+)
 from docling.datamodel.backend_options import MsExcelBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+_OPENPYXL_AVAILABLE: bool = False
+_OPENPYXL_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from openpyxl import Workbook, load_workbook
+    from openpyxl.cell.cell import Cell, MergedCell
+    from openpyxl.chartsheet.chartsheet import Chartsheet
+    from openpyxl.drawing.image import Image
+    from openpyxl.drawing.spreadsheet_drawing import (
+        OneCellAnchor,
+        SpreadsheetDrawing,
+        TwoCellAnchor,
+    )
+    from openpyxl.packaging.relationship import get_dependents, get_rels_path
+    from openpyxl.styles import PatternFill
+    from openpyxl.utils.cell import range_boundaries
+    from openpyxl.worksheet.worksheet import Worksheet
+    from openpyxl.xml.constants import IMAGE_NS
+
+    _OPENPYXL_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _OPENPYXL_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'openpyxl' package is required to process Excel files. "
+    "Install it with `pip install 'docling-slim[format-xlsx]'`."
+)
+
+
+# Safe XML parser — prevents XXE, DTD-over-network, and entity-expansion attacks.
+_SAFE_XML_PARSER: Final = etree.XMLParser(
+    resolve_entities=False,
+    load_dtd=False,
+    no_network=True,
+    dtd_validation=False,
+)
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Excel charts as images "
+    "(render_chart_images=True). Install LibreOffice and make sure `soffice` is "
+    "on PATH. Charts still keep their classification and reconstructed tabular "
+    "data without it."
+)
+
+# Maps an openpyxl chart object's ``tagname`` (the DrawingML element name, e.g.
+# "barChart") to the docling picture-classification label we tag the emitted
+# PictureItem with. Chart types not listed fall back to OTHER_CHART.
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
+
+
+def _has_unsafe_zip_paths(namelist: list[str]) -> bool:
+    """Return True if any ZIP member name is absolute or contains a path traversal."""
+    return any(m.startswith("/") or ".." in m for m in namelist)
 
 
 @dataclass
@@ -69,6 +146,66 @@ class DataRegion:
     def height(self) -> PositiveInt:
         """Number of rows in the data region."""
         return self.max_row - self.min_row + 1
+
+
+class _MergedCellIndex:
+    """Index merged-cell anchors without expanding their coordinate ranges."""
+
+    def __init__(self, sheet: Worksheet) -> None:
+        self._anchor_spans: dict[tuple[int, int], tuple[int, int]] = {}
+
+        min_row: int | None = None
+        min_col: int | None = None
+        max_row = 0
+        max_col = 0
+
+        for merged_range in sheet.merged_cells.ranges:
+            anchor = (merged_range.min_row - 1, merged_range.min_col - 1)
+            self._anchor_spans.setdefault(
+                anchor,
+                (
+                    merged_range.max_row - merged_range.min_row + 1,
+                    merged_range.max_col - merged_range.min_col + 1,
+                ),
+            )
+            min_row = (
+                merged_range.min_row
+                if min_row is None
+                else min(min_row, merged_range.min_row)
+            )
+            min_col = (
+                merged_range.min_col
+                if min_col is None
+                else min(min_col, merged_range.min_col)
+            )
+            max_row = max(max_row, merged_range.max_row)
+            max_col = max(max_col, merged_range.max_col)
+
+        self.bounds = (
+            DataRegion(min_row, max_row, min_col, max_col)
+            if min_row is not None and min_col is not None
+            else None
+        )
+
+    def contains(self, cell: Cell | MergedCell) -> bool:
+        """Return whether a cell is an anchor or shadow of a merged range."""
+        return (
+            isinstance(cell, MergedCell)
+            or (
+                cell.row - 1,
+                cell.column - 1,
+            )
+            in self._anchor_spans
+        )
+
+    @staticmethod
+    def is_shadow(cell: Cell | MergedCell) -> bool:
+        """Return whether a cell is a non-anchor part of a merged range."""
+        return isinstance(cell, MergedCell)
+
+    def span_at(self, row: int, col: int) -> tuple[int, int]:
+        """Return the row and column span for a 0-based anchor coordinate."""
+        return self._anchor_spans.get((row, col), (1, 1))
 
 
 class ExcelCell(BaseModel):
@@ -107,7 +244,7 @@ class ExcelTable(BaseModel):
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing Excel workbooks.
+    """Backend for parsing Excel workbooks (XLSX and XLS files).
 
     The backend converts an Excel workbook into a DoclingDocument object.
     Each worksheet is converted into a separate page.
@@ -122,19 +259,29 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     bounding box object with the cell indices as units (0-based index). The size of this
     bounding box is the number of columns and rows that the table or picture spans.
 
+    Legacy ``.xls`` files (binary Excel 97-2004 format) are first converted to
+    ``.xlsx`` via LibreOffice before parsing.
+
     Limitations:
         - Threaded comments (Excel 365+) are only extracted when the file is provided
           as a Path. When provided as a BytesIO stream, threaded comments cannot be
           extracted because the stream is consumed by openpyxl during initialization.
           Old-style cell comments (notes) are always extracted regardless of input type.
+        - Legacy ``.xls`` files are always converted to a ``BytesIO`` stream before
+          parsing, so threaded comments are not available for that format.
     """
+
+    # Maximum uncompressed byte sizes accepted when reading members from the XLSX zip.
+    # These caps guard against decompression-bomb payloads in drawing XML / image files.
+    _MAX_DRAWING_BYTES: Final[int] = 10 * 1024 * 1024  # 10 MB
+    _MAX_IMAGE_BYTES: Final[int] = 50 * 1024 * 1024  # 50 MB
 
     @override
     def __init__(
         self,
-        in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[MsExcelBackendOptions] = None,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: MsExcelBackendOptions | None = None,
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
@@ -146,30 +293,48 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
+        if not _OPENPYXL_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _OPENPYXL_IMPORT_ERROR
+        if in_doc.format == InputFormat.XLS:
+            path_or_stream = convert_to_modern_format(path_or_stream, "xls", "xlsx")
         if options is None:
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         self.page_range = in_doc.limits.page_range
 
-        # Initialise the parents for the hierarchy
-        self.max_levels = 10
+        # Current sheet group; set at the start of each sheet conversion
+        self.parent: GroupItem | None = None
 
-        self.parents: dict[int, Any] = {}
-        for i in range(-1, self.max_levels):
-            self.parents[i] = None
+        # Lazy-initialized LibreOffice converter for EMF/WMF images
+        self.xlsx_to_pdf_converter: Callable | None = None
+        self.xlsx_to_pdf_converter_init: bool = False
 
         self.workbook = None
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.workbook = load_workbook(
-                    filename=self.path_or_stream, data_only=True
+            # Suppress the openpyxl warning for WMF/EMF images being dropped:
+            # those formats are handled separately via LibreOffice conversion.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r".* image format is not supported so the image is being dropped",
+                    category=UserWarning,
+                    module=r"openpyxl\.reader\.drawings",
                 )
-
-            elif isinstance(self.path_or_stream, Path):
-                self.workbook = load_workbook(
-                    filename=str(self.path_or_stream), data_only=True
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"The image .* will be removed because it cannot be read",
+                    category=UserWarning,
+                    module=r"openpyxl\.reader\.drawings",
                 )
+                if isinstance(self.path_or_stream, BytesIO):
+                    self.workbook = load_workbook(
+                        filename=self.path_or_stream, data_only=True
+                    )
+                elif isinstance(self.path_or_stream, Path):
+                    self.workbook = load_workbook(
+                        filename=str(self.path_or_stream), data_only=True
+                    )
 
             self.valid = self.workbook is not None
         except Exception as e:
@@ -181,7 +346,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     def _parse_threaded_comments(
         self, sheet_name: str
-    ) -> dict[str, tuple[str, str, Optional[datetime]]]:
+    ) -> dict[str, tuple[str, str, datetime | None]]:
         """Parse threaded comments from Excel XML for a specific sheet.
 
         Returns a dict mapping cell coordinates to (author, text, timestamp) tuples.
@@ -191,7 +356,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             Uses secure XML parser configuration to prevent XXE attacks and validates
             ZIP file paths to prevent zip-slip attacks.
         """
-        threaded_comments: dict[str, tuple[str, str, Optional[datetime]]] = {}
+        threaded_comments: dict[str, tuple[str, str, datetime | None]] = {}
 
         # Only extract from Path objects (BytesIO is consumed by load_workbook)
         if not isinstance(self.path_or_stream, Path):
@@ -207,21 +372,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 self.path_or_stream.seek(0)
 
             with ZipFile(self.path_or_stream, "r") as zip_file:
-                if any(m.startswith("/") or ".." in m for m in zip_file.namelist()):
+                if _has_unsafe_zip_paths(zip_file.namelist()):
                     _log.warning("Skipping file with unsafe ZIP paths")
                     return threaded_comments
-
-                parser = etree.XMLParser(
-                    resolve_entities=False,
-                    load_dtd=False,
-                    no_network=True,
-                    dtd_validation=False,
-                )
 
                 person_map: dict[str, str] = {}
                 try:
                     person_xml = zip_file.read("xl/persons/person.xml")
-                    person_tree = etree.fromstring(person_xml, parser=parser)
+                    person_tree = etree.fromstring(person_xml, parser=_SAFE_XML_PARSER)
                     person_map = {
                         person.get("id"): person.get("displayName")
                         for person in person_tree.findall(".//tc:person", namespaces=ns)
@@ -244,7 +402,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 threaded_file = f"xl/threadedComments/threadedComment{sheet_num}.xml"
                 try:
                     threaded_xml = zip_file.read(threaded_file)
-                    threaded_tree = etree.fromstring(threaded_xml, parser=parser)
+                    threaded_tree = etree.fromstring(
+                        threaded_xml, parser=_SAFE_XML_PARSER
+                    )
 
                     for comment in threaded_tree.findall(
                         ".//tc:threadedComment", namespaces=ns
@@ -302,7 +462,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @override
     def page_count(self) -> int:
         if self.is_valid() and self.workbook:
-            sheet_names_filter: Optional[list[str]] = (
+            sheet_names_filter: list[str] | None = (
                 self.options.sheet_names
                 if isinstance(self.options, MsExcelBackendOptions)
                 else None
@@ -318,7 +478,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.XLSX}
+        return {InputFormat.XLSX, InputFormat.XLS}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -333,7 +493,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 
@@ -359,7 +519,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
-            sheet_names_filter: Optional[list[str]] = (
+            sheet_names_filter: list[str] | None = (
                 self.options.sheet_names
                 if isinstance(self.options, MsExcelBackendOptions)
                 else None
@@ -391,7 +551,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
-                self.parents[0] = doc.add_group(
+                self.parent = doc.add_group(
                     parent=None,
                     label=GroupLabel.SHEET,
                     name=name,
@@ -414,7 +574,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return doc
 
     def _convert_sheet(
-        self, doc: DoclingDocument, sheet: Union[Worksheet, Chartsheet], page_no: int
+        self, doc: DoclingDocument, sheet: Worksheet | Chartsheet, page_no: int
     ) -> DoclingDocument:
         """Parse an Excel worksheet and attach its structure to a DoclingDocument
 
@@ -429,10 +589,43 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if isinstance(sheet, Worksheet):
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
-
-        # TODO: parse charts in sheet
+        # Charts can be on both Worksheet and Chartsheet objects
+        if isinstance(sheet, (Worksheet, Chartsheet)):
+            doc = self._find_chart_in_sheet(doc, sheet, page_no)
+        self._sort_sheet_children_by_position(doc, page_no)
 
         return doc
+
+    def _sort_sheet_children_by_position(
+        self, doc: DoclingDocument, page_no: int
+    ) -> None:
+        """Sort the current sheet group's direct children by top-row position.
+
+        Tables are added before images during sheet conversion.  When an image
+        sits above a table on the sheet (smaller row index), it would otherwise
+        appear after the table in the exported document.  Sorting the sheet
+        group's children by their ``bbox.t`` corrects the visual order.
+
+        Children without provenance on the current page sort to the end.
+
+        Args:
+            doc: The DoclingDocument whose current sheet group is sorted in place.
+            page_no: The 1-based page number of the sheet being processed.
+        """
+        sheet_group = self.parent
+        if sheet_group is None:
+            return
+
+        def _top_row(ref: Any) -> float:
+            item = ref.resolve(doc)
+            if item is None:
+                return float("inf")
+            for prov in getattr(item, "prov", []):
+                if prov.page_no == page_no:
+                    return prov.bbox.t
+            return float("inf")
+
+        sheet_group.children.sort(key=_top_row)
 
     def _find_tables_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet, page_no: int
@@ -460,15 +653,37 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             )
 
             for excel_table in tables:
+                title_cell, excel_table = self._split_leading_section_label(excel_table)
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
+                if title_cell is not None:
+                    doc.add_text(
+                        text=title_cell.text,
+                        label=DocItemLabel.TEXT,
+                        parent=self.parent,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (
+                                    origin_col + title_cell.col,
+                                    origin_row - 1,
+                                    origin_col + title_cell.col + title_cell.col_span,
+                                    origin_row,
+                                ),
+                                origin=CoordOrigin.TOPLEFT,
+                            ),
+                        ),
+                        content_layer=content_layer,
+                    )
+
                 if treat_singleton_as_text and len(excel_table.data) == 1:
                     doc.add_text(
                         text=excel_table.data[0].text,
                         label=DocItemLabel.TEXT,
-                        parent=self.parents[0],
+                        parent=self.parent,
                         prov=ProvenanceItem(
                             page_no=page_no,
                             charspan=(0, 0),
@@ -507,7 +722,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                     doc.add_table(
                         data=table_data,
-                        parent=self.parents[0],
+                        parent=self.parent,
                         prov=ProvenanceItem(
                             page_no=page_no,
                             charspan=(0, 0),
@@ -562,7 +777,59 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return doc
 
-    def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
+    def _split_leading_section_label(
+        self, table: ExcelTable
+    ) -> tuple[ExcelCell | None, ExcelTable]:
+        """Split a merged section label from an adjacent data table."""
+        if table.num_rows < 2 or table.num_cols < 2:
+            return None, table
+
+        first_row_cells = [cell for cell in table.data if cell.row == 0]
+        first_row_text_cells = [cell for cell in first_row_cells if cell.text.strip()]
+        if len(first_row_text_cells) != 1:
+            return None, table
+
+        title_cell = first_row_text_cells[0]
+        if (
+            title_cell.col != 0
+            or title_cell.row_span != 1
+            or title_cell.col_span <= 1
+            or title_cell.col_span > table.num_cols
+        ):
+            return None, table
+
+        second_row_header_cells = [
+            cell
+            for cell in table.data
+            if cell.row == 1 and cell.text.strip() and cell.col_span == 1
+        ]
+        if len(second_row_header_cells) < 2:
+            return None, table
+
+        data = [
+            ExcelCell(
+                row=cell.row - 1,
+                col=cell.col,
+                text=cell.text,
+                row_span=cell.row_span,
+                col_span=cell.col_span,
+            )
+            for cell in table.data
+            if cell.row > 0
+        ]
+        return (
+            title_cell,
+            ExcelTable(
+                anchor=(table.anchor[0], table.anchor[1] + 1),
+                num_rows=table.num_rows - 1,
+                num_cols=table.num_cols,
+                data=data,
+            ),
+        )
+
+    def _find_true_data_bounds(
+        self, sheet: Worksheet, merged_cell_index: _MergedCellIndex
+    ) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
 
         This function scans all cells to find the smallest rectangular region that contains
@@ -571,6 +838,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         Args:
             sheet: The worksheet to analyze.
+            merged_cell_index: Index containing merged-cell anchors, spans, and
+                bounds for the worksheet.
 
         Returns:
             A data region representing the smallest rectangle that covers all data and merged cells.
@@ -587,16 +856,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 max_row = max(max_row, r)
                 max_col = max(max_col, c)
 
-        # Expand bounds to include merged cells
-        for merged in sheet.merged_cells.ranges:
+        # Expand bounds to include merged cells without scanning all ranges again.
+        if merged_cell_index.bounds is not None:
+            merged_bounds = merged_cell_index.bounds
             min_row = (
-                merged.min_row if min_row is None else min(min_row, merged.min_row)
+                merged_bounds.min_row
+                if min_row is None
+                else min(min_row, merged_bounds.min_row)
             )
             min_col = (
-                merged.min_col if min_col is None else min(min_col, merged.min_col)
+                merged_bounds.min_col
+                if min_col is None
+                else min(min_col, merged_bounds.min_col)
             )
-            max_row = max(max_row, merged.max_row)
-            max_col = max(max_col, merged.max_col)
+            max_row = max(max_row, merged_bounds.max_row)
+            max_col = max(max_col, merged_bounds.max_col)
 
         # If no data found, default to (1, 1, 1, 1)
         if min_row is None or min_col is None:
@@ -607,7 +881,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_data_tables(
         self, sheet: Worksheet
     ) -> tuple[
-        list[ExcelTable], dict[tuple[int, int], tuple[str, str, Optional[datetime]]]
+        list[ExcelTable], dict[tuple[int, int], tuple[str, str, datetime | None]]
     ]:
         """Find all compact rectangular data tables in an Excel worksheet.
 
@@ -621,13 +895,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 - A list of ExcelTable objects representing the data tables
                 - A dict mapping (row, col) to (author, comment_text, timestamp) for cells with comments
         """
-        bounds: DataRegion = self._find_true_data_bounds(
-            sheet
-        )  # The true data boundaries
+        merged_cell_index = _MergedCellIndex(sheet)
+        bounds = self._find_true_data_bounds(sheet, merged_cell_index)
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
-            tuple[int, int], tuple[str, str, Optional[datetime]]
+            tuple[int, int], tuple[str, str, datetime | None]
         ] = {}  # Collect comments
 
         # Parse threaded comments from XML (Excel 365+ format with proper author names and timestamps)
@@ -671,7 +944,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 # If the cell starts a new table, find its bounds
                 table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, bounds.max_row, bounds.max_col
+                    sheet,
+                    start_row=ri,
+                    start_col=rj,
+                    max_row=bounds.max_row,
+                    max_col=bounds.max_col,
+                    merged_cell_index=merged_cell_index,
                 )
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
@@ -681,10 +959,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_table_bounds(
         self,
         sheet: Worksheet,
+        *,
         start_row: int,
         start_col: int,
         max_row: int,
         max_col: int,
+        merged_cell_index: _MergedCellIndex,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
         """Determine table bounds using a Flood Fill (BFS) strategy.
 
@@ -731,7 +1011,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         min_c, max_c = start_col, start_col
 
         # Helper: Check if a cell has content
-        def has_content(r, c):
+        def has_content(r: int, c: int) -> bool:
             if r < 0 or c < 0 or r >= max_row or c >= max_col:
                 return False
 
@@ -740,11 +1020,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if cell.value is not None:
                 return True
 
-            # 2. Check merge ranges
-            for mr in sheet.merged_cells.ranges:
-                if cell.coordinate in mr:
-                    return True
-            return False
+            # 2. Check the worksheet-level merged-cell index.
+            return merged_cell_index.contains(cell)
 
         # --- Phase 1: Flood Fill (Connectivity Check) ---
         while queue:
@@ -783,17 +1060,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # --- Phase 2: Extract Data (Semantic Grid) ---
         data = []
 
-        # We must identify cells that are "shadowed" by a merge (not the top-left)
-        hidden_merge_cells = set()
-        for mr in sheet.merged_cells.ranges:
-            mr_min_r, mr_min_c = mr.min_row - 1, mr.min_col - 1
-            mr_max_r, mr_max_c = mr.max_row - 1, mr.max_col - 1
-            for r in range(mr_min_r, mr_max_r + 1):
-                for c in range(mr_min_c, mr_max_c + 1):
-                    if r == mr_min_r and c == mr_min_c:
-                        continue
-                    hidden_merge_cells.add((r, c))
-
         # We iterate the bounding box of the found region
         # Gaps inside the bounding box become empty cells (preserving layout)
         for ri in range(min_r, max_r + 1):
@@ -804,20 +1070,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # Logic: If we found a "U" shape, do we fill the middle?
                 # Yes, Excel tables are typically treated as rectangular bounding boxes.
 
-                if (ri, rj) in hidden_merge_cells:
+                cell = sheet.cell(row=ri + 1, column=rj + 1)
+                if merged_cell_index.is_shadow(cell):
                     continue
 
-                cell = sheet.cell(row=ri + 1, column=rj + 1)
                 cell_text = str(cell.value) if cell.value is not None else ""
 
                 # Compute Spans
-                row_span = 1
-                col_span = 1
-                for mr in sheet.merged_cells.ranges:
-                    if (ri + 1) == mr.min_row and (rj + 1) == mr.min_col:
-                        row_span = (mr.max_row - mr.min_row) + 1
-                        col_span = (mr.max_col - mr.min_col) + 1
-                        break
+                row_span, col_span = merged_cell_index.span_at(ri, rj)
 
                 data.append(
                     ExcelCell(
@@ -843,6 +1103,217 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             table_cells,
         )
 
+    @staticmethod
+    def _anchor_to_tuple(anchor: Any) -> tuple[int, int, int, int]:
+        """Convert an openpyxl anchor object to a (left_col, top_row, right_col, bottom_row) tuple.
+
+        Args:
+            anchor: A TwoCellAnchor, OneCellAnchor, or unknown anchor type.
+
+        Returns:
+            A 4-tuple suitable for BoundingBox.from_tuple.
+        """
+        if isinstance(anchor, TwoCellAnchor):
+            return (
+                anchor._from.col,
+                anchor._from.row,
+                anchor.to.col + 1,
+                anchor.to.row + 1,
+            )
+        if isinstance(anchor, OneCellAnchor):
+            return (
+                anchor._from.col,
+                anchor._from.row,
+                anchor._from.col + 1,
+                anchor._from.row + 1,
+            )
+        return (0, 0, 0, 0)
+
+    def _get_libreoffice_converter(self) -> Callable | None:
+        """Lazily initialize and return a LibreOffice converter callable.
+
+        The converter accepts ``(input_path: Path, output_path: Path)`` and
+        converts the input file to PDF at the given output path.
+
+        Returns:
+            A converter callable, or None when LibreOffice is not available.
+        """
+        if self.xlsx_to_pdf_converter_init:
+            return self.xlsx_to_pdf_converter
+
+        self.xlsx_to_pdf_converter_init = True
+        self.xlsx_to_pdf_converter = get_docx_to_pdf_converter()
+        if self.xlsx_to_pdf_converter is None:
+            _log.debug(
+                "LibreOffice not found — EMF/WMF images in XLSX will be skipped."
+            )
+        return self.xlsx_to_pdf_converter
+
+    def _convert_emf_to_pil(self, image_bytes: bytes) -> PILImage.Image | None:
+        """Convert a raw EMF or WMF image to a PIL Image via LibreOffice.
+
+        LibreOffice can convert standalone ``.emf``/``.wmf`` files to PDF
+        directly — no DOCX or XLSX wrapper is needed.  The raw bytes are
+        written to a temp file, converted to PDF, and the first page is
+        rendered with pypdfium2.
+
+        Args:
+            image_bytes: Raw EMF or WMF image data.
+
+        Returns:
+            A PIL Image, or None if LibreOffice is unavailable or conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            return None
+
+        # WMF placeable magic: D7 CD C6 9A; everything else we treat as EMF.
+        suffix = ".wmf" if image_bytes[:4] == b"\xd7\xcd\xc6\x9a" else ".emf"
+        temp_dir = Path(mkdtemp())
+        try:
+            input_path = temp_dir / f"image{suffix}"
+            output_path = temp_dir / "image.pdf"
+            input_path.write_bytes(image_bytes)
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("EMF/WMF conversion via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _find_unsupported_images_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet, page_no: int
+    ) -> DoclingDocument:
+        """Find EMF/WMF images dropped by openpyxl and add them via LibreOffice.
+
+        openpyxl silently drops WMF images and raises ``OSError`` for EMF
+        images (which PIL cannot decode natively).  This method re-parses the
+        drawing relationships for the sheet directly from the XLSX zip archive
+        and converts those unsupported images using LibreOffice.
+
+        Args:
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
+            page_no: The dense (1-based) page number for this sheet in the output document.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+        # drawing rels are stored on the worksheet object by openpyxl
+        drawing_paths: list[str] = [
+            rel.target
+            for rel in sheet._rels.find(SpreadsheetDrawing._rel_type)  # type: ignore[attr-defined]
+        ]
+        if not drawing_paths:
+            return doc
+
+        content_layer = self._get_sheet_content_layer(sheet)
+
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+
+        try:
+            with ZipFile(self.path_or_stream, "r") as zf:
+                if _has_unsafe_zip_paths(zf.namelist()):
+                    _log.warning(
+                        "Skipping EMF/WMF scan: XLSX archive contains unsafe ZIP paths"
+                    )
+                    return doc
+
+                for drawing_path in drawing_paths:
+                    doc = self._process_drawing_for_unsupported_images(
+                        doc, zf, drawing_path, page_no, content_layer
+                    )
+        except Exception as exc:
+            _log.debug("Could not scan drawing files for unsupported images: %s", exc)
+
+        return doc
+
+    def _process_drawing_for_unsupported_images(
+        self,
+        doc: DoclingDocument,
+        zf: ZipFile,
+        drawing_path: str,
+        page_no: int,
+        content_layer: ContentLayer | None,
+    ) -> DoclingDocument:
+        """Scan one drawing XML file and convert any EMF/WMF blips found.
+
+        Args:
+            doc: The DoclingDocument to update.
+            zf: Open ZipFile for the xlsx archive.
+            drawing_path: Absolute path inside the zip to the drawing XML.
+            page_no: Page number (1-based) for provenance.
+            content_layer: ContentLayer for added pictures.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+        if drawing_path not in zf.namelist():
+            return doc
+
+        tree = etree.fromstring(zf.read(drawing_path), parser=_SAFE_XML_PARSER)
+        try:
+            drawing = SpreadsheetDrawing.from_tree(tree)
+        except TypeError:
+            return doc
+
+        rels_path = get_rels_path(drawing_path)
+        if rels_path not in zf.namelist():
+            return doc
+        deps = get_dependents(zf, rels_path)
+
+        for rel in drawing._blip_rels:
+            dep = deps.get(rel.embed)
+            if dep.Type != IMAGE_NS or dep.target not in zf.namelist():
+                continue
+
+            image_bytes = zf.read(dep.target)
+
+            # Skip images PIL can already handle — openpyxl already added those.
+            try:
+                pil_probe = PILImage.open(BytesIO(image_bytes))
+                probe_buf = BytesIO()
+                pil_probe.save(probe_buf, format="PNG")
+                continue  # PIL succeeded; openpyxl took care of this one
+            except (UnidentifiedImageError, OSError):
+                pass
+
+            pil_image = self._convert_emf_to_pil(image_bytes)
+            if pil_image is None:
+                _log.warning(
+                    "Could not convert unsupported image '%s'. "
+                    "Install LibreOffice for EMF/WMF support in XLSX files.",
+                    dep.target,
+                )
+                continue
+
+            doc.add_picture(
+                parent=self.parent,
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+                prov=ProvenanceItem(
+                    page_no=page_no,
+                    charspan=(0, 0),
+                    bbox=BoundingBox.from_tuple(
+                        self._anchor_to_tuple(rel.anchor),
+                        origin=CoordOrigin.TOPLEFT,
+                    ),
+                ),
+                content_layer=content_layer,
+            )
+
+        return doc
+
     def _find_images_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet, page_no: int
     ) -> DoclingDocument:
@@ -858,35 +1329,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
-            # Iterate over byte images in the sheet
+            # Images that PIL can read are already loaded by openpyxl into sheet._images
             for item in sheet._images:  # type: ignore[attr-defined]
                 try:
                     image: Image = cast(Image, item)
-                    pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
-                    anchor = (0, 0, 0, 0)
-                    if isinstance(image.anchor, TwoCellAnchor):
-                        anchor = (
-                            image.anchor._from.col,
-                            image.anchor._from.row,
-                            image.anchor.to.col + 1,
-                            image.anchor.to.row + 1,
-                        )
-                    elif isinstance(image.anchor, OneCellAnchor):
-                        anchor = (
-                            image.anchor._from.col,
-                            image.anchor._from.row,
-                            image.anchor._from.col + 1,
-                            image.anchor._from.row + 1,
-                        )
+                    ref = image.ref
+                    pil_image = (
+                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
+                    )
                     doc.add_picture(
-                        parent=self.parents[0],
+                        parent=self.parent,
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
                         caption=None,
                         prov=ProvenanceItem(
                             page_no=page_no,
                             charspan=(0, 0),
                             bbox=BoundingBox.from_tuple(
-                                anchor, origin=CoordOrigin.TOPLEFT
+                                self._anchor_to_tuple(image.anchor),
+                                origin=CoordOrigin.TOPLEFT,
                             ),
                         ),
                         content_layer=content_layer,
@@ -894,31 +1354,515 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 except Exception:
                     _log.error("could not extract the image from excel sheets")
 
+            # EMF/WMF images are silently dropped by openpyxl; handle them separately
+            doc = self._find_unsupported_images_in_sheet(doc, sheet, page_no)
+
         return doc
+
+    def _find_chart_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet | Chartsheet, page_no: int
+    ) -> DoclingDocument:
+        """Find native charts on a sheet and attach them as classified pictures.
+
+        openpyxl parses each embedded chart (bar, line, pie, scatter, ...) into
+        ``sheet._charts``.  For every chart we emit a PictureItem whose meta
+        carries (a) the chart-type classification and (b) the chart's underlying
+        numbers reconstructed as a TableData.  This mirrors the ODF backend so
+        XLSX and ODS charts have the same downstream shape.
+
+        Args:
+            doc: The DoclingDocument to update.
+            sheet: The worksheet or chart sheet being parsed.
+            page_no: The 1-based page number of this sheet, used for provenance.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+
+        if not (
+            isinstance(self.options, MsExcelBackendOptions)
+            and self.options.parse_charts
+        ):
+            return doc
+        content_layer = self._get_sheet_content_layer(sheet)
+
+        charts = sheet._charts  # type: ignore[attr-defined]
+        if not charts:
+            return doc
+
+        # Rendering a chart to an actual image is opt-in and needs LibreOffice.
+        render_charts = self.options.render_chart_images
+        if render_charts and self._get_libreoffice_converter() is None:
+            _log.warning(_CHART_RENDER_HINT)
+            render_charts = False
+
+        for chart in charts:
+            try:
+                classification = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                    chart.tagname, PictureClassificationLabel.OTHER_CHART
+                )
+                caption_text = self._chart_title_text(chart)
+                table_data = self._chart_to_table_data(chart)
+
+                bbox = BoundingBox.from_tuple(
+                    self._anchor_to_tuple(chart.anchor),
+                    origin=CoordOrigin.TOPLEFT,
+                )
+
+                # On any rendering failure fall back to the no-image behavior:
+                # the picture still carries its classification and chart data.
+                image_ref = None
+                if render_charts:
+                    try:
+                        chart_image = self._render_chart_image(chart)
+                        if chart_image is not None:
+                            image_ref = ImageRef.from_pil(image=chart_image, dpi=72)
+                    except Exception:
+                        _log.warning(
+                            "could not render a chart image; keeping chart data "
+                            "without image",
+                            exc_info=True,
+                        )
+
+                caption_item = (
+                    doc.add_text(
+                        label=DocItemLabel.CAPTION,
+                        text=caption_text,
+                        content_layer=content_layer,
+                    )
+                    if caption_text
+                    else None
+                )
+
+                picture = doc.add_picture(
+                    parent=self.parent,
+                    image=image_ref,
+                    caption=caption_item,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=bbox,
+                    ),
+                    content_layer=content_layer,
+                )
+
+                picture.meta = PictureMeta(
+                    classification=PictureClassificationMetaField(
+                        predictions=[
+                            PictureClassificationPrediction(class_name=classification)
+                        ]
+                    ),
+                    tabular_chart=(
+                        TabularChartMetaField(chart_data=table_data)
+                        if table_data is not None
+                        else None
+                    ),
+                )
+            except Exception:
+                _log.error(
+                    "could not extract a chart from the excel sheet", exc_info=True
+                )
+
+        return doc
+
+    @staticmethod
+    def _chart_title_text(chart: Any) -> str | None:
+        """Extract the plain-text title of an openpyxl chart, if any.
+
+        A chart title is stored as DrawingML rich text: ``chart.title`` is a
+        Title object whose ``.tx.rich.p`` is a list of paragraphs, each with a
+        list of runs ``.r``, each run carrying its text in ``.t``.  We flatten
+        all runs into a single string.  Returns None when the chart has no title.
+
+        Args:
+            chart: An openpyxl chart object (BarChart, LineChart, ...).
+
+        Returns:
+            The concatenated title text, or None.
+        """
+        title = chart.title
+        if title is None:
+            return None
+
+        if isinstance(title, str):
+            return title or None
+        tx = title.tx
+        if tx is None or tx.rich is None:
+            return None
+
+        runs: list[str] = []
+        for paragraph in tx.rich.p:
+            for run in paragraph.r or []:
+                if run.t:
+                    runs.append(run.t)
+        text = "".join(runs).strip()
+        return text or None
+
+    def _chart_to_table_data(self, chart: Any) -> TableData | None:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Layout produced (categories down the first column, one column per series):
+
+            | <blank> | <series 0 name> | <series 1 name> | ...
+            | cat_0   | val_0,0         | val_1,0         | ...
+            | cat_1   | val_0,1         | val_1,1         | ...
+
+        Chart data is stored in openpyxl as *references* back into the workbook
+        (e.g. "'Sheet1'!$B$2:$B$7"), which we resolve to cached cell values.
+        Scatter charts use ``xVal``/``yVal`` instead of ``cat``/``val``.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A TableData, or None if the chart exposes no usable series.
+        """
+        series_list = list(chart.series)
+        if not series_list:
+            return None
+
+        categories: list[str] = []
+        for series in series_list:
+            cat_ref = self._ref_formula(series.cat) or self._ref_formula(series.xVal)
+            if cat_ref:
+                categories = self._resolve_reference(cat_ref)
+                break
+
+        columns: list[tuple[str, list[str]]] = []
+
+        for series in series_list:
+            value_ref = self._ref_formula(series.val) or self._ref_formula(series.yVal)
+            values = self._resolve_reference(value_ref) if value_ref else []
+
+            name_ref = self._ref_formula(series.tx)
+            if name_ref:
+                resolved = self._resolve_reference(name_ref)
+                name = resolved[0] if resolved else ""
+            elif series.tx is not None and series.tx.v is not None:
+                name = str(series.tx.v)
+            else:
+                name = ""
+            columns.append((name, values))
+
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+        if num_data_rows == 0:
+            return None
+
+        num_rows = num_data_rows + 1
+        num_cols = 1 + len(columns)
+        cells: list[TableCell] = []
+
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
+                )
+            )
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),
+                    )
+                )
+
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    @staticmethod
+    def _to_float(text: str) -> float | None:
+        """Parse a cell string into a float, or None if it is not numeric.
+
+        Cached values arrive as strings; a chart plots them only when they are
+        written back as numbers. Non-numeric cells (blank, labels) return None
+        so the caller can leave them as text.
+        """
+        try:
+            return float(text)
+        except (TypeError, ValueError):
+            return None
+
+    def _render_chart_image(self, chart: Any) -> PILImage.Image | None:
+        """Render a native chart to an image via LibreOffice.
+
+        XLSX stores charts as vector definitions with no embedded raster.  To
+        obtain a picture we isolate the chart into a throwaway single-chart
+        workbook (its data copied onto hidden sheets so the series still
+        resolve), convert that to PDF with LibreOffice — the same external tool
+        already used for EMF/WMF images — and rasterize the first page with
+        pypdfium2, trimming the surrounding whitespace.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A PIL Image, or None when LibreOffice is unavailable, the chart has
+            no resolvable data, or the conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            return None
+
+        standalone = self._build_standalone_chart_workbook(chart)
+        if standalone is None:
+            return None
+
+        temp_dir = Path(mkdtemp())
+        try:
+            input_path = temp_dir / "chart.xlsx"
+            output_path = temp_dir / "chart.pdf"
+            standalone.save(input_path)
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for a chart")
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("Chart rendering via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _build_standalone_chart_workbook(self, chart: Any) -> Workbook | None:
+        """Build a one-chart workbook with the chart's data on hidden sheets.
+
+        A chart references its data by sheet-qualified ranges (e.g.
+        ``"'Sheet1'!$B$2:$B$7"``).  Every referenced range is recreated here —
+        same sheet name, same cell coordinates, cached values — on hidden
+        sheets, and the chart is anchored alone on a single visible sheet.
+        LibreOffice prints only the visible sheet, so the resulting PDF holds
+        just the chart.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A populated Workbook, or None when the chart exposes no resolvable
+            data references.
+        """
+        if self.workbook is None:
+            return None
+
+        references: list[str] = []
+        for series in chart.series:
+            for data_source in (
+                series.cat,
+                series.xVal,
+                series.val,
+                series.yVal,
+                series.tx,
+            ):
+                formula = self._ref_formula(data_source)
+                if formula:
+                    references.append(formula)
+        if not references:
+            return None
+
+        standalone = Workbook()
+        # A fresh Workbook always holds exactly one worksheet; take it directly
+        # rather than via ``.active``, which is typed as optional.
+        chart_sheet = standalone.worksheets[0]
+        chart_sheet.title = "chart_render"
+
+        # Every reference must be copied, so this cannot short-circuit.
+        copied = [self._copy_reference_into(standalone, ref) for ref in references]
+        if not any(copied):
+            return None
+
+        # ``add_chart`` overwrites ``chart.anchor``; copy so the workbook's own
+        # chart keeps the anchor its provenance bbox is derived from.
+        chart_sheet.add_chart(deepcopy(chart), "A1")
+        return standalone
+
+    def _copy_reference_into(self, target: Workbook, ref: str) -> bool:
+        """Copy one chart data range into ``target`` on a hidden sheet.
+
+        Recreates the referenced sheet by name if needed, hides it, and writes
+        the cached cell values at their original coordinates.  Numeric-looking
+        text is coerced to numbers so the chart plots it as values rather than
+        labels.
+
+        Args:
+            target: The standalone Workbook being assembled.
+            ref: A sheet-qualified range reference, e.g. "'Sheet1'!$B$2:$B$7".
+
+        Returns:
+            True when the referenced range was resolved and copied.
+        """
+        if self.workbook is None or "!" not in ref:
+            return False
+
+        sheet_part, cell_range = ref.rsplit("!", 1)
+        sheet_part = sheet_part.strip()
+        if sheet_part.startswith("'") and sheet_part.endswith("'"):
+            sheet_part = sheet_part[1:-1].replace("''", "'")
+        if sheet_part not in self.workbook.sheetnames:
+            _log.debug("Chart references unknown sheet %r", sheet_part)
+            return False
+
+        try:
+            bounds = range_boundaries(cell_range)
+        except Exception:
+            _log.debug("Could not parse chart range %r", cell_range)
+            return False
+        if any(bound is None for bound in bounds):
+            # Open-ended ranges (e.g. "B:B") carry no usable row bounds.
+            _log.debug("Chart range %r is not fully bounded", cell_range)
+            return False
+        min_col, min_row, max_col, max_row = cast(tuple[int, int, int, int], bounds)
+
+        source_sheet = self.workbook[sheet_part]
+        if sheet_part in target.sheetnames:
+            dest_sheet = target[sheet_part]
+        else:
+            dest_sheet = target.create_sheet(sheet_part)
+            dest_sheet.sheet_state = "hidden"
+
+        for row in range(min_row, max_row + 1):
+            for col in range(min_col, max_col + 1):
+                value = source_sheet.cell(row=row, column=col).value
+                if isinstance(value, str):
+                    numeric = self._to_float(value)
+                    if numeric is not None:
+                        value = numeric
+                dest_sheet.cell(row=row, column=col, value=value)
+        return True
+
+    @staticmethod
+    def _ref_formula(data_source: Any) -> str | None:
+        """Return the cell-range formula string from a chart data source.
+
+        A chart's series title/categories/values are each a small openpyxl
+        object (SeriesLabel, AxDataSource, NumDataSource) that may hold either a
+        numeric reference (``.numRef``) or a string reference (``.strRef``); both
+        expose the range formula on ``.f`` (e.g. "'Sheet1'!$B$2:$B$7").  These
+        objects don't share a common base exposing both attributes, so we probe
+        each — a narrowly-scoped getattr against a third-party API.
+
+        Args:
+            data_source: A chart data-source object, or None.
+
+        Returns:
+            The range-formula string, or None if absent.
+        """
+        if data_source is None:
+            return None
+        num_ref = getattr(data_source, "numRef", None)
+        if num_ref is not None and num_ref.f:
+            return num_ref.f
+        str_ref = getattr(data_source, "strRef", None)
+        if str_ref is not None and str_ref.f:
+            return str_ref.f
+        return None
+
+    def _resolve_reference(self, ref: str) -> list[str]:
+        """Resolve a chart range reference to a flat list of cell-value strings.
+
+        Charts point at their data by reference rather than embedding it, e.g.
+        ``"'Duck Observations'!$B$2:$B$7"``.  We split off the (possibly quoted)
+        sheet name, convert the range to bounds with openpyxl's
+        ``range_boundaries``, and read the *cached* values from the workbook
+        (the backend loads with ``data_only=True``, so we get computed numbers,
+        not formulas).  Values are returned in row-major order.
+
+        Args:
+            ref: A range reference string, optionally sheet-qualified.
+
+        Returns:
+            The referenced cell values as strings ("" for empty cells).  Returns
+            an empty list if the sheet is missing (e.g. filtered out) or the
+            reference can't be parsed.
+        """
+        if self.workbook is None:
+            return []
+
+        if "!" in ref:
+            sheet_part, cell_range = ref.rsplit("!", 1)
+            sheet_part = sheet_part.strip()
+            if sheet_part.startswith("'") and sheet_part.endswith("'"):
+                sheet_part = sheet_part[1:-1].replace("''", "'")
+            sheet_name = sheet_part
+        else:
+            sheet_name, cell_range = self.workbook.active.title, ref
+        if sheet_name not in self.workbook.sheetnames:
+            _log.debug("Chart references unknown sheet %r", sheet_name)
+            return []
+
+        target_sheet = self.workbook[sheet_name]
+
+        try:
+            min_col, min_row, max_col, max_row = range_boundaries(cell_range)
+        except Exception:
+            _log.debug("Could not parse chart range %r", cell_range)
+            return []
+
+        values: list[str] = []
+        for row in range(min_row, max_row + 1):
+            for col in range(min_col, max_col + 1):
+                value = target_sheet.cell(row=row, column=col).value
+                values.append("" if value is None else str(value))
+
+        return values
 
     @staticmethod
     def _find_page_size(
         doc: DoclingDocument, page_no: PositiveInt
     ) -> tuple[float, float]:
-        left: float = -1.0
-        top: float = -1.0
-        right: float = -1.0
-        bottom: float = -1.0
-        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+        """Return (width, height) for the given page in cell-index units.
+
+        Width and height are the maximum ``r`` and ``b`` bbox coordinates seen
+        across all items on the page, regardless of content layer.  Because
+        bboxes use ``CoordOrigin.TOPLEFT`` with the sheet origin at ``(0, 0)``,
+        the page extent equals the largest right/bottom value — not the span
+        between the leftmost/topmost and rightmost/bottommost edges.
+        """
+        width: float = 0.0
+        height: float = 0.0
+        for item, _ in doc.iterate_items(
+            traverse_pictures=True,
+            page_no=page_no,
+            included_content_layers=set(ContentLayer),
+        ):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                bbox = provenance.bbox
-                left = min(left, bbox.l) if left != -1 else bbox.l
-                right = max(right, bbox.r) if right != -1 else bbox.r
-                top = min(top, bbox.t) if top != -1 else bbox.t
-                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+                if provenance.page_no != page_no:
+                    continue
+                width = max(width, provenance.bbox.r)
+                height = max(height, provenance.bbox.b)
 
-        return (right - left, bottom - top)
+        return (width, height)
 
     def _find_cell_item(
         self, doc: DoclingDocument, page_no: int, row: int, col: int
-    ) -> Optional[DocItem]:
+    ) -> DocItem | None:
         """Find the DocItem (table cell or text) at the given row/col position.
 
         Args:
@@ -946,7 +1890,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return None
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
+    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
         return (
             None
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE

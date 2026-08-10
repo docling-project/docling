@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING, Callable, List, Optional
+
+from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
+
+from docling.backend.latex.constants import ENV_MATH_CLEAN, ENV_MATH_DISPLAY_PREFIXES
 
 if TYPE_CHECKING:
     from typing import Any
 
-from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
-from pylatexenc.latexwalker import LatexMathNode
-
-from docling.backend.latex.constants import ENV_MATH_CLEAN, ENV_MATH_DISPLAY_PREFIXES
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import LatexMathNode
+except ImportError:
+    pass  # guarded by LatexDocumentBackend.__init__
 
 
 class MathHandlerMixin:

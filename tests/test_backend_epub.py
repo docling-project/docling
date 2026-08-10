@@ -7,12 +7,11 @@ The test file 'epub_purvis_poetry.epub' is sourced from Standard Ebooks
 high-quality, carefully formatted public domain ebooks.
 
 The source text "Poetry" by Sarah Louisa Forten Purvis is in the public domain
-in the United States. Standard Ebooks dedicates the entirety of their ebook
-files, including markup, cover art, and formatting, to the public domain via
+in the United States. The cover art has been dedicated as CC0 by the Smithsonian.
+Standard Ebooks dedicates the rest of their ebook files to the public domain via
 the CC0 1.0 Universal Public Domain Dedication.
 
-For more information about Standard Ebooks and their public domain dedication,
-visit: https://standardebooks.org/about
+For more information about Standard Ebooks visit: https://standardebooks.org/about
 """
 
 import logging

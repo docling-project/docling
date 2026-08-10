@@ -96,7 +96,7 @@ def test_docling_document_doclang_roundtrip_from_groundtruth(gt_path: Path):
     assert len(roundtrip_doc.pictures) == len(original_doc.pictures)
 
 
-@pytest.mark.parametrize("name", ["sample.dclg", "sample.dclg.xml"])
+@pytest.mark.parametrize("name", ["sample.dclg", "sample.dclg.xml", "sample.xml"])
 def test_doclang_guess_format_by_extension(tmp_path: Path, name: str):
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
     doc_path = tmp_path / name
@@ -106,3 +106,15 @@ def test_doclang_guess_format_by_extension(tmp_path: Path, name: str):
 
     stream = DocumentStream(name=name, stream=BytesIO(DOCLANG_XML.encode("utf-8")))
     assert dci._guess_format(stream) == InputFormat.XML_DOCLANG
+
+
+def test_doclang_backend_converts_generic_xml_extension(tmp_path: Path):
+    doc_path = tmp_path / "sample.xml"
+    doc_path.write_text(DOCLANG_XML, encoding="utf-8")
+
+    result = DocumentConverter(allowed_formats=[InputFormat.XML_DOCLANG]).convert(
+        doc_path
+    )
+
+    assert result.input.format == InputFormat.XML_DOCLANG
+    assert result.document.export_to_markdown().startswith("# DocLang Title")

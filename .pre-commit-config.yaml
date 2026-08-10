@@ -17,15 +17,13 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
     hooks:
-      # Run the Ruff formatter.
-      - id: ruff-format
-        name: "Ruff formatter"
-        args: [--config=pyproject.toml]
-        files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
-      # Run the Ruff linter.
       - id: ruff
         name: "Ruff linter"
         args: [--exit-non-zero-on-fix, --fix, --config=pyproject.toml]
+        files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
+      - id: ruff-format
+        name: "Ruff formatter"
+        args: [--config=pyproject.toml]
         files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
   - repo: local
     hooks:

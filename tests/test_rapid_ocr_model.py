@@ -1,7 +1,5 @@
-import sys
-from enum import Enum
+from io import BytesIO
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -12,107 +10,40 @@ from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 pytestmark = pytest.mark.ml_ocr
 
 
-@pytest.mark.parametrize(
-    ("backend", "det_name", "cls_name", "rec_name"),
-    [
-        (
-            "onnxruntime",
-            "ch_PP-OCRv4_det_mobile.onnx",
-            "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
-            "ch_PP-OCRv4_rec_mobile.onnx",
-        ),
-        (
-            "torch",
-            "ch_PP-OCRv4_det_mobile.pth",
-            "ch_ptocr_mobile_v2.0_cls_mobile.pth",
-            "ch_PP-OCRv4_rec_mobile.pth",
-        ),
-    ],
-)
-def test_rapidocr_default_models_use_3_8_mobile_assets(
-    backend: str,
-    det_name: str,
-    cls_name: str,
-    rec_name: str,
-):
-    model_paths = RapidOcrModel._default_models[backend]
+def _capture_params(
+    monkeypatch: pytest.MonkeyPatch, options: RapidOcrOptions, artifacts_path: Path
+) -> dict[str, object]:
+    """Build a RapidOcrModel with real rapidocr resolution but faked inference
+    and downloading, returning the params dict handed to RapidOCR.
 
-    assert "/v3.8.0/" in model_paths["det_model_path"]["url"]
-    assert model_paths["det_model_path"]["path"].endswith(det_name)
-    assert model_paths["cls_model_path"]["path"].endswith(cls_name)
-    assert model_paths["rec_model_path"]["path"].endswith(rec_name)
-    assert model_paths["rec_keys_path"]["path"].endswith(
-        "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt"
-    )
-    assert model_paths["font_path"]["path"] == "resources/fonts/FZYTK.TTF"
+    artifacts_path is strictly offline, so the checkpoints are prefetched first.
+    """
+    import rapidocr
 
-    for detail in model_paths.values():
-        assert "_infer" not in detail["path"]
-        assert "_infer" not in detail["url"]
-
-
-@pytest.mark.parametrize(
-    ("backend", "det_name", "cls_name", "rec_name"),
-    [
-        (
-            "onnxruntime",
-            "ch_PP-OCRv4_det_mobile.onnx",
-            "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
-            "ch_PP-OCRv4_rec_mobile.onnx",
-        ),
-        (
-            "torch",
-            "ch_PP-OCRv4_det_mobile.pth",
-            "ch_ptocr_mobile_v2.0_cls_mobile.pth",
-            "ch_PP-OCRv4_rec_mobile.pth",
-        ),
-    ],
-)
-def test_rapidocr_model_initialization_uses_mobile_default_paths(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    backend: str,
-    det_name: str,
-    cls_name: str,
-    rec_name: str,
-):
     captured: dict[str, object] = {}
 
-    class FakeEngineType(str, Enum):
-        ONNXRUNTIME = "onnxruntime"
-        OPENVINO = "openvino"
-        PADDLE = "paddle"
-        TORCH = "torch"
-
     class FakeRapidOCR:
-        def __init__(self, params):
+        def __init__(self, *, params):
             captured["params"] = params
 
-    monkeypatch.setitem(
-        sys.modules,
-        "rapidocr",
-        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
+    monkeypatch.setattr(rapidocr, "RapidOCR", FakeRapidOCR)
+    monkeypatch.setattr(
+        "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
+        lambda url, *, progress: BytesIO(b"dummy content"),
     )
-
-    model_root = tmp_path / RapidOcrModel._model_repo_folder
-    for detail in RapidOcrModel._default_models[backend].values():
-        file_path = model_root / detail["path"]
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_bytes(b"")
+    RapidOcrModel.download_models(
+        backend=options.backend,
+        lang=options.lang[0],
+        local_dir=artifacts_path / RapidOcrModel._model_repo_folder,
+    )
 
     RapidOcrModel(
         enabled=True,
-        artifacts_path=tmp_path,
-        options=RapidOcrOptions(backend=backend),
-        accelerator_options=AcceleratorOptions(device="cpu", num_threads=1),
+        artifacts_path=artifacts_path,
+        options=options,
+        accelerator_options=AcceleratorOptions(device="cpu", num_threads=4),
     )
-
-    params = captured["params"]
-    assert Path(params["Det.model_path"]).name == det_name
-    assert Path(params["Cls.model_path"]).name == cls_name
-    assert Path(params["Rec.model_path"]).name == rec_name
-    assert Path(params["Rec.rec_keys_path"]).name == "ppocr_keys_v1.txt"
-    assert Path(params["Global.font_path"]).name == "FZYTK.TTF"
+    return captured["params"]
 
 
 @pytest.mark.parametrize(
@@ -125,70 +56,36 @@ def test_rapidocr_model_initialization_uses_mobile_default_paths(
 )
 def test_rapidocr_num_threads_propagated_per_engine(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     backend: str,
     engine_key: str,
 ):
-    captured: dict[str, object] = {}
-
-    class FakeEngineType(str, Enum):
-        ONNXRUNTIME = "onnxruntime"
-        OPENVINO = "openvino"
-        PADDLE = "paddle"
-        TORCH = "torch"
-
-    class FakeRapidOCR:
-        def __init__(self, params):
-            captured["params"] = params
-
-    monkeypatch.setitem(
-        sys.modules,
-        "rapidocr",
-        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
-    )
-
-    RapidOcrModel(
-        enabled=True,
-        artifacts_path=None,
-        options=RapidOcrOptions(backend=backend),
-        accelerator_options=AcceleratorOptions(device="cpu", num_threads=4),
-    )
-
+    params = _capture_params(monkeypatch, RapidOcrOptions(backend=backend), tmp_path)
     # num_threads must reach the engine actually in use, not only ONNXRuntime.
-    assert captured["params"][engine_key] == 4
+    assert params[engine_key] == 4
 
 
 @pytest.mark.parametrize("backend", ["paddle", "torch"])
 def test_rapidocr_gpu_device_uses_cuda_ep_cfg_key(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     backend: str,
 ):
-    captured: dict[str, object] = {}
-
-    class FakeEngineType(str, Enum):
-        ONNXRUNTIME = "onnxruntime"
-        OPENVINO = "openvino"
-        PADDLE = "paddle"
-        TORCH = "torch"
-
-    class FakeRapidOCR:
-        def __init__(self, params):
-            captured["params"] = params
-
-    monkeypatch.setitem(
-        sys.modules,
-        "rapidocr",
-        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
-    )
-
-    RapidOcrModel(
-        enabled=True,
-        artifacts_path=None,
-        options=RapidOcrOptions(backend=backend),
-        accelerator_options=AcceleratorOptions(device="cpu"),
-    )
-
-    params = captured["params"]
+    params = _capture_params(monkeypatch, RapidOcrOptions(backend=backend), tmp_path)
     # The GPU device id must use the engine's real key; the legacy top-level
     # `gpu_id` key is not read by RapidOCR (see #3049 for the torch fix).
     assert f"EngineConfig.{backend}.cuda_ep_cfg.device_id" in params
     assert f"EngineConfig.{backend}.gpu_id" not in params
+
+
+def test_rapidocr_pins_explicit_model_paths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    params = _capture_params(
+        monkeypatch, RapidOcrOptions(backend="onnxruntime"), tmp_path
+    )
+    # Paths are always pinned now, so rapidocr never lazy-resolves models.
+    assert params["Det.model_path"] is not None
+    assert params["Rec.model_path"] is not None
+    assert "Det.lang_type" not in params
+    assert "Rec.lang_type" not in params

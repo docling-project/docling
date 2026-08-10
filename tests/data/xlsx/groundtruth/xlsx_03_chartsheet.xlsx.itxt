@@ -2,3 +2,6 @@ item-0 at level 0: unspecified: group _root_
   item-1 at level 1: sheet: group Duck Observations
     item-2 at level 2: table with [7x4]
   item-3 at level 1: sheet: group Duck Chart
+    item-4 at level 2: picture
+      item-4 at level 3: caption: Wild Duck Observations by Year
+  item-5 at level 1: caption: Wild Duck Observations by Year

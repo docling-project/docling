@@ -1,5 +1,5 @@
 <doctag><section_header_level_1><loc_52><loc_37><loc_225><loc_48>اميدنامه پذيرش در بازار اصلی - کالای داخلی</section_header_level_1>
-<picture><loc_326><loc_21><loc_405><loc_61></picture>
+<picture><loc_327><loc_21><loc_405><loc_61></picture>
 <section_header_level_1><loc_322><loc_55><loc_404><loc_62>شرکت بورس کالای ايران</section_header_level_1>
 <section_header_level_1><loc_308><loc_82><loc_403><loc_93>-2-5 استاندارد کالا</section_header_level_1>
 <text><loc_379><loc_96><loc_436><loc_106>نام استاندارد</text>

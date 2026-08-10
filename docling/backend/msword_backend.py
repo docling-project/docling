@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
+import zipfile
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -9,6 +12,7 @@ from typing import Any, Callable, Final
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
+    CodeItem,
     ContentLayer,
     DocItem,
     DocItemLabel,
@@ -18,47 +22,241 @@ from docling_core.types.doc import (
     ImageRef,
     ListGroup,
     NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     RefItem,
     RichTableCell,
     TableCell,
     TableData,
     TableItem,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
-from docx import Document
-from docx.document import Document as DocxDocument
-from docx.oxml.table import CT_Tc
-from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
-from docx.table import Table, _Cell
-from docx.text.hyperlink import Hyperlink
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pydantic import AnyUrl
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
     get_docx_to_pdf_converter,
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
+from docling.datamodel.backend_options import MsWordBackendOptions
+from docling.datamodel.base_models import FormatToMimeType
+from docling.datamodel.document import InputDocument, InputFormat
+from docling.exceptions import DocumentLoadError, SecurityError
+from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 
 _log = logging.getLogger(__name__)
 
+_DOCX_AVAILABLE: bool = False
+_DOCX_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from docx import Document
+    from docx.document import Document as DocxDocument
+    from docx.enum.style import WD_STYLE_TYPE
+    from docx.oxml.simpletypes import ST_Merge
+    from docx.oxml.table import CT_Tc
+    from docx.oxml.xmlchemy import BaseOxmlElement
+    from docx.styles.style import BaseStyle, ParagraphStyle
+    from docx.table import Table, _Cell
+    from docx.text.hyperlink import Hyperlink
+    from docx.text.paragraph import Paragraph
+    from docx.text.run import Run
+
+    _DOCX_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _DOCX_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'python-docx' package is required to process Word files. "
+    "Install it with `pip install 'docling-slim[format-docx]'`."
+)
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Word charts as images "
+    "(render_chart_images=True). Install LibreOffice and make sure `soffice` is "
+    "on PATH. Charts still keep their classification and reconstructed tabular "
+    "data without it."
+)
+
+_SAFE_XML_PARSER: Final = etree.XMLParser(
+    resolve_entities=False,
+    load_dtd=False,
+    no_network=True,
+    dtd_validation=False,
+)
+"""Safe XML parser for chart parts.
+
+Prevents XXE, DTD-over-network, and entity-expansion attacks when parsing
+untrusted ``chartN.xml`` payloads.
+"""
+
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
+"""Maps a DrawingML chart plot element name to a docling picture-classification label.
+
+The key is the tag-local name of the chart type element (e.g. ``"barChart"``,
+the child of ``c:plotArea``). These tag names are shared across OOXML Office
+formats. Chart types not listed fall back to ``OTHER_CHART``.
+"""
+
+_STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
+"""Common prefix of all Strict OOXML namespace and relationship URIs."""
+
+_TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
+"""Host segment of all Transitional OOXML namespace URIs."""
+
+_STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
+"""Byte string present in every Strict OOXML part that carries a Strict namespace URI."""
+
+_OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
+"""OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
+
+_MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024
+"""Read cap (64 KiB) for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
+
+_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024
+"""Per-member uncompressed size cap (512 MiB) applied during Strict-to-Transitional rewriting."""
+
+_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024
+"""Total uncompressed size cap (2 GiB) for all members during Strict-to-Transitional rewriting."""
+
+_STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
+    "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
+    "http://purl.oclc.org/ooxml/descriptions/full": "http://descriptions.openxmlformats.org/description/full",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/customXml": "http://schemas.openxmlformats.org/officeDocument/2006/customXml",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+}
+"""Strict namespace URIs whose Transitional equivalents are irregular (Open XML SDK NamespaceIdMap)."""
+
+_STRICT_OOXML_NS_RE: Final = re.compile(
+    r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
+)
+"""Matches Strict OOXML namespace/relationship URIs."""
+
+_VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
+    {
+        "decimal",
+        "lowerRoman",
+        "upperRoman",
+        "lowerLetter",
+        "upperLetter",
+        "decimalZero",
+    }
+)
+"""OOXML numFmt values that produce visible list/heading markers."""
+
+
+def _strict_ns_to_transitional(strict_ns: str) -> str:
+    """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
+    if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
+        return _STRICT_OOXML_NS_OVERRIDES[strict_ns]
+    rest = strict_ns[len(_STRICT_OOXML_NS_PREFIX) :]
+    rest = rest.replace("extendedProperties", "extended-properties")
+    rest = rest.replace("customProperties", "custom-properties")
+    segment, separator, tail = rest.partition("/")
+    if not separator:
+        return f"{_TRANSITIONAL_NS_HOST}{segment}/2006"
+    return f"{_TRANSITIONAL_NS_HOST}{segment}/2006/{tail}"
+
+
+def _is_strict_ooxml(archive: zipfile.ZipFile) -> bool:
+    """Cheaply decide whether an open .docx archive is a Strict OOXML package.
+
+    Only the small package root relationships part (``_rels/.rels``) is read, so
+    the common Transitional case does not pay for decompressing the whole file.
+    """
+    try:
+        with archive.open(_OOXML_ROOT_RELS) as root_rels:
+            return _STRICT_OOXML_MARKER in root_rels.read(_MAX_ROOT_RELS_SIZE)
+    except KeyError:
+        # No root relationships: not a well-formed OOXML package. Let python-docx
+        # deal with it on the unchanged path.
+        return False
+
+
+def _is_safe_zip_member(name: str) -> bool:
+    """Return whether a zip member name stays inside the archive root.
+
+    Guards against zip-slip: absolute paths, drive-letter paths and ``..``
+    traversal are rejected.
+    """
+    normalized = name.replace("\\", "/")
+    if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+        return False
+    return not any(part == ".." for part in normalized.split("/"))
+
+
+def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
+    """Rewrite an open Strict OOXML package to Transitional namespaces in memory.
+
+    Only XML/relationship parts that actually carry a Strict namespace are
+    decoded and rewritten; every other member (images, fonts, ...) is copied
+    through with its original compression, avoiding a needless decode pass. Each
+    member is decompressed exactly once. The archive is validated against
+    zip-slip and zip-bomb attacks while it is read.
+    """
+    normalized = BytesIO()
+    total_uncompressed = 0
+    with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in archive.infolist():
+            if not _is_safe_zip_member(info.filename):
+                raise SecurityError(f"ZIP slip attempt: {info.filename}")
+            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    f"Refusing to expand oversized OOXML part: {info.filename}"
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
+                )
+            content = archive.read(info.filename)
+            if (
+                info.filename.endswith((".xml", ".rels"))
+                and _STRICT_OOXML_MARKER in content
+            ):
+                content = _STRICT_OOXML_NS_RE.sub(
+                    lambda match: _strict_ns_to_transitional(match.group(0)),
+                    content.decode("utf-8"),
+                ).encode("utf-8")
+            target.writestr(info, content)
+    normalized.seek(0)
+    return normalized
+
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
-    """Backend for parsing Microsoft Word (.docx) documents.
+    """Backend for parsing Word documents (DOCX and DOC files).
+
+    Both Transitional (ISO/IEC 29500-4) and Strict (ISO/IEC 29500-1) ``.docx``
+    packages are supported. Strict packages use ``purl.oclc.org`` namespace URIs
+    that ``python-docx`` does not recognise; they are normalised to their
+    Transitional equivalents in memory before parsing. Transitional files are
+    handed to ``python-docx`` unchanged.
+
+    Legacy ``.doc`` files (binary Word 97-2004 format) are first converted to
+    ``.docx`` via LibreOffice before parsing.
 
     Note:
-        Images with a total area (width * height) less than or equal to
-        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout
-        artifacts (such as invisible spacers) and are discarded during parsing.
+        Images with a total area (width x height) less than or equal to
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25 px2) are treated as invisible
+        layout spacers and discarded during parsing.
     """
 
     _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -66,6 +264,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     _BLIP_NAMESPACES: Final = {
         "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
         "w": _W_NS,
         "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
@@ -77,13 +276,122 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
-    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
-        25  # Images with an area (w*h) below this are dropped as layout artifacts
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
+    """Images with an area (w*h) below this are dropped as layout artifacts."""
+
+    _CODE_STYLE_NAMES: Final[frozenset[str]] = frozenset(
+        {
+            "source code",
+            "code",
+            "code block",
+            "code listing",
+            "html preformatted",
+            "preformatted text",
+            "preformatted",
+            "verbatim",
+        }
     )
+    """Case-folded paragraph style names that mark a paragraph as code.
+
+    Matched exactly, never by substring: ``"Unicode"`` or ``"Area Code"`` must
+    not match, and caption styles like ``"Listing"`` are intentionally omitted.
+    Mirrors pandoc's docx reader and LibreOffice/HTML equivalents.
+    """
+
+    _CODE_STYLE_IDS: Final[frozenset[str]] = frozenset(
+        {
+            "sourcecode",
+            "source_code",
+            "code",
+            "codeblock",
+            "codelisting",
+            "htmlpreformatted",
+            "preformattedtext",
+            "preformatted",
+            "verbatim",
+        }
+    )
+    """Case-folded paragraph style IDs that mark a paragraph as code.
+
+    Complements ``_CODE_STYLE_NAMES``; style IDs are the canonical XML
+    ``w:styleId`` attribute values, distinct from the human-readable name.
+    """
+
+    _MAX_STYLE_INHERITANCE_DEPTH: Final[int] = 10
+    """Defensive cap against malformed or cyclic ``base_style`` inheritance chains."""
+
+    _MONOSPACE_FONTS: Final[frozenset[str]] = frozenset(
+        {
+            "consolas",
+            "courier",
+            "courier new",
+            "lucida console",
+            "menlo",
+            "monaco",
+            "dejavu sans mono",
+            "andale mono",
+            "liberation mono",
+            "sf mono",
+        }
+    )
+    """Case-folded font family names considered monospaced for code detection.
+
+    Used by the font-fallback signal in ``_is_code_by_font``: a paragraph is a
+    code candidate when nearly every character resolves to one of these families.
+    """
+
+    _MONOSPACE_CHAR_RATIO: Final[float] = 0.9
+    """Minimum fraction of characters that must be monospaced for font-based code detection."""
+
+    _CODE_INDICATIVE_CHARS: Final[frozenset[str]] = frozenset("{};=<>")
+    """ASCII punctuation that distinguishes code from monospaced prose.
+
+    Parentheses, brackets, and lone semicolons are excluded: phone numbers,
+    citations, and legal clauses use them freely.
+    """
+
+    _CODE_CALL_PATTERN: Final[re.Pattern[str]] = re.compile(
+        r"[A-Za-z_]\((?:\s*\)|[^)]*[\d,._='\"][^)]*\))"
+    )
+    """Matches a function/method call whose arguments look code-like.
+
+    Accepts an empty call (``set()``) or one whose arguments carry code-ish
+    characters (``print(sys.argv)``). Plain ``word(word)`` shapes like
+    ``party(ies)`` are intentionally excluded.
+    """
+
+    _CODE_DEF_PATTERN: Final[re.Pattern[str]] = re.compile(
+        r"^[ \t]*(?:async\s+)?"
+        r"(?:def|class|if|elif|while|for|with|except|finally|try"
+        r"|catch|switch|function|func|fn|sub|proc)"
+        r"\s+\S[^\n]*:[ \t]*$",
+        re.MULTILINE,
+    )
+    """Matches a keyword-led block-header line in two forms.
+
+    - Definition/call form: ``def fib(n):``, ``class Foo(Bar):``, ``for x in range(n):``
+    - Bare-expression form: ``while True:``, ``if x == 0:``, ``with open(f) as fh:``
+
+    Prose labels ending in ``:`` (e.g. ``"Note:"``) are excluded by the leading
+    keyword anchor combined with requiring at least one non-space character after
+    the keyword. Statement keywords that do not produce block headers (``return``,
+    ``import``) are omitted to avoid false positives on prose.
+    """
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: MsWordBackendOptions | None = None,
+    ) -> None:
+        if not _DOCX_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
+        if options is None:
+            options = MsWordBackendOptions()
+        if in_doc.format == InputFormat.DOC:
+            path_or_stream = convert_to_modern_format(path_or_stream, "doc", "docx")
+        super().__init__(in_doc, path_or_stream, options)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
@@ -117,6 +425,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # numIds already opened in this document. Word numbers continuously
+        # per numId, so a numId that reappears is a resumed list, not a new one
+        self.started_numids: set[int] = set()
         # Track the last numId to handle list continuation after interruptions
         self.last_numid: int | None = None
         # Track the last list group and its parent to reuse only in same context
@@ -139,6 +450,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.paragraph_comment_map: dict[int, list[str]] = {}
         # Track text items created from each paragraph element
         self.paragraph_to_items: dict[int, list[RefItem]] = {}
+        # True when the previous sibling item is a code block; lets indented,
+        # punctuation-free continuation lines stay in the block.
+        self._prev_sibling_is_code: bool = False
+        # Forces the next code paragraph to start a fresh block; set at
+        # boundaries that add no item of their own (1x1 tables, headers).
+        self._force_new_code_block: bool = False
+        # Blank code paragraphs are buffered so a block never ends in them.
+        self._pending_code_blank_lines: int = 0
+        # The document default style's font is not evidence of code.
+        self._default_paragraph_style: BaseStyle | None = None
 
         self.docx_obj = self.load_msword_file(
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
@@ -146,6 +467,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.docx_obj:
             self.valid = True
             self.current_part = self.docx_obj.part
+            self._default_paragraph_style = self.docx_obj.styles.default(
+                WD_STYLE_TYPE.PARAGRAPH
+            )
             # Build comment mappings after loading document
             self._extract_comment_ranges()
 
@@ -168,7 +492,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.DOCX}
+        return {InputFormat.DOCX, InputFormat.DOC}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -180,7 +504,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 
@@ -206,12 +530,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: BytesIO | Path, document_hash: str
     ) -> DocxDocument:
         try:
-            if isinstance(path_or_stream, BytesIO):
-                return Document(path_or_stream)
-            elif isinstance(path_or_stream, Path):
+            if isinstance(path_or_stream, Path):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
                 return Document(str(path_or_stream))
+            elif isinstance(path_or_stream, BytesIO):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
+                path_or_stream.seek(0)
+                return Document(path_or_stream)
             else:
                 return None
+        except SecurityError:
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"MsWordDocumentBackend could not load document with hash {document_hash}"
@@ -307,6 +640,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group = None
         self.last_list_group_numid = None
         self.last_list_group_parent = None
+
+    def _end_list_on_body_text(self, text: str) -> None:
+        """Drop the cached list group once body text follows a list.
+
+        A blank spacer paragraph between a list item and this text closes the
+        list but keeps the group cached, so a later item would re-open a group
+        that now sits *before* this paragraph and the text would be rendered
+        after the whole list.
+        """
+        if text:
+            self._clear_list_group_cache()
 
     @contextmanager
     def _isolated_list_context(self):
@@ -469,23 +813,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(te2)
             # Check for DrawingML elements
             elif drawingml_els:
-                if (
-                    self.docx_to_pdf_converter is None
-                    and self.docx_to_pdf_converter_init is False
-                ):
-                    self.docx_to_pdf_converter = get_docx_to_pdf_converter()
-                    self.docx_to_pdf_converter_init = True
+                # Native charts (graphicFrames referencing word/charts/chartN.xml)
+                # are parsed into classified pictures carrying their reconstructed
+                # data, without LibreOffice. Any remaining DrawingML (shapes,
+                # SmartArt, ...) still needs LibreOffice to be rasterized.
+                chart_els: list[Any] = []
+                other_els: list[Any] = []
+                for el in drawingml_els:
+                    (chart_els if self._is_chart_drawing(el) else other_els).append(el)
 
-                if self.docx_to_pdf_converter is None:
-                    if self.display_drawingml_warning:
-                        _log.warning(
-                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                            "If you want these exported, make sure you have "
-                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
-                        )
-                        self.display_drawingml_warning = False
-                else:
-                    self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
+                for chart_el in chart_els:
+                    chart_ref = self._handle_chart(doc=doc, chart_el=chart_el)
+                    if chart_ref is not None:
+                        added_elements.append(chart_ref)
+
+                if other_els:
+                    if (
+                        self.docx_to_pdf_converter is None
+                        and self.docx_to_pdf_converter_init is False
+                    ):
+                        self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+                        self.docx_to_pdf_converter_init = True
+
+                    if self.docx_to_pdf_converter is None:
+                        if self.display_drawingml_warning:
+                            _log.warning(
+                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                                "If you want these exported, make sure you have "
+                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                            )
+                            self.display_drawingml_warning = False
+                    else:
+                        self._handle_drawingml(doc=doc, drawingml_els=other_els)
 
                 # Always process text in paragraph
                 if (
@@ -576,7 +935,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # If not found directly in paragraph, check if the style defines numbering
         if paragraph.style is not None:
-            style_elem = getattr(paragraph.style, "element", None)
+            style_elem = paragraph.style.element
             if style_elem is not None:
                 style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
                 if style_numPr is not None:
@@ -600,11 +959,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
         """Find the level element from the numbering XML for a given numId and ilvl."""
         try:
-            if not hasattr(self.docx_obj, "part") or not hasattr(
-                self.docx_obj.part, "package"
-            ):
-                return None
-
             numbering_part = None
             for part in self.docx_obj.part.package.parts:
                 if "numbering" in part.partname:
@@ -719,8 +1073,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parts.append(str(counter))
         return ".".join(parts) + "."
 
-    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
-        """Check if a list is numbered based on its numFmt value."""
+    def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
+        """Return True when numbering.xml defines a visible marker for numId/ilvl."""
         try:
             lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
@@ -733,20 +1087,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            numbered_formats = {
-                "decimal",
-                "lowerRoman",
-                "upperRoman",
-                "lowerLetter",
-                "upperLetter",
-                "decimalZero",
-            }
-
-            return num_fmt in numbered_formats
+            return num_fmt in _VISIBLE_NUMBERING_FORMATS
 
         except Exception as e:
-            _log.debug(f"Error determining if list is numbered: {e}")
+            _log.debug(f"Error determining visible numbering format: {e}")
             return False
+
+    def _is_numbered_heading(self, paragraph: Paragraph) -> bool:
+        """Return True when heading numbering would render a visible marker."""
+        numid, ilvl = self._get_numId_and_ilvl(paragraph)
+        return numid is not None and self._has_visible_numbering_format(
+            numid, ilvl or 0
+        )
 
     def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
         """Extract outlineLvl from paragraph's style definition.
@@ -757,7 +1109,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if paragraph.style is None:
             return None
 
-        style_elem = getattr(paragraph.style, "element", None)
+        style_elem = paragraph.style.element
         if style_elem is None:
             return None
 
@@ -793,17 +1145,193 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return style_label, None
 
+    def _last_child_item(
+        self, doc: DoclingDocument, parent: NodeItem | None
+    ) -> NodeItem | None:
+        """Return the last child of a container.
+
+        Args:
+            doc: The document being built.
+            parent: The container to inspect; None means the document body.
+
+        Returns:
+            The resolved last child item, or None if the container is empty.
+        """
+        container = parent if parent is not None else doc.body
+        if not container.children:
+            return None
+        return container.children[-1].resolve(doc)
+
+    def _is_code_style(self, style: ParagraphStyle | None) -> bool:
+        """Return True if a style marks its paragraphs as code.
+
+        Mirrors pandoc's docx reader: the style itself or any ancestor in its
+        ``base_style`` chain may carry the code style name/id.
+
+        Args:
+            style: The already-resolved paragraph style (resolving it is
+                expensive, so callers do it once).
+
+        Returns:
+            True if the style chain marks the paragraph as code.
+        """
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            name = (style.name or "").strip().lower()
+            style_id = (style.style_id or "").strip().lower()
+            if name in self._CODE_STYLE_NAMES or style_id in self._CODE_STYLE_IDS:
+                return True
+            # A malformed basedOn chain can hop to a style type (e.g. a
+            # numbering style) that lacks this attribute; getattr keeps
+            # the walk safe.
+            style = getattr(style, "base_style", None)
+            depth += 1
+        return False
+
+    def _is_in_table_cell(self, paragraph: Paragraph) -> bool:
+        """Return True if the paragraph sits inside a table cell."""
+        return bool(paragraph._p.xpath("ancestor::w:tc"))
+
+    def _effective_style_font(self, style: ParagraphStyle | None) -> str:
+        """Return the case-folded font family a style resolves to.
+
+        Walks the ``base_style`` chain; used as the fallback font for runs
+        whose own ``run.font.name`` is None because the typeface is inherited
+        from the paragraph style. The document-default style is excluded: a
+        paragraph left on it carries no author intent, so a Courier document
+        theme is not code evidence.
+
+        Args:
+            style: The already-resolved paragraph style to walk.
+
+        Returns:
+            The lowercased font family name, or "" if none applies.
+        """
+        default_style = self._default_paragraph_style
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            if default_style is not None and style.element is default_style.element:
+                return ""
+            font_name = style.font.name
+            if font_name:
+                return font_name.strip().lower()
+            # A malformed basedOn chain can hop to a style type (e.g. a
+            # numbering style) that lacks base_style; getattr keeps the
+            # walk safe.
+            style = getattr(style, "base_style", None)
+            depth += 1
+        return ""
+
+    def _monospaced_char_counts(
+        self, paragraph: Paragraph, style_font: str
+    ) -> tuple[int, int]:
+        """Count how much of the paragraph text is set in a monospaced font.
+
+        Scans every run in the paragraph element, including runs nested
+        inside hyperlinks, tracked insertions, smart tags and field results
+        (all omitted by ``paragraph.runs``), so a proportional-font span in
+        any of them cannot slip past the all-monospace check.
+
+        Args:
+            paragraph: The paragraph to scan.
+            style_font: The paragraph style's resolved font, used when a run
+                inherits its typeface (``run.font.name`` is None) instead of
+                setting it directly.
+
+        Returns:
+            A (monospaced_char_count, total_char_count) tuple.
+        """
+        # Deleted-text runs (w:del) carry w:delText rather than w:t, so their
+        # run.text is empty and the filter drops them.
+        runs = [
+            run
+            for r_el in paragraph._p.xpath(".//w:r")
+            if (run := Run(r_el, paragraph)).text.strip()
+        ]
+        mono_chars = 0
+        total_chars = 0
+        for run in runs:
+            run_len = len(run.text.strip())
+            total_chars += run_len
+            font_name = (run.font.name or "").strip().lower() or style_font
+            if font_name in self._MONOSPACE_FONTS:
+                mono_chars += run_len
+        return mono_chars, total_chars
+
+    def _is_code_by_font(
+        self, paragraph: Paragraph, style: ParagraphStyle | None
+    ) -> bool:
+        """Return True if the paragraph reads as code set in a monospaced font.
+
+        Lower-precision fallback used only when the style name doesn't already
+        mark the paragraph as code: (nearly) every run must resolve to a
+        monospaced font and the text must look code-like.
+
+        Args:
+            paragraph: The paragraph to classify.
+            style: The already-resolved paragraph style, passed in to avoid
+                re-reading the expensive ``paragraph.style`` property.
+
+        Returns:
+            True if the font fallback classifies the paragraph as code.
+        """
+        # Ordered cheapest-first: ordinary prose exits before the numbering
+        # lookup and the per-run font scan. In headers/footers only the
+        # explicit style tier applies.
+        if self.content_layer == ContentLayer.FURNITURE:
+            return False
+
+        lowered_style = (style.name or "").lower() if style else ""
+        if any(kw in lowered_style for kw in ("caption", "figure", "table", "label")):
+            return False
+
+        raw_text = paragraph.text
+        stripped_text = raw_text.strip()
+        if not stripped_text or re.match(
+            r"^(figure|table|listing)\s+\d", stripped_text, re.IGNORECASE
+        ):
+            return False
+
+        # The text must carry a code signal, or be an indented line directly
+        # continuing a block ("    return a" stays inside; isolated
+        # monospaced prose does not).
+        strong_hits = {ch for ch in stripped_text if ch in self._CODE_INDICATIVE_CHARS}
+        # Semicolons alone are prose; statements carry a second signal, and
+        # terminator-only lines like "listen 80;" survive via continuation.
+        has_code_char = (
+            bool(strong_hits - {";"})
+            or self._CODE_CALL_PATTERN.search(stripped_text) is not None
+            or self._CODE_DEF_PATTERN.search(stripped_text) is not None
+            or detect_code_language(stripped_text) is not CodeLanguageLabel.UNKNOWN
+        )
+        is_code_continuation = self._prev_sibling_is_code and raw_text[:1].isspace()
+        if not has_code_char and not is_code_continuation:
+            return False
+
+        # Never reclassify a list item; an explicit code style still wins.
+        numid, ilevel = self._get_numId_and_ilvl(paragraph)
+        if numid and ilevel is not None:
+            return False
+
+        style_font = self._effective_style_font(style)
+        mono_chars, total_chars = self._monospaced_char_counts(paragraph, style_font)
+        if total_chars == 0 or mono_chars / total_chars < self._MONOSPACE_CHAR_RATIO:
+            return False
+
+        return not self._is_in_table_cell(paragraph)
+
     def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, int | None]:
-        if paragraph.style is None:
+        # Resolve the style once: python-docx's ``paragraph.style`` scans all
+        # styles on every access, so re-reading it per predicate is costly.
+        style = paragraph.style
+        if style is None:
             return "Normal", None
 
-        label: str = paragraph.style.style_id
-        name: str = paragraph.style.name or ""
+        label: str = style.style_id
+        name: str = style.name or ""
         base_style_label: str | None = None
         base_style_name: str | None = None
-        if isinstance(
-            base_style := getattr(paragraph.style, "base_style", None), ParagraphStyle
-        ):
+        if isinstance(base_style := getattr(style, "base_style", None), ParagraphStyle):
             base_style_label = base_style.style_id
             base_style_name = base_style.name
 
@@ -839,6 +1367,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if base_style_name and "heading" in base_style_name.lower():
                 return self._get_heading_and_level(base_style_name)
 
+        if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
+            return "Code", None
+
         return label, None
 
     @classmethod
@@ -850,7 +1381,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if not is_bold:
             try:
                 # Check the raw XML of the run itself for <w:b> tags
-                if hasattr(run, "_element") and run._element is not None:
+                if run._element is not None:
                     b_tags = run._element.xpath(".//w:b | .//w:bCs")
                     for b in b_tags:
                         val = b.get(
@@ -861,11 +1392,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             break
 
                 # Check the paragraph's direct formatting properties
-                if (
-                    not is_bold
-                    and hasattr(run, "_parent")
-                    and hasattr(run._parent, "_element")
-                ):
+                if not is_bold and run._parent._element is not None:
                     pPr_b = run._parent._element.xpath(
                         "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
                     )
@@ -881,11 +1408,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if (
                     not is_bold
                     and paragraph is not None
-                    and getattr(paragraph, "style", None)
+                    and paragraph.style is not None
                 ):
                     current_style = paragraph.style
                     while current_style is not None:
-                        if hasattr(current_style, "font") and current_style.font.bold:
+                        if current_style.font.bold:
                             is_bold = True
                             break
 
@@ -912,21 +1439,40 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
+        """Resolve a hyperlink's address to a URL or a local path.
+
+        Addresses without a URL scheme are treated as (relative) filesystem
+        paths. Addresses with a scheme are parsed as URLs.
+
+        Malformed URLs (e.g. an address containing spaces) are handled
+        gracefully: the invalid target is dropped and ``None`` is returned so
+        that the link text is still preserved and conversion of the rest of the
+        document continues. This avoids a single bad hyperlink aborting the
+        whole conversion.
+
+        Args:
+            hyperlink: The DOCX hyperlink whose address should be resolved.
+
+        Returns:
+            An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
+            or ``None`` when there is no address or the URL is malformed.
+        """
         if hyperlink.address:
-            return (
-                AnyUrl(hyperlink.address)
-                if urlparse(hyperlink.address).scheme
-                else Path(hyperlink.address)
-            )
+            if not urlparse(hyperlink.address).scheme:
+                return Path(hyperlink.address)
+            try:
+                return AnyUrl(hyperlink.address)
+            except ValidationError:
+                _log.warning(
+                    "Skipping malformed hyperlink address: %r", hyperlink.address
+                )
+                return None
 
         return None
 
     def _iter_paragraph_content(
         self, paragraph: Paragraph
     ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
-        if not hasattr(paragraph, "_p"):
-            return []
-
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
 
         def _get_children_recursive(node):
@@ -991,9 +1537,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return content
 
     def _get_paragraph_text(self, paragraph: Paragraph) -> str:
-        if not hasattr(paragraph, "iter_inner_content") or not hasattr(paragraph, "_p"):
-            return paragraph.text
-
         return "".join(
             text
             for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
@@ -1013,12 +1556,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ] = []
         group_text = ""
         previous_format = None
-        last_format = None
 
         # Iterate over the runs of the paragraph and group them by format
         for text, format, hyperlink in self._iter_paragraph_content(paragraph):
-            last_format = format
-
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
@@ -1040,7 +1580,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), last_format, None))
+            paragraph_elements.append((group_text.strip(), previous_format, None))
 
         return paragraph_elements
 
@@ -1455,6 +1995,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if text is None:
             return elem_ref
+        # Kept unstripped: code blocks preserve leading indentation.
+        raw_paragraph_text = text
         text = text.strip()
 
         # Track the paragraph element ID for comment linking
@@ -1467,6 +2009,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
+        self._prev_sibling_is_code = isinstance(
+            self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
+        )
         p_style_id, p_level = self._get_label_and_level(paragraph)
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
@@ -1477,10 +2022,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if (
             numid is not None
             and ilevel is not None
-            and p_style_id not in ["Title", "Heading"]
+            and p_style_id not in ["Title", "Heading", "Code"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(numid, ilevel)
+            is_numbered = self._has_visible_numbering_format(numid, ilevel)
 
             # If there are equations in the list item, handle them specially
             if len(equations) > 0:
@@ -1504,20 +2049,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._update_history(p_style_id, p_level, numid, ilevel)
             return elem_ref
         elif (
-            numid is None
-            and self._prev_numid() is not None
+            self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
-        ):  # Close list
+            and (numid is None or p_style_id == "Code")
+        ):  # Close list. A Code paragraph after a list must close it even if it
+            # carries a stray/inherited numId, then be re-parented at body level
+            # by the Code branch below (otherwise it nests inside the ListGroup).
             self.last_numid = self._prev_numid()
-            # Store the list group and its parent for potential reuse
-            if self.level_at_new_list and self.level_at_new_list in self.parents:
-                parent_item = self.parents.get(self.level_at_new_list)
-                if isinstance(parent_item, ListGroup):
-                    self.last_list_group = parent_item
-                    self.last_list_group_numid = self.last_numid
-                    self.last_list_group_parent = self.parents.get(
-                        self.level_at_new_list - 1
-                    )
+            if text and text.strip():
+                # Substantive body text breaks list continuity
+                self._clear_list_group_cache()
+            else:
+                # Empty/whitespace paragraph — cache the group for potential reuse
+                if self.level_at_new_list and self.level_at_new_list in self.parents:
+                    parent_item = self.parents.get(self.level_at_new_list)
+                    if isinstance(parent_item, ListGroup):
+                        self.last_list_group = parent_item
+                        self.last_list_group_numid = self.last_numid
+                        self.last_list_group_parent = self.parents.get(
+                            self.level_at_new_list - 1
+                        )
 
             if self.level_at_new_list:
                 for key in range(len(self.parents)):
@@ -1542,13 +2093,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
-            else:
-                is_numbered_style = False
+            is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 
@@ -1594,7 +2139,58 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     elem_ref=elem_ref,
                 )
 
+        elif p_style_id == "Code" and not checkbox_label:
+            # Code-styled checkboxes fall through to the text branch,
+            # keeping their label.
+            level = self._get_level()
+            parent = self.parents[level - 1]
+            code_text = raw_paragraph_text.rstrip()
+            # Merge into the previous code block only when it is the parent's
+            # last child (any intervening element breaks the block), the most
+            # recent text item (a resumed list adds items without touching
+            # this parent), and in the same content layer.
+            last_item = self._last_child_item(doc, parent)
+            merge_target = None if self._force_new_code_block else last_item
+            if (
+                isinstance(merge_target, CodeItem)
+                and merge_target.content_layer == self.content_layer
+                and doc.texts
+                and doc.texts[-1] is merge_target
+            ):
+                if code_text:
+                    joiner = "\n" * (self._pending_code_blank_lines + 1)
+                    merge_target.text = f"{merge_target.text}{joiner}{code_text}"
+                    merge_target.orig = f"{merge_target.orig}{joiner}{code_text}"
+                    self._pending_code_blank_lines = 0
+                    # Re-detect language on the full accumulated text; a single
+                    # paragraph may be ambiguous while the combined block is not.
+                    if merge_target.code_language is CodeLanguageLabel.UNKNOWN:
+                        merge_target.code_language = detect_code_language(
+                            merge_target.text
+                        )
+                else:
+                    # Buffered: written only if more code follows, so a
+                    # block never ends in blank lines.
+                    self._pending_code_blank_lines += 1
+                elem_ref.append(merge_target.get_ref())
+                self._force_new_code_block = False
+            elif text:
+                # Start a new block, but never on a leading blank paragraph.
+                self._pending_code_blank_lines = 0
+                code_item = doc.add_code(
+                    text=code_text,
+                    orig=code_text,
+                    parent=parent,
+                    content_layer=self.content_layer,
+                    code_language=detect_code_language(code_text),
+                )
+                elem_ref.append(code_item.get_ref())
+                self._force_new_code_block = False
+            # A blank that neither starts nor extends a block leaves the
+            # barrier armed.
+
         else:
+            self._end_list_on_body_text(text)
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1844,6 +2440,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         It determines whether to open a new list, continue an existing one, handle
         indentation changes, or close lists based on the numbering context.
 
+        Contract with interleaved blocks: Word numbers list items continuously
+        per ``w:numId``, so items sharing a numId belong to the same list even
+        when paragraphs of a different numId (for example a bullet list placed
+        between two ordered items) appear in between. Counters are therefore
+        reset only the first time a numId is opened -- tracked in
+        ``self.started_numids`` -- so a numId that reappears after an
+        intervening block resumes its numbering instead of restarting at 1
+        (see #3896).
+
         Args:
             doc: The DoclingDocument being constructed.
             numid: The numbering ID from the DOCX paragraph properties.
@@ -1861,9 +2466,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
-            # Only reset counters if this is a truly new list (different numId)
-            if self.last_numid != numid:
+            # Only reset counters the first time a numId is opened. A numId
+            # that reappears after an intervening list of a different numId is
+            # the same Word list resuming, and must keep its numbering.
+            if numid not in self.started_numids:
                 self._reset_list_counters_for_new_sequence(numid)
+                self.started_numids.add(numid)
 
             list_gr = self._get_or_create_list_group(
                 doc=doc,
@@ -1925,9 +2533,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 use_level = level
                 self.level_at_new_list = use_level
 
-            # Only reset counters if this is a different numId
-            if self.last_numid != numid:
+            # Only reset counters the first time a numId is opened. A numId
+            # that reappears after an intervening list of a different numId is
+            # the same Word list resuming, and must keep its numbering.
+            if numid not in self.started_numids:
                 self._reset_list_counters_for_new_sequence(numid)
+                self.started_numids.add(numid)
 
             list_gr = self._get_or_create_list_group(
                 doc=doc,
@@ -2076,6 +2687,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         doc: DoclingDocument,
     ) -> list[RefItem]:
+        """Convert a ``w:tbl`` element into a Docling table.
+
+        Cells are emitted in a single pass over the rows. A row may start late
+        (``w:gridBefore``) or end early (``w:gridAfter``), so a cell's position
+        within its row does not identify its layout-grid column; the grid column
+        is therefore tracked explicitly while walking the row. A cell with
+        ``vMerge="continue"`` holds no content of its own and instead extends the
+        cell still open at the same grid column.
+
+        Args:
+            element: The ``w:tbl`` element to convert.
+            doc: The DoclingDocument being constructed.
+
+        Returns:
+            References to the items created for this table.
+        """
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
@@ -2087,7 +2714,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
             self._clear_list_group_cache()
+            # Still a code-block boundary: outside code must not merge with
+            # code inside the cell.
+            self._force_new_code_block = True
             self._walk_linear(cell_element._element, doc)
+            self._force_new_code_block = True
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
@@ -2097,35 +2728,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         elem_ref.append(docling_table.get_ref())
 
-        cell_set: set[CT_Tc] = set()
+        open_cells: dict[int, TableCell] = {}
         for row_idx, row in enumerate(table.rows):
-            _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
-            col_idx = 0
-            while col_idx < num_cols:
-                # Handle merged cells: row may have fewer cells than num_cols
-                if col_idx >= len(row.cells):
+            grid_col = row.grid_cols_before
+            for tc in row._tr.tc_lst:
+                if grid_col >= num_cols:
                     break
-                cell: _Cell = row.cells[col_idx]
-                _log.debug(
-                    f" col {col_idx} grid_span {cell.grid_span} grid_cols_before {row.grid_cols_before}"
-                )
-                if cell is None or cell._tc in cell_set:
-                    _log.debug("  skipped since repeated content")
-                    col_idx += cell.grid_span
-                    continue
-                else:
-                    cell_set.add(cell._tc)
+                col_span = tc.grid_span
 
-                spanned_idx = row_idx
-                spanned_tc: CT_Tc | None = cell._tc
-                while spanned_tc == cell._tc:
-                    spanned_idx += 1
-                    spanned_tc = (
-                        table.rows[spanned_idx].cells[col_idx]._tc
-                        if spanned_idx < num_rows
-                        else None
+                spanned = open_cells.get(grid_col)
+                if tc.vMerge == ST_Merge.CONTINUE and spanned is not None:
+                    spanned.end_row_offset_idx = row_idx + 1
+                    spanned.row_span = (
+                        spanned.end_row_offset_idx - spanned.start_row_offset_idx
                     )
-                _log.debug(f"  spanned before row {spanned_idx}")
+                    grid_col += col_span
+                    continue
+
+                cell = _Cell(tc, table)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
@@ -2137,17 +2757,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
+                ref_for_rich_cell: RefItem | None = None
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
                     with self._isolated_list_context():
                         _, provs_in_cell = self._walk_linear(cell._element, doc)
-                _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
+                _log.debug(f"Table cell {row_idx},{grid_col} rich? {rich_table_cell}")
 
+                new_cell: TableCell
                 if len(provs_in_cell) > 0:
                     # Cell has multiple elements, we need to group them
-                    rich_table_cell = True
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    group_name = (
+                        f"rich_cell_group_{len(doc.tables)}_{grid_col}_{row_idx}"
+                    )
                     ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
                         group_name,
                         doc,
@@ -2156,35 +2779,35 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         content_layer=self.content_layer,
                     )
 
-                if rich_table_cell:
-                    rich_cell = RichTableCell(
+                if rich_table_cell and ref_for_rich_cell is not None:
+                    new_cell = RichTableCell(
                         text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_span=1,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=grid_col,
+                        end_col_offset_idx=grid_col + col_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=rich_cell)
-                    col_idx += cell.grid_span
                 else:
-                    simple_cell = TableCell(
+                    new_cell = TableCell(
                         text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_span=1,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=grid_col,
+                        end_col_offset_idx=grid_col + col_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=simple_cell)
-                    col_idx += cell.grid_span
+
+                doc.add_table_cell(table_item=docling_table, cell=new_cell)
+                open_cells[grid_col] = new_cell
+                grid_col += col_span
         return elem_ref
 
     def _has_blip(self, element: BaseOxmlElement) -> bool:
@@ -2252,6 +2875,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     fm = MsWordDocumentBackend._get_format_from_run(item)
                     if fm != Formatting():
                         return True
+
+        # Walk a non-empty code-styled cell as rich content so it can emit a
+        # CodeItem; the font fallback never fires inside cells.
+        if paragraphs:
+            first_para = Paragraph(paragraphs[0], self.docx_obj)
+            if first_para.text.strip() and self._is_code_style(first_para.style):
+                return True
 
         # All checks passed: plain text only
         return False
@@ -2527,8 +3157,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
         """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.
 
-        DrawingML elements without blips (e.g., charts, SmartArt) need to be
-        rendered through LibreOffice to extract as images.
+        Blip-less DrawingML shapes (e.g., SmartArt, WordprocessingML shapes) need
+        to be rendered through LibreOffice to extract as images. Native charts are
+        handled separately by the _handle_chart method.
 
         Args:
             doc: The DoclingDocument being constructed
@@ -2551,72 +3182,398 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _is_chart_drawing(self, drawing_el: Any) -> bool:
+        """Return True when a ``w:drawing`` embeds a native chart.
+
+        A charted drawing holds a graphic frame whose ``c:chart`` element
+        references a ``word/charts/chartN.xml`` part (rather than an ``a:blip``
+        image or a shape).
+        """
+        return (
+            drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES) is not None
+        )
+
+    def _resolve_chart_root(self, drawing_el: Any) -> Any | None:
+        """Resolve a charted ``w:drawing`` to the root of its chart part.
+
+        The drawing's ``c:chart@r:id`` is a relationship into the main document
+        part; we follow it to the ``chartN.xml`` payload and parse it with the
+        hardened XML parser. Returns None when the relationship or payload is
+        missing or malformed.
+        """
+        chart_ref = drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES)
+        if chart_ref is None:
+            return None
+        rid = chart_ref.get(f"{{{self._BLIP_NAMESPACES['r']}}}id")
+        if not rid:
+            return None
+        try:
+            part = self.docx_obj.part.related_parts[rid]
+        except KeyError:
+            _log.debug("chart relationship %r not found in document part", rid)
+            return None
+        try:
+            return etree.fromstring(part.blob, parser=_SAFE_XML_PARSER)
+        except etree.XMLSyntaxError:
+            _log.debug("could not parse chart part for relationship %r", rid)
+            return None
+
+    def _classify_chart(self, chart_root: Any) -> PictureClassificationLabel:
+        """Classify a chart from the first plot element under ``c:plotArea``.
+
+        The plot element name (``barChart``, ``lineChart``, ``pieChart``, ...) is
+        mapped to a docling classification label; unknown or combination charts
+        fall back to OTHER_CHART.
+        """
+        plot_area = chart_root.find(".//c:plotArea", namespaces=self._BLIP_NAMESPACES)
+        if plot_area is not None:
+            for child in plot_area:
+                label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                    etree.QName(child).localname
+                )
+                if label is not None:
+                    return label
+        return PictureClassificationLabel.OTHER_CHART
+
+    @staticmethod
+    def _chart_cell_text(value: str | None) -> str:
+        """Format a cached chart value as cell text.
+
+        Numeric cache values (``c:numCache``) round-trip through float so they
+        read like the source data (``"4.4000000000000004"`` -> ``"4.4"``,
+        ``"2"`` -> ``"2"``). Non-numeric labels are returned unchanged; None
+        becomes an empty string.
+        """
+        if value is None:
+            return ""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return value
+        if number.is_integer():
+            return str(int(number))
+        return str(number)
+
+    def _read_chart_cache(self, node: Any | None) -> list[str]:
+        """Read the cached ``c:pt`` values under a chart data source.
+
+        Handles both cached references (``c:numCache``/``c:strCache``) and inline
+        literals (``c:numLit``/``c:strLit``). Points are indexed by ``@idx`` and
+        gaps are filled with empty strings so every series aligns to the same rows.
+        """
+        if node is None:
+            return []
+        ns = self._BLIP_NAMESPACES
+        cache = None
+        for tag in ("numCache", "strCache", "numLit", "strLit"):
+            cache = node.find(f".//c:{tag}", namespaces=ns)
+            if cache is not None:
+                break
+        if cache is None:
+            return []
+
+        points: dict[int, str] = {}
+        for pt in cache.findall("c:pt", namespaces=ns):
+            try:
+                idx = int(pt.get("idx", "0"))
+            except ValueError:
+                continue
+            value = pt.find("c:v", namespaces=ns)
+            points[idx] = self._chart_cell_text(
+                value.text if value is not None else None
+            )
+        if not points:
+            return []
+
+        count = 0
+        count_el = cache.find("c:ptCount", namespaces=ns)
+        if count_el is not None and count_el.get("val"):
+            try:
+                count = int(count_el.get("val"))
+            except ValueError:
+                count = 0
+        length = max([count] + [idx + 1 for idx in points])
+        return [points.get(idx, "") for idx in range(length)]
+
+    def _chart_series_name(self, series: Any) -> str:
+        """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
+        tx = series.find("c:tx", namespaces=self._BLIP_NAMESPACES)
+        if tx is None:
+            return ""
+        cached = self._read_chart_cache(tx)
+        if cached:
+            return cached[0]
+        literal = tx.find("c:v", namespaces=self._BLIP_NAMESPACES)
+        return self._chart_cell_text(literal.text) if literal is not None else ""
+
+    def _chart_title_text(self, chart_root: Any) -> str | None:
+        """Extract the chart's title text, or None when it has no title.
+
+        A chart title is DrawingML rich text (``a:t`` runs) under ``c:chart/
+        c:title``; some charts instead reference a cell, cached in a ``c:strRef``.
+        """
+        ns = self._BLIP_NAMESPACES
+        chart = chart_root.find("c:chart", namespaces=ns)
+        if chart is None:
+            return None
+        title = chart.find("c:title", namespaces=ns)
+        if title is None:
+            return None
+        runs = [t.text for t in title.findall(".//a:t", namespaces=ns) if t.text]
+        text = "".join(runs).strip()
+        if not text:
+            cached = self._read_chart_cache(title)
+            text = cached[0].strip() if cached else ""
+        return text or None
+
+    def _chart_to_table_data(self, chart_root: Any) -> TableData | None:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Layout produced (categories down the first column, one column per series):
+
+            | <blank> | <series 0 name> | <series 1 name> | ...
+            | cat_0   | val_0,0         | val_1,0         | ...
+            | cat_1   | val_0,1         | val_1,1         | ...
+
+        The plotted numbers and labels come from each series' inline cache
+        (``c:numCache``/``c:strCache``), so no workbook reference resolution is
+        needed. Scatter charts use ``c:xVal``/``c:yVal`` in place of ``c:cat``/
+        ``c:val``.
+
+        Args:
+            chart_root: The parsed root of a ``chartN.xml`` part.
+
+        Returns:
+            A TableData, or None if the chart exposes no usable series.
+        """
+        ns = self._BLIP_NAMESPACES
+        series_list = chart_root.findall(".//c:ser", namespaces=ns)
+        if not series_list:
+            return None
+
+        categories: list[str] = []
+        for series in series_list:
+            cat = series.find("c:cat", namespaces=ns)
+            if cat is None:
+                cat = series.find("c:xVal", namespaces=ns)
+            resolved = self._read_chart_cache(cat)
+            if resolved:
+                categories = resolved
+                break
+
+        columns: list[tuple[str, list[str]]] = []
+        for series in series_list:
+            val = series.find("c:val", namespaces=ns)
+            if val is None:
+                val = series.find("c:yVal", namespaces=ns)
+            values = self._read_chart_cache(val)
+            columns.append((self._chart_series_name(series), values))
+
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+        if num_data_rows == 0:
+            return None
+
+        num_rows = num_data_rows + 1
+        num_cols = 1 + len(columns)
+        cells: list[TableCell] = []
+
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
+                )
+            )
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),
+                    )
+                )
+
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    def _render_chart_image(self, drawing_el: Any) -> Image.Image | None:
+        """Render a charted drawing to an image via LibreOffice.
+
+        Reuses the shared DOCX->PDF->PNG path, isolating just the chart drawing.
+        Returns None (and warns once) when LibreOffice is unavailable or the
+        render fails, so the chart still keeps its classification and data.
+        """
+        image = self._convert_elements_via_docx([drawing_el], element_tag=None)
+        if image is None and self.display_drawingml_warning:
+            _log.warning(_CHART_RENDER_HINT)
+            self.display_drawingml_warning = False
+        return image
+
+    def _handle_chart(self, doc: DoclingDocument, chart_el: Any) -> RefItem | None:
+        """Add a native chart drawing as a classified PictureItem with its data.
+
+        The chart becomes a PictureItem whose meta carries (a) the chart-type
+        classification and (b) the chart's plotted numbers reconstructed as a
+        TableData — both derived from the chart part without LibreOffice. The
+        chart title, if any, becomes the picture caption. When
+        ``render_chart_images`` is enabled and LibreOffice is available, a
+        rendered image is attached; on any failure the picture keeps its
+        classification and data without an image.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            chart_el: The ``w:drawing`` element embedding the chart.
+
+        Returns:
+            A reference to the added picture, or None if it could not be added.
+        """
+        level = self._get_level()
+        parent = self.parents[level - 1]
+
+        chart_root = self._resolve_chart_root(chart_el)
+        classification: PictureClassificationLabel | None = None
+        table_data: TableData | None = None
+        caption_text: str | None = None
+        if chart_root is not None:
+            classification = self._classify_chart(chart_root)
+            table_data = self._chart_to_table_data(chart_root)
+            caption_text = self._chart_title_text(chart_root)
+
+        render_charts = (
+            isinstance(self.options, MsWordBackendOptions)
+            and self.options.render_chart_images
+        )
+        image_ref = None
+        if render_charts:
+            chart_image = self._render_chart_image(chart_el)
+            if chart_image is not None:
+                image_ref = ImageRef.from_pil(image=chart_image, dpi=72)
+
+        caption_item = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=caption_text,
+                content_layer=self.content_layer,
+            )
+            if caption_text
+            else None
+        )
+        picture = doc.add_picture(
+            parent=parent,
+            image=image_ref,
+            caption=caption_item,
+            content_layer=self.content_layer,
+        )
+        if classification is not None:
+            picture.meta = PictureMeta(
+                classification=PictureClassificationMetaField(
+                    predictions=[
+                        PictureClassificationPrediction(class_name=classification)
+                    ]
+                ),
+                tabular_chart=(
+                    TabularChartMetaField(chart_data=table_data)
+                    if table_data is not None
+                    else None
+                ),
+            )
+        return picture.get_ref()
+
     def _add_header_footer(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add section headers and footers.
 
         Headers and footers are added in the furniture content and only the text paragraphs
         are parsed. The paragraphs are attached to a single group item for the header or the
-        footer. If the document has a section with new header and footer, they will be parsed
-        in new group items.
+        footer. Every section is visited; a header/footer definition that is inherited
+        ("linked to previous") from an already-emitted section is skipped so it is not
+        duplicated. Sections with different_first_page_header_footer contribute both their
+        first-page and their regular header/footer, since both are actually used.
 
         Args:
             docx_obj: A docx Document object to be parsed.
             doc: A DoclingDocument object to add the header and footer from docx_obj.
         """
         current_layer = self.content_layer
-        base_parent = self.parents[0]
+        base_parents = dict(self.parents)
+        base_level = self.level
         self.content_layer = ContentLayer.FURNITURE
 
         txbx_xpath = etree.XPath(
             ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//a:p//a:t",
             namespaces=self._BLIP_NAMESPACES,
         )
-        for sec_idx, section in enumerate(docx_obj.sections):
-            if sec_idx > 0 and not section.different_first_page_header_footer:
-                continue
+        emitted_partnames: set[str] = set()
 
-            hdr = (
-                section.first_page_header
-                if section.different_first_page_header_footer
-                else section.header
+        def _add_hdr_ftr_part(part, name: str) -> None:
+            resolved_part = part.part
+            partname = str(resolved_part.partname)
+            if partname in emitted_partnames:
+                return
+            emitted_partnames.add(partname)
+
+            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            tables = part.tables
+            has_blip = self._has_blip(part._element)
+            has_txbx = len(txbx_xpath(part._element)) > 0
+
+            if not (par or tables or has_blip or has_txbx):
+                return
+
+            # A header/footer part is parsed in isolation: reset the whole heading
+            # hierarchy first, otherwise a heading left over from the body (whose
+            # level is still "open") silently steals this content instead of the
+            # group below, since _get_level() picks the first open level, not
+            # necessarily level 0.
+            for i in range(-1, self.max_levels):
+                self.parents[i] = None
+            self.level = 0
+
+            self.parents[0] = doc.add_group(
+                label=GroupLabel.SECTION,
+                name=name,
+                content_layer=self.content_layer,
             )
-            par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
-            tables = hdr.tables
-            has_blip = self._has_blip(hdr._element)
-            has_txbx = len(txbx_xpath(hdr._element)) > 0
+            # Each header/footer part is its own code-block scope.
+            self._force_new_code_block = True
+            self._pending_code_blank_lines = 0
+            self.current_part = resolved_part
+            self._walk_linear(part._element, doc)
+            self.current_part = self.docx_obj.part
 
-            if par or tables or has_blip or has_txbx:
-                self.parents[0] = doc.add_group(
-                    label=GroupLabel.SECTION,
-                    name="page header",
-                    content_layer=self.content_layer,
-                )
-                self.current_part = hdr.part
-                self._walk_linear(hdr._element, doc)
-                self.current_part = self.docx_obj.part
+        for section in docx_obj.sections:
+            if section.different_first_page_header_footer:
+                _add_hdr_ftr_part(section.first_page_header, "page header")
+            _add_hdr_ftr_part(section.header, "page header")
 
-            ftr = (
-                section.first_page_footer
-                if section.different_first_page_header_footer
-                else section.footer
-            )
-            par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
-            tables = ftr.tables
-            has_blip = self._has_blip(ftr._element)
-            has_txbx = len(txbx_xpath(ftr._element)) > 0
+            if section.different_first_page_header_footer:
+                _add_hdr_ftr_part(section.first_page_footer, "page footer")
+            _add_hdr_ftr_part(section.footer, "page footer")
 
-            if par or tables or has_blip or has_txbx:
-                self.parents[0] = doc.add_group(
-                    label=GroupLabel.SECTION,
-                    name="page footer",
-                    content_layer=self.content_layer,
-                )
-                self.current_part = ftr.part
-                self._walk_linear(ftr._element, doc)
-                self.current_part = self.docx_obj.part
-
+        self._force_new_code_block = True
+        self._pending_code_blank_lines = 0
         self.content_layer = current_layer
-        self.parents[0] = base_parent
+        self.parents = base_parents
+        self.level = base_level
 
     def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add document comments (reviewer annotations) and link to annotated items.
@@ -2637,7 +3594,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: A DoclingDocument object to add the comments from docx_obj.
         """
         # Check if document has any comments
-        if not hasattr(docx_obj, "comments") or len(docx_obj.comments) == 0:
+        if len(docx_obj.comments) == 0:
             return
 
         # Process each comment and link to target items
@@ -2717,7 +3674,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Parses the DOCX XML to find commentRangeStart and commentRangeEnd markers
         and builds a map of paragraph elements to their associated comment IDs.
         """
-        if not self.docx_obj or not hasattr(self.docx_obj, "element"):
+        if not self.docx_obj:
             return
 
         # Parse the document body for comment range markers

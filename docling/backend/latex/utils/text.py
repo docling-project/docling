@@ -1,21 +1,13 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING, Callable, List, Optional
-
-if TYPE_CHECKING:
-    from typing import Any
 
 from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
     NodeItem,
-)
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexGroupNode,
-    LatexMacroNode,
-    LatexMathNode,
 )
 
 from docling.backend.latex.constants import (
@@ -29,6 +21,20 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_STYLE,
 )
 
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexGroupNode,
+        LatexMacroNode,
+        LatexMathNode,
+    )
+except ImportError:
+    pass  # guarded by LatexDocumentBackend.__init__
+
 
 class TextHelperMixin:
     if TYPE_CHECKING:
@@ -37,16 +43,16 @@ class TextHelperMixin:
 
         def _process_nodes(
             self,
-            nodes: "Any",
-            doc: "Any",
-            parent: "Any" = ...,
-            formatting: "Any" = ...,
-            text_label: "Any" = ...,
+            nodes: Any,
+            doc: Any,
+            parent: Any = ...,
+            formatting: Any = ...,
+            text_label: Any = ...,
         ) -> None: ...
-        def _extract_macro_arg(self, node: "Any") -> str: ...
+        def _extract_macro_arg(self, node: Any) -> str: ...
         def _expand_macros(self, latex_str: str) -> str: ...
         def _expand_custom_macro_invocation(
-            self, node: "Any", following_nodes: "Any"
+            self, node: Any, following_nodes: Any
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
 

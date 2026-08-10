@@ -35,14 +35,14 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 ## Features
 
-- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
+- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
 - 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 - 🧬 A unified, expressive [DoclingDocument][docling_document] representation format
 - ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, DocLang, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
 - 📜 Support for several application-specific XML schemas including [DocLang](https://doclang.ai), [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
 - 🔒 Local execution capabilities for sensitive data and air-gapped environments
 - 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
-- 🔍 Extensive OCR support for scanned PDFs and images
+- 🔍 Extensive [OCR support][ocr_engines] for scanned PDFs and images
 - 👓 Support for several Visual Language Models, such as ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
 - 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 - 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
@@ -51,6 +51,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 ### What's new
 
+- 🎬 Parsing of video files (MP4, AVI, MOV, MKV, and WebM) with an ASR transcript and representative keyframes
 - 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
@@ -89,3 +90,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: ./usage/supported_formats.md
 [docling_document]: ./concepts/docling_document.md
 [integrations]: ./integrations/index.md
+[ocr_engines]: ./concepts/OCR.md

@@ -34,7 +34,7 @@ _log = logging.getLogger(__name__)
 
 _INSTALL_HINT = (
     "The 'mail-parser' package is required to process email files. "
-    "Install it with `pip install 'docling[format-email]'`."
+    "Install it with `pip install 'docling-slim[format-email]'`."
 )
 
 
