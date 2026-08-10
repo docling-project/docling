@@ -9,7 +9,7 @@ import unicodedata
 # instead of the canonical letter. Text stored that way is not searchable or
 # comparable against normally-encoded Arabic, since a shaped codepoint never
 # matches its U+0600 block equivalent.
-_ARABIC_PRESENTATION_RE = re.compile(r"[ﭐ-﷿ﹰ-﻿]+")
+_ARABIC_PRESENTATION_RE = re.compile("[\ufb50-\ufdff\ufe70-\ufeff]+")
 
 
 def normalize_arabic_presentation_forms(text: str) -> str:
