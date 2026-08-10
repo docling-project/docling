@@ -155,6 +155,58 @@ def test_manage_list_structure_no_keyerror_when_use_level_exceeds_parents(tmp_pa
     assert isinstance(backend.parents.get(use_level), ListGroup)
 
 
+def test_manage_list_structure_no_keyerror_open_indented_list_exceeds_parents(tmp_path):
+    """_manage_list_structure must not raise KeyError in the "Open indented list" branch.
+
+    The pathological state is:
+      - parents has keys 0..11, with keys 0..10 holding body nodes and key 11
+        holding a ListGroup.
+      - level_at_new_list is 11, prev_indent is 2, ilevel is 4.
+      - The "Open indented list" loop runs for i in range(14, 16), accessing
+        parents[i - 1] where i - 1 = 13 is not a key in parents.
+    """
+    docx_path = tmp_path / "empty.docx"
+    docx_path.write_bytes(_make_empty_docx().getvalue())
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    backend = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path)
+
+    out_doc = DoclingDocument(
+        name="test",
+        origin=DocumentOrigin(
+            filename="test.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            binary_hash="0",
+        ),
+    )
+
+    body_node = out_doc.body
+    first_list_gr = out_doc.add_list_group(name="list", parent=body_node)
+    backend.parents = dict.fromkeys(range(12), body_node)
+    backend.parents[11] = first_list_gr
+
+    # Simulate history: same numId, previous item was at ilevel=2.
+    backend.history = {
+        "names": [None, "list"],
+        "levels": [None, 11],
+        "numids": [None, 27],
+        "indents": [None, 2],
+    }
+    backend.level_at_new_list = 11
+    backend.last_numid = 27
+
+    elem_ref, use_level = backend._manage_list_structure(
+        doc=out_doc, numid=27, ilevel=4
+    )
+
+    assert isinstance(backend.parents.get(use_level), ListGroup)
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
