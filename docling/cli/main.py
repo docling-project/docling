@@ -46,6 +46,7 @@ from rich.console import Console
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
+    _parse_page_range,
     _should_generate_export_images,
     _split_list,
 )
@@ -128,7 +129,7 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
-from docling.datamodel.settings import settings
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
@@ -871,6 +872,14 @@ def convert(  # noqa: C901
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
     ] = None,
+    page_range: Annotated[
+        str | None,
+        typer.Option(
+            "--page-range",
+            help="Only convert a range of pages, e.g. 1-4 (page numbers start at 1). "
+            "Honored by the PDF, XLSX and PPTX backends.",
+        ),
+    ] = None,
     table_mode: Annotated[
         TableFormerMode,
         typer.Option(..., help="The mode to use in the table structure model."),
@@ -1086,6 +1095,8 @@ def convert(  # noqa: C901
     if headers is not None:
         headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
+
+    parsed_page_range = _parse_page_range(page_range) or DEFAULT_PAGE_RANGE
 
     parsed_html_image_headers: dict[str, str] | None = None
     if html_image_headers is not None:
@@ -1440,7 +1451,10 @@ def convert(  # noqa: C901
 
         _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
-            input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
+            input_doc_paths,
+            headers=parsed_headers,
+            raises_on_error=abort_on_error,
+            page_range=parsed_page_range,
         )
 
         output.mkdir(parents=True, exist_ok=True)

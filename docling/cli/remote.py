@@ -17,14 +17,17 @@ from typing import Annotated, Optional
 import typer
 from docling_core.types.doc import ImageRefMode
 
-from docling.cli.export_utils import _export_flags_from_formats, _split_list
+from docling.cli.export_utils import (
+    _export_flags_from_formats,
+    _parse_page_range,
+    _split_list,
+)
 from docling.cli.main import ChunkerType
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.datamodel.settings import PageRange
 from docling.service_client import (
     DEFAULT_MAX_CONCURRENCY,
     DoclingServiceClient,
@@ -65,33 +68,6 @@ Examples:
   # Whole directory, only PDFs and DOCX, no OCR
   docling convert-remote --from pdf --from docx --no-ocr ./inbox
 """
-
-
-def _parse_page_range(raw: Optional[str]) -> Optional[PageRange]:
-    """Parse a ``--page-range`` value like ``1-4`` (or a single page ``4``).
-
-    Page numbers start at 1. Returns ``None`` when no range is given so the
-    service default (all pages) applies.
-    """
-    if raw is None:
-        return None
-    text = raw.strip()
-    try:
-        if "-" in text:
-            start_str, end_str = text.split("-", 1)
-            start, end = int(start_str), int(end_str)
-        else:
-            start = end = int(text)
-    except ValueError:
-        raise typer.BadParameter(
-            f"Invalid --page-range {raw!r}. Use START-END (e.g. 1-4) or a single page.",
-        )
-    if start < 1 or end < start:
-        raise typer.BadParameter(
-            f"Invalid --page-range {raw!r}. Page numbers start at 1 and END must be "
-            ">= START.",
-        )
-    return (start, end)
 
 
 def _collect_sources(
