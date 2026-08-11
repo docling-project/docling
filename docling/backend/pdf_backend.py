@@ -37,6 +37,47 @@ class PdfPageBackend(ABC):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         pass
 
+    def intersects_with(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> bool:
+        """Return whether visible page content intersects ``bbox``.
+
+        ``bbox`` may use either coordinate origin. The default returns ``False``; backends
+        with access to the PDF content stream override it with the real query. Backends
+        without vector content (e.g. OCR/image) keep the default.
+        """
+        return False
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> list[BoundingBox]:
+        """Return the visible horizontal and/or vertical stroked shape segments.
+
+        Segments are returned as degenerate (zero-height or zero-width) boxes with top-left
+        origin. The default returns an empty list; backends without access to the stroked
+        page geometry keep it.
+        """
+        return []
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> list[BoundingBox]:
+        """Return the bboxes of visible shapes merged by overlapping bboxes.
+
+        Boxes use top-left origin. The default returns an empty list; backends without
+        vector content keep it.
+        """
+        return []
+
     @abstractmethod
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None

@@ -28,6 +28,11 @@ def test_doc_path():
     return Path("./tests/data/pdf/sources/2206.01062.pdf")
 
 
+@pytest.fixture
+def ruled_table_path():
+    return Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
+
+
 def _get_backend(pdf_doc):
     in_doc = InputDocument(
         path_or_stream=pdf_doc,
@@ -787,3 +792,68 @@ def test_get_page_image_crop_contains_black_square(
     white_mean = ImageStat.Stat(white_crop).mean
     assert all(channel_mean < 5.0 for channel_mean in black_mean)
     assert all(channel_mean > 250.0 for channel_mean in white_mean)
+
+
+def test_threaded_backend_reports_shape_geometry_in_top_left_origin(ruled_table_path):
+    """The ruled table on this page must surface as axis-aligned stroked segments."""
+    in_doc = InputDocument(
+        path_or_stream=ruled_table_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+    assert isinstance(doc_backend, ThreadedDoclingParseDocumentBackend)
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+        page_size = page_backend.get_size()
+
+        lines = page_backend.get_shape_lines()
+        assert lines, "the ruled table must produce stroked segments"
+        for line in lines:
+            assert line.coord_origin == CoordOrigin.TOPLEFT
+            assert 0 <= line.l <= line.r <= page_size.width
+            assert 0 <= line.t <= line.b <= page_size.height
+            # Axis-aligned segments come back as degenerate boxes.
+            assert line.l == pytest.approx(line.r) or line.t == pytest.approx(line.b)
+
+        regions = page_backend.get_connected_shape_bounding_boxes()
+        assert len(regions) == 1
+        table_region = regions[0]
+        assert table_region.coord_origin == CoordOrigin.TOPLEFT
+        for line in lines:
+            assert table_region.l <= line.l and line.r <= table_region.r
+            assert table_region.t <= line.t and line.b <= table_region.b
+    finally:
+        doc_backend.unload()
+
+
+def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
+    """`intersects_with` must discriminate between the ruled table and a blank margin."""
+    in_doc = InputDocument(
+        path_or_stream=ruled_table_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+
+        blank_margin = BoundingBox(
+            l=0, t=0, r=20, b=20, coord_origin=CoordOrigin.TOPLEFT
+        )
+        table = BoundingBox(
+            l=150, t=350, r=460, b=460, coord_origin=CoordOrigin.TOPLEFT
+        )
+
+        assert page_backend.intersects_with(bbox=table) is True
+        assert page_backend.intersects_with(bbox=blank_margin) is False
+        assert (
+            page_backend.intersects_with(
+                bbox=blank_margin, chars=True, shapes=False, bitmaps=False
+            )
+            is False
+        )
+    finally:
+        doc_backend.unload()

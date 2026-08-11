@@ -19,6 +19,7 @@ from docling_core.types.doc.page import (
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
+from rtree import index
 
 from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumDocumentBackend,
@@ -28,6 +29,83 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
+
+
+def _apply_page_rotation(
+    pos: tuple[float, float, float, float], rotation: int, page_size: Size
+) -> tuple[float, float, float, float]:
+    """Map a bottom-left page-object bbox onto the rotated page frame."""
+    if rotation == 90:
+        return (pos[1], page_size.height - pos[2], pos[3], page_size.height - pos[0])
+    if rotation == 180:
+        return (
+            page_size.width - pos[2],
+            page_size.height - pos[3],
+            page_size.width - pos[0],
+            page_size.height - pos[1],
+        )
+    if rotation == 270:
+        return (page_size.width - pos[3], pos[0], page_size.width - pos[1], pos[2])
+    return pos
+
+
+def _merge_overlapping_boxes(
+    boxes: List[BoundingBox], tolerance: float
+) -> List[BoundingBox]:
+    """Merge boxes that overlap (within ``tolerance``) into their connected components.
+
+    All boxes must share the top-left origin. An R-tree keeps this near-linear: pages of
+    vector art routinely carry thousands of path objects.
+    """
+    if not boxes:
+        return []
+
+    def _query(bbox: BoundingBox) -> tuple[float, float, float, float]:
+        return (
+            bbox.l - tolerance,
+            bbox.t - tolerance,
+            bbox.r + tolerance,
+            bbox.b + tolerance,
+        )
+
+    prop = index.Property()
+    prop.dimension = 2
+    tree = index.Index(properties=prop)
+    for i, bbox in enumerate(boxes):
+        tree.insert(i, (bbox.l, bbox.t, bbox.r, bbox.b))
+
+    merged: List[BoundingBox] = []
+    visited: set[int] = set()
+    for start in range(len(boxes)):
+        if start in visited:
+            continue
+
+        visited.add(start)
+        stack = [start]
+        left, top, right, bottom = (
+            boxes[start].l,
+            boxes[start].t,
+            boxes[start].r,
+            boxes[start].b,
+        )
+        while stack:
+            current = boxes[stack.pop()]
+            left = min(left, current.l)
+            top = min(top, current.t)
+            right = max(right, current.r)
+            bottom = max(bottom, current.b)
+            for neighbor in tree.intersection(_query(current)):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+
+        merged.append(
+            BoundingBox(
+                l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.TOPLEFT
+            )
+        )
+
+    return merged
 
 
 def get_pdf_page_geometry(
@@ -277,46 +355,86 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return merge_horizontal_cells(cells)
 
-    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        AREA_THRESHOLD = 0  # 32 * 32
+    def _object_rects(self, obj_type: int) -> Iterable[BoundingBox]:
+        """Yield the bboxes of the page objects of ``obj_type``, in top-left origin."""
         page_size = self.get_size()
 
         with pypdfium2_lock:
             page = self._require_page()
             rotation = page.get_rotation()
-            for obj in page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+            for obj in page.get_objects(filter=[obj_type]):
                 if _PYPDFIUM2_MAJOR_VERSION >= 5:
                     pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
                     pos = obj.get_pos()  # pypdfium2 <= 4.x
-                if rotation == 90:
-                    pos = (
-                        pos[1],
-                        page_size.height - pos[2],
-                        pos[3],
-                        page_size.height - pos[0],
-                    )
-                elif rotation == 180:
-                    pos = (
-                        page_size.width - pos[2],
-                        page_size.height - pos[3],
-                        page_size.width - pos[0],
-                        page_size.height - pos[1],
-                    )
-                elif rotation == 270:
-                    pos = (
-                        page_size.width - pos[3],
-                        pos[0],
-                        page_size.width - pos[1],
-                        pos[2],
-                    )
+                pos = _apply_page_rotation(pos, rotation, page_size)
 
-                cropbox = BoundingBox.from_tuple(
+                yield BoundingBox.from_tuple(
                     pos, origin=CoordOrigin.BOTTOMLEFT
                 ).to_top_left_origin(page_height=page_size.height)
-                if cropbox.area() > AREA_THRESHOLD:
-                    cropbox = cropbox.scaled(scale=scale)
-                    yield cropbox
+
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        AREA_THRESHOLD = 0  # 32 * 32
+
+        for cropbox in self._object_rects(pdfium_c.FPDF_PAGEOBJ_IMAGE):
+            if cropbox.area() > AREA_THRESHOLD:
+                yield cropbox.scaled(scale=scale)
+
+    def intersects_with(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> bool:
+        """Best-effort content-intersection test built from page-object bboxes.
+
+        pypdfium2 exposes no visibility or clip state, so this approximates the
+        docling-parse query: an object counts as intersecting when its bounding box does,
+        even if the object is clipped away or fully transparent.
+        """
+        if not self.valid:
+            return False
+
+        page_size = self.get_size()
+        probe = bbox.to_top_left_origin(page_height=page_size.height)
+
+        obj_types = []
+        if shapes:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_PATH)
+        if bitmaps:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_IMAGE)
+        if chars:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_TEXT)
+
+        for obj_type in obj_types:
+            for rect in self._object_rects(obj_type):
+                # Plain overlap, so that degenerate (zero-area) rules still count.
+                if (
+                    rect.l <= probe.r
+                    and probe.l <= rect.r
+                    and rect.t <= probe.b
+                    and probe.t <= rect.b
+                ):
+                    return True
+
+        return False
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> List[BoundingBox]:
+        """Best-effort connected shape regions, merged from path-object bboxes.
+
+        Unlike the docling-parse implementation this sees neither clip state nor stroke
+        width, so the regions are the union of raw path bounding boxes.
+        """
+        if not self.valid:
+            return []
+
+        return _merge_overlapping_boxes(
+            list(self._object_rects(pdfium_c.FPDF_PAGEOBJ_PATH)), tolerance
+        )
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         with pypdfium2_lock:

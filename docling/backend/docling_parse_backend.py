@@ -447,6 +447,52 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
 
+    def intersects_with(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> bool:
+        if not self.is_valid():
+            return False
+        return self._result.intersects_with(
+            bbox=bbox, chars=chars, shapes=shapes, bitmaps=bitmaps
+        )
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> list[BoundingBox]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_shape_lines(
+                horizontal=horizontal, vertical=vertical, tolerance=tolerance
+            )
+        ]
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> list[BoundingBox]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_connected_shape_bounding_boxes(
+                tolerance=tolerance
+            )
+        ]
+
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:

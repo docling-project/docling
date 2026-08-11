@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, CoordOrigin
 
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
     PyPdfiumPageBackend,
@@ -109,3 +110,56 @@ def test_merge_row():
         cell.text
         == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
     )
+
+
+def test_pdfium_shape_regions_approximate_docling_parse():
+    """The bounds-based approximation must agree with the docling-parse decoder."""
+    pdf_doc = Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
+
+    pdfium_backend = _get_backend(pdf_doc)
+    parse_in_doc = InputDocument(
+        path_or_stream=pdf_doc,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    parse_backend = parse_in_doc._backend
+
+    try:
+        pdfium_regions = pdfium_backend.load_page(
+            0
+        ).get_connected_shape_bounding_boxes()
+        parse_regions = next(
+            iter(parse_backend.iter_pages())
+        ).get_connected_shape_bounding_boxes()
+
+        assert len(pdfium_regions) == len(parse_regions) == 1
+        for pdfium_side, parse_side in zip(
+            pdfium_regions[0].as_tuple(), parse_regions[0].as_tuple()
+        ):
+            # pypdfium2 reports painted bounds, docling-parse the geometric path, so the
+            # two differ by roughly the stroke width.
+            assert pdfium_side == pytest.approx(parse_side, abs=1.0)
+    finally:
+        pdfium_backend.unload()
+        parse_backend.unload()
+
+
+def test_pdfium_intersects_only_where_content_is():
+    """`intersects_with` must discriminate between the ruled table and a blank margin."""
+    pdf_doc = Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
+
+    doc_backend = _get_backend(pdf_doc)
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+        blank_margin = BoundingBox(
+            l=0, t=0, r=20, b=20, coord_origin=CoordOrigin.TOPLEFT
+        )
+        table = BoundingBox(
+            l=150, t=350, r=460, b=460, coord_origin=CoordOrigin.TOPLEFT
+        )
+
+        assert page_backend.intersects_with(bbox=table) is True
+        assert page_backend.intersects_with(bbox=blank_margin) is False
+    finally:
+        doc_backend.unload()
