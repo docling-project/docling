@@ -33,6 +33,7 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
@@ -42,10 +43,29 @@ class ReadingOrderOptions(BaseModel):
     model_names: str = ""  # e.g. "language;term;reference"
     recover_orphaned_table_text: bool = False
 
+    @classmethod
+    def from_pdf_pipeline_options(
+        cls, pipeline_options: PdfPipelineOptions
+    ) -> "ReadingOrderOptions":
+        table_options = pipeline_options.table_structure_options
+        supports_recovery = (
+            pipeline_options.do_table_structure
+            and type(table_options) is TableStructureOptions
+            and table_options.do_cell_matching
+        )
+        if pipeline_options.recover_orphaned_table_text and not supports_recovery:
+            raise ValueError(
+                "recover_orphaned_table_text requires do_table_structure=True and "
+                "TableStructureOptions (TableFormer V1) with do_cell_matching=True"
+            )
+        return cls(
+            recover_orphaned_table_text=pipeline_options.recover_orphaned_table_text
+        )
+
 
 class ReadingOrderModel:
     _RICH_CELL_PICTURE_COVERAGE_THRESHOLD = 0.8
-    _TABLE_CHILD_ABSORBED_OVERLAP = 0.3
+    _TABLEFORMER_V1_MATCHED_OVERLAP_THRESHOLD = 0.0
 
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
@@ -157,7 +177,7 @@ class ReadingOrderModel:
                 cell_bbox = cell.to_bounding_box()
                 if any(
                     cell_bbox.intersection_over_self(bbox)
-                    > cls._TABLE_CHILD_ABSORBED_OVERLAP
+                    > cls._TABLEFORMER_V1_MATCHED_OVERLAP_THRESHOLD
                     for bbox in matched_bboxes
                 ):
                     continue

@@ -579,8 +579,12 @@ class StandardPdfPipeline(ConvertPipeline):
     """High-performance PDF pipeline with multi-threaded stages."""
 
     def __init__(self, pipeline_options: ThreadedPdfPipelineOptions) -> None:
+        reading_order_options = ReadingOrderOptions.from_pdf_pipeline_options(
+            pipeline_options
+        )
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
+        self._reading_order_options = reading_order_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
         self._page_sizes_by_no: dict[int, Size] = {}
 
@@ -637,9 +641,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(
-            options=ReadingOrderOptions(
-                recover_orphaned_table_text=self.pipeline_options.recover_orphaned_table_text
-            )
+            options=self._reading_order_options
         )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options

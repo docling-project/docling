@@ -1968,10 +1968,12 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         bool,
         Field(
             description=(
-                "Recover OCR'd text inside TABLE regions that the table structure model's predicted grid did not bind "
-                "to any cell, re-emitting it as body text immediately after the table instead of silently dropping it. "
-                "Recovery is skipped if any populated table cell has no spatial bounds. Disabled by default, which "
-                "preserves the existing table/body output exactly. Only applicable when `do_table_structure=True`."
+                "Recover text inside TABLE regions that TableFormer V1 cell matching did not bind to a cell, "
+                "re-emitting it as body text immediately after the table instead of silently dropping it. Requires "
+                "`do_table_structure=True` and `TableStructureOptions(do_cell_matching=True)`. To avoid duplicate "
+                "output, any positive overlap with a populated table cell is treated as bound, and recovery is skipped "
+                "if any populated table cell has no spatial bounds. Disabled by default, which preserves the existing "
+                "table/body output exactly."
             )
         ),
     ] = False
