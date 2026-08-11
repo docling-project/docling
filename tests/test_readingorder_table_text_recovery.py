@@ -216,6 +216,39 @@ def test_recover_orphaned_table_text_when_all_children_are_absorbed_adds_nothing
     assert [child.cref for child in doc.body.children] == ["#/tables/0"]
 
 
+def test_v1_recovery_treats_any_positive_overlap_as_matched():
+    matched_cell = TableCell(
+        text="cell",
+        bbox=BoundingBox(l=0, t=0, r=10, b=10),
+        start_row_offset_idx=0,
+        end_row_offset_idx=1,
+        start_col_offset_idx=0,
+        end_col_offset_idx=1,
+    )
+    partially_absorbed = _child(2, (8, 0, 18, 10), "cell")
+    table = _table([matched_cell], [partially_absorbed])
+
+    doc = _new_doc()
+    prov = ProvenanceItem(
+        page_no=1,
+        charspan=(0, 0),
+        bbox=BoundingBox(l=0, t=0, r=100, b=100, coord_origin=CoordOrigin.BOTTOMLEFT),
+    )
+    doc.add_table(
+        data=ReadingOrderModel._table_data_from_table(table),
+        prov=prov,
+    )
+
+    model = ReadingOrderModel(
+        options=ReadingOrderOptions(recover_orphaned_table_text=True)
+    )
+    model._add_unmatched_table_text(table, doc)
+
+    assert doc.groups == []
+    assert doc.texts == []
+    assert [child.cref for child in doc.body.children] == ["#/tables/0"]
+
+
 def test_recover_orphaned_table_text_when_enabled_appends_body_text_after_table():
     matched_cell = TableCell(
         text="cell",
