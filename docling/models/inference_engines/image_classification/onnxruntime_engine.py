@@ -40,7 +40,6 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
         model_config: Optional[EngineModelConfig] = None,
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]] = None,
-        hf_token: Optional[str | bool] = None,
     ):
         """Initialize the ONNX Runtime image-classification engine."""
         super().__init__(
@@ -48,7 +47,6 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             model_config=model_config,
             accelerator_options=accelerator_options,
             artifacts_path=artifacts_path,
-            hf_token=hf_token,
         )
         self.options: OnnxRuntimeImageClassificationEngineOptions = options
         self._session: Optional[ort.InferenceSession] = None
