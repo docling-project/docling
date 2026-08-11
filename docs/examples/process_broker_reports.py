@@ -34,7 +34,6 @@ import re
 from pathlib import Path
 
 import pandas as pd
-
 from docling_core.types.doc import DocItemLabel, ImageRefMode
 
 from docling.datamodel.base_models import InputFormat
@@ -60,14 +59,14 @@ METRIC_ALIASES = {
     "pb": "pb",
 }
 
-_UNIT_PAREN = re.compile(r"[（(].*?[)）]")
+_UNIT_PAREN = re.compile(r"[\uff08(].*?[\uff09)]")
 
 
 def normalize_label(label: str) -> str:
     """Normalize a table row label for alias matching.
 
     Strips whitespace and parenthetical units, e.g.
-    "加权平均ROE（%）" -> "加权平均roe".
+    "加权平均ROE(%)" -> "加权平均roe".
     """
     return _UNIT_PAREN.sub("", label).replace(" ", "").lower()
 
@@ -126,7 +125,9 @@ def render_chart(metrics: dict, out_path: Path) -> Path | None:
     except ImportError:
         return None
 
-    series = [(key, metrics[key]) for key in ("revenue", "net_profit") if key in metrics]
+    series = [
+        (key, metrics[key]) for key in ("revenue", "net_profit") if key in metrics
+    ]
     if not series:
         return None
     periods = series[0][1]["periods"]
@@ -182,7 +183,9 @@ def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) 
 
     if doc.tables or doc.pictures:
         out_dir.mkdir(parents=True, exist_ok=True)
-        doc.save_as_markdown(out_dir / f"{pdf_path.stem}.md", image_mode=ImageRefMode.REFERENCED)
+        doc.save_as_markdown(
+            out_dir / f"{pdf_path.stem}.md", image_mode=ImageRefMode.REFERENCED
+        )
         if metrics:
             (out_dir / f"{pdf_path.stem}-metrics.json").write_text(
                 json.dumps(summary, ensure_ascii=False, indent=2),
@@ -203,13 +206,16 @@ def print_summary(report: dict) -> None:
     if report["metrics"]:
         for key, data in report["metrics"].items():
             pairs = ", ".join(
-                f"{period}={value}" for period, value in zip(data["periods"], data["values"])
+                f"{period}={value}"
+                for period, value in zip(data["periods"], data["values"])
             )
             print(f"    {key}: {pairs}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Batch-process broker research reports.")
+    parser = argparse.ArgumentParser(
+        description="Batch-process broker research reports."
+    )
     parser.add_argument(
         "--input",
         type=Path,
