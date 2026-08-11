@@ -43,6 +43,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
 from docling.datamodel.service.chunking import (
+    ChunkingOptionType,
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
 )
@@ -372,6 +373,24 @@ class _BaseDoclingServiceClient:
             page_range=effective_range,
         )
         return _ResolvedOptions(options=merged, limits=limits)
+
+    @staticmethod
+    def _resolve_chunking_options(
+        *,
+        chunker: ChunkerKind,
+        chunking_options: ChunkingOptionType | None,
+    ) -> ChunkingOptionType:
+        if chunking_options is None:
+            if chunker == ChunkerKind.HYBRID:
+                return HybridChunkerOptions()
+            return HierarchicalChunkerOptions()
+
+        if chunking_options.chunker.value != chunker.value:
+            raise ValueError(
+                f"Chunker kind '{chunker.value}' does not match chunking options "
+                f"kind '{chunking_options.chunker.value}'."
+            )
+        return chunking_options
 
     def _options_for_output_formats(
         self,
@@ -1007,8 +1026,15 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
+        *,
+        chunking_options: ChunkingOptionType | None = None,
     ) -> ChunkDocumentResponse:
-        job = self.submit_chunk(source=source, chunker=chunker, options=options)
+        job = self.submit_chunk(
+            source=source,
+            chunker=chunker,
+            options=options,
+            chunking_options=chunking_options,
+        )
         return job.result(timeout=self._job_timeout)
 
     def submit(
@@ -1105,6 +1131,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
+        *,
+        chunking_options: ChunkingOptionType | None = None,
     ) -> ConversionJob[ChunkDocumentResponse]:
         resolved = self._resolve_options(
             options=options,
@@ -1112,10 +1140,15 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             max_file_size=None,
             page_range=None,
         )
+        resolved_chunking_options = self._resolve_chunking_options(
+            chunker=chunker,
+            chunking_options=chunking_options,
+        )
         initial_status = self._submit_chunk_task(
             source=source,
             chunker=chunker,
             options=resolved.options,
+            chunking_options=resolved_chunking_options,
         )
         handlers = _JobHandlers[ChunkDocumentResponse](
             poll=self._poll_task_status,
@@ -1263,18 +1296,14 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def _submit_chunk_task(
         self,
+        *,
         source: SourceType,
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions,
+        chunking_options: ChunkingOptionType,
     ) -> TaskStatusResponse:
         source = self._normalize_source(source)
         if isinstance(source, HttpSourceRequest):
-            chunking_options: HybridChunkerOptions | HierarchicalChunkerOptions
-            if chunker == ChunkerKind.HYBRID:
-                chunking_options = HybridChunkerOptions()
-            else:
-                chunking_options = HierarchicalChunkerOptions()
-
             payload = {
                 "convert_options": self._serialize_convert_options(options),
                 "chunking_options": chunking_options.model_dump(
@@ -1296,12 +1325,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 f"convert_{key}": value
                 for key, value in self._serialize_convert_options(options).items()
             }
-            chunk_model: HybridChunkerOptions | HierarchicalChunkerOptions
-            if chunker == ChunkerKind.HYBRID:
-                chunk_model = HybridChunkerOptions()
-            else:
-                chunk_model = HierarchicalChunkerOptions()
-            chunk_payload = chunk_model.model_dump(mode="json", exclude_none=True)
+            chunk_payload = chunking_options.model_dump(mode="json", exclude_none=True)
             chunk_payload.pop("chunker", None)
             data.update(
                 {f"chunking_{key}": value for key, value in chunk_payload.items()}

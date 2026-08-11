@@ -84,9 +84,17 @@ for result in client.convert_all(
 ## Chunk remotely (RAG)
 
 ```python
+from docling.datamodel.service.chunking import HybridChunkerOptions
 from docling.service_client import ChunkerKind
 
-response = client.chunk(source="report.pdf", chunker=ChunkerKind.HYBRID)
+response = client.chunk(
+    source="report.pdf",
+    chunker=ChunkerKind.HYBRID,
+    chunking_options=HybridChunkerOptions(
+        max_tokens=512,
+        use_markdown_tables=True,
+    ),
+)
 # ChunkerKind.HYBRID or ChunkerKind.HIERARCHICAL
 ```
 

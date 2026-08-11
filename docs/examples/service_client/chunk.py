@@ -15,6 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from docling.datamodel.service.chunking import HierarchicalChunkerOptions
 from docling.service_client import ChunkerKind, DoclingServiceClient
 
 load_dotenv()  # DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY from env or a .env
@@ -27,7 +28,13 @@ def main() -> None:
         url=os.environ["DOCLING_SERVICE_URL"],
         api_key=os.environ.get("DOCLING_SERVICE_API_KEY", ""),
     ) as client:
-        response = client.chunk(source=SOURCE, chunker=ChunkerKind.HIERARCHICAL)
+        response = client.chunk(
+            source=SOURCE,
+            chunker=ChunkerKind.HIERARCHICAL,
+            chunking_options=HierarchicalChunkerOptions(
+                use_markdown_tables=True,
+            ),
+        )
         print(
             len(response.chunks), "chunks from", len(response.documents), "document(s)"
         )
