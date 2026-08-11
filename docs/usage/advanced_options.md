@@ -142,6 +142,46 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Extract the native content of a PDF
+
+The `NativePdfPipeline` converts a PDF with docling-parse alone: it emits one text
+item per native text cell and one picture per embedded bitmap image, and runs no
+layout, OCR or table model. That makes it very fast, at the price of a document
+without reading order, headings or tables.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.document_converter import DocumentConverter, NativePdfFormatOption
+
+pipeline_options = NativePdfPipelineOptions()
+pipeline_options.generate_page_images = True  # parse *and* render every page
+pipeline_options.images_scale = 2.0  # 144 DPI page images
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: NativePdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+`text_cell_unit` selects the granularity of the extracted text: `TextCellUnit.LINE`
+(default), `TextCellUnit.WORD` or `TextCellUnit.CHAR`. Set
+`generate_page_images=False` to skip rendering altogether, which is the fastest
+configuration.
+
+`parser_threads` sets how many threads docling-parse decodes pages with, and
+defaults to all but one of the machine's CPU threads. It is unrelated to
+`accelerator_options.num_threads`, which configures model inference and is unused
+by this pipeline.
+
+The same pipeline is available in the CLI, for PDF input only:
+
+```sh
+docling --pipeline native --from pdf FILE
+docling --pipeline native --from pdf --parser-threads 8 FILE
+```
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:

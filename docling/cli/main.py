@@ -112,6 +112,7 @@ from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
+    NativePdfPipelineOptions,
     OcrAutoOptions,
     OcrMode,
     OcrOptions,
@@ -360,6 +361,7 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
     help=(
         "Convert documents with Docling. At default verbosity a per-file "
         "progress line is logged; pass -q/--quiet for fully silent output "
@@ -989,7 +991,19 @@ def convert(  # noqa: C901
             help="The timeout for processing each document, in seconds.",
         ),
     ] = None,
-    num_threads: Annotated[int, typer.Option(..., help="Number of threads")] = 4,
+    num_threads: Annotated[
+        int, typer.Option(..., help="Number of threads for model inference")
+    ] = 4,
+    parser_threads: Annotated[
+        int | None,
+        typer.Option(
+            ...,
+            help=(
+                "Number of PDF parser threads used by `--pipeline native`. "
+                "Defaults to all but one of the machine's CPU threads."
+            ),
+        ),
+    ] = None,
     release_native_memory_every_n_pages: Annotated[
         int,
         typer.Option(
@@ -1051,6 +1065,7 @@ def convert(  # noqa: C901
         HTMLFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
+        NativePdfFormatOption,
         PdfFormatOption,
         PowerpointFormatOption,
         WordFormatOption,
@@ -1080,7 +1095,19 @@ def convert(  # noqa: C901
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
 
+    requested_from_formats = from_formats
     from_formats = _expand_from_formats(from_formats)
+
+    if pipeline == ProcessingPipeline.NATIVE:
+        # The native pipeline reads the native content of a PDF; it has nothing to
+        # offer for the other input formats, so it never silently handles them.
+        if requested_from_formats is None:
+            from_formats = [InputFormat.PDF]
+        elif set(from_formats) != {InputFormat.PDF}:
+            err_console.print(
+                "[red]Error: --pipeline native is only available for --from pdf.[/red]"
+            )
+            raise typer.Abort()
 
     parsed_headers: dict[str, str] | None = None
     if headers is not None:
@@ -1333,6 +1360,55 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option,
                     backend_options=LatexBackendOptions(),
                 ),
+            }
+
+        elif pipeline == ProcessingPipeline.NATIVE:
+            normalized_pdf_backend = normalize_pdf_backend(pdf_backend)
+            if normalized_pdf_backend not in (
+                PdfBackend.DOCLING_PARSE,
+                PdfBackend.THREADED_DOCLING_PARSE,
+            ):
+                err_console.print(
+                    f"[red]Error: --pipeline native requires a docling-parse PDF backend, "
+                    f"got '{normalized_pdf_backend.value}'.[/red]"
+                )
+                raise typer.Abort()
+
+            native_pipeline_options = NativePdfPipelineOptions(
+                allow_external_plugins=allow_external_plugins,
+                enable_remote_services=enable_remote_services,
+                accelerator_options=accelerator_options,
+                do_picture_description=enrich_picture_description,
+                do_picture_classification=enrich_picture_classes,
+                do_chart_extraction=enrich_chart_extraction,
+                document_timeout=document_timeout,
+            )
+            if parser_threads is not None:
+                native_pipeline_options.parser_threads = parser_threads
+            # Rasterizing and encoding a page image costs more than parsing the
+            # page, so only pay for it when an output actually carries images.
+            if _should_generate_export_images(image_export_mode, to_formats):
+                native_pipeline_options.images_scale = 2
+            else:
+                native_pipeline_options.generate_page_images = False
+            pipeline_options = native_pipeline_options
+
+            format_options = {
+                InputFormat.PDF: NativePdfFormatOption(
+                    pipeline_options=native_pipeline_options,
+                    backend_options=ThreadedDoclingParseBackendOptions(
+                        password=pdf_password,
+                        parser_threads=native_pipeline_options.parser_threads,
+                        release_native_memory_every_n_pages=(
+                            release_native_memory_every_n_pages
+                        ),
+                        include_bitmap_images=(
+                            native_pipeline_options.generate_picture_images
+                        ),
+                        render_pages=native_pipeline_options.generate_page_images,
+                        render_scale=native_pipeline_options.images_scale,
+                    ),
+                )
             }
 
         elif pipeline == ProcessingPipeline.VLM:

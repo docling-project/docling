@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 from datetime import datetime
 from enum import Enum
@@ -6,11 +7,13 @@ from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal
 
 from docling_core.types.doc import PictureClassificationLabel
+from docling_core.types.doc.page import TextCellUnit
 from pydantic import (
     AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
     field_validator,
     model_validator,
 )
@@ -2130,12 +2133,14 @@ class ProcessingPipeline(str, Enum):
     Attributes:
         LEGACY: Legacy pipeline for backward compatibility with older document processing workflows.
         STANDARD: Standard pipeline for general document processing (PDF, DOCX, images, etc.) with layout analysis.
+        NATIVE: Model-free pipeline extracting the native text and images of a PDF with docling-parse.
         VLM: Vision-Language Model pipeline for advanced document understanding using multimodal AI models.
         ASR: Automatic Speech Recognition pipeline for audio and video transcription to text.
     """
 
     LEGACY = "legacy"
     STANDARD = "standard"
+    NATIVE = "native"
     VLM = "vlm"
     ASR = "asr"
 
@@ -2152,3 +2157,69 @@ class ThreadedPdfPipelineOptions(PdfPipelineOptions):
     See Also:
         `PdfPipelineOptions`: Base class with all batch and queue settings.
     """
+
+
+def default_parser_threads() -> int:
+    """All but one of the machine's CPU threads, so the machine stays responsive."""
+    return max(1, (os.cpu_count() or 2) - 1)
+
+
+class NativePdfPipelineOptions(PaginatedPipelineOptions):
+    """Pipeline options for the native (model-free) PDF pipeline.
+
+    The native pipeline reads what is already encoded in the PDF: the text cells
+    and the embedded bitmap images reported by docling-parse. It runs no layout,
+    OCR or table-structure model, so conversion is fast but the resulting
+    `DoclingDocument` carries one plain `TextItem` per text cell in the parser's
+    order, without reading order, headings or tables.
+
+    Note:
+        Native picture images additionally require the PDF backend to decode the
+        embedded bitmaps (`PdfBackendOptions.include_bitmap_images=True`);
+        without it, pictures are still emitted, but only with their bounding box.
+
+    See Also:
+        `PdfPipelineOptions`: Full PDF pipeline with layout, OCR and tables.
+    """
+
+    text_cell_unit: Annotated[
+        TextCellUnit,
+        Field(
+            description=(
+                "Granularity of the native text cells emitted as text items: one item per line "
+                "(default), per word, or per character. The PDF backend must materialize the "
+                "requested cell unit; the docling-parse backends materialize words and lines."
+            )
+        ),
+    ] = TextCellUnit.LINE
+    parser_threads: Annotated[
+        PositiveInt,
+        Field(
+            default_factory=default_parser_threads,
+            description=(
+                "Number of PDF parser worker threads. This is the only parallelism this "
+                "pipeline has, since it runs no model: `accelerator_options` governs model "
+                "inference and is unused here. Defaults to all but one of the machine's "
+                "CPU threads."
+            ),
+        ),
+    ]
+    generate_picture_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Attach the embedded bitmap images of the PDF to the picture items. Requires a "
+                "PDF backend configured with `include_bitmap_images=True`."
+            )
+        ),
+    ] = True
+    generate_page_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Attach a rendered image of every page to the document. Page images are produced "
+                "by rasterizing the page, so the pipeline parses *and* renders each page, at "
+                "`images_scale` pixels per point. Disable it to parse only, which is faster."
+            )
+        ),
+    ] = True

@@ -7,6 +7,7 @@ from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
+    PositiveFloat,
     PositiveInt,
     SecretStr,
     conint,
@@ -187,6 +188,15 @@ class PdfBackendOptions(BaseBackendOptions):
             "diacritics that should remain in the same text cell."
         ),
     )
+    include_bitmap_images: bool = Field(
+        False,
+        description=(
+            "Whether docling-parse should decode the bytes of the bitmap images "
+            "embedded in the page, in addition to their bounding boxes. Needed to "
+            "extract native picture images (e.g. by the native PDF pipeline); "
+            "decoding costs time and memory, so it is off by default."
+        ),
+    )
 
 
 class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
@@ -200,6 +210,22 @@ class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
         description=(
             "Number of parser threads to use for the threaded docling-parse backend. "
             "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    render_pages: bool = Field(
+        True,
+        description=(
+            "Whether the parser should also render a page image while decoding a page. "
+            "Rendering is what makes page images available; turn it off to parse the "
+            "text and image content only, at which point requesting a page image fails."
+        ),
+    )
+    render_scale: PositiveFloat = Field(
+        1.0,
+        description=(
+            "Raster scale in pixels per point of the page image rendered while decoding "
+            "(1.0 renders at 72 DPI, 2.0 at 144 DPI). Set it to the scale the page images "
+            "are consumed at, so pages are not rendered a second time on request."
         ),
     )
     release_native_memory_every_n_pages: conint(ge=0) = Field(
