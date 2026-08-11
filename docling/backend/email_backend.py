@@ -1,20 +1,27 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
+import quopri
 import re
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, formataddr
 from io import BytesIO
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions, HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
+
+if TYPE_CHECKING:
+    from docling.document_converter import DocumentConverter
 from docling.exceptions import DocumentLoadError
 
 # mail-parser is only installed by the `format-email` extra, but
@@ -264,22 +271,142 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             return mail_date.strip()
         return ""
 
-    def _get_attachment_labels(self) -> list[str]:
-        """Return one display label per attachment (name, optional content type).
+    @staticmethod
+    def _attachment_filename(index: int, attachment: dict[str, Any]) -> str:
+        filename = (attachment.get("filename") or "").strip()
+        return filename or f"attachment-{index + 1}"
 
-        Only attachment metadata is surfaced; the encoded payload is never
-        included, matching how ``.eml`` attachment content is excluded.
+    @staticmethod
+    def _attachment_label(index: int, attachment: dict[str, Any]) -> str:
+        filename = EmailDocumentBackend._attachment_filename(index, attachment)
+        content_type = (attachment.get("mail_content_type") or "").strip()
+        return f"{filename} ({content_type})" if content_type else filename
+
+    @staticmethod
+    def _get_attachment_bytes(attachment: dict[str, Any]) -> bytes | None:
+        """Decode an attachment's payload into raw bytes.
+
+        mailparser exposes the payload as it appeared in the MIME part together
+        with its transfer encoding, so we reverse that encoding here. Returns
+        ``None`` when the payload is missing or cannot be decoded.
         """
+        payload = attachment.get("payload")
+        if payload is None:
+            return None
+
+        encoding = (attachment.get("content_transfer_encoding") or "").lower()
+        try:
+            if encoding == "base64":
+                return base64.b64decode(payload)
+            if encoding == "quoted-printable":
+                data = payload.encode("utf-8") if isinstance(payload, str) else payload
+                return quopri.decodestring(data)
+        except (ValueError, binascii.Error):
+            return None
+
+        if isinstance(payload, bytes):
+            return payload
+        if isinstance(payload, str):
+            charset = attachment.get("charset") or "utf-8"
+            try:
+                return payload.encode(charset, errors="replace")
+            except LookupError:
+                return payload.encode("utf-8", errors="replace")
+        return None
+
+    def _build_attachment_converter(self) -> DocumentConverter:
+        # Imported lazily: document_converter imports this module, so a
+        # module-level import would create a circular import. One converter is
+        # built per email and reused across its attachments (pipelines are cached
+        # per converter instance). It uses default options, so a nested email
+        # attachment is parsed but its own attachments are not recursed.
+        from docling.document_converter import DocumentConverter
+
+        return DocumentConverter()
+
+    def _convert_attachment(
+        self, converter: DocumentConverter, filename: str, data: bytes
+    ) -> DoclingDocument | None:
+        """Convert one attachment via Docling, or ``None`` if it cannot be parsed."""
+        stream = DocumentStream(name=filename, stream=BytesIO(data))
+        try:
+            result = converter.convert(stream, raises_on_error=False)
+        except Exception as exc:  # unsupported format, missing extra, bad bytes
+            _log.info("Could not convert email attachment %r: %s", filename, exc)
+            return None
+        if result.status not in (
+            ConversionStatus.SUCCESS,
+            ConversionStatus.PARTIAL_SUCCESS,
+        ):
+            _log.info(
+                "Skipped email attachment %r (conversion status: %s)",
+                filename,
+                result.status,
+            )
+            return None
+        return result.document
+
+    def _add_attachments(self, doc: DoclingDocument) -> None:
+        """Append the attachments section, listing or parsing per the options."""
         assert self.mail is not None
 
-        labels: list[str] = []
-        for index, attachment in enumerate(self.mail.attachments or []):
-            filename = (attachment.get("filename") or "").strip()
-            if not filename:
-                filename = f"attachment-{index + 1}"
-            content_type = (attachment.get("mail_content_type") or "").strip()
-            labels.append(f"{filename} ({content_type})" if content_type else filename)
-        return labels
+        attachments = self.mail.attachments or []
+        if not attachments:
+            return
+        if not (self.options.process_attachments or self.options.list_attachments):
+            return
+
+        doc.add_heading(text="Attachments", level=2)
+
+        if not self.options.process_attachments:
+            attachments_group = doc.add_list_group(name="attachments")
+            for index, attachment in enumerate(attachments):
+                doc.add_list_item(
+                    text=self._attachment_label(index, attachment),
+                    parent=attachments_group,
+                )
+            return
+
+        converter: DocumentConverter | None = None
+        total_bytes = 0
+        for index, attachment in enumerate(attachments):
+            if index >= self.options.max_attachments:
+                break
+            filename = self._attachment_filename(index, attachment)
+            label = self._attachment_label(index, attachment)
+            section = doc.add_heading(text=filename, level=3)
+
+            data = self._get_attachment_bytes(attachment)
+            if not data:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=f"{label}: attachment content could not be read.",
+                )
+                continue
+            if len(data) > self.options.max_attachment_bytes:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=f"{label}: skipped (exceeds max_attachment_bytes).",
+                )
+                continue
+            if total_bytes + len(data) > self.options.max_attachment_total_bytes:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=f"{label}: skipped (attachment size budget exceeded).",
+                )
+                continue
+            total_bytes += len(data)
+
+            if converter is None:
+                converter = self._build_attachment_converter()
+            child = self._convert_attachment(converter, filename, data)
+            if child is None:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=f"{label}: could not be parsed by Docling.",
+                )
+            else:
+                doc.add_document(child, parent=section)
 
     def convert(self) -> DoclingDocument:
         if not self.is_valid() or self.mail is None:
@@ -317,12 +444,6 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for body_paragraph in body_paragraphs:
             doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
 
-        if self.options.list_attachments:
-            attachment_labels = self._get_attachment_labels()
-            if attachment_labels:
-                doc.add_heading(text="Attachments", level=2)
-                attachments_group = doc.add_list_group(name="attachments")
-                for label in attachment_labels:
-                    doc.add_list_item(text=label, parent=attachments_group)
+        self._add_attachments(doc)
 
         return doc

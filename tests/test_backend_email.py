@@ -279,3 +279,82 @@ def test_msg_document_converter_lists_attachments_via_format_option():
     assert "Attachments" in markdown
     assert "test.txt" in markdown
     assert "report.pdf" in markdown
+
+
+def _email_backend(path: Path, options: EmailBackendOptions) -> EmailDocumentBackend:
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.EMAIL,
+        backend=EmailDocumentBackend,
+    )
+    return EmailDocumentBackend(in_doc=in_doc, path_or_stream=path, options=options)
+
+
+def test_email_process_attachments_embeds_converted_content():
+    in_path = Path("tests/data/email/sources/eml_with_html_attachment.eml")
+    backend = _email_backend(in_path, EmailBackendOptions(process_attachments=True))
+
+    markdown = backend.convert().export_to_markdown()
+
+    # The email's own content is still present ...
+    assert "Please see the attached quarterly report." in markdown
+    # ... and the HTML attachment was parsed and embedded under its own subsection.
+    assert "report.html" in markdown
+    assert "Quarterly Report" in markdown
+    assert "Revenue rose to 12 million dollars." in markdown
+
+
+def test_email_process_attachments_via_document_converter():
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EMAIL],
+        format_options={
+            InputFormat.EMAIL: EmailFormatOption(
+                backend_options=EmailBackendOptions(process_attachments=True)
+            )
+        },
+    )
+    result = converter.convert(
+        Path("tests/data/email/sources/eml_with_html_attachment.eml")
+    )
+
+    markdown = result.document.export_to_markdown()
+    assert "Quarterly Report" in markdown
+    assert "Revenue rose to 12 million dollars." in markdown
+
+
+def test_email_attachments_not_processed_by_default():
+    in_path = Path("tests/data/email/sources/eml_with_html_attachment.eml")
+    backend = _email_backend(in_path, EmailBackendOptions())
+
+    markdown = backend.convert().export_to_markdown()
+
+    assert "Attachments" not in markdown
+    assert "Quarterly Report" not in markdown
+
+
+def test_email_process_attachments_falls_back_to_listing_when_unparseable():
+    # msg_with_attachment.msg carries a text attachment (parseable) and a
+    # deliberately invalid application/pdf attachment (unparseable), so this
+    # exercises both the embed path and the name/type fallback in one document.
+    in_path = Path("tests/data/email/sources/msg_with_attachment.msg")
+    backend = _email_backend(in_path, EmailBackendOptions(process_attachments=True))
+
+    markdown = backend.convert().export_to_markdown()
+
+    # Parseable attachment content is embedded.
+    assert "This is a test attachment file." in markdown
+    # Unparseable attachment is still listed by name/type (never dropped).
+    assert "report.pdf" in markdown
+    assert "could not be parsed" in markdown
+
+
+def test_email_process_attachments_respects_max_attachments():
+    in_path = Path("tests/data/email/sources/eml_with_html_attachment.eml")
+    backend = _email_backend(
+        in_path, EmailBackendOptions(process_attachments=True, max_attachments=0)
+    )
+
+    markdown = backend.convert().export_to_markdown()
+
+    # No attachment is processed, so the converted attachment content is absent.
+    assert "Revenue rose to 12 million dollars." not in markdown
