@@ -5,6 +5,8 @@ Here some of our picks to get you started:
 - 🔀 conversion examples ranging from [simple conversion to Markdown](./minimal.py) and export of [figures](./export_figures.py) & [tables](./export_tables.py), to [VLM](./minimal_vlm_pipeline.py) and [audio](./minimal_asr_pipeline.py) pipelines, as well as specialized formats like [XBRL](./xbrl_conversion.ipynb)
 - 💬 various RAG examples, e.g. based on [LangChain](./rag_langchain.ipynb), [LlamaIndex](./rag_llamaindex.ipynb), or [Haystack](./rag_haystack.ipynb), including [visual grounding](./visual_grounding.ipynb), and using different vector stores like [Milvus](./rag_milvus.ipynb), [Weaviate](./rag_weaviate.ipynb), or [Qdrant](./retrieval_qdrant.ipynb)
 - 📤 [{==\[:fontawesome-solid-flask:{ title="beta feature" } beta\]==} structured data extraction](./extraction.ipynb)
+- 📈 [batch-processing broker research reports](./process_broker_reports.py) — a production-oriented
+  convert → export → audit loop (Markdown with referenced figures) for report knowledge bases
 - examples for ✍️ [serialization](./serialization.ipynb) and ✂️ [chunking](./hybrid_chunking.ipynb), including [user-defined customizations](./advanced_chunking_and_serialization.ipynb)
 - 🖼️ [picture annotations](./pictures_description.ipynb), [remote picture annotations](./pictures_description_api.py), [API usage capture](./picture_description_api_usage.py), and [enrichments](./enrich_doclingdocument.py)
 
