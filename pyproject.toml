@@ -364,7 +364,7 @@ constraints = [
 ]
 
 [tool.uv.workspace]
-members = ["packages/docling"]
+members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }

@@ -20,8 +20,14 @@ cp README.md packages/docling/README.md
 # Restore placeholder README
 mv packages/docling/README.md.placeholder packages/docling/README.md
 
+# Build docling-client package (meta-package, dependency-only wheel)
+echo "Building docling-client package..."
+(cd packages/docling-client && uv build --out-dir ../../dist/docling-client)
+
 echo "Build complete."
 echo "docling-slim artifacts:"
 ls -lh dist/docling-slim/
 echo "docling artifacts:"
 ls -lh dist/docling/
+echo "docling-client artifacts:"
+ls -lh dist/docling-client/
