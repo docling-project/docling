@@ -711,6 +711,55 @@ def test_odt_classifies_hyperlink_targets(
     assert result.document.export_to_markdown().strip() == expected_markdown
 
 
+def test_odt_link_without_href_does_not_crash(tmp_path: Path):
+    path = tmp_path / "link_without_href.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    paragraph = Paragraph("Before ")
+    # A text:a element missing xlink:href entirely (malformed/hand-edited
+    # markup) - odfdo's own Link always sets the attribute, so build the raw
+    # element to exercise the case where the attribute is absent.
+    raw_link = Element.from_tag("text:a")
+    raw_link.text = "malformed link"
+    paragraph.append(raw_link)
+    paragraph.append(" after")
+    body.append(paragraph)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [
+        (
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in result.document.texts
+    ] == [("Before malformed link after", None)]
+
+
+def test_odt_empty_heading_produces_no_item(tmp_path: Path):
+    path = tmp_path / "empty_heading.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    body.append(Header(2))
+    body.append(Paragraph("Real content"))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    headings = [
+        item
+        for item in result.document.texts
+        if item.label == DocItemLabel.SECTION_HEADER
+    ]
+    assert headings == []
+    assert [item.text for item in result.document.texts] == ["Real content"]
+
+
 def test_odt_text_document_script_formatting():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 
