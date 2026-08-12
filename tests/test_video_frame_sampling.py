@@ -98,7 +98,7 @@ def test_fixed_interval_rejects_bad_args(kwargs):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"threshold": -1},
+        {"prominence": -1},
         {"probe_fps": 0},
         {"min_scene_duration_seconds": -1},
         {"max_frames": 0},
@@ -161,7 +161,7 @@ def test_fixed_interval_respects_max_frames(three_scene_video: Path):
 @pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
 def test_scene_change_detects_three_scenes(three_scene_video: Path):
     sampler = SimpleSceneChangeFrameSampler(
-        threshold=0.2, probe_fps=2.0, min_scene_duration_seconds=1.0
+        probe_fps=2.0, min_scene_duration_seconds=1.0
     )
     scenes = sampler.detect_scenes(three_scene_video)
     assert len(scenes) == 3
@@ -175,7 +175,7 @@ def test_scene_change_representative_frames_are_correct_colors(
     three_scene_video: Path,
 ):
     sampler = SimpleSceneChangeFrameSampler(
-        threshold=0.2, probe_fps=2.0, min_scene_duration_seconds=1.0
+        probe_fps=2.0, min_scene_duration_seconds=1.0
     )
     frames = sampler.sample(three_scene_video)
     assert len(frames) == 3
@@ -198,7 +198,7 @@ def test_scene_change_representative_frames_are_correct_colors(
 def test_scene_change_respects_min_duration(three_scene_video: Path):
     # A very large min duration collapses everything into one scene.
     sampler = SimpleSceneChangeFrameSampler(
-        threshold=0.2, probe_fps=2.0, min_scene_duration_seconds=100.0
+        probe_fps=2.0, min_scene_duration_seconds=100.0
     )
     scenes = sampler.detect_scenes(three_scene_video)
     assert len(scenes) == 1

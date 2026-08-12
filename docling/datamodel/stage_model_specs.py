@@ -23,6 +23,7 @@ from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR_GROUNDING_PROMPT,
 )
 from docling.models.inference_engines.image_classification.base import (
     ImageClassificationEngineType,
@@ -1005,6 +1006,55 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
 )
 
+# Only Heron has an ONNX export, hence no engine_overrides on the variants below.
+OBJECT_DETECTION_LAYOUT_HERON_101 = ObjectDetectionStagePreset(
+    preset_id="layout_heron_101",
+    name="Layout Heron 101",
+    description="RT-DETR layout-heron model (ResNet101)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron_101",
+        repo_id="docling-project/docling-layout-heron-101",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM = ObjectDetectionStagePreset(
+    preset_id="layout_egret_medium",
+    name="Layout Egret Medium",
+    description="D-FINE layout-egret model (medium)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_medium",
+        repo_id="docling-project/docling-layout-egret-medium",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_LARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_large",
+    name="Layout Egret Large",
+    description="D-FINE layout-egret model (large)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_large",
+        repo_id="docling-project/docling-layout-egret-large",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_XLARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_xlarge",
+    name="Layout Egret XLarge",
+    description="D-FINE layout-egret model (xlarge)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_xlarge",
+        repo_id="docling-project/docling-layout-egret-xlarge",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
 
 # -----------------------------------------------------------------------------
 # IMAGE CLASSIFICATION PRESETS
@@ -1567,6 +1617,33 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
 # -----------------------------------------------------------------------------
 # CHANDRA / DOTS VLM_CONVERT PRESETS
 # -----------------------------------------------------------------------------
+
+VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
+    preset_id="unlimited_ocr",
+    name="Unlimited-OCR",
+    description="Unlimited-OCR model for document layout parsing with bounding boxes (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR",
+        default_repo_id="baidu/Unlimited-OCR",
+        prompt=UNLIMITED_OCR_GROUNDING_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        max_new_tokens=8192,
+        api_overrides={
+            # The model has no chat template, and its grounding markers are special
+            # tokens: without skip_special_tokens=False the layout annotations are
+            # stripped from the completion and the page comes back as flat text.
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "unlimited-ocr",
+                    "max_tokens": 8192,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
 
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",

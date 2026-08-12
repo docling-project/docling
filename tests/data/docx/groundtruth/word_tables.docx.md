@@ -42,3 +42,15 @@ A non-uniform table with all kinds of spans and empty cells
 |  |  |  |  |  |
 |  |  |  |  |  |
 |  |  |  |  | Cell 8.4 |
+
+A non-uniform table with a row starting late
+
+| Header 0.0 | Header 0.1 |
+| - | - |
+|  | Cell 1.1 |
+
+A non-uniform table with a vertical span over a row starting late
+
+| Header 0.0 | Header 0.1 | Merged Cell 0.2 1.2 |
+| - | - | - |
+|  |  | Merged Cell 0.2 1.2 |

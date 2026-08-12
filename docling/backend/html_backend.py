@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -590,10 +591,43 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return value
         return Path(value).resolve().as_uri()
 
+    def _get_browser_local_base_path(self) -> Optional[Path]:
+        if isinstance(self.path_or_stream, Path):
+            return self.path_or_stream.resolve()
+
+        if self.base_path and ImageResourceLoader.is_local_path(self.base_path):
+            return Path(self.base_path).resolve()
+
+        return None
+
+    def _is_allowed_browser_file_request(self, request_url: str) -> bool:
+        local_base_path = self._get_browser_local_base_path()
+        if local_base_path is not None and request_url == local_base_path.as_uri():
+            return True
+
+        if not self.options.enable_local_fetch or local_base_path is None:
+            return False
+
+        requested_path = Path(url2pathname(urlparse(request_url).path)).resolve()
+        return requested_path.is_relative_to(local_base_path.parent)
+
     def _get_browser_request_block_reason(self, request_url: str) -> Optional[str]:
         parsed = urlparse(request_url)
         scheme = (parsed.scheme or "").lower()
-        if scheme in {"file", "data", "about", "blob"}:
+        if scheme == "file":
+            if self._is_allowed_browser_file_request(request_url):
+                return None
+            if not self.options.enable_local_fetch:
+                return (
+                    "local fetch is disabled "
+                    "(set options.enable_local_fetch=True to allow)"
+                )
+            return (
+                "local file access is limited to the source document directory "
+                "during HTML rendering"
+            )
+
+        if scheme in {"data", "about", "blob"}:
             return None
 
         if ImageResourceLoader.is_remote_url(request_url):
@@ -1522,6 +1556,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     row_span -= 1
                 while (
                     col_idx < num_cols
+                    and row_idx + start_row_span < num_rows
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from docling.datamodel.pipeline_options import (
-    LayoutOptions,
+    LayoutObjectDetectionOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
@@ -16,13 +16,19 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS,
 )
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
-from docling.models.stages.layout.layout_model import LayoutModel
-from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+from docling.models.stages.ocr.easyocr_model import (
+    EasyOcrModel,
+    _resolve_easyocr_recognition_models,
+)
 from docling.models.stages.ocr.nemotron_ocr_model import (
     NemotronOcrModel,
     nemotron_ocr_model_dir,
 )
-from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
+from docling.models.stages.ocr.rapid_ocr_model import (
+    _RAPIDOCR_DEFAULT_LANGUAGE,
+    RapidOcrModel,
+    _parse_rapidocr_model_spec,
+)
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
     DocumentPictureClassifierOptions,
@@ -33,6 +39,12 @@ from docling.models.stages.table_structure.table_structure_model import (
 from docling.models.utils.hf_model_download import download_hf_model
 
 _log = logging.getLogger(__name__)
+
+# Prefetched when the caller does not name specific `<backend>:<lang>`
+_DEFAULT_RAPIDOCR_MODELS = (
+    f"torch:{_RAPIDOCR_DEFAULT_LANGUAGE}",
+    f"onnxruntime:{_RAPIDOCR_DEFAULT_LANGUAGE}",
+)
 
 
 def download_models(
@@ -55,9 +67,22 @@ def download_models(
     with_granite_chart_extraction: bool = False,
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
+    rapidocr_models: Optional[list[str]] = None,
     with_easyocr: bool = False,
+    easyocr_languages: Optional[list[str]] = None,
     with_nemotron_ocr: bool = False,
 ):
+    if easyocr_languages is not None and not with_easyocr:
+        raise ValueError("easyocr_languages requires with_easyocr=True")
+    if rapidocr_models is not None and not with_rapidocr:
+        raise ValueError("rapidocr_models requires with_rapidocr=True")
+
+    easyocr_recognition_models = ["english_g2", "latin_g2"]
+    if easyocr_languages is not None:
+        easyocr_recognition_models = _resolve_easyocr_recognition_models(
+            easyocr_languages
+        )
+
     if output_dir is None:
         output_dir = settings.cache_dir / "models"
 
@@ -66,11 +91,21 @@ def download_models(
 
     if with_layout:
         _log.info("Downloading layout model...")
-        LayoutModel.download_models(
-            local_dir=output_dir / LayoutOptions().model_spec.model_repo_folder,
-            force=force,
-            progress=progress,
-        )
+        layout_spec = LayoutObjectDetectionOptions().model_spec
+        # Fetch every engine variant: e.g. the ONNX engine reads from its own repo.
+        layout_repos = {layout_spec.repo_id: layout_spec.revision}
+        for override in layout_spec.engine_overrides.values():
+            merged = override.merge_with(layout_spec.repo_id, layout_spec.revision)
+            assert merged.repo_id is not None and merged.revision is not None
+            layout_repos[merged.repo_id] = merged.revision
+        for repo_id, revision in layout_repos.items():
+            download_hf_model(
+                repo_id=repo_id,
+                revision=revision,
+                local_dir=output_dir / repo_id.replace("/", "--"),
+                force=force,
+                progress=progress,
+            )
 
     if with_tableformer:
         _log.info("Downloading tableformer model...")
@@ -204,21 +239,30 @@ def download_models(
         )
 
     if with_rapidocr:
-        for backend in ("torch", "onnxruntime"):
-            for lang in ("chinese", "english"):
-                _log.info(f"Downloading rapidocr {backend} {lang} models...")
-                RapidOcrModel.download_models(
-                    backend=backend,
-                    local_dir=output_dir / RapidOcrModel._model_repo_folder,
-                    force=force,
-                    progress=progress,
-                    lang=lang,
-                )
+        # PP-OCRv6 recognition/detection are single multilingual checkpoints, so the
+        # default set already covers all ~52 v6 languages. `rapidocr_models` exists for
+        # the non-v6 languages, which are served by per-script PP-OCRv4/v5 models.
+        # Parsed here rather than up front: it reaches into rapidocr, an optional extra.
+        for spec in (
+            _parse_rapidocr_model_spec(value)
+            for value in (rapidocr_models or _DEFAULT_RAPIDOCR_MODELS)
+        ):
+            # _parse_rapidocr_model_spec always sets user_lang.
+            assert spec.user_lang is not None
+            _log.info(f"Downloading rapidocr {spec.backend} {spec.user_lang} models...")
+            RapidOcrModel.download_models(
+                backend=spec.backend,
+                lang=spec.user_lang,
+                local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                force=force,
+                progress=progress,
+            )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")
         EasyOcrModel.download_models(
             local_dir=output_dir / EasyOcrModel._model_repo_folder,
+            recognition_models=easyocr_recognition_models,
             force=force,
             progress=progress,
         )

@@ -85,6 +85,36 @@ def test_empty_table_does_not_crash():
     assert data.num_cols == 0
 
 
+def test_non_numeric_image_dimensions_do_not_crash():
+    # image width/height can be non-numeric in real AsciiDoc (e.g. "50%", "auto").
+    # convert() used int(item["width"]) directly, so such an image raised
+    # ValueError and failed the whole document; it must fall back to the default
+    # size and keep converting the rest of the content.
+    from io import BytesIO
+
+    adoc = (
+        b"= Title\n\n"
+        b"Intro text.\n\n"
+        b"image::diagram.png[Architecture, width=50%, height=auto]\n\n"
+        b"Text after the image.\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(adoc),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="dims.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "Intro text." in md
+    assert "Text after the image." in md
+
+    picture = doc.pictures[0]
+    assert picture.image.size.width == DEFAULT_IMAGE_WIDTH
+    assert picture.image.size.height == DEFAULT_IMAGE_HEIGHT
+
+
 def test_asciidocs_examples():
     fnames = sorted(glob.glob("./tests/data/asciidoc/sources/*.asciidoc"))
 

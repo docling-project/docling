@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "powerpoint_unrecognized_shape",
   "origin": {
-    "mimetype": "application/vnd.ms-powerpoint",
+    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
     "binary_hash": 4810066311353306760,
     "filename": "powerpoint_unrecognized_shape.pptx"
   },

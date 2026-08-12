@@ -166,7 +166,7 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     assert dci._guess_format(doc_path) == InputFormat.PDF
 
-    # Valid MS Office
+    # Valid MS Office (modern formats)
     buf = BytesIO(Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read())
     stream = DocumentStream(name="lorem_ipsum.docx", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
@@ -195,6 +195,39 @@ def test_guess_format(tmp_path):
         Path("./tests/data/pptx/sources/powerpoint_sample.pptx").read_bytes()
     )
     assert dci._guess_format(pptx_no_ext) == InputFormat.PPTX
+
+    # Legacy binary Office formats
+    legacy_cases = [
+        (
+            Path("./tests/data/doc/sources/legacy_sample.doc"),
+            InputFormat.DOC,
+        ),
+        (
+            Path("./tests/data/xls/sources/legacy_sample.xls"),
+            InputFormat.XLS,
+        ),
+        (
+            Path("./tests/data/ppt/sources/legacy_sample.ppt"),
+            InputFormat.PPT,
+        ),
+    ]
+    for legacy_path, expected_format in legacy_cases:
+        assert dci._guess_format(legacy_path) == expected_format
+
+        stream = DocumentStream(
+            name=legacy_path.name, stream=BytesIO(legacy_path.read_bytes())
+        )
+        assert dci._guess_format(stream) == expected_format
+
+        no_ext = temp_dir / f"{expected_format.value}_no_ext"
+        no_ext.write_bytes(legacy_path.read_bytes())
+        assert dci._guess_format(no_ext) == expected_format
+
+        no_ext_stream = DocumentStream(
+            name=f"{expected_format.value}_upload",
+            stream=BytesIO(legacy_path.read_bytes()),
+        )
+        assert dci._guess_format(no_ext_stream) == expected_format
 
     # Valid OpenDocument formats
     odfdo_available = importlib.util.find_spec("odfdo") is not None
@@ -299,6 +332,13 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/uspto/sources/ipa20110039701.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
+    # Valid XML USPTO patent grant, Full Text Data/XML v2.5
+    buf = BytesIO(Path("./tests/data/uspto/sources/pg06442728.xml").open("rb").read())
+    stream = DocumentStream(name="pg06442728.xml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.XML_USPTO
+    doc_path = Path("./tests/data/uspto/sources/pg06442728.xml")
+    assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
+
     buf = BytesIO(
         Path("./tests/data/uspto/sources/pftaps057006474.txt").open("rb").read()
     )
@@ -348,6 +388,18 @@ def test_guess_format(tmp_path):
     buf = BytesIO(Path(doc_path).open("rb").read())
     stream = DocumentStream(name="docling_test.xml", stream=buf)
     assert dci._guess_format(stream) is None
+
+    # Valid DocLang XML with generic .xml extension
+    doclang_xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        "<doclang><heading>DocLang</heading><text>Hello</text></doclang>"
+    )
+    doc_path = temp_dir / "doclang_sample.xml"
+    doc_path.write_text(doclang_xml, encoding="utf-8")
+    assert dci._guess_format(doc_path) == InputFormat.XML_DOCLANG
+    buf = BytesIO(doc_path.read_bytes())
+    stream = DocumentStream(name="doclang_sample.xml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.XML_DOCLANG
 
     # Plain .txt file (not USPTO) should be detected as Markdown
     stream = DocumentStream(name="pftaps057006474.txt", stream=BytesIO(b"xyz"))

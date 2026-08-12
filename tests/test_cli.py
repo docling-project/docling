@@ -1,21 +1,28 @@
 import base64
+import json
 import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import click
 import pytest
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
 
-from docling.cli.export_utils import _should_generate_export_images, _split_list
+from docling.cli.export_utils import (
+    _parse_page_range,
+    _should_generate_export_images,
+    _split_list,
+)
 from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import PdfBackend, VlmPipelineOptions
+from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
@@ -166,6 +173,7 @@ def test_cli_from_odf_expands_to_open_document_formats(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert input_doc_paths
             return []
@@ -344,6 +352,86 @@ def test_cli_html_image_headers_require_remote_fetch(tmp_path):
         "--html-image-headers requires --html-image-fetch remote or all"
         in result.output
     )
+
+
+def test_cli_default_verbosity_logs_per_file_progress(tmp_path):
+    """At default verbosity (-v not given), the CLI must still surface
+    which input file is currently being converted. Regression for #3467
+    where multi-file batches (e.g. directories of audio) gave no per-file
+    feedback at default verbosity.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app, [str(first), str(second), "--from", "md", "--output", str(output)]
+        )
+        assert result.exit_code == 0
+
+        # After default-verbosity invocation, per-file progress loggers must
+        # be enabled at INFO so the "Processing document <name>" line fires.
+        assert progress_logger.isEnabledFor(logging.INFO)
+        assert converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
+def test_cli_quiet_suppresses_per_file_progress(tmp_path):
+    """`--quiet` reinstates fully silent default output: the per-file progress
+    loggers stay at WARNING so callers (e.g. AI agents) that shell out to
+    docling don't get unexpected INFO lines bloating their context.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app,
+            [
+                str(first),
+                str(second),
+                "--from",
+                "md",
+                "--quiet",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+
+        # With --quiet the progress loggers are left at WARNING, so INFO-level
+        # per-file lines are suppressed.
+        assert not progress_logger.isEnabledFor(logging.INFO)
+        assert not converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
 
 
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
@@ -538,26 +626,26 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
 
 
 def test_cli_audio_extensions_coverage():
-    """Test that all audio extensions from FormatToExtensions are covered."""
+    """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
 
-    # Verify that the centralized audio extensions include all expected formats
     audio_extensions = FormatToExtensions[InputFormat.AUDIO]
-    expected_extensions = [
-        "wav",
-        "mp3",
-        "m4a",
-        "aac",
-        "ogg",
-        "flac",
-        "mp4",
-        "avi",
-        "mov",
-    ]
-
-    for ext in expected_extensions:
+    expected_audio = ["wav", "mp3", "m4a", "aac", "ogg", "flac"]
+    for ext in expected_audio:
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
+        )
+
+    video_extensions = FormatToExtensions[InputFormat.VIDEO]
+    expected_video = ["mp4", "avi", "mov", "mkv", "webm"]
+    for ext in expected_video:
+        assert ext in video_extensions, (
+            f"Video extension {ext} not found in FormatToExtensions[InputFormat.VIDEO]"
+        )
+
+    for ext in expected_video:
+        assert ext not in audio_extensions, (
+            f"Video extension {ext} should not be in FormatToExtensions[InputFormat.AUDIO]"
         )
 
 
@@ -589,6 +677,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert len(input_doc_paths) == 1
             return []
@@ -623,6 +712,175 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options.release_native_memory_every_n_pages == 64
 
 
+def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the built OcrOptions."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["ocr_options"] = pdf_option.pipeline_options.ocr_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("ocr_options")
+
+
+@pytest.mark.parametrize("mode", list(OcrMode))
+def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
+    result, ocr_options = _capture_cli_ocr_options(
+        monkeypatch, ["--ocr-mode", mode.value], tmp_path
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.mode is mode
+
+
+def test_cli_ocr_mode_defaults_to_default(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.DEFAULT
+
+
+def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FULL_PAGE
+
+
+def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr", "--ocr-mode", "layout_regions"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FULL_PAGE
+
+
+def test_cli_invalid_ocr_mode_is_rejected(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-mode",
+            "not_a_mode",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def _capture_cli_page_range(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the page_range it got."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["page_range"] = page_range
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("page_range")
+
+
+def test_cli_page_range_reaches_convert_all(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "2-4"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (2, 4)
+
+
+def test_cli_page_range_accepts_single_page(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "3"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (3, 3)
+
+
+def test_cli_page_range_defaults_to_all_pages(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert page_range == DEFAULT_PAGE_RANGE
+
+
+@pytest.mark.parametrize("raw", ["4-2", "0-3", "abc", "1-", "-3"])
+def test_cli_invalid_page_range_is_rejected(tmp_path, monkeypatch, raw):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", raw], tmp_path
+    )
+    assert result.exit_code != 0
+    assert page_range is None
+
+
+def test_cli_page_range_limits_converted_pages(tmp_path):
+    """`--page-range 2-3` must convert only those slides of a 3-slide deck.
+
+    Uses PPTX because its backend honors ``page_range`` without needing the
+    layout model, keeping the end-to-end assertion cheap.
+    """
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pptx/sources/powerpoint_sample.pptx",
+            "--output",
+            str(output),
+            "--to",
+            "json",
+            "--page-range",
+            "2-3",
+        ],
+    )
+    assert result.exit_code == 0
+
+    doc = json.loads((output / "powerpoint_sample.json").read_text(encoding="utf-8"))
+    assert sorted(int(page_no) for page_no in doc["pages"]) == [2, 3]
+
+
+def test_parse_page_range_is_shared_with_convert_remote():
+    """`convert` and `convert-remote` must parse --page-range identically."""
+    assert _parse_page_range(None) is None
+    assert _parse_page_range("1-4") == (1, 4)
+    assert _parse_page_range(" 7 ") == (7, 7)
+    with pytest.raises(click.exceptions.UsageError):
+        _parse_page_range("4-2")
+
+
 def test_cli_passes_accelerator_options_to_vlm_pipeline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -646,6 +904,7 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert len(input_doc_paths) == 1
             return []

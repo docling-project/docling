@@ -56,15 +56,30 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
     "Windows)."
 )
 
+_AUDIO_SUFFIX_TO_MIMETYPE = {
+    ".wav": "audio/x-wav",
+    ".mp3": "audio/mp3",
+    ".m4a": "audio/m4a",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+}
+
+
+def _audio_mimetype(filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    return _AUDIO_SUFFIX_TO_MIMETYPE.get(suffix, "audio/x-wav")
+
 
 def _process_conversation(
     conversation: list["_ConversationItem"], conv_res: ConversionResult
 ) -> None:
     """Process the conversation items and add them to the document."""
     # Ensure we have a proper DoclingDocument
+    filename = conv_res.input.file.name or "audio.wav"
     origin = DocumentOrigin(
-        filename=conv_res.input.file.name or "audio.wav",
-        mimetype="audio/x-wav",
+        filename=filename,
+        mimetype=_audio_mimetype(filename),
         binary_hash=conv_res.input.document_hash,
     )
     conv_res.document = DoclingDocument(
@@ -162,6 +177,17 @@ class _ConversationItem(BaseModel):
         return result
 
 
+# Distil-Whisper models are not part of openai-whisper's model registry, but
+# their Hugging Face repos publish the checkpoint in the original OpenAI
+# format, which whisper.load_model() accepts as a local file path.
+_DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str]] = {
+    "distil-small.en": ("distil-whisper/distil-small.en", "original-model.bin"),
+    "distil-medium.en": ("distil-whisper/distil-medium.en", "original-model.bin"),
+    "distil-large-v3": ("distil-whisper/distil-large-v3-openai", "model.bin"),
+    "distil-large-v3.5": ("distil-whisper/distil-large-v3.5-openai", "model.bin"),
+}
+
+
 class _NativeWhisperModel:
     def __init__(
         self,
@@ -202,7 +228,42 @@ class _NativeWhisperModel:
 
             self.model_name = asr_options.repo_id
             _log.info(f"loading _NativeWhisperModel({self.model_name})")
-            if artifacts_path is not None:
+            distil_checkpoint = _DISTIL_WHISPER_OPENAI_CHECKPOINTS.get(self.model_name)
+            if distil_checkpoint is not None:
+                from huggingface_hub import hf_hub_download
+                from huggingface_hub.utils import LocalEntryNotFoundError
+
+                repo_id, filename = distil_checkpoint
+                _log.info(
+                    f"loading {self.model_name} from OpenAI-format checkpoint "
+                    f"{repo_id}/{filename}"
+                )
+                if artifacts_path is not None:
+                    # artifacts_path means fully-offline operation: resolve the
+                    # checkpoint from the local cache and never download.
+                    try:
+                        checkpoint_path = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=filename,
+                            cache_dir=str(artifacts_path),
+                            local_files_only=True,
+                        )
+                    except LocalEntryNotFoundError as err:
+                        raise FileNotFoundError(
+                            f"artifacts_path ({artifacts_path}) does not contain "
+                            f"the checkpoint {repo_id}/{filename} required by ASR "
+                            f"model '{self.model_name}'. Prefetch it with: "
+                            f"hf download {repo_id} {filename} "
+                            f'--cache-dir "{artifacts_path}"'
+                        ) from err
+                else:
+                    checkpoint_path = hf_hub_download(
+                        repo_id=repo_id, filename=filename
+                    )
+                self.model = whisper.load_model(
+                    name=checkpoint_path, device=self.device
+                )
+            elif artifacts_path is not None:
                 _log.info(f"loading {self.model_name} from {artifacts_path}")
                 self.model = whisper.load_model(
                     name=self.model_name,
@@ -353,9 +414,27 @@ class _MlxWhisperModel:
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
-        audio_path: Path = Path(conv_res.input.file).resolve()
+        path_or_stream = conv_res.input._backend.path_or_stream
+        temp_file_path: Path | None = None
+
+        if not isinstance(path_or_stream, (BytesIO, Path)):
+            raise RuntimeError(
+                f"ASR pipeline requires a file path or BytesIO stream, "
+                f"but got {type(path_or_stream)}"
+            )
 
         try:
+            if isinstance(path_or_stream, BytesIO):
+                suffix = Path(conv_res.input.file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp_file:
+                    temp_file_path = Path(tmp_file.name)
+                    tmp_file.write(path_or_stream.getvalue())
+                audio_path = temp_file_path
+            else:
+                audio_path = path_or_stream
+
             if shutil.which("ffmpeg") is None:
                 _log.error(MISSING_FFMPEG_MESSAGE)
                 conv_res.errors.append(
@@ -375,9 +454,17 @@ class _MlxWhisperModel:
 
         except Exception as exc:
             _log.error(f"MLX Audio transcription has an error: {exc}")
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
 
-        conv_res.status = ConversionStatus.FAILURE
-        return conv_res
+        finally:
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as exc:
+                    _log.warning(
+                        f"Failed to delete temporary file {temp_file_path}: {exc}"
+                    )
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """Transcribe audio using MLX Whisper.
@@ -447,7 +534,7 @@ class _WhisperS2TModel:
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
-                    "`pip install 'whisper-s2t-reborn[pyav]>=1.6.3'`."
+                    "`pip install 'whisper-s2t-reborn[pyav]>=1.7.1'`."
                 )
 
             self.whisper_s2t = whisper_s2t
@@ -618,6 +705,59 @@ class _WhisperS2TModel:
 # ============================================================
 # Transcriber protocol + factory (new; consumed by AsrPipeline and VideoPipeline)
 # ============================================================
+
+
+def _merge_into_sentences(
+    items: list["_ConversationItem"],
+) -> list["_ConversationItem"]:
+    """Merge Whisper segments into complete sentences.
+
+    Consecutive segments are merged until a sentence-ending punctuation
+    mark (. ? !) is found. The merged item spans the full time range
+    of all contributing segments and concatenates their text.
+
+    This produces one block per sentence, which maps cleanly to one
+    speaker per block for diarization.
+
+    Args:
+        items: ASR segments in chronological order.
+
+    Returns:
+        One merged item per sentence.
+    """
+    if not items:
+        return []
+
+    merged: list[_ConversationItem] = []
+    current: _ConversationItem | None = None
+
+    for item in items:
+        if current is None:
+            current = _ConversationItem(
+                start_time=item.start_time,
+                end_time=item.end_time,
+                text=item.text.strip(),
+                speaker=item.speaker,
+                words=list(item.words or []),
+            )
+        else:
+            current.end_time = item.end_time
+            current.text = current.text.rstrip() + " " + item.text.strip()
+            if item.words:
+                current.words = (current.words or []) + list(item.words)
+
+        # Flush on sentence boundary
+        if current.text.rstrip().endswith((".", "?", "!")):
+            merged.append(current)
+            current = None
+
+    # Flush any remaining text
+    if current is not None:
+        merged.append(current)
+
+    return merged
+
+
 class _AsrTranscriber(Protocol):
     """Structural type for ASR backends.
 

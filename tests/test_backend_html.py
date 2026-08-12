@@ -168,6 +168,24 @@ def test_heading_levels():
     assert found_lvl_1 and found_lvl_2
 
 
+def test_table_header_rowspan_without_body_does_not_crash():
+    # A table whose only row is a `th` with rowspan (no body rows to span into)
+    # used to raise IndexError: get_html_table_row_col counts no rows for an
+    # all-header-rowspan row, so the grid was empty and the cell-placement read
+    # went out of bounds. It should not crash and should keep the cell.
+    src = b"<table><tr><th rowspan='2'>h</th></tr></table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
@@ -1207,12 +1225,15 @@ def _make_html_backend(options=None):
 def test_browser_request_block_reason_policy():
     """Render-mode request filtering: scheme allow-list plus remote-fetch gating."""
     backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=False))
+    source_file_url = Path(backend.path_or_stream).resolve().as_uri()
 
-    # data:/file: schemes are always allowed during rendering
+    # data: remains allow-listed, and the source document itself must remain renderable
     assert (
         backend._get_browser_request_block_reason("data:image/png;base64,AAAA") is None
     )
-    assert backend._get_browser_request_block_reason("file:///tmp/page.html") is None
+    assert backend._get_browser_request_block_reason(source_file_url) is None
+    reason = backend._get_browser_request_block_reason("file:///tmp/page.html")
+    assert reason is not None and "local fetch is disabled" in reason
 
     # remote requests are blocked while remote fetch is disabled
     reason = backend._get_browser_request_block_reason("http://example.com/img.png")
@@ -1228,6 +1249,20 @@ def test_browser_request_block_reason_policy():
     assert (
         backend._get_browser_request_block_reason("http://example.com/img.png") is None
     )
+
+
+def test_browser_request_block_reason_local_fetch_confined_to_source_directory():
+    html_path = Path("./tests/data/html/sources/example_01.html").resolve()
+    backend = _make_html_backend(
+        HTMLBackendOptions(enable_local_fetch=True, source_uri=html_path)
+    )
+
+    allowed_file_url = (html_path.parent / "example_image_01.png").resolve().as_uri()
+    assert backend._get_browser_request_block_reason(allowed_file_url) is None
+
+    blocked_file_url = (html_path.parent.parent.parent / "README.md").resolve().as_uri()
+    reason = backend._get_browser_request_block_reason(blocked_file_url)
+    assert reason is not None and "source document directory" in reason
 
 
 def test_coerce_base_url():

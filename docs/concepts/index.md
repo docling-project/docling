@@ -5,6 +5,7 @@ Here some of our picks to get you started:
 - 🏛️ Docling [architecture](./architecture.md)
 - 📄 [Docling Document](./docling_document.md)
 - core operations like ✍️ [serialization](./serialization.md) and ✂️ [chunking](./chunking.md)
+- 🔍 [OCR engines](./OCR.md)
 
 👈 ... and there is much more: explore all the concepts using the navigation menu on the side
 

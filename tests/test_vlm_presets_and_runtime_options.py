@@ -663,6 +663,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.DOCLANG,
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+            ResponseFormat.UNLIMITED_OCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,
             ResponseFormat.CHANDRA_HTML,
             ResponseFormat.DOTS_JSON,

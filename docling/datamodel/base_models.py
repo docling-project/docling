@@ -95,7 +95,9 @@ class InputFormat(str, Enum):
     """A document format supported by document backend parsers."""
 
     DOCX = "docx"
+    DOC = "doc"
     PPTX = "pptx"
+    PPT = "ppt"
     HTML = "html"
     IMAGE = "image"
     PDF = "pdf"
@@ -103,6 +105,7 @@ class InputFormat(str, Enum):
     MD = "md"
     CSV = "csv"
     XLSX = "xlsx"
+    XLS = "xls"
     ODT = "odt"
     ODS = "ods"
     ODP = "odp"
@@ -110,14 +113,17 @@ class InputFormat(str, Enum):
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
     XML_DOCLANG = "xml_doclang"
+    DCLX = "dclx"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
+    VIDEO = "video"
     VTT = "vtt"
     LATEX = "latex"
     EMAIL = "email"
     EPUB = "epub"
     BOXNOTE = "boxnote"
+    EBCDIC = "ebcdic"
 
 
 class OutputFormat(str, Enum):
@@ -136,29 +142,35 @@ class OutputFormat(str, Enum):
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
+    InputFormat.DOC: ["doc", "dot"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
+    InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
     InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
+    InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.XLS: ["xls", "xlt"],
     InputFormat.ODT: ["odt", "ott"],
     InputFormat.ODS: ["ods", "ots"],
     InputFormat.ODP: ["odp", "otp"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
-    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
+    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac"],
+    InputFormat.VIDEO: ["mp4", "avi", "mov", "mkv", "webm"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
-    InputFormat.EMAIL: ["eml"],
+    InputFormat.EMAIL: ["eml", "msg"],
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
+    InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -166,10 +178,17 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
     ],
+    InputFormat.DOC: [
+        "application/msword",
+        "application/x-msword",
+    ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",
         "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ],
+    InputFormat.PPT: [
+        "application/vnd.ms-powerpoint",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
@@ -189,6 +208,10 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ],
+    InputFormat.XLS: [
+        "application/vnd.ms-excel",
+        "application/x-msexcel",
     ],
     InputFormat.ODT: [
         "application/vnd.oasis.opendocument.text",
@@ -216,16 +239,21 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "audio/ogg",
         "audio/flac",
         "audio/x-flac",
+    ],
+    InputFormat.VIDEO: [
         "video/mp4",
         "video/avi",
         "video/x-msvideo",
         "video/quicktime",
+        "video/x-matroska",
+        "video/webm",
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
-    InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EMAIL: ["message/rfc822", "application/vnd.ms-outlook"],
     InputFormat.EPUB: ["application/epub+zip"],
     InputFormat.BOXNOTE: ["application/vnd.box.boxnote"],
+    InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -348,6 +376,7 @@ class ApiImageRequestResult:
     num_tokens: int | None
     stop_reason: VlmStopReason
     usage: Any | None = None
+    logprobs: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -357,6 +386,7 @@ class ApiImageStreamingRequestResult:
     text: str
     num_tokens: int | None
     usage: Any | None = None
+    logprobs: Any | None = None
 
 
 class ContainerElement(
@@ -503,10 +533,29 @@ class OpenAiChatMessage(BaseModel):
     tool_calls: list[dict[str, Any]] | None = None
 
 
+class OpenAiTopLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+
+
+class OpenAiTokenLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+    top_logprobs: list[OpenAiTopLogprob] | None = None
+
+
+class OpenAiResponseLogprobs(BaseModel):
+    content: list[OpenAiTokenLogprob] | None = None
+    refusal: list[OpenAiTokenLogprob] | None = None
+
+
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
     finish_reason: str | None
+    logprobs: OpenAiResponseLogprobs | None = None
 
 
 class OpenAiResponseUsage(BaseModel):

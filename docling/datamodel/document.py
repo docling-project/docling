@@ -115,6 +115,11 @@ class InputRejection(NamedTuple):
 
     message: str
     category: FailureCategory
+    # The exception that caused the rejection, when one exists. Lets the
+    # converter re-raise ``ConversionError`` with ``from`` so applications can
+    # classify failures via ``__cause__`` (e.g. an encrypted PDF surfaces the
+    # underlying ``PdfiumError``). See issue #1920.
+    original_error: Optional[BaseException] = None
 
 
 class InputDocument(BaseModel):
@@ -221,6 +226,7 @@ class InputDocument(BaseModel):
             self._rejection = self._rejection or InputRejection(
                 message=f"File {self.file.name} not found or cannot be opened.",
                 category=FailureCategory.SOURCE_UNAVAILABLE,
+                original_error=e,
             )
             _log.exception(
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
@@ -236,6 +242,7 @@ class InputDocument(BaseModel):
                     f"{self.file.name}."
                 ),
                 category=FailureCategory.UNKNOWN,
+                original_error=e,
             )
             _log.exception(
                 "An unexpected error occurred while opening the document "
@@ -315,6 +322,7 @@ class InputDocument(BaseModel):
             self._rejection = InputRejection(
                 message=str(exc) or "The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
+                original_error=exc,
             )
             return
 
@@ -324,6 +332,20 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+
+def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
+    """Return the exception behind an invalid input document, if one exists.
+
+    Companion to ``build_invalid_input_errors``: lets the converter raise
+    ``ConversionError`` with ``from`` so the original backend exception (e.g.
+    ``PdfiumError`` for an encrypted PDF) stays reachable via ``__cause__``
+    for programmatic error classification. See issue #1920.
+    """
+    rejection = in_doc._rejection
+    if rejection is None:
+        return None
+    return rejection.original_error
 
 
 def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
@@ -746,13 +768,19 @@ class _DocumentConversionInput(BaseModel):
         if isinstance(obj, Path):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_dclx_extension(obj.name):
+                return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
             obj_ext = obj.suffix[1:] if obj.suffix else ""
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
-            if mime is None:  # must guess from content
+            needs_content_sniff = mime is None or (
+                mime is not None
+                and mime.lower() in {"application/xml", "application/xhtml+xml"}
+            )
+            if needs_content_sniff:
                 with obj.open("rb") as f:
-                    content = f.read(1024)  # Read first 1KB
+                    content = f.read(1024)
             if mime is not None and mime.lower() == "application/zip":
                 mime_root = "application/vnd.openxmlformats-officedocument"
                 suffix = obj.suffix.lower()
@@ -772,6 +800,8 @@ class _DocumentConversionInput(BaseModel):
         elif isinstance(obj, DocumentStream):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_dclx_extension(obj.name):
+                return InputFormat.DCLX
             content = obj.stream.read(8192)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
@@ -824,6 +854,10 @@ class _DocumentConversionInput(BaseModel):
         return lower_name.endswith((".dclg", ".dclg.xml"))
 
     @staticmethod
+    def _has_dclx_extension(name: str) -> bool:
+        return name.lower().endswith(".dclx")
+
+    @staticmethod
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
@@ -854,6 +888,15 @@ class _DocumentConversionInput(BaseModel):
         return None
 
     @staticmethod
+    def _has_doclang_root_element(content_str: str) -> bool:
+        """Return whether XML content starts with a DocLang root element."""
+        content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
+        content_str = content_str.lstrip()
+        if re.match(r"<\?xml", content_str):
+            content_str = re.sub(r"<\?xml[^>]*\?>", "", content_str, count=1).lstrip()
+        return re.match(r"<\s*doclang\b", content_str, re.IGNORECASE) is not None
+
+    @staticmethod
     def _guess_from_content(
         content: bytes,
         mime: str,
@@ -877,7 +920,7 @@ class _DocumentConversionInput(BaseModel):
             if match_doctype:
                 xml_doctype = match_doctype.group()
                 if InputFormat.XML_USPTO in formats and any(
-                    item in xml_doctype
+                    item in xml_doctype.lower()
                     for item in (
                         "us-patent-application-v4",
                         "us-patent-grant-v4",
@@ -892,6 +935,13 @@ class _DocumentConversionInput(BaseModel):
                     or "JATS-archive" in xml_doctype
                 ):
                     input_format = InputFormat.XML_JATS
+
+            if (
+                input_format is None
+                and InputFormat.XML_DOCLANG in formats
+                and _DocumentConversionInput._has_doclang_root_element(content_str)
+            ):
+                input_format = InputFormat.XML_DOCLANG
 
         elif mime == "text/plain":
             content_str = content.decode("utf-8", errors="replace")
@@ -930,14 +980,22 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
         elif ext in FormatToExtensions[InputFormat.BOXNOTE]:
             mime = FormatToMimeType[InputFormat.BOXNOTE][0]
+        elif ext in FormatToExtensions[InputFormat.EBCDIC]:
+            mime = FormatToMimeType[InputFormat.EBCDIC][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
             mime = FormatToMimeType[InputFormat.DOCX][0]
+        elif ext in FormatToExtensions[InputFormat.DOC]:
+            mime = FormatToMimeType[InputFormat.DOC][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
+        elif ext in FormatToExtensions[InputFormat.PPT]:
+            mime = FormatToMimeType[InputFormat.PPT][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.XLS]:
+            mime = FormatToMimeType[InputFormat.XLS][0]
         elif ext in FormatToExtensions[InputFormat.ODT]:
             mime = FormatToMimeType[InputFormat.ODT][0]
         elif ext in FormatToExtensions[InputFormat.ODS]:
@@ -949,7 +1007,11 @@ class _DocumentConversionInput(BaseModel):
         elif ext in FormatToExtensions[InputFormat.LATEX]:
             mime = FormatToMimeType[InputFormat.LATEX][0]
         elif ext in FormatToExtensions[InputFormat.EMAIL]:
-            mime = FormatToMimeType[InputFormat.EMAIL][0]
+            mime = (
+                "application/vnd.ms-outlook"
+                if ext == "msg"
+                else FormatToMimeType[InputFormat.EMAIL][0]
+            )
         return mime
 
     @staticmethod
@@ -987,6 +1049,11 @@ class _DocumentConversionInput(BaseModel):
             r"<!doctype\s+(?P<root>[a-zA-Z_:][a-zA-Z0-9_:.-]*)\s+.*>\s*<(?P=root)\b"
         )
         if p.search(content_str):
+            return "application/xml"
+
+        if _DocumentConversionInput._has_doclang_root_element(
+            content.decode("utf-8", errors="replace")
+        ):
             return "application/xml"
 
         return None

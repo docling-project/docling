@@ -88,18 +88,20 @@ class PagePreprocessingModel(BasePageModel):
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
 
-        # DEBUG code:
-        def draw_text_boxes(image, cells, show: bool = False):
-            draw = ImageDraw.Draw(image.copy())
-            for c in cells:
-                x0, y0, x1, y1 = (
-                    c.to_bounding_box().l,
-                    c.to_bounding_box().t,
-                    c.to_bounding_box().r,
-                    c.to_bounding_box().b,
-                )
+        def draw_cell_boxes(image, text_cells, bitmap_cells, show: bool = False):
+            image = image.copy()
+            draw = ImageDraw.Draw(image)
+            # Text cells in red
+            for c in text_cells:
+                bbox = c.to_bounding_box()
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
 
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
+            # Bitmap rects in green
+            for bbox in bitmap_cells:
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
+
+                draw.rectangle([(x0, y0), (x1, y1)], outline="green")
             if show:
                 image.show()
             else:
@@ -113,7 +115,11 @@ class PagePreprocessingModel(BasePageModel):
                 image.save(str(out_file), format="png")
 
         if settings.debug.visualize_cells:
-            draw_text_boxes(page.get_image(scale=1.0), page.cells)
+            draw_cell_boxes(
+                page.get_image(scale=1.0),
+                page.cells,
+                page._backend.get_bitmap_rects(),
+            )
 
         return page
 
