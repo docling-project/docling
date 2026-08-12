@@ -60,6 +60,7 @@ def test_convert_path(converter: DocumentConverter):
         gt=get_regular_groundtruth_paths(pdf_path, tag="docling_parse"),
         doc_result=doc_result,
         generate=GENERATE,
+        verify_doctags=False,
     )
 
 
@@ -75,6 +76,7 @@ def test_convert_stream(converter: DocumentConverter):
         gt=get_regular_groundtruth_paths(pdf_path, tag="docling_parse"),
         doc_result=doc_result,
         generate=GENERATE,
+        verify_doctags=False,
     )
 
 

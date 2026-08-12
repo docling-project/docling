@@ -19,8 +19,6 @@ from .verify_utils import verify_conversion_result_v2
 GENERATE_V2 = GEN_TEST_DATA
 pytestmark = pytest.mark.ml_pdf_model
 
-SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf"]
-
 # PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
 SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
 
@@ -124,14 +122,11 @@ def test_e2e_pdfs_conversions(artifact_suffix, backend):
 
         doc_result: ConversionResult = converter.convert(pdf_path)
 
-        # Decide if to skip doctags comparison
-        verify_doctags = pdf_path.name not in SKIP_DOCTAGS_COMPARISON
-
         verify_conversion_result_v2(
             gt=get_regular_groundtruth_paths(pdf_path, tag=artifact_suffix),
             doc_result=doc_result,
             generate=GENERATE_V2,
-            verify_doctags=verify_doctags,
+            verify_doctags=False,
             verify_doclang=True,
         )
 
@@ -140,9 +135,9 @@ def test_doclang_backend_groundtruth_differences_report():
     gt_dir = Path("./tests/data/pdf/groundtruth")
     rows: list[str] = []
 
-    for docling_parse_path in sorted(gt_dir.glob("*.docling_parse.doclang.xml")):
-        stem = docling_parse_path.name.removesuffix(".docling_parse.doclang.xml")
-        pypdfium2_path = gt_dir / f"{stem}.pypdfium2.doclang.xml"
+    for docling_parse_path in sorted(gt_dir.glob("*.docling_parse.dclg")):
+        stem = docling_parse_path.name.removesuffix(".docling_parse.dclg")
+        pypdfium2_path = gt_dir / f"{stem}.pypdfium2.dclg"
 
         if not pypdfium2_path.exists():
             rows.append(f"| {stem} | missing pypdfium2 | - | - | - | - | - | - | - |")

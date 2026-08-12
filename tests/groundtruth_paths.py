@@ -20,7 +20,7 @@ _PAGES_META_SUFFIX = ".pages.meta.json"
 _JSON_SUFFIX = ".json"
 _MD_SUFFIX = ".md"
 _DOCTAGS_SUFFIX = ".doctags.txt"
-_DOCLANG_SUFFIX = ".doclang.xml"
+_DOCLANG_SUFFIX = ".dclg"
 
 
 # Maps an OCR engine `kind` to the GT sub-directory (and filename tag) it uses.

@@ -50,6 +50,16 @@ def _is_xml_char(char: str) -> bool:
     )
 
 
+def _normalize_newlines(text: str) -> str:
+    """Drop stray CR characters extracted from source documents.
+
+    Some backends (e.g. pypdfium2) carry a literal CRLF out of the PDF into item text.
+    Ground truth is stored and compared with LF only, so the exported text is normalized
+    on both the generate and the verify path.
+    """
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _export_clean_doclang(doc: DoclingDocument) -> str:
     raw_doclang = (
         DocLangDocSerializer(
@@ -63,7 +73,7 @@ def _export_clean_doclang(doc: DoclingDocument) -> str:
     root = parseString(clean_doclang).documentElement
     if root is None:
         raise ValueError("DocLang XML serialization did not produce a document root")
-    return root.toprettyxml(indent="  ").rstrip() + "\n"
+    return _normalize_newlines(root.toprettyxml(indent="  ").rstrip()) + "\n"
 
 
 class _TestPagesMeta(BaseModel):
@@ -458,7 +468,7 @@ def _assert_doclang_nodes_close(true_node: Node, pred_node: Node, path: str) -> 
         )
 
 
-def verify_doclang(doc_true_doclang: str, doc_pred_doclang: str) -> bool:
+def verify_dclg(doc_true_doclang: str, doc_pred_doclang: str) -> bool:
     true_root = parseString(doc_true_doclang).documentElement
     pred_root = parseString(doc_pred_doclang).documentElement
     if true_root is None or pred_root is None:
@@ -490,8 +500,10 @@ def verify_conversion_result_v2(
         _TestPagesMeta.from_page(page) for page in doc_pred_pages
     ]
     doc_pred: DoclingDocument = doc_result.document
-    doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
-    doc_pred_dt = doc_result.document.export_to_doctags()
+    doc_pred_md = _normalize_newlines(
+        doc_result.document.export_to_markdown(compact_tables=True)
+    )
+    doc_pred_dt = _normalize_newlines(doc_result.document.export_to_doctags())
 
     pages_path = gt.pages_meta
     json_path = gt.doc_json
@@ -515,17 +527,18 @@ def verify_conversion_result_v2(
         )
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(md_path, mode="w", encoding="utf-8") as fw:
+        with open(md_path, mode="w", encoding="utf-8", newline="") as fw:
             fw.write(doc_pred_md)
 
-        dt_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(dt_path, mode="w", encoding="utf-8") as fw:
-            fw.write(doc_pred_dt)
+        if verify_doctags:
+            dt_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(dt_path, mode="w", encoding="utf-8", newline="") as fw:
+                fw.write(doc_pred_dt)
 
         if verify_doclang:
             doc_pred_doclang = _export_clean_doclang(doc_result.document)
             doclang_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(doclang_path, mode="w", encoding="utf-8") as fw:
+            with open(doclang_path, mode="w", encoding="utf-8", newline="") as fw:
                 fw.write(doc_pred_doclang)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
@@ -534,14 +547,15 @@ def verify_conversion_result_v2(
         with open(json_path, encoding="utf-8") as fr:
             doc_true: DoclingDocument = DoclingDocument.model_validate_json(fr.read())
 
-        with open(md_path, encoding="utf-8") as fr:
+        with open(md_path, encoding="utf-8", newline="") as fr:
             doc_true_md = fr.read()
 
-        with open(dt_path, encoding="utf-8") as fr:
-            doc_true_dt = fr.read()
+        if verify_doctags:
+            with open(dt_path, encoding="utf-8", newline="") as fr:
+                doc_true_dt = fr.read()
 
         if verify_doclang:
-            with open(doclang_path, encoding="utf-8") as fr:
+            with open(doclang_path, encoding="utf-8", newline="") as fr:
                 doc_true_doclang = fr.read()
 
         if not fuzzy:
@@ -567,7 +581,7 @@ def verify_conversion_result_v2(
 
         if verify_doclang:
             doc_pred_doclang = _export_clean_doclang(doc_result.document)
-            assert verify_doclang(doc_true_doclang, doc_pred_doclang), (
+            assert verify_dclg(doc_true_doclang, doc_pred_doclang), (
                 f"Mismatch in DocLang prediction for {input_path}"
             )
 
@@ -598,12 +612,14 @@ def verify_export(
 ) -> bool:
     file = Path(gtfile)
 
+    pred_text = _normalize_newlines(pred_text)
+
     if not file.exists() or generate:
-        with file.open(mode="w", encoding="utf-8") as fw:
+        with file.open(mode="w", encoding="utf-8", newline="") as fw:
             fw.write(pred_text)
         return True
 
-    with file.open(encoding="utf-8") as fr:
+    with file.open(encoding="utf-8", newline="") as fr:
         true_text = fr.read()
 
     if fuzzy:
