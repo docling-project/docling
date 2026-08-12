@@ -403,6 +403,9 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def is_valid(self) -> bool:
         return self._result.success
 
+    def get_error_message(self) -> str:
+        return self._result.error_message
+
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:

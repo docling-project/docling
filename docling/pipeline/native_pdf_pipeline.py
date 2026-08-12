@@ -224,7 +224,14 @@ class NativePdfPipeline(ConvertPipeline):
     ) -> Page | None:
         """Collect the native content of one page, or None if it failed to parse."""
         if not page_backend.is_valid():
-            self._record_page_failure(conv_res, page_backend, "Page failed to parse.")
+            detail = page_backend.get_error_message()
+            self._record_page_failure(
+                conv_res,
+                page_backend,
+                f"Page failed to parse: {detail}"
+                if detail
+                else "Page failed to parse.",
+            )
             return None
 
         try:
