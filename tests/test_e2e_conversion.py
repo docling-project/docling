@@ -1,8 +1,10 @@
 import difflib
 import re
+from collections import Counter
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItem, DoclingDocument
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -183,4 +185,81 @@ def test_doclang_backend_groundtruth_differences_report():
             "first diff line | tag deltas dp/pdfium | docling_parse | pypdfium2 |\n"
             "| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |\n"
             + "\n".join(rows)
+        )
+
+
+def _labels_by_page(doc: DoclingDocument) -> dict[int, list[str]]:
+    """Reading-order sequence of item labels, grouped by the page they sit on."""
+    labels: dict[int, list[str]] = {}
+    for item, _level in doc.iterate_items():
+        if not isinstance(item, DocItem) or not item.prov:
+            continue
+        labels.setdefault(item.prov[0].page_no, []).append(item.label.value)
+    return labels
+
+
+def _label_count_deltas(left: list[str], right: list[str]) -> str:
+    left_counts = Counter(left)
+    right_counts = Counter(right)
+    deltas = sorted(
+        (
+            (label, left_counts.get(label, 0), right_counts.get(label, 0))
+            for label in set(left_counts) | set(right_counts)
+            if left_counts.get(label, 0) != right_counts.get(label, 0)
+        ),
+        key=lambda item: abs(item[1] - item[2]),
+        reverse=True,
+    )
+    if not deltas:
+        return "order only"
+    return ", ".join(f"{label}:{lhs}/{rhs}" for label, lhs, rhs in deltas)
+
+
+def test_layout_structure_per_page_between_backends():
+    """Compare the per-page layout structure of both PDF backends.
+
+    Both backends must see the same pages, which is asserted. The labels they assign
+    within a page still differ on a minority of pages, so those are reported rather
+    than failed.
+    """
+    gt_dir = Path("./tests/data/pdf/groundtruth")
+    rows: list[str] = []
+
+    for docling_parse_path in sorted(gt_dir.glob("*.docling_parse.json")):
+        stem = docling_parse_path.name.removesuffix(".docling_parse.json")
+        pypdfium2_path = gt_dir / f"{stem}.pypdfium2.json"
+        if not pypdfium2_path.exists():
+            continue
+
+        docling_parse_doc = DoclingDocument.load_from_json(docling_parse_path)
+        pypdfium2_doc = DoclingDocument.load_from_json(pypdfium2_path)
+
+        docling_parse_pages = set(docling_parse_doc.pages)
+        pypdfium2_pages = set(pypdfium2_doc.pages)
+        assert docling_parse_pages == pypdfium2_pages, (
+            f"[{stem}] backends disagree on which pages exist: "
+            f"docling_parse={sorted(docling_parse_pages)} "
+            f"pypdfium2={sorted(pypdfium2_pages)}"
+        )
+
+        docling_parse_labels = _labels_by_page(docling_parse_doc)
+        pypdfium2_labels = _labels_by_page(pypdfium2_doc)
+
+        for page_no in sorted(docling_parse_pages):
+            docling_parse_page = docling_parse_labels.get(page_no, [])
+            pypdfium2_page = pypdfium2_labels.get(page_no, [])
+            if docling_parse_page == pypdfium2_page:
+                continue
+            rows.append(
+                "| "
+                f"{stem} | {page_no} | "
+                f"{len(docling_parse_page)}/{len(pypdfium2_page)} | "
+                f"{_label_count_deltas(docling_parse_page, pypdfium2_page)} |"
+            )
+
+    if rows:
+        pytest.skip(
+            "Per-page layout structure differs between docling_parse and pypdfium2:\n\n"
+            "| file | page | items dp/pdfium | label deltas dp/pdfium |\n"
+            "| --- | ---: | ---: | --- |\n" + "\n".join(rows)
         )

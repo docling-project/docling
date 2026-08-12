@@ -118,6 +118,23 @@ def _assert_bbox_close(
         )
 
 
+def _describe_item(item: DocItem) -> str:
+    """Compact identification of a doc item, for use in assertion messages."""
+    parts: list[str] = [item.self_ref]
+    if item.prov:
+        prov = item.prov[0]
+        parts.append(f"page {prov.page_no}")
+        if prov.bbox is not None:
+            bbox = prov.bbox
+            parts.append(
+                f"bbox=({bbox.l:.1f}, {bbox.t:.1f}, {bbox.r:.1f}, {bbox.b:.1f})"
+            )
+    if isinstance(item, TextItem):
+        text = item.text if len(item.text) <= 60 else f"{item.text[:57]}..."
+        parts.append(repr(text))
+    return ", ".join(parts)
+
+
 def levenshtein(str1: str, str2: str) -> int:
     # Ensure str1 is the shorter string to optimize memory usage
     if len(str1) > len(str2):
@@ -283,8 +300,8 @@ def verify_docitems(
         f"[{pdf_filename}] Picture lengths do not match: {len(doc_true.pictures)} != {len(doc_pred.pictures)}"
     )
 
-    for (true_item, _true_level), (pred_item, _pred_level) in zip(
-        doc_true.iterate_items(), doc_pred.iterate_items()
+    for item_no, ((true_item, _true_level), (pred_item, _pred_level)) in enumerate(
+        zip(doc_true.iterate_items(), doc_pred.iterate_items())
     ):
         if not isinstance(true_item, DocItem):
             continue
@@ -294,12 +311,16 @@ def verify_docitems(
 
         # Validate type
         assert true_item.label == pred_item.label, (
-            f"[{pdf_filename}] Object label does not match."
+            f"[{pdf_filename}] Object label does not match at item {item_no}:\n"
+            f"  groundtruth: {true_item.label.value} ({_describe_item(true_item)})\n"
+            f"  predicted  : {pred_item.label.value} ({_describe_item(pred_item)})"
         )
 
         # Validate provenance
         assert len(true_item.prov) == len(pred_item.prov), (
-            f"[{pdf_filename}] Length of prov mismatch"
+            f"[{pdf_filename}] Length of prov mismatch at item {item_no} "
+            f"({true_item.label.value}): "
+            f"groundtruth {len(true_item.prov)} != predicted {len(pred_item.prov)}"
         )
         if len(true_item.prov) > 0:
             true_prov = true_item.prov[0]
@@ -308,10 +329,16 @@ def verify_docitems(
             pred_page = doc_pred.pages.get(pred_prov.page_no)
 
             assert true_prov.page_no == pred_prov.page_no, (
-                f"[{pdf_filename}] Page provenance mistmatch"
+                f"[{pdf_filename}] Page provenance mismatch at item {item_no} "
+                f"({true_item.label.value}): "
+                f"groundtruth page {true_prov.page_no} != "
+                f"predicted page {pred_prov.page_no}"
             )
             assert (true_prov.bbox is None) == (pred_prov.bbox is None), (
-                f"[{pdf_filename}] BBox presence mismatch"
+                f"[{pdf_filename}] BBox presence mismatch at item {item_no} "
+                f"({true_item.label.value}): "
+                f"groundtruth bbox={true_prov.bbox is not None}, "
+                f"predicted bbox={pred_prov.bbox is not None}"
             )
 
             if true_prov.bbox is not None and pred_prov.bbox is not None:
