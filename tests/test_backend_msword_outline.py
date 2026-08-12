@@ -13,14 +13,19 @@ from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter
 
 
-def _add_style_with_outline_level(doc, style_id: str, name: str, outline_lvl: int):
-    """Register a paragraph style carrying an explicit ``w:outlineLvl``."""
-    style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-    style.element.set(qn("w:styleId"), style_id)
+def _set_outline_level(style, outline_lvl: int):
+    """Pin an explicit ``w:outlineLvl`` onto an existing paragraph style."""
     lvl = OxmlElement("w:outlineLvl")
     lvl.set(qn("w:val"), str(outline_lvl))
     style.element.get_or_add_pPr().append(lvl)
     return style
+
+
+def _add_style_with_outline_level(doc, style_id: str, name: str, outline_lvl: int):
+    """Register a paragraph style carrying an explicit ``w:outlineLvl``."""
+    style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+    style.element.set(qn("w:styleId"), style_id)
+    return _set_outline_level(style, outline_lvl)
 
 
 def _markdown(doc, tmp_path, name: str) -> str:
@@ -86,3 +91,42 @@ def test_body_text_outline_level_is_not_promoted_to_a_heading(tmp_path):
 
     assert "Not a heading at all" in markdown
     assert "#" not in markdown
+
+
+def test_title_style_is_not_reclassified_as_a_heading(tmp_path):
+    """A ``Title`` style keeps its own branch even when it carries an outline level.
+
+    Word's built-in ``Title`` style defines no ``w:outlineLvl``, but a document
+    may still pin one onto it; that must not turn the title into a heading.
+    """
+
+    def build(pinned: bool) -> str:
+        doc = Document()
+        if pinned:
+            _set_outline_level(doc.styles["Title"], 0)
+        doc.add_paragraph("The document title").style = doc.styles["Title"]
+        doc.add_paragraph("Body text.")
+        return _markdown(doc, tmp_path, "title_pinned" if pinned else "title_plain")
+
+    assert build(pinned=True) == build(pinned=False)
+
+
+def test_heading_style_with_the_body_text_sentinel_falls_back_to_its_name(tmp_path):
+    """``w:outlineLvl`` 9 does not yield a level-10 heading on a heading style.
+
+    The sentinel is outside the 1-9 range, so the level has to keep coming from
+    the style name.
+    """
+
+    def build(pinned: bool) -> str:
+        doc = Document()
+        style = doc.styles.add_style("Custom Heading 3", WD_STYLE_TYPE.PARAGRAPH)
+        style.element.set(qn("w:styleId"), "Heading3Alt")
+        if pinned:
+            _set_outline_level(style, 9)
+        doc.add_paragraph("Section title").style = style
+        return _markdown(doc, tmp_path, "sentinel" if pinned else "unpinned")
+
+    pinned = build(pinned=True)
+    assert pinned == build(pinned=False)
+    assert pinned.strip().startswith("#")

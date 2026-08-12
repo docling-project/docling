@@ -493,17 +493,19 @@ def test_get_outline_level_from_style():
     h1 = paragraphs[5]
     assert h1.style.name == "Heading 1"
     assert h1.text == "Let\u2019s swim!"
-    assert backend._get_outline_level_from_style(h1) == 1  # outlineLvl=0 → level 1
+    # outlineLvl=0 → level 1
+    assert backend._get_outline_level_from_style(h1.style) == 1
 
     h2 = paragraphs[15]
     assert h2.style.name == "Heading 2"
     assert h2.text == "Let\u2019s eat"
-    assert backend._get_outline_level_from_style(h2) == 2  # outlineLvl=1 → level 2
+    # outlineLvl=1 → level 2
+    assert backend._get_outline_level_from_style(h2.style) == 2
 
     non_heading = paragraphs[0]
     assert non_heading.style.name == "Subtitle"
     assert non_heading.text == "Summer activities"
-    assert backend._get_outline_level_from_style(non_heading) is None
+    assert backend._get_outline_level_from_style(non_heading.style) is None
 
 
 def test_external_image_references():
