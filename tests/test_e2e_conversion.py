@@ -43,9 +43,9 @@ def _doclang_tag_counts(content: str) -> dict[str, int]:
     return counts
 
 
-def _first_different_line(left: str, right: str) -> tuple[int, str, str]:
-    left_lines = left.splitlines()
-    right_lines = right.splitlines()
+def _first_different_line(
+    left_lines: list[str], right_lines: list[str]
+) -> tuple[int, str, str]:
     max_len = max(len(left_lines), len(right_lines))
     for line_no in range(max_len):
         left_line = left_lines[line_no] if line_no < len(left_lines) else ""
@@ -148,20 +148,26 @@ def test_doclang_backend_groundtruth_differences_report():
         if docling_parse_xml == pypdfium2_xml:
             continue
 
+        docling_parse_lines = docling_parse_xml.splitlines()
+        pypdfium2_lines = pypdfium2_xml.splitlines()
+
         line_no, docling_parse_line, pypdfium2_line = _first_different_line(
-            docling_parse_xml,
-            pypdfium2_xml,
+            docling_parse_lines,
+            pypdfium2_lines,
         )
+        # Compare whole lines rather than characters: a character-level ratio() over
+        # these ~150k-char files costs minutes per pair, and the report only ever shows
+        # line-granular figures anyway.
         similarity = difflib.SequenceMatcher(
             None,
-            docling_parse_xml,
-            pypdfium2_xml,
+            docling_parse_lines,
+            pypdfium2_lines,
             autojunk=False,
         ).ratio()
         rows.append(
             "| "
             f"{stem} | different | "
-            f"{len(docling_parse_xml.splitlines())}/{len(pypdfium2_xml.splitlines())} | "
+            f"{len(docling_parse_lines)}/{len(pypdfium2_lines)} | "
             f"{len(docling_parse_xml)}/{len(pypdfium2_xml)} | "
             f"{similarity:.3f} | "
             f"{line_no} | "

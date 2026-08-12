@@ -88,8 +88,8 @@ class TrivialChunker(BaseChunker):
 
 
 def main() -> None:
-    data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/groundtruth/normal_4pages.json"
+    data_folder = Path(__file__).parent / "data"
+    input_doc_path = data_folder / "normal_4pages.json"
 
     doc = DoclingDocument.load_from_json(input_doc_path)
     chunker = TrivialChunker()
