@@ -5,6 +5,7 @@ import binascii
 import logging
 import quopri
 import re
+from collections.abc import Callable
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, formataddr
@@ -19,10 +20,10 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 if TYPE_CHECKING:
     from docling.document_converter import DocumentConverter
-from docling.exceptions import DocumentLoadError
 
 # mail-parser is only installed by the `format-email` extra, but
 # DocumentConverter imports every backend eagerly. Importing it at module load
@@ -54,6 +55,22 @@ except ImportError as e:  # pragma: no cover - import-time guard
     _OXMSG_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
+
+# DocumentConverter lives in the entrypoints layer, which the backend (core)
+# layer must not import (enforced by Tach). Instead, docling.document_converter
+# injects a factory here at import time, inverting the dependency. When the
+# factory is unset (e.g. the converter module was never imported), attachment
+# processing gracefully degrades to listing.
+_attachment_converter_factory: Callable[[], DocumentConverter] | None = None
+
+
+def register_attachment_converter_factory(
+    factory: Callable[[], DocumentConverter],
+) -> None:
+    """Register the factory used to build a converter for email attachments."""
+    global _attachment_converter_factory
+    _attachment_converter_factory = factory
+
 
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
 _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
@@ -314,15 +331,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 return payload.encode("utf-8", errors="replace")
         return None
 
-    def _build_attachment_converter(self) -> DocumentConverter:
-        # Imported lazily: document_converter imports this module, so a
-        # module-level import would create a circular import. One converter is
-        # built per email and reused across its attachments (pipelines are cached
-        # per converter instance). It uses default options, so a nested email
+    @staticmethod
+    def _build_attachment_converter() -> DocumentConverter | None:
+        # The converter (entrypoints layer) is injected via
+        # register_attachment_converter_factory so this core-layer backend never
+        # imports it. Returns None when no factory has been registered, in which
+        # case attachments are listed instead of parsed. One converter is built
+        # per email and reused across its attachments (pipelines are cached per
+        # converter instance); it uses default options, so a nested email
         # attachment is parsed but its own attachments are not recursed.
-        from docling.document_converter import DocumentConverter
-
-        return DocumentConverter()
+        if _attachment_converter_factory is None:
+            return None
+        return _attachment_converter_factory()
 
     def _convert_attachment(
         self, converter: DocumentConverter, filename: str, data: bytes
@@ -346,28 +366,22 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             return None
         return result.document
 
-    def _add_attachments(self, doc: DoclingDocument) -> None:
-        """Append the attachments section, listing or parsing per the options."""
-        assert self.mail is not None
+    def _list_attachments(
+        self, doc: DoclingDocument, attachments: list[dict[str, Any]]
+    ) -> None:
+        attachments_group = doc.add_list_group(name="attachments")
+        for index, attachment in enumerate(attachments):
+            doc.add_list_item(
+                text=self._attachment_label(index, attachment),
+                parent=attachments_group,
+            )
 
-        attachments = self.mail.attachments or []
-        if not attachments:
-            return
-        if not (self.options.process_attachments or self.options.list_attachments):
-            return
-
-        doc.add_heading(text="Attachments", level=2)
-
-        if not self.options.process_attachments:
-            attachments_group = doc.add_list_group(name="attachments")
-            for index, attachment in enumerate(attachments):
-                doc.add_list_item(
-                    text=self._attachment_label(index, attachment),
-                    parent=attachments_group,
-                )
-            return
-
-        converter: DocumentConverter | None = None
+    def _process_attachments(
+        self,
+        doc: DoclingDocument,
+        attachments: list[dict[str, Any]],
+        converter: DocumentConverter,
+    ) -> None:
         total_bytes = 0
         for index, attachment in enumerate(attachments):
             if index >= self.options.max_attachments:
@@ -397,8 +411,6 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 continue
             total_bytes += len(data)
 
-            if converter is None:
-                converter = self._build_attachment_converter()
             child = self._convert_attachment(converter, filename, data)
             if child is None:
                 doc.add_text(
@@ -407,6 +419,30 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 doc.add_document(child, parent=section)
+
+    def _add_attachments(self, doc: DoclingDocument) -> None:
+        """Append the attachments section, listing or parsing per the options."""
+        assert self.mail is not None
+
+        attachments = self.mail.attachments or []
+        if not attachments:
+            return
+        if not (self.options.process_attachments or self.options.list_attachments):
+            return
+
+        # Fall back to listing when parsing is off, or when no converter factory
+        # was registered (the entrypoints layer was never imported).
+        converter = (
+            self._build_attachment_converter()
+            if self.options.process_attachments
+            else None
+        )
+
+        doc.add_heading(text="Attachments", level=2)
+        if converter is None:
+            self._list_attachments(doc, attachments)
+        else:
+            self._process_attachments(doc, attachments, converter)
 
     def convert(self) -> DoclingDocument:
         if not self.is_valid() or self.mail is None:
