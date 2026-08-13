@@ -3,7 +3,7 @@ import logging
 import warnings
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Final, Set, Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
@@ -13,6 +13,26 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# Characters of the file handed to csv.Sniffer to detect the dialect.
+_SNIFF_SAMPLE_SIZE: Final[int] = 65536
+_DELIMITERS: Final[str] = ",;\t|:"
+
+
+def _sniff_dialect(head: str, sample: str) -> type[csv.Dialect]:
+    """Detect the dialect from the first line, falling back to a larger sample.
+
+    The first line is enough for most files and is what the sniffer reads best:
+    it rejects samples whose rows hold different numbers of delimiters. It is
+    not enough when a quoted field spans several lines, because the line is cut
+    mid-quote; retrying with a sample that closes the quote recovers those.
+
+    Raises csv.Error if neither can be detected.
+    """
+    try:
+        return csv.Sniffer().sniff(head, _DELIMITERS)
+    except csv.Error:
+        return csv.Sniffer().sniff(sample, _DELIMITERS)
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
@@ -57,9 +77,11 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
 
         # Detect CSV dialect
         head = self.content.readline()
+        self.content.seek(0)
+        sample = self.content.read(_SNIFF_SAMPLE_SIZE)
         try:
-            dialect: type[csv.Dialect] = csv.Sniffer().sniff(head, ",;\t|:")
-            if dialect.delimiter not in {",", ";", "\t", "|", ":"}:
+            dialect: type[csv.Dialect] = _sniff_dialect(head, sample)
+            if dialect.delimiter not in _DELIMITERS:
                 raise RuntimeError(
                     f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
                 )
