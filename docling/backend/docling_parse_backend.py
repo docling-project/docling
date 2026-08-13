@@ -454,7 +454,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         chars: bool = False,
         shapes: bool = True,
         bitmaps: bool = True,
-    ) -> bool:
+    ) -> Optional[bool]:
         if not self.is_valid():
             return False
         return self._result.intersects_with(
@@ -467,7 +467,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         horizontal: bool = True,
         vertical: bool = True,
         tolerance: float = 1e-3,
-    ) -> list[BoundingBox]:
+    ) -> Optional[list[BoundingBox]]:
         if not self.is_valid():
             return []
 
@@ -481,7 +481,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
 
     def get_connected_shape_bounding_boxes(
         self, *, tolerance: float = 0.0
-    ) -> list[BoundingBox]:
+    ) -> Optional[list[BoundingBox]]:
         if not self.is_valid():
             return []
 

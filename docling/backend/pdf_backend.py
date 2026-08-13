@@ -44,14 +44,13 @@ class PdfPageBackend(ABC):
         chars: bool = False,
         shapes: bool = True,
         bitmaps: bool = True,
-    ) -> bool:
-        """Return whether visible page content intersects ``bbox``.
+    ) -> Optional[bool]:
+        """Return whether visible page content intersects `bbox`.
 
-        ``bbox`` may use either coordinate origin. The default returns ``False``; backends
-        with access to the PDF content stream override it with the real query. Backends
-        without vector content (e.g. OCR/image) keep the default.
+        `None` means this backend cannot answer the query at all, as distinct from `False`, which
+        means it looked and found no intersecting content.
         """
-        return False
+        return None
 
     def get_shape_lines(
         self,
@@ -59,24 +58,25 @@ class PdfPageBackend(ABC):
         horizontal: bool = True,
         vertical: bool = True,
         tolerance: float = 1e-3,
-    ) -> list[BoundingBox]:
+    ) -> Optional[list[BoundingBox]]:
         """Return the visible horizontal and/or vertical stroked shape segments.
 
+        Boxes use top-left origin.
         Segments are returned as degenerate (zero-height or zero-width) boxes with top-left
-        origin. The default returns an empty list; backends without access to the stroked
-        page geometry keep it.
+        origin. `None` means this backend cannot answer the query at all, as distinct from
+        an empty list, which means it looked and found no segments.
         """
-        return []
+        return None
 
     def get_connected_shape_bounding_boxes(
         self, *, tolerance: float = 0.0
-    ) -> list[BoundingBox]:
+    ) -> Optional[list[BoundingBox]]:
         """Return the bboxes of visible shapes merged by overlapping bboxes.
 
-        Boxes use top-left origin. The default returns an empty list; backends without
-        vector content keep it.
+        Boxes use top-left origin. `None` means this backend cannot answer the query at
+        all, as distinct from an empty list, which means it looked and found no shapes.
         """
-        return []
+        return None
 
     @abstractmethod
     def get_page_image(

@@ -387,7 +387,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         chars: bool = False,
         shapes: bool = True,
         bitmaps: bool = True,
-    ) -> bool:
+    ) -> Optional[bool]:
         """Best-effort content-intersection test built from page-object bboxes.
 
         pypdfium2 exposes no visibility or clip state, so this approximates the
@@ -423,7 +423,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
     def get_connected_shape_bounding_boxes(
         self, *, tolerance: float = 0.0
-    ) -> List[BoundingBox]:
+    ) -> Optional[List[BoundingBox]]:
         """Best-effort connected shape regions, merged from path-object bboxes.
 
         Unlike the docling-parse implementation this sees neither clip state nor stroke
