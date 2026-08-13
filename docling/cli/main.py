@@ -43,6 +43,7 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
+from docling.backend.epub_serializer import EpubDocument
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
@@ -444,6 +445,8 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    md_book_frontmatter: bool = False,
+    md_chapter_index: bool = False,
     export_dclx: bool = False,
     export_chunks: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
@@ -549,9 +552,19 @@ def export_documents(
             if export_md:
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
-                )
+                if isinstance(conv_res.document, EpubDocument) and (
+                    md_book_frontmatter or md_chapter_index
+                ):
+                    conv_res.document.save_as_book_markdown(
+                        filename=fname,
+                        image_mode=image_export_mode,
+                        book_frontmatter=md_book_frontmatter,
+                        chapter_index=md_chapter_index,
+                    )
+                else:
+                    conv_res.document.save_as_markdown(
+                        filename=fname, image_mode=image_export_mode
+                    )
                 if _is_empty_output(fname):
                     error_message = (
                         "Markdown export produced empty output for "
@@ -760,6 +773,25 @@ def convert(  # noqa: C901
             help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    md_book_frontmatter: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--md-book-frontmatter",
+            help="Add EPUB book metadata as YAML frontmatter in Markdown output.",
+        ),
+    ] = False,
+    md_chapter_index: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--md-chapter-index",
+            help=(
+                "Add EPUB chapter titles with absolute UTF-8 byte and 1-based "
+                "line offsets. Implies book frontmatter."
+            ),
+        ),
+    ] = False,
     html_image_fetch: Annotated[
         HtmlImageFetchMode,
         typer.Option(
@@ -1329,11 +1361,16 @@ def convert(  # noqa: C901
                         fetch_images=html_fetch_images,
                         enable_local_fetch=html_enable_local_fetch,
                         enable_remote_fetch=html_enable_remote_fetch,
+                        rewrite_internal_links=(
+                            md_book_frontmatter or md_chapter_index
+                        ),
                     )
                     if (
                         html_fetch_images
                         or html_enable_local_fetch
                         or html_enable_remote_fetch
+                        or md_book_frontmatter
+                        or md_chapter_index
                     )
                     else None,
                 ),
@@ -1466,6 +1503,8 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            md_book_frontmatter=md_book_frontmatter,
+            md_chapter_index=md_chapter_index,
             chunker_type=chunker_type,
             chunk_max_tokens=chunk_max_tokens,
             chunk_tokenizer=chunk_tokenizer,

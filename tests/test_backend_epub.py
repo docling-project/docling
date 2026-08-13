@@ -16,13 +16,16 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 
 import logging
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 
 from docling.backend.epub_backend import EpubDocumentBackend
+from docling.backend.epub_serializer import EpubDocument
+from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, EpubFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -119,8 +122,15 @@ def test_epub_document_structure(documents):
 def test_epub_metadata_extraction(documents):
     """Test that EPUB metadata is properly extracted."""
     for _, doc in documents:
-        # The document should have extracted metadata
-        assert doc.name, "Document should have a title from EPUB metadata"
+        assert isinstance(doc, EpubDocument)
+        assert doc.epub_metadata.model_dump(exclude_none=True) == {
+            "title": "Poetry",
+            "authors": ["Sarah Louisa Forten Purvis"],
+            "published": "2023-12-06T20:52:11Z",
+            "language": "en-US",
+            "source_file": "epub_purvis_poetry.epub",
+        }
+        assert "epub_metadata" not in doc.model_dump()
 
 
 def test_epub_image_extraction(documents):
@@ -186,3 +196,84 @@ def test_epub_link_fixing():
     # This is a basic check - the actual link format may vary
     assert markdown is not None, "Should be able to export to markdown"
     assert len(markdown) > 0, "Markdown export should not be empty"
+
+
+def test_chapter_index_requires_link_rewriting(epub_paths: list[Path]) -> None:
+    result = get_converter().convert(epub_paths[0])
+
+    assert isinstance(result.document, EpubDocument)
+    with pytest.raises(ValueError, match="rewrite_internal_links=True"):
+        result.document.export_to_book_markdown(chapter_index=True)
+
+
+def test_book_markdown_rewrites_cross_spine_links(tmp_path: Path) -> None:
+    epub_path = tmp_path / "linked-book.epub"
+    with ZipFile(epub_path, "w") as epub:
+        epub.writestr("mimetype", "application/epub+zip")
+        epub.writestr(
+            "META-INF/container.xml",
+            """<?xml version="1.0"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OPS/content.opf"/></rootfiles>
+</container>""",
+        )
+        epub.writestr(
+            "OPS/content.opf",
+            """<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Linked Book</dc:title>
+    <dc:creator>First Author</dc:creator>
+    <dc:creator>Second Author</dc:creator>
+    <dc:date>1901</dc:date>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="toc" href="toc.xhtml"/>
+    <item id="chapter" href="chapter.htm.html"/>
+  </manifest>
+  <spine><itemref idref="toc"/><itemref idref="chapter"/></spine>
+</package>""",
+        )
+        epub.writestr(
+            "OPS/toc.xhtml",
+            """<html><body><h1>Contents</h1>
+<p><a href="chapter.htm.html#chap01">Chapter One</a></p>
+<p><a href="chapter.htm.html#chap02">Chapter Two</a></p>
+<p><a href="chapter.htm.html#note">Chapter One note</a></p>
+<p><a href="missing.htm#ghost">Ghost</a></p>
+</body></html>""",
+        )
+        epub.writestr(
+            "OPS/chapter.htm.html",
+            """<html><body>
+<h1 id="chap01">Chapter One</h1><p>First body.</p>
+<a id="note"></a><p>Chapter one note.</p>
+<p><a href="chapter.htm.html#chap02">Next chapter</a></p>
+<a id="chap02"></a><h1>Chapter -- Two</h1><p>Second body.</p>
+</body></html>""",
+        )
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(rewrite_internal_links=True)
+            )
+        },
+    )
+    result = converter.convert(epub_path)
+    repeated_result = converter.convert(epub_path)
+
+    assert isinstance(result.document, EpubDocument)
+    markdown = result.document.export_to_book_markdown(chapter_index=True)
+    assert 'authors: ["First Author", "Second Author"]' in markdown
+    assert "[Chapter One](#chapter-one)" in markdown
+    assert "[Chapter Two](#chapter----two)" in markdown
+    assert "[Chapter One note](#chapter-one)" in markdown
+    assert "[Next chapter](#chapter----two)" in markdown
+    assert "missing.htm#ghost" not in markdown
+    assert "Ghost" in markdown
+    assert (
+        repeated_result.document.export_to_book_markdown(chapter_index=True) == markdown
+    )

@@ -48,6 +48,8 @@ docling convert [OPTIONS] source
 | `--headers` | `text` |  | Specify http request headers used when fetching url input sources in the form of a JSON string |
 | `--html-image-headers` | `text` |  | Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string |
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
+| `--md-book-frontmatter` | flag | `false` | Add EPUB book metadata as YAML frontmatter in Markdown output. |
+| `--md-chapter-index` | flag | `false` | Add EPUB chapter titles with absolute UTF-8 byte and 1-based line offsets. Implies book frontmatter. |
 | `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
 | `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
 | `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
@@ -222,4 +224,3 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-

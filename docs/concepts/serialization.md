@@ -34,6 +34,43 @@ The respective `DoclingDocument` export methods (e.g. `export_to_markdown()`) ar
 provided as user shorthands — internally directly instantiating and delegating to
 respective serializers.
 
+### EPUB book navigation
+
+Converted EPUB documents also provide `export_to_book_markdown()`. Its opt-in
+frontmatter can carry the EPUB title, authors, publication date, language, and
+source filename. Enabling the chapter index implies frontmatter and adds the
+absolute UTF-8 byte offset and 1-based line number of every top-level chapter
+heading. Here, top-level means a level-1 section heading that begins a top-level
+serialization part; headings nested below preceding group content are not indexed.
+
+```python
+from docling.datamodel.backend_options import EpubBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter
+from docling.document_converter import EpubFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.EPUB: EpubFormatOption(
+            backend_options=EpubBackendOptions(rewrite_internal_links=True)
+        )
+    }
+)
+result = converter.convert("book.epub")
+markdown = result.document.export_to_book_markdown(chapter_index=True)
+```
+
+`rewrite_internal_links=True` resolves links between EPUB spine documents while
+the source package is available. The CLI enables it automatically when either
+book Markdown option is selected. A chapter-index export rejects documents that
+were converted without that option rather than emitting dangling links. EPUB
+package metadata is transient conversion state, so export book Markdown directly
+from the conversion result rather than reloading a JSON or DCLX serialization.
+
+The same options are available in the CLI as `--md-book-frontmatter` and
+`--md-chapter-index`. Both are disabled by default, so ordinary Markdown exports
+remain unchanged.
+
 ## Format-specific behaviors
 
 Each serializer makes format-specific trade-offs when representing document
