@@ -5,7 +5,7 @@ import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 from docling_core.types.doc import NodeItem
 
@@ -40,7 +40,40 @@ from docling.models.stages.picture_classifier.document_picture_classifier import
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
+if TYPE_CHECKING:
+    from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+
 _log = logging.getLogger(__name__)
+
+
+def get_expected_page_nos(conv_res: ConversionResult) -> list[int]:
+    """The 1-based page numbers to convert, clipped to the requested page range."""
+    start_page, end_page = conv_res.input.limits.page_range
+    return list(
+        range(
+            max(1, start_page),
+            min(conv_res.input.page_count, end_page) + 1,
+        )
+    )
+
+
+def iter_requested_page_backends(
+    backend: "PdfDocumentBackend", expected_page_nos: list[int]
+) -> Iterable["PdfPageBackend"]:
+    """Yield the page backends of the requested pages.
+
+    Backends without random page access (e.g. the threaded docling-parse backend)
+    deliver their pages in completion order, so those are filtered while iterating.
+    """
+    if backend.supports_random_page_access:
+        for page_no in expected_page_nos:
+            yield backend.load_page(page_no - 1)
+        return
+
+    expected_page_no_set = set(expected_page_nos)
+    for page_backend in backend.iter_pages():
+        if page_backend.page_no in expected_page_no_set:
+            yield page_backend
 
 
 class BasePipeline(ABC):

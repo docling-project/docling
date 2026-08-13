@@ -517,6 +517,16 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.pipeline.native_pdf_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.pipeline.threaded_standard_pdf_pipeline"
 layer = "pipeline"
 depends_on = ["docling.pipeline.standard_pdf_pipeline"]
@@ -552,6 +562,7 @@ depends_on = [
   "docling.pipeline",
   "docling.pipeline.asr_pipeline",
   "docling.pipeline.base_pipeline",
+  "docling.pipeline.native_pdf_pipeline",
   "docling.pipeline.simple_pipeline",
   "docling.pipeline.standard_pdf_pipeline",
   "docling.utils",

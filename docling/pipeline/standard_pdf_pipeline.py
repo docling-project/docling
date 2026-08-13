@@ -77,7 +77,11 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
     ReadingOrderOptions,
 )
-from docling.pipeline.base_pipeline import ConvertPipeline
+from docling.pipeline.base_pipeline import (
+    ConvertPipeline,
+    get_expected_page_nos,
+    iter_requested_page_backends,
+)
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -780,24 +784,10 @@ class StandardPdfPipeline(ConvertPipeline):
     def _iter_requested_page_backends(
         self, backend: PdfDocumentBackend, expected_page_nos: list[int]
     ) -> Iterable[PdfPageBackend]:
-        if backend.supports_random_page_access:
-            for page_no in expected_page_nos:
-                yield backend.load_page(page_no - 1)
-            return
-
-        expected_page_no_set = set(expected_page_nos)
-        for page_backend in backend.iter_pages():
-            if page_backend.page_no in expected_page_no_set:
-                yield page_backend
+        return iter_requested_page_backends(backend, expected_page_nos)
 
     def _get_expected_page_nos(self, conv_res: ConversionResult) -> list[int]:
-        start_page, end_page = conv_res.input.limits.page_range
-        return list(
-            range(
-                max(1, start_page),
-                min(conv_res.input.page_count, end_page) + 1,
-            )
-        )
+        return get_expected_page_nos(conv_res)
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.

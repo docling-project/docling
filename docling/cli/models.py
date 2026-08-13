@@ -42,6 +42,7 @@ err_console = Console(stderr=True)
 
 app = typer.Typer(
     name="Docling models helper",
+    context_settings={"help_option_names": ["-h", "--help"]},
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
