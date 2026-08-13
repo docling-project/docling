@@ -272,6 +272,32 @@ def test_pptx_malformed_picture_shapes():
     assert "Slide With Wrong Content Type" in pred_md
 
 
+def test_pptx_left_flush_shape_keeps_own_bbox(tmp_path: Path):
+    """A shape positioned at x = 0 EMU must keep its own bounding box.
+
+    shape.left is an Emu, an int subclass, so a left-flush shape made the
+    old truthiness check fall into the position-unknown fallback and its
+    provenance bbox covered the entire slide.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    flush = slide.shapes.add_textbox(Inches(0), Inches(1), Inches(3), Inches(1))
+    flush.text_frame.text = "flush left"
+    pptx_path = tmp_path / "flush_left.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    item = next(t for t in doc.texts if t.text == "flush left")
+    bbox = item.prov[0].bbox
+    assert (bbox.l, bbox.r) == (0, Inches(3))
+    assert abs(bbox.t - bbox.b) == Inches(1)
+    assert bbox.r != prs.slide_width
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")

@@ -226,7 +226,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _generate_prov(
         self, shape, slide_ind, text="", slide_size=Size(width=1, height=1)
     ):
-        if shape.left:
+        if None not in (shape.left, shape.top, shape.width, shape.height):
             left = shape.left
             top = shape.top
             width = shape.width
