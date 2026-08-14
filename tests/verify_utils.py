@@ -1,6 +1,7 @@
 import json
 import math
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 from xml.dom import Node
@@ -505,7 +506,14 @@ def verify_dclg(doc_true_doclang: str, doc_pred_doclang: str) -> bool:
     return True
 
 
-def verify_conversion_result_v2(
+class VerificationFailure(BaseModel):
+    """A single ground-truth check of a conversion result that did not match."""
+
+    check: str
+    message: str
+
+
+def check_conversion_result_v2(
     gt: GroundTruthPaths,
     doc_result: ConversionResult,
     generate: bool = False,
@@ -513,14 +521,35 @@ def verify_conversion_result_v2(
     verify_doctags: bool = True,
     verify_doclang: bool = False,
     indent: int = 2,
-):
+) -> list[VerificationFailure]:
+    """Compare a conversion result against ground truth and collect every mismatch.
+
+    Unlike `verify_conversion_result_v2`, a failing check does not stop the checks
+    after it, so a caller can report all the ways a document deviates at once.
+    """
     PageMetaList = TypeAdapter(list[_TestPagesMeta])
 
     input_path = doc_result.input.file
+    failures: list[VerificationFailure] = []
 
-    assert doc_result.status == ConversionStatus.SUCCESS, (
-        f"Doc {input_path} did not convert successfully."
-    )
+    def run_check(check: str, verify: Callable[[], bool], mismatch: str) -> None:
+        """Record the outcome of one check instead of raising on mismatch."""
+        try:
+            matches = verify()
+        except AssertionError as exc:
+            failures.append(VerificationFailure(check=check, message=str(exc)))
+        else:
+            if not matches:
+                failures.append(VerificationFailure(check=check, message=mismatch))
+
+    if doc_result.status != ConversionStatus.SUCCESS:
+        failures.append(
+            VerificationFailure(
+                check="status",
+                message=f"Doc {input_path} did not convert successfully.",
+            )
+        )
+        return failures
 
     doc_pred_pages: list[Page] = doc_result.pages
     doc_pred_pages_meta: list[_TestPagesMeta] = [
@@ -586,31 +615,69 @@ def verify_conversion_result_v2(
                 doc_true_doclang = fr.read()
 
         if not fuzzy:
-            assert verify_cells(doc_pred_pages_meta, doc_true_pages_meta), (
-                f"Mismatch in PDF cell prediction for {input_path}"
+            run_check(
+                "cells",
+                lambda: verify_cells(doc_pred_pages_meta, doc_true_pages_meta),
+                f"Mismatch in PDF cell prediction for {input_path}",
             )
 
-        assert verify_docitems(
-            doc_pred=doc_pred,
-            doc_true=doc_true,
-            fuzzy=fuzzy,
-            pdf_filename=input_path.name,
-        ), f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
+        run_check(
+            "docitems",
+            lambda: verify_docitems(
+                doc_pred=doc_pred,
+                doc_true=doc_true,
+                fuzzy=fuzzy,
+                pdf_filename=input_path.name,
+            ),
+            f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}",
+        )
 
-        assert verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy), (
-            f"Mismatch in Markdown prediction for {input_path}"
+        run_check(
+            "markdown",
+            lambda: verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy),
+            f"Mismatch in Markdown prediction for {input_path}",
         )
 
         if verify_doctags:
-            assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
-                f"Mismatch in DocTags prediction for {input_path}"
+            run_check(
+                "doctags",
+                lambda: verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy),
+                f"Mismatch in DocTags prediction for {input_path}",
             )
 
         if verify_doclang:
             doc_pred_doclang = _export_clean_doclang(doc_result.document)
-            assert verify_dclg(doc_true_doclang, doc_pred_doclang), (
-                f"Mismatch in DocLang prediction for {input_path}"
+            run_check(
+                "doclang",
+                lambda: verify_dclg(doc_true_doclang, doc_pred_doclang),
+                f"Mismatch in DocLang prediction for {input_path}",
             )
+
+    return failures
+
+
+def verify_conversion_result_v2(
+    gt: GroundTruthPaths,
+    doc_result: ConversionResult,
+    generate: bool = False,
+    fuzzy: bool = False,
+    verify_doctags: bool = True,
+    verify_doclang: bool = False,
+    indent: int = 2,
+):
+    failures = check_conversion_result_v2(
+        gt=gt,
+        doc_result=doc_result,
+        generate=generate,
+        fuzzy=fuzzy,
+        verify_doctags=verify_doctags,
+        verify_doclang=verify_doclang,
+        indent=indent,
+    )
+    if failures:
+        raise AssertionError(
+            "\n".join(f"[{failure.check}] {failure.message}" for failure in failures)
+        )
 
 
 def verify_document(

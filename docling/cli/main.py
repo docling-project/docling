@@ -868,7 +868,7 @@ def convert(  # noqa: C901
     ] = None,
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
-    ] = PdfBackend.DOCLING_PARSE,
+    ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
     ] = None,
@@ -1365,8 +1365,15 @@ def convert(  # noqa: C901
                 )
                 raise typer.Abort()
 
+            # FIXME: VlmPipeline still fetches pages through load_page(), which the
+            # default (threaded) backend does not implement, so it is pinned to the
+            # random-access backend here. Remove this pin once the paginated
+            # pipelines consume backends via iter_pages(); see
+            # _plans/threaded_backend_random_page_access.md.
             pdf_format_option = PdfFormatOption(
-                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+                pipeline_cls=VlmPipeline,
+                pipeline_options=pipeline_options,
+                backend=DoclingParseDocumentBackend,
             )
 
             format_options = {
