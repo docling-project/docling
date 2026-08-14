@@ -349,7 +349,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             for i, cell in enumerate(prioritized_cells):
                 idx.insert(i, cell.rect.to_bounding_box().as_tuple())
             for cell in secondary_cells:
-                if not any(idx.intersection(cell.rect.to_bounding_box().as_tuple())):
+                overlaps = any(
+                    True
+                    for _ in idx.intersection(cell.rect.to_bounding_box().as_tuple())
+                )
+                if not overlaps:
                     merged_cells.append(cell)
         else:
             # Index the (smaller) secondary cells; drop the ones overlapping any
