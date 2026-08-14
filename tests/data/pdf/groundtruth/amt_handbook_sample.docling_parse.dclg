@@ -42,58 +42,25 @@
     The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.
   </text>
   <text>
-    <location value="277"/>
-    <location value="30"/>
-    <location value="483"/>
-    <location value="77"/>
-    the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.
-  </text>
-  <text>
-    <location value="277"/>
-    <location value="80"/>
-    <location value="281"/>
-    <location value="86"/>
-    .
-  </text>
-  <heading level="2">
-    <location value="277"/>
-    <location value="88"/>
-    <location value="389"/>
-    <location value="94"/>
-    Stainless Steel Self-Locking Nut
-  </heading>
-  <text>
-    <location value="277"/>
-    <location value="98"/>
-    <location value="483"/>
-    <location value="236"/>
-    The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt  easily,  because  the  threaded  insert  is  the  proper  size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.
-  </text>
-  <heading level="2">
-    <location value="277"/>
-    <location value="247"/>
-    <location value="335"/>
-    <location value="252"/>
-    Elastic Stop Nut
-  </heading>
-  <text>
-    <location value="277"/>
-    <location value="256"/>
-    <location value="483"/>
-    <location value="270"/>
-    The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This
-  </text>
-  <text>
+    <thread thread_id="1"/>
     <location value="62"/>
     <location value="329"/>
     <location value="269"/>
     <location value="343"/>
     Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is
   </text>
-  <picture>
-    <location value="60"/>
-    <location value="351"/>
+  <text>
+    <thread thread_id="1"/>
     <location value="277"/>
+    <location value="30"/>
+    <location value="483"/>
+    <location value="77"/>
+    the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.
+  </text>
+  <picture>
+    <location value="61"/>
+    <location value="351"/>
+    <location value="269"/>
     <location value="459"/>
     <caption>
       <location value="62"/>
@@ -138,11 +105,46 @@
       Elastic anchor nut
     </text>
   </picture>
+  <text>
+    <location value="277"/>
+    <location value="80"/>
+    <location value="281"/>
+    <location value="86"/>
+    .
+  </text>
+  <heading level="2">
+    <location value="277"/>
+    <location value="88"/>
+    <location value="389"/>
+    <location value="94"/>
+    Stainless Steel Self-Locking Nut
+  </heading>
+  <text>
+    <location value="277"/>
+    <location value="98"/>
+    <location value="483"/>
+    <location value="236"/>
+    The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt  easily,  because  the  threaded  insert  is  the  proper  size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.
+  </text>
+  <heading level="2">
+    <location value="277"/>
+    <location value="247"/>
+    <location value="335"/>
+    <location value="252"/>
+    Elastic Stop Nut
+  </heading>
+  <text>
+    <location value="277"/>
+    <location value="256"/>
+    <location value="483"/>
+    <location value="270"/>
+    The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This
+  </text>
   <picture>
     <location value="276"/>
     <location value="279"/>
-    <location value="511"/>
-    <location value="460"/>
+    <location value="482"/>
+    <location value="459"/>
     <caption>
       <location value="277"/>
       <location value="465"/>

@@ -2153,56 +2153,56 @@
     <text>
       <location value="176"/>
       <location value="143"/>
-      <location value="187"/>
+      <location value="199"/>
       <location value="146"/>
       論文ファイル
     </text>
     <text>
       <location value="221"/>
       <location value="143"/>
-      <location value="228"/>
+      <location value="236"/>
       <location value="146"/>
       参考文献
     </text>
     <text>
       <location value="92"/>
       <location value="148"/>
-      <location value="96"/>
+      <location value="100"/>
       <location value="151"/>
       出典
     </text>
     <text>
       <location value="147"/>
       <location value="148"/>
-      <location value="156"/>
+      <location value="166"/>
       <location value="151"/>
       ファイル数
     </text>
     <text>
-      <location value="163"/>
+      <location value="173"/>
       <location value="148"/>
-      <location value="167"/>
+      <location value="181"/>
       <location value="151"/>
       英語
     </text>
     <text>
       <location value="192"/>
       <location value="148"/>
-      <location value="198"/>
+      <location value="203"/>
       <location value="151"/>
       日本語
     </text>
     <text>
       <location value="214"/>
       <location value="148"/>
-      <location value="218"/>
+      <location value="222"/>
       <location value="151"/>
       英語
     </text>
     <text>
       <location value="233"/>
       <location value="148"/>
-      <location value="239"/>
+      <location value="245"/>
       <location value="151"/>
       日本語
     </text>
@@ -2293,7 +2293,7 @@
     <text>
       <location value="46"/>
       <location value="161"/>
-      <location value="62"/>
+      <location value="78"/>
       <location value="164"/>
       電気情報通信学会
     </text>
@@ -2307,7 +2307,7 @@
     <text>
       <location value="86"/>
       <location value="161"/>
-      <location value="96"/>
+      <location value="106"/>
       <location value="164"/>
       年総合大会
     </text>
@@ -2349,7 +2349,7 @@
     <text>
       <location value="46"/>
       <location value="166"/>
-      <location value="60"/>
+      <location value="74"/>
       <location value="169"/>
       情報処理学会第
     </text>
@@ -2363,7 +2363,7 @@
     <text>
       <location value="78"/>
       <location value="166"/>
-      <location value="88"/>
+      <location value="97"/>
       <location value="169"/>
       回全国大会
     </text>
@@ -2412,7 +2412,7 @@
     <text>
       <location value="46"/>
       <location value="170"/>
-      <location value="48"/>
+      <location value="50"/>
       <location value="173"/>
       第
     </text>
@@ -2426,7 +2426,7 @@
     <text>
       <location value="55"/>
       <location value="170"/>
-      <location value="76"/>
+      <location value="97"/>
       <location value="173"/>
       回人工知能学会全国大会
     </text>
@@ -2475,7 +2475,7 @@
     <text>
       <location value="46"/>
       <location value="175"/>
-      <location value="66"/>
+      <location value="85"/>
       <location value="178"/>
       自然言語処理研究会第
     </text>
@@ -2489,7 +2489,7 @@
     <text>
       <location value="92"/>
       <location value="175"/>
-      <location value="94"/>
+      <location value="96"/>
       <location value="178"/>
       〜
     </text>
@@ -2503,7 +2503,7 @@
     <text>
       <location value="102"/>
       <location value="175"/>
-      <location value="104"/>
+      <location value="106"/>
       <location value="178"/>
       回
     </text>
@@ -2552,7 +2552,7 @@
     <text>
       <location value="57"/>
       <location value="180"/>
-      <location value="73"/>
+      <location value="89"/>
       <location value="183"/>
       から収集した論文
     </text>
@@ -2594,7 +2594,7 @@
     <text>
       <location value="142"/>
       <location value="185"/>
-      <location value="144"/>
+      <location value="146"/>
       <location value="188"/>
       計
     </text>
