@@ -1557,9 +1557,11 @@ def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
     assert with_picture.count("<!-- image -->") == 1
 
     # The same shape, loaded from the checked-in fixture, behaves identically.
-    from_file = get_converter().convert(
-        _CONTENT_CONTROL_PICTURE_FIXTURE
-    ).document.export_to_markdown()
+    from_file = (
+        get_converter()
+        .convert(_CONTENT_CONTROL_PICTURE_FIXTURE)
+        .document.export_to_markdown()
+    )
     assert "COVER TITLE INSIDE SDT" in from_file
     assert "BODY TEXT OUTSIDE SDT" in from_file
     assert from_file.count("<!-- image -->") == 1
