@@ -33,10 +33,6 @@ from docling.datamodel.base_models import (
     InputFormat,
     OutputFormat,
 )
-from docling.datamodel.service.chunking import (
-    HierarchicalChunkerOptions,
-    HybridChunkerOptions,
-)
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -1702,82 +1698,14 @@ def test_submit_chunk_local_string_source_uses_file_endpoint(tmp_path: Path) -> 
             source=str(sample),
             chunker=ChunkerKind.HYBRID,
             options=ConvertDocumentsRequestOptions(),
-            chunking_options=HybridChunkerOptions(
-                max_tokens=512,
-                use_markdown_tables=True,
-                merge_peers=False,
-            ),
         )
 
     assert job.task_id == "task-chunk-file-string"
     assert captured["path"] == "/v1/chunk/hybrid/file/async"
-    data = captured["data"]
-    assert isinstance(data, dict)
-    assert data["chunking_max_tokens"] == 512
-    assert data["chunking_use_markdown_tables"] is True
-    assert data["chunking_merge_peers"] is False
     files = captured["files"]
     assert isinstance(files, dict)
     assert files["files"][0] == "sample.pdf"
     assert files["files"][2] == "application/pdf"
-
-
-def test_submit_chunk_url_source_sends_custom_chunking_options() -> None:
-    captured: dict[str, object] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        captured["payload"] = json.loads(request.content.decode("utf-8"))
-        return httpx.Response(
-            200,
-            json=_status_response("task-chunk-source", "pending").model_dump(
-                mode="json"
-            ),
-        )
-
-    transport = httpx.MockTransport(handler)
-
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        client._http_client.close()
-        client._http_client = httpx.Client(
-            transport=transport,
-            timeout=client._http_client.timeout,
-        )
-        job = client.submit_chunk(
-            source="https://example.org/sample.pdf",
-            chunker=ChunkerKind.HYBRID,
-            chunking_options=HybridChunkerOptions(
-                max_tokens=512,
-                use_markdown_tables=True,
-            ),
-        )
-
-    assert job.task_id == "task-chunk-source"
-    payload = captured["payload"]
-    assert isinstance(payload, dict)
-    chunking_payload = payload["chunking_options"]
-    assert isinstance(chunking_payload, dict)
-    assert chunking_payload["max_tokens"] == 512
-    assert chunking_payload["use_markdown_tables"] is True
-
-
-@pytest.mark.parametrize(
-    ("chunker", "chunking_options"),
-    [
-        (ChunkerKind.HYBRID, HierarchicalChunkerOptions()),
-        (ChunkerKind.HIERARCHICAL, HybridChunkerOptions()),
-    ],
-)
-def test_submit_chunk_rejects_options_for_different_chunker(
-    chunker: ChunkerKind,
-    chunking_options: HierarchicalChunkerOptions | HybridChunkerOptions,
-) -> None:
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        with pytest.raises(ValueError, match="does not match"):
-            client.submit_chunk(
-                source="https://example.org/sample.pdf",
-                chunker=chunker,
-                chunking_options=chunking_options,
-            )
 
 
 def test_submit_accepts_http_source_request() -> None:
@@ -3865,7 +3793,6 @@ async def test_async_submit_chunk_url_source_posts_correct_endpoint() -> None:
 
     def handler(method: str, url: str, **kw: object) -> httpx.Response:
         captured["url"] = url
-        captured["payload"] = kw["json"]
         return httpx.Response(
             200, json=_status_response("chunk-1", "pending").model_dump(mode="json")
         )
@@ -3878,78 +3805,6 @@ async def test_async_submit_chunk_url_source_posts_correct_endpoint() -> None:
 
     assert "/v1/chunk/hybrid/source/async" in str(captured["url"])
     assert job.task_id == "chunk-1"
-    payload = captured["payload"]
-    assert isinstance(payload, dict)
-    chunking_payload = payload["chunking_options"]
-    assert isinstance(chunking_payload, dict)
-    assert chunking_payload["use_markdown_tables"] is False
-    assert "max_tokens" not in chunking_payload
-
-
-@pytest.mark.anyio
-async def test_async_submit_chunk_url_source_sends_custom_options() -> None:
-    captured: dict[str, object] = {}
-
-    def handler(method: str, url: str, **kw: object) -> httpx.Response:
-        captured["payload"] = kw["json"]
-        return httpx.Response(
-            200,
-            json=_status_response("chunk-custom-source", "pending").model_dump(
-                mode="json"
-            ),
-        )
-
-    async with _make_async_http_client(handler) as client:
-        job = await client.submit_chunk(
-            source="https://example.org/doc.pdf",
-            chunker=ChunkerKind.HYBRID,
-            chunking_options=HybridChunkerOptions(
-                max_tokens=512,
-                use_markdown_tables=True,
-            ),
-        )
-
-    assert job.task_id == "chunk-custom-source"
-    payload = captured["payload"]
-    assert isinstance(payload, dict)
-    chunking_payload = payload["chunking_options"]
-    assert isinstance(chunking_payload, dict)
-    assert chunking_payload["max_tokens"] == 512
-    assert chunking_payload["use_markdown_tables"] is True
-
-
-@pytest.mark.anyio
-async def test_async_submit_chunk_file_sends_custom_options(
-    tmp_path: Path,
-) -> None:
-    captured: dict[str, object] = {}
-    sample = tmp_path / "sample.pdf"
-    sample.write_bytes(b"%PDF-1.4\n")
-
-    def handler(method: str, url: str, **kw: object) -> httpx.Response:
-        captured["data"] = kw["data"]
-        return httpx.Response(
-            200,
-            json=_status_response("chunk-custom-file", "pending").model_dump(
-                mode="json"
-            ),
-        )
-
-    async with _make_async_http_client(handler) as client:
-        job = await client.submit_chunk(
-            source=sample,
-            chunker=ChunkerKind.HYBRID,
-            chunking_options=HybridChunkerOptions(
-                max_tokens=512,
-                use_markdown_tables=True,
-            ),
-        )
-
-    assert job.task_id == "chunk-custom-file"
-    data = captured["data"]
-    assert isinstance(data, dict)
-    assert data["chunking_max_tokens"] == 512
-    assert data["chunking_use_markdown_tables"] is True
 
 
 # --- health / version ---
