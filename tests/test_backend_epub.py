@@ -19,9 +19,9 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
+from docling_core.transforms.serializer.epub import EpubMetadata
 
 from docling.backend.epub_backend import EpubDocumentBackend
-from docling.backend.epub_serializer import EpubDocument
 from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -119,18 +119,19 @@ def test_epub_document_structure(documents):
         assert doc.name, "Document should have a name/title"
 
 
-def test_epub_metadata_extraction(documents):
-    """Test that EPUB metadata is properly extracted."""
-    for _, doc in documents:
-        assert isinstance(doc, EpubDocument)
-        assert doc.epub_metadata.model_dump(exclude_none=True) == {
-            "title": "Poetry",
-            "authors": ["Sarah Louisa Forten Purvis"],
-            "published": "2023-12-06T20:52:11Z",
-            "language": "en-US",
-            "source_file": "epub_purvis_poetry.epub",
-        }
-        assert "epub_metadata" not in doc.model_dump()
+def test_epub_metadata_is_surfaced_on_the_conversion_result(epub_paths):
+    """The OPF package metadata has no home in DoclingDocument, so the pipeline
+    surfaces it on the conversion result for the EPUB output format to render."""
+    result = get_converter().convert(epub_paths[0])
+
+    assert result._epub_metadata == EpubMetadata(
+        title="Poetry",
+        authors=["Sarah Louisa Forten Purvis"],
+        published="2023-12-06T20:52:11Z",
+        language="en-US",
+        source_file="epub_purvis_poetry.epub",
+    )
+    assert "epub_metadata" not in result.document.model_dump()
 
 
 def test_epub_image_extraction(documents):
@@ -198,14 +199,6 @@ def test_epub_link_fixing():
     assert len(markdown) > 0, "Markdown export should not be empty"
 
 
-def test_chapter_index_requires_link_rewriting(epub_paths: list[Path]) -> None:
-    result = get_converter().convert(epub_paths[0])
-
-    assert isinstance(result.document, EpubDocument)
-    with pytest.raises(ValueError, match="rewrite_internal_links=True"):
-        result.document.export_to_book_markdown(chapter_index=True)
-
-
 def test_book_markdown_rewrites_cross_spine_links(tmp_path: Path) -> None:
     epub_path = tmp_path / "linked-book.epub"
     with ZipFile(epub_path, "w") as epub:
@@ -265,8 +258,7 @@ def test_book_markdown_rewrites_cross_spine_links(tmp_path: Path) -> None:
     result = converter.convert(epub_path)
     repeated_result = converter.convert(epub_path)
 
-    assert isinstance(result.document, EpubDocument)
-    markdown = result.document.export_to_book_markdown(chapter_index=True)
+    markdown = result.document.export_to_epub(metadata=result._epub_metadata)
     assert 'authors: ["First Author", "Second Author"]' in markdown
     assert "[Chapter One](#chapter-one)" in markdown
     assert "[Chapter Two](#chapter----two)" in markdown
@@ -275,5 +267,6 @@ def test_book_markdown_rewrites_cross_spine_links(tmp_path: Path) -> None:
     assert "missing.htm#ghost" not in markdown
     assert "Ghost" in markdown
     assert (
-        repeated_result.document.export_to_book_markdown(chapter_index=True) == markdown
+        repeated_result.document.export_to_epub(metadata=repeated_result._epub_metadata)
+        == markdown
     )

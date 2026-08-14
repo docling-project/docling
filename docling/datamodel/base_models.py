@@ -128,6 +128,7 @@ class InputFormat(str, Enum):
 
 class OutputFormat(str, Enum):
     MARKDOWN = "md"
+    EPUB = "epub"
     JSON = "json"
     YAML = "yaml"
     HTML = "html"

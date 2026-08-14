@@ -40,7 +40,7 @@ docling convert [OPTIONS] source
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--from` | `text` (repeatable) |  | Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats. |
-| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Specify output formats. Defaults to Markdown. |
+| `--to` | `md`, `epub`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Specify output formats. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
 | `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |
@@ -48,8 +48,6 @@ docling convert [OPTIONS] source
 | `--headers` | `text` |  | Specify http request headers used when fetching url input sources in the form of a JSON string |
 | `--html-image-headers` | `text` |  | Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string |
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
-| `--md-book-frontmatter` | flag | `false` | Add EPUB book metadata as YAML frontmatter in Markdown output. |
-| `--md-chapter-index` | flag | `false` | Add EPUB chapter titles with absolute UTF-8 byte and 1-based line offsets. Implies book frontmatter. |
 | `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
 | `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
 | `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
@@ -125,7 +123,7 @@ docling convert-remote [OPTIONS] source
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
 | `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
-| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
+| `--to` | `md`, `epub`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
 | `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |

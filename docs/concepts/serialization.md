@@ -36,18 +36,40 @@ respective serializers.
 
 ### EPUB book navigation
 
-Converted EPUB documents also provide `export_to_book_markdown()`. Its opt-in
-frontmatter can carry the EPUB title, authors, publication date, language, and
-source filename. Enabling the chapter index implies frontmatter and adds the
-absolute UTF-8 byte offset and 1-based line number of every top-level chapter
-heading. Here, top-level means a level-1 section heading that begins a top-level
-serialization part; headings nested below preceding group content are not indexed.
+The `epub` output format renders a book as Markdown preceded by a YAML
+frontmatter block holding the book metadata and a chapter index. Every chapter
+entry carries the absolute UTF-8 byte offset and the 1-based line number of its
+heading, so a reader can seek straight to a chapter instead of scanning the whole
+book. A chapter is a top-level heading — either a title item (`#`) or a level-1
+section heading (`##`), since an EPUB may title its chapters with `<h1>` or
+`<h2>`. Headings nested below preceding group content are not indexed.
+
+```sh
+docling book.epub --to epub
+```
+
+That writes `book.epub.md`:
+
+```yaml
+---
+title: "Alice's Adventures in Wonderland"
+authors: ["Lewis Carroll"]
+language: "en"
+source_file: "book.epub"
+chapters:
+  - title: "CHAPTER I. Down the Rabbit-Hole"
+    line:         12
+    byte:        287
+---
+```
+
+From the SDK, the serializer lives in `docling-core` as `EpubDocSerializer`, with
+`DoclingDocument.export_to_epub()` and `save_as_epub()` as shorthands:
 
 ```python
 from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter
-from docling.document_converter import EpubFormatOption
+from docling.document_converter import DocumentConverter, EpubFormatOption
 
 converter = DocumentConverter(
     format_options={
@@ -57,19 +79,16 @@ converter = DocumentConverter(
     }
 )
 result = converter.convert("book.epub")
-markdown = result.document.export_to_book_markdown(chapter_index=True)
+markdown = result.document.export_to_epub(metadata=result._epub_metadata)
 ```
 
 `rewrite_internal_links=True` resolves links between EPUB spine documents while
-the source package is available. The CLI enables it automatically when either
-book Markdown option is selected. A chapter-index export rejects documents that
-were converted without that option rather than emitting dangling links. EPUB
-package metadata is transient conversion state, so export book Markdown directly
-from the conversion result rather than reloading a JSON or DCLX serialization.
+the source package is still available; the CLI enables it automatically for
+`--to epub`. EPUB package metadata is transient conversion state carried on the
+conversion result, so export directly from it rather than reloading a JSON or
+DCLX serialization.
 
-The same options are available in the CLI as `--md-book-frontmatter` and
-`--md-chapter-index`. Both are disabled by default, so ordinary Markdown exports
-remain unchanged.
+Ordinary `--to md` output is unchanged.
 
 ## Format-specific behaviors
 

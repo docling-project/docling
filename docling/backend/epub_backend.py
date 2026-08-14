@@ -10,11 +10,11 @@ from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
 from defusedxml.common import DefusedXmlException
+from docling_core.transforms.serializer.epub import EpubMetadata
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.epub_serializer import EpubDocument, EpubMetadata
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -614,8 +614,4 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         html_stream.close()
 
-        return EpubDocument.from_document(
-            doc,
-            metadata=self.metadata,
-            internal_links_rewritten=self.options.rewrite_internal_links,
-        )
+        return doc

@@ -4,6 +4,7 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     DeclarativeDocumentBackend,
 )
+from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ConvertPipelineOptions
@@ -37,7 +38,12 @@ class SimplePipeline(ConvertPipeline):
         # the backend is expected to be of type DeclarativeDocumentBackend, which can output
         # a DoclingDocument straight.
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
-            conv_res.document = conv_res.input._backend.convert()
+            backend = conv_res.input._backend
+            conv_res.document = backend.convert()
+            if isinstance(backend, EpubDocumentBackend):
+                # The EPUB package metadata has no home in DoclingDocument, so surface
+                # it on the result for the EPUB output format to render.
+                conv_res._epub_metadata = backend.metadata
         return conv_res
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:

@@ -42,6 +42,7 @@ def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool
         "export_html": OutputFormat.HTML in to_formats,
         "export_html_split_page": OutputFormat.HTML_SPLIT_PAGE in to_formats,
         "export_md": OutputFormat.MARKDOWN in to_formats,
+        "export_epub": OutputFormat.EPUB in to_formats,
         "export_txt": OutputFormat.TEXT in to_formats,
         "export_doctags": OutputFormat.DOCTAGS in to_formats,
         "export_vtt": OutputFormat.VTT in to_formats,

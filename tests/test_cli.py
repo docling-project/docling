@@ -83,8 +83,6 @@ def test_cli_convert_help():
     assert "layout clusters" in result.output
     assert "layour" not in result.output
     assert "input_sources" not in result.output
-    assert "--md-book-front" in result.output
-    assert "--md-chapter-in" in result.output
 
 
 def test_cli_version():
@@ -102,7 +100,7 @@ def test_cli_convert(tmp_path):
     assert converted.exists()
 
 
-def test_cli_epub_chapter_index_offsets_seek_to_headings(tmp_path: Path) -> None:
+def test_cli_epub_output_carries_metadata_and_seekable_chapters(tmp_path: Path) -> None:
     source = Path("tests/data/epub/sources/epub_purvis_poetry.epub")
     output = tmp_path / "out"
 
@@ -112,24 +110,26 @@ def test_cli_epub_chapter_index_offsets_seek_to_headings(tmp_path: Path) -> None
             str(source),
             "--output",
             str(output),
+            "--to",
+            "epub",
             "--image-export-mode",
             "placeholder",
-            "--md-chapter-index",
         ],
     )
 
     assert result.exit_code == 0, result.output
-    markdown = (output / f"{source.stem}.md").read_text(encoding="utf-8")
-    frontmatter = yaml.safe_load(markdown.split("---\n", maxsplit=2)[1])
-    markdown_bytes = markdown.encode("utf-8")
+    book = (output / f"{source.stem}.epub.md").read_bytes()
+    frontmatter = yaml.safe_load(book.decode("utf-8").split("---\n", maxsplit=2)[1])
+
     assert frontmatter["title"] == "Poetry"
     assert frontmatter["authors"] == ["Sarah Louisa Forten Purvis"]
+    assert frontmatter["language"] == "en-US"
+    assert frontmatter["source_file"] == source.name
     assert frontmatter["chapters"]
     for chapter in frontmatter["chapters"]:
-        offset = chapter["byte"]
-        heading = markdown_bytes[offset:].split(b"\n", maxsplit=1)[0].decode()
-        assert heading.startswith("## ")
-        assert heading.replace("*", "") == f"## {chapter['title']}"
+        heading = book[chapter["byte"] :].split(b"\n", maxsplit=1)[0].decode("utf-8")
+        assert heading.startswith("#")
+        assert heading.lstrip("# ").replace("*", "") == chapter["title"]
 
 
 def test_cli_exports_doclang(tmp_path):
