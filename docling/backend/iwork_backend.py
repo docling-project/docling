@@ -105,6 +105,16 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 self._paragraphs = self._read_paragraphs(archive)
         except DocumentLoadError:
             raise
+        except (NotImplementedError, RuntimeError) as exc:
+            # Pages encrypts members with a scheme zipfile cannot read, leaving a
+            # nonsense compress_type rather than setting the standard encrypted
+            # flag, so this is the only reliable signal that a document is
+            # password-protected.
+            raise DocumentLoadError(
+                f"Pages document with hash {self.document_hash} appears to be "
+                "password-protected; Docling cannot read encrypted iWork "
+                "documents. Remove the password in Pages and save again."
+            ) from exc
         except (zipfile.BadZipFile, OSError) as exc:
             raise DocumentLoadError(
                 f"Could not open Pages document with hash {self.document_hash}: "

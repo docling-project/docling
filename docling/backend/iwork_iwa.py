@@ -35,6 +35,11 @@ _WIRE_64BIT = 1
 _WIRE_LENGTH_DELIMITED = 2
 _WIRE_32BIT = 5
 
+# Snappy element tags, taken from the low two bits of each tag byte.
+_TAG_LITERAL = 0
+_TAG_COPY_1B = 1
+_TAG_COPY_2B = 2
+
 # A decompressed archive stream must stay under this to bound memory use for a
 # hostile container. Real Pages documents decompress to a few MB at most.
 _MAX_STREAM_BYTES = 256 * 1024 * 1024
@@ -107,16 +112,76 @@ def read_reference(buf: bytes) -> int | None:
     return target if isinstance(target, int) else None
 
 
+def decompress_snappy_block(block: bytes) -> bytes:
+    """Decompress one raw Snappy block.
+
+    Implemented here rather than taken from a binding because iWork needs only
+    the decompressor, and that half of Snappy is small: a varint length preamble
+    followed by literal and copy elements. Keeping it in Python means the format
+    does not depend on a compiled wheel staying maintained for future Python
+    releases, and Pages documents are small enough that the speed difference is
+    immaterial.
+    """
+    expected, pos = read_varint(block, 0)
+    out = bytearray()
+    size = len(block)
+
+    while pos < size:
+        tag = block[pos]
+        pos += 1
+        kind = tag & 0x03
+
+        if kind == _TAG_LITERAL:
+            length = tag >> 2
+            if length >= 60:
+                # 60..63 mean the real length occupies the next (length - 59) bytes.
+                extra = length - 59
+                if pos + extra > size:
+                    raise DocumentLoadError("Truncated Snappy literal length.")
+                length = int.from_bytes(block[pos : pos + extra], "little")
+                pos += extra
+            length += 1
+            if pos + length > size:
+                raise DocumentLoadError("Truncated Snappy literal.")
+            out += block[pos : pos + length]
+            pos += length
+            continue
+
+        if kind == _TAG_COPY_1B:
+            length = 4 + ((tag >> 2) & 0x07)
+            if pos >= size:
+                raise DocumentLoadError("Truncated Snappy copy offset.")
+            offset = ((tag >> 5) << 8) | block[pos]
+            pos += 1
+        else:
+            width = 2 if kind == _TAG_COPY_2B else 4
+            length = (tag >> 2) + 1
+            if pos + width > size:
+                raise DocumentLoadError("Truncated Snappy copy offset.")
+            offset = int.from_bytes(block[pos : pos + width], "little")
+            pos += width
+
+        if offset == 0 or offset > len(out):
+            raise DocumentLoadError("Snappy copy offset outside the output window.")
+
+        start = len(out) - offset
+        if offset >= length:
+            out += out[start : start + length]
+        else:
+            # Overlapping copy: the source keeps advancing as the output grows,
+            # which is how Snappy encodes repeated runs, so copy byte by byte.
+            for index in range(length):
+                out.append(out[start + index])
+
+    if len(out) != expected:
+        raise DocumentLoadError(
+            f"Snappy block decoded to {len(out)} bytes, expected {expected}."
+        )
+    return bytes(out)
+
+
 def decompress(data: bytes) -> bytes:
     """Concatenate the decompressed chunks of one ``.iwa`` member."""
-    try:
-        import cramjam
-    except ImportError as exc:  # pragma: no cover - exercised via the extra
-        raise DocumentLoadError(
-            "Reading Pages 5+ documents requires the 'cramjam' package. "
-            "Install docling with the 'format-iwork' extra."
-        ) from exc
-
     out = bytearray()
     pos = 0
     while pos < len(data):
@@ -133,13 +198,8 @@ def decompress(data: bytes) -> bytes:
         if len(block) != length:
             raise DocumentLoadError("Truncated IWA chunk payload.")
         pos += length
-        try:
-            # Raw Snappy: the chunk carries no stream framing or checksum.
-            out += bytes(cramjam.snappy.decompress_raw(block))
-        except Exception as exc:
-            raise DocumentLoadError(
-                f"Corrupt Snappy block in IWA stream: {exc}"
-            ) from exc
+        # Raw Snappy: the chunk carries no stream framing or checksum.
+        out += decompress_snappy_block(block)
         if len(out) > _MAX_STREAM_BYTES:
             raise DocumentLoadError(
                 f"IWA stream expands beyond {_MAX_STREAM_BYTES} bytes."

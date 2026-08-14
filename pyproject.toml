@@ -150,10 +150,9 @@ format-email = [
 ]
 
 # Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
-# Index/*.iwa; cramjam supplies the raw-Snappy decoder as a pure-Rust wheel, so
-# no libsnappy system library is needed. iWork '09 documents are plain XML.
+# Index/*.iwa; the Snappy decompressor is implemented in pure Python, so no
+# compiled dependency is needed. iWork '09 documents are plain XML.
 format-iwork = [
-  'cramjam>=2.8.0,<3.0.0',
   'defusedxml>=0.7.1,<0.8.0',
 ]
 
@@ -470,7 +469,6 @@ include = ["docling", ".github/scripts"]
 [tool.ty.analysis]
 allowed-unresolved-imports = [
   "arelle.**",
-  "cramjam.**",
   "docling_ibm_models.**",
   "docling_parse.**",
   "easyocr.**",

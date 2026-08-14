@@ -20,7 +20,11 @@ from pathlib import Path
 import pytest
 
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
-from docling.backend.iwork_iwa import iter_objects, read_fields
+from docling.backend.iwork_iwa import (
+    decompress_snappy_block,
+    iter_objects,
+    read_fields,
+)
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
@@ -30,6 +34,7 @@ from docling.exceptions import DocumentLoadError
 SOURCES = Path("./tests/data/pages/sources")
 PAGES_2013 = SOURCES / "pages_2013.pages"
 PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
+PAGES_PASSWORD_PROTECTED = SOURCES / "pages_password_protected.pages"
 
 # Present in the body of both fixtures.
 _BODY_SENTENCE = "Some plain text to parse."
@@ -146,6 +151,58 @@ def test_iwa_reader_walks_the_real_object_graph():
     document = next(o for o in objects.values() if o.message_type == 10000)
     body_ref = read_fields(document.payload)[4][0]
     assert isinstance(body_ref, bytes)
+
+
+def test_password_protected_document_is_rejected_cleanly():
+    """Pages encrypts members with a scheme zipfile cannot read, and leaves a
+    nonsense compress_type instead of setting the standard encrypted flag. That
+    surfaces as NotImplementedError deep inside zipfile, which must be turned
+    into a DocumentLoadError rather than escaping as an unhandled crash."""
+    with pytest.raises(DocumentLoadError, match="password-protected"):
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=PAGES_PASSWORD_PROTECTED,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            PAGES_PASSWORD_PROTECTED,
+        )
+
+
+def test_snappy_decoder_handles_every_element_type():
+    """The IWA payloads exercise literals and all three copy encodings. Round-trip
+    a payload built to hit each one, including an overlapping copy, which is how
+    Snappy encodes repeated runs and the easiest case to get wrong."""
+
+    def literal(payload: bytes) -> bytes:
+        assert len(payload) <= 60
+        return bytes([(len(payload) - 1) << 2]) + payload
+
+    # "abcd" then a 1-byte-offset copy repeating it, then a long run produced by
+    # an overlapping copy of a single byte.
+    body = literal(b"abcd")
+    body += bytes([(1) | (((4 - 4) & 0x07) << 2) | (0 << 5), 4])  # copy len 4, off 4
+    body += literal(b"z")
+    body += bytes([0x02 | ((20 - 1) << 2)]) + (1).to_bytes(2, "little")  # off 1, len 20
+
+    expected = b"abcd" + b"abcd" + b"z" + b"z" * 20
+    block = bytes([len(expected)]) + body
+
+    assert decompress_snappy_block(block) == expected
+
+
+@pytest.mark.parametrize(
+    "block, reason",
+    [
+        (b"\x04\x00\x00", "length mismatch"),  # claims 4 bytes, yields 1
+        (b"\x04\x11\xff", "copy offset past the start of the output"),
+        (b"\x04\xfc", "truncated literal"),
+    ],
+)
+def test_snappy_decoder_rejects_malformed_blocks(block: bytes, reason: str):
+    """A corrupt block must fail loudly rather than return partial output."""
+    with pytest.raises(DocumentLoadError):
+        decompress_snappy_block(block)
 
 
 def test_zip_without_pages_index_is_rejected(tmp_path: Path):
