@@ -58,12 +58,7 @@ _INVISIBLE_RENDERING_MODES = frozenset(
 
 
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
-    """Keep only the cells that paint ink on the page.
-
-    `PdfCellRenderingMode.UNKNOWN` (-1) means the PDF never issued a `Tr` operator, i.e. the
-    default mode 0 (fill), so it counts as visible. Cells that carry no rendering mode at all
-    (OCR output merged into the page) are kept as well.
-    """
+    """Keep only the cells that paint ink on the page"""
     return [
         cell
         for cell in cells

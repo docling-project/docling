@@ -7,7 +7,11 @@ from pathlib import Path
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import TextCell
+from docling_core.types.doc.page import (
+    PdfCellRenderingMode,
+    PdfTextCell,
+    TextCell,
+)
 from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
@@ -35,6 +39,34 @@ class _MergeCellsPriority(str, Enum):
 
     # Take the PDF cells ONLY if they do not overlap with any OCR cell
     OCR_FIRST = "ocr_cells_first"
+
+
+# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
+# natively when answering `intersects_with()`, so the merge below has to match it.
+_INVISIBLE_RENDERING_MODES = frozenset(
+    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
+)
+
+
+def _partition_by_visibility(
+    cells: Iterable[TextCell],
+) -> tuple[list[TextCell], list[TextCell]]:
+    """Split cells into (visible, invisible), preserving the order within each group.
+
+    Cells carrying no rendering mode (plain `TextCell`, e.g. OCR output) count as visible,
+    as does `UNKNOWN` (-1): no `Tr` operator means the PDF default mode 0 (fill).
+    """
+    visible: list[TextCell] = []
+    invisible: list[TextCell] = []
+    for cell in cells:
+        if (
+            isinstance(cell, PdfTextCell)
+            and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
+        ):
+            invisible.append(cell)
+        else:
+            visible.append(cell)
+    return visible, invisible
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
@@ -162,6 +194,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_rects: list[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
             cluster_bbox = cluster.bbox
+            cluster_bbox_tuple = cluster_bbox.as_tuple()
 
             # A cluster overlapping a bitmap or a shape always needs OCR, so the text query
             # never runs for it: each backend query is a full scan of the page content.
@@ -171,7 +204,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 )
             else:
                 assert non_text_index is not None
-                cluster_bbox_tuple = cluster_bbox.as_tuple()
                 has_non_text = any(
                     True for _ in non_text_index.intersection(cluster_bbox_tuple)
                 )
@@ -272,6 +304,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
               - PDF_FIRST when PDF_AWARE_LAYOUT_REGIONS
+          Check the comments on _MergeCellsPriority for the semantic of each priority value
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
@@ -286,9 +319,18 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     if self.options.mode == OcrMode.LAYOUT_REGIONS
                     else _MergeCellsPriority.PDF_FIRST
                 )
+            # Segregate visible/invisible PDF cells and merge OCR cells only with the visible PDF
+
+            visible_cells, invisible_cells = _partition_by_visibility(existing_cells)
             final_cells = self._merge_ocr_and_pdf_cells(
-                ocr_cells, existing_cells, priority
+                ocr_cells, visible_cells, priority
             )
+
+            # Put the invisible cells back
+            if invisible_cells:
+                final_cells = self._merge_cells_by_priority(
+                    final_cells, invisible_cells
+                )
 
         # Re-index in-place
         for i, cell in enumerate(final_cells):
@@ -336,6 +378,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         else:
             prioritized_cells, secondary_cells = ocr_cells, pdf_cells
 
+        return self._merge_cells_by_priority(prioritized_cells, secondary_cells)
+
+    def _merge_cells_by_priority(
+        self,
+        prioritized_cells: list[TextCell],
+        secondary_cells: list[TextCell],
+    ) -> list[TextCell]:
+        r"""
+        Keep every prioritized cell, plus the secondary cells that overlap none of them.
+        """
         p = index.Property()
         p.dimension = 2
         idx = index.Index(properties=p)
