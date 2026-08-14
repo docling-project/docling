@@ -112,12 +112,17 @@ def test_supersample_factor_backend_option(test_doc_path):
         backend_options=PdfBackendOptions(supersample_factor=1.0),
     )
     page_backend = in_doc._backend.load_page(0)
-
-    image = page_backend.get_page_image(scale=2)
+    try:
+        image = page_backend.get_page_image(scale=2)
+    finally:
+        page_backend.unload()
+        in_doc._backend.unload()
 
     pdf = pdfium.PdfDocument(test_doc_path)
-    reference = pdf[0].render(scale=2, rotation=0, crop=(0, 0, 0, 0)).to_pil()
-    pdf.close()
+    try:
+        reference = pdf[0].render(scale=2, rotation=0, crop=(0, 0, 0, 0)).to_pil()
+    finally:
+        pdf.close()
 
     assert image.size == reference.size
     assert image.tobytes() == reference.tobytes()
