@@ -1384,8 +1384,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _is_title_style(*labels: str | None) -> bool:
         """Whether any of the given style ids/names denotes a title style.
 
-        Matched the same way headings are: on the substring, so that both the
-        style id and the (possibly localized) style name get a chance.
+        Matches on the ``"title"`` substring, which reliably covers the
+        English built-in ``Title`` style.  Localized equivalents (e.g.
+        ``"Titre"``, ``"Titel"``) do not contain the substring and would
+        not be excluded — but that gap is acceptable in practice because
+        neither Word nor LibreOffice writes ``w:outlineLvl`` on a Title
+        style, so the condition this guard protects is unreachable for
+        real documents.
         """
         return any("title" in label.lower() for label in labels if label)
 
