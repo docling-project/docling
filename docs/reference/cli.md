@@ -61,11 +61,14 @@ docling convert [OPTIONS] source
 | `--force-ocr` / `--no-force-ocr` | flag | `false` | DEPRECATED: use `--ocr-mode full_page` instead. Replace any existing text with OCR generated text over the full content. |
 | `--ocr-mode` | `full_page`, `layout_regions`, `pdf_aware_layout_regions`, `default` | `default` | Which document regions are fed to the OCR engine. |
 | `--tables` / `--no-tables` | flag | `true` | If enabled, the table structure model will be used to extract table information. |
+| `--layout-engine` | `text` | `layout_object_detection` | The layout engine to use. When --allow-external-plugins is *not* set, the available values are: layout_object_detection, docling_layout_default, docling_experimental_table_crops_layout. Use the option --show-external-plugins to see the options allowed with external plugins. |
+| `--table-structure-engine` | `text` | `docling_tableformer` | The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: docling_tableformer, docling_tableformer_v2, granite_vision_table. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, nemotron-ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-lang` | `text` |  | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names. |
 | `--psm` | `integer` |  | Page Segmentation Mode for the OCR engine (0-13). |
 | `--pdf-backend` | `pypdfium2`, `docling_parse`, `threaded_docling_parse`, `dlparse_v1`, `dlparse_v2`, `dlparse_v4` | `docling_parse` | The PDF backend to use. |
 | `--pdf-password` | `text` |  | Password for protected PDF documents |
+| `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). Honored by the PDF, XLSX and PPTX backends. |
 | `--table-mode` | `fast`, `accurate` | `accurate` | The mode to use in the table structure model. |
 | `--enrich-code` / `--no-enrich-code` | flag | `false` | Enable the code enrichment model in the pipeline. |
 | `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the formula enrichment model in the pipeline. |
