@@ -105,8 +105,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
-        Implementation that uses the intersects_with()
-
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
         1. Start from the layout clusters.
@@ -202,55 +200,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
 
         return ocr_rects
-
-    # def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
-    #     r"""
-    #     Compute the OCR rects from the layout clusters of a programmatic PDF.
-    #
-    #     1. Start from the layout clusters.
-    #     2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
-    #        The following clusters therefore remain:
-    #        - Clusters without any overlapping PDF cell.
-    #        - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
-    #     3. Deduplicate the remaining cluster bboxes.
-    #     """
-    #     if page.predictions.layout is None:
-    #         return []
-    #     if page._backend is None:
-    #         return self._find_layout_ocr_rects(page)
-    #
-    #     # Create index for the text PDF cells
-    #     p = index.Property()
-    #     p.dimension = 2
-    #     text_index = index.Index(properties=p)
-    #     for i, text_cell in enumerate(page._backend.get_text_cells()):
-    #         text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
-    #
-    #     # Create index for the non-text PDF cells
-    #     non_text_index = index.Index(properties=p)
-    #     for i, bbox in enumerate(page._backend.get_bitmap_rects()):
-    #         non_text_index.insert(i, bbox.as_tuple())
-    #
-    #     # Collect the non-eliminated cluster bboxes
-    #     ocr_rects: list[BoundingBox] = []
-    #     for cluster in page.predictions.layout.clusters:
-    #         cluster_bbox_tuple = cluster.bbox.as_tuple()
-    #         text_overlaps = list(text_index.intersection(cluster_bbox_tuple))
-    #         non_text_overlaps = list(non_text_index.intersection(cluster_bbox_tuple))
-    #
-    #         # Get the clusters that overlap with non-txt PDF cells
-    #         if len(non_text_overlaps) > 0:
-    #             ocr_rects.append(cluster.bbox)
-    #         # And the ones that don't overlap with any PDF cells
-    #         elif len(text_overlaps) == 0:
-    #             ocr_rects.append(cluster.bbox)
-    #
-    #     # Deduplicate the surviving cluster bboxes.
-    #     _, ocr_rects = self._deduplicate_rects(
-    #         page.size, ocr_rects, dilation_size=BaseOcrModel.DEFAULT_DILATION_SIZE
-    #     )
-    #
-    #     return ocr_rects
 
     def _deduplicate_rects(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
