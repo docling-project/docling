@@ -1,6 +1,6 @@
-Docling allows to be extended with third-party plugins which extend the choice of options provided in several steps of the pipeline.
+Docling can be extended with third-party plugins that add model implementations to several pipeline stages.
 
-Plugins are loaded via the [pluggy](https://github.com/pytest-dev/pluggy/) system which allows third-party developers to register the new capabilities using the [setuptools entrypoint](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#entry-points-for-plugins).
+Plugins are discovered through Python package [entry points](https://packaging.python.org/en/latest/specifications/entry-points/) in the `docling` group. Entry-point names must be unique across the environment.
 
 The actual entrypoint definition might vary, depending on the packaging system you are using. Here are a few examples:
 
@@ -46,6 +46,17 @@ The actual entrypoint definition might vary, depending on the packaging system y
 
 ## Plugin factories
 
+A plugin module can define one or more of these hooks:
+
+| Hook | Model contract | Options contract |
+| --- | --- | --- |
+| `ocr_engines` | `BaseOcrModel` | `OcrOptions` |
+| `layout_engines` | `BaseLayoutModel` | `BaseLayoutOptions` |
+| `table_structure_engines` | `BaseTableStructureModel` | `BaseTableStructureOptions` |
+| `picture_description` | `PictureDescriptionBaseModel` | `PictureDescriptionBaseOptions` |
+
+Each hook must be callable and return a mapping whose matching key contains a list of model classes. Every model class must implement the model contract for that hook and return its options class from `get_options_type()`. Option `kind` values must be unique within a factory; Docling rejects conflicting registrations instead of selecting one based on package discovery order.
+
 ### OCR factory
 
 The OCR factory allows to provide more OCR engines to the Docling users.
@@ -62,13 +73,13 @@ def ocr_engines():
     }
 ```
 
-where `YourOcrModel` must implement the [`BaseOcrModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_ocr_model.py#L23) and provide an options class derived from [`OcrOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L105).
+where `YourOcrModel` must implement [`BaseOcrModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_ocr_model.py) and provide an options class derived from [`OcrOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py).
 
 If you look for an example, the [default Docling plugins](https://github.com/docling-project/docling/blob/main/docling/models/plugins/defaults.py) is a good starting point.
 
 ## Third-party plugins
 
-When the plugin is not provided by the main `docling` package but by a third-party package this have to be enabled explicitly via the `allow_external_plugins` option.
+Plugins outside the main `docling` package must be enabled explicitly through the `allow_external_plugins` option. When external plugins are disabled, Docling filters their entry points before importing any third-party plugin code.
 
 ```py
 from docling.datamodel.base_models import InputFormat
@@ -76,7 +87,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
-pipeline_options.allow_external_plugins = True  # <-- enabled the external plugins
+pipeline_options.allow_external_plugins = True  # Enable external plugins.
 pipeline_options.ocr_options = YourOptions  # <-- your options here
 
 doc_converter = DocumentConverter(
@@ -90,7 +101,7 @@ doc_converter = DocumentConverter(
 
 ### Using the `docling` CLI
 
-Similarly, when using the `docling` users have to enable external plugins before selecting the new one.
+The CLI can list external models from all four supported plugin factories. External plugins still have to be enabled before selecting one for conversion.
 
 ```sh
 # Show the external plugins

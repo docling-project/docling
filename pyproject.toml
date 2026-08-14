@@ -53,7 +53,6 @@ dependencies = [
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
   'certifi>=2024.7.4',
-  'pluggy>=1.0.0,<2.0.0',
   'tqdm>=4.65.0,<5.0.0',
 ]
 

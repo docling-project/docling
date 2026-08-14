@@ -149,9 +149,14 @@ from docling.document_converter import (
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
+    get_picture_description_factory,
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
+from docling.models.factories.plugin_registry import (
+    is_internal_plugin_distribution,
+    load_plugin_modules,
+)
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -239,9 +244,6 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
 
     return list(dict.fromkeys(expanded_formats))
 
-
-ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-ocr_engines_enum_internal = ocr_factory_internal.get_enum()
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -406,6 +408,16 @@ def show_external_plugins_callback(value: bool):
         ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
         layout_factory_all = get_layout_factory(allow_external_plugins=True)
         table_factory_all = get_table_structure_factory(allow_external_plugins=True)
+        picture_factory_all = get_picture_description_factory(
+            allow_external_plugins=True
+        )
+        plugin_packages = {
+            plugin.name: plugin.distribution_name
+            for plugin in load_plugin_modules(
+                BaseFactory.default_plugin_name,
+                allow_external_plugins=True,
+            )
+        }
 
         def print_external_plugins(factory: BaseFactory, factory_name: str):
             table = rich.table.Table(title=f"Available {factory_name} engines")
@@ -413,17 +425,19 @@ def show_external_plugins_callback(value: bool):
             table.add_column("Plugin")
             table.add_column("Package")
             for meta in factory.registered_meta.values():
-                if not meta.module.startswith("docling."):
+                package = plugin_packages.get(meta.plugin_name)
+                if package is not None and not is_internal_plugin_distribution(package):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
-                        meta.module.split(".")[0],
+                        package,
                     )
             rich.print(table)
 
         print_external_plugins(ocr_factory_all, "OCR")
         print_external_plugins(layout_factory_all, "layout")
         print_external_plugins(table_factory_all, "table")
+        print_external_plugins(picture_factory_all, "picture description")
 
         raise typer.Exit()
 
@@ -846,9 +860,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The registered OCR engine kind to use. Use "
+                "--show-external-plugins to list third-party options."
             ),
         ),
     ] = OcrAutoOptions.kind,

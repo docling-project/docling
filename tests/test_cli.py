@@ -1,6 +1,8 @@
 import base64
 import json
 import re
+import subprocess
+import sys
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -82,6 +84,24 @@ def test_cli_convert_help():
     assert "layout clusters" in result.output
     assert "layour" not in result.output
     assert "input_sources" not in result.output
+
+
+def test_cli_import_does_not_discover_plugins() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; import docling.cli.main; "
+                "assert 'docling.models.plugins.defaults' not in sys.modules"
+            ),
+        ],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_cli_version():
