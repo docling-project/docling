@@ -45,7 +45,7 @@ class PdfPageBackend(ABC):
         shapes: bool = True,
         bitmaps: bool = True,
     ) -> Optional[bool]:
-        """Return whether visible page content intersects `bbox`.
+        """`True` if any visible element of an enabled category overlaps bbox, else `False`
 
         `None` means this backend cannot answer the query at all, as distinct from `False`, which
         means it looked and found no intersecting content.
