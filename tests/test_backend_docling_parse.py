@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 from docling_core.types.doc import CoordOrigin
+from docling_core.types.doc.page import PdfCellRenderingMode
 from docling_parse.pdf_parser import ContentLevel
 from PIL import Image, ImageDraw, ImageStat
 
@@ -855,5 +856,54 @@ def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
             )
             is False
         )
+    finally:
+        doc_backend.unload()
+
+
+def test_invisible_text_cells_report_rendering_mode():
+    """docling-parse must surface `rendering_mode` so invisible text can be told apart."""
+    doc_backend = _get_backend(Path("./tests/data/pdf/invisible_text_layer.pdf"))
+
+    try:
+        page_backend: DoclingParsePageBackend = doc_backend.load_page(0)
+        cells = {cell.text: cell for cell in page_backend.get_text_cells()}
+
+        assert set(cells) == {"Visible heading line", "Invisible OCR text layer"}
+
+        visible = cells["Visible heading line"]
+        invisible = cells["Invisible OCR text layer"]
+
+        # No `Tr` operator precedes the first line, so it keeps the UNKNOWN default, which
+        # means the PDF default mode 0 (fill).
+        assert visible.rendering_mode is PdfCellRenderingMode.UNKNOWN
+        assert invisible.rendering_mode is PdfCellRenderingMode.INVISIBLE
+
+        visible_texts = {
+            cell.text for cell in page_backend.get_visible_text_cells() or []
+        }
+        assert visible_texts == {"Visible heading line"}
+    finally:
+        doc_backend.unload()
+
+
+def test_threaded_backend_filters_invisible_text_cells():
+    """The threaded backend must answer `get_visible_text_cells()` like the paged one."""
+    in_doc = InputDocument(
+        path_or_stream=Path("./tests/data/pdf/invisible_text_layer.pdf"),
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+
+        assert {cell.text for cell in page_backend.get_text_cells()} == {
+            "Visible heading line",
+            "Invisible OCR text layer",
+        }
+        assert {cell.text for cell in page_backend.get_visible_text_cells() or []} == {
+            "Visible heading line"
+        }
     finally:
         doc_backend.unload()

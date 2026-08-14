@@ -33,6 +33,16 @@ class PdfPageBackend(ABC):
     def get_text_cells(self) -> Iterable[TextCell]:
         pass
 
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        """Return the subset of `get_text_cells()` that actually paints ink on the page.
+
+        Text drawn in a rendering mode that paints nothing (PDF 32000 modes 3 and 7) is left
+        out, so an invisible OCR layer over a scanned page does not read as programmatic
+        text. `None` means this backend cannot tell visible from invisible text at all, as
+        distinct from an empty list, which means it looked and found none.
+        """
+        return None
+
     @abstractmethod
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         pass

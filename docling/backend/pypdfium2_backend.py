@@ -187,6 +187,12 @@ _log = logging.getLogger(__name__)
 # pypdfium2 5.x renamed PdfObject.get_pos() -> get_bounds()
 _PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
 
+# PDF 32000 text rendering modes that paint no ink, matching the filter docling-parse
+# applies natively when answering content-intersection queries.
+_INVISIBLE_TEXT_RENDER_MODES = frozenset(
+    {pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_CLIP}
+)
+
 
 class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     def __init__(
@@ -355,14 +361,28 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return merge_horizontal_cells(cells)
 
-    def _object_rects(self, obj_type: int) -> Iterable[BoundingBox]:
-        """Yield the bboxes of the page objects of ``obj_type``, in top-left origin."""
+    def _object_rects(
+        self, obj_type: int, *, skip_invisible_text: bool = False
+    ) -> Iterable[BoundingBox]:
+        """Yield the bboxes of the page objects of ``obj_type``, in top-left origin.
+
+        With ``skip_invisible_text``, text objects drawn in a rendering mode that paints no
+        ink are left out, matching what docling-parse does natively.
+        """
         page_size = self.get_size()
 
         with pypdfium2_lock:
             page = self._require_page()
             rotation = page.get_rotation()
             for obj in page.get_objects(filter=[obj_type]):
+                if (
+                    skip_invisible_text
+                    and obj_type == pdfium_c.FPDF_PAGEOBJ_TEXT
+                    and pdfium_c.FPDFTextObj_GetTextRenderMode(obj.raw)
+                    in _INVISIBLE_TEXT_RENDER_MODES
+                ):
+                    continue
+
                 if _PYPDFIUM2_MAJOR_VERSION >= 5:
                     pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
@@ -390,9 +410,10 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     ) -> Optional[bool]:
         """Best-effort content-intersection test built from page-object bboxes.
 
-        pypdfium2 exposes no visibility or clip state, so this approximates the
-        docling-parse query: an object counts as intersecting when its bounding box does,
-        even if the object is clipped away or fully transparent.
+        pypdfium2 exposes no clip state, so this approximates the docling-parse query: an
+        object counts as intersecting when its bounding box does, even if the object is
+        clipped away or fully transparent. Text rendering mode is the one visibility signal
+        it does expose, and invisible text is skipped just like docling-parse does.
         """
         if not self.valid:
             return False
@@ -409,7 +430,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             obj_types.append(pdfium_c.FPDF_PAGEOBJ_TEXT)
 
         for obj_type in obj_types:
-            for rect in self._object_rects(obj_type):
+            for rect in self._object_rects(obj_type, skip_invisible_text=True):
                 # Plain overlap, so that degenerate (zero-area) rules still count.
                 if (
                     rect.l <= probe.r

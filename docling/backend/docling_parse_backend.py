@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import SegmentedPdfPage, TextCell
+from docling_core.types.doc.page import (
+    PdfCellRenderingMode,
+    PdfTextCell,
+    SegmentedPdfPage,
+    TextCell,
+)
 from docling_parse.pdf_parser import (
     ContentConfig,
     ContentLevel,
@@ -43,6 +48,28 @@ if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
+# natively when answering `intersects_with()`, so the cell-level view has to match it.
+_INVISIBLE_RENDERING_MODES = frozenset(
+    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
+)
+
+
+def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
+    """Keep only the cells that paint ink on the page.
+
+    `PdfCellRenderingMode.UNKNOWN` (-1) means the PDF never issued a `Tr` operator, i.e. the
+    default mode 0 (fill), so it counts as visible. Cells that carry no rendering mode at all
+    (OCR output merged into the page) are kept as well.
+    """
+    return [
+        cell
+        for cell in cells
+        if not isinstance(cell, PdfTextCell)
+        or cell.rendering_mode not in _INVISIBLE_RENDERING_MODES
+    ]
 
 
 def _make_docling_parse_decode_config(
@@ -185,6 +212,12 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         assert self._dpage is not None
 
         return self._dpage.textline_cells
+
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
+        return _visible_text_cells(self._dpage.textline_cells)
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         self._ensure_parsed()
@@ -431,6 +464,12 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         if segmented_page is None:
             return []
         return segmented_page.textline_cells
+
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return []
+        return _visible_text_cells(segmented_page.textline_cells)
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         segmented_page = self.get_segmented_page()

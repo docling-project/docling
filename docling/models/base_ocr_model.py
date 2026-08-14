@@ -142,8 +142,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             p.dimension = 2
 
             # Index for the text PDF cells
+            text_cells = backend.get_visible_text_cells()
+            if text_cells is None:
+                text_cells = backend.get_text_cells()
+
             text_index = index.Index(properties=p)
-            for i, text_cell in enumerate(backend.get_text_cells()):
+            for i, text_cell in enumerate(text_cells):
                 text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
 
             # Index for the non-text PDF cells: bitmaps, and shapes when available

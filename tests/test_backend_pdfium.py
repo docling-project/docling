@@ -163,3 +163,28 @@ def test_pdfium_intersects_only_where_content_is():
         assert page_backend.intersects_with(bbox=blank_margin) is False
     finally:
         doc_backend.unload()
+
+
+def test_pdfium_intersects_ignores_invisible_text():
+    """Text drawn with rendering mode 3 paints nothing, so it must not count as content."""
+    doc_backend = _get_backend(Path("./tests/data/pdf/invisible_text_layer.pdf"))
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+        visible_line = BoundingBox(
+            l=60, t=70, r=400, b=110, coord_origin=CoordOrigin.TOPLEFT
+        )
+        invisible_line = BoundingBox(
+            l=60, t=470, r=400, b=510, coord_origin=CoordOrigin.TOPLEFT
+        )
+        text_only = {"chars": True, "shapes": False, "bitmaps": False}
+
+        assert page_backend.intersects_with(bbox=visible_line, **text_only) is True
+        assert page_backend.intersects_with(bbox=invisible_line, **text_only) is False
+
+        # The cell itself is still extracted; only the visibility query ignores it.
+        assert "Invisible OCR text layer" in {
+            cell.text for cell in page_backend.get_text_cells()
+        }
+    finally:
+        doc_backend.unload()
