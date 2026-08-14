@@ -93,9 +93,12 @@ extract-core = [
 
 # --- PDF Formats ---
 format-pdf-pypdfium2 = [
+  'pillow>=10.0.0,<13.0.0',
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
+  'rtree>=1.3.0,<2.0.0',
 ]
 format-pdf-docling = [
+  'pillow>=10.0.0,<13.0.0',
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
   'docling-parse>=7.12.0,<8.0.0',
 ]
