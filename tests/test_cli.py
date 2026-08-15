@@ -1044,3 +1044,66 @@ def test_cli_invalid_ocr_engine_is_rejected(tmp_path):
         ],
     )
     assert result.exit_code != 0
+
+
+def _capture_cli_asr_pipeline_options(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the
+    AsrPipelineOptions built alongside the requested (non-audio) pipeline.
+
+    The CLI always constructs `AsrPipelineOptions` regardless of the input
+    format, so this can be observed without converting an audio file.
+    """
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            audio_option = format_options[InputFormat.AUDIO]
+            captured["asr_pipeline_options"] = audio_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("asr_pipeline_options")
+
+
+def test_cli_allow_external_plugins_reaches_asr_pipeline_options(tmp_path, monkeypatch):
+    """Regression test for #3284: `--allow-external-plugins` and
+    `--enable-remote-services` were parsed correctly but never passed into
+    the (always-constructed) `AsrPipelineOptions`, which silently kept
+    reporting `allow_external_plugins=False` / `enable_remote_services=False`
+    regardless of the flags actually passed on the command line.
+    """
+    result, asr_pipeline_options = _capture_cli_asr_pipeline_options(
+        monkeypatch,
+        ["--allow-external-plugins", "--enable-remote-services"],
+        tmp_path,
+    )
+    assert result.exit_code == 0, result.output
+    assert asr_pipeline_options is not None
+    assert asr_pipeline_options.allow_external_plugins is True
+    assert asr_pipeline_options.enable_remote_services is True
+
+
+def test_cli_asr_pipeline_options_default_to_false(tmp_path, monkeypatch):
+    """Companion to the regression test above: without the flags, the
+    ASR pipeline options should still default to False."""
+    result, asr_pipeline_options = _capture_cli_asr_pipeline_options(
+        monkeypatch, [], tmp_path
+    )
+    assert result.exit_code == 0, result.output
+    assert asr_pipeline_options is not None
+    assert asr_pipeline_options.allow_external_plugins is False
+    assert asr_pipeline_options.enable_remote_services is False
