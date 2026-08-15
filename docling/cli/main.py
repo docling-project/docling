@@ -1434,7 +1434,8 @@ def convert(  # noqa: C901
                 device=device,
                 num_threads=num_threads,
             ),
-            # enable_remote_services=enable_remote_services,
+            allow_external_plugins=allow_external_plugins,
+            enable_remote_services=enable_remote_services,
             # artifacts_path = artifacts_path
         )
 
