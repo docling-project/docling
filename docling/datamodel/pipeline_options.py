@@ -1657,9 +1657,17 @@ class AsrPipelineOptions(PipelineOptions):
             description=(
                 "Automatic Speech Recognition (ASR) model configuration for audio transcription. Specifies which "
                 "ASR model to use (e.g., Whisper variants) and model-specific parameters for speech-to-text conversion."
-            )
+            ),
+            # `default_factory`, not a plain default: `asr_model_specs.WHISPER_TINY`
+            # is a hardware-auto-detecting preset (lazily computed via
+            # `asr_model_specs.__getattr__`, PEP 562). A plain `= ...` default
+            # is evaluated once at class-definition time — i.e. at import time,
+            # for every consumer of this module — which would defeat that
+            # laziness the moment this class body runs. `default_factory` defers
+            # it to actual instance construction instead.
+            default_factory=lambda: asr_model_specs.WHISPER_TINY,
         ),
-    ] = asr_model_specs.WHISPER_TINY
+    ]
 
 
 from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
@@ -1679,8 +1687,13 @@ class VideoPipelineOptions(PipelineOptions):
 
     asr_options: Annotated[
         InlineAsrOptions,
-        Field(description="ASR model configuration for the video audio track."),
-    ] = asr_model_specs.WHISPER_TINY
+        Field(
+            description="ASR model configuration for the video audio track.",
+            # See AsrPipelineOptions.asr_options above for why this must be
+            # a default_factory rather than a plain default.
+            default_factory=lambda: asr_model_specs.WHISPER_TINY,
+        ),
+    ]
 
     frame_sampling_mode: Annotated[
         VideoFrameSamplingMode,
