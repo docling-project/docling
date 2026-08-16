@@ -28,6 +28,7 @@ from docling.datamodel.pipeline_options import (
     ProcessingPipeline,
     TableFormerMode,
     TableStructureOptions,
+    TextFormattingOptions,
     VlmConvertOptions,
 )
 
@@ -520,6 +521,32 @@ class ConvertDocumentsOptions(BaseModel):
             ],
         ),
     ] = HeadingHierarchyOptions()
+
+    do_pdf_text_formatting: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, bold and italic text is recovered for PDF and image inputs "
+                "processed by the standard pipeline, by reading the weight and slant of the "
+                "embedded PDF font names. When disabled, emphasis is dropped and the text "
+                "converts indistinguishably from body text. Boolean. Optional, defaults to "
+                "false."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
+    pdf_text_formatting_options: Annotated[
+        TextFormattingOptions,
+        Field(
+            description=(
+                "Fine-tuning of the character-formatting recovery, applied when "
+                "do_pdf_text_formatting is enabled. The nested enabled flag is set "
+                "automatically from do_pdf_text_formatting and does not need to be provided."
+            ),
+            examples=[TextFormattingOptions(use_rendering_mode=False)],
+        ),
+    ] = TextFormattingOptions()
 
     include_images: Annotated[
         bool,
