@@ -8089,7 +8089,7 @@
           "bbox": {
             "l": 209.93,
             "t": 570.64,
-            "r": 223.87,
+            "r": 237.81,
             "b": 566.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8116,7 +8116,7 @@
           "bbox": {
             "l": 263.76,
             "t": 570.64,
-            "r": 273.06,
+            "r": 282.35,
             "b": 566.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8143,7 +8143,7 @@
           "bbox": {
             "l": 110.25,
             "t": 563.16,
-            "r": 114.9,
+            "r": 119.54,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8170,7 +8170,7 @@
           "bbox": {
             "l": 175.37,
             "t": 563.16,
-            "r": 186.98,
+            "r": 198.6,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8195,9 +8195,9 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 195.31,
+            "l": 206.93,
             "t": 563.16,
-            "r": 199.96,
+            "r": 216.22,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8224,7 +8224,7 @@
           "bbox": {
             "l": 229.2,
             "t": 563.16,
-            "r": 236.17,
+            "r": 243.14,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8251,7 +8251,7 @@
           "bbox": {
             "l": 256.11,
             "t": 563.16,
-            "r": 260.76,
+            "r": 265.41,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8278,7 +8278,7 @@
           "bbox": {
             "l": 278.38,
             "t": 563.16,
-            "r": 285.35,
+            "r": 292.32,
             "b": 558.51,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8629,7 +8629,7 @@
           "bbox": {
             "l": 55.53,
             "t": 543.02,
-            "r": 74.12,
+            "r": 92.7,
             "b": 538.38,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8683,7 +8683,7 @@
           "bbox": {
             "l": 103.03,
             "t": 543.02,
-            "r": 114.65,
+            "r": 126.27,
             "b": 538.38,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8845,7 +8845,7 @@
           "bbox": {
             "l": 55.53,
             "t": 535.54,
-            "r": 71.79,
+            "r": 88.06,
             "b": 530.89,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -8899,7 +8899,7 @@
           "bbox": {
             "l": 93.22,
             "t": 535.54,
-            "r": 104.84,
+            "r": 116.45,
             "b": 530.89,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9088,7 +9088,7 @@
           "bbox": {
             "l": 55.53,
             "t": 528.31,
-            "r": 57.85,
+            "r": 60.18,
             "b": 523.67,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9142,7 +9142,7 @@
           "bbox": {
             "l": 65.34,
             "t": 528.31,
-            "r": 90.9,
+            "r": 116.45,
             "b": 523.67,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9331,7 +9331,7 @@
           "bbox": {
             "l": 55.53,
             "t": 521.08,
-            "r": 78.76,
+            "r": 101.99,
             "b": 516.44,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9385,7 +9385,7 @@
           "bbox": {
             "l": 109.74,
             "t": 521.08,
-            "r": 112.07,
+            "r": 114.39,
             "b": 516.44,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9439,7 +9439,7 @@
           "bbox": {
             "l": 122.14,
             "t": 521.08,
-            "r": 124.46,
+            "r": 126.79,
             "b": 516.44,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9628,7 +9628,7 @@
           "bbox": {
             "l": 68.69,
             "t": 513.6,
-            "r": 87.27,
+            "r": 105.86,
             "b": 508.95,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9790,7 +9790,7 @@
           "bbox": {
             "l": 169.62,
             "t": 506.37,
-            "r": 171.94,
+            "r": 174.26,
             "b": 501.73,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -16242,9 +16242,9 @@
         }
       ],
       "orig": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
-      "text": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
-      "enumerated": false,
-      "marker": ""
+      "text": "If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
+      "enumerated": true,
+      "marker": "3.a."
     },
     {
       "self_ref": "#/texts/561",
@@ -16528,9 +16528,9 @@
         }
       ],
       "orig": "9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
-      "text": "9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
-      "enumerated": false,
-      "marker": ""
+      "text": "Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row).",
+      "enumerated": true,
+      "marker": "9a."
     },
     {
       "self_ref": "#/texts/571",
@@ -16557,9 +16557,9 @@
         }
       ],
       "orig": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
-      "text": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
-      "enumerated": false,
-      "marker": ""
+      "text": "Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
+      "enumerated": true,
+      "marker": "9b."
     },
     {
       "self_ref": "#/texts/572",
@@ -16586,9 +16586,9 @@
         }
       ],
       "orig": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
-      "text": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
-      "enumerated": false,
-      "marker": ""
+      "text": "Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
+      "enumerated": true,
+      "marker": "9c."
     },
     {
       "self_ref": "#/texts/573",
@@ -16615,9 +16615,9 @@
         }
       ],
       "orig": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
-      "text": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
-      "enumerated": false,
-      "marker": ""
+      "text": "Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
+      "enumerated": true,
+      "marker": "9d."
     },
     {
       "self_ref": "#/texts/574",
