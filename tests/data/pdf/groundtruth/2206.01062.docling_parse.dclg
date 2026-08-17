@@ -2268,15 +2268,14 @@
     <location value="451"/>
     ACM ISBN 978-1-4503-9385-0/22/08.
   </text>
-  <page_footer>
+  <text>
     <href uri="https://doi.org/10.1145/3534678.3539043"/>
-    <layer value="furniture"/>
     <location value="45"/>
     <location value="453"/>
     <location value="140"/>
     <location value="457"/>
     https://doi.org/10.1145/3534678.3539043
-  </page_footer>
+  </text>
   <page_break/>
   <page_header>
     <layer value="furniture"/>

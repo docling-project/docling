@@ -9214,8 +9214,8 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_footer",
+      "content_layer": "body",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -15112,10 +15112,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.26,
-            "t": 545.96,
-            "r": 555.28,
-            "b": 264.17,
+            "l": 322.24,
+            "t": 545.66,
+            "r": 555.26,
+            "b": 264.06,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

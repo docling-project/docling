@@ -67,11 +67,6 @@ Solution Brief IBM Systems Lab Services and Training
 
 ## Highlights
 
-- g115g3 g40g81g75g68g81g70g72g3 g87g75g72g3 g83g72g85g73g82g85g80g68g81g70g72g3 g82g73g3 g92g82g88g85g3 g71g68g87g68g69g68g86g72g3 g82g83g72g85g68g87g76g82g81g86
-- g115g3 g40g68g85g81g3 g74g85g72g68g87g72g85g3 g85g72g87g88g85g81g3 g82g81g3 g44g55g3 g83g85g82g77g72g70g87g86g3 g87g75g85g82g88g74g75g3 g80g82g71g72g85g81g76g93g68g87g76g82g81g3 g82g73g3 g71g68g87g68g69g68g86g72g3 g68g81g71g3 g68g83g83g79g76g70g68g87g76g82g81g86
-- g115g3 g53g72g79g92g3 g82g81g3 g44g37g48g3 g72g91g83g72g85g87g3 g70g82g81g86g88g79g87g76g81g74g15g3 g86g78g76g79g79g86g3 g86g75g68g85g76g81g74g3 g68g81g71g3 g85g72g81g82g90g81g3 g86g72g85g89g76g70g72g86
-- g115g3 g55 g68g78g72g3 g68g71g89g68g81g87g68g74g72g3 g82g73g3 g68g70g70g72g86g86g3 g87g82g3 g68g3 g90g82g85g79g71g90g76g71g72g3 g86g82g88g85g70g72g3 g82g73g3 g72g91g83g72g85g87g76g86g72
-
 <!-- image -->
 
 Power Services
@@ -389,8 +384,6 @@ Protect columns by defining column masks This IBM Redpaper publication provides 
 This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.
 
 <!-- image -->
-
-®
 
 <!-- image -->
 

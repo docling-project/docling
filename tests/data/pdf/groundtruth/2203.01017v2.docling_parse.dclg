@@ -73,29 +73,25 @@
     1
     <nl/>
   </table>
-  <list class="ordered">
-    <ldiv>
-      <marker>b.</marker>
-    </ldiv>
+  <text>
     <location value="264"/>
     <location value="203"/>
     <location value="407"/>
+    <location value="208"/>
+    b. Red-annotation of bounding boxes,
+  </text>
+  <text>
+    <location value="273"/>
+    <location value="210"/>
+    <location value="395"/>
     <location value="215"/>
-    Red-annotation of bounding boxes, Blue-predictions by TableFormer
-    <ldiv>
-      <marker>c.</marker>
-    </ldiv>
-    <location value="264"/>
-    <location value="272"/>
-    <location value="411"/>
-    <location value="277"/>
-    Structure predicted by TableFormer:
-  </list>
+    Blue-predictions by TableFormer
+  </text>
   <picture>
     <location value="263"/>
     <location value="218"/>
     <location value="451"/>
-    <location value="265"/>
+    <location value="266"/>
     <text>
       <location value="341"/>
       <location value="222"/>
@@ -265,6 +261,13 @@
       1
     </text>
   </picture>
+  <heading level="2">
+    <location value="264"/>
+    <location value="272"/>
+    <location value="411"/>
+    <location value="277"/>
+    c. Structure predicted by TableFormer:
+  </heading>
   <table>
     <location value="264"/>
     <location value="280"/>
@@ -2121,11 +2124,39 @@
     <location value="56"/>
     Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells
   </list>
+  <text>
+    <location value="45"/>
+    <location value="61"/>
+    <location value="238"/>
+    <location value="66"/>
+    Japanese language (previously unseen by TableFormer):
+  </text>
+  <text>
+    <location value="255"/>
+    <location value="61"/>
+    <location value="361"/>
+    <location value="66"/>
+    Example table from FinTabNet:
+  </text>
+  <text>
+    <location value="318"/>
+    <location value="189"/>
+    <location value="460"/>
+    <location value="193"/>
+    Text is aligned to match original for ease of viewing
+  </text>
   <picture>
     <location value="42"/>
     <location value="62"/>
-    <location value="464"/>
+    <location value="463"/>
     <location value="189"/>
+    <caption>
+      <location value="42"/>
+      <location value="208"/>
+      <location value="456"/>
+      <location value="236"/>
+      Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.
+    </caption>
     <list class="ordered">
       <ldiv>
         <marker>b.</marker>
@@ -2136,20 +2167,6 @@
       <location value="140"/>
       Structure predicted by TableFormer, with superimposed matched PDF cell text:
     </list>
-    <text>
-      <location value="45"/>
-      <location value="61"/>
-      <location value="238"/>
-      <location value="66"/>
-      Japanese language (previously unseen by TableFormer):
-    </text>
-    <text>
-      <location value="255"/>
-      <location value="61"/>
-      <location value="361"/>
-      <location value="66"/>
-      Example table from FinTabNet:
-    </text>
     <text>
       <location value="176"/>
       <location value="143"/>
@@ -2858,24 +2875,17 @@
       $ 104.51
     </text>
   </picture>
-  <text>
-    <location value="318"/>
-    <location value="189"/>
-    <location value="460"/>
-    <location value="193"/>
-    Text is aligned to match original for ease of viewing
-  </text>
   <picture>
     <location value="43"/>
     <location value="246"/>
     <location value="453"/>
     <location value="287"/>
     <caption>
-      <location value="42"/>
-      <location value="208"/>
-      <location value="456"/>
-      <location value="236"/>
-      Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.
+      <location value="52"/>
+      <location value="297"/>
+      <location value="446"/>
+      <location value="302"/>
+      Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.
     </caption>
     <text>
       <location value="184"/>
@@ -3277,13 +3287,6 @@
       Predicted Structure
     </text>
   </picture>
-  <text>
-    <location value="52"/>
-    <location value="297"/>
-    <location value="446"/>
-    <location value="302"/>
-    Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.
-  </text>
   <heading level="2">
     <location value="42"/>
     <location value="318"/>

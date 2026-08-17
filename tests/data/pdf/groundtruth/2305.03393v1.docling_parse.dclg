@@ -18,8 +18,15 @@
     <location value="117"/>
     <location value="110"/>
     <location value="398"/>
+    <location value="129"/>
+    Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , [0000 -0002 -8088 -0823]
+  </text>
+  <text>
+    <location value="192"/>
+    <location value="126"/>
+    <location value="250"/>
     <location value="132"/>
-    Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , and Peter Staar [0000 -0002 -8088 -0823]
+    and Peter Staar
   </text>
   <text>
     <location value="233"/>
@@ -47,7 +54,7 @@
     <location value="308"/>
     <location value="378"/>
     <location value="322"/>
-    Keywords: Table Structure Recognition · Data Representation · Trans- formers · Optimization.
+    Keywords: Table Structure Recognition · Data Representation · Transformers · Optimization.
   </text>
   <heading level="2">
     <location value="113"/>
