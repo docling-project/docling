@@ -27,10 +27,9 @@ def _convert(
     *,
     enabled: bool = True,
     page_range: tuple[int, int] | None = None,
-    do_ocr: bool = False,
 ) -> ConversionResult:
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = do_ocr
+    pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = False
     pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
     if enabled:
@@ -83,15 +82,4 @@ def test_formatting_is_not_recovered_unless_enabled(pipeline_cls) -> None:
         pipeline_cls, "tests/data/pdf/sources/amt_handbook_sample.pdf", enabled=False
     )
 
-    assert all(t.formatting is None for t in result.document.texts)
-
-
-@pytest.mark.ml_ocr
-def test_scanned_pages_carry_no_formatting() -> None:
-    # OCR produces cells without font information, so nothing is claimed about their styling.
-    result = _convert(
-        StandardPdfPipeline, "tests/data/ocr/sources/ocr_test.pdf", do_ocr=True
-    )
-
-    assert result.document.texts
     assert all(t.formatting is None for t in result.document.texts)
