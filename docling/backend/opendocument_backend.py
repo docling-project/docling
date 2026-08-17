@@ -888,7 +888,8 @@ def _odf_image_can_be_bitmap(image: Any, image_url: str | None) -> bool:
     suffix = Path(image_url).suffix.lower()
     if suffix in {".pdf", ".svg", ".emf", ".wmf"}:
         return False
-    # Empty suffix is intentionally excluded: extension-less paths are typical of system files (e.g. /etc/passwd) and are not valid ODF image references.
+    # Empty suffix is intentionally excluded: extension-less paths are typical of
+    # system files (e.g. /etc/passwd) and are not valid ODF image references.
     return suffix in {
         ".bmp",
         ".gif",
