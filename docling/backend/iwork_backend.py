@@ -18,13 +18,13 @@ Only body text is extracted. Heading levels, lists and tables are carried by the
 paragraph style runs (IWA) and style attributes (XML) and are not yet mapped.
 """
 
-import gzip
 import logging
 import mimetypes
 import zipfile
+import zlib
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import Any, Optional, Set, Union
 
 import defusedxml.ElementTree as ET
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
@@ -49,6 +49,22 @@ mimetypes.add_type(_PAGES_MIMETYPE, ".pages")
 
 _MODERN_INDEX_PREFIX = "Index/"
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
+
+# Compression methods ZIP defines and zipfile can open. Anything else means the
+# member is encrypted or otherwise unreadable.
+_READABLE_COMPRESSION_METHODS = frozenset(
+    {
+        zipfile.ZIP_STORED,
+        zipfile.ZIP_DEFLATED,
+        zipfile.ZIP_BZIP2,
+        zipfile.ZIP_LZMA,
+    }
+)
+
+# An index.xml.gz can expand enormously relative to its stored size, so the
+# legacy path decompresses incrementally against this ceiling rather than
+# trusting the member size that max_total_bytes is computed from.
+_MAX_LEGACY_XML_BYTES = 100 * 1024 * 1024
 
 # Message type numbers from the reverse-engineered iWork schemas. Only these two
 # are needed to reach the body text.
@@ -105,15 +121,22 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 self._paragraphs = self._read_paragraphs(archive)
         except DocumentLoadError:
             raise
-        except (NotImplementedError, RuntimeError) as exc:
-            # Pages encrypts members with a scheme zipfile cannot read, leaving a
-            # nonsense compress_type rather than setting the standard encrypted
-            # flag, so this is the only reliable signal that a document is
-            # password-protected.
+        except RecursionError as exc:
+            # RecursionError subclasses RuntimeError, so it must be caught first;
+            # otherwise deeply nested XML would be reported as an encryption
+            # problem, hiding a real robustness failure behind benign advice.
             raise DocumentLoadError(
-                f"Pages document with hash {self.document_hash} appears to be "
-                "password-protected; Docling cannot read encrypted iWork "
-                "documents. Remove the password in Pages and save again."
+                f"Pages document with hash {self.document_hash} is nested too "
+                "deeply to parse."
+            ) from exc
+        except (NotImplementedError, RuntimeError) as exc:
+            # Encryption is normally detected up front from the member table.
+            # Anything reaching here is an unreadable member for some other
+            # reason (an unknown compression method, a missing codec module), so
+            # the message stays about the container rather than about passwords.
+            raise DocumentLoadError(
+                f"Could not read Pages document with hash {self.document_hash}: "
+                f"the archive contains a member Docling cannot decompress ({exc})."
             ) from exc
         except (zipfile.BadZipFile, OSError) as exc:
             raise DocumentLoadError(
@@ -136,6 +159,13 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             raise DocumentLoadError(
                 f"Pages archive expands to {total_bytes} bytes, exceeding the "
                 f"max_total_bytes limit of {self.options.max_total_bytes}."
+            )
+
+        if any(_is_encrypted(info) for info in infos):
+            raise DocumentLoadError(
+                f"Pages document with hash {self.document_hash} is "
+                "password-protected; Docling cannot read encrypted iWork "
+                "documents. Remove the password in Pages and save again."
             )
 
         names = {info.filename for info in infos}
@@ -202,9 +232,20 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         """Read body text from the ``index.xml`` of an iWork '09 document."""
         raw = archive.read(member)
         if member.endswith(".gz"):
+            # max_total_bytes only counts the stored size of a gzipped member, so
+            # a small index.xml.gz could otherwise expand without bound. Cap the
+            # output instead of using gzip.decompress, which has no limit.
+            limit = min(_MAX_LEGACY_XML_BYTES, self.options.max_total_bytes)
             try:
-                raw = gzip.decompress(raw)
-            except OSError as exc:
+                decompressor = zlib.decompressobj(wbits=31)
+                raw = decompressor.decompress(raw, limit)
+                if decompressor.unconsumed_tail:
+                    raise DocumentLoadError(
+                        f"'{member}' in Pages document with hash "
+                        f"{self.document_hash} expands beyond the {limit} byte "
+                        "limit."
+                    )
+            except zlib.error as exc:
                 raise DocumentLoadError(
                     f"Could not decompress '{member}' in Pages document with hash "
                     f"{self.document_hash}."
@@ -264,16 +305,47 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
 
-def _iter_text_excluding_ghosts(element) -> list[str]:
-    """Collect text under ``element``, skipping ``sf:ghost-text`` subtrees."""
+def _is_encrypted(info: zipfile.ZipInfo) -> bool:
+    """Report whether an archive member cannot be read because it is encrypted.
+
+    Standard ZIP encryption sets bit 0 of the general-purpose flags. Pages does
+    not use that: it leaves the flag clear and writes a compression method
+    outside the set ZIP defines, so both signals are needed.
+    """
+    if info.flag_bits & 0x1:
+        return True
+    return info.compress_type not in _READABLE_COMPRESSION_METHODS
+
+
+def _iter_text_excluding_ghosts(element: Any) -> list[str]:
+    """Collect text under ``element``, skipping ``sf:ghost-text`` subtrees.
+
+    Walked with an explicit stack rather than recursively: nesting depth in the
+    XML is attacker-controlled, and a recursive walk exhausts the interpreter
+    stack on a deeply nested document.
+    """
     parts: list[str] = []
-    if element.text:
-        parts.append(element.text)
-    for child in element:
-        if child.tag != _SF_GHOST_TEXT:
-            parts.extend(_iter_text_excluding_ghosts(child))
-        if child.tail:
-            parts.append(child.tail)
+    # Each entry is (node, want_tail): want_tail entries emit the node's trailing
+    # text after its subtree has been visited.
+    stack: list[tuple[Any, bool]] = [(element, False)]
+
+    while stack:
+        node, want_tail = stack.pop()
+        if want_tail:
+            if node.tail:
+                parts.append(node.tail)
+            continue
+
+        if node.text:
+            parts.append(node.text)
+
+        # Push in reverse so children pop in document order, each followed by its
+        # own tail. A ghost-text child is skipped but still contributes its tail.
+        for child in reversed(list(node)):
+            stack.append((child, True))
+            if child.tag != _SF_GHOST_TEXT:
+                stack.append((child, False))
+
     return parts
 
 

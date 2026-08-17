@@ -112,8 +112,8 @@ def read_reference(buf: bytes) -> int | None:
     return target if isinstance(target, int) else None
 
 
-def decompress_snappy_block(block: bytes) -> bytes:
-    """Decompress one raw Snappy block.
+def decompress_snappy_block(block: bytes, limit: int = _MAX_STREAM_BYTES) -> bytes:
+    """Decompress one raw Snappy block, emitting at most ``limit`` bytes.
 
     Implemented here rather than taken from a binding because iWork needs only
     the decompressor, and that half of Snappy is small: a varint length preamble
@@ -121,8 +121,19 @@ def decompress_snappy_block(block: bytes) -> bytes:
     does not depend on a compiled wheel staying maintained for future Python
     releases, and Pages documents are small enough that the speed difference is
     immaterial.
+
+    Raw Snappy expands by up to 21.33x — a three-byte copy tag emits 64 bytes —
+    and the IWA chunk length field is three bytes wide, so a single chunk may
+    declare 16.7 MB and expand to roughly 358 MB. ``limit`` is therefore checked
+    twice: against the declared size before any work happens, and against the
+    output as it grows, because a hostile block can declare a small size and
+    then emit far more.
     """
     expected, pos = read_varint(block, 0)
+    if expected > limit:
+        raise DocumentLoadError(
+            f"Snappy block declares {expected} bytes, over the {limit} byte limit."
+        )
     out = bytearray()
     size = len(block)
 
@@ -145,6 +156,10 @@ def decompress_snappy_block(block: bytes) -> bytes:
                 raise DocumentLoadError("Truncated Snappy literal.")
             out += block[pos : pos + length]
             pos += length
+            if len(out) > expected:
+                raise DocumentLoadError(
+                    f"Snappy block emitted more than the {expected} bytes it declared."
+                )
             continue
 
         if kind == _TAG_COPY_1B:
@@ -173,6 +188,13 @@ def decompress_snappy_block(block: bytes) -> bytes:
             for index in range(length):
                 out.append(out[start + index])
 
+        # Bounds the work a lying block can cause: without this, a small declared
+        # size followed by a huge body is only caught after it is materialized.
+        if len(out) > expected:
+            raise DocumentLoadError(
+                f"Snappy block emitted more than the {expected} bytes it declared."
+            )
+
     if len(out) != expected:
         raise DocumentLoadError(
             f"Snappy block decoded to {len(out)} bytes, expected {expected}."
@@ -198,12 +220,10 @@ def decompress(data: bytes) -> bytes:
         if len(block) != length:
             raise DocumentLoadError("Truncated IWA chunk payload.")
         pos += length
-        # Raw Snappy: the chunk carries no stream framing or checksum.
-        out += decompress_snappy_block(block)
-        if len(out) > _MAX_STREAM_BYTES:
-            raise DocumentLoadError(
-                f"IWA stream expands beyond {_MAX_STREAM_BYTES} bytes."
-            )
+        # Raw Snappy: the chunk carries no stream framing or checksum. Passing the
+        # remaining budget makes _MAX_STREAM_BYTES a true ceiling for the stream,
+        # rather than the ceiling plus one whole block.
+        out += decompress_snappy_block(block, _MAX_STREAM_BYTES - len(out))
     return bytes(out)
 
 

@@ -13,12 +13,14 @@ can be checked against each other.
 See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 """
 
+import gzip
 import zipfile
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 
+from docling.backend import iwork_iwa
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.backend.iwork_iwa import (
     decompress_snappy_block,
@@ -203,6 +205,115 @@ def test_snappy_decoder_rejects_malformed_blocks(block: bytes, reason: str):
     """A corrupt block must fail loudly rather than return partial output."""
     with pytest.raises(DocumentLoadError):
         decompress_snappy_block(block)
+
+
+def _varint(value: int) -> bytes:
+    out = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        out.append(byte | 0x80 if value else byte)
+        if not value:
+            return bytes(out)
+
+
+def _snappy_bomb(declared: int, copies: int) -> bytes:
+    """A block whose copy tags expand ~21x, the worst case for raw Snappy."""
+    body = bytes([0 << 2]) + b"A"
+    body += (bytes([0x02 | ((64 - 1) << 2)]) + (1).to_bytes(2, "little")) * copies
+    return _varint(declared) + body
+
+
+def _write_pages(path: Path, members: dict[str, bytes]) -> Path:
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    return path
+
+
+def test_snappy_block_declaring_more_than_the_limit_is_refused_before_decoding():
+    """Raw Snappy expands up to 21.33x and an IWA chunk may declare 16.7 MB, so
+    the declared size has to be rejected before any element is decoded."""
+    with pytest.raises(DocumentLoadError, match=r"over the .* byte limit"):
+        decompress_snappy_block(_snappy_bomb(400 * 1024 * 1024, 1), limit=1024)
+
+
+def test_snappy_block_that_lies_about_its_size_is_stopped_mid_decode():
+    """A block may declare a small size and then emit far more. Checking only at
+    the end would mean doing all the work first."""
+    with pytest.raises(DocumentLoadError, match="more than the 10 bytes"):
+        decompress_snappy_block(_snappy_bomb(10, 200_000))
+
+
+def _snappy_literal_run(size: int) -> bytes:
+    """A well-formed block that decodes to exactly ``size`` bytes of literals."""
+    body = bytearray()
+    remaining = size
+    while remaining:
+        take = min(60, remaining)
+        body += bytes([(take - 1) << 2]) + b"A" * take
+        remaining -= take
+    return _varint(size) + bytes(body)
+
+
+def test_iwa_stream_budget_is_shared_across_chunks(monkeypatch, tmp_path: Path):
+    """The ceiling must bound the whole stream, not reset for each chunk. Two
+    chunks that are each individually fine must still be refused once their
+    combined output passes the limit."""
+    monkeypatch.setattr(iwork_iwa, "_MAX_STREAM_BYTES", 1500)
+
+    block = _snappy_literal_run(1000)
+    chunk = b"\x00" + len(block).to_bytes(3, "little") + block
+
+    # One chunk alone stays under the ceiling.
+    assert len(iwork_iwa.decompress(chunk)) == 1000
+
+    with pytest.raises(DocumentLoadError, match="over the 500 byte limit"):
+        iwork_iwa.decompress(chunk * 2)
+
+
+def test_gzipped_legacy_index_cannot_expand_without_bound(tmp_path: Path):
+    """max_total_bytes only counts the stored size of index.xml.gz, so the
+    decompressed size needs its own ceiling."""
+    bomb = _write_pages(
+        tmp_path / "gzbomb.pages",
+        {"index.xml.gz": gzip.compress(b"\0" * (400 * 1024 * 1024))},
+    )
+
+    with pytest.raises(DocumentLoadError, match="expands beyond"):
+        IWorkPagesDocumentBackend(
+            InputDocument(
+                path_or_stream=bomb,
+                format=InputFormat.IWORK_PAGES,
+                backend=IWorkPagesDocumentBackend,
+            ),
+            bomb,
+            IWorkBackendOptions(max_total_bytes=8 * 1024 * 1024),
+        )
+
+
+def test_deeply_nested_legacy_xml_does_not_exhaust_the_stack(tmp_path: Path):
+    """Nesting depth is attacker-controlled, so the text walk must not recurse."""
+    depth = 30_000
+    xml = (
+        b'<?xml version="1.0"?>'
+        b'<sf:document xmlns:sf="http://developer.apple.com/namespaces/sf"><sf:p>'
+        + b"<sf:span>" * depth
+        + b"deep text"
+        + b"</sf:span>" * depth
+        + b"</sf:p></sf:document>"
+    )
+    nested = _write_pages(tmp_path / "deep.pages", {"index.xml": xml})
+
+    backend = IWorkPagesDocumentBackend(
+        InputDocument(
+            path_or_stream=nested,
+            format=InputFormat.IWORK_PAGES,
+            backend=IWorkPagesDocumentBackend,
+        ),
+        nested,
+    )
+    assert "deep text" in backend.convert().export_to_markdown()
 
 
 def test_zip_without_pages_index_is_rejected(tmp_path: Path):

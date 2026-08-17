@@ -170,7 +170,8 @@ the document uses:
     are not yet mapped, and text boxes, headers, footers, footnotes and comments
     are not included. Password-protected documents cannot be read.
 
-The archive limits applied while reading the container can be tuned with
+The container is untrusted input, so member count, total size, per-member size
+and decompressed output are all bounded. Those limits can be tuned with
 `IWorkBackendOptions`:
 
 ```python
