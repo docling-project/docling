@@ -144,7 +144,7 @@ def _bbox(left, top, right, bottom):
     )
 
 
-def _cell(text, left, top, right, bottom):
+def _cell(text, left, top, right, bottom, font_name="Helvetica"):
     return PdfTextCell(
         index=0,
         rect=BoundingRectangle.from_bounding_box(_bbox(left, top, right, bottom)),
@@ -153,7 +153,7 @@ def _cell(text, left, top, right, bottom):
         rendering_mode=PdfCellRenderingMode.FILL_TEXT,
         widget=False,
         font_key="F1",
-        font_name="Helvetica",
+        font_name=font_name,
     )
 
 
@@ -209,3 +209,165 @@ def test_style_fallback_assigns_levels_by_font_size():
     model.assign_heading_levels(doc, parsed_pages={1: page})
 
     assert [h.level for h in doc.texts] == [1, 2]
+
+
+def _style_levels(rows, **opts) -> list[int]:
+    """Level of each heading, from ``(text, top, bottom, font name)`` rows on a single page.
+
+    Each row becomes both a heading and the parsed cell it was extracted from, so the cell height
+    (``bottom - top``) acts as the font size and the font name carries weight and slant.
+    """
+    doc = DoclingDocument(name="t")
+    cells = []
+    for text, top, bottom, font_name in rows:
+        doc.add_heading(
+            text=text,
+            prov=ProvenanceItem(
+                page_no=1, charspan=(0, len(text)), bbox=_bbox(100, top, 300, bottom)
+            ),
+        )
+        cells.append(_cell(text, 100, top, 300, bottom, font_name=font_name))
+
+    model = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(use_numbering=False, use_style=True, **opts)
+    )
+    model.assign_heading_levels(doc, parsed_pages={1: _segmented_page(cells)})
+    return [heading.level for heading in doc.texts]
+
+
+def test_close_font_sizes_are_one_level():
+    # Heading size is measured from the cells, so the same font measures taller on a heading that
+    # has descenders ("Securing and protecting" vs "Contents" in redp5110_sampled.pdf). Splitting
+    # on that difference invents a level and leaves each level holding a single heading.
+    levels = _style_levels(
+        [
+            ("Securing and protecting data", 50, 74, "/Helvetica-Bold"),  # height 24
+            ("Contents", 100, 123, "/Helvetica-Bold"),  # height 23
+            ("1.1 Security fundamentals", 150, 162, "/Helvetica-Bold"),  # height 12
+        ]
+    )
+
+    assert levels == [1, 1, 2]
+
+
+def test_style_size_tolerance_zero_keeps_every_size_apart():
+    rows = [
+        ("Securing and protecting data", 50, 74, "/Helvetica-Bold"),
+        ("Contents", 100, 123, "/Helvetica-Bold"),
+    ]
+
+    assert _style_levels(rows, style_size_tolerance=0.0) == [1, 2]
+
+
+def test_weight_separates_headings_inside_one_size_cluster():
+    # Once near-identical sizes share a level, weight and slant are what tell them apart.
+    levels = _style_levels(
+        [
+            ("Securing and protecting data", 50, 74, "/Helvetica-Bold"),  # height 24
+            ("DB2 for i Center of Excellence", 100, 123, "/Times-Italic"),  # height 23
+        ]
+    )
+
+    assert levels == [1, 2]
+
+
+def test_style_ranks_bold_above_regular_at_the_same_size():
+    # The case font size alone cannot separate: a section head set in the body size, distinguished
+    # only by its weight (as in tests/data/pdf/sources/redp5110_sampled.pdf).
+    levels = _style_levels(
+        [
+            ("Notices", 50, 62, "/Helvetica-Bold"),
+            ("Trademarks", 80, 92, "/Helvetica"),
+        ]
+    )
+
+    assert levels == [1, 2]
+
+
+def test_uniform_weight_adds_no_levels():
+    # A signal that does not vary must not split anything: three bold headings at two sizes still
+    # produce the two levels that font size alone would.
+    levels = _style_levels(
+        [
+            ("Preface", 50, 72, "/Helvetica-Bold"),
+            ("Authors", 100, 112, "/Helvetica-Bold"),
+            ("Comments", 130, 142, "/Helvetica-Bold"),
+        ]
+    )
+
+    assert levels == [1, 2, 2]
+
+
+def test_style_ranks_weight_then_slant():
+    # At one size: bold is the most prominent, italic the least (italic sits lighter on the page
+    # than upright text, so italic subheads rank below plain ones).
+    levels = _style_levels(
+        [
+            ("Scope", 50, 62, "/Helvetica-Bold"),
+            ("Definitions", 80, 92, "/Helvetica"),
+            ("Remarks", 110, 122, "/Helvetica-Oblique"),
+        ]
+    )
+
+    assert levels == [1, 2, 3]
+
+
+def test_all_caps_outranks_mixed_case():
+    levels = _style_levels(
+        [
+            ("OVERVIEW", 50, 62, "/Helvetica-Bold"),
+            ("Details", 80, 92, "/Helvetica-Bold"),
+        ]
+    )
+
+    assert levels == [1, 2]
+
+
+def test_weight_is_voted_across_the_cells_of_a_heading():
+    # A heading can mix fonts -- a regular numbering marker in front of a bold title. The bold
+    # title carries more characters, so the heading counts as bold and outranks the plain one.
+    doc = DoclingDocument(name="t")
+    for text, top in [("1.1 Scope", 50), ("Definitions", 80)]:
+        doc.add_heading(
+            text=text,
+            prov=ProvenanceItem(
+                page_no=1, charspan=(0, len(text)), bbox=_bbox(100, top, 300, top + 12)
+            ),
+        )
+    page = _segmented_page(
+        [
+            _cell("1.1", 100, 50, 124, 62, font_name="/Helvetica"),
+            _cell("Scope", 128, 50, 300, 62, font_name="/Helvetica-Bold"),
+            _cell("Definitions", 100, 80, 300, 92, font_name="/Helvetica"),
+        ]
+    )
+
+    model = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(use_numbering=False, use_style=True)
+    )
+    model.assign_heading_levels(doc, parsed_pages={1: page})
+
+    assert [heading.level for heading in doc.texts] == [1, 2]
+
+
+def test_use_font_style_false_ranks_by_size_only():
+    rows = [
+        ("Notices", 50, 62, "/Helvetica-Bold"),
+        ("Trademarks", 80, 92, "/Helvetica"),
+    ]
+
+    assert _style_levels(rows, use_font_style=False) == [1, 1]
+
+
+def test_font_names_without_styling_rank_by_size_only():
+    # Some PDFs report a resource key instead of a font name; those headings must fall back to
+    # font size rather than being split apart.
+    levels = _style_levels(
+        [
+            ("Overview", 50, 70, "/F1"),
+            ("Details", 88, 100, "/F2"),
+            ("Remarks", 120, 132, "/F3"),
+        ]
+    )
+
+    assert levels == [1, 2, 2]

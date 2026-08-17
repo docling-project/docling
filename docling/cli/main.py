@@ -112,7 +112,11 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
+    BaseLayoutOptions,
+    BaseTableStructureOptions,
     ConvertPipelineOptions,
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
     OcrAutoOptions,
     OcrMode,
     OcrOptions,
@@ -242,6 +246,14 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+
+layout_factory_internal = get_layout_factory(allow_external_plugins=False)
+layout_engines_enum_internal = layout_factory_internal.get_enum()
+
+table_structure_factory_internal = get_table_structure_factory(
+    allow_external_plugins=False
+)
+table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -841,6 +853,28 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    layout_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = LayoutObjectDetectionOptions.kind,
+    table_structure_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = TableStructureOptions.kind,
     ocr_engine: Annotated[
         str,
         typer.Option(
@@ -1215,6 +1249,20 @@ def convert(  # noqa: C901
             password=pdf_password
         )
 
+        layout_factory = get_layout_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        layout_options: BaseLayoutOptions = layout_factory.create_options(  # type: ignore
+            kind=layout_engine
+        )
+
+        table_structure_factory = get_table_structure_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        table_structure_options: BaseTableStructureOptions = (  # type: ignore
+            table_structure_factory.create_options(kind=table_structure_engine)
+        )
+
         if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
@@ -1223,6 +1271,8 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                layout_options=layout_options,
+                table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,

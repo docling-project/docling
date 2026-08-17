@@ -1100,16 +1100,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid, ilvl or 0
         )
 
-    def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
-        """Extract outlineLvl from paragraph's style definition.
+    def _get_outline_level_from_style(self, style: ParagraphStyle | None) -> int | None:
+        """Extract outlineLvl from a paragraph style definition.
 
-        In OOXML, outlineLvl is 0-indexed (0-8 for heading levels 1-9).
-        This method returns the 1-indexed heading level (outlineLvl + 1).
+        In OOXML, outlineLvl is 0-indexed: 0-8 are heading levels 1-9 and 9 is
+        the "body text" sentinel. This method returns the 1-indexed value
+        (outlineLvl + 1), so heading levels are 1-9 and body text is 10.
         """
-        if paragraph.style is None:
+        if style is None:
             return None
 
-        style_elem = paragraph.style.element
+        style_elem = style.element
         if style_elem is None:
             return None
 
@@ -1321,6 +1322,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return not self._is_in_table_cell(paragraph)
 
     def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, int | None]:
+        """Classify a paragraph as a heading, code block or plain text.
+
+        Heading detection has two independent signals. The style *name* carries
+        the level for the usual English styles, while ``w:outlineLvl`` is
+        OOXML's own heading marker and is language-independent, which is what
+        makes localized styles (e.g. Czech ``Nadpis1``) resolvable at all. The
+        outline level therefore wins over name parsing when it denotes a real
+        heading, and it is also honoured on its own for styles that are not
+        recognizable by name. ``Title`` styles are left out of the latter so
+        they keep reaching their own branch; in practice they never carry
+        ``w:outlineLvl`` anyway.
+        """
         # Resolve the style once: python-docx's ``paragraph.style`` scans all
         # styles on every access, so re-reading it per predicate is costly.
         style = paragraph.style
@@ -1351,9 +1364,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             or (base_style_name and "heading" in base_style_name.lower())
         )
 
+        # 1-9 are real heading levels; 10 is the "body text" sentinel.
+        outline_level = self._get_outline_level_from_style(style)
+        if outline_level is not None and not 1 <= outline_level <= 9:
+            outline_level = None
+
         if is_heading:
-            # First try to get the level from outlineLvl (authoritative source)
-            outline_level = self._get_outline_level_from_style(paragraph)
+            # The outline level is authoritative when it denotes a heading.
             if outline_level is not None:
                 return "Heading", outline_level
 
@@ -1370,7 +1387,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
             return "Code", None
 
+        if outline_level is not None and not self._is_title_style(
+            label, name, base_style_label, base_style_name
+        ):
+            return "Heading", outline_level
+
         return label, None
+
+    @staticmethod
+    def _is_title_style(*labels: str | None) -> bool:
+        """Whether any of the given style ids/names denotes a title style.
+
+        Matches on the ``"title"`` substring, which reliably covers the
+        English built-in ``Title`` style.  Localized equivalents (e.g.
+        ``"Titre"``, ``"Titel"``) do not contain the substring and would
+        not be excluded — but that gap is acceptable in practice because
+        neither Word nor LibreOffice writes ``w:outlineLvl`` on a Title
+        style, so the condition this guard protects is unreachable for
+        real documents.
+        """
+        return any("title" in label.lower() for label in labels if label)
 
     @classmethod
     def _get_format_from_run(
