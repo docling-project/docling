@@ -508,3 +508,48 @@ def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Title"
         assert doc.texts[1].text == "Some body text."
+def test_convert_hard_line_break():
+    markdown = "Author 1  \nAffiliation 1"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1\nAffiliation 1"
+
+
+def test_convert_hard_line_break():
+    markdown = "Author 1  \nAffiliation 1"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1\nAffiliation 1"
+
+
+def test_convert_soft_line_break():
+    markdown = "Author 1\nAffiliation 1"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == [
+        "Author 1",
+        "Affiliation 1",
+    ]
+
+
+def test_convert_hard_line_break_preserves_formatting():
+    markdown = "Author **John**  \nUniversity XYZ"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert len(doc.texts) == 3
+
+    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].formatting is None
+
+    assert doc.texts[1].text == "John"
+    assert doc.texts[1].formatting is not None
+    assert doc.texts[1].formatting.bold is True
+
+    assert doc.texts[2].text == "University XYZ"
+    assert doc.texts[2].formatting is None
