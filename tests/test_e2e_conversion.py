@@ -12,6 +12,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .groundtruth_paths import get_regular_groundtruth_paths
@@ -23,6 +24,27 @@ pytestmark = pytest.mark.ml_pdf_model
 
 # PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
 SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
+
+# Page selection per source PDF, keyed by file name. Each value is an inclusive,
+# 1-based `(first_page, last_page)` range; documents without an entry are converted
+# in full.
+#
+# The ground truth is tied to this selection: after changing an entry, regenerate the
+# affected files with
+# `DOCLING_GEN_TEST_DATA=1 uv run pytest tests/test_e2e_conversion.py` and review the
+# result. Note that `2305.03393v1-pg9.pdf` shares its `docling_parse` ground truth with
+# tests/test_interfaces.py, which always converts that document in full.
+PAGE_SELECTION: dict[str, PageRange] = {
+    "2203.01017v2.pdf": (2, 5),
+    "2206.01062.pdf": (2, 5),
+    "2305.03393v1.pdf": (2, 5),
+}
+
+
+def get_page_range(pdf_path: Path) -> PageRange:
+    """Pages to convert for `pdf_path`, defaulting to the whole document."""
+    return PAGE_SELECTION.get(pdf_path.name, DEFAULT_PAGE_RANGE)
+
 
 PDF_BACKENDS = [
     pytest.param(
@@ -157,10 +179,18 @@ def test_e2e_pdfs_conversions(artifact_suffix, backend):
     results: list[tuple[str, str, bool, str]] = []
 
     for pdf_path in pdf_paths:
-        print(f"converting {pdf_path}")
+        page_range = get_page_range(pdf_path)
+        selection = (
+            "all pages"
+            if page_range == DEFAULT_PAGE_RANGE
+            else f"pages {page_range[0]}-{page_range[1]}"
+        )
+        print(f"converting {pdf_path} ({selection})")
 
         try:
-            doc_result: ConversionResult = converter.convert(pdf_path)
+            doc_result: ConversionResult = converter.convert(
+                pdf_path, page_range=page_range
+            )
             failures = check_conversion_result_v2(
                 gt=get_regular_groundtruth_paths(pdf_path, tag=artifact_suffix),
                 doc_result=doc_result,
