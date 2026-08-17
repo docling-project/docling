@@ -52,7 +52,7 @@ class DebugSettings(BaseModel):
 
 
 class InferenceSettings(BaseModel):
-    compile_torch_models: bool = True
+    compile_torch_models: bool = False
 
 
 class AppSettings(BaseSettings):
