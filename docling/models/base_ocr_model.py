@@ -319,8 +319,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     if self.options.mode == OcrMode.LAYOUT_REGIONS
                     else _MergeCellsPriority.PDF_FIRST
                 )
-            # Segregate visible/invisible PDF cells and merge OCR cells only with the visible PDF
-
+            # S:egregate visible/invisible PDF cells and merge OCR cells only with the visible PDF
             visible_cells, invisible_cells = _partition_by_visibility(existing_cells)
             final_cells = self._merge_ocr_and_pdf_cells(
                 ocr_cells, visible_cells, priority
@@ -342,10 +341,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable.
-        # Filter out cells where from_ocr=False, keeping any OCR generated cells.
-        # This ensures downstream components (e.g., table structure model) fall back to
-        # OCR-extracted textline cells.
+        # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable. Keep only OCR cells
         if self.options.mode == OcrMode.FULL_PAGE:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
