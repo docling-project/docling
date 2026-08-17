@@ -66,7 +66,7 @@ from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
-_DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+_DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>") 
 
 
 def _raise_if_unsupported_threaded_backend(
@@ -237,8 +237,8 @@ class VlmPipeline(PaginatedPipeline):
         """Determine conversion status accounting for VLM stop reasons.
 
         Extends the base implementation to detect partial failures from VLM
-        inference, such as truncated output (LENGTH) or filtered content
-        (CONTENT_FILTERED).
+        inference, such as truncated output (LENGTH), filtered content
+        (CONTENT_FILTERED), or a swallowed API error (UNSPECIFIED + empty text).
         """
         status = super()._determine_status(conv_res)
 
@@ -265,6 +265,18 @@ class VlmPipeline(PaginatedPipeline):
                         module_name=self.__class__.__name__,
                         error_message="VLM output incomplete "
                         f"(stop_reason={vlm_response.stop_reason.value}).",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                status = ConversionStatus.PARTIAL_SUCCESS
+            elif vlm_response.stop_reason == VlmStopReason.UNSPECIFIED and not vlm_response.text:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message="VLM returned empty output with UNSPECIFIED stop reason; "
+                        "the API call likely failed (timeout, connection error, or gateway error).",
                         category=FailureCategory.INFERENCE_FAILURE,
                         page_no=page.page_no,
                     )
