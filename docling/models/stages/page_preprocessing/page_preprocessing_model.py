@@ -5,7 +5,10 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy as np
+from docling_core.types.doc import BoundingBox
+from docling_core.types.doc.page import TextCell
 from PIL import ImageDraw
+from PIL.Image import Image
 from pydantic import BaseModel
 
 from docling.datamodel.base_models import Page
@@ -88,7 +91,12 @@ class PagePreprocessingModel(BasePageModel):
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
 
-        def draw_cell_boxes(image, text_cells, bitmap_cells, show: bool = False):
+        def draw_cell_boxes(
+            image: Image,
+            text_cells: Iterable[TextCell],
+            bitmap_cells: Iterable[BoundingBox],
+            show: bool = False,
+        ) -> None:
             image = image.copy()
             draw = ImageDraw.Draw(image)
             # Text cells in red
@@ -115,11 +123,13 @@ class PagePreprocessingModel(BasePageModel):
                 image.save(str(out_file), format="png")
 
         if settings.debug.visualize_cells:
-            draw_cell_boxes(
-                page.get_image(scale=1.0),
-                page.cells,
-                page._backend.get_bitmap_rects(),
-            )
+            page_image = page.get_image(scale=1.0)
+            if page_image is not None:
+                draw_cell_boxes(
+                    page_image,
+                    page.cells,
+                    page._backend.get_bitmap_rects(),
+                )
 
         return page
 
