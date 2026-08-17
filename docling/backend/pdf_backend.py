@@ -35,17 +35,17 @@ class PdfPageBackend(ABC):
 
     @abstractmethod
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        pass
+        """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
 
     @abstractmethod
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
-        pass
+        """Render a logical page region at ``scale`` pixels per document point."""
 
     @abstractmethod
     def get_size(self) -> Size:
-        pass
+        """Return the page size in 72-DPI document points."""
 
     @abstractmethod
     def is_valid(self) -> bool:
