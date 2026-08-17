@@ -94,9 +94,12 @@ class PagePreprocessingModel(BasePageModel):
         def draw_cell_boxes(
             image: Image,
             text_cells: Iterable[TextCell],
+            shape_cells: Iterable[BoundingBox],
             bitmap_cells: Iterable[BoundingBox],
             show: bool = False,
         ) -> None:
+            r"""Draw the PDF cells: text in red, shapes in blue, bitmaps in green"""
+
             image = image.copy()
             draw = ImageDraw.Draw(image)
             # Text cells in red
@@ -105,6 +108,11 @@ class PagePreprocessingModel(BasePageModel):
                 x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
 
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
+            # Connected shape regions in blue
+            for bbox in shape_cells:
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
+
+                draw.rectangle([(x0, y0), (x1, y1)], outline="blue")
             # Bitmap rects in green
             for bbox in bitmap_cells:
                 x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
@@ -125,9 +133,15 @@ class PagePreprocessingModel(BasePageModel):
         if settings.debug.visualize_cells:
             page_image = page.get_image(scale=1.0)
             if page_image is not None:
+                # Not all backends support the shape boxes
+                shape_boxes = page._backend.get_connected_shape_bounding_boxes()
+                if shape_boxes is None:
+                    shape_boxes = []
+
                 draw_cell_boxes(
                     page_image,
                     page.cells,
+                    shape_boxes,
                     page._backend.get_bitmap_rects(),
                 )
 
