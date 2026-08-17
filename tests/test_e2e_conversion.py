@@ -27,7 +27,8 @@ SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
 
 # Page selection per source PDF, keyed by file name. Each value is an inclusive,
 # 1-based `(first_page, last_page)` range; documents without an entry are converted
-# in full.
+# in full. Every source longer than 5 pages gets an entry, so the ground truth stays
+# small and the suite exercises page-offset handling instead of only full documents.
 #
 # The ground truth is tied to this selection: after changing an entry, regenerate the
 # affected files with
@@ -38,6 +39,7 @@ PAGE_SELECTION: dict[str, PageRange] = {
     "2203.01017v2.pdf": (2, 5),
     "2206.01062.pdf": (2, 5),
     "2305.03393v1.pdf": (2, 5),
+    "redp5110_sampled.pdf": (2, 5),
 }
 
 
