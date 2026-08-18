@@ -26,6 +26,7 @@ resolution-markers = [
 [manifest]
 members = [
     "docling",
+    "docling-client",
     "docling-slim",
 ]
 overrides = [{ name = "grpcio", specifier = ">=1.75.1" }]
@@ -1491,7 +1492,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.115.0"
+version = "2.120.3"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1546,9 +1547,20 @@ requires-dist = [
 provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
 
 [[package]]
+name = "docling-client"
+version = "2.120.3"
+source = { editable = "packages/docling-client" }
+dependencies = [
+    { name = "docling-slim", extra = ["service-client"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "docling-slim", extras = ["service-client"], editable = "." }]
+
+[[package]]
 name = "docling-core"
-version = "2.87.1"
-source = { git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes#66040cb7b96f77699c9d74051500d645e7e758ed" }
+version = "2.91.0"
+source = { git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes#e4e745a3769f0ee172eb66d11ae1f5c0d4ac5892" }
 dependencies = [
     { name = "defusedxml" },
     { name = "doclang" },
@@ -1645,7 +1657,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.115.0"
+version = "2.120.3"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -1694,6 +1706,7 @@ all = [
     { name = "pypdfium2" },
     { name = "python-docx" },
     { name = "python-dotenv" },
+    { name = "python-oxmsg" },
     { name = "python-pptx" },
     { name = "qwen-vl-utils" },
     { name = "rapidocr" },
@@ -1777,12 +1790,16 @@ format-docx = [
 format-email = [
     { name = "beautifulsoup4" },
     { name = "mail-parser" },
+    { name = "python-oxmsg" },
 ]
 format-html = [
     { name = "beautifulsoup4" },
 ]
 format-html-render = [
     { name = "playwright" },
+]
+format-iwork = [
+    { name = "defusedxml" },
 ]
 format-latex = [
     { name = "pylatexenc" },
@@ -1893,6 +1910,7 @@ standard = [
     { name = "pypdfium2" },
     { name = "python-docx" },
     { name = "python-dotenv" },
+    { name = "python-oxmsg" },
     { name = "python-pptx" },
     { name = "rapidocr" },
     { name = "rich" },
@@ -1993,6 +2011,7 @@ requires-dist = [
     { name = "arelle-release", marker = "extra == 'format-xml-xbrl'", specifier = ">=2.38.17,<3.0.0" },
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
+    { name = "defusedxml", marker = "extra == 'format-iwork'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes" },
@@ -2006,7 +2025,7 @@ requires-dist = [
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-jats'" },
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-uspto'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
-    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "format-iwork", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },
     { name = "docling-slim", extras = ["standard", "models-vlm-inline", "format-audio", "format-html-render", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "models-remote", "models-onnxruntime", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'feat-ocr-easyocr'", specifier = ">=1.7,<2.0" },
@@ -2043,6 +2062,7 @@ requires-dist = [
     { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.2.0,<2.0.0" },
     { name = "python-dotenv", marker = "extra == 'cli'", specifier = "~=1.0" },
     { name = "python-dotenv", marker = "extra == 'service-client'", specifier = "~=1.0" },
+    { name = "python-oxmsg", marker = "extra == 'format-email'", specifier = ">=0.0.2,<0.1.0" },
     { name = "python-pptx", marker = "extra == 'format-pptx'", specifier = ">=1.0.2,<2.0.0" },
     { name = "qwen-vl-utils", marker = "extra == 'models-vlm-inline'", specifier = ">=0.0.11" },
     { name = "rapidocr", marker = "extra == 'feat-ocr-rapidocr'", specifier = ">=3.9.1,<4.0.0" },
@@ -2066,9 +2086,9 @@ requires-dist = [
     { name = "typer", marker = "extra == 'cli'", specifier = ">=0.12.5,<0.27.0" },
     { name = "typer", marker = "extra == 'service-client'", specifier = ">=0.12.5,<0.27.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
-    { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.6.3,<2" },
+    { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.7.1,<2.0.0" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-iwork", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [
@@ -5311,6 +5331,15 @@ wheels = [
 ]
 
 [[package]]
+name = "olefile"
+version = "0.47"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/1b/077b508e3e500e1629d366249c3ccb32f95e50258b231705c09e3c7a4366/olefile-0.47.zip", hash = "sha256:599383381a0bf3dfbd932ca0ca6515acd174ed48870cbf7fee123d698c192c1c", size = 112240, upload-time = "2023-12-01T16:22:53.025Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/d3/b64c356a907242d719fc668b71befd73324e47ab46c8ebbbede252c154b2/olefile-0.47-py2.py3-none-any.whl", hash = "sha256:543c7da2a7adadf21214938bb79c83ea12b473a4b6ee4ad4bf854e7715e13d1f", size = 114565, upload-time = "2023-12-01T16:22:51.518Z" },
+]
+
+[[package]]
 name = "omegaconf"
 version = "2.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -6890,6 +6919,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5b/42/55c32bb9b12693c092ad250a0e82edb5b31ddeda6eb772de5f308b3804ad/python_multipart-0.0.32.tar.gz", hash = "sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e", size = 46881, upload-time = "2026-06-04T16:18:58.647Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl", hash = "sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23", size = 30042, upload-time = "2026-06-04T16:18:57.319Z" },
+]
+
+[[package]]
+name = "python-oxmsg"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "olefile" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/4e/869f34faedbc968796d2c7e9837dede079c9cb9750917356b1f1eda926e9/python_oxmsg-0.0.2.tar.gz", hash = "sha256:a6aff4deb1b5975d44d49dab1d9384089ffeec819e19c6940bc7ffbc84775fad", size = 34713, upload-time = "2025-02-03T17:13:47.415Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/53/67/f56c69a98c7eb244025845506387d0f961681657c9fcd8b2d2edd148f9d2/python_oxmsg-0.0.2-py3-none-any.whl", hash = "sha256:22be29b14c46016bcd05e34abddfd8e05ee82082f53b82753d115da3fc7d0355", size = 31455, upload-time = "2025-02-03T17:13:46.061Z" },
 ]
 
 [[package]]
@@ -9820,7 +9863,7 @@ wheels = [
 
 [[package]]
 name = "whisper-s2t-reborn"
-version = "1.6.3"
+version = "1.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "av", version = "17.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -9836,9 +9879,9 @@ dependencies = [
     { name = "torch", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version != '3.12.*' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/57/6aa04b85b05247ac0617176caa1fb2887ee39a4ea5a8346353caa04b3490/whisper_s2t_reborn-1.6.3.tar.gz", hash = "sha256:1fd58b2b7218923775548a5a12fc3d0988435c146301a7aaf5acf02cc3693a71", size = 1436041, upload-time = "2026-06-25T13:32:36.756Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/b4/1585cee8154c35cef2b8c714dfef1094e33e4e4e1d303a13e5386fcb9e23/whisper_s2t_reborn-1.7.1.tar.gz", hash = "sha256:d2d36693a6a9df5957d2055eb538ce8ef0bd46aa732ef566bc4f6bf63ef362d1", size = 1436892, upload-time = "2026-08-05T01:10:16.869Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/8f/a73573109961f108ecd87338a6a439894912abb9ac642168f85023a1e41b/whisper_s2t_reborn-1.6.3-py3-none-any.whl", hash = "sha256:b8c8562d82851f6125455fa51edd2e6cab3836e3decb15216e40dcd515b4912a", size = 1437499, upload-time = "2026-06-25T13:32:35.3Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/20/bd6ef2d24f3da33b347d97ca3751af13fed3e07510db4cb5e27bd6e7ed7d/whisper_s2t_reborn-1.7.1-py3-none-any.whl", hash = "sha256:8a2cc44301091020740f973fd5c7b2804b73a1101bc6271dd27675e028f8d1a3", size = 1437964, upload-time = "2026-08-05T01:10:14.958Z" },
 ]
 
 [[package]]
