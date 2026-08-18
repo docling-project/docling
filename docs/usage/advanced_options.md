@@ -103,6 +103,12 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Image resolution and scale
+
+Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
+determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+Rendering at scale `n` produces `n` pixels per document point.
+
 ### Control PDF table extraction options
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.
