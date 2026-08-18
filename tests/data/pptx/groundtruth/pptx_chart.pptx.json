@@ -4,7 +4,7 @@
   "name": "pptx_chart",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.template",
-    "binary_hash": 17902016994395085351,
+    "binary_hash": 5923647545748822237,
     "filename": "pptx_chart.pptx"
   },
   "furniture": {
@@ -22,6 +22,9 @@
       },
       {
         "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/groups/1"
       }
     ],
     "content_layer": "body",
@@ -44,6 +47,23 @@
       ],
       "content_layer": "body",
       "name": "slide-0",
+      "label": "chapter"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/pictures/1"
+        }
+      ],
+      "content_layer": "body",
+      "name": "slide-1",
       "label": "chapter"
     }
   ],
@@ -86,6 +106,33 @@
       "prov": [],
       "orig": "Wild Duck Observations by Year",
       "text": "Wild Duck Observations by Year"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 457200.0,
+            "t": 1417638.0,
+            "r": 8686800.0,
+            "b": 274638.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            17
+          ]
+        }
+      ],
+      "orig": "Quarterly revenue",
+      "text": "Quarterly revenue"
     }
   ],
   "pictures": [
@@ -541,6 +588,44 @@
       "references": [],
       "footnotes": [],
       "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/1",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "meta": {
+        "classification": {
+          "predictions": [
+            {
+              "class_name": "other_chart"
+            }
+          ]
+        }
+      },
+      "label": "picture",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 914400.0,
+            "t": 5486400.0,
+            "r": 6400800.0,
+            "b": 1828800.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
     }
   ],
   "tables": [],
@@ -553,6 +638,13 @@
         "height": 6858000.0
       },
       "page_no": 1
+    },
+    "2": {
+      "size": {
+        "width": 9144000.0,
+        "height": 6858000.0
+      },
+      "page_no": 2
     }
   }
 }

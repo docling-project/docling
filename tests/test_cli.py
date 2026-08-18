@@ -1,21 +1,28 @@
 import base64
+import json
 import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import click
 import pytest
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
 
-from docling.cli.export_utils import _should_generate_export_images, _split_list
+from docling.cli.export_utils import (
+    _parse_page_range,
+    _should_generate_export_images,
+    _split_list,
+)
 from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
@@ -166,6 +173,7 @@ def test_cli_from_odf_expands_to_open_document_formats(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert input_doc_paths
             return []
@@ -669,6 +677,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert len(input_doc_paths) == 1
             return []
@@ -712,7 +721,13 @@ def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
             pdf_option = format_options[InputFormat.PDF]
             captured["ocr_options"] = pdf_option.pipeline_options.ocr_options
 
-        def convert_all(self, input_doc_paths, headers=None, raises_on_error=False):
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
             return []
 
     monkeypatch.setattr(
@@ -773,6 +788,99 @@ def test_cli_invalid_ocr_mode_is_rejected(tmp_path):
     assert result.exit_code != 0
 
 
+def _capture_cli_page_range(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the page_range it got."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["page_range"] = page_range
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("page_range")
+
+
+def test_cli_page_range_reaches_convert_all(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "2-4"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (2, 4)
+
+
+def test_cli_page_range_accepts_single_page(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "3"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (3, 3)
+
+
+def test_cli_page_range_defaults_to_all_pages(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert page_range == DEFAULT_PAGE_RANGE
+
+
+@pytest.mark.parametrize("raw", ["4-2", "0-3", "abc", "1-", "-3"])
+def test_cli_invalid_page_range_is_rejected(tmp_path, monkeypatch, raw):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", raw], tmp_path
+    )
+    assert result.exit_code != 0
+    assert page_range is None
+
+
+def test_cli_page_range_limits_converted_pages(tmp_path):
+    """`--page-range 2-3` must convert only those slides of a 3-slide deck.
+
+    Uses PPTX because its backend honors ``page_range`` without needing the
+    layout model, keeping the end-to-end assertion cheap.
+    """
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pptx/sources/powerpoint_sample.pptx",
+            "--output",
+            str(output),
+            "--to",
+            "json",
+            "--page-range",
+            "2-3",
+        ],
+    )
+    assert result.exit_code == 0
+
+    doc = json.loads((output / "powerpoint_sample.json").read_text(encoding="utf-8"))
+    assert sorted(int(page_no) for page_no in doc["pages"]) == [2, 3]
+
+
+def test_parse_page_range_is_shared_with_convert_remote():
+    """`convert` and `convert-remote` must parse --page-range identically."""
+    assert _parse_page_range(None) is None
+    assert _parse_page_range("1-4") == (1, 4)
+    assert _parse_page_range(" 7 ") == (7, 7)
+    with pytest.raises(click.exceptions.UsageError):
+        _parse_page_range("4-2")
+
+
 def test_cli_passes_accelerator_options_to_vlm_pipeline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -796,6 +904,7 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             input_doc_paths: list[Path],
             headers: dict[str, str] | None = None,
             raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
         ) -> list[Any]:
             assert len(input_doc_paths) == 1
             return []
@@ -826,3 +935,112 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
     assert captured_pipeline_options is not None
     assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
     assert captured_pipeline_options.accelerator_options.num_threads == 7
+
+
+def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):
+    """Helper to capture layout/table/ocr engine options from CLI."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["option"] = getattr(pdf_option.pipeline_options, option_name)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("option")
+
+
+def test_cli_layout_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --layout-engine sets layout options correctly."""
+    result, layout_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--layout-engine", "docling_layout_default"],
+        tmp_path,
+        "layout_options",
+    )
+    assert result.exit_code == 0
+    assert layout_options is not None
+    assert layout_options.kind == "docling_layout_default"
+
+
+def test_cli_table_structure_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --table-structure-engine sets table structure options correctly."""
+    result, table_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--table-structure-engine", "docling_tableformer_v2"],
+        tmp_path,
+        "table_structure_options",
+    )
+    assert result.exit_code == 0
+    assert table_options is not None
+    assert table_options.kind == "docling_tableformer_v2"
+
+
+def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --ocr-engine sets OCR options correctly."""
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch, ["--ocr-engine", "easyocr"], tmp_path, "ocr_options"
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.kind == "easyocr"
+
+
+def test_cli_invalid_layout_engine_is_rejected(tmp_path):
+    """Test that invalid --layout-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--layout-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_invalid_table_structure_engine_is_rejected(tmp_path):
+    """Test that invalid --table-structure-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--table-structure-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_invalid_ocr_engine_is_rejected(tmp_path):
+    """Test that invalid --ocr-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0

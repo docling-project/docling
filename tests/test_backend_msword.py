@@ -18,6 +18,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Inches
 from lxml import etree
 from PIL import Image
 
@@ -573,17 +574,19 @@ def test_get_outline_level_from_style():
     h1 = paragraphs[5]
     assert h1.style.name == "Heading 1"
     assert h1.text == "Let\u2019s swim!"
-    assert backend._get_outline_level_from_style(h1) == 1  # outlineLvl=0 → level 1
+    # outlineLvl=0 → level 1
+    assert backend._get_outline_level_from_style(h1.style) == 1
 
     h2 = paragraphs[15]
     assert h2.style.name == "Heading 2"
     assert h2.text == "Let\u2019s eat"
-    assert backend._get_outline_level_from_style(h2) == 2  # outlineLvl=1 → level 2
+    # outlineLvl=1 → level 2
+    assert backend._get_outline_level_from_style(h2.style) == 2
 
     non_heading = paragraphs[0]
     assert non_heading.style.name == "Subtitle"
     assert non_heading.text == "Summer activities"
-    assert backend._get_outline_level_from_style(non_heading) is None
+    assert backend._get_outline_level_from_style(non_heading.style) is None
 
 
 def test_external_image_references():
@@ -1574,3 +1577,73 @@ def test_docx_code_detection(tmp_path):
     assert not _code_items(doc), "A code-styled checkbox must not become a CodeItem"
     design = next(it for it in doc.texts if it.text == "Design")
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
+
+
+# ------ Content control (w:sdt) holding a picture ------
+
+
+def _move_into_content_control(document, paragraphs) -> None:
+    """Wrap the given body paragraphs in a ``w:sdt``, as Word cover pages are."""
+    body = document.element.body
+    sdt = etree.SubElement(body, qn("w:sdt"))
+    etree.SubElement(sdt, qn("w:sdtPr"))
+    sdt_content = etree.SubElement(sdt, qn("w:sdtContent"))
+    for paragraph in paragraphs:
+        body.remove(paragraph._p)
+        sdt_content.append(paragraph._p)
+    body.remove(sdt)
+    body.insert(0, sdt)
+
+
+# A durable, human-openable copy of the ``build(with_picture=True)`` document
+# below, checked in so the exact cover-page shape can be inspected in Word and so
+# the end-to-end conversion path is exercised against a real file. Its groundtruth
+# lives under tests/data/docx/groundtruth/content_control_with_picture.docx.*.
+_CONTENT_CONTROL_PICTURE_FIXTURE = Path(
+    "./tests/data/docx/sources/content_control_with_picture.docx"
+)
+
+
+def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
+    """A picture inside a content control must not swallow the control's text.
+
+    The image branches of the element walk are keyed on descendant XPaths, so a
+    ``w:sdt`` holding a picture anywhere inside used to match there and the
+    content-control branch was never reached -- the picture was emitted and
+    every paragraph in the control was dropped. Word's built-in cover pages are
+    exactly this shape, so the document title went missing.
+    """
+    logo_path = tmp_path / "logo.png"
+    Image.new("RGB", (120, 120), (200, 30, 30)).save(str(logo_path))
+
+    def build(with_picture: bool) -> str:
+        doc = Document()
+        paragraphs = []
+        if with_picture:
+            picture_paragraph = doc.add_paragraph()
+            picture_paragraph.add_run().add_picture(str(logo_path), width=Inches(1.5))
+            paragraphs.append(picture_paragraph)
+        paragraphs.append(doc.add_paragraph("COVER TITLE INSIDE SDT"))
+        _move_into_content_control(doc, paragraphs)
+        doc.add_paragraph("BODY TEXT OUTSIDE SDT")
+        return _convert_built(doc, tmp_path).export_to_markdown()
+
+    without_picture = build(with_picture=False)
+    assert "COVER TITLE INSIDE SDT" in without_picture
+    assert "BODY TEXT OUTSIDE SDT" in without_picture
+
+    with_picture = build(with_picture=True)
+    assert "COVER TITLE INSIDE SDT" in with_picture
+    assert "BODY TEXT OUTSIDE SDT" in with_picture
+    # The picture is still emitted, and exactly once.
+    assert with_picture.count("<!-- image -->") == 1
+
+    # The same shape, loaded from the checked-in fixture, behaves identically.
+    from_file = (
+        get_converter()
+        .convert(_CONTENT_CONTROL_PICTURE_FIXTURE)
+        .document.export_to_markdown()
+    )
+    assert "COVER TITLE INSIDE SDT" in from_file
+    assert "BODY TEXT OUTSIDE SDT" in from_file
+    assert from_file.count("<!-- image -->") == 1

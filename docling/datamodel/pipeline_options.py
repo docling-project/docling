@@ -1852,12 +1852,38 @@ class HeadingHierarchyOptions(BaseModel):
         bool,
         Field(
             description=(
-                "Use font size (approximated from parsed PDF cell heights) as a fallback for "
-                "headings without recognizable numbering. Requires "
-                "`generate_parsed_pages=True`."
+                "Use the visual style of the heading (font size, and with `use_font_style` also "
+                "weight, slant and letter case) as a fallback for headings without recognizable "
+                "numbering. Requires `generate_parsed_pages=True`."
             )
         ),
     ] = True
+    use_font_style: Annotated[
+        bool,
+        Field(
+            description=(
+                "Refine the style fallback with the font weight and slant read from the embedded "
+                "PDF font names, plus all-caps detection, so that headings sharing a font size "
+                "are still ranked (bold above regular, upright above italic, all-caps above "
+                "mixed case). Ignored when `use_style` is disabled; font names that carry no "
+                "recognizable styling fall back to font size alone."
+            )
+        ),
+    ] = True
+    style_size_tolerance: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "Relative difference below which two heading font sizes are treated as one size "
+                "by the style fallback. The size of a heading is measured from its cells, so the "
+                "same font measures a little taller on a heading that has descenders; without "
+                "this tolerance such headings would land on different levels. Higher = more "
+                "sizes collapse into one level."
+            ),
+        ),
+    ] = 0.05
     numbering_schemes: Annotated[
         list[str] | None,
         Field(

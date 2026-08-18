@@ -1,14 +1,9 @@
 """Shared image-resource loading for declarative backends.
 
-Turns an image source (a ``data:`` URI, a local file, or a remote URL) into a
-Docling :class:`~docling_core.types.doc.document.ImageRef`, enforcing the
-relevant safety limits: a path-traversal guard when resolving relative paths,
-the ``enable_local_fetch`` / ``enable_remote_fetch`` toggles, and the base64 and
-remote download size caps.
-
-This logic originated in the HTML backend. It is factored out here so the HTML
-and Markdown backends can share a single implementation instead of duplicating
-it (or constructing one backend from inside the other).
+Turns an image source (a URI, a local file, or a remote URL) into a DoclingDocument
+`ImageRef`, enforcing the relevant safety limits: a path-traversal guard when resolving
+relative paths, the `enable_local_fetch` / `enable_remote_fetch` toggles, and the
+base64 and remote download size caps.
 """
 
 import base64
@@ -79,7 +74,7 @@ def validate_url_safety(url: str) -> None:
 class ImageResourceLoader:
     """Resolve and load image resources for declarative document backends.
 
-    The ``base_path`` against which relative locations are resolved is supplied
+    The `base_path` against which relative locations are resolved is supplied
     per call rather than stored, so a backend that mutates its base path between
     calls always uses the current value.
     """
@@ -179,7 +174,7 @@ class ImageResourceLoader:
         return None
 
     def load_image_ref(self, src: str, base_path: Optional[str]) -> Optional[ImageRef]:
-        """Resolve ``src`` against ``base_path`` and decode it into an ImageRef."""
+        """Resolve `src` against `base_path` and decode it into an ImageRef."""
         return self.create_image_ref(
             self.resolve_relative_path(src, base_path), base_path
         )

@@ -168,6 +168,24 @@ def test_heading_levels():
     assert found_lvl_1 and found_lvl_2
 
 
+def test_table_header_rowspan_without_body_does_not_crash():
+    # A table whose only row is a `th` with rowspan (no body rows to span into)
+    # used to raise IndexError: get_html_table_row_col counts no rows for an
+    # all-header-rowspan row, so the grid was empty and the cell-placement read
+    # went out of bounds. It should not crash and should keep the cell.
+    src = b"<table><tr><th rowspan='2'>h</th></tr></table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 

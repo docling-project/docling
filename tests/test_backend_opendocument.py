@@ -10,6 +10,8 @@ This module includes two types of tests:
 from __future__ import annotations
 
 import logging
+import sys
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -17,6 +19,7 @@ import pytest
 from docling_core.types.doc import (
     DocItemLabel,
     ImageRefMode,
+    InlineGroup,
     PictureClassificationLabel,
     PictureItem,
     RichTableCell,
@@ -47,6 +50,7 @@ from odfdo import (
     Frame,
     Header,
     LineBreak,
+    Link,
     List as OdfList,
     ListItem,
     Paragraph,
@@ -555,6 +559,207 @@ def test_odt_text_document_text_formatting():
     assert "**Lorem Ipsum is not simply random text**" in markdown
     assert "*a Latin professor at Hampden-Sydney College in Virginia*" in markdown
     assert "~~The Extremes of Good and Evil~~" in markdown
+
+
+def test_odt_hyperlink_preserved(tmp_path: Path):
+    path = tmp_path / "hyperlink.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Watch ")
+    paragraph.append(Link(url="https://example.com/talk", text="the example talk"))
+    paragraph.append(Span(" for context."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [
+        (
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in res.document.texts
+    ] == [
+        ("Watch", None),
+        ("the example talk", "https://example.com/talk"),
+        ("for context.", None),
+    ]
+    assert res.document.export_to_markdown().strip() == (
+        "Watch [the example talk](https://example.com/talk) for context."
+    )
+    assert "example.com/talk" in res.document.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_label", "expected_markdown"),
+    [
+        ("heading", DocItemLabel.SECTION_HEADER, "###"),
+        ("title", DocItemLabel.TITLE, "#"),
+        ("subtitle", DocItemLabel.SECTION_HEADER, "##"),
+    ],
+)
+def test_odt_preserves_hyperlinks_in_block_text(
+    tmp_path: Path,
+    kind: str,
+    expected_label: DocItemLabel,
+    expected_markdown: str,
+):
+    path = tmp_path / f"linked_{kind}.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    block = Header(2) if kind == "heading" else Paragraph(style=kind.capitalize())
+    block.append("Read ")
+    block.append(Link(url="#details", text="details"))
+    block.append(" now")
+    body.append(block)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    semantic_items = [
+        item for item in result.document.texts if item.label == expected_label
+    ]
+
+    assert len(semantic_items) == 1
+    semantic_item = semantic_items[0]
+    assert semantic_item.text == ""
+    assert len(semantic_item.children) == 1
+
+    inline_group = semantic_item.children[0].resolve(result.document)
+    assert isinstance(inline_group, InlineGroup)
+    inline_items = [child.resolve(result.document) for child in inline_group.children]
+    assert [
+        (
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in inline_items
+    ] == [("Read", None), ("details", "#details"), ("now", None)]
+    assert result.document.export_to_markdown().strip() == (
+        f"{expected_markdown} Read [details](#details) now"
+    )
+
+
+def test_odt_preserves_linked_list_item_target(tmp_path: Path):
+    path = tmp_path / "linked_list_item.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    paragraph = Paragraph()
+    paragraph.append(Link(url="list-target.odt#part", text="linked list item"))
+    list_item = ListItem()
+    list_item.append(paragraph)
+    odf_list = OdfList()
+    odf_list.append(list_item)
+    body.append(odf_list)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item for item in result.document.texts if item.label == DocItemLabel.LIST_ITEM
+    ]
+
+    assert [
+        (
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in list_items
+    ] == [("linked list item", "list-target.odt#part")]
+    assert result.document.export_to_markdown().strip() == (
+        "- [linked list item](list-target.odt#part)"
+    )
+
+
+@pytest.mark.parametrize(
+    ("href", "expected_hyperlink", "expected_markdown"),
+    [
+        ("   ", None, "linked text"),
+        ("http://[::1", None, "linked text"),
+        ("http://", None, "linked text"),
+        ("http:", None, "linked text"),
+        ("guide.odt#part", "guide.odt#part", "[linked text](guide.odt#part)"),
+        ("#part", "#part", "[linked text](#part)"),
+    ],
+)
+def test_odt_classifies_hyperlink_targets(
+    tmp_path: Path,
+    href: str,
+    expected_hyperlink: str | None,
+    expected_markdown: str,
+):
+    path = tmp_path / "hyperlink_target.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    paragraph = Paragraph()
+    paragraph.append(Link(url=href, text="linked text"))
+    body.append(paragraph)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert len(result.document.texts) == 1
+    text_item = result.document.texts[0]
+    assert text_item.text == "linked text"
+    assert (
+        str(text_item.hyperlink) if text_item.hyperlink is not None else None
+    ) == expected_hyperlink
+    assert result.document.export_to_markdown().strip() == expected_markdown
+
+
+def test_odt_link_without_href_does_not_crash(tmp_path: Path):
+    path = tmp_path / "link_without_href.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    paragraph = Paragraph("Before ")
+    # A text:a element missing xlink:href entirely (malformed/hand-edited
+    # markup) - odfdo's own Link always sets the attribute, so build the raw
+    # element to exercise the case where the attribute is absent.
+    raw_link = Element.from_tag("text:a")
+    raw_link.text = "malformed link"
+    paragraph.append(raw_link)
+    paragraph.append(" after")
+    body.append(paragraph)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [
+        (
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in result.document.texts
+    ] == [("Before malformed link after", None)]
+
+
+def test_odt_empty_heading_produces_no_item(tmp_path: Path):
+    path = tmp_path / "empty_heading.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    body.append(Header(2))
+    body.append(Paragraph("Real content"))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    headings = [
+        item
+        for item in result.document.texts
+        if item.label == DocItemLabel.SECTION_HEADER
+    ]
+    assert headings == []
+    assert [item.text for item in result.document.texts] == ["Real content"]
 
 
 def test_odt_text_document_script_formatting():
@@ -1170,3 +1375,82 @@ def test_ods_sheet_names_filter(tmp_path: Path):
         f"Should have 1 group, got {len(doc_single.groups)}"
     )
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
+
+
+def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
+    """Build a minimal ODT whose only draw:image points at *href* (not embedded)."""
+    content_xml = (
+        '<?xml version="1.0"?>'
+        "<office:document-content"
+        ' xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+        ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"'
+        ' xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"'
+        ' xmlns:xlink="http://www.w3.org/1999/xlink" office:version="1.2">'
+        "<office:body><office:text><text:p>"
+        f'<draw:frame><draw:image xlink:href="{href}"/></draw:frame>'
+        "</text:p></office:text></office:body>"
+        "</office:document-content>"
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/vnd.oasis.opendocument.text")
+        z.writestr("content.xml", content_xml)
+    return path
+
+
+def test_odt_local_filesystem_path_is_not_read(tmp_path: Path):
+    """Crafted ODT with an absolute xlink:href must not read from the local filesystem.
+
+    Regression test for the security advisory: the ODF backend previously fell
+    back to Path(image_url).read_bytes() when the part was not found inside the
+    archive, allowing arbitrary local-file reads from document-supplied paths.
+    """
+    canary = tmp_path / "canary.png"
+    Image.new("RGB", (4, 4), "blue").save(canary)
+
+    odt_path = tmp_path / "trigger.odt"
+    _build_odt_with_external_image_href(odt_path, str(canary))
+
+    files_opened: list[str] = []
+
+    def _audit(event: str, args: tuple) -> None:
+        if event == "open":
+            files_opened.append(str(args[0]))
+
+    sys.addaudithook(_audit)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(odt_path)
+
+    # The canary must not have been opened.
+    assert str(canary) not in files_opened, (
+        "ODF backend read a local filesystem path supplied via xlink:href"
+    )
+    # The document converts successfully but contains no picture (no embedded image).
+    assert res.document.pictures == [], (
+        "No picture should appear when the xlink:href points outside the archive"
+    )
+
+
+def test_odt_extensionless_path_is_not_read(tmp_path: Path):
+    """Extension-less absolute paths (e.g. /etc/passwd) must be rejected early.
+
+    _odf_image_can_be_bitmap previously allowed the empty-suffix case, which
+    admitted any extension-less system path before the filesystem fallback ran.
+    """
+    odt_path = tmp_path / "trigger_noext.odt"
+    _build_odt_with_external_image_href(odt_path, "/etc/passwd")
+
+    files_opened: list[str] = []
+
+    def _audit(event: str, args: tuple) -> None:
+        if event == "open":
+            files_opened.append(str(args[0]))
+
+    sys.addaudithook(_audit)
+
+    DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(odt_path)
+
+    assert "/etc/passwd" not in files_opened, (
+        "ODF backend attempted to open an extension-less system path"
+    )

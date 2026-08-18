@@ -46,6 +46,7 @@ from rich.console import Console
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
+    _parse_page_range,
     _should_generate_export_images,
     _split_list,
 )
@@ -111,7 +112,11 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
+    BaseLayoutOptions,
+    BaseTableStructureOptions,
     ConvertPipelineOptions,
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
     OcrAutoOptions,
     OcrMode,
     OcrOptions,
@@ -128,7 +133,7 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
-from docling.datamodel.settings import settings
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
@@ -241,6 +246,14 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+
+layout_factory_internal = get_layout_factory(allow_external_plugins=False)
+layout_engines_enum_internal = layout_factory_internal.get_enum()
+
+table_structure_factory_internal = get_table_structure_factory(
+    allow_external_plugins=False
+)
+table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -840,6 +853,28 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    layout_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = LayoutObjectDetectionOptions.kind,
+    table_structure_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = TableStructureOptions.kind,
     ocr_engine: Annotated[
         str,
         typer.Option(
@@ -870,6 +905,14 @@ def convert(  # noqa: C901
     ] = PdfBackend.DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
+    ] = None,
+    page_range: Annotated[
+        str | None,
+        typer.Option(
+            "--page-range",
+            help="Only convert a range of pages, e.g. 1-4 (page numbers start at 1). "
+            "Honored by the PDF, XLSX and PPTX backends.",
+        ),
     ] = None,
     table_mode: Annotated[
         TableFormerMode,
@@ -1049,6 +1092,7 @@ def convert(  # noqa: C901
         ExcelFormatOption,
         FormatOption,
         HTMLFormatOption,
+        IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
         PdfFormatOption,
@@ -1086,6 +1130,8 @@ def convert(  # noqa: C901
     if headers is not None:
         headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
+
+    parsed_page_range = _parse_page_range(page_range) or DEFAULT_PAGE_RANGE
 
     parsed_html_image_headers: dict[str, str] | None = None
     if html_image_headers is not None:
@@ -1204,6 +1250,20 @@ def convert(  # noqa: C901
             password=pdf_password
         )
 
+        layout_factory = get_layout_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        layout_options: BaseLayoutOptions = layout_factory.create_options(  # type: ignore
+            kind=layout_engine
+        )
+
+        table_structure_factory = get_table_structure_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        table_structure_options: BaseTableStructureOptions = (  # type: ignore
+            table_structure_factory.create_options(kind=table_structure_engine)
+        )
+
         if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
@@ -1212,6 +1272,8 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                layout_options=layout_options,
+                table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
@@ -1296,6 +1358,9 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+                    pipeline_options=simple_format_option
+                ),
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option
                 ),
@@ -1440,7 +1505,10 @@ def convert(  # noqa: C901
 
         _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
-            input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
+            input_doc_paths,
+            headers=parsed_headers,
+            raises_on_error=abort_on_error,
+            page_range=parsed_page_range,
         )
 
         output.mkdir(parents=True, exist_ok=True)
