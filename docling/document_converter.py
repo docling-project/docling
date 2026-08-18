@@ -26,6 +26,7 @@ from docling.backend.ebcdic_backend import EbcdicDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.hwpx_backend import HwpxDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
@@ -136,6 +137,11 @@ class WordFormatOption(FormatOption):
 class PowerpointFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+
+
+class HwpxFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = HwpxDocumentBackend
 
 
 class OdtFormatOption(FormatOption):
@@ -276,6 +282,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.DOC: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
         InputFormat.PPT: PowerpointFormatOption(),
+        InputFormat.HWPX: HwpxFormatOption(),
         InputFormat.ODT: OdtFormatOption(),
         InputFormat.ODS: OdsFormatOption(),
         InputFormat.ODP: OdpFormatOption(),
