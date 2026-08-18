@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "text_document_02",
   "origin": {
     "mimetype": "application/vnd.oasis.opendocument.text",
