@@ -41,14 +41,17 @@ class _MergeCellsPriority(str, Enum):
     OCR_FIRST = "ocr_cells_first"
 
 
-# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
-# natively when answering `intersects_with()`, so the merge below has to match it.
+# PDF 32000 text rendering modes that paint no ink
 _INVISIBLE_RENDERING_MODES = frozenset(
     {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
 )
 
 
-def _partition_by_visibility(
+# Flag to control if the OCR cells post-processing will use all PDF cells or only the visible ones
+_PDF_CELLS_POST_PROCESSING_SEGREGATION = True
+
+
+def _segregate_by_visibility(
     cells: Iterable[TextCell],
 ) -> tuple[list[TextCell], list[TextCell]]:
     """Split cells into (visible, invisible), preserving the order within each group.
@@ -154,8 +157,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         assert page.size is not None
         backend = page._backend
 
-        # Probe the backend once: `intersects_with()` answers with None when it cannot query
-        # the page content at all, in which case we fall back to spatial indices.
+        # Probe the backend to decide if `intersects_with()` is available or indexing is needed
         page_bbox = BoundingBox(
             l=0,
             t=0,
@@ -196,8 +198,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cluster_bbox = cluster.bbox
             cluster_bbox_tuple = cluster_bbox.as_tuple()
 
-            # A cluster overlapping a bitmap or a shape always needs OCR, so the text query
-            # never runs for it: each backend query is a full scan of the page content.
             if use_backend_queries:
                 has_non_text = backend.intersects_with(
                     bbox=cluster_bbox, chars=False, shapes=True, bitmaps=True
@@ -319,17 +319,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     if self.options.mode == OcrMode.LAYOUT_REGIONS
                     else _MergeCellsPriority.PDF_FIRST
                 )
-            # S:egregate visible/invisible PDF cells and merge OCR cells only with the visible PDF
-            visible_cells, invisible_cells = _partition_by_visibility(existing_cells)
             final_cells = self._merge_ocr_and_pdf_cells(
-                ocr_cells, visible_cells, priority
+                ocr_cells,
+                existing_cells,
+                priority,
+                segregate_pdf_cells=_PDF_CELLS_POST_PROCESSING_SEGREGATION,
             )
-
-            # Put the invisible cells back
-            if invisible_cells:
-                final_cells = self._merge_cells_by_priority(
-                    final_cells, invisible_cells
-                )
 
         # Re-index in-place
         for i, cell in enumerate(final_cells):
@@ -363,18 +358,36 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_cells: list[TextCell],
         pdf_cells: list[TextCell],
         priority: _MergeCellsPriority,
+        segregate_pdf_cells: bool = True,
     ) -> list[TextCell]:
         r"""
         Merge PDF and OCR cells, resolving overlaps according to `priority`.
+
+        When `segregate_pdf_cells` is True, the OCR cells are merged only with the visible PDF
+        cells and the invisible ones are put back afterwards. Otherwise, the OCR cells are merged
+        with all the PDF cells indiscriminately.
         """
+        visible_cells: list[TextCell]
+        invisible_cells: list[TextCell]
+        if segregate_pdf_cells:
+            visible_cells, invisible_cells = _segregate_by_visibility(pdf_cells)
+        else:
+            visible_cells, invisible_cells = list(pdf_cells), []
+
         # The prioritized cells are always kept
         # the secondary cells are added only where they don't overlap a prioritized cell.
         if priority == _MergeCellsPriority.PDF_FIRST:
-            prioritized_cells, secondary_cells = pdf_cells, ocr_cells
+            prioritized_cells, secondary_cells = visible_cells, ocr_cells
         else:
-            prioritized_cells, secondary_cells = ocr_cells, pdf_cells
+            prioritized_cells, secondary_cells = ocr_cells, visible_cells
 
-        return self._merge_cells_by_priority(prioritized_cells, secondary_cells)
+        merged_cells = self._merge_cells_by_priority(prioritized_cells, secondary_cells)
+
+        # Put the invisible cells back
+        if invisible_cells:
+            merged_cells = self._merge_cells_by_priority(merged_cells, invisible_cells)
+
+        return merged_cells
 
     def _merge_cells_by_priority(
         self,
