@@ -29,6 +29,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.inference_engines.vlm._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
@@ -190,7 +191,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         # Download or locate model artifacts using shared utility
         def download_wrapper(repo_id: str, revision: str) -> Path:
-            return self.download_models(repo_id, revision=revision)
+            try:
+                return self.download_models(repo_id, revision=revision)
+            except DoclingModelDownloadError as e:
+                _log.error(f"Failed to download {repo_id}")
+                raise e
 
         artifacts_path = resolve_model_artifacts_path(
             repo_id=repo_id,

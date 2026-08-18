@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -104,7 +105,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             )
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
+                try:
+                    artifacts_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    # No logging
+                    raise e
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
 
@@ -124,6 +129,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id="docling-project/CodeFormulaV2",
@@ -131,6 +137,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:

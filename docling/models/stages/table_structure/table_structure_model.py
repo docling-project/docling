@@ -21,6 +21,7 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -48,7 +49,12 @@ class TableStructureModel(BaseTableStructureModel):
         self.enabled = enabled
         if self.enabled:
             if artifacts_path is None:
-                artifacts_path = self.download_models() / self._model_path
+                try:
+                    artifacts_path = self.download_models() / self._model_path
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download TableStructureModel")
+                    raise e
+
             else:
                 # will become the default in the future
                 if (artifacts_path / self._model_repo_folder).exists():
@@ -98,7 +104,10 @@ class TableStructureModel(BaseTableStructureModel):
 
     @staticmethod
     def download_models(
-        local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
+        local_dir: Optional[Path] = None,
+        force: bool = False,
+        progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id="docling-project/docling-models",
@@ -106,6 +115,7 @@ class TableStructureModel(BaseTableStructureModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def draw_table_and_cells(
