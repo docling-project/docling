@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
-from typing import ClassVar, Optional, Set, Union
+from typing import TYPE_CHECKING, ClassVar, Optional, Set, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
@@ -13,6 +13,9 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.utils.pdf_outline import _PdfOutlineItem
+
+if TYPE_CHECKING:
+    from docling.utils.form_utils import FormFieldInfo
 
 
 class PdfPageBackend(ABC):
@@ -93,6 +96,15 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         A flat, document-ordered list where each entry carries its own depth (``level``). The
         default returns an empty list; PDFium-backed backends override this with the real
         outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
+        """
+        return []
+
+    def get_form_fields(self) -> list["FormFieldInfo"]:
+        """Return the document's AcroForm widget fields (interactive form layer).
+
+        A flat, document-ordered list of :class:`~docling.utils.form_utils.FormFieldInfo`.
+        The default returns an empty list; PDFium-backed backends override this with the
+        real field list. Documents without an interactive form keep the default.
         """
         return []
 

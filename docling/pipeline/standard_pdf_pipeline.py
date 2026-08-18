@@ -78,6 +78,7 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderOptions,
 )
 from docling.pipeline.base_pipeline import ConvertPipeline
+from docling.utils.form_utils import attach_form_fields
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -1048,6 +1049,14 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
+
+            # Attach the interactive form layer (AcroForm widget annotations)
+            if self.pipeline_options.extract_form_fields:
+                backend = conv_res.input._backend
+                assert isinstance(backend, PdfDocumentBackend)
+                form_fields = backend.get_form_fields()
+                if form_fields:
+                    attach_form_fields(conv_res.document, form_fields)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
