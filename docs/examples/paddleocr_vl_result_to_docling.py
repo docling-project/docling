@@ -19,7 +19,11 @@ Current adapter boundaries:
   because provider switches can make it OCR text, chart rows, or markup rather
   than a natural-language picture description.
 
-Run:
+Run with the bundled official-service fixture:
+
+    python docs/examples/paddleocr_vl_result_to_docling.py
+
+Run with your own saved result:
 
     python docs/examples/paddleocr_vl_result_to_docling.py result.json
 """
@@ -29,6 +33,14 @@ from pathlib import Path
 
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
 
+_DEFAULT_INPUT = (
+    Path(__file__).resolve().parents[2]
+    / "tests"
+    / "data"
+    / "json_paddleocr_vl"
+    / "self_authored_page.paddleocr-vl-1.6.aistudio-pruned.json"
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -37,7 +49,16 @@ def main() -> None:
             "JSON result to Markdown and Docling JSON."
         )
     )
-    parser.add_argument("input", type=Path, help="Path to the saved result JSON")
+    parser.add_argument(
+        "input",
+        nargs="?",
+        type=Path,
+        default=_DEFAULT_INPUT,
+        help=(
+            "Path to the saved result JSON "
+            "(default: bundled official AI Studio fixture)"
+        ),
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
