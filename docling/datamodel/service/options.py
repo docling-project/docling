@@ -559,6 +559,21 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = ""
 
+    compact_tables: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to use compact table format without column padding in the "
+                "markdown output. When False (default), tables use padded columns "
+                "for better visual formatting. When True, tables use minimal "
+                "whitespace, which avoids exponential whitespace growth on tables "
+                "with a wide outlier cell (e.g. a merged banner/disclaimer row) and "
+                "is better for large tables and downstream processing."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
     chunking_options: Annotated[
         Optional[ChunkingOptionType],
         Field(
