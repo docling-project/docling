@@ -413,7 +413,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
-        self.processed_textbox_elements: list[int] = []
+        # The elements themselves, not their ``id()``: lxml proxies are created on
+        # demand and freed once unreferenced, and CPython reuses the address for the
+        # proxy of a different node. Bookkeeping by address then reads an unrelated
+        # textbox as "already processed" and drops it silently. Holding the elements
+        # makes the identity real -- lxml keeps one proxy per node while referenced.
+        self.processed_textbox_elements: set = set()
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
@@ -715,8 +720,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
-            element_id = id(element)
-            if element_id not in self.processed_textbox_elements:
+            if element not in self.processed_textbox_elements:
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
                     ".//w:txbxContent|.//v:textbox//w:p",
@@ -765,10 +769,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if textbox_elements:
                     # Mark the parent element as processed
-                    self.processed_textbox_elements.append(element_id)
+                    self.processed_textbox_elements.add(element)
                     # Also mark all found textbox elements as processed
                     for tb_element in textbox_elements:
-                        self.processed_textbox_elements.append(id(tb_element))
+                        self.processed_textbox_elements.add(tb_element)
 
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
@@ -1776,17 +1780,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _collect_textbox_paragraphs(self, textbox_elements):
         """Collect and organize paragraphs from textbox elements."""
-        processed_paragraphs = []
-        container_paragraphs = {}
+        # Elements, not their ``id()`` -- see ``processed_textbox_elements``.
+        processed_paragraphs: set = set()
+        container_paragraphs: dict = {}
 
         for element in textbox_elements:
-            element_id = id(element)
             # Skip if we've already processed this exact element
-            if element_id in processed_paragraphs:
+            if element in processed_paragraphs:
                 continue
 
             tag_name = etree.QName(element).localname
-            processed_paragraphs.append(element_id)
+            processed_paragraphs.add(element)
 
             # Handle paragraphs directly found (VML textboxes)
             if tag_name == "p":
@@ -1794,7 +1798,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 container_id = None
                 for ancestor in element.iterancestors():
                     if any(ns in ancestor.tag for ns in ["textbox", "shape", "txbx"]):
-                        container_id = id(ancestor)
+                        container_id = ancestor
                         break
 
                 if container_id not in container_paragraphs:
@@ -1806,28 +1810,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Handle txbxContent elements (Word DrawingML textboxes)
             elif tag_name == "txbxContent":
                 paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
-                container_id = id(element)
+                container_id = element
                 if container_id not in container_paragraphs:
                     container_paragraphs[container_id] = []
 
                 for p in paragraphs:
-                    p_id = id(p)
-                    if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                    if p not in processed_paragraphs:
+                        processed_paragraphs.add(p)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )
             else:
                 # Try to extract any paragraphs from unknown elements
                 paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
-                container_id = id(element)
+                container_id = element
                 if container_id not in container_paragraphs:
                     container_paragraphs[container_id] = []
 
                 for p in paragraphs:
-                    p_id = id(p)
-                    if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                    if p not in processed_paragraphs:
+                        processed_paragraphs.add(p)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )
