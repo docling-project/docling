@@ -19,13 +19,18 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel
 
-from docling.backend import iwork_iwa
-from docling.backend.iwork_backend import IWorkPagesDocumentBackend
-from docling.backend.iwork_iwa import (
+from docling.backend.iwork import iwa
+from docling.backend.iwork.iwa import (
     decompress_snappy_block,
     iter_objects,
     read_fields,
+)
+from docling.backend.iwork.pages_backend import (
+    IWorkPagesDocumentBackend,
+    _iwa_style_name,
+    _label_for_style,
 )
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
@@ -260,16 +265,16 @@ def test_iwa_stream_budget_is_shared_across_chunks(monkeypatch, tmp_path: Path):
     """The ceiling must bound the whole stream, not reset for each chunk. Two
     chunks that are each individually fine must still be refused once their
     combined output passes the limit."""
-    monkeypatch.setattr(iwork_iwa, "_MAX_STREAM_BYTES", 1500)
+    monkeypatch.setattr(iwa, "_MAX_STREAM_BYTES", 1500)
 
     block = _snappy_literal_run(1000)
     chunk = b"\x00" + len(block).to_bytes(3, "little") + block
 
     # One chunk alone stays under the ceiling.
-    assert len(iwork_iwa.decompress(chunk)) == 1000
+    assert len(iwa.decompress(chunk)) == 1000
 
     with pytest.raises(DocumentLoadError, match="over the 500 byte limit"):
-        iwork_iwa.decompress(chunk * 2)
+        iwa.decompress(chunk * 2)
 
 
 def test_gzipped_legacy_index_cannot_expand_without_bound(tmp_path: Path):
@@ -383,3 +388,75 @@ def test_end_to_end_conversion():
     assert result.document.origin is not None
     assert result.document.origin.mimetype == "application/vnd.apple.pages"
     assert result.document.origin.filename == "pages_2013.pages"
+
+
+def test_legacy_table_is_extracted_with_its_header_row():
+    """iWork '09 stores table cells flat in sf:datasource, so the grid dimensions
+    are what place them. The fixture holds a 3x4 table with one header row."""
+    doc = _backend(PAGES_IWORK09).convert()
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (4, 3)
+
+    by_position = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.table_cells
+    }
+    assert by_position[(0, 0)].text == "Column one"
+    assert by_position[(0, 2)].text == "Column three"
+    assert by_position[(3, 2)].text == "Cell nine"
+
+    # Only the first row is a header, per sf:num-header-rows.
+    assert by_position[(0, 0)].column_header
+    assert not by_position[(1, 0)].column_header
+
+
+@pytest.mark.parametrize(
+    "style_name, expected_label, expected_level",
+    [
+        # Names observed in the stylesheets of the real Tika fixtures.
+        ("Title", DocItemLabel.TITLE, None),
+        ("Heading 1", DocItemLabel.SECTION_HEADER, 1),
+        ("Heading 2", DocItemLabel.SECTION_HEADER, 2),
+        ("Heading", DocItemLabel.SECTION_HEADER, 1),
+        ("Subheading", DocItemLabel.SECTION_HEADER, 2),
+        ("Body", DocItemLabel.TEXT, None),
+        ("Free Form", DocItemLabel.TEXT, None),
+        ("Footnote Text", DocItemLabel.TEXT, None),
+        (None, DocItemLabel.TEXT, None),
+    ],
+)
+def test_style_names_map_to_labels(style_name, expected_label, expected_level):
+    """Pages uses the same built-in style names in both container generations,
+    so one mapping serves the IWA and XML readers."""
+    assert _label_for_style(style_name) == (expected_label, expected_level)
+
+
+def test_iwa_paragraph_styles_resolve_to_their_real_names():
+    """The IWA heading path depends on resolving a style run to its style name.
+    Check that against genuine Apple output rather than the mapping alone."""
+    archive = zipfile.ZipFile(PAGES_2013)
+    objects = {
+        obj.identifier: obj
+        for name in archive.namelist()
+        if name.endswith(".iwa")
+        for obj in iter_objects(archive.read(name))
+    }
+
+    names = {
+        _iwa_style_name(obj.payload)
+        for obj in objects.values()
+        if obj.message_type == 2022
+    }
+    # The fixture's body is styled "Body"; anonymous styles resolve to None.
+    assert "Body" in names
+
+
+def test_body_text_is_labelled_from_its_style():
+    """The fixture's body paragraphs are all styled "Body", so nothing should be
+    promoted to a heading."""
+    doc = _backend(PAGES_2013).convert()
+
+    assert doc.texts
+    assert all(item.label == DocItemLabel.TEXT for item in doc.texts)
