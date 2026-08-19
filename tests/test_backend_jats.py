@@ -395,6 +395,119 @@ def test_jats_paragraph_emphasis_is_preserved():
     ]
 
 
+def test_jats_external_link_boundaries_are_preserved():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/docs">linked text</ext-link> after.'
+        "</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        for item in groups[0]
+    ] == [
+        ("Before", None),
+        ("linked text", "https://example.com/docs"),
+        ("after.", None),
+    ]
+
+
+def test_jats_adjacent_external_links_with_different_targets_do_not_merge():
+    doc = convert_jats_body(
+        '<sec><title>T</title><p xmlns:xlink="http://www.w3.org/1999/xlink">'
+        '<ext-link xlink:href="https://example.com/a">first</ext-link><ext-link '
+        'xlink:href="https://example.com/b">second</ext-link></p></sec>'
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        for item in groups[0]
+    ] == [
+        ("first", "https://example.com/a"),
+        ("second", "https://example.com/b"),
+    ]
+
+
+def test_jats_external_link_preserves_nested_formatting():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/docs">linked '
+        "<italic>text</italic></ext-link> after.</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (
+            item.text.strip(),
+            str(item.hyperlink) if item.hyperlink is not None else None,
+            item.formatting.italic if item.formatting is not None else False,
+        )
+        for item in groups[0]
+    ] == [
+        ("Before", None, False),
+        ("linked", "https://example.com/docs", False),
+        ("text", "https://example.com/docs", True),
+        ("after.", None, False),
+    ]
+
+
+def test_jats_external_link_without_href_is_plain_text():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link>plain text</ext-link> "
+        "after.</p></sec>"
+    )
+
+    texts = [item for item in doc.texts if item.label == DocItemLabel.TEXT]
+    assert [(item.text, item.hyperlink) for item in texts] == [
+        ("Before plain text after.", None)
+    ]
+
+
+def test_jats_external_relative_link_falls_back_to_path():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p><ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="../docs">relative</ext-link></p></sec>'
+    )
+
+    texts = [item for item in doc.texts if item.label == DocItemLabel.TEXT]
+    assert [(item.text, item.hyperlink) for item in texts] == [
+        ("relative", Path("../docs"))
+    ]
+
+
+def test_jats_external_link_is_preserved_on_inline_formula():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p><ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/equation">value '
+        "<inline-formula><tex-math>$$x$$</tex-math></inline-formula>"
+        "</ext-link> after.</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (
+            item.label,
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in groups[0]
+    ] == [
+        (DocItemLabel.TEXT, "value", "https://example.com/equation"),
+        (DocItemLabel.FORMULA, "x", "https://example.com/equation"),
+        (DocItemLabel.TEXT, "after.", None),
+    ]
+
+
 def test_jats_plain_paragraph_stays_a_single_text_item():
     doc = convert_jats_body(
         "<sec><title>T</title><p>Plain text with a <xref>1</xref> citation.</p></sec>"
