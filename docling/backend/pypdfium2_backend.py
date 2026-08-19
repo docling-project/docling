@@ -31,24 +31,6 @@ from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
 
 
-def _apply_page_rotation(
-    pos: tuple[float, float, float, float], rotation: int, page_size: Size
-) -> tuple[float, float, float, float]:
-    """Map a bottom-left page-object bbox onto the rotated page frame."""
-    if rotation == 90:
-        return (pos[1], page_size.height - pos[2], pos[3], page_size.height - pos[0])
-    if rotation == 180:
-        return (
-            page_size.width - pos[2],
-            page_size.height - pos[3],
-            page_size.width - pos[0],
-            page_size.height - pos[1],
-        )
-    if rotation == 270:
-        return (page_size.width - pos[3], pos[0], page_size.width - pos[1], pos[2])
-    return pos
-
-
 def _merge_overlapping_boxes(
     boxes: List[BoundingBox], tolerance: float
 ) -> List[BoundingBox]:
@@ -177,6 +159,76 @@ def get_pdf_page_geometry(
         )
 
 
+def _rect_to_display_frame(
+    rect: tuple[float, float, float, float],
+    rotation: int,
+    page_size: Size,
+) -> tuple[float, float, float, float]:
+    """Map a rect from the page's unrotated frame to its rotated display frame.
+
+    PDFium reports page-object and text coordinates in the unrotated (MediaBox)
+    frame, ignoring the page's ``/Rotate`` entry. ``PdfPage.get_size()`` and the
+    rendered page bitmap, on the other hand, are already in the rotated display
+    frame. Applying the rotation here puts everything the backend returns into
+    that single frame.
+
+    Args:
+        rect: ``(x0, y0, x1, y1)`` in the unrotated frame, bottom-left origin.
+        rotation: page rotation in degrees (``PdfPage.get_rotation()``).
+        page_size: page size in the display frame (``get_size()``).
+
+    Returns:
+        ``(x0, y0, x1, y1)`` in the display frame, bottom-left origin.
+    """
+    x0, y0, x1, y1 = rect
+    if rotation == 90:
+        return (y0, page_size.height - x1, y1, page_size.height - x0)
+    elif rotation == 180:
+        return (
+            page_size.width - x1,
+            page_size.height - y1,
+            page_size.width - x0,
+            page_size.height - y0,
+        )
+    elif rotation == 270:
+        return (page_size.width - y1, x0, page_size.width - y0, x1)
+    return (x0, y0, x1, y1)
+
+
+def _rect_to_pdf_frame(
+    rect: tuple[float, float, float, float],
+    rotation: int,
+    page_size: Size,
+) -> tuple[float, float, float, float]:
+    """Map a rect from the rotated display frame back to the unrotated frame.
+
+    Inverse of :func:`_rect_to_display_frame`, needed whenever coordinates are
+    handed back to PDFium (e.g. ``PdfTextPage.get_text_bounded()``), which only
+    understands the unrotated frame.
+
+    Args:
+        rect: ``(x0, y0, x1, y1)`` in the display frame, bottom-left origin.
+        rotation: page rotation in degrees (``PdfPage.get_rotation()``).
+        page_size: page size in the display frame (``get_size()``).
+
+    Returns:
+        ``(x0, y0, x1, y1)`` in the unrotated frame, bottom-left origin.
+    """
+    x0, y0, x1, y1 = rect
+    if rotation == 90:
+        return (page_size.height - y1, x0, page_size.height - y0, x1)
+    elif rotation == 180:
+        return (
+            page_size.width - x1,
+            page_size.height - y1,
+            page_size.width - x0,
+            page_size.height - y0,
+        )
+    elif rotation == 270:
+        return (y0, page_size.width - x1, y1, page_size.width - x0)
+    return (x0, y0, x1, y1)
+
+
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
@@ -230,8 +282,10 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     def _compute_text_cells(self) -> List[TextCell]:
         """Compute text cells from pypdfium."""
         with pypdfium2_lock:
+            page = self._require_page()
             if not self.text_page:
-                self.text_page = self._require_page().get_textpage()
+                self.text_page = page.get_textpage()
+            rotation = page.get_rotation()
 
         cells = []
         cell_counter = 0
@@ -242,7 +296,9 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             for i in range(self.text_page.count_rects()):
                 rect = self.text_page.get_rect(i)
                 text_piece = self.text_page.get_text_bounded(*rect)
-                x0, y0, x1, y1 = rect
+                # `rect` is in the unrotated frame, `page_size` in the rotated
+                # display frame: bring the rect over before converting origin.
+                x0, y0, x1, y1 = _rect_to_display_frame(rect, rotation, page_size)
                 cells.append(
                     TextCell(
                         index=cell_counter,
@@ -340,8 +396,11 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 assert self.text_page is not None
                 bbox = merged_bbox.to_bottom_left_origin(page_size.height)
+                # Cells are stored in the display frame; PDFium only understands
+                # the unrotated one, so undo the rotation before querying it.
+                pdf_rect = _rect_to_pdf_frame(bbox.as_tuple(), rotation, page_size)
                 with pypdfium2_lock:
-                    merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
+                    merged_text = self.text_page.get_text_bounded(*pdf_rect)
 
                 return TextCell(
                     index=group[0].index,
@@ -387,7 +446,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                     pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
                     pos = obj.get_pos()  # pypdfium2 <= 4.x
-                pos = _apply_page_rotation(pos, rotation, page_size)
+                pos = _rect_to_display_frame(pos, rotation, page_size)
 
                 yield BoundingBox.from_tuple(
                     pos, origin=CoordOrigin.BOTTOMLEFT
@@ -459,14 +518,22 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         with pypdfium2_lock:
+            page = self._require_page()
             if not self.text_page:
-                self.text_page = self._require_page().get_textpage()
+                self.text_page = page.get_textpage()
+            rotation = page.get_rotation()
+
+        page_size = self.get_size()
 
         if bbox.coord_origin != CoordOrigin.BOTTOMLEFT:
-            bbox = bbox.to_bottom_left_origin(self.get_size().height)
+            bbox = bbox.to_bottom_left_origin(page_size.height)
+
+        # `bbox` is expressed in the rotated display frame, PDFium expects the
+        # unrotated one.
+        pdf_rect = _rect_to_pdf_frame(bbox.as_tuple(), rotation, page_size)
 
         with pypdfium2_lock:
-            text_piece = self.text_page.get_text_bounded(*bbox.as_tuple())
+            text_piece = self.text_page.get_text_bounded(*pdf_rect)
 
         return text_piece
 
