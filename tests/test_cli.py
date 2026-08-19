@@ -6,7 +6,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-import click
 import pytest
 import typer
 from docling_core.types.doc import ImageRefMode
