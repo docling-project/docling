@@ -8,6 +8,7 @@ from typing import Any
 
 import click
 import pytest
+import yaml
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
@@ -97,6 +98,38 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_epub_output_carries_metadata_and_seekable_chapters(tmp_path: Path) -> None:
+    source = Path("tests/data/epub/sources/epub_purvis_poetry.epub")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--output",
+            str(output),
+            "--to",
+            "epub",
+            "--image-export-mode",
+            "placeholder",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    book = (output / f"{source.stem}.epub.md").read_bytes()
+    frontmatter = yaml.safe_load(book.decode("utf-8").split("---\n", maxsplit=2)[1])
+
+    assert frontmatter["title"] == "Poetry"
+    assert frontmatter["authors"] == ["Sarah Louisa Forten Purvis"]
+    assert frontmatter["language"] == "en-US"
+    assert frontmatter["source_file"] == source.name
+    assert frontmatter["chapters"]
+    for chapter in frontmatter["chapters"]:
+        heading = book[chapter["byte"] :].split(b"\n", maxsplit=1)[0].decode("utf-8")
+        assert heading.startswith("#")
+        assert heading.lstrip("# ").replace("*", "") == chapter["title"]
 
 
 def test_cli_exports_doclang(tmp_path):

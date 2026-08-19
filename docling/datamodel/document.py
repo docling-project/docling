@@ -24,6 +24,7 @@ from typing import (
 import filetype
 
 # DO NOT REMOVE; explicitly exposed from this location
+from docling_core.transforms.serializer.epub import EpubMetadata
 from docling_core.types.doc import (
     DocItem,
     DocItemLabel,
@@ -592,6 +593,11 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+
+    # Book metadata read from the EPUB package document, surfaced from the backend for
+    # the EPUB output format. Private transient plumbing like `_pdf_outline` above:
+    # a Pydantic private attr (not a model field, never serialized).
+    _epub_metadata: Optional[EpubMetadata] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):

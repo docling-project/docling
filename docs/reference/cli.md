@@ -40,7 +40,7 @@ docling convert [OPTIONS] source
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--from` | `text` (repeatable) |  | Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats. |
-| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Specify output formats. Defaults to Markdown. |
+| `--to` | `md`, `epub`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Specify output formats. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
 | `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |
@@ -126,7 +126,7 @@ docling convert-remote [OPTIONS] source
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
 | `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
-| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
+| `--to` | `md`, `epub`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
 | `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |
@@ -225,4 +225,3 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-

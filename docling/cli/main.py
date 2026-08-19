@@ -456,6 +456,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_epub: bool = False,
     export_dclx: bool = False,
     export_chunks: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
@@ -555,6 +556,16 @@ def export_documents(
                     filename=fname,
                     strict_text=True,
                     image_mode=ImageRefMode.PLACEHOLDER,
+                )
+
+            # Export EPUB book Markdown format:
+            if export_epub:
+                fname = output_dir / f"{doc_filename}.epub.md"
+                _log.info(f"writing EPUB book Markdown output to {fname}")
+                conv_res.document.save_as_epub(
+                    filename=fname,
+                    metadata=conv_res._epub_metadata,
+                    image_mode=image_export_mode,
                 )
 
             # Export Markdown format:
@@ -1218,6 +1229,9 @@ def convert(  # noqa: C901
             to_formats = [OutputFormat.MARKDOWN]
 
         export_flags = _export_flags_from_formats(to_formats)
+        # The EPUB output format links between chapters, which the backend can only
+        # resolve while it still has the spine documents.
+        export_epub = export_flags["export_epub"]
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         # Deprecated --force-ocr wins over --ocr-mode; warn when used.
@@ -1383,11 +1397,13 @@ def convert(  # noqa: C901
                         fetch_images=html_fetch_images,
                         enable_local_fetch=html_enable_local_fetch,
                         enable_remote_fetch=html_enable_remote_fetch,
+                        rewrite_internal_links=export_epub,
                     )
                     if (
                         html_fetch_images
                         or html_enable_local_fetch
                         or html_enable_remote_fetch
+                        or export_epub
                     )
                     else None,
                 ),

@@ -1,13 +1,16 @@
 import logging
+import posixpath
 import re
 import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
 from defusedxml.common import DefusedXmlException
+from docling_core.transforms.serializer.epub import EpubMetadata
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 from typing_extensions import override
 
@@ -19,6 +22,20 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+_BS4_AVAILABLE = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, NavigableString, Tag
+
+    _BS4_AVAILABLE = True
+except ImportError as exc:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = exc
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' package is required to process EPUB files. "
+    "Install it with `pip install 'docling-slim[format-html]'`."
+)
 
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
@@ -42,12 +59,16 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             targets may not be accessible in the exported Markdown.
     """
 
+    options: EpubBackendOptions
+
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
         options: EpubBackendOptions | None = None,
     ):
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = EpubBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -58,7 +79,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         self.valid = False
         self.epub_zip: ZipFile | None = None
         self.content_files: list[str] = []
-        self.metadata: dict[str, str] = {}
+        self.metadata = EpubMetadata(source_file=self.file.name or None)
         self.temp_dir: Path | None = None
 
         try:
@@ -210,7 +231,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             _log.error(f"Error during EPUB extraction: {e}")
             raise RuntimeError(f"Failed to extract EPUB archive: {e}") from e
 
-    def _extract_metadata(self, opf_root):
+    def _extract_metadata(self, opf_root) -> None:
         """Extract metadata from the OPF file."""
         ns_dc = {"dc": "http://purl.org/dc/elements/1.1/"}
         ns_opf = {"opf": "http://www.idpf.org/2007/opf"}
@@ -219,18 +240,24 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         if metadata is None:
             return
 
-        # Extract common metadata fields
-        for field in [
-            "title",
-            "creator",
-            "publisher",
-            "date",
-            "language",
-            "identifier",
-        ]:
+        def first_text(field: str) -> str | None:
             element = metadata.find(f"dc:{field}", ns_dc)
-            if element is not None and element.text:
-                self.metadata[field] = element.text
+            if element is None or not element.text:
+                return None
+            return element.text.strip() or None
+
+        authors = [
+            element.text.strip()
+            for element in metadata.findall("dc:creator", ns_dc)
+            if element.text and element.text.strip()
+        ]
+        self.metadata = EpubMetadata(
+            title=first_text("title"),
+            authors=authors,
+            published=first_text("date"),
+            language=first_text("language"),
+            source_file=self.file.name or None,
+        )
 
         _log.debug(f"Extracted metadata: {self.metadata}")
 
@@ -275,7 +302,97 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         pattern = r'src="([^"]+)"'
         return re.sub(pattern, replace_image_src, html_content)
 
-    def _fix_internal_links(self, html_content: str) -> str:
+    @staticmethod
+    def _markdown_heading_anchor(text: str) -> str:
+        """Return the GitHub-style anchor emitted for a Markdown heading."""
+        filtered = "".join(
+            character
+            for character in text.lower()
+            if character.isalnum() or character in {" ", "-", "_"}
+        )
+        return "-".join(filtered.split())
+
+    def _spine_heading_targets(
+        self,
+    ) -> dict[tuple[str, str | None], str | None]:
+        """Map EPUB spine documents and source fragments to heading anchors."""
+        if self.epub_zip is None:
+            return {}
+
+        targets: dict[tuple[str, str | None], str | None] = {}
+        anchor_counts: dict[str, int] = {}
+        heading_pattern = re.compile(r"^h[1-6]$")
+        for content_file in self.content_files:
+            normalized_file = posixpath.normpath(content_file)
+            first_target: str | None = None
+            try:
+                raw_html = self.epub_zip.read(content_file).decode("utf-8")
+                soup = BeautifulSoup(raw_html, "html.parser")
+                heading_anchors: dict[int, str] = {}
+                for heading in soup.find_all(heading_pattern):
+                    title = heading.get_text(" ", strip=True)
+                    base_anchor = self._markdown_heading_anchor(title)
+                    if not base_anchor:
+                        continue
+                    duplicate_count = anchor_counts.get(base_anchor, 0)
+                    anchor_counts[base_anchor] = duplicate_count + 1
+                    anchor = (
+                        base_anchor
+                        if duplicate_count == 0
+                        else f"{base_anchor}-{duplicate_count}"
+                    )
+                    heading_anchors[id(heading)] = anchor
+                    if first_target is None:
+                        first_target = anchor
+
+                for element in soup.find_all(
+                    lambda tag: tag.has_attr("id") or tag.has_attr("name")
+                ):
+                    if not isinstance(element, Tag):
+                        continue
+                    if id(element) in heading_anchors:
+                        target_heading = element
+                    elif child_heading := element.find(heading_pattern):
+                        target_heading = child_heading
+                    elif element.name == "a" and not element.get_text(strip=True):
+                        sibling = element.next_sibling
+                        while (
+                            isinstance(sibling, NavigableString) and not sibling.strip()
+                        ):
+                            sibling = sibling.next_sibling
+                        target_heading = (
+                            sibling
+                            if isinstance(sibling, Tag)
+                            and heading_pattern.match(sibling.name or "")
+                            else element.find_previous(heading_pattern)
+                            or element.find_next(heading_pattern)
+                        )
+                    else:
+                        target_heading = element.find_previous(
+                            heading_pattern
+                        ) or element.find_next(heading_pattern)
+                    if target_heading is None:
+                        continue
+                    target = heading_anchors.get(id(target_heading))
+                    if target is None:
+                        continue
+                    for attribute in ("id", "name"):
+                        if fragment := element.get(attribute):
+                            targets[(normalized_file, str(fragment))] = target
+            except (KeyError, UnicodeDecodeError) as exc:
+                _log.warning(
+                    "Failed to inspect EPUB heading in %s: %s", content_file, exc
+                )
+            targets[(normalized_file, None)] = first_target
+        return targets
+
+    def _fix_internal_links(
+        self,
+        html_content: str,
+        *,
+        content_file: str | None = None,
+        heading_targets: dict[tuple[str, str | None], str | None] | None = None,
+    ) -> str:
         """Fix internal links that reference other XHTML files.
 
         When combining multiple XHTML files into one HTML document, links like
@@ -288,14 +405,38 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        # Pattern to match href attributes that reference .xhtml files with anchors
-        # Examples: href="endnotes.xhtml#note-1" or href="chapter-1.xhtml#section-2"
-        pattern = r'href="([^"]*\.xhtml)(#[^"]*)"'
+        if not self.options.rewrite_internal_links:
+            # Preserve the existing default behavior byte-for-byte.
+            pattern = r'href="([^"]*\.xhtml)(#[^"]*)"'
+            return re.sub(pattern, r'href="\2"', html_content)
 
-        # Replace with just the anchor part
-        fixed_content = re.sub(pattern, r'href="\2"', html_content)
+        if content_file is None or heading_targets is None:
+            return html_content
 
-        return fixed_content
+        current_file = posixpath.normpath(content_file)
+        spine_files = {path for path, _ in heading_targets}
+        soup = BeautifulSoup(html_content, "html.parser")
+        for link in soup.find_all("a", href=True):
+            href = str(link["href"])
+            parsed = urlsplit(href)
+            if parsed.scheme or parsed.netloc or not parsed.path:
+                continue
+
+            target_file = posixpath.normpath(
+                posixpath.join(posixpath.dirname(current_file), unquote(parsed.path))
+            )
+
+            if target_file in spine_files:
+                fragment = unquote(parsed.fragment) or None
+                target = heading_targets.get((target_file, fragment))
+                if target is not None:
+                    link["href"] = f"#{target}"
+                else:
+                    del link["href"]
+            elif re.search(r"\.(?:xhtml|html|htm)(?:\.html?)?$", parsed.path, re.I):
+                del link["href"]
+
+        return str(soup)
 
     @override
     def is_valid(self) -> bool:
@@ -381,8 +522,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         combined_html_parts = [
             '<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body>'
         ]
-
-        # TODO: leverage `self.metadata` once DoclingDocument supports file metadata
+        heading_targets = (
+            self._spine_heading_targets()
+            if self.options.rewrite_internal_links
+            else None
+        )
 
         # Process each content file in reading order
         for content_file in self.content_files:
@@ -407,7 +551,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 # Fix internal links: convert file.xhtml#anchor to #anchor
                 # This is necessary because we're combining all XHTML files into one HTML
-                body_content = self._fix_internal_links(body_content)
+                body_content = self._fix_internal_links(
+                    body_content,
+                    content_file=content_file,
+                    heading_targets=heading_targets,
+                )
 
                 # Fix image paths if we extracted to temp directory
                 if self.temp_dir:

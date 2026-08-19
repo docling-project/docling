@@ -34,6 +34,62 @@ The respective `DoclingDocument` export methods (e.g. `export_to_markdown()`) ar
 provided as user shorthands — internally directly instantiating and delegating to
 respective serializers.
 
+### EPUB book navigation
+
+The `epub` output format renders a book as Markdown preceded by a YAML
+frontmatter block holding the book metadata and a chapter index. Every chapter
+entry carries the absolute UTF-8 byte offset and the 1-based line number of its
+heading, so a reader can seek straight to a chapter instead of scanning the whole
+book. A chapter is a top-level heading — either a title item (`#`) or a level-1
+section heading (`##`), since an EPUB may title its chapters with `<h1>` or
+`<h2>`. Headings nested below preceding group content are not indexed.
+
+```sh
+docling book.epub --to epub
+```
+
+That writes `book.epub.md`:
+
+```yaml
+---
+title: "Alice's Adventures in Wonderland"
+authors: ["Lewis Carroll"]
+language: "en"
+source_file: "book.epub"
+chapters:
+  - title: "CHAPTER I. Down the Rabbit-Hole"
+    line:         12
+    byte:        287
+---
+```
+
+From the SDK, the serializer lives in `docling-core` as `EpubDocSerializer`, with
+`DoclingDocument.export_to_epub()` and `save_as_epub()` as shorthands:
+
+```python
+from docling.datamodel.backend_options import EpubBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, EpubFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.EPUB: EpubFormatOption(
+            backend_options=EpubBackendOptions(rewrite_internal_links=True)
+        )
+    }
+)
+result = converter.convert("book.epub")
+markdown = result.document.export_to_epub(metadata=result._epub_metadata)
+```
+
+`rewrite_internal_links=True` resolves links between EPUB spine documents while
+the source package is still available; the CLI enables it automatically for
+`--to epub`. EPUB package metadata is transient conversion state carried on the
+conversion result, so export directly from it rather than reloading a JSON or
+DCLX serialization.
+
+Ordinary `--to md` output is unchanged.
+
 ## Format-specific behaviors
 
 Each serializer makes format-specific trade-offs when representing document

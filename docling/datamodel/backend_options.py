@@ -157,6 +157,15 @@ class EpubBackendOptions(BaseBackendOptions):
     fetch_images: Annotated[
         bool, Field(description="Whether to fetch and process images from the EPUB.")
     ] = False
+    rewrite_internal_links: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to rewrite links between EPUB spine documents to Markdown "
+                "heading anchors."
+            )
+        ),
+    ] = False
     max_total_bytes: Annotated[
         PositiveInt,
         Field(

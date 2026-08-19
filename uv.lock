@@ -1560,7 +1560,7 @@ requires-dist = [{ name = "docling-slim", extras = ["service-client"], editable 
 [[package]]
 name = "docling-core"
 version = "2.91.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/docling-project/docling-core/?rev=main#4252788e6a3bfb04cd0fe98fd678d09d50c3fd18" }
 dependencies = [
     { name = "defusedxml" },
     { name = "doclang" },
@@ -1576,10 +1576,6 @@ dependencies = [
     { name = "tabulate" },
     { name = "typer" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/f5/5aaf6f1221242a4dd598b515786ffca796352a8d960a9c6a0deb614301f4/docling_core-2.91.0.tar.gz", hash = "sha256:dc40fe76524a2700f869265015a9ef86027888e73b5652f324b3b5c52a2df240", size = 344852, upload-time = "2026-08-06T14:23:07.919Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/68/de7c0ba404d035afe78ae4e602290bb6c330b34cc53fd5f92c9950be4ac0/docling_core-2.91.0-py3-none-any.whl", hash = "sha256:4949a5dd77ae1daf4153c095897d3bdde1c870f2bbe401bf94d8834bef867998", size = 286832, upload-time = "2026-08-06T14:23:05.908Z" },
 ]
 
 [package.optional-dependencies]
@@ -2018,8 +2014,8 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'format-iwork'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", specifier = ">=2.91.0,<3.0.0" },
-    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
+    { name = "docling-core", git = "https://github.com/docling-project/docling-core/?rev=main" },
+    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core/?rev=main" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.0.0,<8.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
@@ -2146,7 +2142,7 @@ examples = [
 ]
 pr-fast-checks = [
     { name = "boto3-stubs", specifier = "~=1.37" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.73.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core/?rev=main" },
     { name = "pandas-stubs", specifier = "~=2.1" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
