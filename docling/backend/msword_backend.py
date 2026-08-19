@@ -413,11 +413,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
-        # The elements themselves, not their ``id()``: lxml proxies are created on
-        # demand and freed once unreferenced, and CPython reuses the address for the
-        # proxy of a different node. Bookkeeping by address then reads an unrelated
-        # textbox as "already processed" and drops it silently. Holding the elements
-        # makes the identity real -- lxml keeps one proxy per node while referenced.
         self.processed_textbox_elements: set[etree._Element] = set()
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
@@ -452,9 +447,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Track comment mappings: comment_id -> comment object
         self.comment_map: dict[str, Any] = {}
         # Track paragraph elements to their comment IDs
-        self.paragraph_comment_map: dict[int, list[str]] = {}
+        self.paragraph_comment_map: dict[etree._Element, list[str]] = {}
         # Track text items created from each paragraph element
-        self.paragraph_to_items: dict[int, list[RefItem]] = {}
+        self.paragraph_to_items: dict[etree._Element, list[RefItem]] = {}
         # True when the previous sibling item is a code block; lets indented,
         # punctuation-free continuation lines stay in the block.
         self._prev_sibling_is_code: bool = False
@@ -2044,8 +2039,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         raw_paragraph_text = text
         text = text.strip()
 
-        # Track the paragraph element ID for comment linking
-        para_element_id = id(element)
+        # Track the paragraph element for comment linking.
+        para_element = element
         comment_ids = self._get_comment_ids_for_element(element)
 
         # Check if this paragraph contains a checkbox
@@ -2265,10 +2260,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._update_history(p_style_id, p_level, numid, ilevel)
 
         # Store mapping of paragraph element to created items for comment linking
-        if elem_ref and para_element_id:
-            self.paragraph_to_items[para_element_id] = elem_ref
+        if elem_ref:
+            self.paragraph_to_items[para_element] = elem_ref
             if comment_ids:
-                self.paragraph_comment_map[para_element_id] = list(comment_ids)
+                self.paragraph_comment_map[para_element] = list(comment_ids)
 
         return elem_ref
 
@@ -3731,7 +3726,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Find all paragraphs with comment ranges
             body = self.docx_obj.element.body
             for paragraph in body.findall(".//w:p", namespaces):
-                para_id = id(paragraph)
+                para_id = paragraph
 
                 # Find comment range start markers in this paragraph
                 comment_starts = paragraph.findall(".//w:commentRangeStart", namespaces)
