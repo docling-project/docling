@@ -30,6 +30,7 @@ FUZZY_BBOX_TOL_RATIO = (
 )
 STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
+IMAGE_SIZE_ABS_TOL_PX = 2  # rasterisation rounding is absolute; floor prevents false failures on small images
 
 
 class _TestPagesMeta(BaseModel):
@@ -194,7 +195,8 @@ def verify_picture_image_v2(
         f"Image mode mismatch: {true_image.mode} vs {pred_item.mode}"
     )
 
-    # Check image size with percentage-based tolerance
+    # Effective tolerance is max(ABS_TOL_PX, ratio * dimension): the absolute floor
+    # prevents false failures on small LibreOffice-rasterised images.
     tol_ratio = FUZZY_IMAGE_SIZE_TOL_RATIO if fuzzy else STRICT_IMAGE_SIZE_TOL_RATIO
     true_width, true_height = true_image.size
     pred_width, pred_height = pred_item.size
@@ -202,17 +204,16 @@ def verify_picture_image_v2(
     width_diff = abs(true_width - pred_width)
     height_diff = abs(true_height - pred_height)
 
-    # Calculate actual percentage differences
-    width_diff_ratio = width_diff / true_width if true_width > 0 else 0
-    height_diff_ratio = height_diff / true_height if true_height > 0 else 0
+    width_tol = max(IMAGE_SIZE_ABS_TOL_PX, tol_ratio * true_width)
+    height_tol = max(IMAGE_SIZE_ABS_TOL_PX, tol_ratio * true_height)
 
-    assert width_diff_ratio <= tol_ratio, (
+    assert width_diff <= width_tol, (
         f"Image width mismatch: {true_width} vs {pred_width} "
-        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+        f"(diff: {width_diff} pixels, tolerance {width_tol:.1f} px)"
     )
-    assert height_diff_ratio <= tol_ratio, (
+    assert height_diff <= height_tol, (
         f"Image height mismatch: {true_height} vs {pred_height} "
-        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+        f"(diff: {height_diff} pixels, tolerance {height_tol:.1f} px)"
     )
 
     return True
