@@ -1,3 +1,13 @@
+## [v2.120.3](https://github.com/docling-project/docling/releases/tag/v2.120.3) - 2026-08-18
+
+### Fix
+
+* **odf:** Resolve 'draw:image' 'xlink:href' through ImageResourceLoader ([#4015](https://github.com/docling-project/docling/issues/4015)) ([`6ee9965`](https://github.com/docling-project/docling/commit/6ee9965adfc364b3696a67c825ec2f0d9cee4311))
+* Transformers warnings ([#4014](https://github.com/docling-project/docling/issues/4014)) ([`ac1f2ce`](https://github.com/docling-project/docling/commit/ac1f2cee6ee4b4b4eac6d0906dd08c1059ec7962))
+* Add coordinate padding to OCRmac results ([#4021](https://github.com/docling-project/docling/issues/4021)) ([`455fcec`](https://github.com/docling-project/docling/commit/455fcec8b299eaeda3547d2f8791b994eeba9087))
+* Respect DPI in page rendering on ImageBackend ([#4012](https://github.com/docling-project/docling/issues/4012)) ([`9e974af`](https://github.com/docling-project/docling/commit/9e974af2f3fcb587ee313c47fb5528bb280162fe))
+* Do not torch compile models by default ([#4013](https://github.com/docling-project/docling/issues/4013)) ([`6f6ae4a`](https://github.com/docling-project/docling/commit/6f6ae4aa68c6b2373d43d5a5d606e547ad1b9dc8))
+
 ## [v2.120.2](https://github.com/docling-project/docling/releases/tag/v2.120.2) - 2026-08-17
 
 ### Fix

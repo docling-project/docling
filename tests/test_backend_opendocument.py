@@ -10,6 +10,8 @@ This module includes two types of tests:
 from __future__ import annotations
 
 import logging
+import sys
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -1373,3 +1375,82 @@ def test_ods_sheet_names_filter(tmp_path: Path):
         f"Should have 1 group, got {len(doc_single.groups)}"
     )
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
+
+
+def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
+    """Build a minimal ODT whose only draw:image points at *href* (not embedded)."""
+    content_xml = (
+        '<?xml version="1.0"?>'
+        "<office:document-content"
+        ' xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+        ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"'
+        ' xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"'
+        ' xmlns:xlink="http://www.w3.org/1999/xlink" office:version="1.2">'
+        "<office:body><office:text><text:p>"
+        f'<draw:frame><draw:image xlink:href="{href}"/></draw:frame>'
+        "</text:p></office:text></office:body>"
+        "</office:document-content>"
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/vnd.oasis.opendocument.text")
+        z.writestr("content.xml", content_xml)
+    return path
+
+
+def test_odt_local_filesystem_path_is_not_read(tmp_path: Path):
+    """Crafted ODT with an absolute xlink:href must not read from the local filesystem.
+
+    Regression test for the security advisory: the ODF backend previously fell
+    back to Path(image_url).read_bytes() when the part was not found inside the
+    archive, allowing arbitrary local-file reads from document-supplied paths.
+    """
+    canary = tmp_path / "canary.png"
+    Image.new("RGB", (4, 4), "blue").save(canary)
+
+    odt_path = tmp_path / "trigger.odt"
+    _build_odt_with_external_image_href(odt_path, str(canary))
+
+    files_opened: list[str] = []
+
+    def _audit(event: str, args: tuple) -> None:
+        if event == "open":
+            files_opened.append(str(args[0]))
+
+    sys.addaudithook(_audit)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(odt_path)
+
+    # The canary must not have been opened.
+    assert str(canary) not in files_opened, (
+        "ODF backend read a local filesystem path supplied via xlink:href"
+    )
+    # The document converts successfully but contains no picture (no embedded image).
+    assert res.document.pictures == [], (
+        "No picture should appear when the xlink:href points outside the archive"
+    )
+
+
+def test_odt_extensionless_path_is_not_read(tmp_path: Path):
+    """Extension-less absolute paths (e.g. /etc/passwd) must be rejected early.
+
+    _odf_image_can_be_bitmap previously allowed the empty-suffix case, which
+    admitted any extension-less system path before the filesystem fallback ran.
+    """
+    odt_path = tmp_path / "trigger_noext.odt"
+    _build_odt_with_external_image_href(odt_path, "/etc/passwd")
+
+    files_opened: list[str] = []
+
+    def _audit(event: str, args: tuple) -> None:
+        if event == "open":
+            files_opened.append(str(args[0]))
+
+    sys.addaudithook(_audit)
+
+    DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(odt_path)
+
+    assert "/etc/passwd" not in files_opened, (
+        "ODF backend attempted to open an extension-less system path"
+    )

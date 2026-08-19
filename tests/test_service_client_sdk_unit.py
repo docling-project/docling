@@ -4332,3 +4332,25 @@ async def test_async_submit_batch_rejects_both_target_and_targets() -> None:
                 target=PresignedUrlTarget(),
                 targets=[PresignedUrlTarget()],
             )
+
+
+_ACCEPT_DOC_VERSION_HEADER = "Accept-Docling-Document-Version"
+
+
+def test_sync_client_stamps_accept_doc_version_header() -> None:
+    from docling_core.types.doc.common.constants import CURRENT_VERSION
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        assert (
+            client._http_client.headers[_ACCEPT_DOC_VERSION_HEADER] == CURRENT_VERSION
+        )
+
+
+@pytest.mark.anyio
+async def test_async_client_stamps_accept_doc_version_header() -> None:
+    from docling_core.types.doc.common.constants import CURRENT_VERSION
+
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
+        assert (
+            client._async_client.headers[_ACCEPT_DOC_VERSION_HEADER] == CURRENT_VERSION
+        )

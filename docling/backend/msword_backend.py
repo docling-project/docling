@@ -783,6 +783,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(t)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
+            # Check for the sdt containers, like table of contents.
+            # This must come before the image branches: they are computed with
+            # descendant XPaths, so a control holding a picture anywhere inside
+            # would match there and its paragraphs would never be walked.
+            elif tag_name == "sdt":
+                sdt_content = element.find(
+                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                )
+                if sdt_content is not None:
+                    # Recursively walk the SDT content to catch textboxes, tables, and nested structures
+                    _, te = self._walk_linear(sdt_content, doc)
+                    added_elements.extend(te)
             # Check for Image
             elif drawing_blip:
                 pics = self._handle_pictures(drawing_blip, doc)
@@ -855,15 +867,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     is not None
                 ):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
-                    added_elements.extend(te)
-            # Check for the sdt containers, like table of contents
-            elif tag_name == "sdt":
-                sdt_content = element.find(
-                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                )
-                if sdt_content is not None:
-                    # Recursively walk the SDT content to catch textboxes, tables, and nested structures
-                    _, te = self._walk_linear(sdt_content, doc)
                     added_elements.extend(te)
             # Check for Text
             elif tag_name == "p":

@@ -1492,7 +1492,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.120.2"
+version = "2.120.3"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1548,7 +1548,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 
 [[package]]
 name = "docling-client"
-version = "2.120.2"
+version = "2.120.3"
 source = { editable = "packages/docling-client" }
 dependencies = [
     { name = "docling-slim", extra = ["service-client"] },
@@ -1633,7 +1633,7 @@ dependencies = [
 
 [[package]]
 name = "docling-slim"
-version = "2.120.2"
+version = "2.120.3"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -1773,6 +1773,9 @@ format-html = [
 ]
 format-html-render = [
     { name = "playwright" },
+]
+format-iwork = [
+    { name = "defusedxml" },
 ]
 format-latex = [
     { name = "pylatexenc" },
@@ -1983,6 +1986,7 @@ requires-dist = [
     { name = "arelle-release", marker = "extra == 'format-xml-xbrl'", specifier = ">=2.38.17,<3.0.0" },
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
+    { name = "defusedxml", marker = "extra == 'format-iwork'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", specifier = ">=2.91.0,<3.0.0" },
@@ -1996,7 +2000,7 @@ requires-dist = [
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-jats'" },
     { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-xml-uspto'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
-    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "format-iwork", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },
     { name = "docling-slim", extras = ["standard", "models-vlm-inline", "format-audio", "format-html-render", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "models-remote", "models-onnxruntime", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'feat-ocr-easyocr'", specifier = ">=1.7,<2.0" },
@@ -2058,7 +2062,7 @@ requires-dist = [
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
     { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.7.1,<2.0.0" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-opendocument", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-iwork", "format-xml-jats", "format-xml-uspto", "format-xml-xbrl", "format-html-render", "format-audio", "format-video", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "feat-ocr-nemotron", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [

@@ -1092,6 +1092,7 @@ def convert(  # noqa: C901
         ExcelFormatOption,
         FormatOption,
         HTMLFormatOption,
+        IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
         PdfFormatOption,
@@ -1357,6 +1358,9 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+                    pipeline_options=simple_format_option
+                ),
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option
                 ),

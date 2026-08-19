@@ -1,0 +1,104 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "content_control_with_picture",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 10736170593663451033,
+    "filename": "content_control_with_picture.docx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/pictures/0"
+      },
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "COVER TITLE INSIDE SDT",
+      "text": "COVER TITLE INSIDE SDT",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "BODY TEXT OUTSIDE SDT",
+      "text": "BODY TEXT OUTSIDE SDT",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    }
+  ],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 120.0,
+          "height": 120.0
+        },
+        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAIAAAC2BqGFAAABj0lEQVR4Ae3BQQEAAAABMYpc/yhiSeFnc0C354BuzwHdngO6PQd0ew7o9hzQ7Tmg23NAt+eAbs8B3Z4Duj0HdHsO6PYc0O05oNtzQLfngG7PAd2eA7o9B3R7Duj2HNDtOaDbc0C354BuzwHdngO6PQd0ew7o9hzQ7Tmg23NAt+eAbs8B3Z4Duj0HdHsO6PYc0O05oNtzQLfngG7PAd2eA7o9B3R7Duj2HNDtOaDbc0C354BuzwHdngO6PQd0ew7o9hzQ7Tmg23NAt+eAbs8B3Z4Duj0HdHsO6PYc0O05oNtzQLfngG7PAd2eA7o9B3R7Duj2HNDtOaDbc0C354BuzwHdngO6PQd0ew7o9hzQ7Tmg23NAt+eAbs8B3Z4Duj0HdHsO6PYc0O05oNtzQLfngG7PAd2eA7o9B3R7Duj2HNDtOaDbc0C354BuzwHdngO6PQd0ew7o9hzQ7Tmg23NAt+eAbs8B3Z4Duj0HdHsO6PYc0O05oNtzQLfngG7PAd2eA7o9B3R7Duj2HNDtOaDbKxmMellnJmUSAAAAAElFTkSuQmCC"
+      },
+      "annotations": []
+    }
+  ],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}
