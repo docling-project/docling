@@ -60,11 +60,6 @@ Solution Brief IBM Systems Lab Services and Training
 
 ## Highlights
 
-- /g115/g3 /g40/g81/g75/g68/g81/g70/g72/g3 /g87/g75/g72/g3 /g83/g72/g85/g73/g82/g85/g80/g68/g81/g70/g72/g3 /g82/g73/g3 /g92/g82/g88/g85/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g82/g83/g72/g85/g68/g87/g76/g82/g81/g86
-- /g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86
-- /g115/g3 /g53/g72/g79/g92/g3 /g82/g81/g3 /g44/g37/g48/g3 /g72/g91/g83/g72/g85/g87/g3 /g70/g82/g81/g86/g88/g79/g87/g76/g81/g74/g15/g3 /g86/g78/g76/g79/g79/g86/g3 /g86/g75/g68/g85/g76/g81/g74/g3 /g68/g81/g71/g3 /g85/g72/g81/g82/g90/g81/g3 /g86/g72/g85/g89/g76/g70/g72/g86
-- /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72
-
 <!-- image -->
 
 Power Services
@@ -127,9 +122,9 @@ Businesses must make a serious effort to secure their data and recognize that se
 
 This chapter describes how you can secure and protect data in DB2 for i. The following topics are covered in this chapter:
 
-- /SM590000 Security fundamentals
-- /SM590000 Current state of IBM i security
-- /SM590000 DB2 for i security controls
+- SM590000 Security fundamentals
+- SM590000 Current state of IBM i security
+- SM590000 DB2 for i security controls
 
 1   http://www.idtheftcenter.org
 
@@ -139,13 +134,13 @@ This chapter describes how you can secure and protect data in DB2 for i. The fol
 
 Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:
 
-- /SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.
+- SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.
 
 The monitoring and assessment of adherence to the security policy determines whether your security strategy is working. Often, IBM security consultants are asked to perform security assessments for companies without regard to the security policy. Although these assessments can be useful for observing how the system is defined and how data is being accessed, they cannot determine the level of security without a security policy. Without a security policy, it really is not an assessment as much as it is a baseline for monitoring the changes in the security settings that are captured.
 
 A security policy is what defines whether the system and its settings are secure (or not).
 
-- /SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.
+- SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.
 
 With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.
 
@@ -175,9 +170,9 @@ Figure 1-2   Existing row and column controls
 
 The following CL commands can be used to work with, display, or change function usage IDs:
 
-- /SM590000 Work Function Usage ( WRKFCNUSG )
-- /SM590000 Change Function Usage ( CHGFCNUSG )
-- /SM590000 Display Function Usage ( DSPFCNUSG )
+- SM590000 Work Function Usage ( WRKFCNUSG )
+- SM590000 Change Function Usage ( CHGFCNUSG )
+- SM590000 Display Function Usage ( DSPFCNUSG )
 
 For example, the following CHGFCNUSG command shows granting authorization to user HBEDOYA to administer and manage RCAC rules:
 
@@ -193,8 +188,8 @@ Table 2-1   FUNCTION\_USAGE view
 | - | - | - |
 | FUNCTION_ID | VARCHAR(30) | ID of the function. |
 | USER_NAME | VARCHAR(10) | Name of the user profile that has a usage setting for this function. |
-| USAGE | VARCHAR(7) | Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function. |
-| USER_TYPE | VARCHAR(5) | Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group. |
+| USAGE | VARCHAR(7) | Usage setting: SM590000 ALLOWED: The user profile is allowed to use the function. SM590000 DENIED: The user profile is not allowed to use the function. |
+| USER_TYPE | VARCHAR(5) | Type of user profile: SM590000 USER: The user profile is a user. SM590000 GROUP: The user profile is a group. |
 
 To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
 
@@ -260,11 +255,11 @@ Table 3-1   Special registers and their corresponding values
 
 Figure 3-5 shows the difference in the special register values when an adopted authority is used:
 
-- /SM590000 A user connects to the server using the user profile ALICE.
-- /SM590000 USER and CURRENT USER initially have the same value of ALICE.
-- /SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.
-- /SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.
-- /SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.
+- SM590000 A user connects to the server using the user profile ALICE.
+- SM590000 USER and CURRENT USER initially have the same value of ALICE.
+- SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.
+- SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.
+- SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.
 
 Figure 3-5   Special registers and adopted authority
 

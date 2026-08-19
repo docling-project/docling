@@ -12434,12 +12434,12 @@
           },
           "charspan": [
             0,
-            183
+            182
           ]
         }
       ],
-      "orig": "Table 4: Performance of a Mask R-CNN R50 network with document-wise and page-wise split for different label sets. Naive page-wise split will result in /tildelow 10% point improvement.",
-      "text": "Table 4: Performance of a Mask R-CNN R50 network with document-wise and page-wise split for different label sets. Naive page-wise split will result in /tildelow 10% point improvement."
+      "orig": "Table 4: Performance of a Mask R-CNN R50 network with document-wise and page-wise split for different label sets. Naive page-wise split will result in tildelow 10% point improvement.",
+      "text": "Table 4: Performance of a Mask R-CNN R50 network with document-wise and page-wise split for different label sets. Naive page-wise split will result in tildelow 10% point improvement."
     },
     {
       "self_ref": "#/texts/435",
@@ -15121,10 +15121,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.81,
-            "t": 543.24,
-            "r": 554.32,
-            "b": 266.11,
+            "l": 322.79,
+            "t": 543.26,
+            "r": 554.34,
+            "b": 266.09,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

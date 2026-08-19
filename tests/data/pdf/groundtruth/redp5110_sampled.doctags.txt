@@ -12,11 +12,6 @@
 <text><loc_77><loc_87><loc_191><loc_98>Solution Brief IBM Systems Lab Services and Training</text>
 <picture><loc_117><loc_171><loc_147><loc_180></picture>
 <section_header_level_1><loc_118><loc_207><loc_154><loc_213>Highlights</section_header_level_1>
-<unordered_list><list_item><loc_118><loc_217><loc_199><loc_226>/g115/g3 /g40/g81/g75/g68/g81/g70/g72/g3 /g87/g75/g72/g3 /g83/g72/g85/g73/g82/g85/g80/g68/g81/g70/g72/g3 /g82/g73/g3 /g92/g82/g88/g85/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g82/g83/g72/g85/g68/g87/g76/g82/g81/g86</list_item>
-<list_item><loc_118><loc_231><loc_212><loc_246>/g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86</list_item>
-<list_item><loc_118><loc_250><loc_204><loc_260>/g115/g3 /g53/g72/g79/g92/g3 /g82/g81/g3 /g44/g37/g48/g3 /g72/g91/g83/g72/g85/g87/g3 /g70/g82/g81/g86/g88/g79/g87/g76/g81/g74/g15/g3 /g86/g78/g76/g79/g79/g86/g3 /g86/g75/g68/g85/g76/g81/g74/g3 /g68/g81/g71/g3 /g85/g72/g81/g82/g90/g81/g3 /g86/g72/g85/g89/g76/g70/g72/g86</list_item>
-<list_item><loc_118><loc_265><loc_191><loc_274>/g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72</list_item>
-</unordered_list>
 <picture><loc_52><loc_381><loc_212><loc_435></picture>
 <text><loc_377><loc_87><loc_414><loc_92>Power Services</text>
 <section_header_level_1><loc_229><loc_147><loc_379><loc_175>DB2 for i Center of Excellence</section_header_level_1>
@@ -57,9 +52,9 @@
 <text><loc_112><loc_220><loc_447><loc_271>Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center 1  reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute 2 revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.</text>
 <text><loc_112><loc_279><loc_431><loc_308>Businesses must make a serious effort to secure their data and recognize that securing information assets is a cost of doing business. In many parts of the world and in many industries, securing the data is required by law and subject to audits. Data security is no longer an option; it is a requirement.</text>
 <text><loc_112><loc_316><loc_447><loc_329>This chapter describes how you can secure and protect data in DB2 for i. The following topics are covered in this chapter:</text>
-<unordered_list><list_item><loc_112><loc_334><loc_204><loc_340>/SM590000 Security fundamentals</list_item>
-<list_item><loc_112><loc_342><loc_231><loc_348>/SM590000 Current state of IBM i security</list_item>
-<list_item><loc_112><loc_350><loc_216><loc_355>/SM590000 DB2 for i security controls</list_item>
+<unordered_list><list_item><loc_112><loc_334><loc_204><loc_340>SM590000 Security fundamentals</list_item>
+<list_item><loc_112><loc_342><loc_231><loc_348>SM590000 Current state of IBM i security</list_item>
+<list_item><loc_112><loc_350><loc_216><loc_355>SM590000 DB2 for i security controls</list_item>
 </unordered_list>
 <footnote><loc_112><loc_452><loc_211><loc_458>1   http://www.idtheftcenter.org</footnote>
 <footnote><loc_112><loc_458><loc_191><loc_464>2 http://www.ponemon.org /</footnote>
@@ -68,11 +63,11 @@
 <page_break>
 <section_header_level_1><loc_53><loc_47><loc_218><loc_56>1.1  Security fundamentals</section_header_level_1>
 <text><loc_112><loc_67><loc_445><loc_81>Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:</text>
-<unordered_list><list_item><loc_112><loc_86><loc_447><loc_114>/SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.</list_item>
+<unordered_list><list_item><loc_112><loc_86><loc_447><loc_114>SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.</list_item>
 </unordered_list>
 <text><loc_124><loc_119><loc_447><loc_170>The monitoring and assessment of adherence to the security policy determines whether your security strategy is working. Often, IBM security consultants are asked to perform security assessments for companies without regard to the security policy. Although these assessments can be useful for observing how the system is defined and how data is being accessed, they cannot determine the level of security without a security policy. Without a security policy, it really is not an assessment as much as it is a baseline for monitoring the changes in the security settings that are captured.</text>
 <text><loc_124><loc_175><loc_443><loc_181>A security policy is what defines whether the system and its settings are secure (or not).</text>
-<unordered_list><list_item><loc_112><loc_186><loc_447><loc_237>/SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.</list_item>
+<unordered_list><list_item><loc_112><loc_186><loc_447><loc_237>SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.</list_item>
 </unordered_list>
 <text><loc_112><loc_245><loc_437><loc_259>With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.</text>
 <section_header_level_1><loc_53><loc_277><loc_264><loc_286>1.2  Current state of IBM i security</section_header_level_1>
@@ -91,15 +86,15 @@
 <page_break>
 <section_header_level_1><loc_53><loc_45><loc_274><loc_53>2.1.6  Change Function Usage CL command</section_header_level_1>
 <text><loc_112><loc_62><loc_447><loc_67>The following CL commands can be used to work with, display, or change function usage IDs:</text>
-<unordered_list><list_item><loc_112><loc_72><loc_246><loc_78>/SM590000 Work Function Usage ( WRKFCNUSG )</list_item>
-<list_item><loc_112><loc_80><loc_256><loc_86>/SM590000 Change Function Usage ( CHGFCNUSG )</list_item>
-<list_item><loc_112><loc_87><loc_254><loc_93>/SM590000 Display Function Usage ( DSPFCNUSG )</list_item>
+<unordered_list><list_item><loc_112><loc_72><loc_246><loc_78>SM590000 Work Function Usage ( WRKFCNUSG )</list_item>
+<list_item><loc_112><loc_80><loc_256><loc_86>SM590000 Change Function Usage ( CHGFCNUSG )</list_item>
+<list_item><loc_112><loc_87><loc_254><loc_93>SM590000 Display Function Usage ( DSPFCNUSG )</list_item>
 </unordered_list>
 <text><loc_112><loc_101><loc_419><loc_115>For example, the following CHGFCNUSG command shows granting authorization to user HBEDOYA to administer and manage RCAC rules:</text>
 <text><loc_112><loc_120><loc_361><loc_125>CHGFCNUSG FCNID(QIBM_DB_SECADM) USER(HBEDOYA) USAGE(*ALLOWED)</text>
 <section_header_level_1><loc_53><loc_138><loc_445><loc_146>2.1.7  Verifying function usage IDs for RCAC with the FUNCTION_USAGE view</section_header_level_1>
 <text><loc_112><loc_155><loc_424><loc_168>The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.</text>
-<otsl><loc_110><loc_183><loc_447><loc_279><ched>Column name<ched>Data type<ched>Description<nl><fcel>FUNCTION_ID<fcel>VARCHAR(30)<fcel>ID of the function.<nl><fcel>USER_NAME<fcel>VARCHAR(10)<fcel>Name of the user profile that has a usage setting for this function.<nl><fcel>USAGE<fcel>VARCHAR(7)<fcel>Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function.<nl><fcel>USER_TYPE<fcel>VARCHAR(5)<fcel>Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.<nl><caption><loc_112><loc_176><loc_232><loc_182>Table 2-1   FUNCTION_USAGE view</caption></otsl>
+<otsl><loc_110><loc_183><loc_447><loc_279><ched>Column name<ched>Data type<ched>Description<nl><fcel>FUNCTION_ID<fcel>VARCHAR(30)<fcel>ID of the function.<nl><fcel>USER_NAME<fcel>VARCHAR(10)<fcel>Name of the user profile that has a usage setting for this function.<nl><fcel>USAGE<fcel>VARCHAR(7)<fcel>Usage setting: SM590000 ALLOWED: The user profile is allowed to use the function. SM590000 DENIED: The user profile is not allowed to use the function.<nl><fcel>USER_TYPE<fcel>VARCHAR(5)<fcel>Type of user profile: SM590000 USER: The user profile is a user. SM590000 GROUP: The user profile is a group.<nl><caption><loc_112><loc_176><loc_232><loc_182>Table 2-1   FUNCTION_USAGE view</caption></otsl>
 <text><loc_112><loc_286><loc_447><loc_299>To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.</text>
 <otsl><loc_111><loc_314><loc_449><loc_373><fcel>SELECT<fcel>function_id, user_name, usage, user_type<nl><fcel>FROM ORDER<fcel>function_usage function_id='QIBM_DB_SECADM' user_name;<nl><fcel>WHERE<ecel><nl><caption><loc_112><loc_307><loc_378><loc_312>Example 2-1   Query to determine who has authority to define and manage RCAC</caption></otsl>
 <section_header_level_1><loc_53><loc_392><loc_204><loc_401>2.2  Separation of duties</section_header_level_1>
@@ -124,11 +119,11 @@
 <text><loc_112><loc_45><loc_337><loc_51>Table 3-1 summarizes these special registers and their values.</text>
 <otsl><loc_111><loc_65><loc_444><loc_129><ched>Special register<ched>Corresponding value<nl><fcel>USER or SESSION_USER<fcel>The effective user of the thread excluding adopted authority.<nl><fcel>CURRENT_USER<fcel>The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER.<nl><fcel>SYSTEM_USER<fcel>The authorization ID that initiated the connection.<nl><caption><loc_112><loc_59><loc_304><loc_64>Table 3-1   Special registers and their corresponding values</caption></otsl>
 <text><loc_112><loc_135><loc_440><loc_149>Figure 3-5 shows the difference in the special register values when an adopted authority is used:</text>
-<unordered_list><list_item><loc_112><loc_154><loc_336><loc_160>/SM590000 A user connects to the server using the user profile ALICE.</list_item>
-<list_item><loc_112><loc_164><loc_370><loc_170>/SM590000 USER and CURRENT USER initially have the same value of ALICE.</list_item>
-<list_item><loc_112><loc_175><loc_442><loc_189>/SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.</list_item>
-<list_item><loc_112><loc_194><loc_447><loc_214>/SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.</list_item>
-<list_item><loc_112><loc_219><loc_447><loc_233>/SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.</list_item>
+<unordered_list><list_item><loc_112><loc_154><loc_336><loc_160>SM590000 A user connects to the server using the user profile ALICE.</list_item>
+<list_item><loc_112><loc_164><loc_370><loc_170>SM590000 USER and CURRENT USER initially have the same value of ALICE.</list_item>
+<list_item><loc_112><loc_175><loc_442><loc_189>SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.</list_item>
+<list_item><loc_112><loc_194><loc_447><loc_214>SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.</list_item>
+<list_item><loc_112><loc_219><loc_447><loc_233>SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.</list_item>
 </unordered_list>
 <picture><loc_111><loc_242><loc_247><loc_374><caption><loc_112><loc_377><loc_279><loc_382>Figure 3-5   Special registers and adopted authority</caption></picture>
 <section_header_level_1><loc_53><loc_395><loc_202><loc_402>3.2.2  Built-in global variables</section_header_level_1>
