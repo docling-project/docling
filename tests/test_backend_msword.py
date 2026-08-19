@@ -1673,25 +1673,43 @@ _TEXTBOX_XML = (
     "</wp:inline></w:drawing></w:r></w:p>"
 )
 
+#: A legacy VML textbox whose paragraph is not wrapped in ``w:txbxContent``. The backend
+#: reaches these through a separate branch that walks ancestors to find the containing shape,
+#: and that branch does the same bookkeeping, so it needs the same guarantee.
+_VML_TEXTBOX_XML = (
+    "<w:p {nsdecl}><w:r><w:pict>"
+    '<v:shape id="vml{index}" type="#_x0000_t202" style="width:150pt;height:40pt">'
+    "<v:textbox><w:p><w:r><w:t>{text}</w:t></w:r></w:p></v:textbox>"
+    "</v:shape>"
+    "</w:pict></w:r></w:p>"
+)
+
 _NSDECL = " ".join(
     [
         'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"',
         'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"',
         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"',
         'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"',
+        'xmlns:v="urn:schemas-microsoft-com:vml"',
     ]
 )
 
 
 def _document_with_textboxes(path, count):
-    """A document whose every textbox says its own number, so losses are nameable."""
+    """A document whose every textbox says its own number, so losses are nameable.
+
+    Both textbox flavours are present: modern DrawingML and legacy VML. They travel
+    through different branches of the collection code, and both branches keep the same
+    bookkeeping, so a probe on one flavour would leave the other unguarded.
+    """
     document = Document()
     document.add_paragraph("start")
     body = document.element.body
     for index in range(count):
+        template = _VML_TEXTBOX_XML if index % 2 else _TEXTBOX_XML
         body.append(
             etree.fromstring(
-                _TEXTBOX_XML.format(
+                template.format(
                     nsdecl=_NSDECL,
                     shape_id=1000 + index,
                     index=index,
