@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, Type, cast
+from typing import Annotated, Literal, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -40,7 +40,7 @@ from docling_core.transforms.serializer.html import (
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import TypeAdapter
+from pydantic import SecretStr, TypeAdapter
 from rich.console import Console
 
 from docling.cli.export_utils import (
@@ -1100,7 +1100,29 @@ def convert(  # noqa: C901
         WordFormatOption,
     )
     from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
+    from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
     from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    def _resolve_pdf_backend() -> tuple[type[PdfDocumentBackend], PdfBackendOptions]:
+        selected_backend = normalize_pdf_backend(pdf_backend)
+        password = SecretStr(pdf_password) if pdf_password is not None else None
+        if selected_backend == PdfBackend.DOCLING_PARSE:
+            return DoclingParseDocumentBackend, PdfBackendOptions(password=password)
+        if selected_backend == PdfBackend.THREADED_DOCLING_PARSE:
+            return (
+                ThreadedDoclingParseDocumentBackend,
+                ThreadedDoclingParseBackendOptions(
+                    password=password,
+                    parser_threads=num_threads,
+                    release_native_memory_every_n_pages=(
+                        release_native_memory_every_n_pages
+                    ),
+                ),
+            )
+        if selected_backend == PdfBackend.PYPDFIUM2:
+            return PyPdfiumDocumentBackend, PdfBackendOptions(password=password)
+        raise RuntimeError(f"Unexpected PDF backend type {selected_backend}")
 
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -1246,9 +1268,7 @@ def convert(  # noqa: C901
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         pipeline_options: PipelineOptions
         format_options: dict[InputFormat, FormatOption] = {}
-        pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
-            password=pdf_password
-        )
+        backend, pdf_backend_options = _resolve_pdf_backend()
 
         layout_factory = get_layout_factory(
             allow_external_plugins=allow_external_plugins
@@ -1264,7 +1284,12 @@ def convert(  # noqa: C901
             table_structure_factory.create_options(kind=table_structure_engine)
         )
 
-        if pipeline == ProcessingPipeline.STANDARD:
+        if pipeline in {ProcessingPipeline.STANDARD, ProcessingPipeline.LEGACY}:
+            pipeline_cls = (
+                LegacyStandardPdfPipeline
+                if pipeline == ProcessingPipeline.LEGACY
+                else StandardPdfPipeline
+            )
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -1296,27 +1321,10 @@ def convert(  # noqa: C901
                     True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
-            pdf_backend = normalize_pdf_backend(pdf_backend)
-            backend: Type[PdfDocumentBackend]
-            if pdf_backend == PdfBackend.DOCLING_PARSE:
-                backend = DoclingParseDocumentBackend  # type: ignore
-            elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
-                backend = ThreadedDoclingParseDocumentBackend  # type: ignore
-                pdf_backend_options = ThreadedDoclingParseBackendOptions(
-                    password=pdf_password,
-                    parser_threads=num_threads,
-                    release_native_memory_every_n_pages=(
-                        release_native_memory_every_n_pages
-                    ),
-                )
-            elif pdf_backend == PdfBackend.PYPDFIUM2:
-                backend = PyPdfiumDocumentBackend  # type: ignore
-            else:
-                raise RuntimeError(f"Unexpected PDF backend type {pdf_backend}")
-
             pdf_format_option = PdfFormatOption(
+                pipeline_cls=pipeline_cls,
                 pipeline_options=pipeline_options,
-                backend=backend,  # pdf_backend
+                backend=backend,
                 backend_options=pdf_backend_options,
             )
             mets_gbs_options = pipeline_options.model_copy()
@@ -1349,6 +1357,7 @@ def convert(  # noqa: C901
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
+                pipeline_cls=pipeline_cls,
                 pipeline_options=pipeline_options,
                 backend=ImageDocumentBackend,
                 backend_options=pdf_backend_options,
@@ -1405,6 +1414,10 @@ def convert(  # noqa: C901
                 accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
+            if _should_generate_export_images(image_export_mode, to_formats):
+                pipeline_options.generate_page_images = True
+                pipeline_options.generate_picture_images = True
+                pipeline_options.images_scale = 2
 
             # Use the new preset system
             try:
@@ -1419,20 +1432,21 @@ def convert(  # noqa: C901
                 )
                 raise typer.Abort()
 
-            # FIXME: VlmPipeline still fetches pages through load_page(), which the
-            # default (threaded) backend does not implement, so it is pinned to the
-            # random-access backend here. Remove this pin once the paginated
-            # pipelines consume backends via iter_pages(); see
-            # _plans/threaded_backend_random_page_access.md.
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline,
                 pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,
+                backend=backend,
+                backend_options=pdf_backend_options,
+            )
+            image_format_option = PdfFormatOption(
+                pipeline_cls=VlmPipeline,
+                pipeline_options=pipeline_options,
+                backend=ImageDocumentBackend,
             )
 
             format_options = {
                 InputFormat.PDF: pdf_format_option,
-                InputFormat.IMAGE: pdf_format_option,
+                InputFormat.IMAGE: image_format_option,
             }
 
         # Set ASR options

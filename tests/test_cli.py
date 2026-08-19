@@ -712,6 +712,81 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options.release_native_memory_every_n_pages == 64
 
 
+@pytest.mark.parametrize(
+    ("pipeline_name", "expected_pipeline"),
+    [("legacy", "LegacyStandardPdfPipeline"), ("vlm", "VlmPipeline")],
+)
+@pytest.mark.parametrize(
+    ("pdf_backend", "expected_backend"),
+    [
+        (PdfBackend.DOCLING_PARSE, "DoclingParseDocumentBackend"),
+        (
+            PdfBackend.THREADED_DOCLING_PARSE,
+            "ThreadedDoclingParseDocumentBackend",
+        ),
+        (PdfBackend.PYPDFIUM2, "PyPdfiumDocumentBackend"),
+    ],
+)
+def test_cli_routes_pdf_backend_for_legacy_and_vlm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pipeline_name: str,
+    expected_pipeline: str,
+    pdf_backend: PdfBackend,
+    expected_backend: str,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            pdf_option = format_options[InputFormat.PDF]
+            image_option = format_options[InputFormat.IMAGE]
+            captured["pipeline"] = pdf_option.pipeline_cls.__name__
+            captured["pdf_backend"] = pdf_option.backend.__name__
+            captured["image_backend"] = image_option.backend.__name__
+            if pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+                assert isinstance(
+                    pdf_option.backend_options, ThreadedDoclingParseBackendOptions
+                )
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            pipeline_name,
+            "--pdf-backend",
+            pdf_backend.value,
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured == {
+        "pipeline": expected_pipeline,
+        "pdf_backend": expected_backend,
+        "image_backend": "ImageDocumentBackend",
+    }
+
+
 def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
     """Invoke `docling convert` with a fake converter and return the built OcrOptions."""
     captured: dict[str, Any] = {}
@@ -895,7 +970,9 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
         ) -> None:
             nonlocal captured_pipeline_options
             pdf_option = format_options[InputFormat.PDF]
-            assert format_options[InputFormat.IMAGE] is pdf_option
+            assert format_options[InputFormat.IMAGE].pipeline_options is (
+                pdf_option.pipeline_options
+            )
             assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
             captured_pipeline_options = pdf_option.pipeline_options
 
@@ -935,6 +1012,8 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
     assert captured_pipeline_options is not None
     assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
     assert captured_pipeline_options.accelerator_options.num_threads == 7
+    assert captured_pipeline_options.generate_page_images is True
+    assert captured_pipeline_options.generate_picture_images is True
 
 
 def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):
