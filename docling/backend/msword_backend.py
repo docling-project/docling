@@ -418,7 +418,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # proxy of a different node. Bookkeeping by address then reads an unrelated
         # textbox as "already processed" and drops it silently. Holding the elements
         # makes the identity real -- lxml keeps one proxy per node while referenced.
-        self.processed_textbox_elements: set = set()
+        self.processed_textbox_elements: set[etree._Element] = set()
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
@@ -1778,11 +1778,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
-    def _collect_textbox_paragraphs(self, textbox_elements):
+    def _collect_textbox_paragraphs(
+        self, textbox_elements: list[etree._Element]
+    ) -> dict[etree._Element | None, list[tuple[etree._Element, int | None]]]:
         """Collect and organize paragraphs from textbox elements."""
         # Elements, not their ``id()`` -- see ``processed_textbox_elements``.
-        processed_paragraphs: set = set()
-        container_paragraphs: dict = {}
+        processed_paragraphs: set[etree._Element] = set()
+        container_paragraphs: dict[
+            etree._Element | None, list[tuple[etree._Element, int | None]]
+        ] = {}
 
         for element in textbox_elements:
             # Skip if we've already processed this exact element
