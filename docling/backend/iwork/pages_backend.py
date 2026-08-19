@@ -104,6 +104,50 @@ _STYLE_SUPER_FIELD = 1
 _STYLE_NAME_FIELD = 1
 """Field of ``TSS.StyleArchive`` holding the style's human-facing name."""
 
+_TST_TABLE_MODEL = 6001
+"""Message type of ``TST.TableModelArchive``, the root of one table."""
+
+_TST_TILE = 6002
+"""Message type of ``TST.Tile``, which lays a table's cells out into rows."""
+
+_TST_DATA_LIST = 6005
+"""Message type of ``TST.TableDataList``, a table's shared value table.
+
+Cells reference their contents by key rather than holding them, so two cells
+with the same text share a single entry.
+"""
+
+_TABLE_ROWS_FIELD = 6
+_TABLE_COLS_FIELD = 7
+_TABLE_HEADER_ROWS_FIELD = 9
+_TABLE_DATA_STORE_FIELD = 4
+"""Fields of ``TST.TableModelArchive``: geometry, header rows, and data store."""
+
+_STORE_TILES_FIELD = 3
+_STORE_STRINGS_FIELD = 4
+"""Fields of a table's data store: its tiles, and its string data list."""
+
+_TILE_ROWS_FIELD = 5
+_ROW_INDEX_FIELD = 1
+_ROW_STORAGE_FIELD = 3
+_ROW_OFFSETS_FIELD = 4
+"""Fields of ``TST.Tile`` and of one of its rows.
+
+A row holds a packed cell buffer plus one ``int16`` offset per column, where a
+negative offset marks a column with no cell.
+"""
+
+_CELL_VERSION = 4
+_CELL_TYPE_TEXT = 3
+_CELL_KEY_OFFSET = 16
+"""Layout of a packed cell.
+
+Byte 0 is the storage version and byte 1 the value type; a text cell holds the
+key of its string in the four bytes at ``_CELL_KEY_OFFSET``. Only this
+combination is decoded, so an unrecognised cell yields no text rather than
+misread bytes.
+"""
+
 _STORAGE_PARAGRAPH_STYLE_FIELD = 5
 """Field of ``TSWP.StorageArchive`` holding the paragraph style run table.
 
@@ -156,12 +200,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
     """Extract text from Apple Pages documents of either generation.
 
     Known limitations:
-        * Tables are read from iWork '09 documents only. A Pages 5+ table keeps
-          its cell contents in a packed per-row storage buffer (``Index/Tables/
-          Tile.iwa``) that still needs decoding; the strings are reachable but
-          their grid positions are not, and guessing at the order would silently
-          mangle any table containing repeated values.
-        * Lists are not recovered.
+        * Only text cells are read from a table. A cell holding a number, a
+          date or a formula result is left empty rather than guessed at.
+        * Character formatting and lists are not recovered.
         * Text boxes, headers, footers, footnotes and comments are not
           included; only the main body storage is read, in both generations.
         * Password-protected documents cannot be read.
@@ -298,7 +339,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(value, bytes)
         )
         styles = self._iwa_style_runs(fields, objects)
-        return _split_paragraphs(text, styles), []
+        return _split_paragraphs(text, styles), _iwa_tables(objects)
 
     @staticmethod
     def _iwa_style_runs(
@@ -660,3 +701,166 @@ def _iter_body_paragraphs(root: Element) -> list[Element]:
                 stack.append(child)
 
     return paragraphs
+
+
+def _iwa_tables(objects: dict[int, IWAObject]) -> list[TableData]:
+    """Build table data from the ``TST`` archives of a Pages 5+ document.
+
+    A table keeps its geometry on the model, its cell contents in a shared value
+    list, and the placement of those values in tiles. Cells reference their value
+    by key, so equal values share one entry — which is why the tiles have to be
+    read rather than assuming the value list is already in cell order.
+
+    Args:
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        One :class:`TableData` per table that could be read, in object order.
+    """
+    tables: list[TableData] = []
+
+    for model in objects.values():
+        if model.message_type != _TST_TABLE_MODEL:
+            continue
+
+        fields = _safe_fields(model.payload)
+        num_rows = fields.get(_TABLE_ROWS_FIELD, [None])[0]
+        num_cols = fields.get(_TABLE_COLS_FIELD, [None])[0]
+        store_raw = fields.get(_TABLE_DATA_STORE_FIELD, [None])[0]
+        if not isinstance(num_rows, int) or not isinstance(num_cols, int):
+            continue
+        if not num_rows or not num_cols or not isinstance(store_raw, bytes):
+            continue
+
+        header_rows = fields.get(_TABLE_HEADER_ROWS_FIELD, [0])[0]
+        store = _safe_fields(store_raw)
+        strings = _iwa_string_table(store, objects)
+
+        cells: list[TableCell] = []
+        for tile in _iwa_tiles(store, objects):
+            cells.extend(
+                _iwa_tile_cells(
+                    tile,
+                    strings,
+                    num_cols,
+                    header_rows if isinstance(header_rows, int) else 0,
+                )
+            )
+
+        if cells:
+            tables.append(
+                TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+            )
+
+    return tables
+
+
+def _iwa_string_table(
+    store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
+) -> dict[int, str]:
+    """Read a table's shared strings, keyed as its cells reference them."""
+    reference = store.get(_STORE_STRINGS_FIELD, [None])[0]
+    target = read_reference(reference) if isinstance(reference, bytes) else None
+    data_list = objects.get(target) if target is not None else None
+    if data_list is None or data_list.message_type != _TST_DATA_LIST:
+        return {}
+
+    strings: dict[int, str] = {}
+    for entry in _safe_fields(data_list.payload).get(3, []):
+        if not isinstance(entry, bytes):
+            continue
+        parsed = _safe_fields(entry)
+        key = parsed.get(1, [None])[0]
+        value = next((v for v in parsed.get(3, []) if isinstance(v, bytes)), None)
+        if isinstance(key, int) and value is not None:
+            strings[key] = value.decode("utf-8", errors="replace")
+    return strings
+
+
+def _iwa_tiles(
+    store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
+) -> list[IWAObject]:
+    """Resolve the tiles a table's data store points at."""
+    tiles: list[IWAObject] = []
+    container = store.get(_STORE_TILES_FIELD, [None])[0]
+    if not isinstance(container, bytes):
+        return tiles
+
+    for entry in _safe_fields(container).get(1, []):
+        if not isinstance(entry, bytes):
+            continue
+        reference = _safe_fields(entry).get(2, [None])[0]
+        target = read_reference(reference) if isinstance(reference, bytes) else None
+        tile = objects.get(target) if target is not None else None
+        if tile is not None and tile.message_type == _TST_TILE:
+            tiles.append(tile)
+    return tiles
+
+
+def _iwa_tile_cells(
+    tile: IWAObject, strings: dict[int, str], num_cols: int, header_rows: int
+) -> list[TableCell]:
+    """Read one tile's cells, placing them by each row's per-column offsets."""
+    cells: list[TableCell] = []
+
+    for row_message in _safe_fields(tile.payload).get(_TILE_ROWS_FIELD, []):
+        if not isinstance(row_message, bytes):
+            continue
+        row = _safe_fields(row_message)
+        row_index = row.get(_ROW_INDEX_FIELD, [None])[0]
+        storage = row.get(_ROW_STORAGE_FIELD, [None])[0]
+        offsets = row.get(_ROW_OFFSETS_FIELD, [None])[0]
+        if not isinstance(row_index, int):
+            continue
+        if not isinstance(storage, bytes) or not isinstance(offsets, bytes):
+            continue
+
+        for column in range(min(num_cols, len(offsets) // 2)):
+            start = int.from_bytes(
+                offsets[column * 2 : column * 2 + 2], "little", signed=True
+            )
+            text = _iwa_cell_text(storage, start, strings)
+            if text is None:
+                continue
+            cells.append(
+                TableCell(
+                    text=text,
+                    start_row_offset_idx=row_index,
+                    end_row_offset_idx=row_index + 1,
+                    start_col_offset_idx=column,
+                    end_col_offset_idx=column + 1,
+                    column_header=row_index < header_rows,
+                )
+            )
+
+    return cells
+
+
+def _iwa_cell_text(storage: bytes, start: int, strings: dict[int, str]) -> str | None:
+    """Read one packed cell, or None when there is nothing readable there.
+
+    Only the text cell layout is decoded. Any other value type — a number, a
+    date, a formula result — is skipped rather than guessed at from bytes whose
+    meaning has not been established against a real document.
+    """
+    if start < 0 or start + _CELL_KEY_OFFSET + 4 > len(storage):
+        return None
+    if storage[start] != _CELL_VERSION or storage[start + 1] != _CELL_TYPE_TEXT:
+        return None
+
+    key_at = start + _CELL_KEY_OFFSET
+    key = int.from_bytes(storage[key_at : key_at + 4], "little")
+    return strings.get(key)
+
+
+def _safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
+    """Decode a message, treating an unreadable one as empty.
+
+    The table archives carry sub-messages this reader has no need to understand,
+    some of which use wire types the fields it does want never use. Failing the
+    whole document over one of them would be wrong.
+    """
+    try:
+        return read_fields(payload)
+    except DocumentLoadError:
+        return {}

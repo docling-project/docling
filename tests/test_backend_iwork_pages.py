@@ -498,3 +498,37 @@ def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
     assert "Real body text." in text
     for furniture in ("Running header", "Page footer", "A footnote body"):
         assert furniture not in text
+
+
+def test_modern_table_is_extracted_from_the_tile_storage():
+    """A Pages 5+ table places its cells through per-row offsets into a packed
+    buffer, each referencing a shared string by key. Reading the tile is what
+    makes repeated values safe: they share one entry in the value list."""
+    doc = _backend(PAGES_2013).convert()
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (4, 3)
+
+    by_position = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.table_cells
+    }
+    assert by_position[(0, 0)].text == "Column one"
+    assert by_position[(3, 2)].text == "Cell nine"
+    assert by_position[(0, 1)].column_header
+    assert not by_position[(1, 1)].column_header
+
+
+def test_both_generations_agree_on_the_table():
+    """The two fixtures are the same document saved by different Pages releases,
+    so the IWA tile reader and the '09 XML reader must produce the same grid."""
+
+    def grid(path: Path) -> dict[tuple[int, int], str]:
+        table = _backend(path).convert().tables[0].data
+        return {
+            (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+            for cell in table.table_cells
+        }
+
+    assert grid(PAGES_2013) == grid(PAGES_IWORK09)
