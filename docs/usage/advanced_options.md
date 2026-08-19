@@ -178,8 +178,8 @@ generations.
     Tables are read from iWork '09 documents but not yet from Pages 5+, where
     cell contents live in a packed per-row storage buffer that still needs
     decoding. Lists, text boxes, headers, footers, footnotes and comments are not
-    included in either generation, and password-protected documents cannot be
-    read.
+    included in either generation — only the main body is read — and
+    password-protected documents cannot be read.
 
 The container is untrusted input, so member count, total size, per-member size
 and decompressed output are all bounded. Those limits can be tuned with

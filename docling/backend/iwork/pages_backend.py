@@ -129,6 +129,21 @@ _SF_TABULAR_MODEL = f"{{{_SF_NAMESPACE}}}tabular-model"
 _SF_GRID = f"{{{_SF_NAMESPACE}}}grid"
 _SF_CELL_TEXT = f"{{{_SF_NAMESPACE}}}ct"
 
+_SF_FURNITURE = frozenset(
+    {
+        f"{{{_SF_NAMESPACE}}}header",
+        f"{{{_SF_NAMESPACE}}}footer",
+        f"{{{_SF_NAMESPACE}}}footnotes",
+    }
+)
+"""Elements whose paragraphs are page furniture rather than body content.
+
+Each carries its own ``sf:text-body``, so they have to be pruned by element
+rather than by looking for the document's body. The IWA reader only ever sees
+the body storage, so skipping them keeps both generations in agreement about
+what the document contains.
+"""
+
 _HEADING_PATTERN = re.compile(r"^heading\s*(\d+)?$", re.IGNORECASE)
 """Matches Pages' built-in heading styles, e.g. "Heading 1" or bare "Heading"."""
 
@@ -147,8 +162,8 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
           their grid positions are not, and guessing at the order would silently
           mangle any table containing repeated values.
         * Lists are not recovered.
-        * Text boxes, headers, footers, footnotes and comments are not included;
-          only the main body storage is read.
+        * Text boxes, headers, footers, footnotes and comments are not
+          included; only the main body storage is read, in both generations.
         * Password-protected documents cannot be read.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
@@ -364,7 +379,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         }
 
         paragraphs: list[_Paragraph] = []
-        for para in root.iter(_SF_PARAGRAPH):
+        for para in _iter_body_paragraphs(root):
             # itertext() would pull in the template placeholder text, which is
             # not document content.
             text = _clean("".join(_iter_text_excluding_ghosts(para)))
@@ -615,3 +630,33 @@ def _label_for_style(style_name: str | None) -> tuple[DocItemLabel, int | None]:
         return DocItemLabel.SECTION_HEADER, min(level, 6)
 
     return DocItemLabel.TEXT, None
+
+
+def _iter_body_paragraphs(root: Element) -> list[Element]:
+    """Collect the body paragraphs of an '09 document, skipping page furniture.
+
+    Headers, footers and footnotes each hold their own ``sf:text-body``, so a
+    plain ``root.iter()`` would pull their paragraphs into the body flow. They
+    are pruned instead, which matches the IWA reader: it follows
+    ``TP.DocumentArchive`` to the body storage and never sees them.
+
+    Args:
+        root: The parsed ``index.xml`` root element.
+
+    Returns:
+        The body paragraphs, in document order.
+    """
+    paragraphs: list[Element] = []
+    # Explicit stack, for the same reason the text walk uses one: nesting depth
+    # is attacker-controlled.
+    stack: list[Element] = [root]
+
+    while stack:
+        node = stack.pop()
+        if node.tag == _SF_PARAGRAPH:
+            paragraphs.append(node)
+        for child in reversed(list(node)):
+            if child.tag not in _SF_FURNITURE:
+                stack.append(child)
+
+    return paragraphs

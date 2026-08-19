@@ -460,3 +460,41 @@ def test_body_text_is_labelled_from_its_style():
 
     assert doc.texts
     assert all(item.label == DocItemLabel.TEXT for item in doc.texts)
+
+
+def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
+    """Headers, footers and footnotes each carry their own sf:text-body in an '09
+    document, so iterating every sf:p would fold them into the body flow. The IWA
+    reader only ever sees the body storage, so both generations must agree."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:stylesheet>
+        <sf:paragraphstyle sf:name="Body" sf:ident="ps-body"/>
+      </sf:stylesheet>
+      <sf:text-storage>
+        <sf:text-body><sf:p sf:style="ps-body">Real body text.</sf:p></sf:text-body>
+        <sf:header><sf:text-body><sf:p>Running header</sf:p></sf:text-body></sf:header>
+        <sf:footer><sf:text-body><sf:p>Page footer</sf:p></sf:text-body></sf:footer>
+        <sf:footnotes>
+          <sf:text-storage><sf:text-body>
+            <sf:p>A footnote body</sf:p>
+          </sf:text-body></sf:text-storage>
+        </sf:footnotes>
+      </sf:text-storage>
+    </sf:document>""".encode()
+
+    source = _write_pages(tmp_path / "furniture.pages", {"index.xml": xml})
+    backend = IWorkPagesDocumentBackend(
+        InputDocument(
+            path_or_stream=source,
+            format=InputFormat.IWORK_PAGES,
+            backend=IWorkPagesDocumentBackend,
+        ),
+        source,
+    )
+
+    text = backend.convert().export_to_markdown()
+    assert "Real body text." in text
+    for furniture in ("Running header", "Page footer", "A footnote body"):
+        assert furniture not in text
