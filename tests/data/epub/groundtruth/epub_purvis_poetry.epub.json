@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "epub_purvis_poetry",
   "origin": {
     "mimetype": "application/epub+zip",
@@ -545,8 +545,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "By",
-      "text": "By"
+      "orig": "By ",
+      "text": "By "
     },
     {
       "self_ref": "#/texts/2",
@@ -629,8 +629,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This ebook is the product of many hours of hard work by volunteers for",
-      "text": "This ebook is the product of many hours of hard work by volunteers for"
+      "orig": "This ebook is the product of many hours of hard work by volunteers for ",
+      "text": "This ebook is the product of many hours of hard work by volunteers for "
     },
     {
       "self_ref": "#/texts/7",
@@ -666,8 +666,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This particular ebook is based on digital scans from the",
-      "text": "This particular ebook is based on digital scans from the"
+      "orig": "This particular ebook is based on digital scans from the ",
+      "text": "This particular ebook is based on digital scans from the "
     },
     {
       "self_ref": "#/texts/10",
@@ -703,8 +703,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the",
-      "text": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the"
+      "orig": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the ",
+      "text": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the "
     },
     {
       "self_ref": "#/texts/13",
@@ -728,8 +728,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". For full license information, see the",
-      "text": ". For full license information, see the"
+      "orig": ". For full license information, see the ",
+      "text": ". For full license information, see the "
     },
     {
       "self_ref": "#/texts/15",
@@ -740,8 +740,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Uncopyright",
-      "text": "Uncopyright",
+      "orig": "Uncopyright ",
+      "text": "Uncopyright ",
       "hyperlink": "uncopyright.xhtml"
     },
     {
@@ -765,8 +765,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at",
-      "text": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at"
+      "orig": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at ",
+      "text": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at "
     },
     {
       "self_ref": "#/texts/18",
@@ -941,8 +941,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless",
-      "text": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless"
+      "orig": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless ",
+      "text": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless "
     },
     {
       "self_ref": "#/texts/30",
@@ -1103,8 +1103,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut",
-      "text": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut"
+      "orig": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut ",
+      "text": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut "
     },
     {
       "self_ref": "#/texts/41",
@@ -1115,8 +1115,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "these",
-      "text": "these",
+      "orig": "these ",
+      "text": "these ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -1134,8 +1134,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "were scenes he'll know no more-\nHe only",
-      "text": "were scenes he'll know no more-\nHe only"
+      "orig": "were scenes he'll know no more-\nHe only ",
+      "text": "were scenes he'll know no more-\nHe only "
     },
     {
       "self_ref": "#/texts/43",
@@ -1146,8 +1146,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "feels",
-      "text": "feels",
+      "orig": "feels ",
+      "text": "feels ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -1268,8 +1268,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that",
-      "text": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that"
+      "orig": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that ",
+      "text": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that "
     },
     {
       "self_ref": "#/texts/52",
@@ -1280,8 +1280,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "his",
-      "text": "his",
+      "orig": "his ",
+      "text": "his ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -1456,8 +1456,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince",
-      "text": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince"
+      "orig": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince ",
+      "text": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince "
     },
     {
       "self_ref": "#/texts/64",
@@ -2164,8 +2164,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "I knew not",
-      "text": "I knew not"
+      "orig": "I knew not ",
+      "text": "I knew not "
     },
     {
       "self_ref": "#/texts/111",
@@ -2176,8 +2176,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "then",
-      "text": "then",
+      "orig": "then ",
+      "text": "then ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -2376,8 +2376,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Poetry",
-      "text": "Poetry",
+      "orig": "Poetry ",
+      "text": "Poetry ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -2395,8 +2395,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "was compiled from poems published between 1831 and 1836 by",
-      "text": "was compiled from poems published between 1831 and 1836 by"
+      "orig": "was compiled from poems published between 1831 and 1836 by ",
+      "text": "was compiled from poems published between 1831 and 1836 by "
     },
     {
       "self_ref": "#/texts/126",
@@ -2432,8 +2432,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This ebook was transcribed and produced for",
-      "text": "This ebook was transcribed and produced for"
+      "orig": "This ebook was transcribed and produced for ",
+      "text": "This ebook was transcribed and produced for "
     },
     {
       "self_ref": "#/texts/129",
@@ -2444,8 +2444,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Standard Ebooks",
-      "text": "Standard Ebooks",
+      "orig": "Standard Ebooks ",
+      "text": "Standard Ebooks ",
       "hyperlink": "https://standardebooks.org/"
     },
     {
@@ -2457,8 +2457,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "by",
-      "text": "by"
+      "orig": "by ",
+      "text": "by "
     },
     {
       "self_ref": "#/texts/131",
@@ -2482,8 +2482,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",\nand is based on digital scans from the",
-      "text": ",\nand is based on digital scans from the"
+      "orig": ",\nand is based on digital scans from the ",
+      "text": ",\nand is based on digital scans from the "
     },
     {
       "self_ref": "#/texts/133",
@@ -2519,8 +2519,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The cover page is adapted from",
-      "text": "The cover page is adapted from"
+      "orig": "The cover page is adapted from ",
+      "text": "The cover page is adapted from "
     },
     {
       "self_ref": "#/texts/136",
@@ -2550,8 +2550,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",\na painting completed in 1877 by",
-      "text": ",\na painting completed in 1877 by"
+      "orig": ",\na painting completed in 1877 by ",
+      "text": ",\na painting completed in 1877 by "
     },
     {
       "self_ref": "#/texts/138",
@@ -2575,8 +2575,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".\nThe cover and title pages feature the",
-      "text": ".\nThe cover and title pages feature the"
+      "orig": ".\nThe cover and title pages feature the ",
+      "text": ".\nThe cover and title pages feature the "
     },
     {
       "self_ref": "#/texts/140",
@@ -2587,8 +2587,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "League Spartan",
-      "text": "League Spartan",
+      "orig": "League Spartan ",
+      "text": "League Spartan ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -2606,8 +2606,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/142",
@@ -2618,8 +2618,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Sorts Mill Goudy",
-      "text": "Sorts Mill Goudy",
+      "orig": "Sorts Mill Goudy ",
+      "text": "Sorts Mill Goudy ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -2637,8 +2637,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "typefaces created in 2014 and 2009 by",
-      "text": "typefaces created in 2014 and 2009 by"
+      "orig": "typefaces created in 2014 and 2009 by ",
+      "text": "typefaces created in 2014 and 2009 by "
     },
     {
       "self_ref": "#/texts/144",
@@ -2674,8 +2674,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This edition was released on",
-      "text": "This edition was released on"
+      "orig": "This edition was released on ",
+      "text": "This edition was released on "
     },
     {
       "self_ref": "#/texts/147",
@@ -2686,8 +2686,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "May 21, 2026, 6:29 p.m.",
-      "text": "May 21, 2026, 6:29 p.m.",
+      "orig": "May 21, 2026, 6:29 p.m. ",
+      "text": "May 21, 2026, 6:29 p.m. ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -2705,8 +2705,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and is based on",
-      "text": "and is based on"
+      "orig": "and is based on ",
+      "text": "and is based on "
     },
     {
       "self_ref": "#/texts/149",
@@ -2736,8 +2736,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at",
-      "text": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at"
+      "orig": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at ",
+      "text": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at "
     },
     {
       "self_ref": "#/texts/151",
@@ -2773,8 +2773,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at",
-      "text": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at"
+      "orig": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at ",
+      "text": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at "
     },
     {
       "self_ref": "#/texts/154",
@@ -2848,8 +2848,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Copyright pages exist to tell you that you",
-      "text": "Copyright pages exist to tell you that you"
+      "orig": "Copyright pages exist to tell you that you ",
+      "text": "Copyright pages exist to tell you that you "
     },
     {
       "self_ref": "#/texts/159",
@@ -2860,8 +2860,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "can't",
-      "text": "can't",
+      "orig": "can't ",
+      "text": "can't ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -2903,8 +2903,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the",
-      "text": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the"
+      "orig": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the ",
+      "text": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the "
     },
     {
       "self_ref": "#/texts/163",

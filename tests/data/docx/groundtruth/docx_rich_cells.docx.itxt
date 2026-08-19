@@ -14,15 +14,15 @@ item-0 at level 0: unspecified: group _root_
             item-13 at level 6: list: group list
               item-14 at level 7: list_item: 
                 item-15 at level 8: inline: group group
-                  item-16 at level 9: text: B
+                  item-16 at level 9: text: B 
                   item-17 at level 9: text: First
               item-18 at level 7: list_item: 
                 item-19 at level 8: inline: group group
-                  item-20 at level 9: text: B
+                  item-20 at level 9: text: B 
                   item-21 at level 9: text: Second
               item-22 at level 7: list_item: 
                 item-23 at level 8: inline: group group
-                  item-24 at level 9: text: B
+                  item-24 at level 9: text: B 
                   item-25 at level 9: text: Third
           item-26 at level 5: unspecified: group rich_cell_group_1_0_2
             item-27 at level 6: text: First Paragraph
@@ -34,15 +34,15 @@ Second Paragraph
               item-31 at level 7: list_item: Number two
               item-32 at level 7: list_item: Number three
           item-33 at level 5: unspecified: group rich_cell_group_1_1_2
-            item-34 at level 6: text: This is simple text with
+            item-34 at level 6: text: This is simple text with 
             item-35 at level 6: text: bold
-            item-36 at level 6: text: ,
+            item-36 at level 6: text: , 
             item-37 at level 6: text: strikethrough
-            item-38 at level 6: text: and
+            item-38 at level 6: text:  and 
             item-39 at level 6: text: italic
-            item-40 at level 6: text: formatting with x
+            item-40 at level 6: text:  formatting with x
             item-41 at level 6: text: 2
-            item-42 at level 6: text: and H
+            item-42 at level 6: text:  and H
             item-43 at level 6: text: 2
             item-44 at level 6: text: O
           item-45 at level 5: unspecified: group rich_cell_group_1_0_3
@@ -54,11 +54,11 @@ Second Paragraph
         item-51 at level 4: text: Before table
         item-52 at level 4: table with [3x2]
           item-53 at level 5: unspecified: group rich_cell_group_2_1_1
-            item-54 at level 6: text: Simple cell with
+            item-54 at level 6: text: Simple cell with 
             item-55 at level 6: text: bold
-            item-56 at level 6: text: and
+            item-56 at level 6: text:  and 
             item-57 at level 6: text: italic
-            item-58 at level 6: text: text
+            item-58 at level 6: text:  text
           item-59 at level 5: unspecified: group rich_cell_group_3_0_2
             item-60 at level 6: table with [2x3]
               item-61 at level 7: unspecified: group rich_cell_group_3_0_1
@@ -81,15 +81,15 @@ A nested table
             item-77 at level 6: text: 
         item-78 at level 4: inline: group group
         item-79 at level 4: inline: group group
-          item-80 at level 5: text: After table with
+          item-80 at level 5: text: After table with 
           item-81 at level 5: text: bold
-          item-82 at level 5: text: ,
+          item-82 at level 5: text: , 
           item-83 at level 5: text: underline
-          item-84 at level 5: text: ,
+          item-84 at level 5: text: , 
           item-85 at level 5: text: strikethrough
-          item-86 at level 5: text: , and
+          item-86 at level 5: text: , and 
           item-87 at level 5: text: italic
-          item-88 at level 5: text: formatting
+          item-88 at level 5: text:  formatting
         item-89 at level 4: text: 
       item-90 at level 3: section_header: Table with pictures
         item-91 at level 4: text: 

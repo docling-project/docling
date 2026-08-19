@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
@@ -384,8 +384,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/4",
@@ -415,8 +415,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/6",
@@ -446,8 +446,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/8",
