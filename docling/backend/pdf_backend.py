@@ -45,7 +45,7 @@ class PdfPageBackend(ABC):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
 
-    def intersects_with(
+    def has_content_in(
         self,
         *,
         bbox: BoundingBox,

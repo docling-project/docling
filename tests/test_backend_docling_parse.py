@@ -830,7 +830,7 @@ def test_threaded_backend_reports_shape_geometry_in_top_left_origin(ruled_table_
 
 
 def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
-    """`intersects_with` must discriminate between the ruled table and a blank margin."""
+    """`has_content_in` must discriminate between the ruled table and a blank margin."""
     in_doc = InputDocument(
         path_or_stream=ruled_table_path,
         format=InputFormat.PDF,
@@ -848,10 +848,10 @@ def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
             l=150, t=350, r=460, b=460, coord_origin=CoordOrigin.TOPLEFT
         )
 
-        assert page_backend.intersects_with(bbox=table) is True
-        assert page_backend.intersects_with(bbox=blank_margin) is False
+        assert page_backend.has_content_in(bbox=table) is True
+        assert page_backend.has_content_in(bbox=blank_margin) is False
         assert (
-            page_backend.intersects_with(
+            page_backend.has_content_in(
                 bbox=blank_margin, chars=True, shapes=False, bitmaps=False
             )
             is False

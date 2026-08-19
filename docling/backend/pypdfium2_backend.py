@@ -459,7 +459,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             if cropbox.area() > AREA_THRESHOLD:
                 yield cropbox.scaled(scale=scale)
 
-    def intersects_with(
+    def has_content_in(
         self,
         *,
         bbox: BoundingBox,

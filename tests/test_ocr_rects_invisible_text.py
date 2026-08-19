@@ -83,7 +83,7 @@ def _load_first_page(backend_cls):
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        # Spatial-index path (no `intersects_with`), the default PDF backend.
+        # Spatial-index path (no `has_content_in`), the default PDF backend.
         DoclingParseDocumentBackend,
         # Native-query paths.
         ThreadedDoclingParseDocumentBackend,

@@ -145,7 +145,7 @@ def test_pdfium_shape_regions_approximate_docling_parse():
 
 
 def test_pdfium_intersects_only_where_content_is():
-    """`intersects_with` must discriminate between the ruled table and a blank margin."""
+    """`has_content_in` must discriminate between the ruled table and a blank margin."""
     pdf_doc = Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
     doc_backend = _get_backend(pdf_doc)
@@ -159,8 +159,8 @@ def test_pdfium_intersects_only_where_content_is():
             l=150, t=350, r=460, b=460, coord_origin=CoordOrigin.TOPLEFT
         )
 
-        assert page_backend.intersects_with(bbox=table) is True
-        assert page_backend.intersects_with(bbox=blank_margin) is False
+        assert page_backend.has_content_in(bbox=table) is True
+        assert page_backend.has_content_in(bbox=blank_margin) is False
     finally:
         doc_backend.unload()
 
@@ -179,8 +179,8 @@ def test_pdfium_intersects_ignores_invisible_text():
         )
         text_only = {"chars": True, "shapes": False, "bitmaps": False}
 
-        assert page_backend.intersects_with(bbox=visible_line, **text_only) is True
-        assert page_backend.intersects_with(bbox=invisible_line, **text_only) is False
+        assert page_backend.has_content_in(bbox=visible_line, **text_only) is True
+        assert page_backend.has_content_in(bbox=invisible_line, **text_only) is False
 
         # The cell itself is still extracted; only the visibility query ignores it.
         assert "Invisible OCR text layer" in {

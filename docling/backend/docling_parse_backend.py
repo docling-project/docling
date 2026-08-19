@@ -481,7 +481,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
 
-    def intersects_with(
+    def has_content_in(
         self,
         *,
         bbox: BoundingBox,

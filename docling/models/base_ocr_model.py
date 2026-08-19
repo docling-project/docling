@@ -157,7 +157,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         assert page.size is not None
         backend = page._backend
 
-        # Probe the backend to decide if `intersects_with()` is available or indexing is needed
+        # Probe the backend to decide if `has_content_in()` is available or indexing is needed
         page_bbox = BoundingBox(
             l=0,
             t=0,
@@ -165,7 +165,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             b=page.size.height,
             coord_origin=CoordOrigin.TOPLEFT,
         )
-        use_backend_queries = backend.intersects_with(bbox=page_bbox) is not None
+        use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
         text_index = None
         non_text_index = None
@@ -199,7 +199,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cluster_bbox_tuple = cluster_bbox.as_tuple()
 
             if use_backend_queries:
-                has_non_text = backend.intersects_with(
+                has_non_text = backend.has_content_in(
                     bbox=cluster_bbox, chars=False, shapes=True, bitmaps=True
                 )
             else:
@@ -214,7 +214,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
             # Of the rest, only the clusters without any programmatic text need OCR.
             if use_backend_queries:
-                has_text = backend.intersects_with(
+                has_text = backend.has_content_in(
                     bbox=cluster_bbox, chars=True, shapes=False, bitmaps=False
                 )
             else:
