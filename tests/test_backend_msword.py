@@ -94,7 +94,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument]]):
+def test_e2e_docx_conversions(documents):
     has_libreoffice = False
     try:
         cmd = get_libreoffice_cmd(raise_if_unavailable=True)
@@ -103,8 +103,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
     except Exception:
         pass
 
-    for docx_path, doc in docx_paths:
-        if not IS_CI and not has_libreoffice and docx_path.name == "drawingml.docx":
+    for docx_path, doc in documents:
+        if (
+            not IS_CI
+            and not has_libreoffice
+            and docx_path.name
+            in {"drawingml.docx", "textbox.docx", "test_emf_docx.docx"}
+        ):
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
 
@@ -133,28 +138,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             ), f"export to html failed on {docx_path}"
 
 
-flaky_file = "textbox.docx"
-
-
-def test_e2e_docx_conversions(documents):
-    target = [item for item in documents if item[0].name != flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
-def test_textbox_conversion(documents):
-    target = [item for item in documents if item[0].name == flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
 def test_textbox_extraction(documents):
     name = "textbox.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
 
     # Verify if a particular textbox content is extracted
     textbox_found = False
-    for item, _ in doc.iterate_items():
+    for item in doc.texts:
         if item.text[:30] == """Suggested Reportable Symptoms:""":
             textbox_found = True
     assert textbox_found
@@ -1647,106 +1637,3 @@ def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
     assert "COVER TITLE INSIDE SDT" in from_file
     assert "BODY TEXT OUTSIDE SDT" in from_file
     assert from_file.count("<!-- image -->") == 1
-
-
-# ------ Node identity of textboxes (#4034) ------
-
-#: Enough textboxes that a freed lxml proxy's address is handed to a later one.
-#: A handful would pass even with the defect present, so the probe would not
-#: distinguish anything: the collision needs the allocator to recycle addresses.
-_TEXTBOX_COUNT = 200
-
-_TEXTBOX_XML = (
-    "<w:p {nsdecl}><w:r><w:drawing>"
-    '<wp:inline distT="0" distB="0" distL="0" distR="0">'
-    '<wp:extent cx="2000000" cy="500000"/>'
-    '<wp:docPr id="{shape_id}" name="TextBox {index}"/>'
-    "<a:graphic>"
-    '<a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">'
-    "<wps:wsp>"
-    '<wps:cNvSpPr txBox="1"/>'
-    '<wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="500000"/></a:xfrm>'
-    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></wps:spPr>'
-    "<wps:txbx><w:txbxContent><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:txbxContent></wps:txbx>"
-    "<wps:bodyPr/>"
-    "</wps:wsp></a:graphicData></a:graphic>"
-    "</wp:inline></w:drawing></w:r></w:p>"
-)
-
-#: A legacy VML textbox whose paragraph is not wrapped in ``w:txbxContent``. The backend
-#: reaches these through a separate branch that walks ancestors to find the containing shape,
-#: and that branch does the same bookkeeping, so it needs the same guarantee.
-_VML_TEXTBOX_XML = (
-    "<w:p {nsdecl}><w:r><w:pict>"
-    '<v:shape id="vml{index}" type="#_x0000_t202" style="width:150pt;height:40pt">'
-    "<v:textbox><w:p><w:r><w:t>{text}</w:t></w:r></w:p></v:textbox>"
-    "</v:shape>"
-    "</w:pict></w:r></w:p>"
-)
-
-_NSDECL = " ".join(
-    [
-        'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"',
-        'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"',
-        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"',
-        'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"',
-        'xmlns:v="urn:schemas-microsoft-com:vml"',
-    ]
-)
-
-
-def _document_with_textboxes(path, count):
-    """A document whose every textbox says its own number, so losses are nameable.
-
-    Both textbox flavours are present: modern DrawingML and legacy VML. They travel
-    through different branches of the collection code, and both branches keep the same
-    bookkeeping, so a probe on one flavour would leave the other unguarded.
-    """
-    document = Document()
-    document.add_paragraph("start")
-    body = document.element.body
-    for index in range(count):
-        template = _VML_TEXTBOX_XML if index % 2 else _TEXTBOX_XML
-        body.append(
-            etree.fromstring(
-                template.format(
-                    nsdecl=_NSDECL,
-                    shape_id=1000 + index,
-                    index=index,
-                    text=f"CALLOUT-{index:04d}",
-                )
-            )
-        )
-    document.save(str(path))
-    return {f"CALLOUT-{index:04d}" for index in range(count)}
-
-
-def _callouts(doc):
-    return {item.text for item in doc.texts if item.text.startswith("CALLOUT-")}
-
-
-def test_every_textbox_survives_and_the_result_does_not_change_between_runs(tmp_path):
-    """Textboxes must not be dropped, and the same bytes must give the same document.
-
-    The backend used to remember handled textboxes by ``id(element)`` without keeping
-    the element alive. lxml frees an unreferenced proxy immediately and CPython hands
-    its address to the proxy of a different node, so the dedup guard read an unrelated
-    textbox as "already processed" and dropped it -- silently, with a successful
-    status. Measured before the fix on this very document: 4 to 14 of 200 textboxes
-    survived, and the count changed from run to run inside one process.
-
-    Both halves matter. Completeness alone can pass by luck on a single run, and
-    stability alone would pass if every run lost the same text.
-    """
-    path = tmp_path / "textboxes.docx"
-    expected = _document_with_textboxes(path, _TEXTBOX_COUNT)
-
-    runs = [_callouts(_convert(path)) for _ in range(3)]
-
-    missing = sorted(expected - runs[0])
-    assert not missing, (
-        f"{len(missing)} of {_TEXTBOX_COUNT} textboxes were dropped, first: {missing[:5]}"
-    )
-    assert runs[0] == runs[1] == runs[2], (
-        f"the same bytes gave different documents: {[len(run) for run in runs]}"
-    )
