@@ -1,3 +1,4 @@
+import logging
 import re
 import warnings
 from collections.abc import Iterable
@@ -5,6 +6,13 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy as np
+from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfPageBoundaryType,
+    PdfPageGeometry,
+    SegmentedPdfPage,
+)
 from PIL import ImageDraw
 from pydantic import BaseModel
 
@@ -14,12 +22,15 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
+_log = logging.getLogger(__name__)
+
 
 class PagePreprocessingOptions(BaseModel):
     images_scale: Optional[float]
     skip_cell_extraction: bool = (
         False  # Skip text cell extraction for VLM-only processing
     )
+    allow_empty_cells_on_decode_error: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -69,7 +80,40 @@ class PagePreprocessingModel(BasePageModel):
     def _parse_page_cells(self, conv_res: ConversionResult, page: Page) -> Page:
         assert page._backend is not None
 
-        page.parsed_page = page._backend.get_segmented_page()
+        try:
+            page.parsed_page = page._backend.get_segmented_page()
+        except UnicodeDecodeError:
+            if not self.options.allow_empty_cells_on_decode_error:
+                raise
+
+            assert page.size is not None
+            bbox = BoundingBox(
+                l=0.0,
+                t=0.0,
+                r=float(page.size.width),
+                b=float(page.size.height),
+                coord_origin=CoordOrigin.BOTTOMLEFT,
+            )
+            page.parsed_page = SegmentedPdfPage(
+                dimension=PdfPageGeometry(
+                    angle=0.0,
+                    rect=BoundingRectangle.from_bounding_box(bbox),
+                    boundary_type=PdfPageBoundaryType.CROP_BOX,
+                    art_bbox=bbox,
+                    bleed_bbox=bbox,
+                    crop_bbox=bbox,
+                    media_bbox=bbox,
+                    trim_bbox=bbox,
+                ),
+                char_cells=[],
+                word_cells=[],
+                textline_cells=[],
+            )
+            _log.warning(
+                "Native text decoding failed on page %s; continuing with "
+                "an empty text layer for full-page OCR",
+                page.page_no,
+            )
         assert page.parsed_page is not None
 
         # Rate the text quality from the PDF parser, and aggregate on page

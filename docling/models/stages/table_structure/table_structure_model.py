@@ -225,8 +225,8 @@ class TableStructureModel(BaseTableStructureModel):
                 }
 
                 for table_cluster, tbl_box in in_tables:
-                    # Check if word-level cells are available from backend:
-                    sp = page._backend.get_segmented_page()
+                    # Use the parsed page because OCR may have replaced backend cells.
+                    sp = page.parsed_page
                     if sp is not None:
                         tcells = sp.get_cells_in_bbox(
                             cell_unit=TextCellUnit.WORD,
