@@ -25,6 +25,13 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.table_cell_postprocess import (
+    consolidate_duplicate_spans,
+    promote_wrapped_header_rows,
+    recover_leftover_words,
+    split_into_structural_subtables,
+    split_tall_fused_rows,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -283,6 +290,68 @@ class TableStructureModel(BaseTableStructureModel):
                         .get("prediction", {})
                         .get("rs_seq", [])
                     )
+
+                    # Collapse adjacent same-text cells into one with span > 1.
+                    # TableFormer occasionally emits N duplicates for a label
+                    # that visually spans N grid cells instead of one
+                    # colspan/rowspan cell.
+                    table_cells = consolidate_duplicate_spans(table_cells)
+
+                    # Promote rows that look like wrapped header continuations
+                    # (no digits, short text, header-matching line height) so
+                    # multi-line headers don't leak into the data section.
+                    promote_wrapped_header_rows(table_cells, num_rows)
+
+                    # Recover input PDF words TableFormer did not grid.
+                    # Two-pass: leftovers that look like tabular rows
+                    # (≥2 cells in distinct columns at similar Y) get
+                    # placed as new rows in table_cells; the rest are
+                    # emitted as a TEXT cluster so the data still appears
+                    # in the JSON. Both passes preserve the conservation
+                    # invariant that TABLE alone violates.
+                    new_row_count, _ = recover_leftover_words(
+                        tcells=tcells,
+                        table_cells=table_cells,
+                        table_cluster=table_cluster,
+                        page_clusters=page.predictions.layout.clusters,
+                    )
+                    num_rows += new_row_count
+
+                    # Split rows whose cells fused multiple visual lines
+                    # from the source PDF (TableFormer absorbed an
+                    # un-detected mini-table into one over-tall row with
+                    # concatenated cell text). Uses tcells geometry to
+                    # find the original visual lines and re-assigns words
+                    # to the table's existing column layout.
+                    tall_added = split_tall_fused_rows(
+                        tcells=tcells,
+                        table_cells=table_cells,
+                    )
+                    num_rows += tall_added
+
+                    # Split when the layout postprocessor merged multiple
+                    # visually-distinct tables into one TABLE cluster.
+                    # Detect row-pattern shifts (e.g. 21 rows of "label
+                    # spanning N cols + value" followed by 2 rows of "N
+                    # cells in distinct columns") and emit the trailing
+                    # sub-table as its own Cluster + Table. Page assembly
+                    # iterates clusters and renders multiple Tables on one
+                    # page with auto blank-line separators.
+                    table_cells, num_rows, num_cols, did_split = (
+                        split_into_structural_subtables(
+                            table_cells=table_cells,
+                            table_cluster=table_cluster,
+                            page_clusters=page.predictions.layout.clusters,
+                            table_map=table_prediction.table_map,
+                            page_no=page.page_no,
+                        )
+                    )
+                    if did_split:
+                        # The original otsl_seq describes the un-split
+                        # whole table; clear it so the kept sub-table's
+                        # Table object doesn't carry a sequence that no
+                        # longer matches its cells.
+                        otsl_seq = []
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
