@@ -13,7 +13,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
-from docling_core.types.doc import DocItem, DoclingDocument, ImageRef, PictureItem
+from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.document import DocTagsDocument
 
 if TYPE_CHECKING:
@@ -440,42 +440,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             for page_item in document.pages.values():
                 page_item.image = None
         return document
-
-    @staticmethod
-    def _concatenate_page_documents(
-        page_documents: list[tuple[int, DoclingDocument]],
-    ) -> DoclingDocument:
-        if not page_documents:
-            return DoclingDocument(name="")
-
-        document = DoclingDocument.concatenate(
-            docs=[page_document for _, page_document in page_documents]
-        )
-        page_no_map = {
-            current_page_no: requested_page_no
-            for current_page_no, (requested_page_no, _) in zip(
-                sorted(document.pages), page_documents
-            )
-        }
-        document.pages = {
-            page_no_map[page_no]: page_item
-            for page_no, page_item in document.pages.items()
-        }
-        for page_no, page_item in document.pages.items():
-            page_item.page_no = page_no
-        for item, _level in document.iterate_items():
-            if isinstance(item, DocItem):
-                for provenance in item.prov:
-                    provenance.page_no = page_no_map[provenance.page_no]
-        return document
-
-    @staticmethod
-    def _release_page_resources(page: Page) -> None:
-        if page._backend is not None:
-            page._backend.unload()
-            page._backend = None
-        page._image_cache = {}
-        page.parsed_page = None
 
     def _integrate_results(
         self, conv_res: ConversionResult, proc: ProcessingResult

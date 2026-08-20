@@ -366,14 +366,6 @@ class VlmPipeline(PaginatedPipeline):
         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         return True
 
-    @staticmethod
-    def _release_page_resources(page: Page) -> None:
-        if page._backend is not None:
-            page._backend.unload()
-            page._backend = None
-        page._image_cache = {}
-        page.parsed_page = None
-
     def extract_text_from_backend(self, page: Page, bbox: BoundingBox | None) -> str:
         # Convert bounding box normalized to 0-100 into page coordinates for cropping
         text = ""
@@ -703,34 +695,6 @@ class VlmPipeline(PaginatedPipeline):
                 if self.pipeline_options.generate_page_images and image is not None
                 else None
             )
-
-    @staticmethod
-    def _concatenate_page_documents(
-        page_documents: list[tuple[int, DoclingDocument]],
-    ) -> DoclingDocument:
-        if not page_documents:
-            return DoclingDocument(name="")
-
-        document = DoclingDocument.concatenate(
-            docs=[page_document for _, page_document in page_documents]
-        )
-        page_no_map = {
-            current_page_no: requested_page_no
-            for current_page_no, (requested_page_no, _) in zip(
-                sorted(document.pages), page_documents
-            )
-        }
-        document.pages = {
-            page_no_map[page_no]: page_item
-            for page_no, page_item in document.pages.items()
-        }
-        for page_no, page_item in document.pages.items():
-            page_item.page_no = page_no
-        for item, _level in document.iterate_items():
-            if isinstance(item, DocItem):
-                for provenance in item.prov:
-                    provenance.page_no = page_no_map[provenance.page_no]
-        return document
 
     @classmethod
     def get_default_options(cls) -> VlmPipelineOptions:
