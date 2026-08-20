@@ -13,8 +13,8 @@ from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
@@ -75,7 +75,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     """
     format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: ImageDocumentBackend,
-        InputFormat.PDF: PyPdfiumDocumentBackend,
+        InputFormat.PDF: ThreadedDoclingParseDocumentBackend,
     }
 
     backend = format_to_default_backend.get(fmt)
