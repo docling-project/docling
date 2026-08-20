@@ -194,9 +194,7 @@ class VlmPipeline(PaginatedPipeline):
                 )
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
-        assert isinstance(conv_res.input._backend, PdfDocumentBackend)
-        page._backend = conv_res.input._backend.load_page(page.page_no - 1)
-        return self._initialize_page(conv_res, page)
+        raise NotImplementedError("VlmPipeline initializes pages in _build_document()")
 
     def _initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):
@@ -550,18 +548,6 @@ class VlmPipeline(PaginatedPipeline):
                 [predicted_text], [image]
             )
         )
-
-    def _turn_dt_into_doc(self, conv_res: ConversionResult) -> DoclingDocument:
-        page_documents: list[tuple[int, DoclingDocument]] = []
-        for page in conv_res.pages:
-            response = page.predictions.vlm_response
-            document = self._doctags_page_document(
-                response.text if response is not None else "",
-                page.image or PILImage.new("RGB", (1, 1), "white"),
-            )
-            self._finalize_page_output(document, page)
-            page_documents.append((page.page_no, document))
-        return self._concatenate_page_documents(page_documents)
 
     def _dots_page_document(
         self,
