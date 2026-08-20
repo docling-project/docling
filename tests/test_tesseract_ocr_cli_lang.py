@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
 
@@ -24,18 +25,11 @@ def _model_for_listing(listing: str) -> TesseractOcrCliModel:
     return model
 
 
-def test_script_packs_listed_with_a_posix_separator():
-    model = _model_for_listing(
-        "List of available languages (3):\neng\nscript/Arabic\nscript/Latin\n"
-    )
-    assert model._script_prefix == "script/"
-    assert "script/Arabic" in model._tesseract_languages
-
-
-def test_script_packs_listed_with_a_windows_separator():
+@pytest.mark.parametrize("sep", ["/", "\\"], ids=["posix", "windows"])
+def test_script_packs_are_listed_with_either_separator(sep: str):
     """Windows tesseract prints `script\\Arabic`; the prefix must still be detected."""
     model = _model_for_listing(
-        "List of available languages (3):\neng\nscript\\Arabic\nscript\\Latin\n"
+        f"List of available languages (3):\neng\nscript{sep}Arabic\nscript{sep}Latin\n"
     )
     assert model._script_prefix == "script/"
     assert "script/Arabic" in model._tesseract_languages
