@@ -657,5 +657,24 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         if self._closed:
             return
         self._closed = True
-        self.parser.unload(self.doc_key)
+        # WORKAROUND for a missing docling-parse API: the native threaded
+        # parser has no way to cancel/abort an in-progress iteration. It also
+        # forbids unload_document() while an iteration is still active
+        # (has_tasks() is True), and the only way to clear that active state is
+        # to drain every remaining scheduled page via get_task().
+        #
+        # A full conversion drains iter_pages() naturally, but any early exit
+        # (document_timeout, a stage error, a page-range subset that returns
+        # early) abandons the generator with pages still pending. Calling
+        # unload() then raises "Cannot unload documents while threaded
+        # iteration is active", and draining just to satisfy the unload would
+        # force decoding every remaining page we deliberately bailed on.
+        #
+        # So in that case we drop the parser and rely on its C++ destructor to
+        # stop the workers. Replace this branch with an explicit cancel once
+        # docling-parse exposes one for an active iteration.
+        if self.parser.has_tasks():
+            self.parser = None  # type: ignore[assignment]
+        else:
+            self.parser.unload(self.doc_key)
         super().unload()
