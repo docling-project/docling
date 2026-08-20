@@ -658,23 +658,21 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             return
         self._closed = True
         # WORKAROUND for a missing docling-parse API: the native threaded
-        # parser has no way to cancel/abort an in-progress iteration. It also
-        # forbids unload_document() while an iteration is still active
-        # (has_tasks() is True), and the only way to clear that active state is
-        # to drain every remaining scheduled page via get_task().
+        # parser has no way to cancel/abort an in-progress iteration. It forbids
+        # unload_document() while an iteration is still active (has_tasks() is
+        # True), and dropping the parser to let its C++ destructor stop the
+        # workers segfaults when iteration is active. The only safe way to clear
+        # the active state is to drain every remaining scheduled task via
+        # get_task().
         #
         # A full conversion drains iter_pages() naturally, but any early exit
         # (document_timeout, a stage error, a page-range subset that returns
-        # early) abandons the generator with pages still pending. Calling
-        # unload() then raises "Cannot unload documents while threaded
-        # iteration is active", and draining just to satisfy the unload would
-        # force decoding every remaining page we deliberately bailed on.
-        #
-        # So in that case we drop the parser and rely on its C++ destructor to
-        # stop the workers. Replace this branch with an explicit cancel once
-        # docling-parse exposes one for an active iteration.
-        if self.parser.has_tasks():
-            self.parser = None  # type: ignore[assignment]
-        else:
-            self.parser.unload(self.doc_key)
+        # early) abandons the generator with pages still pending, so we drain
+        # the rest here. get_task() returns the raw result without the expensive
+        # get_page() conversion, so we pay only for the C++ decode of pages we
+        # bailed on, not the full docling processing. Replace this loop with an
+        # explicit cancel once docling-parse exposes one for an active iteration.
+        while self.parser.has_tasks():
+            self.parser.get_task()
+        self.parser.unload(self.doc_key)
         super().unload()
