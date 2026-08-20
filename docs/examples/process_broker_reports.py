@@ -168,8 +168,17 @@ def build_converter() -> DocumentConverter:
 
 
 def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) -> dict:
-    """Convert one report and export Markdown, metrics JSON and an optional chart."""
-    result = converter.convert(pdf_path)
+    """Convert one report and export Markdown, metrics JSON and an optional chart.
+
+    Conversion failures (e.g. an unreadable PDF or a transient model-download
+    error) are logged and returned as an error entry instead of aborting the
+    whole batch, so the example always exits cleanly.
+    """
+    try:
+        result = converter.convert(pdf_path)
+    except Exception as exc:
+        _log.error("failed to convert %s: %s", pdf_path.name, exc)
+        return {"file": pdf_path.name, "error": str(exc)}
     doc = result.document
     metrics = extract_metrics(doc)
     summary = {
@@ -181,8 +190,13 @@ def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) 
         "metrics": metrics,
     }
 
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # Always emit the machine-readable audit so downstream consumers get a stable
+    # artifact, even when no tables/pictures are detected.
+    (out_dir / f"{pdf_path.stem}-summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     if doc.tables or doc.pictures:
-        out_dir.mkdir(parents=True, exist_ok=True)
         doc.save_as_markdown(
             out_dir / f"{pdf_path.stem}.md", image_mode=ImageRefMode.REFERENCED
         )
@@ -199,6 +213,9 @@ def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) 
 
 def print_summary(report: dict) -> None:
     """Human-readable audit line for one report."""
+    if "error" in report:
+        print(f"  {report['file']}: ERROR {report['error']}")
+        return
     print(
         f"  {report['file']}: {report['pages']} pages, "
         f"{report['tables']} tables, {report['pictures']} pictures"
@@ -228,8 +245,12 @@ def main() -> None:
     converter = build_converter()
     reports = []
     for pdf_path in sorted(args.input.glob("*.pdf")):
-        reports.append(process_report(converter, pdf_path, out_dir))
-        _log.info("converted %s", pdf_path.name)
+        report = process_report(converter, pdf_path, out_dir)
+        reports.append(report)
+        if "error" in report:
+            _log.warning("skipped %s due to conversion error", pdf_path.name)
+        else:
+            _log.info("converted %s", pdf_path.name)
 
     print(f"\nProcessed {len(reports)} report(s) -> {out_dir}")
     for report in reports:
