@@ -96,7 +96,8 @@ format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 format-pdf-docling = [
-  'docling-parse>=7.13.0,<8.0.0',
+  'docling-parse>=7.14.0,<8.0.0',
+  'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 
 format-pdf = [
@@ -374,7 +375,6 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "959f895774c4916ca55af0dec02e11172ea96c31" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 
 [tool.uv]
