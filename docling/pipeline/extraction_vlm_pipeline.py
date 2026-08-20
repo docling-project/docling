@@ -1,14 +1,14 @@
 import inspect
 import json
 import logging
+import time
+from collections.abc import Generator
 from typing import Optional
 
 from PIL.Image import Image
 from pydantic import BaseModel
 
-from docling.backend.abstract_backend import PaginatedDocumentBackend
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
+from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -36,17 +36,6 @@ from docling.utils.accelerator_utils import decide_device
 _log = logging.getLogger(__name__)
 
 
-def _raise_if_unsupported_threaded_backend(
-    backend: PaginatedDocumentBackend, pipeline_name: str
-) -> None:
-    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
-        raise RuntimeError(
-            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
-            "It still requires ordered/random page access via load_page() and cannot "
-            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
-        )
-
-
 class ExtractionVlmPipeline(BaseExtractionPipeline):
     def __init__(self, pipeline_options: VlmExtractionPipelineOptions):
         super().__init__(pipeline_options)
@@ -68,14 +57,79 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         """Extract data using the VLM model."""
-        backend = ext_res.input._backend
-        if isinstance(backend, PdfDocumentBackend):
-            _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
-
         try:
-            # Get images from input document using the backend
             images = self._get_images_from_input(ext_res.input)
-            if not images:
+            if template is not None:
+                prompt = self._serialize_template(template)
+            else:
+                prompt = "Extract all text and structured information from this document. Return as JSON."
+
+            processed_image = False
+            started_at = time.monotonic()
+            try:
+                for page_number, image in images:
+                    processed_image = True
+                    try:
+                        predictions = list(
+                            self.vlm_model.process_images([image], prompt)
+                        )
+                        if predictions:
+                            extracted_text = predictions[0].text
+                            extracted_data = None
+                            vlm_stop_reason: VlmStopReason = predictions[0].stop_reason
+                            if vlm_stop_reason in {
+                                VlmStopReason.LENGTH,
+                                VlmStopReason.STOP_SEQUENCE,
+                            }:
+                                ext_res.status = ConversionStatus.PARTIAL_SUCCESS
+
+                            try:
+                                extracted_data = json.loads(extracted_text)
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+
+                            page_data = ExtractedPageData(
+                                page_no=page_number,
+                                extracted_data=extracted_data,
+                                raw_text=extracted_text,
+                            )
+                        else:
+                            page_data = ExtractedPageData(
+                                page_no=page_number,
+                                extracted_data=None,
+                                errors=["No extraction result from VLM model"],
+                            )
+                    except Exception as e:
+                        _log.error(f"Error processing page {page_number}: {e}")
+                        page_data = ExtractedPageData(
+                            page_no=page_number,
+                            extracted_data=None,
+                            errors=[str(e)],
+                        )
+                    ext_res.pages.append(page_data)
+
+                    timeout = self.pipeline_options.document_timeout
+                    elapsed = time.monotonic() - started_at
+                    if timeout is not None and elapsed > timeout:
+                        message = (
+                            "Document processing timeout: exceeded "
+                            f"{timeout:.3f}s limit after {elapsed:.3f}s."
+                        )
+                        _log.warning(message)
+                        ext_res.errors.append(
+                            ErrorItem(
+                                component_type=DoclingComponentType.PIPELINE,
+                                module_name=self.__class__.__name__,
+                                error_message=message,
+                                category=FailureCategory.TIMEOUT,
+                            )
+                        )
+                        ext_res.status = ConversionStatus.PARTIAL_SUCCESS
+                        break
+            finally:
+                images.close()
+
+            if not processed_image:
                 ext_res.status = ConversionStatus.FAILURE
                 ext_res.errors.append(
                     ErrorItem(
@@ -85,61 +139,8 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                         category=FailureCategory.BACKEND_FAILURE,
                     )
                 )
-                return ext_res
 
-            # Use provided template or default prompt
-            if template is not None:
-                prompt = self._serialize_template(template)
-            else:
-                prompt = "Extract all text and structured information from this document. Return as JSON."
-
-            # Process all images with VLM model
-            start_page, end_page = ext_res.input.limits.page_range
-            for i, image in enumerate(images):
-                # Calculate the actual page number based on the filtered range
-                page_number = start_page + i
-                try:
-                    predictions = list(self.vlm_model.process_images([image], prompt))
-
-                    if predictions:
-                        # Parse the extracted text as JSON if possible, otherwise use as-is
-                        extracted_text = predictions[0].text
-                        extracted_data = None
-                        vlm_stop_reason: VlmStopReason = predictions[0].stop_reason
-                        if (
-                            vlm_stop_reason == VlmStopReason.LENGTH
-                            or vlm_stop_reason == VlmStopReason.STOP_SEQUENCE
-                        ):
-                            ext_res.status = ConversionStatus.PARTIAL_SUCCESS
-
-                        try:
-                            extracted_data = json.loads(extracted_text)
-                        except (json.JSONDecodeError, ValueError):
-                            # If not valid JSON, keep extracted_data as None
-                            pass
-
-                        # Create page data with proper structure
-                        page_data = ExtractedPageData(
-                            page_no=page_number,
-                            extracted_data=extracted_data,
-                            raw_text=extracted_text,  # Always populate raw_text
-                        )
-                        ext_res.pages.append(page_data)
-                    else:
-                        # Add error page data
-                        page_data = ExtractedPageData(
-                            page_no=page_number,
-                            extracted_data=None,
-                            errors=["No extraction result from VLM model"],
-                        )
-                        ext_res.pages.append(page_data)
-
-                except Exception as e:
-                    _log.error(f"Error processing page {page_number}: {e}")
-                    page_data = ExtractedPageData(
-                        page_no=page_number, extracted_data=None, errors=[str(e)]
-                    )
-                    ext_res.pages.append(page_data)
+            ext_res.pages.sort(key=lambda page: page.page_no)
 
         except Exception as e:
             _log.error(f"Error during extraction: {e}")
@@ -165,43 +166,45 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         else:
             return ConversionStatus.FAILURE
 
-    def _get_images_from_input(self, input_doc: InputDocument) -> list[Image]:
-        """Extract images from input document using the backend."""
-        images = []
-
+    def _get_images_from_input(
+        self, input_doc: InputDocument
+    ) -> Generator[tuple[int, Image], None, None]:
+        """Yield one rendered page at a time and release it before advancing."""
+        page_iterator = None
         try:
             backend = input_doc._backend
-
             assert isinstance(backend, PdfDocumentBackend)
-            # Use the backend's pagination interface
             page_count = backend.page_count()
-
-            # Respect page range limits, following the same pattern as PaginatedPipeline
             start_page, end_page = input_doc.limits.page_range
             _log.info(
                 f"Processing pages {start_page}-{end_page} of {page_count} total pages for extraction"
             )
-
-            for page_num in range(page_count):
-                # Only process pages within the specified range (0-based indexing)
-                if start_page - 1 <= page_num <= end_page - 1:
-                    try:
-                        page_backend = backend.load_page(page_num)
-                        if page_backend.is_valid():
-                            # Get page image at a reasonable scale
-                            page_image = page_backend.get_page_image(
-                                scale=self.pipeline_options.vlm_options.scale
-                            )
-                            images.append(page_image)
-                        else:
-                            _log.warning(f"Page {page_num + 1} backend is not valid")
-                    except Exception as e:
-                        _log.error(f"Error loading page {page_num + 1}: {e}")
+            page_nos = range(max(1, start_page), min(page_count, end_page) + 1)
+            page_iterator = iter_pdf_page_backends(backend, page_nos)
+            for page_backend in page_iterator:
+                page_image = None
+                try:
+                    if not page_backend.is_valid():
+                        _log.warning(
+                            f"Page {page_backend.page_no} backend is not valid"
+                        )
+                        continue
+                    page_image = page_backend.get_page_image(
+                        scale=self.pipeline_options.vlm_options.scale
+                    )
+                    yield page_backend.page_no, page_image
+                except Exception as e:
+                    _log.error(f"Error loading page {page_backend.page_no}: {e}")
+                finally:
+                    if page_image is not None:
+                        page_image.close()
+                    page_backend.unload()
 
         except Exception as e:
             _log.error(f"Error getting images from input document: {e}")
-
-        return images
+        finally:
+            if isinstance(page_iterator, Generator):
+                page_iterator.close()
 
     def _serialize_template(self, template: ExtractionTemplateType) -> str:
         """Serialize template to string based on its type."""
