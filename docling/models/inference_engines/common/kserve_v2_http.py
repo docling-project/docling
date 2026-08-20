@@ -17,6 +17,13 @@ import numpy as np
 import requests
 from pydantic import BaseModel
 
+from docling.models.inference_engines.common.kserve_v2_errors import (
+    KserveV2ClientError,
+    KserveV2OverloadError,
+    KserveV2PersistentError,
+    KserveV2RequestError,
+    KserveV2TransportError,
+)
 from docling.models.inference_engines.common.kserve_v2_types import (
     KSERVE_V2_NUMPY_DATATYPES,
     NUMPY_KSERVE_V2_DATATYPES,
@@ -29,6 +36,67 @@ from docling.models.inference_engines.common.kserve_v2_utils import (
 
 _log = logging.getLogger(__name__)
 _INFERENCE_HEADER_CONTENT_LENGTH = "Inference-Header-Content-Length"
+
+# HTTP status -> typed-error category, mirroring the gRPC taxonomy so callers see
+# one error model regardless of transport. Statuses not listed fall back by class
+# (4xx -> request, 5xx -> persistent) in _classify_http_error.
+_HTTP_REQUEST_STATUSES = frozenset({400, 422})
+_HTTP_PERSISTENT_STATUSES = frozenset({401, 403, 404})
+_HTTP_OVERLOAD_STATUSES = frozenset({429})
+# 502/503/504 are proxy/gateway-level "backend not reachable right now" signals,
+# analogous to gRPC UNAVAILABLE; safe to retry for stateless inference.
+_HTTP_TRANSPORT_STATUSES = frozenset({502, 503, 504})
+
+
+def _classify_http_error(
+    exc: requests.exceptions.RequestException,
+    *,
+    model_name: str,
+    operation: str,
+    url: str,
+) -> KserveV2ClientError:
+    """Map a requests exception to a typed client error (see kserve_v2_errors)."""
+    context: Dict[str, Any] = {
+        "model_name": model_name,
+        "operation": operation,
+        "details": str(exc),
+    }
+
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return KserveV2TransportError(
+            f"Connect timeout during {operation} to {url}", **context
+        )
+    if isinstance(exc, requests.exceptions.ReadTimeout):
+        # Server accepted the connection but did not respond in time: closer to a
+        # queue/scheduling timeout than a transport fault.
+        return KserveV2OverloadError(
+            f"Read timeout during {operation} to {url}", **context
+        )
+    if isinstance(exc, requests.exceptions.Timeout):
+        return KserveV2TransportError(f"Timeout during {operation} to {url}", **context)
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return KserveV2TransportError(
+            f"Failed to connect to {url} during {operation}", **context
+        )
+
+    response = getattr(exc, "response", None)
+    status = response.status_code if response is not None else None
+    context["status_code"] = str(status) if status is not None else None
+    if response is not None:
+        context["details"] = response.text
+    message = f"HTTP error {status} from {url} during {operation}"
+
+    if status in _HTTP_REQUEST_STATUSES:
+        return KserveV2RequestError(message, **context)
+    if status in _HTTP_PERSISTENT_STATUSES:
+        return KserveV2PersistentError(message, **context)
+    if status in _HTTP_OVERLOAD_STATUSES:
+        return KserveV2OverloadError(message, **context)
+    if status in _HTTP_TRANSPORT_STATUSES:
+        return KserveV2TransportError(message, **context)
+    if status is not None and 400 <= status < 500:
+        return KserveV2RequestError(message, **context)
+    return KserveV2PersistentError(message, **context)
 
 
 def _tensor_kserve_dtype(tensor: np.ndarray) -> str:
@@ -220,6 +288,7 @@ class KserveV2HttpClient:
         self,
         url: str,
         method: str = "GET",
+        operation: str = "request",
         **kwargs: Any,
     ) -> requests.Response:
         """Execute HTTP request with consistent error handling.
@@ -227,15 +296,16 @@ class KserveV2HttpClient:
         Args:
             url: Target URL
             method: HTTP method (GET or POST)
+            operation: Logical operation name for error context (e.g. ModelInfer)
             **kwargs: Additional arguments passed to requests
 
         Returns:
             HTTP response object
 
         Raises:
-            requests.exceptions.Timeout: If request exceeds timeout
-            requests.exceptions.ConnectionError: If cannot connect to server
-            requests.exceptions.HTTPError: If server returns error status
+            KserveV2ClientError: Typed error preserving HTTP status/details and
+                indicating whether the failure is request-local, overload,
+                transport, or persistent (see kserve_v2_errors).
         """
         request_headers = dict(self.headers)
         extra_headers = kwargs.pop("headers", None)
@@ -252,17 +322,9 @@ class KserveV2HttpClient:
                 )
             response.raise_for_status()
             return response
-        except requests.exceptions.Timeout as exc:
-            raise requests.exceptions.Timeout(
-                f"Timeout during {method} request to {url}"
-            ) from exc
-        except requests.exceptions.ConnectionError as exc:
-            raise requests.exceptions.ConnectionError(
-                f"Failed to connect to {url}"
-            ) from exc
-        except requests.exceptions.HTTPError as exc:
-            raise requests.exceptions.HTTPError(
-                f"HTTP error {response.status_code} from {url}: {response.text}"
+        except requests.exceptions.RequestException as exc:
+            raise _classify_http_error(
+                exc, model_name=self.model_name, operation=operation, url=url
             ) from exc
 
     @property
@@ -298,12 +360,13 @@ class KserveV2HttpClient:
             Validated model metadata including inputs/outputs schema
 
         Raises:
-            requests.exceptions.Timeout: If request exceeds timeout
-            requests.exceptions.ConnectionError: If cannot connect to server
-            requests.exceptions.HTTPError: If server returns error status
+            KserveV2ClientError: Typed transport error (request/overload/
+                transport/persistent) preserving HTTP status and details.
             RuntimeError: If response format is invalid
         """
-        response = self._execute_http_request(self.model_metadata_url, method="GET")
+        response = self._execute_http_request(
+            self.model_metadata_url, method="GET", operation="ModelMetadata"
+        )
 
         try:
             return KserveV2ModelMetadataResponse.model_validate(response.json())
@@ -330,9 +393,8 @@ class KserveV2HttpClient:
             Mapping of output tensor names to numpy arrays
 
         Raises:
-            requests.exceptions.Timeout: If request exceeds timeout
-            requests.exceptions.ConnectionError: If cannot connect to server
-            requests.exceptions.HTTPError: If server returns error status
+            KserveV2ClientError: Typed transport error (request/overload/
+                transport/persistent) preserving HTTP status and details.
             RuntimeError: If response format is invalid
         """
         if _log.isEnabledFor(logging.DEBUG):
@@ -379,7 +441,7 @@ class KserveV2HttpClient:
             _t_http_start = time.time()
             _t_http_mono = time.monotonic()
         response = self._execute_http_request(
-            self.infer_url, method="POST", **request_kwargs
+            self.infer_url, method="POST", operation="ModelInfer", **request_kwargs
         )
         if _log.isEnabledFor(logging.DEBUG):
             _log.debug(
