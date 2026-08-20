@@ -483,12 +483,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Integrate processing results into conversion result."""
         page_map = {p.page_no: p for p in proc.pages}
 
-        # Track failed pages for cleanup
-        failed_page_nos = {page_no for page_no, _, _ in proc.failed_pages}
-
-        # Collect pages that will be removed (failed pages) for resource cleanup
-        pages_to_remove = [p for p in conv_res.pages if p.page_no in failed_page_nos]
-
         conv_res.pages = [
             page_map[p.page_no] for p in conv_res.pages if p.page_no in page_map
         ]
@@ -511,16 +505,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         else:
             conv_res.status = ConversionStatus.SUCCESS
-
-        # Clean up resources for failed pages that were removed
-        for p in pages_to_remove:
-            if p._backend is not None:
-                p._backend.unload()
-            p._image_cache = {}
-            # Clean up parsed_page if it exists (it's Optional[SegmentedPdfPage])
-            if p.parsed_page is not None:
-                del p.parsed_page
-                p.parsed_page = None
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         return conv_res
