@@ -4,21 +4,21 @@
 
 **Student falls ill**
 
-- Suggested Reportable Symptoms:
-＊ Fever
-＊ Cough
-＊ Diarrhea
-＊ Vomiting
-＊ Rash
-＊ Blisters
-＊ Headache
+- Suggested Reportable Symptoms:  
+＊ Fever  
+＊ Cough  
+＊ Diarrhea  
+＊ Vomiting  
+＊ Rash  
+＊ Blisters  
+＊ Headache  
 ＊ Sore throat
 
 <!-- image -->
 
 <!-- image -->
 
-If a caregiver suspects that within one week, a fifth of the class (for classes with more than 15 students) or more than three students (for classes with 15 or fewer students)
+If a caregiver suspects that within one week, a fifth of the class (for classes with more than 15 students) or more than three students (for classes with 15 or fewer students)  
 show the same suggested reportable symptoms
 
 <!-- image -->
@@ -41,7 +41,7 @@ Upon receiving a report from the kindergarten, conduct a preliminary assessment 
 
 <!-- image -->
 
-Department of Education:
+Department of Education:  
 Collaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.
 
 <!-- image -->

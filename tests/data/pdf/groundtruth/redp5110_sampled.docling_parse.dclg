@@ -12,349 +12,227 @@
     <location value="458"/>
     <location value="462"/>
     <fcel/>
-    <text>
-      <location value="114"/>
-      <location value="86"/>
-      <location value="145"/>
-      <location value="92"/>
-      Notices
-    </text>
-    <text>
-      <location value="146"/>
-      <location value="86"/>
-      <location value="458"/>
-      <location value="92"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . vii
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="94"/>
-      <location value="458"/>
-      <location value="100"/>
-      Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  viii
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="108"/>
-      <location value="234"/>
-      <location value="114"/>
-      DB2 for i Center of Excellence
-    </text>
-    <text>
-      <location value="235"/>
-      <location value="108"/>
-      <location value="458"/>
-      <location value="114"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  ix
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="123"/>
-      <location value="145"/>
-      <location value="129"/>
-      Preface
-    </text>
-    <text>
-      <location value="146"/>
-      <location value="123"/>
-      <location value="458"/>
-      <location value="129"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  xi
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="131"/>
-      <location value="458"/>
-      <location value="137"/>
-      Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . xi
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="139"/>
-      <location value="458"/>
-      <location value="145"/>
-      Now you can become a published author, too!  . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  xiii
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="147"/>
-      <location value="458"/>
-      <location value="153"/>
-      Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  xiii
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="155"/>
-      <location value="458"/>
-      <location value="161"/>
-      Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  xiv
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="170"/>
-      <location value="312"/>
-      <location value="176"/>
-      Chapter 1.  Securing and protecting IBM DB2 data
-    </text>
-    <text>
-      <location value="314"/>
-      <location value="170"/>
-      <location value="458"/>
-      <location value="176"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  1
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="178"/>
-      <location value="458"/>
-      <location value="183"/>
-      1.1  Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  2
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="186"/>
-      <location value="458"/>
-      <location value="192"/>
-      1.2  Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  2
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="194"/>
-      <location value="458"/>
-      <location value="200"/>
-      1.3  DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  3
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="202"/>
-      <location value="458"/>
-      <location value="208"/>
-      1.3.1  Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  4
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="210"/>
-      <location value="458"/>
-      <location value="216"/>
-      1.3.2  New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . . . . . . . . .  5
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="224"/>
-      <location value="282"/>
-      <location value="230"/>
-      Chapter 2.  Roles and separation of duties
-    </text>
-    <text>
-      <location value="284"/>
-      <location value="224"/>
-      <location value="458"/>
-      <location value="230"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  7
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="232"/>
-      <location value="458"/>
-      <location value="238"/>
-      2.1  Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  8
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="240"/>
-      <location value="458"/>
-      <location value="246"/>
-      2.1.1  DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . . . . . . . . .  8
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="248"/>
-      <location value="458"/>
-      <location value="254"/>
-      2.1.2  Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . . . . . . . . .  8
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="256"/>
-      <location value="458"/>
-      <location value="262"/>
-      2.1.3  Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . . . . . . . . .  9
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="264"/>
-      <location value="458"/>
-      <location value="270"/>
-      2.1.4  Database Information function: QIBM_DB_SYSMON  . . . . . . . . . . . . . . . . . . . . . .  9
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="273"/>
-      <location value="458"/>
-      <location value="279"/>
-      2.1.5  Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . . . . . . . . .  9
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="281"/>
-      <location value="458"/>
-      <location value="287"/>
-      2.1.6  Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  10
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="289"/>
-      <location value="458"/>
-      <location value="295"/>
-      2.1.7  Verifying function usage IDs for RCAC with the FUNCTION_USAGE view . . . . .  10
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="297"/>
-      <location value="458"/>
-      <location value="303"/>
-      2.2  Separation of duties  . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  10
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="311"/>
-      <location value="292"/>
-      <location value="317"/>
-      Chapter 3.  Row and Column Access Control
-    </text>
-    <text>
-      <location value="293"/>
-      <location value="311"/>
-      <location value="458"/>
-      <location value="317"/>
-      . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  13
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="319"/>
-      <location value="458"/>
-      <location value="325"/>
-      3.1  Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . . . . . . . .  14
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="327"/>
-      <location value="458"/>
-      <location value="333"/>
-      3.1.1  Row permission and column mask definitions  . . . . . . . . . . . . . . . . . . . . . . . . . . .  14
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="335"/>
-      <location value="458"/>
-      <location value="341"/>
-      3.1.2  Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  16
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="343"/>
-      <location value="458"/>
-      <location value="349"/>
-      3.2  Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  18
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="351"/>
-      <location value="458"/>
-      <location value="357"/>
-      3.2.1  Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  18
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="360"/>
-      <location value="458"/>
-      <location value="365"/>
-      3.2.2  Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  19
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="368"/>
-      <location value="458"/>
-      <location value="374"/>
-      3.3  VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  20
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="376"/>
-      <location value="458"/>
-      <location value="382"/>
-      3.4  Establishing and controlling accessibility by using the RCAC rule text. . . . . . . . . . . . .  21
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="384"/>
-      <location value="458"/>
-      <location value="390"/>
-      3.5  SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . . . . . . .  22
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="392"/>
-      <location value="458"/>
-      <location value="398"/>
-      3.6  Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  22
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="400"/>
-      <location value="458"/>
-      <location value="406"/>
-      3.6.1  Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . . .  23
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="408"/>
-      <location value="458"/>
-      <location value="414"/>
-      3.6.2  Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . . . . . . . .  23
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="416"/>
-      <location value="458"/>
-      <location value="422"/>
-      3.6.3  Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  24
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="424"/>
-      <location value="458"/>
-      <location value="430"/>
-      3.6.4  Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  25
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="432"/>
-      <location value="458"/>
-      <location value="438"/>
-      3.6.5  Defining and creating column masks  . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  26
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="440"/>
-      <location value="458"/>
-      <location value="446"/>
-      3.6.6  Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  28
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="448"/>
-      <location value="458"/>
-      <location value="454"/>
-      3.6.7  Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  29
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="456"/>
-      <location value="458"/>
-      <location value="462"/>
-      3.6.8  Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . . . . . . . .  32
-    </text>
+    Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . vii
+    <nl/>
+    <fcel/>
+    Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    viii
+    <nl/>
+    <fcel/>
+    DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . ix
+    <nl/>
+    <ecel/>
+    <srow/>
+    .
+    <nl/>
+    <rhed/>
+    Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xi
+    <nl/>
+    <rhed/>
+    Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . xi
+    <nl/>
+    <rhed/>
+    Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiii
+    <nl/>
+    <rhed/>
+    Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiii
+    <nl/>
+    <rhed/>
+    Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    xiv
+    <nl/>
+    <srow/>
+    Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    . 1
+    <nl/>
+    <rhed/>
+    . .
+    <ecel/>
+    <nl/>
+    <rhed/>
+    1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 2
+    <nl/>
+    <rhed/>
+    1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 2
+    <nl/>
+    <rhed/>
+    1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 3
+    <nl/>
+    <rhed/>
+    1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 4
+    <nl/>
+    <rhed/>
+    1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 5
+    <nl/>
+    <srow/>
+    Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    . 7
+    <nl/>
+    <rhed/>
+    2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .
+    <fcel/>
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . .
+    <fcel/>
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    10
+    <nl/>
+    <rhed/>
+    2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view
+    <fcel/>
+    10
+    <nl/>
+    <rhed/>
+    2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    10
+    <nl/>
+    <srow/>
+    Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    13
+    <nl/>
+    <rhed/>
+    3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . .
+    <fcel/>
+    14
+    <nl/>
+    <rhed/>
+    3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    14
+    <nl/>
+    <rhed/>
+    3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    16
+    <nl/>
+    <rhed/>
+    3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    18
+    <nl/>
+    <rhed/>
+    3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    18
+    <nl/>
+    <rhed/>
+    3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    19
+    <nl/>
+    <rhed/>
+    3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    20
+    <nl/>
+    <rhed/>
+    3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .
+    <fcel/>
+    21
+    <nl/>
+    <rhed/>
+    3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    22
+    <nl/>
+    <srow/>
+    3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
+    22
+    <nl/>
+    <rhed/>
+    3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . .
+    <fcel/>
+    23
+    <nl/>
+    <rhed/>
+    3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . .
+    <fcel/>
+    23
+    <nl/>
+    <rhed/>
+    3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    24
+    <nl/>
+    <rhed/>
+    3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    25
+    <nl/>
+    <rhed/>
+    3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    26
+    <nl/>
+    <rhed/>
+    3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    28
+    <nl/>
+    <rhed/>
+    3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    29
+    <nl/>
+    <rhed/>
+    3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . .
+    <fcel/>
+    32
     <nl/>
   </index>
   <footnote>
