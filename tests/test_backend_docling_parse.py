@@ -231,6 +231,12 @@ class _FakeThreadedParser:
         yield _FakeThreadedResult(page_number=3)
         yield _FakeThreadedResult(page_number=2)
 
+    def has_tasks(self) -> bool:
+        return False
+
+    def get_task(self):
+        raise AssertionError("get_task must not be called once has_tasks() is False")
+
     def unload(self, doc_key: str) -> bool:
         self.unload_calls.append(doc_key)
         return True
