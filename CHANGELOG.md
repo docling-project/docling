@@ -1,3 +1,17 @@
+## [v2.121.0](https://github.com/docling-project/docling/releases/tag/v2.121.0) - 2026-08-20
+
+### Feature
+
+* Extend the PdfPageBackend for better integration with docling-parse and improve the OCR input selection ([#3981](https://github.com/docling-project/docling/issues/3981)) ([`83fa205`](https://github.com/docling-project/docling/commit/83fa2051198ace5d62882bee7e8d72c074e98b88))
+* **service-client:** Advertise accepted DoclingDocument version via Accept-Docling-Document-Version header ([#4024](https://github.com/docling-project/docling/issues/4024)) ([`df9c91f`](https://github.com/docling-project/docling/commit/df9c91fc9934459223d25dcf8b876ef759643922))
+* **iwork:** Add Apple Pages (`.pages`) support ([#3934](https://github.com/docling-project/docling/issues/3934)) ([`2f8694f`](https://github.com/docling-project/docling/commit/2f8694f63d65ddf45740a09765a702c31324e2f3))
+
+### Fix
+
+* **pypdfium2:** Apply page rotation to text-cell coordinates ([#4008](https://github.com/docling-project/docling/issues/4008)) ([`43e258b`](https://github.com/docling-project/docling/commit/43e258bb28c4cb84a86a46772b155a6dfcb20cfc))
+* Coerce MLX bfloat16 logprobs to float in VlmPredictionToken ([#4005](https://github.com/docling-project/docling/issues/4005)) ([`ff54826`](https://github.com/docling-project/docling/commit/ff54826ff0d9e4893e2d16f4221bff7ea411c96a))
+* **docx:** Descend into a content control that also holds a picture (#3950) ([#3952](https://github.com/docling-project/docling/issues/3952)) ([`c4b5ed6`](https://github.com/docling-project/docling/commit/c4b5ed6202d669e2fba2654affb843f3b1611de2))
+
 ## [v2.120.3](https://github.com/docling-project/docling/releases/tag/v2.120.3) - 2026-08-18
 
 ### Fix

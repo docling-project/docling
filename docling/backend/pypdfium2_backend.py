@@ -19,6 +19,7 @@ from docling_core.types.doc.page import (
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
+from rtree import index
 
 from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumDocumentBackend,
@@ -28,6 +29,65 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
+
+
+def _merge_overlapping_boxes(
+    boxes: List[BoundingBox], tolerance: float
+) -> List[BoundingBox]:
+    """Merge boxes that overlap (within ``tolerance``) into their connected components.
+
+    All boxes must share the top-left origin. An R-tree keeps this near-linear: pages of
+    vector art routinely carry thousands of path objects.
+    """
+    if not boxes:
+        return []
+
+    def _query(bbox: BoundingBox) -> tuple[float, float, float, float]:
+        return (
+            bbox.l - tolerance,
+            bbox.t - tolerance,
+            bbox.r + tolerance,
+            bbox.b + tolerance,
+        )
+
+    prop = index.Property()
+    prop.dimension = 2
+    tree = index.Index(properties=prop)
+    for i, bbox in enumerate(boxes):
+        tree.insert(i, (bbox.l, bbox.t, bbox.r, bbox.b))
+
+    merged: List[BoundingBox] = []
+    visited: set[int] = set()
+    for start in range(len(boxes)):
+        if start in visited:
+            continue
+
+        visited.add(start)
+        stack = [start]
+        left, top, right, bottom = (
+            boxes[start].l,
+            boxes[start].t,
+            boxes[start].r,
+            boxes[start].b,
+        )
+        while stack:
+            current = boxes[stack.pop()]
+            left = min(left, current.l)
+            top = min(top, current.t)
+            right = max(right, current.r)
+            bottom = max(bottom, current.b)
+            for neighbor in tree.intersection(_query(current)):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+
+        merged.append(
+            BoundingBox(
+                l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.TOPLEFT
+            )
+        )
+
+    return merged
 
 
 def get_pdf_page_geometry(
@@ -178,6 +238,12 @@ _log = logging.getLogger(__name__)
 # Resolve pypdfium2 major version
 # pypdfium2 5.x renamed PdfObject.get_pos() -> get_bounds()
 _PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
+
+# PDF 32000 text rendering modes that paint no ink, matching the filter docling-parse
+# applies natively when answering content-intersection queries.
+_INVISIBLE_TEXT_RENDER_MODES = frozenset(
+    {pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE, pdfium_c.FPDF_TEXTRENDERMODE_CLIP}
+)
 
 
 class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
@@ -354,26 +420,101 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return merge_horizontal_cells(cells)
 
-    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        AREA_THRESHOLD = 0  # 32 * 32
+    def _object_rects(
+        self, obj_type: int, *, skip_invisible_text: bool = False
+    ) -> Iterable[BoundingBox]:
+        """Yield the bboxes of the page objects of ``obj_type``, in top-left origin.
+
+        With ``skip_invisible_text``, text objects drawn in a rendering mode that paints no
+        ink are left out, matching what docling-parse does natively.
+        """
         page_size = self.get_size()
 
         with pypdfium2_lock:
             page = self._require_page()
             rotation = page.get_rotation()
-            for obj in page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+            for obj in page.get_objects(filter=[obj_type]):
+                if (
+                    skip_invisible_text
+                    and obj_type == pdfium_c.FPDF_PAGEOBJ_TEXT
+                    and pdfium_c.FPDFTextObj_GetTextRenderMode(obj.raw)
+                    in _INVISIBLE_TEXT_RENDER_MODES
+                ):
+                    continue
+
                 if _PYPDFIUM2_MAJOR_VERSION >= 5:
                     pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
                     pos = obj.get_pos()  # pypdfium2 <= 4.x
                 pos = _rect_to_display_frame(pos, rotation, page_size)
 
-                cropbox = BoundingBox.from_tuple(
+                yield BoundingBox.from_tuple(
                     pos, origin=CoordOrigin.BOTTOMLEFT
                 ).to_top_left_origin(page_height=page_size.height)
-                if cropbox.area() > AREA_THRESHOLD:
-                    cropbox = cropbox.scaled(scale=scale)
-                    yield cropbox
+
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        AREA_THRESHOLD = 0  # 32 * 32
+
+        for cropbox in self._object_rects(pdfium_c.FPDF_PAGEOBJ_IMAGE):
+            if cropbox.area() > AREA_THRESHOLD:
+                yield cropbox.scaled(scale=scale)
+
+    def has_content_in(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> Optional[bool]:
+        """Best-effort content-intersection test built from page-object bboxes.
+
+        pypdfium2 exposes no clip state, so this approximates the docling-parse query: an
+        object counts as intersecting when its bounding box does, even if the object is
+        clipped away or fully transparent. Text rendering mode is the one visibility signal
+        it does expose, and invisible text is skipped just like docling-parse does.
+        """
+        if not self.valid:
+            return False
+
+        page_size = self.get_size()
+        probe = bbox.to_top_left_origin(page_height=page_size.height)
+
+        obj_types = []
+        if shapes:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_PATH)
+        if bitmaps:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_IMAGE)
+        if chars:
+            obj_types.append(pdfium_c.FPDF_PAGEOBJ_TEXT)
+
+        for obj_type in obj_types:
+            for rect in self._object_rects(obj_type, skip_invisible_text=True):
+                # Plain overlap, so that degenerate (zero-area) rules still count.
+                if (
+                    rect.l <= probe.r
+                    and probe.l <= rect.r
+                    and rect.t <= probe.b
+                    and probe.t <= rect.b
+                ):
+                    return True
+
+        return False
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> Optional[List[BoundingBox]]:
+        """Best-effort connected shape regions, merged from path-object bboxes.
+
+        Unlike the docling-parse implementation this sees neither clip state nor stroke
+        width, so the regions are the union of raw path bounding boxes.
+        """
+        if not self.valid:
+            return []
+
+        return _merge_overlapping_boxes(
+            list(self._object_rects(pdfium_c.FPDF_PAGEOBJ_PATH)), tolerance
+        )
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         with pypdfium2_lock:

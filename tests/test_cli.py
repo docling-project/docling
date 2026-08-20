@@ -6,8 +6,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-import click
 import pytest
+import typer
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
@@ -952,7 +952,7 @@ def test_parse_page_range_is_shared_with_convert_remote():
     assert _parse_page_range(None) is None
     assert _parse_page_range("1-4") == (1, 4)
     assert _parse_page_range(" 7 ") == (7, 7)
-    with pytest.raises(click.exceptions.UsageError):
+    with pytest.raises(typer.BadParameter):
         _parse_page_range("4-2")
 
 
