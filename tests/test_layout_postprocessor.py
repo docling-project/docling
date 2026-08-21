@@ -1,8 +1,9 @@
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster
-from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.datamodel.pipeline_options import LayoutPostprocessorOptions
+from docling.utils.layout_postprocessor import LayoutPostprocessor, SpatialClusterIndex
 
 
 def _cluster(
@@ -17,23 +18,46 @@ def _cluster(
     )
 
 
-def _text_cell(index: int) -> TextCell:
+def _text_cell(
+    index: int,
+    bbox: tuple[float, float, float, float] = (0, 0, 1, 1),
+    text: str | None = None,
+    *,
+    from_ocr: bool = False,
+) -> TextCell:
+    left, top, right, bottom = bbox
+    cell_text = str(index) if text is None else text
     return TextCell(
         index=index,
         rect=BoundingRectangle(
-            r_x0=0,
-            r_y0=0,
-            r_x1=1,
-            r_y1=0,
-            r_x2=1,
-            r_y2=1,
-            r_x3=0,
-            r_y3=1,
+            r_x0=left,
+            r_y0=top,
+            r_x1=right,
+            r_y1=top,
+            r_x2=right,
+            r_y2=bottom,
+            r_x3=left,
+            r_y3=bottom,
+            coord_origin=CoordOrigin.TOPLEFT,
         ),
-        text=str(index),
-        orig=str(index),
-        from_ocr=False,
+        text=cell_text,
+        orig=cell_text,
+        from_ocr=from_ocr,
     )
+
+
+def _special_cluster_processor(
+    pictures: list[Cluster], cells: list[TextCell]
+) -> LayoutPostprocessor:
+    processor = object.__new__(LayoutPostprocessor)
+    processor.page_size = Size(width=600, height=800)
+    processor.cells = cells
+    processor.special_clusters = pictures
+    processor.regular_clusters = []
+    processor.options = LayoutPostprocessorOptions(skip_cell_assignment=True)
+    processor.picture_index = SpatialClusterIndex(pictures)
+    processor.wrapper_index = SpatialClusterIndex([])
+    return processor
 
 
 def test_sort_cells_uses_native_cell_index_order() -> None:
@@ -89,3 +113,40 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
 
     ids = {c.id for c in result}
     assert ids == {1, 2}
+
+
+def test_embedded_slide_container_is_removed_before_picture_deoverlap() -> None:
+    outer_slide = _cluster(1, DocItemLabel.PICTURE, (10, 200, 590, 525))
+    nested_chart = _cluster(2, DocItemLabel.PICTURE, (300, 250, 570, 500))
+    native_cells = [
+        _text_cell(
+            index,
+            (30, 230 + index * 30, 280, 250 + index * 30),
+            "machine-readable slide text " * 4,
+        )
+        for index in range(3)
+    ]
+    processor = _special_cluster_processor([outer_slide, nested_chart], native_cells)
+
+    result = processor._process_special_clusters()
+
+    assert [cluster.id for cluster in result] == [nested_chart.id]
+
+
+def test_embedded_slide_container_is_kept_for_ocr_only_content() -> None:
+    outer_slide = _cluster(1, DocItemLabel.PICTURE, (10, 200, 590, 525))
+    nested_chart = _cluster(2, DocItemLabel.PICTURE, (300, 250, 570, 500))
+    ocr_cells = [
+        _text_cell(
+            index,
+            (30, 230 + index * 30, 280, 250 + index * 30),
+            "text recognized from a raster image " * 4,
+            from_ocr=True,
+        )
+        for index in range(3)
+    ]
+    processor = _special_cluster_processor([outer_slide, nested_chart], ocr_cells)
+
+    result = processor._process_special_clusters()
+
+    assert [cluster.id for cluster in result] == [outer_slide.id]
