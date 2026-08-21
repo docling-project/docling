@@ -19,6 +19,32 @@ comment:
   behavior: default
   require_changes: true
 
+# The ML lanes only run when changed paths select them, and PR runs prune
+# unaffected tests via Tach, so most commits upload a subset of the flags
+# below. carryforward keeps the unuploaded flags at their last known value
+# instead of dropping them, which otherwise reports a large phantom coverage
+# loss on any PR that does not touch the ML paths.
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - type: project
+        target: auto
+        informational: true
+  individual_flags:
+    - name: run-tests-core
+      carryforward: true
+    - name: run-tests-ml-ocr
+      carryforward: true
+    - name: run-tests-ml-pdf-model
+      carryforward: true
+    - name: run-tests-ml-vlm
+      carryforward: true
+    - name: run-tests-ml-asr
+      carryforward: true
+    - name: run-examples
+      carryforward: true
+
 component_management:
   default_rules:
     statuses:
