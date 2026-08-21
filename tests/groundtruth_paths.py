@@ -20,7 +20,6 @@ _PAGES_META_SUFFIX = ".pages.meta.json"
 _JSON_SUFFIX = ".json"
 _MD_SUFFIX = ".md"
 _DOCTAGS_SUFFIX = ".doctags.txt"
-_DOCLANG_SUFFIX = ".dclg"
 
 
 # Maps an OCR engine `kind` to the GT sub-directory (and filename tag) it uses.
@@ -43,7 +42,6 @@ class GroundTruthPaths(BaseModel):
     doc_json: Path
     md: Path
     doctags: Path
-    doclang: Path
 
 
 def get_regular_groundtruth_paths(
@@ -69,7 +67,6 @@ def get_regular_groundtruth_paths(
         doc_json=base.with_suffix(f"{prefix}{_JSON_SUFFIX}"),
         md=base.with_suffix(f"{prefix}{_MD_SUFFIX}"),
         doctags=base.with_suffix(f"{prefix}{_DOCTAGS_SUFFIX}"),
-        doclang=base.with_suffix(f"{prefix}{_DOCLANG_SUFFIX}"),
     )
     return gt_paths
 
