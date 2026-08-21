@@ -27,6 +27,7 @@ from docling.models.base_layout_model import (
 )
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_arabic_presentation_forms
 
 _log = logging.getLogger(__name__)
 
@@ -153,6 +154,9 @@ class PageAssembleModel(BasePageModel):
             ),
             sanitized_text,
         )
+        # Arabic shaping normalization: fold contextual presentation forms back to
+        # their canonical Arabic letters, so the extracted text is searchable.
+        sanitized_text = normalize_arabic_presentation_forms(sanitized_text)
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
