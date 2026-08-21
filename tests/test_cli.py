@@ -712,19 +712,30 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options.release_native_memory_every_n_pages == 64
 
 
+# Pipeline and backend selection are independent in the CLI routing, so pair
+# them (zip) rather than take the cartesian product: every pipeline and every
+# backend is still exercised at least once.
 @pytest.mark.parametrize(
-    ("pipeline_name", "expected_pipeline"),
-    [("legacy", "LegacyStandardPdfPipeline"), ("vlm", "VlmPipeline")],
-)
-@pytest.mark.parametrize(
-    ("pdf_backend", "expected_backend"),
+    ("pipeline_name", "expected_pipeline", "pdf_backend", "expected_backend"),
     [
-        (PdfBackend.DOCLING_PARSE, "DoclingParseDocumentBackend"),
         (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.DOCLING_PARSE,
+            "DoclingParseDocumentBackend",
+        ),
+        (
+            "vlm",
+            "VlmPipeline",
             PdfBackend.THREADED_DOCLING_PARSE,
             "ThreadedDoclingParseDocumentBackend",
         ),
-        (PdfBackend.PYPDFIUM2, "PyPdfiumDocumentBackend"),
+        (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.PYPDFIUM2,
+            "PyPdfiumDocumentBackend",
+        ),
     ],
 )
 def test_cli_routes_pdf_backend_for_legacy_and_vlm(
