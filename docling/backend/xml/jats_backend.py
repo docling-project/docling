@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+import warnings
 from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
@@ -32,6 +33,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
+    ImageRef,
     NodeItem,
     TableCell,
     TableData,
@@ -43,6 +45,7 @@ from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -70,6 +73,7 @@ DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
+_XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
 
 # Maps JATS formatting tags to docling-core formatting attributes.
 _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
@@ -159,6 +163,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.path_or_stream = path_or_stream
+        self._image_loader = ImageResourceLoader(enable_local_fetch=True)
 
         # Initialize the root of the document hierarchy
         self.root: NodeItem | None = None
@@ -820,9 +825,43 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
-        doc.add_picture(parent=parent, caption=fig_caption)
+        doc.add_picture(
+            parent=parent,
+            caption=fig_caption,
+            image=self._load_figure_image(node),
+        )
 
         return
+
+    def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
+        """Load a local image referenced by a direct JATS ``graphic`` child."""
+        if not isinstance(self.path_or_stream, Path):
+            return None
+
+        graphic_nodes = node.xpath("graphic")
+        if not graphic_nodes:
+            return None
+
+        href = graphic_nodes[0].get(_XLINK_HREF)
+        if href is None or not href.strip():
+            return None
+
+        href = href.strip()
+        if not ImageResourceLoader.is_local_path(href):
+            return None
+
+        base_path = str(self.path_or_stream)
+        try:
+            resolved_href = self._image_loader.resolve_relative_path(href, base_path)
+        except ValueError as e:
+            warnings.warn(f"Could not process an image from {href}: {e}")
+            return None
+
+        if not Path(resolved_href).is_file():
+            _log.debug("Skipping missing JATS figure image: %s", resolved_href)
+            return None
+
+        return self._image_loader.create_image_ref(resolved_href, base_path)
 
     def _add_metadata(
         self, doc: DoclingDocument, xml_components: XMLComponents
