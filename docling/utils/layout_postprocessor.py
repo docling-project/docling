@@ -189,6 +189,12 @@ class LayoutPostprocessor:
         DocItemLabel.DOCUMENT_INDEX: 0.45,
     }
 
+    CONTENT_CONTAINER_MIN_PAGE_WIDTH_RATIO = 0.8
+    CONTENT_CONTAINER_MIN_NATIVE_TEXT_CHARS = 200
+    CONTENT_CONTAINER_MIN_NATIVE_TEXT_RATIO = 0.8
+    CONTENT_CONTAINER_PICTURE_CONTAINMENT_THRESHOLD = 0.8
+    CONTENT_CONTAINER_MAX_NESTED_PICTURE_AREA_RATIO = 0.8
+
     LABEL_REMAPPING = {
         # DocItemLabel.DOCUMENT_INDEX: DocItemLabel.TABLE,
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
@@ -321,6 +327,7 @@ class LayoutPostprocessor:
         ]
 
         special_clusters = self._handle_cross_type_overlaps(special_clusters)
+        special_clusters = self._remove_content_container_pictures(special_clusters)
 
         # Calculate page area from known page size
         assert self.page_size is not None
@@ -382,6 +389,75 @@ class LayoutPostprocessor:
         )
 
         return picture_clusters + wrapper_clusters
+
+    def _remove_content_container_pictures(
+        self, special_clusters: list[Cluster]
+    ) -> list[Cluster]:
+        """Remove broad picture proposals that represent embedded page content.
+
+        Layout models can label a landscape slide embedded in a portrait PDF as one
+        large picture, even when the PDF contains native text and smaller picture
+        proposals inside it. Keeping that outer proposal makes the native text its
+        children and collapses the nested pictures during picture de-overlap.
+        """
+        if self.page_size is None or self.page_size.width <= 0:
+            return special_clusters
+
+        if self.page_size.height <= self.page_size.width:
+            return special_clusters
+
+        native_cells = [
+            cell
+            for cell in self.cells
+            if not cell.from_ocr and len(cell.text.strip()) > 0
+        ]
+        total_native_text_chars = sum(len(cell.text.strip()) for cell in native_cells)
+        if total_native_text_chars < self.CONTENT_CONTAINER_MIN_NATIVE_TEXT_CHARS:
+            return special_clusters
+
+        pictures = [
+            cluster
+            for cluster in special_clusters
+            if cluster.label == DocItemLabel.PICTURE and cluster.bbox.area() > 0
+        ]
+        picture_ids_to_remove: set[int] = set()
+
+        for picture in pictures:
+            if picture.bbox.width <= picture.bbox.height:
+                continue
+            if (
+                picture.bbox.width / self.page_size.width
+                < self.CONTENT_CONTAINER_MIN_PAGE_WIDTH_RATIO
+            ):
+                continue
+
+            contains_nested_picture = any(
+                nested.id != picture.id
+                and nested.bbox.area() / picture.bbox.area()
+                < self.CONTENT_CONTAINER_MAX_NESTED_PICTURE_AREA_RATIO
+                and nested.bbox.intersection_over_self(picture.bbox)
+                > self.CONTENT_CONTAINER_PICTURE_CONTAINMENT_THRESHOLD
+                for nested in pictures
+            )
+            if not contains_nested_picture:
+                continue
+
+            contained_native_text_chars = sum(
+                len(cell.text.strip())
+                for cell in native_cells
+                if cell.to_bounding_box().intersection_over_self(picture.bbox) > 0.8
+            )
+            if (
+                contained_native_text_chars / total_native_text_chars
+                >= self.CONTENT_CONTAINER_MIN_NATIVE_TEXT_RATIO
+            ):
+                picture_ids_to_remove.add(picture.id)
+
+        return [
+            cluster
+            for cluster in special_clusters
+            if cluster.id not in picture_ids_to_remove
+        ]
 
     def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
         """Handle overlaps between regular and wrapper clusters before child assignment.
