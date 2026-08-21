@@ -52,13 +52,22 @@ def _enabled(recorded: dict[str, Any]) -> set[str]:
     return {key for key, value in recorded.items() if key.startswith("with_") and value}
 
 
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_BOX_DRAWING = re.compile(r"[\u2500-\u257f]")
+
+
 def _flat(output: str) -> str:
-    """Collapse Rich's box-drawing and line wrapping into a single line.
+    """Reduce a Rich error panel to a single line of plain text.
 
     Typer renders ``BadParameter`` messages inside a bordered panel and hard
-    wraps them, so error text cannot be matched against the raw output.
+    wraps them, so error text cannot be matched against the raw output. When
+    the output stream is a terminal -- as it is under CI -- Rich also emits
+    colour codes, including between the wrapped halves of a sentence, so the
+    escapes have to go before whitespace is collapsed or the message is still
+    split.
     """
-    stripped = re.sub(r"[\u2500-\u257f]", " ", output)
+    stripped = _ANSI_ESCAPE.sub("", output)
+    stripped = _BOX_DRAWING.sub(" ", stripped)
     return re.sub(r"\s+", " ", stripped)
 
 
@@ -158,8 +167,10 @@ def test_verbose_download_prints_offline_usage_hint(tmp_path, recorded_download)
     result = runner.invoke(app, ["models", "download", "-o", str(tmp_path), "layout"])
 
     assert result.exit_code == 0
-    assert "Models downloaded into" in result.output
-    assert "--artifacts-path" in result.output
+    # Rich wraps and colours this hint, so normalise before matching.
+    output = _flat(result.output)
+    assert "Models downloaded into" in output
+    assert "--artifacts-path" in output
 
 
 def test_easyocr_lang_is_forwarded_when_easyocr_is_selected(
