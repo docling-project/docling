@@ -89,6 +89,22 @@ def test_e2e_invalid_csv_conversions():
         converter.convert(csv_inconsistent_header)
 
 
+def test_quoted_newline_in_first_field():
+    """A quoted field spanning several lines must not break delimiter sniffing.
+
+    Reading a single line split the field mid-quote, so the sniffer saw an
+    unterminated quote and the conversion failed outright.
+    """
+    csv_bytes = b'"line one\nstill line one";b;c\n1;2;3\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="quoted.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    table = conv_result.document.tables[0]
+    assert table.data.num_cols == 3
+    assert table.data.table_cells[0].text == "line one\nstill line one"
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(
