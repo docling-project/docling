@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import Any
 
 from pydantic import (
     AnyUrl,
@@ -85,10 +86,6 @@ def _get_whisper_tiny_model():
     )
 
 
-# Create the model instance
-WHISPER_TINY = _get_whisper_tiny_model()
-
-
 def _get_whisper_small_model():
     """
     Get the best Whisper Small model for the current hardware.
@@ -125,10 +122,6 @@ def _get_whisper_small_model():
         max_new_tokens=256,
         max_time_chunk=30.0,
     )
-
-
-# Create the model instance
-WHISPER_SMALL = _get_whisper_small_model()
 
 
 def _get_whisper_medium_model():
@@ -169,10 +162,6 @@ def _get_whisper_medium_model():
     )
 
 
-# Create the model instance
-WHISPER_MEDIUM = _get_whisper_medium_model()
-
-
 def _get_whisper_base_model():
     """
     Get the best Whisper Base model for the current hardware.
@@ -209,10 +198,6 @@ def _get_whisper_base_model():
         max_new_tokens=256,
         max_time_chunk=30.0,
     )
-
-
-# Create the model instance
-WHISPER_BASE = _get_whisper_base_model()
 
 
 def _get_whisper_large_model():
@@ -253,10 +238,6 @@ def _get_whisper_large_model():
     )
 
 
-# Create the model instance
-WHISPER_LARGE = _get_whisper_large_model()
-
-
 def _get_whisper_turbo_model():
     """
     Get the best Whisper Turbo model for the current hardware.
@@ -295,8 +276,38 @@ def _get_whisper_turbo_model():
     )
 
 
-# Create the model instance
-WHISPER_TURBO = _get_whisper_turbo_model()
+# `WHISPER_TINY`, `WHISPER_SMALL`, `WHISPER_MEDIUM`, `WHISPER_BASE`,
+# `WHISPER_LARGE` and `WHISPER_TURBO` are hardware-auto-detecting presets:
+# picking between MLX and native Whisper requires calling
+# `_detect_hardware_and_libraries()`, which does `import torch` to check
+# `torch.backends.mps.is_available()`. That import is guarded against
+# `torch` being *absent* (falls back to `has_mps=False`), but not against
+# the eager cost of running it merely because this module was imported —
+# so building these presets at module load time meant any consumer of
+# `docling.datamodel.pipeline_options` (which imports `asr_model_specs` for
+# unrelated ASR option types) paid that cost even when never touching ASR
+# at all. `__getattr__` (PEP 562) computes and caches each preset lazily,
+# on first real access, so importing this module never imports torch by
+# itself.
+_LAZY_AUTO_PRESET_FACTORIES = {
+    "WHISPER_TINY": _get_whisper_tiny_model,
+    "WHISPER_SMALL": _get_whisper_small_model,
+    "WHISPER_MEDIUM": _get_whisper_medium_model,
+    "WHISPER_BASE": _get_whisper_base_model,
+    "WHISPER_LARGE": _get_whisper_large_model,
+    "WHISPER_TURBO": _get_whisper_turbo_model,
+}
+_lazy_auto_preset_cache: dict[str, Any] = {}
+
+
+def __getattr__(name: str) -> Any:
+    factory = _LAZY_AUTO_PRESET_FACTORIES.get(name)
+    if factory is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    if name not in _lazy_auto_preset_cache:
+        _lazy_auto_preset_cache[name] = factory()
+    return _lazy_auto_preset_cache[name]
+
 
 # =============================================================================
 # Explicit MLX Whisper model options for users who want to force MLX usage
