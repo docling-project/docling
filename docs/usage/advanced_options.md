@@ -169,12 +169,16 @@ the document uses:
   Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
   template yields no spurious content.
 
-!!! note "Body text only"
+Titles and headings are recovered from the paragraph styles Pages applies
+("Title", "Heading 1", "Subheading"), which are named identically in both
+generations.
 
-    Only the document body is extracted, as a flat sequence of paragraphs.
-    Heading levels, lists and tables are carried by the paragraph style runs and
-    are not yet mapped, and text boxes, headers, footers, footnotes and comments
-    are not included. Password-protected documents cannot be read.
+!!! note "Not yet extracted"
+
+    Character formatting, lists, text boxes, headers, footers, footnotes
+    and comments are not included — only the main body and its tables are
+    read — and password-protected documents cannot be read. Table cells
+    holding anything other than text are left empty.
 
 The container is untrusted input, so member count, total size, per-member size
 and decompressed output are all bounded. Those limits can be tuned with
