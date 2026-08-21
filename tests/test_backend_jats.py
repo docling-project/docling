@@ -533,6 +533,44 @@ def test_jats_stream_does_not_resolve_relative_figure_image():
     assert pictures[0].image is None
 
 
+@pytest.mark.parametrize(
+    "graphic",
+    [
+        pytest.param("", id="no-graphic"),
+        pytest.param("<graphic/>", id="missing-href"),
+        pytest.param('<graphic xlink:href=" "/>', id="blank-href"),
+        pytest.param(
+            '<graphic xlink:href="https://example.com/figure.png"/>',
+            id="remote-href",
+        ),
+        pytest.param('<graphic xlink:href="missing.png"/>', id="missing-file"),
+    ],
+)
+def test_jats_file_skips_unavailable_figure_image(tmp_path: Path, graphic: str):
+    jats_path = tmp_path / "article.nxml"
+    jats_path.write_text(
+        f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
+  <body>
+    <fig>{graphic}</fig>
+    <p>Content after the unavailable figure.</p>
+  </body>
+</article>
+""",
+        encoding="utf-8",
+    )
+
+    doc = get_converter().convert(jats_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    assert "Content after the unavailable figure." in doc.export_to_markdown()
+
+
 def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     image_path = tmp_path / "outside.png"
     Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
