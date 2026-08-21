@@ -676,6 +676,63 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
 
 
+def test_disconnected_pocket_inside_bounding_box_is_not_duplicated(
+    tmp_path: Path,
+) -> None:
+    """A cell inside the flood-filled bounding box but never reached by the BFS
+    (separated from the ring by more than gap_tolerance empty cells) must not be
+    absorbed into the ring's own table data, since it is not actually connected
+    to it. It must instead surface once, as its own separate table.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    # A 5x5 ring border, all filled, plus one disconnected marker cell in the
+    # interior (2,2 / 0-based) separated from the border by an empty gap of 1
+    # cell on every side, i.e. unreachable at gap_tolerance=0.
+    for row in range(1, 6):
+        for col in range(1, 6):
+            is_border = row in (1, 5) or col in (1, 5)
+            if is_border:
+                sheet.cell(row=row, column=col, value=f"border-{row}-{col}")
+    sheet.cell(row=3, column=3, value="island-marker")
+    file_path = tmp_path / "disconnected-pocket.xlsx"
+    workbook.save(file_path)
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    loaded_sheet = backend.workbook.active
+
+    tables, _ = backend._find_data_tables(loaded_sheet)
+
+    marker_occurrences = [
+        (t_idx, cell)
+        for t_idx, table in enumerate(tables)
+        for cell in table.data
+        if cell.text == "island-marker"
+    ]
+    assert len(marker_occurrences) == 1, (
+        f"'island-marker' must surface exactly once, found {len(marker_occurrences)} "
+        f"times across {len(tables)} table(s)"
+    )
+
+    marker_table_idx, marker_cell = marker_occurrences[0]
+    marker_table = tables[marker_table_idx]
+    assert (marker_table.num_rows, marker_table.num_cols) == (1, 1), (
+        "the disconnected marker must form its own single-cell table, not be "
+        "folded into the ring table"
+    )
+
+    ring_table = next(t for t in tables if t is not marker_table)
+    assert all(cell.text != "island-marker" for cell in ring_table.data), (
+        "the ring table's own grid must not carry the disconnected marker's text"
+    )
+
+
 def test_split_leading_section_label_helper() -> None:
     backend = object.__new__(MsExcelDocumentBackend)
 

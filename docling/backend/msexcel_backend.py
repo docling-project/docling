@@ -1060,21 +1060,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # --- Phase 2: Extract Data (Semantic Grid) ---
         data = []
 
-        # We iterate the bounding box of the found region
-        # Gaps inside the bounding box become empty cells (preserving layout)
+        # We iterate the bounding box of the found region. A cell the flood
+        # fill never reached stays out of table_cells and is emitted empty, so
+        # the outer loop in _find_data_tables gives it its own table later.
         for ri in range(min_r, max_r + 1):
             for rj in range(min_c, max_c + 1):
-                # If this cell was part of the flood-fill OR is inside the bounds
-                # (We include gaps inside the bounds to keep the table rectangular)
-
-                # Logic: If we found a "U" shape, do we fill the middle?
-                # Yes, Excel tables are typically treated as rectangular bounding boxes.
-
                 cell = sheet.cell(row=ri + 1, column=rj + 1)
                 if merged_cell_index.is_shadow(cell):
                     continue
 
-                cell_text = str(cell.value) if cell.value is not None else ""
+                cell_text = (
+                    str(cell.value)
+                    if (ri, rj) in table_cells and cell.value is not None
+                    else ""
+                )
 
                 # Compute Spans
                 row_span, col_span = merged_cell_index.span_at(ri, rj)
