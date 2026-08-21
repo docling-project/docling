@@ -7,7 +7,8 @@ import threading
 import time
 import warnings
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from pathlib import Path, PurePath
 from types import MethodType, SimpleNamespace
 
@@ -2454,6 +2455,35 @@ def test_429_without_retry_after_header_does_not_retry() -> None:
             )
 
     assert call_count == 1
+
+
+def test_retry_after_http_date_with_unknown_timezone_does_not_crash() -> None:
+    # RFC 7231 mandates GMT, but non-conformant servers/proxies emit dates with
+    # an unknown timezone ("-0000"), which email.utils parses to a naive
+    # datetime. The backoff computation must not raise when mixing that with an
+    # aware "now".
+    response = httpx.Response(
+        503, headers={"Retry-After": "Sun, 06 Nov 1994 08:49:37 -0000"}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert delay == 0.0  # a date in the past clamps to zero
+
+
+def test_retry_after_future_http_date_returns_positive_delay() -> None:
+    future = datetime.now(tz=timezone.utc) + timedelta(seconds=120)
+    response = httpx.Response(
+        503, headers={"Retry-After": format_datetime(future, usegmt=True)}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert 0.0 < delay <= 120.0
 
 
 def test_402_usage_limit_exceeded_raises_explicit_exception() -> None:
