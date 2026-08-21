@@ -53,8 +53,15 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    DoclingDocument,
+    GroupLabel,
+    PictureItem,
+    TextItem,
+)
 from docling_core.types.doc.document import Script
+from PIL import Image
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -475,6 +482,85 @@ def test_jats_footnotes_are_preserved():
     md = doc.export_to_markdown()
     assert "First footnote" in md
     assert "Second footnote" in md
+
+
+def test_jats_file_embeds_relative_figure_image(tmp_path: Path):
+    image_path = tmp_path / "images" / "figure.png"
+    image_path.parent.mkdir()
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+
+    jats_path = tmp_path / "article.nxml"
+    jats_path.write_text(
+        """<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
+  <body>
+    <fig>
+      <label>Figure 1</label>
+      <caption><p>A red rectangle.</p></caption>
+      <graphic xlink:href="images/figure.png"/>
+    </fig>
+  </body>
+</article>
+""",
+        encoding="utf-8",
+    )
+
+    doc = get_converter().convert(jats_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+    assert pictures[0].captions[0].resolve(doc).text == "Figure 1 A red rectangle."
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (255, 0, 0)
+
+
+def test_jats_stream_does_not_resolve_relative_figure_image():
+    doc = convert_jats_body(
+        '<fig><graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="figure.png"/></fig>'
+    )
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
+    image_path = tmp_path / "outside.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    article_dir = tmp_path / "article"
+    article_dir.mkdir()
+    jats_path = article_dir / "article.nxml"
+    jats_path.write_text(
+        """<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
+  <body>
+    <fig><graphic xlink:href="../outside.png"/></fig>
+    <p>Content after the blocked figure.</p>
+  </body>
+</article>
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.warns(UserWarning, match="Path traversal blocked"):
+        doc = get_converter().convert(jats_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
