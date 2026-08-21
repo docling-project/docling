@@ -1,6 +1,7 @@
 import csv
 import logging
 import warnings
+from collections.abc import Callable
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Final, Set, Union
@@ -14,25 +15,27 @@ from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
-# Characters of the file handed to csv.Sniffer to detect the dialect.
-_SNIFF_SAMPLE_SIZE: Final[int] = 65536
+# Characters of the file handed to csv.Sniffer when the first line alone
+# cannot be sniffed.
+_SNIFF_SAMPLE_SIZE: Final[int] = 4096
 _DELIMITERS: Final[str] = ",;\t|:"
 
 
-def _sniff_dialect(head: str, sample: str) -> type[csv.Dialect]:
+def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialect]:
     """Detect the dialect from the first line, falling back to a larger sample.
 
     The first line is enough for most files and is what the sniffer reads best:
     it rejects samples whose rows hold different numbers of delimiters. It is
     not enough when a quoted field spans several lines, because the line is cut
     mid-quote; retrying with a sample that closes the quote recovers those.
+    `read_sample` is only called on that fallback path.
 
     Raises csv.Error if neither can be detected.
     """
     try:
         return csv.Sniffer().sniff(head, _DELIMITERS)
     except csv.Error:
-        return csv.Sniffer().sniff(sample, _DELIMITERS)
+        return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
@@ -75,12 +78,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         Parses the CSV data into a structured document model.
         """
 
-        # Detect CSV dialect
+        # Detect CSV dialect. The larger sample is only read when the first
+        # line fails to sniff.
         head = self.content.readline()
-        self.content.seek(0)
-        sample = self.content.read(_SNIFF_SAMPLE_SIZE)
+
+        def read_sample() -> str:
+            self.content.seek(0)
+            return self.content.read(_SNIFF_SAMPLE_SIZE)
+
         try:
-            dialect: type[csv.Dialect] = _sniff_dialect(head, sample)
+            dialect: type[csv.Dialect] = _sniff_dialect(head, read_sample)
             if dialect.delimiter not in _DELIMITERS:
                 raise RuntimeError(
                     f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
