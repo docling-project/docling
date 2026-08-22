@@ -1990,6 +1990,19 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = TableStructureOptions()
+    recover_orphaned_table_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Recover text inside TABLE regions that TableFormer V1 cell matching did not bind to a cell, "
+                "re-emitting it as body text immediately after the table instead of silently dropping it. Requires "
+                "`do_table_structure=True` and `TableStructureOptions(do_cell_matching=True)`. To avoid duplicate "
+                "output, any positive overlap with a populated table cell is treated as bound, and recovery is skipped "
+                "if any populated table cell has no spatial bounds. Disabled by default, which preserves the existing "
+                "table/body output exactly."
+            )
+        ),
+    ] = False
     ocr_options: Annotated[
         OcrOptions,
         Field(
