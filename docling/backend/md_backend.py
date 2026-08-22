@@ -242,6 +242,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.in_pipeless_table = False
         self.md_table_buffer: list[str] = []
+        self._pending_hard_line_break = False
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
@@ -602,13 +603,36 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         hyperlink=hyperlink,
                     )
                 else:
-                    doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        parent=parent_item,
-                        text=snippet_text,
-                        formatting=formatting,
-                        hyperlink=hyperlink,
-                    )
+                    if self._pending_hard_line_break and doc.texts:
+                        previous = doc.texts[-1]
+
+                        if (
+                            previous.parent
+                            and parent_item
+                            and previous.parent.cref == parent_item.self_ref
+                            and previous.formatting == formatting
+                            and previous.hyperlink == hyperlink
+                        ):
+                            previous.text += "\n" + snippet_text
+                            previous.orig += "\n" + snippet_text
+                        else:
+                            doc.add_text(
+                                label=DocItemLabel.TEXT,
+                                parent=parent_item,
+                                text=snippet_text,
+                                formatting=formatting,
+                                hyperlink=hyperlink,
+                            )
+                    else:
+                        doc.add_text(
+                            label=DocItemLabel.TEXT,
+                            parent=parent_item,
+                            text=snippet_text,
+                            formatting=formatting,
+                            hyperlink=hyperlink,
+                        )
+
+                    self._pending_hard_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
@@ -656,6 +680,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if self.in_table:
                 _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
+            elif not element.soft:
+                _log.debug("Hard line break")
+                self._pending_hard_line_break = True
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
