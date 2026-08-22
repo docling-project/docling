@@ -2632,6 +2632,42 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if im_ref is not None:
                     added_refs.append(im_ref)
 
+            # LaTeXML (and similar generators) wrap <table> inside <figure
+            # class="ltx_table">. The historical code only handled <img>, which
+            # silently dropped the table (and its caption). Dispatch the table
+            # through the normal table handler so cells/rows are parsed.
+            table_tag = tag.find("table")
+            if isinstance(table_tag, Tag):
+                added_refs.extend(self._handle_block(table_tag, doc))
+
+            # If a table was processed and no <img> claimed the caption,
+            # emit it as a standalone CAPTION text item.
+            if isinstance(table_tag, Tag) and not isinstance(img_tag, Tag):
+                caption_tag = tag.find("figcaption", recursive=False)
+                if isinstance(caption_tag, Tag):
+                    cap_list = self._extract_text_and_hyperlink_recursively(
+                        caption_tag, find_parent_annotation=True
+                    )
+                    cap_anno = cap_list.to_single_text_element()
+                    if cap_anno.text:
+                        cap_text = HTMLDocumentBackend._clean_unicode(
+                            cap_anno.text.strip()
+                        )
+                        cap_prov = self._make_prov(
+                            text=cap_text,
+                            tag=caption_tag,
+                            source_tag_id=cap_anno.source_tag_id,
+                        )
+                        doc.add_text(
+                            label=DocItemLabel.CAPTION,
+                            text=cap_text,
+                            orig=cap_anno.text,
+                            content_layer=self.content_layer,
+                            formatting=cap_anno.formatting,
+                            hyperlink=cap_anno.hyperlink,
+                            prov=cap_prov,
+                        )
+
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
             added_refs.extend(heading_refs)
