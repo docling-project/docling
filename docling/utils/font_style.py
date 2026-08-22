@@ -14,16 +14,27 @@ while a miss only falls back to the previous behavior:
 2. **Abbreviations are only honored as a whole separator-delimited part.** ``-Bd`` is bold, but
    the ``TB`` in ``LinLibertineTB`` and the ``LT`` in ``HelveticaNeueLTPro`` are not read as
    styles -- foundry tags glued onto a family name look exactly like weight abbreviations.
+
+:func:`tally_cell_styles` lifts the same reading from one font name to the cells of one layout
+cluster, and :func:`formatting_from_cells` turns that tally into the item-level
+:class:`~docling_core.types.doc.common.formatting.Formatting` of a text item.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from collections import Counter
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from functools import lru_cache
+
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.page import PdfCellRenderingMode, PdfTextCell, TextCell
 
 # Weight of text whose font name says nothing about weight.
 REGULAR_WEIGHT = 400
+# Lightest weight that reads as bold.
+BOLD_WEIGHT = 700
 
 # Subset-embedded fonts are prefixed with six uppercase letters and a plus (PDF 32000-1 9.6.4).
 _SUBSET_PREFIX = re.compile(r"^[A-Z]{6}\+")
@@ -48,7 +59,7 @@ _WEIGHT_TOKENS = {
     "demibold": 600,
     "semi": 600,
     "semibold": 600,
-    "bold": 700,
+    "bold": BOLD_WEIGHT,
     "extrabold": 800,
     "ultrabold": 800,
     "black": 900,
@@ -165,3 +176,112 @@ def parse_font_style(font_name: str) -> _FontStyle:
         italic=bool(italic),
         known=True,
     )
+
+
+# Share of an item's characters that must come from cells with a readable style before the
+# item's styling counts as determined at all.
+_STYLE_COVERAGE = 0.8
+# Share of those characters that must agree before the attribute is set on the item.
+_STYLE_AGREEMENT = 0.8
+
+# Rendering modes that stroke the glyph outline, the classic way of faking a bold face when no
+# bold font is embedded (PDF 32000-1 9.3.6).
+_STROKED_MODES = frozenset(
+    {PdfCellRenderingMode.STROKE_TEXT, PdfCellRenderingMode.FILL_THEN_STROKE}
+)
+
+
+@dataclass(frozen=True)
+class _StyleTally:
+    """Character-weighted styling of a set of cells (internal)."""
+
+    chars: int = 0  # characters in cells that carry text
+    styled_chars: int = 0  # of those, characters whose styling could be read
+    italic_chars: int = 0  # of styled_chars, characters in an italic font
+    weight_chars: Counter[int] = field(
+        default_factory=Counter
+    )  # weight class -> characters
+
+    @property
+    def coverage(self) -> float:
+        return self.styled_chars / self.chars if self.chars else 0.0
+
+    @property
+    def italic_share(self) -> float:
+        return self.italic_chars / self.styled_chars if self.styled_chars else 0.0
+
+    @property
+    def bold_share(self) -> float:
+        if not self.styled_chars:
+            return 0.0
+        return self.weight_chars[weight_class(BOLD_WEIGHT)] / self.styled_chars
+
+    def dominant_weight_class(self) -> int:
+        """The weight class carrying the most characters; on a tie the heavier class wins."""
+        return max(
+            self.weight_chars, key=lambda cls: (self.weight_chars[cls], cls), default=0
+        )
+
+
+def tally_cell_styles(
+    cells: Iterable[TextCell], *, use_rendering_mode: bool = False
+) -> _StyleTally:
+    """Weigh the styling of ``cells`` by the number of characters each one contributes.
+
+    Cells whose styling cannot be read -- OCR output, the pypdfium2 backend, or font names that
+    carry no recognizable styling -- still count towards ``chars``, so that a caller can tell a
+    confidently plain run from one that was simply never legible.
+
+    With ``use_rendering_mode``, a cell whose font name says nothing but which is drawn with a
+    stroked outline is read as bold. It is a fallback for silent font names only: an explicit
+    ``-Regular`` is never overridden.
+    """
+    chars = styled_chars = italic_chars = 0
+    weight_chars: Counter[int] = Counter()
+    for cell in cells:
+        text = (cell.text or "").strip()
+        if not text:
+            continue
+        chars += len(text)
+        if not isinstance(cell, PdfTextCell):
+            continue
+        style = parse_font_style(cell.font_name)
+        if style.known:
+            styled_chars += len(text)
+            weight_chars[weight_class(style.weight)] += len(text)
+            if style.italic:
+                italic_chars += len(text)
+        elif use_rendering_mode and cell.rendering_mode in _STROKED_MODES:
+            styled_chars += len(text)
+            weight_chars[weight_class(BOLD_WEIGHT)] += len(text)
+    return _StyleTally(
+        chars=chars,
+        styled_chars=styled_chars,
+        italic_chars=italic_chars,
+        weight_chars=weight_chars,
+    )
+
+
+def formatting_from_cells(
+    cells: Iterable[TextCell], *, use_rendering_mode: bool = False
+) -> Formatting | None:
+    """Item-level bold/italic for the cells of one layout cluster, or ``None`` when undetermined.
+
+    ``Formatting`` describes a whole text item, while a PDF carries a font per cell, so an
+    attribute is only reported when the cells agree on it. Two gates, both character-weighted:
+    most of the item must be legible at all, and most of the legible part must share the
+    attribute. Anything less returns ``None`` -- an emphasis that is wrong is written verbatim
+    into the exported text as ``**`` or ``*``, while a miss merely reproduces the behavior of a
+    pipeline that reads no styling.
+
+    ``None`` rather than an all-false ``Formatting`` for the same reason: the field is serialized
+    with ``exclude_none``, and "not determined" is what actually happened.
+
+    Underline, strikethrough and script stay unset -- a font name carries no signal for them.
+    """
+    tally = tally_cell_styles(cells, use_rendering_mode=use_rendering_mode)
+    if tally.coverage < _STYLE_COVERAGE:
+        return None
+    bold = tally.bold_share >= _STYLE_AGREEMENT
+    italic = tally.italic_share >= _STYLE_AGREEMENT
+    return Formatting(bold=bold, italic=italic) if (bold or italic) else None
