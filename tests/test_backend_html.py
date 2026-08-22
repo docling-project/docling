@@ -186,6 +186,94 @@ def test_table_header_rowspan_without_body_does_not_crash():
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
 
 
+def test_table_inside_figure_is_parsed():
+    """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
+    html = (
+        b"<html><body>"
+        b'<figure class="ltx_table">'
+        b"<table>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"<figcaption>Table 1: demo caption.</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 2
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+
+def test_image_inside_figure_is_parsed():
+    """Regular HTML figures with images should still be parsed."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="x.png" alt="alt"/>'
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+
+
+def test_table_and_image_inside_figure_are_parsed():
+    """A figure containing both an image and a table should preserve both."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="a.png" alt="alt"/>'
+        b"<table>"
+        b"<tr><td>x</td></tr>"
+        b"</table>"
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+    assert len(doc.tables) == 1
+
+    assert doc.tables[0].data.num_rows == 1
+    assert doc.tables[0].data.num_cols == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["x"]
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
