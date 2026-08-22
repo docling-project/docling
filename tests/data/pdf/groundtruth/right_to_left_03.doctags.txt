@@ -1,8 +1,9 @@
 <doctag><section_header_level_1><loc_52><loc_37><loc_225><loc_48>اميدنامه پذيرش در بازار اصلی - کالای داخلی</section_header_level_1>
-<picture><loc_327><loc_21><loc_405><loc_61></picture>
+<picture><loc_347><loc_22><loc_385><loc_50></picture>
 <section_header_level_1><loc_322><loc_55><loc_404><loc_62>شرکت بورس کالای ايران</section_header_level_1>
 <section_header_level_1><loc_308><loc_82><loc_403><loc_93>-2-5 استاندارد کالا</section_header_level_1>
-<text><loc_379><loc_96><loc_436><loc_106>نام استاندارد</text>
+<unordered_list><list_item><loc_379><loc_96><loc_436><loc_106>نام استاندارد</list_item>
+</unordered_list>
 <text><loc_56><loc_96><loc_222><loc_125>شمشه  و  شمشال  توليد  شده  به  روش  ريخته  گری پيوسته مورد مصرف  در  فولادهای  سازه  ای  - مطابق آناليز پيوست</text>
 <text><loc_348><loc_128><loc_436><loc_138>شماره استاندارد ملی</text>
 <text><loc_194><loc_128><loc_223><loc_136>20300</text>
@@ -24,7 +25,8 @@
 <text><loc_116><loc_262><loc_158><loc_270>1403/10/05</text>
 <text><loc_355><loc_276><loc_414><loc_286>مشاور پذيرش</text>
 <text><loc_103><loc_275><loc_171><loc_283>کارگزاری آرمون بورس</text>
-<text><loc_236><loc_291><loc_414><loc_314>نحوة تعيين قيمت پايه پس از پذيرش کالا در بورس</text>
+<text><loc_236><loc_291><loc_414><loc_301>نحوة تعيين قيمت پايه پس از پذيرش کالا در</text>
+<text><loc_385><loc_304><loc_414><loc_314>بورس</text>
 <text><loc_92><loc_290><loc_179><loc_298>بر اساس قيمت های  جهانی</text>
 <unordered_list><list_item><loc_224><loc_317><loc_414><loc_340>حداقل درصد عرضه از توليد/ کل فروش/ فروش داخلی</list_item>
 </unordered_list>

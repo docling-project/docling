@@ -1147,9 +1147,11 @@ class PdfBackend(str, Enum):
             reliable for basic text extraction.
         DOCLING_PARSE: Docling Parse backend providing enhanced layout
             analysis, structure preservation, and advanced table detection.
-            This is the recommended backend for most use cases.
+            Single-threaded; use `THREADED_DOCLING_PARSE` unless serialized
+            page parsing is required.
         THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
-            concurrent page parsing in the standard PDF pipeline.
+            concurrent page parsing in the standard PDF pipeline. This is the
+            default and recommended backend for most use cases.
         DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.

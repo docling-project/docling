@@ -33,7 +33,7 @@
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/31"
+        "$ref": "#/texts/32"
       }
     ],
     "content_layer": "body",
@@ -48,7 +48,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/groups/1"
         },
         {
           "$ref": "#/texts/4"
@@ -120,16 +120,19 @@
           "$ref": "#/texts/26"
         },
         {
-          "$ref": "#/groups/1"
+          "$ref": "#/texts/27"
         },
         {
-          "$ref": "#/texts/28"
+          "$ref": "#/groups/2"
         },
         {
           "$ref": "#/texts/29"
         },
         {
           "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
         }
       ],
       "content_layer": "body",
@@ -143,7 +146,21 @@
       },
       "children": [
         {
-          "$ref": "#/texts/27"
+          "$ref": "#/texts/3"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/28"
         }
       ],
       "content_layer": "body",
@@ -221,9 +238,9 @@
           "page_no": 1,
           "bbox": {
             "l": 366.31,
-            "t": 703.4,
+            "t": 703.41,
             "r": 479.53,
-            "b": 685.37,
+            "b": 685.38,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -239,11 +256,11 @@
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "list_item",
       "prov": [
         {
           "page_no": 1,
@@ -261,7 +278,9 @@
         }
       ],
       "orig": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
-      "text": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f"
+      "text": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/4",
@@ -845,21 +864,48 @@
           "bbox": {
             "l": 281.33,
             "t": 352.69,
+            "r": 492.58,
+            "b": 335.81,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631",
+      "text": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631"
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 458.5,
+            "t": 330.61,
             "r": 492.71,
             "b": 313.73,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            45
+            4
           ]
         }
       ],
-      "orig": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631 \u0628\u0648\u0631\u0633",
-      "text": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631 \u0628\u0648\u0631\u0633"
+      "orig": "\u0628\u0648\u0631\u0633",
+      "text": "\u0628\u0648\u0631\u0633"
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -886,9 +932,9 @@
       "text": "\u0628\u0631 \u0627\u0633\u0627\u0633 \u0642\u064a\u0645\u062a \u0647\u0627\u06cc  \u062c\u0647\u0627\u0646\u06cc"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -915,7 +961,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -942,7 +988,7 @@
       "text": "\u062d\u062f\u0627\u0642\u0644 %50 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f \u0633\u0627\u0644\u064a\u0627\u0646\u0647 \u064a\u0627 47.500 \u062a\u0646"
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -969,7 +1015,7 @@
       "text": "\u062e\u0637\u0627\u06cc \u0645\u062c\u0627\u0632 \u062a\u062d\u0648\u064a\u0644"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -996,7 +1042,7 @@
       "text": "5% \u0622\u062e\u0631\u064a\u0646 \u0645\u062d\u0645\u0648\u0644\u0647 \u0642\u0627\u0628\u0644 \u062a\u062d\u0648\u064a\u0644"
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/body"
       },
@@ -1036,10 +1082,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 388.88,
-            "t": 806.32,
-            "r": 482.71,
-            "b": 739.05,
+            "l": 412.88,
+            "t": 805.81,
+            "r": 457.96,
+            "b": 758.06,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

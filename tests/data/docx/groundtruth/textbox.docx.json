@@ -57,25 +57,19 @@
         "$ref": "#/texts/10"
       },
       {
-        "$ref": "#/groups/4"
-      },
-      {
         "$ref": "#/pictures/3"
       },
       {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/11"
+      },
+      {
+        "$ref": "#/groups/4"
       },
       {
         "$ref": "#/pictures/4"
       },
       {
-        "$ref": "#/groups/5"
-      },
-      {
-        "$ref": "#/texts/13"
-      },
-      {
-        "$ref": "#/texts/14"
+        "$ref": "#/groups/6"
       },
       {
         "$ref": "#/texts/15"
@@ -87,19 +81,31 @@
         "$ref": "#/texts/17"
       },
       {
-        "$ref": "#/groups/6"
+        "$ref": "#/texts/18"
+      },
+      {
+        "$ref": "#/texts/19"
       },
       {
         "$ref": "#/pictures/5"
       },
       {
+        "$ref": "#/groups/7"
+      },
+      {
+        "$ref": "#/texts/20"
+      },
+      {
         "$ref": "#/groups/8"
       },
       {
-        "$ref": "#/texts/23"
+        "$ref": "#/pictures/6"
       },
       {
-        "$ref": "#/pictures/6"
+        "$ref": "#/texts/22"
+      },
+      {
+        "$ref": "#/texts/23"
       },
       {
         "$ref": "#/texts/24"
@@ -111,31 +117,28 @@
         "$ref": "#/texts/26"
       },
       {
-        "$ref": "#/texts/27"
-      },
-      {
-        "$ref": "#/texts/28"
-      },
-      {
         "$ref": "#/pictures/7"
-      },
-      {
-        "$ref": "#/pictures/8"
-      },
-      {
-        "$ref": "#/texts/29"
-      },
-      {
-        "$ref": "#/pictures/9"
       },
       {
         "$ref": "#/groups/9"
       },
       {
+        "$ref": "#/pictures/8"
+      },
+      {
+        "$ref": "#/texts/31"
+      },
+      {
+        "$ref": "#/pictures/9"
+      },
+      {
+        "$ref": "#/groups/11"
+      },
+      {
         "$ref": "#/pictures/10"
       },
       {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       {
         "$ref": "#/pictures/11"
@@ -144,22 +147,19 @@
         "$ref": "#/pictures/12"
       },
       {
-        "$ref": "#/groups/11"
-      },
-      {
         "$ref": "#/pictures/13"
       },
       {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       {
         "$ref": "#/pictures/14"
       },
       {
-        "$ref": "#/texts/36"
+        "$ref": "#/texts/37"
       },
       {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       {
         "$ref": "#/pictures/15"
@@ -171,7 +171,7 @@
         "$ref": "#/pictures/17"
       },
       {
-        "$ref": "#/texts/40"
+        "$ref": "#/texts/41"
       }
     ],
     "content_layer": "body",
@@ -244,7 +244,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/groups/5"
+        },
+        {
+          "$ref": "#/texts/14"
         }
       ],
       "content_layer": "body",
@@ -254,9 +257,16 @@
     {
       "self_ref": "#/groups/5",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        }
+      ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
@@ -266,43 +276,13 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
-        },
-        {
-          "$ref": "#/groups/7"
-        },
-        {
-          "$ref": "#/texts/22"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/texts/21"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "name": "list",
       "label": "list"
     },
     {
-      "self_ref": "#/groups/8",
+      "self_ref": "#/groups/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -312,16 +292,30 @@
       "label": "list"
     },
     {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "textbox",
+      "label": "section"
+    },
+    {
       "self_ref": "#/groups/9",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/30"
+          "$ref": "#/groups/10"
         },
         {
-          "$ref": "#/texts/31"
+          "$ref": "#/texts/30"
         }
       ],
       "content_layer": "body",
@@ -330,6 +324,26 @@
     },
     {
       "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/27"
+        },
+        {
+          "$ref": "#/texts/28"
+        },
+        {
+          "$ref": "#/texts/29"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/11",
       "parent": {
         "$ref": "#/body"
       },
@@ -346,25 +360,14 @@
       "label": "section"
     },
     {
-      "self_ref": "#/groups/11",
+      "self_ref": "#/groups/12",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
           "$ref": "#/texts/34"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/35"
         }
@@ -380,13 +383,27 @@
       },
       "children": [
         {
-          "$ref": "#/texts/37"
-        },
+          "$ref": "#/texts/36"
+        }
+      ],
+      "content_layer": "body",
+      "name": "textbox",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/38"
         },
         {
           "$ref": "#/texts/39"
+        },
+        {
+          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "body",
@@ -567,50 +584,61 @@
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
+      "text": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
       "formatting": {
         "bold": false,
         "italic": false,
         "underline": false,
         "strikethrough": false,
         "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/body"
       },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "list_item",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
+      "text": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -658,33 +686,50 @@
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Health Bureau:",
-      "text": "Health Bureau:",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Upon receiving a report from the kindergarten, conduct a preliminary assessment of the case, and depending on the situation and type of illness, carry out an epidemiological investigation and report to the Centers for Disease Control.",
-      "text": "Upon receiving a report from the kindergarten, conduct a preliminary assessment of the case, and depending on the situation and type of illness, carry out an epidemiological investigation and report to the Centers for Disease Control.",
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
+      "text": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -694,51 +739,9 @@
       }
     },
     {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "If necessary, provide health education and important reminders at the kindergarten, or notify the individual to undergo specimen collection.",
-      "text": "If necessary, provide health education and important reminders at the kindergarten, or notify the individual to undergo specimen collection.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
-      "enumerated": true,
-      "marker": "1."
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "Implement appropriate epidemic prevention measures in accordance with the Communicable Disease Control Act.",
-      "text": "Implement appropriate epidemic prevention measures in accordance with the Communicable Disease Control Act.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
-      "enumerated": true,
-      "marker": "2."
-    },
-    {
       "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -798,43 +801,88 @@
     {
       "self_ref": "#/texts/27",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "The Health Bureau will handle",
+      "text": "The Health Bureau will handle",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "reporting and specimen collection",
+      "text": "reporting and specimen collection",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": ".",
+      "text": ".",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -851,9 +899,9 @@
       }
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -863,9 +911,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -882,9 +930,9 @@
       }
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -901,45 +949,26 @@
       }
     },
     {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
       "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Yes",
+      "text": "Yes",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -951,9 +980,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/38",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -970,9 +999,9 @@
       }
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -982,9 +1011,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1001,7 +1030,7 @@
       }
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },

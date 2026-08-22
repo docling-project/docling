@@ -16,12 +16,11 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
     ThreadedDoclingParsePageBackend,
 )
-from docling.backend.pdf_backend import PdfDocumentBackend
+from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
-from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 @pytest.fixture
@@ -158,13 +157,10 @@ def test_standard_pipeline_default_backend_loads_only_requested_page_range(
     )
     doc_backend = in_doc._backend
     assert isinstance(doc_backend, PdfDocumentBackend)
-    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
     page_backends = []
 
     try:
-        page_backends = list(
-            pipeline._iter_requested_page_backends(doc_backend, expected_page_nos=[2])
-        )
+        page_backends = list(iter_pdf_page_backends(doc_backend, page_nos=[2]))
 
         assert [page_backend.page_no for page_backend in page_backends] == [2]
         assert loaded_pages == [2]
@@ -234,6 +230,12 @@ class _FakeThreadedParser:
     def iterate_results(self):
         yield _FakeThreadedResult(page_number=3)
         yield _FakeThreadedResult(page_number=2)
+
+    def has_tasks(self) -> bool:
+        return False
+
+    def get_task(self):
+        raise AssertionError("get_task must not be called once has_tasks() is False")
 
     def unload(self, doc_key: str) -> bool:
         self.unload_calls.append(doc_key)
@@ -394,12 +396,9 @@ def test_standard_pipeline_threaded_backend_loads_only_requested_page_range(
     )
     doc_backend = in_doc._backend
     assert isinstance(doc_backend, PdfDocumentBackend)
-    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
 
     try:
-        page_backends = list(
-            pipeline._iter_requested_page_backends(doc_backend, expected_page_nos=[2])
-        )
+        page_backends = list(iter_pdf_page_backends(doc_backend, page_nos=[2]))
 
         parser = _FakeThreadedParser.created
         assert parser is not None

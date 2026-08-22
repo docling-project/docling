@@ -188,6 +188,9 @@ def test_document_timeout(test_doc_path):
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=PdfPipelineOptions(document_timeout=1),
                 pipeline_cls=LegacyStandardPdfPipeline,
+                # The legacy pipeline needs random page access, which the
+                # default (threaded) backend does not provide.
+                backend=DoclingParseDocumentBackend,
             )
         }
     )
@@ -246,8 +249,8 @@ def test_invalid_input_unreadable_source_with_exception_surfaces_error_details()
 
     with (
         patch.object(
-            docling_parse_backend_module.pdfium,
-            "PdfDocument",
+            docling_parse_backend_module.DoclingThreadedPdfParser,
+            "load",
             side_effect=RuntimeError("bad trailer"),
         ),
         pytest.raises(
