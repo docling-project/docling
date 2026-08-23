@@ -208,8 +208,10 @@ class TableStructureModel(BaseTableStructureModel):
                         [
                             max(0, round(cluster.bbox.l) - _BBOX_PAD) * self.scale,
                             max(0, round(cluster.bbox.t) - _BBOX_PAD) * self.scale,
-                            min(page.size.width, round(cluster.bbox.r) + _BBOX_PAD) * self.scale,
-                            min(page.size.height, round(cluster.bbox.b) + _BBOX_PAD) * self.scale,
+                            min(page.size.width, round(cluster.bbox.r) + _BBOX_PAD)
+                            * self.scale,
+                            min(page.size.height, round(cluster.bbox.b) + _BBOX_PAD)
+                            * self.scale,
                         ],
                     )
                     for cluster in page.predictions.layout.clusters
