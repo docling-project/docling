@@ -51,6 +51,11 @@ def test_discover_test_markers_uses_module_level_pytestmark(tmp_path: Path) -> N
         "tests/test_smoke.py",
         "import pytest\n\npytestmark = pytest.mark.cross_platform\n\ndef test_smoke(): pass\n",
     )
+    write_test_file(
+        tmp_path,
+        "tests/test_remote.py",
+        "import pytest\n\npytestmark = pytest.mark.external_service\n\ndef test_remote(): pass\n",
+    )
     write_test_file(tmp_path, "tests/test_core.py", "def test_core(): pass\n")
 
     discovered = marker_selection.discover_test_markers(tmp_path)
@@ -60,6 +65,7 @@ def test_discover_test_markers_uses_module_level_pytestmark(tmp_path: Path) -> N
     assert discovered["ml_pdf_model"] == []
     assert discovered["ml_asr"] == []
     assert discovered["cross_platform"] == [Path("tests/test_smoke.py")]
+    assert discovered["external_service"] == [Path("tests/test_remote.py")]
 
 
 def test_build_ml_suites_returns_all_suites_when_ml_is_triggered() -> None:
@@ -98,8 +104,16 @@ def test_core_ignore_args_only_ignores_ml_marked_modules(
         "tests/test_smoke.py",
         "import pytest\n\npytestmark = pytest.mark.cross_platform\n\ndef test_smoke(): pass\n",
     )
+    write_test_file(
+        tmp_path,
+        "tests/test_remote.py",
+        "import pytest\n\npytestmark = pytest.mark.external_service\n\ndef test_remote(): pass\n",
+    )
 
     args = argparse.Namespace(repo_root=tmp_path)
     marker_selection.run_core_ignore_args(args)
 
-    assert capsys.readouterr().out.splitlines() == ["--ignore=tests/test_ocr.py"]
+    assert capsys.readouterr().out.splitlines() == [
+        "--ignore=tests/test_ocr.py",
+        "--ignore=tests/test_remote.py",
+    ]

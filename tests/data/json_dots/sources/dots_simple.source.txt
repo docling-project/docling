@@ -1,0 +1,1 @@
+Source: tests/data/pdf/2206.01062.pdf, page 1. Model: rednote-hilab/dots.ocr. Runtime: transformers 4.51.3.

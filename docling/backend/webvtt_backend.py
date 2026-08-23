@@ -26,6 +26,7 @@ from typing_extensions import override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 with open(self.path_or_stream, encoding="utf-8") as f:
                     self.content = f.read()
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 "Could not initialize the WebVTT backend for file with hash "
                 f"{self.document_hash}."
             ) from e

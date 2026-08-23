@@ -5,9 +5,17 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
-from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import SegmentedPdfPage, TextCell
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.page import (
+    PdfCellRenderingMode,
+    PdfTextCell,
+    SegmentedPdfPage,
+    TextCell,
+)
 from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
+    DecodeConfig,
     DoclingPdfParser,
     DoclingThreadedPdfParser,
     PageParseResult,
@@ -15,7 +23,6 @@ from docling_parse.pdf_parser import (
     RenderConfig,
     ThreadedPdfParserConfig,
 )
-from docling_parse.pdf_parsers import DecodePageConfig
 from PIL import Image
 from pypdfium2 import PdfPage
 
@@ -29,9 +36,13 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
-from docling.datamodel.base_models import Size
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
+from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
+from docling.utils.pdf_outline import (
+    _PdfOutlineItem,
+    extract_outline_from_docling_parse,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -39,29 +50,58 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
+# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
+# natively when answering `intersects_with()`, so the cell-level view has to match it.
+_INVISIBLE_RENDERING_MODES = frozenset(
+    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
+)
+
+
+def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
+    """Keep only the cells that paint ink on the page"""
+    return [
+        cell
+        for cell in cells
+        if not isinstance(cell, PdfTextCell)
+        or cell.rendering_mode not in _INVISIBLE_RENDERING_MODES
+    ]
+
+
 def _make_docling_parse_decode_config(
     *,
-    create_words: bool,
-    create_textlines: bool,
+    enforce_same_font: bool = True,
     release_native_memory_every_n_pages: int | None = None,
-) -> DecodePageConfig:
-    config = DecodePageConfig()
-    config.keep_char_cells = False
-    config.keep_shapes = False
-    config.keep_bitmaps = (
-        True  # we need to set this to True, otherwhise OCR will not work
-    )
-    config.create_word_cells = create_words
-    config.create_line_cells = create_textlines
-    config.enforce_same_font = True
-    config.materialize_bitmap_bytes = (
-        False  # don't need bitmap images, only rectangles.
-    )
+) -> DecodeConfig:
+    config = DecodeConfig(enforce_same_font=enforce_same_font)
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
 
     return config
+
+
+def _make_docling_parse_page_content_config(
+    *,
+    create_words: bool,
+    create_textlines: bool,
+    compute_shapes: bool = True,
+) -> ContentConfig:
+    compute = ContentLevel.COMPUTE
+    materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
+    skip = ContentLevel.SKIP
+
+    return ContentConfig(
+        char_cells_content_level=compute
+        if (create_words or create_textlines)
+        else skip,
+        word_cells_content_level=materialize if create_words else skip,
+        line_cells_content_level=materialize if create_textlines else skip,
+        # The threaded parser renders the page image from this same decode, so
+        # shapes must be computed there or the render loses all vector content.
+        shapes_content_level=compute if compute_shapes else skip,
+        bitmaps_content_level=materialize,
+        include_bitmap_bytes=False,  # only need bitmap rectangles for OCR
+    )
 
 
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
@@ -105,18 +145,17 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         if self._dpage is not None:
             return
 
-        # FIXME for the future: we will want to make this config a
-        # member of the class, i.e. self.config. Ultimately, we also
-        # should not need to keep the char's, but it seems no lines
-        # get created if we dont keep the chars. Updated version of
-        # docling-parse >v5.3.0 should fix this.
-        config = _make_docling_parse_decode_config(
+        content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            compute_shapes=True,
         )
 
         assert self._dp_doc is not None
-        seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
+        seg_page = self._dp_doc.get_page(
+            self._page_no + 1,
+            content_config=content_config,
+        )
 
         # In Docling, all TextCell instances are expected with top-left origin.
         [
@@ -168,6 +207,12 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         assert self._dpage is not None
 
         return self._dpage.textline_cells
+
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
+        return _visible_text_cells(self._dpage.textline_cells)
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         self._ensure_parsed()
@@ -262,17 +307,33 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        with pypdfium2_lock:
-            self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
-        self.parser = DoclingPdfParser(loglevel="fatal")
+        self.dp_doc: Optional[PdfDocument]
+        try:
+            with pypdfium2_lock:
+                self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
+            self.parser = DoclingPdfParser(loglevel="fatal")
+            decode_config = _make_docling_parse_decode_config(
+                enforce_same_font=self.options.enforce_same_font,
+            )
+            self.dp_doc = self.parser.load(
+                path_or_stream=self.path_or_stream,
+                password=password,
+                decode_config=decode_config,
+            )
+        except RuntimeError as e:
+            # pypdfium2 (PdfiumError) and docling-parse both signal unreadable
+            # bytes by raising RuntimeError; tag it as a load failure.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
-        self.dp_doc: Optional[PdfDocument] = self.parser.load(
-            path_or_stream=self.path_or_stream, password=password
-        )
-        success = self.dp_doc is not None
-
-        if not success:
-            raise RuntimeError(
+        if self.dp_doc is None:
+            raise DocumentLoadError(
                 f"docling-parse could not load document {self.document_hash}."
             )
 
@@ -305,6 +366,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
+        if self.dp_doc is None:
+            return []
+        return extract_outline_from_docling_parse(self.dp_doc)
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -393,6 +460,12 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             return []
         return segmented_page.textline_cells
 
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return []
+        return _visible_text_cells(segmented_page.textline_cells)
+
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
@@ -407,6 +480,52 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             if cropbox.area() > 0:
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
+
+    def has_content_in(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> Optional[bool]:
+        if not self.is_valid():
+            return False
+        return self._result.intersects_with(
+            bbox=bbox, chars=chars, shapes=shapes, bitmaps=bitmaps
+        )
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_shape_lines(
+                horizontal=horizontal, vertical=vertical, tolerance=tolerance
+            )
+        ]
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_connected_shape_bounding_boxes(
+                tolerance=tolerance
+            )
+        ]
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
@@ -458,9 +577,12 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             else 128
         )
         decode_config = _make_docling_parse_decode_config(
+            enforce_same_font=self.options.enforce_same_font,
+            release_native_memory_every_n_pages=native_memory_release_interval,
+        )
+        content_config = _make_docling_parse_page_content_config(
             create_words=True,
             create_textlines=True,
-            release_native_memory_every_n_pages=native_memory_release_interval,
         )
 
         self.parser = DoclingThreadedPdfParser(
@@ -468,9 +590,14 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
                 loglevel="fatal",
                 threads=parser_threads,
                 render_config=render_config,
+                page_content_config=content_config,
             ),
             decode_config=decode_config,
         )
+        # The threaded parser derives its document key by hashing from the current stream
+        # offset, so the stream has to be rewound for that key to cover the whole document.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
         self.doc_key = self.parser.load(
             self.path_or_stream,
             password=password,
@@ -482,6 +609,27 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
 
     def page_count(self) -> int:
         return self.parser.page_count(self.doc_key)
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+
+        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
+        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        """
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        dp_doc = DoclingPdfParser(loglevel="fatal").load(
+            path_or_stream=self.path_or_stream, lazy=True, password=password
+        )
+        if dp_doc is None:
+            return []
+        try:
+            return extract_outline_from_docling_parse(dp_doc)
+        finally:
+            dp_doc.unload()
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

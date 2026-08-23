@@ -25,7 +25,6 @@ import jupytext
 from nbconvert import MarkdownExporter
 from nbconvert.writers import FilesWriter
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "docs" / "examples"
 OUT_DIR = REPO_ROOT / "docs" / "_generated" / "examples"

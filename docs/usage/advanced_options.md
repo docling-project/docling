@@ -14,8 +14,18 @@ Downloading layout model...
 Downloading tableformer model...
 Downloading picture classifier model...
 Downloading code formula model...
-Downloading easyocr models...
+Downloading rapidocr torch chinese models...
+Downloading rapidocr torch english models...
+Downloading rapidocr onnxruntime chinese models...
+Downloading rapidocr onnxruntime english models...
 Models downloaded into $HOME/.cache/docling/models.
+```
+
+To prefetch EasyOCR recognition models for specific languages, repeat
+`--easyocr-lang` with the same language codes used by `EasyOcrOptions.lang`:
+
+```sh
+$ docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
 ```
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
@@ -93,6 +103,12 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Image resolution and scale
+
+Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
+determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+Rendering at scale `n` produces `n` pixels per document point.
+
 ### Control PDF table extraction options
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.
@@ -131,6 +147,52 @@ doc_converter = DocumentConverter(
 )
 ```
 
+
+### Convert Apple Pages documents
+
+Apple Pages (`.pages`) documents convert like any other format, and both
+container generations are read (requires the `format-iwork` extra):
+
+```python
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("report.pages").document
+print(doc.export_to_markdown())
+```
+
+Pages changed its container completely in 2013, so Docling reads whichever one
+the document uses:
+
+- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
+  Snappy-framed protobuf archives. Docling walks that object graph directly.
+- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
+  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
+  template yields no spurious content.
+
+!!! note "Body text only"
+
+    Only the document body is extracted, as a flat sequence of paragraphs.
+    Heading levels, lists and tables are carried by the paragraph style runs and
+    are not yet mapped, and text boxes, headers, footers, footnotes and comments
+    are not included. Password-protected documents cannot be read.
+
+The container is untrusted input, so member count, total size, per-member size
+and decompressed output are all bounded. Those limits can be tuned with
+`IWorkBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkPagesFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+            backend_options=IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
+        )
+    }
+)
+```
 
 ## Impose limits on the document size
 

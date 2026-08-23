@@ -5,9 +5,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+        files: '^(docling|docs/examples|tests|perfs)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
       - id: end-of-file-fixer
-        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+        files: '^(docling|docs/examples|tests|perfs)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
       - id: check-yaml
         args: [--unsafe]
       - id: check-toml
@@ -17,16 +17,14 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
     hooks:
-      # Run the Ruff formatter.
-      - id: ruff-format
-        name: "Ruff formatter"
-        args: [--config=pyproject.toml]
-        files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
-      # Run the Ruff linter.
       - id: ruff
         name: "Ruff linter"
         args: [--exit-non-zero-on-fix, --fix, --config=pyproject.toml]
-        files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
+        files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
+      - id: ruff-format
+        name: "Ruff formatter"
+        args: [--config=pyproject.toml]
+        files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
   - repo: local
     hooks:
       - id: ty

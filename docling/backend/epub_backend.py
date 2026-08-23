@@ -16,6 +16,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Found {len(self.content_files)} content files in EPUB")
         except Exception as e:
             _log.error(f"Failed to initialize EPUB backend: {e}")
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize EPUB backend for file with hash {self.document_hash}."
             ) from e
 

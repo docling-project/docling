@@ -3,15 +3,25 @@ ThreadedDoclingParseDocumentBackend, and extract text cells and page images for
 every page."""
 
 import argparse
+import contextlib
 import gc
 import json
 import logging
 import os
+import sys
 import time
+from collections.abc import Iterator
+from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
 import psutil
+from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
+    DecodeConfig,
+    RenderConfig,
+)
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
@@ -23,6 +33,15 @@ _log = logging.getLogger(__name__)
 
 
 _PROC = psutil.Process(os.getpid())
+DEFAULT_REPO_ID = "docling-project/performance-dataset-bo767"
+DEFAULT_THREADS = "1,2,4,8,12,16"
+
+
+class _DefaultsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    def _get_help_string(self, action: argparse.Action) -> str:
+        if action.default in (None, argparse.SUPPRESS):
+            return action.help or ""
+        return super()._get_help_string(action)
 
 
 def _memory_metrics_mb() -> dict[str, float]:
@@ -46,9 +65,36 @@ def _memory_metrics_mb() -> dict[str, float]:
     return metrics
 
 
+def _parse_threads(value: str) -> list[int]:
+    thread_counts: list[int] = []
+    for raw_count in value.split(","):
+        count_text = raw_count.strip()
+        if not count_text:
+            raise argparse.ArgumentTypeError(
+                "thread counts must be comma-separated positive integers"
+            )
+        try:
+            count = int(count_text)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(
+                f"invalid thread count {count_text!r}"
+            ) from exc
+        if count <= 0:
+            raise argparse.ArgumentTypeError(
+                f"thread count must be positive, got {count}"
+            )
+        thread_counts.append(count)
+    return thread_counts
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    source_group = parser.add_mutually_exclusive_group(required=True)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=_DefaultsHelpFormatter,
+        add_help=False,
+    )
+    input_group = parser.add_argument_group("input source (choose one)")
+    source_group = input_group.add_mutually_exclusive_group()
     source_group.add_argument(
         "-i",
         "--input-dir",
@@ -58,17 +104,29 @@ def parse_args() -> argparse.Namespace:
     source_group.add_argument(
         "-r",
         "--repo-id",
+        default=DEFAULT_REPO_ID,
         help=(
             "Hugging Face dataset repo ID. The script downloads the dataset "
             "snapshot and iterates over its 'pdf/' subfolder."
         ),
     )
-    parser.add_argument(
+    options_group = parser.add_argument_group("options")
+    options_group.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=argparse.SUPPRESS,
+        help="show this help message and exit",
+    )
+    options_group.add_argument(
         "--revision",
         default=None,
-        help="Optional Hugging Face dataset revision, branch, or commit.",
+        help=(
+            "Hugging Face dataset revision, branch, or commit. "
+            "Default: use the dataset default revision."
+        ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--mode",
         choices=("throughput", "memory"),
         default="throughput",
@@ -77,29 +135,30 @@ def parse_args() -> argparse.Namespace:
             "Memory mode writes the JSONL file consumed by plot_memory_metrics.py."
         ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "-o",
         "--output-dir",
         type=Path,
         default=None,
         help=(
-            "Optional output directory. If provided, page images (PNG) and "
+            "Output directory. If provided, page images (PNG) and "
             "text cells (JSON) are written here, one subdirectory per PDF."
+            " Default: do not write page outputs."
         ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "-s",
         "--scale",
         type=float,
         default=1,
-        help="Scale factor for rendered page images (default: 1.5).",
+        help="Scale factor for rendered page images.",
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--glob",
         default="*.pdf",
-        help="Glob pattern to match files in input_dir (default: '*.pdf').",
+        help="Glob pattern to match files in input_dir.",
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--cache-file",
         type=Path,
         default=None,
@@ -109,30 +168,34 @@ def parse_args() -> argparse.Namespace:
             "absolute path and validated against file size and mtime."
         ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--no-cache",
         action="store_true",
         help="Disable the page-count cache and always re-parse to count pages.",
     )
-    parser.add_argument(
-        "--parser-threads",
-        type=int,
-        default=8,
-        help="Optional number of docling-parse parser threads.",
+    options_group.add_argument(
+        "--threads",
+        type=_parse_threads,
+        default=_parse_threads(DEFAULT_THREADS),
+        metavar="THREADS",
+        help=(
+            "Comma-separated list of docling-parse parser thread counts to test. "
+            f"Default: {DEFAULT_THREADS}."
+        ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--release-native-memory-every-n-pages",
         type=int,
         default=128,
         help="Release native parser memory after every N decoded pages.",
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--max-pages",
         type=int,
         default=None,
-        help="Optional global limit for the total number of pages to iterate.",
+        help="Global limit for the total number of pages to iterate. Default: no limit.",
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--metrics-file",
         type=Path,
         default=Path("memory-metrics.jsonl"),
@@ -141,13 +204,12 @@ def parse_args() -> argparse.Namespace:
             "plot_memory_metrics.py."
         ),
     )
-    parser.add_argument(
+    options_group.add_argument(
         "--report-file",
         type=Path,
         default=None,
         help=(
-            "Optional JSON summary report path. Defaults to "
-            "'iterate-pdf-pages-<mode>-report.json'."
+            "JSON summary report path. Default: 'iterate-pdf-pages-<mode>-report.json'."
         ),
     )
     return parser.parse_args()
@@ -167,6 +229,173 @@ def _make_backend_options(
     )
 
 
+def _format_config_table(rows: list[tuple[str, object]]) -> str:
+    parameter_width = max(len(parameter) for parameter, _ in rows)
+    value_width = max(len(str(value)) for _, value in rows)
+    lines = [
+        f"{'parameter':<{parameter_width}}  {'value':<{value_width}}",
+        f"{'-' * parameter_width}  {'-' * value_width}",
+    ]
+    lines.extend(
+        f"{parameter:<{parameter_width}}  {value}" for parameter, value in rows
+    )
+    return "\n".join(lines)
+
+
+def _make_display_decode_config(
+    release_native_memory_every_n_pages: int,
+) -> DecodeConfig:
+    return DecodeConfig(
+        enforce_same_font=True,
+        release_native_memory_every_n_pages=release_native_memory_every_n_pages,
+    )
+
+
+def _make_display_content_config() -> ContentConfig:
+    return ContentConfig(
+        char_cells_content_level=ContentLevel.COMPUTE,
+        word_cells_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
+        line_cells_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
+        shapes_content_level=ContentLevel.SKIP,
+        bitmaps_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
+        include_bitmap_bytes=False,
+    )
+
+
+def _display_level(level: IntEnum) -> str:
+    return level.name.lower()
+
+
+def _log_docling_parse_config(
+    *,
+    document_count: int,
+    total_pages: int,
+    mode: str,
+    thread_counts: list[int],
+    release_native_memory_every_n_pages: int,
+    scale: float,
+) -> None:
+    decode_config = _make_display_decode_config(
+        release_native_memory_every_n_pages=release_native_memory_every_n_pages,
+    )
+    content_config = _make_display_content_config()
+    render_config = RenderConfig()
+    render_config.scale = scale
+
+    _log.info("Benchmark: %d documents, %d total pages", document_count, total_pages)
+    _log.info("Mode: %s", mode)
+    _log.info("Thread counts to test: %s", thread_counts)
+    _log.info("Render scale: %s", scale)
+    _log.info(
+        "Decode config:\n%s",
+        _format_config_table(
+            [
+                ("do_sanitization", decode_config.do_sanitization),
+                ("max_num_lines", decode_config.max_num_lines),
+                ("max_num_bitmaps", decode_config.max_num_bitmaps),
+                ("enforce_same_font", decode_config.enforce_same_font),
+                (
+                    "horizontal_cell_tolerance",
+                    decode_config.horizontal_cell_tolerance,
+                ),
+                (
+                    "word_space_width_factor_for_merge",
+                    decode_config.word_space_width_factor_for_merge,
+                ),
+                (
+                    "line_space_width_factor_for_merge",
+                    decode_config.line_space_width_factor_for_merge,
+                ),
+                (
+                    "line_space_width_factor_for_merge_with_space",
+                    decode_config.line_space_width_factor_for_merge_with_space,
+                ),
+                ("do_thread_safe", decode_config.do_thread_safe),
+                (
+                    "release_native_memory_every_n_pages",
+                    decode_config.release_native_memory_every_n_pages,
+                ),
+                ("keep_glyphs", decode_config.keep_glyphs),
+                ("keep_qpdf_warnings", decode_config.keep_qpdf_warnings),
+            ]
+        ),
+    )
+    _log.info(
+        "Content config:\n%s",
+        _format_config_table(
+            [
+                (
+                    "char_cells_content_level",
+                    _display_level(content_config.char_cells_content_level),
+                ),
+                (
+                    "word_cells_content_level",
+                    _display_level(content_config.word_cells_content_level),
+                ),
+                (
+                    "line_cells_content_level",
+                    _display_level(content_config.line_cells_content_level),
+                ),
+                (
+                    "shapes_content_level",
+                    _display_level(content_config.shapes_content_level),
+                ),
+                (
+                    "bitmaps_content_level",
+                    _display_level(content_config.bitmaps_content_level),
+                ),
+                ("include_bitmap_bytes", content_config.include_bitmap_bytes),
+            ]
+        ),
+    )
+    _log.info(
+        "Render config:\n%s",
+        _format_config_table(
+            [
+                ("render_text", render_config.render_text),
+                ("draw_text_bbox", render_config.draw_text_bbox),
+                ("draw_text_basepoint", render_config.draw_text_basepoint),
+                (
+                    "fit_glyph_bbox_to_target",
+                    render_config.fit_glyph_bbox_to_target,
+                ),
+                ("resolve_fonts", render_config.resolve_fonts),
+                ("font_similarity_cutoff", render_config.font_similarity_cutoff),
+                ("scale", render_config.scale),
+                ("canvas_width", render_config.canvas_width),
+                ("canvas_height", render_config.canvas_height),
+            ]
+        ),
+    )
+
+
+@contextlib.contextmanager
+def _suppress_huggingface_output() -> Iterator[None]:
+    from huggingface_hub.utils import (
+        are_progress_bars_disabled,
+        disable_progress_bars,
+        enable_progress_bars,
+    )
+
+    progress_bars_were_disabled = are_progress_bars_disabled()
+    previous_levels = {
+        logger_name: logging.getLogger(logger_name).level
+        for logger_name in ("huggingface_hub", "httpx")
+    }
+
+    disable_progress_bars()
+    for logger_name in previous_levels:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    try:
+        yield
+    finally:
+        if not progress_bars_were_disabled:
+            enable_progress_bars()
+        for logger_name, level in previous_levels.items():
+            logging.getLogger(logger_name).setLevel(level)
+
+
 def _resolve_input_dir(args: argparse.Namespace) -> Path:
     if args.input_dir is not None:
         return args.input_dir
@@ -179,20 +408,98 @@ def _resolve_input_dir(args: argparse.Namespace) -> Path:
         ) from exc
 
     assert args.repo_id is not None
-    snapshot_dir = Path(
-        snapshot_download(
-            repo_id=args.repo_id,
-            repo_type="dataset",
-            revision=args.revision,
-            allow_patterns="pdf/**",
+    with _suppress_huggingface_output():
+        snapshot_dir = Path(
+            snapshot_download(
+                repo_id=args.repo_id,
+                repo_type="dataset",
+                revision=args.revision,
+                allow_patterns="pdf/**",
+            )
         )
-    )
     pdf_dir = snapshot_dir / "pdf"
     if not pdf_dir.is_dir():
         raise SystemExit(
             f"Dataset '{args.repo_id}' does not contain a 'pdf/' subfolder."
         )
     return pdf_dir
+
+
+def _metrics_file_for_thread_count(
+    metrics_file: Path | None,
+    thread_count: int,
+    multiple_thread_counts: bool,
+) -> Path | None:
+    if metrics_file is None or not multiple_thread_counts:
+        return metrics_file
+    return metrics_file.with_name(
+        f"{metrics_file.stem}-threads-{thread_count}{metrics_file.suffix}"
+    )
+
+
+def _format_duration(seconds: float) -> str:
+    seconds_int = max(0, round(seconds))
+    hours, remainder = divmod(seconds_int, 3600)
+    minutes, seconds_part = divmod(remainder, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{seconds_part:02d}"
+    return f"{minutes:02d}:{seconds_part:02d}"
+
+
+def _estimated_total_duration(
+    *,
+    start_time: float,
+    completed: int,
+    total: int,
+) -> str:
+    if completed <= 0 or total <= 0:
+        return "?"
+    elapsed_seconds = time.monotonic() - start_time
+    return _format_duration(elapsed_seconds / (completed / total))
+
+
+class _ThroughputProgressBar:
+    def __init__(self, *, total: int, desc: str, width: int = 39) -> None:
+        self.total = total
+        self.desc = desc
+        self.width = width
+        self.n = 0
+        self.start_time = time.monotonic()
+
+    def __enter__(self) -> "_ThroughputProgressBar":
+        self._write()
+        return self
+
+    def __exit__(self, *_exc_info: object) -> None:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    def update(self, increment: int = 1) -> None:
+        self.n += increment
+        self._write()
+
+    def _write(self) -> None:
+        percentage = (self.n / self.total * 100) if self.total else 0.0
+        filled = round(self.width * self.n / self.total) if self.total else 0
+        bar = "#" * filled + " " * (self.width - filled)
+        elapsed_seconds = time.monotonic() - self.start_time
+        rate_text = (
+            f"{self.n / elapsed_seconds:.1f}/s"
+            if self.n > 0 and elapsed_seconds
+            else "?/s"
+        )
+        total_text = _estimated_total_duration(
+            start_time=self.start_time,
+            completed=self.n,
+            total=self.total,
+        )
+        sys.stdout.write(
+            "\r"
+            f"  {self.desc}: [{bar}] {self.n}/{self.total} {percentage:3.1f}% "
+            f"{rate_text} elapsed: {_format_duration(elapsed_seconds)} [sec] "
+            f"total: {total_text} [sec]"
+        )
+        sys.stdout.flush()
 
 
 def _count_pages(
@@ -268,6 +575,7 @@ def collect_pdfs_by_page_count(
     cache_file: Path | None,
     parser_threads: int | None,
     release_native_memory_every_n_pages: int,
+    verbose: bool = False,
 ) -> list[tuple[Path, int]]:
     """Return [(pdf_path, page_count), ...] sorted by descending page count,
     using cache_file (if given) to skip re-parsing unchanged files."""
@@ -286,9 +594,11 @@ def collect_pdfs_by_page_count(
             and isinstance(entry.get("page_count"), int)
         ):
             page_count = entry["page_count"]
-            _log.info("  %s: %d page(s) [cached]", pdf_path.name, page_count)
+            if verbose:
+                _log.info("  %s: %d page(s) [cached]", pdf_path.name, page_count)
         else:
-            _log.info("  %s: counting pages...", pdf_path.name)
+            if verbose:
+                _log.info("  %s: counting pages...", pdf_path.name)
             try:
                 page_count = _count_pages(
                     pdf_path,
@@ -298,7 +608,8 @@ def collect_pdfs_by_page_count(
             except Exception:
                 _log.exception("Failed to count pages for %s", pdf_path.name)
                 continue
-            _log.info("  %s: %d page(s)", pdf_path.name, page_count)
+            if verbose:
+                _log.info("  %s: %d page(s)", pdf_path.name, page_count)
             if cache_file is not None:
                 cache[abs_key] = {
                     "size": stat.st_size,
@@ -328,8 +639,10 @@ def process_pdf(
     mode: str,
     metrics_file: Path | None,
     run_start_time: float,
+    progress_bar: Any | None = None,
 ) -> tuple[int, int]:
-    _log.info("Processing %s", pdf_path.name)
+    if mode == "memory":
+        _log.info("Processing %s", pdf_path.name)
 
     limits: DocumentLimits | None = None
     if max_pages is not None:
@@ -362,7 +675,8 @@ def process_pdf(
 
         num_pages = doc_backend.page_count()
         failed_pages = 0
-        _log.info("  %d page(s)", num_pages)
+        if mode == "memory":
+            _log.info("  %d page(s)", num_pages)
 
         for page_backend in doc_backend.iter_pages():
             page_no = page_backend.page_no
@@ -420,17 +734,6 @@ def process_pdf(
                             "total_page_no": processed_pages,
                         },
                     )
-                else:
-                    _log.info(
-                        "  page %d/%d: %d text cell(s), image size=%s, total page %d/%d",
-                        page_no,
-                        num_pages,
-                        len(text_cells),
-                        page_image.size,
-                        processed_pages,
-                        target_total_pages,
-                    )
-
                 """
                 if pdf_out_dir is not None:
                     image_path = pdf_out_dir / f"page_{page_no:04d}.png"
@@ -442,10 +745,13 @@ def process_pdf(
                 """
             except Exception:
                 failed_pages += 1
-                _log.exception(
-                    "  page %d/%d: failed to parse/render", page_no, num_pages
-                )
+                if mode == "memory":
+                    _log.exception(
+                        "  page %d/%d: failed to parse/render", page_no, num_pages
+                    )
             finally:
+                if progress_bar is not None:
+                    progress_bar.update(1)
                 page_backend.unload()
                 if mode == "memory":
                     del page_backend
@@ -485,12 +791,13 @@ def process_pdf(
                     )
 
         if failed_pages:
-            _log.warning(
-                "Completed %s with %d failed page(s) out of %d.",
-                pdf_path.name,
-                failed_pages,
-                num_pages,
-            )
+            if mode == "memory":
+                _log.warning(
+                    "Completed %s with %d failed page(s) out of %d.",
+                    pdf_path.name,
+                    failed_pages,
+                    num_pages,
+                )
         return processed_pages, failed_pages
     finally:
         doc_backend.unload()
@@ -499,9 +806,8 @@ def process_pdf(
 def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
+        format="%(message)s",
     )
-    run_start_time = time.monotonic()
     args = parse_args()
     input_dir = _resolve_input_dir(args)
 
@@ -510,12 +816,6 @@ def main() -> None:
 
     if args.output_dir is not None:
         args.output_dir.mkdir(parents=True, exist_ok=True)
-
-    metrics_file: Path | None = args.metrics_file if args.mode == "memory" else None
-    if metrics_file is not None:
-        metrics_file.parent.mkdir(parents=True, exist_ok=True)
-        metrics_file.write_text("", encoding="utf-8")
-        _log.info("Writing per-page metrics to %s", metrics_file)
 
     report_file = args.report_file or _default_report_file(args.mode)
 
@@ -540,7 +840,7 @@ def main() -> None:
     ordered = collect_pdfs_by_page_count(
         pdfs,
         cache_file,
-        args.parser_threads,
+        args.threads[0],
         args.release_native_memory_every_n_pages,
     )
     total_available_pages = sum(page_count for _, page_count in ordered)
@@ -549,71 +849,95 @@ def main() -> None:
         if args.max_pages is not None
         else total_available_pages
     )
+    _log_docling_parse_config(
+        document_count=len(ordered),
+        total_pages=total_available_pages,
+        mode=args.mode,
+        thread_counts=args.threads,
+        release_native_memory_every_n_pages=args.release_native_memory_every_n_pages,
+        scale=args.scale,
+    )
 
-    _log.info("Processing order (by descending page count):")
-    for pdf_path, page_count in ordered:
-        _log.info("  %5d pages  %s", page_count, pdf_path.name)
+    runs: list[dict[str, Any]] = []
+    multiple_thread_counts = len(args.threads) > 1
+    for thread_count in args.threads:
+        run_start_time = time.monotonic()
+        metrics_file = _metrics_file_for_thread_count(
+            args.metrics_file if args.mode == "memory" else None,
+            thread_count,
+            multiple_thread_counts,
+        )
+        if metrics_file is not None:
+            metrics_file.parent.mkdir(parents=True, exist_ok=True)
+            metrics_file.write_text("", encoding="utf-8")
+            _log.info("Writing per-page metrics to %s", metrics_file)
 
-    processed_pages = 0
-    failed_pages = 0
-    for pdf_path, _ in ordered:
-        if args.max_pages is not None and processed_pages >= args.max_pages:
-            _log.info(
-                "Reached max page limit (%d/%d). Stopping.",
-                processed_pages,
-                target_total_pages,
-            )
-            break
-        try:
-            processed_pages, pdf_failed_pages = process_pdf(
-                pdf_path,
-                args.output_dir,
-                args.scale,
-                args.parser_threads,
-                args.release_native_memory_every_n_pages,
-                processed_pages=processed_pages,
-                target_total_pages=target_total_pages,
-                max_pages=args.max_pages,
-                mode=args.mode,
-                metrics_file=metrics_file,
-                run_start_time=run_start_time,
-            )
-            failed_pages += pdf_failed_pages
-        except Exception:
-            _log.exception("Failed to process %s", pdf_path.name)
+        print(f"Running threaded renderer with {thread_count} threads ...", flush=True)
+        processed_pages = 0
+        failed_pages = 0
+        with _ThroughputProgressBar(
+            total=target_total_pages,
+            desc="rendering",
+        ) as progress_bar:
+            for pdf_path, _ in ordered:
+                if args.max_pages is not None and processed_pages >= args.max_pages:
+                    break
+                try:
+                    processed_pages, pdf_failed_pages = process_pdf(
+                        pdf_path,
+                        args.output_dir,
+                        args.scale,
+                        thread_count,
+                        args.release_native_memory_every_n_pages,
+                        processed_pages=processed_pages,
+                        target_total_pages=target_total_pages,
+                        max_pages=args.max_pages,
+                        mode=args.mode,
+                        metrics_file=metrics_file,
+                        run_start_time=run_start_time,
+                        progress_bar=progress_bar,
+                    )
+                    failed_pages += pdf_failed_pages
+                except Exception:
+                    failed_pages += 1
+                    if args.mode == "memory":
+                        _log.exception("Failed to process %s", pdf_path.name)
 
-    elapsed_seconds = time.monotonic() - run_start_time
+        elapsed_seconds = time.monotonic() - run_start_time
+        run_report = {
+            "elapsed_seconds": elapsed_seconds,
+            "failed_pages": failed_pages,
+            "metrics_file": str(metrics_file) if metrics_file is not None else None,
+            "pages_per_second": (
+                processed_pages / elapsed_seconds if elapsed_seconds > 0.0 else 0.0
+            ),
+            "processed_pages": processed_pages,
+            "threads": thread_count,
+        }
+        runs.append(run_report)
+        error_text = f" ({failed_pages} errors)" if failed_pages else ""
+        print(
+            f"  threads={thread_count}: {elapsed_seconds:.3f}s{error_text}", flush=True
+        )
+
     report = {
-        "elapsed_seconds": elapsed_seconds,
-        "failed_pages": failed_pages,
         "glob": args.glob,
         "input_dir": str(input_dir),
         "max_pages": args.max_pages,
-        "metrics_file": str(metrics_file) if metrics_file is not None else None,
         "mode": args.mode,
         "output_dir": str(args.output_dir) if args.output_dir is not None else None,
-        "pages_per_second": (
-            processed_pages / elapsed_seconds if elapsed_seconds > 0.0 else 0.0
-        ),
-        "parser_threads": args.parser_threads,
-        "processed_pages": processed_pages,
         "release_native_memory_every_n_pages": args.release_native_memory_every_n_pages,
         "repo_id": args.repo_id,
         "report_file": str(report_file),
         "revision": args.revision,
+        "runs": runs,
         "scale": args.scale,
         "target_total_pages": target_total_pages,
+        "threads": args.threads,
         "total_available_pages": total_available_pages,
     }
     _write_report(report_file, report)
-    _log.info(
-        "Processed %d/%d page(s) in %.2fs (%.2f pages/s). Report: %s",
-        processed_pages,
-        target_total_pages,
-        elapsed_seconds,
-        report["pages_per_second"],
-        report_file,
-    )
+    print(f"Wrote summary report to {report_file}", flush=True)
 
 
 if __name__ == "__main__":

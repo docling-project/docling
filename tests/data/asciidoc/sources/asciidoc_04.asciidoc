@@ -1,0 +1,19 @@
+= Tables with cell format specifiers
+
+A table whose header row uses alignment and style specifiers on every cell.
+
+[%autowidth, cols="^.^40,<.^60"]
+|===
+^.^h|Field ^.^h| Description
+| a | First column value
+| b | Second column value
+|===
+
+A table with single-letter cells that collide with style operators.
+
+|===
+^h| Code ^h| Name
+| s | Strong
+| h | Header
+| m | Monospace
+|===

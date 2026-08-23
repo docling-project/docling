@@ -42,10 +42,14 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    LayoutPostprocessorOptions,
+    ThreadedPdfPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
@@ -54,6 +58,12 @@ from docling.models.factories import (
 )
 from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
+)
+from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
+    HeadingHierarchyModel,
+)
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
 )
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
@@ -73,9 +83,33 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 
+STAGE_FAILURE_CATEGORY = {
+    "ocr": FailureCategory.INFERENCE_FAILURE,
+    "layout": FailureCategory.INFERENCE_FAILURE,
+    "table": FailureCategory.INFERENCE_FAILURE,
+    "assemble": FailureCategory.INFERENCE_FAILURE,
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Helper data structures
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+def _make_error_item(
+    *,
+    component_type: DoclingComponentType,
+    module_name: str,
+    error: Exception,
+    category: FailureCategory,
+    page_no: int | None = None,
+) -> ErrorItem:
+    return ErrorItem(
+        component_type=component_type,
+        module_name=module_name,
+        error_message=str(error) or error.__class__.__name__,
+        category=category,
+        page_no=page_no,
+    )
 
 
 @dataclass
@@ -87,6 +121,7 @@ class ThreadedItem:
     page_no: int
     conv_res: ConversionResult
     error: Exception | None = None
+    failure: ErrorItem | None = None
     is_failed: bool = False
 
 
@@ -95,7 +130,9 @@ class ProcessingResult:
     """Aggregated outcome of a pipeline run."""
 
     pages: list[Page] = field(default_factory=list)
-    failed_pages: list[tuple[int, Exception]] = field(default_factory=list)
+    failed_pages: list[tuple[int, Exception, ErrorItem | None]] = field(
+        default_factory=list
+    )
     total_expected: int = 0
 
     @property
@@ -193,6 +230,7 @@ class ThreadedPipelineStage:
         batch_size: int,
         batch_timeout: float,
         queue_max_size: int,
+        shutdown_timeout: float = 15.0,
         postprocess: Callable[[ThreadedItem], None] | None = None,
         timed_out_run_ids: set[int] | None = None,
     ) -> None:
@@ -200,6 +238,7 @@ class ThreadedPipelineStage:
         self.model = model
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout
+        self.shutdown_timeout = shutdown_timeout
         self.input_queue = ThreadedQueue(queue_max_size)
         self._outputs: list[ThreadedQueue] = []
         self._thread: threading.Thread | None = None
@@ -229,13 +268,14 @@ class ThreadedPipelineStage:
         self._running = False
         self.input_queue.close()
         if self._thread is not None:
-            # Give thread 15s to finish naturally before abandoning
-            self._thread.join(timeout=15.0)
+            # Give the thread self.shutdown_timeout seconds to finish naturally before abandoning
+            self._thread.join(timeout=self.shutdown_timeout)
             if self._thread.is_alive():
                 _log.warning(
-                    "Stage %s thread did not terminate within 15s. "
+                    "Stage %s thread did not terminate within %.1fs. "
                     "Thread is likely stuck in a blocking call and will be abandoned (resources may leak).",
                     self.name,
+                    self.shutdown_timeout,
                 )
 
     # ------------------------------------------------------------------ _run
@@ -269,6 +309,15 @@ class ThreadedPipelineStage:
                     it.is_failed = True
                     if it.error is None:
                         it.error = RuntimeError("document timeout exceeded")
+                    if it.failure is None:
+                        error = it.error or RuntimeError("document timeout exceeded")
+                        it.failure = _make_error_item(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.name,
+                            error=error,
+                            category=FailureCategory.TIMEOUT,
+                            page_no=it.page_no,
+                        )
                 result.extend(items)
                 continue
 
@@ -283,9 +332,17 @@ class ThreadedPipelineStage:
                 ]
                 if len(pages_with_payloads) != len(good):
                     # Some items have None payloads, mark all as failed
-                    for it in items:
+                    for it in good:
                         it.is_failed = True
-                        it.error = RuntimeError("Page payload is None")
+                        error = RuntimeError("Page payload is None")
+                        it.error = error
+                        it.failure = _make_error_item(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.name,
+                            error=error,
+                            category=FailureCategory.UNKNOWN,
+                            page_no=it.page_no,
+                        )
                     result.extend(items)
                     continue
 
@@ -321,9 +378,18 @@ class ThreadedPipelineStage:
                 _log.error(
                     "Stage %s failed for run %d: %s", self.name, rid, exc, exc_info=True
                 )
-                for it in items:
+                for it in good:
                     it.is_failed = True
                     it.error = exc
+                    it.failure = _make_error_item(
+                        component_type=DoclingComponentType.MODEL,
+                        module_name=self.name,
+                        error=exc,
+                        category=STAGE_FAILURE_CATEGORY.get(
+                            self.name, FailureCategory.UNKNOWN
+                        ),
+                        page_no=it.page_no,
+                    )
                 result.extend(items)
         return result
 
@@ -346,6 +412,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
         batch_timeout: float,
         queue_max_size: int,
         model: Any,
+        shutdown_timeout: float = 15.0,
         timed_out_run_ids: set[int] | None = None,
     ) -> None:
         super().__init__(
@@ -354,6 +421,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
             batch_size=1,
             batch_timeout=batch_timeout,
             queue_max_size=queue_max_size,
+            shutdown_timeout=shutdown_timeout,
             timed_out_run_ids=timed_out_run_ids,
         )
 
@@ -371,6 +439,15 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                     it.is_failed = True
                     if it.error is None:
                         it.error = RuntimeError("document timeout exceeded")
+                    if it.failure is None:
+                        error = it.error or RuntimeError("document timeout exceeded")
+                        it.failure = _make_error_item(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.name,
+                            error=error,
+                            category=FailureCategory.TIMEOUT,
+                            page_no=it.page_no,
+                        )
                 result.extend(items)
                 continue
 
@@ -387,17 +464,41 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 page = it.payload
                 if page is None:
                     it.is_failed = True
-                    it.error = RuntimeError("Page payload is None")
+                    error = RuntimeError("Page payload is None")
+                    it.error = error
+                    it.failure = _make_error_item(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.name,
+                        error=error,
+                        category=FailureCategory.UNKNOWN,
+                        page_no=it.page_no,
+                    )
                     invalid.append(it)
                 elif page._backend is None:
                     it.is_failed = True
-                    it.error = RuntimeError(
+                    error = RuntimeError(
                         "Page backend must be attached before preprocess"
+                    )
+                    it.error = error
+                    it.failure = _make_error_item(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.name,
+                        error=error,
+                        category=FailureCategory.UNKNOWN,
+                        page_no=it.page_no,
                     )
                     invalid.append(it)
                 elif not page._backend.is_valid():
                     it.is_failed = True
-                    it.error = RuntimeError(f"Page {page.page_no} failed to parse.")
+                    error = RuntimeError(f"Page {page.page_no} failed to parse.")
+                    it.error = error
+                    it.failure = _make_error_item(
+                        component_type=DoclingComponentType.DOCUMENT_BACKEND,
+                        module_name=self.name,
+                        error=error,
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=it.page_no,
+                    )
                     invalid.append(it)
                 else:
                     valid.append((it, page))
@@ -448,6 +549,13 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 for it, _ in valid:
                     it.is_failed = True
                     it.error = exc
+                    it.failure = _make_error_item(
+                        component_type=DoclingComponentType.MODEL,
+                        module_name=self.name,
+                        error=exc,
+                        category=FailureCategory.UNKNOWN,
+                        page_no=it.page_no,
+                    )
                 result.extend(it for it, _ in valid)
         return result
 
@@ -505,6 +613,18 @@ class StandardPdfPipeline(ConvertPipeline):
             accelerator_options=self.pipeline_options.accelerator_options,
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
+
+        # Interim solution: Create LayoutPostprocessorOptions from the layout_option parameters
+        lo = self.pipeline_options.layout_options
+        self.layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=lo.create_orphan_clusters,
+                run_postprocessor=self.layout_model.requires_layout_postprocessing,
+            )
+        )
+
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
@@ -517,6 +637,9 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.heading_hierarchy_model = HeadingHierarchyModel(
+            options=self.pipeline_options.heading_hierarchy_options
+        )
 
         # --- optional enrichment ------------------------------------------------
         # Create a copy to avoid mutating pipeline_options in-place,
@@ -586,6 +709,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
             model=self.preprocessing_model,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         ocr = ThreadedPipelineStage(
@@ -594,6 +718,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.ocr_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         layout = ThreadedPipelineStage(
@@ -602,6 +727,16 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.layout_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
+            timed_out_run_ids=timed_out_run_ids,
+        )
+        layout_postprocess = ThreadedPipelineStage(
+            name="layout_postprocess",
+            model=self.layout_postprocessing_model,
+            batch_size=1,
+            batch_timeout=opts.batch_polling_interval_seconds,
+            queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         table = ThreadedPipelineStage(
@@ -610,6 +745,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=opts.table_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
         assemble = ThreadedPipelineStage(
@@ -618,19 +754,21 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_size=1,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             postprocess=self._release_page_resources,
             timed_out_run_ids=timed_out_run_ids,
         )
 
         # wire stages
         output_q = ThreadedQueue(opts.queue_max_size)
-        preprocess.add_output_queue(ocr.input_queue)
-        ocr.add_output_queue(layout.input_queue)
-        layout.add_output_queue(table.input_queue)
-        table.add_output_queue(assemble.input_queue)
-        assemble.add_output_queue(output_q)
+        preprocess.add_output_queue(layout.input_queue)  # PDF parsing
+        layout.add_output_queue(ocr.input_queue)  # Layout prediction
+        ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
+        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
+        table.add_output_queue(assemble.input_queue)  # Table model
+        assemble.add_output_queue(output_q)  # Assembly
 
-        stages = [preprocess, ocr, layout, table, assemble]
+        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
         return RunContext(
             stages=stages,
             first_stage=preprocess,
@@ -665,7 +803,8 @@ class StandardPdfPipeline(ConvertPipeline):
         """Stream-build the document with a dedicated producer thread.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
-        iter_pages/get_size), that thread will be abandoned after a brief wait (15s) during cleanup.
+        iter_pages/get_size), that thread will be abandoned after a brief wait
+        (`PdfPipelineOptions.stage_shutdown_timeout_seconds`, 15s by default) during cleanup.
         The thread continues running until the blocking call completes, potentially holding
         resources (e.g., pypdfium2_lock).
         """
@@ -673,6 +812,12 @@ class StandardPdfPipeline(ConvertPipeline):
         run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
+
+        # Surface the PDF outline (bookmarks/ToC) for the heading-hierarchy stage, while the
+        # backend is still open. Only extracted when bookmark inference is actually enabled.
+        hh_opts = self.pipeline_options.heading_hierarchy_options
+        if hh_opts.enabled and hh_opts.use_bookmarks:
+            conv_res._pdf_outline = backend.get_document_outline()
 
         expected_page_nos = self._get_expected_page_nos(conv_res)
         if not expected_page_nos:
@@ -698,7 +843,7 @@ class StandardPdfPipeline(ConvertPipeline):
 
         def _completed_page_nos() -> set[int]:
             failed_page_nos = {
-                page_no for page_no, _ in proc.failed_pages if page_no > 0
+                page_no for page_no, _, _ in proc.failed_pages if page_no > 0
             }
             return {page.page_no for page in proc.pages} | failed_page_nos
 
@@ -762,9 +907,8 @@ class StandardPdfPipeline(ConvertPipeline):
                     if itm.run_id != run_id:
                         continue
                     if itm.is_failed or itm.error:
-                        proc.failed_pages.append(
-                            (itm.page_no, itm.error or RuntimeError("unknown error"))
-                        )
+                        error = itm.error or RuntimeError("unknown error")
+                        proc.failed_pages.append((itm.page_no, error, itm.failure))
                     else:
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
@@ -781,7 +925,20 @@ class StandardPdfPipeline(ConvertPipeline):
                             else RuntimeError("pipeline terminated early")
                         )
                         proc.failed_pages.extend(
-                            [(page_no, error) for page_no in missing_page_nos]
+                            [
+                                (
+                                    page_no,
+                                    error,
+                                    _make_error_item(
+                                        component_type=DoclingComponentType.PIPELINE,
+                                        module_name=self.__class__.__name__,
+                                        error=error,
+                                        category=FailureCategory.UNKNOWN,
+                                        page_no=page_no,
+                                    ),
+                                )
+                                for page_no in missing_page_nos
+                            ]
                         )
                     break
 
@@ -790,21 +947,32 @@ class StandardPdfPipeline(ConvertPipeline):
                 missing_page_nos = sorted(
                     set(expected_page_nos) - _completed_page_nos()
                 )
-                proc.failed_pages.extend(
-                    [
-                        (page_no, RuntimeError("document timeout exceeded"))
-                        for page_no in missing_page_nos
-                    ]
-                )
+                for page_no in missing_page_nos:
+                    error = RuntimeError("document timeout exceeded")
+                    proc.failed_pages.append(
+                        (
+                            page_no,
+                            error,
+                            _make_error_item(
+                                component_type=DoclingComponentType.PIPELINE,
+                                module_name=self.__class__.__name__,
+                                error=error,
+                                category=FailureCategory.TIMEOUT,
+                                page_no=page_no,
+                            ),
+                        )
+                    )
         finally:
             for st in ctx.stages:
                 st.stop()
             ctx.output_queue.close()
-            producer_thread.join(timeout=15.0)
+            shutdown_timeout = self.pipeline_options.stage_shutdown_timeout_seconds
+            producer_thread.join(timeout=shutdown_timeout)
             if producer_thread.is_alive():
                 _log.warning(
-                    "Producer thread for run %d did not terminate within 15s and will be abandoned.",
+                    "Producer thread for run %d did not terminate within %.1fs and will be abandoned.",
                     run_id,
+                    shutdown_timeout,
                 )
 
         self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)
@@ -823,17 +991,32 @@ class StandardPdfPipeline(ConvertPipeline):
             page_map[p.page_no] for p in conv_res.pages if p.page_no in page_map
         ]
         # Add error details from failed pages
-        for page_no, error in proc.failed_pages:
-            page_label = f"Page {page_no}" if page_no > 0 else "Unknown page"
-            error_msg = str(error) if error else ""
-            error_item = ErrorItem(
+        for page_no, error, failure in proc.failed_pages:
+            if failure is not None:
+                conv_res.errors.append(failure)
+                continue
+            conv_res.errors.append(
+                _make_error_item(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name=self.__class__.__name__,
+                    error=error or RuntimeError("Page failed to process."),
+                    category=FailureCategory.UNKNOWN,
+                    page_no=page_no if page_no > 0 else None,
+                )
+            )
+        if timeout_exceeded and proc.total_expected > 0:
+            # Timeout exceeded: add structured error and set PARTIAL_SUCCESS
+            timeout_msg = (
+                f"Pipeline stage timeout: processed {len(proc.pages)}/{proc.total_expected} pages successfully, "
+                f"{len(proc.failed_pages)} pages failed or incomplete."
+            )
+            timeout_error = ErrorItem(
                 component_type=DoclingComponentType.PIPELINE,
                 module_name=self.__class__.__name__,
-                error_message=f"{page_label}: {error_msg}" if error_msg else page_label,
+                error_message=timeout_msg,
+                category=FailureCategory.TIMEOUT,
             )
-            conv_res.errors.append(error_item)
-        if timeout_exceeded and proc.total_expected > 0:
-            # Timeout exceeded: set PARTIAL_SUCCESS if any pages were attempted
+            conv_res.errors.append(timeout_error)
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         elif proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
@@ -864,6 +1047,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 elements=elements, headers=headers, body=body
             )
             conv_res.document = self.reading_order_model(conv_res)
+            conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:

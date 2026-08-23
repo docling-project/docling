@@ -1,3 +1,0 @@
-<document>
-<paragraph><location><page_1><loc_12><loc_82><loc_85><loc_91></location>Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package</paragraph>
-</document>

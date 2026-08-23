@@ -19,12 +19,15 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
 )
 from docling.backend.asciidoc_backend import AsciiDocBackend
+from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.ebcdic_backend import EbcdicDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -33,18 +36,28 @@ from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
+from docling.backend.opendocument_backend import (
+    OdpDocumentBackend,
+    OdsDocumentBackend,
+    OdtDocumentBackend,
+)
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
+from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
+    EbcdicBackendOptions,
+    EmailBackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
+    IWorkBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
+    MsWordBackendOptions,
     PdfBackendOptions,
     XBRLBackendOptions,
 )
@@ -54,12 +67,16 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
+    HttpSource,
     InputFormat,
 )
 from docling.datamodel.document import (
     ConversionResult,
     InputDocument,
     _DocumentConversionInput,
+    build_invalid_input_errors,
+    get_input_rejection_cause,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
@@ -73,6 +90,7 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -96,6 +114,11 @@ class FormatOption(BaseFormatOption):
         return self
 
 
+class BoxNoteFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = BoxNoteDocumentBackend
+
+
 class CsvFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
@@ -109,11 +132,27 @@ class ExcelFormatOption(FormatOption):
 class WordFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsWordDocumentBackend
+    backend_options: Optional[MsWordBackendOptions] = None
 
 
 class PowerpointFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+
+
+class OdtFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdtDocumentBackend
+
+
+class OdsFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdsDocumentBackend
+
+
+class OdpFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdpDocumentBackend
 
 
 class MarkdownFormatOption(FormatOption):
@@ -163,6 +202,11 @@ class XMLDocLangFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
 
 
+class DclxFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DocLangArchiveBackend
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -180,6 +224,14 @@ class PdfFormatOption(FormatOption):
     backend_options: Optional[PdfBackendOptions] = None
 
 
+class IWorkPagesFormatOption(FormatOption):
+    """Format option for Apple Pages input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
 class MetsGbsFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = MetsGbsDocumentBackend
@@ -188,6 +240,13 @@ class MetsGbsFormatOption(FormatOption):
 
 class AudioFormatOption(FormatOption):
     pipeline_cls: Type = AsrPipeline
+    backend: Type[AbstractDocumentBackend] = NoOpBackend
+
+
+class VideoFormatOption(FormatOption):
+    """Format option for video input, processed via VideoPipeline."""
+
+    pipeline_cls: Type = VideoPipeline
     backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
@@ -202,6 +261,7 @@ class LatexFormatOption(FormatOption):
 class EmailFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+    backend_options: Optional[EmailBackendOptions] = None
 
 
 class EpubFormatOption(FormatOption):
@@ -210,18 +270,32 @@ class EpubFormatOption(FormatOption):
     backend_options: EpubBackendOptions | None = None
 
 
+class EbcdicFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = EbcdicDocumentBackend
+    backend_options: EbcdicBackendOptions | None = None
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
+        InputFormat.BOXNOTE: BoxNoteFormatOption(),
         InputFormat.XLSX: ExcelFormatOption(),
+        InputFormat.XLS: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
+        InputFormat.DOC: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.PPT: PowerpointFormatOption(),
+        InputFormat.ODT: OdtFormatOption(),
+        InputFormat.ODS: OdsFormatOption(),
+        InputFormat.ODP: OdpFormatOption(),
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
+        InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
@@ -232,12 +306,15 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
         InputFormat.AUDIO: AudioFormatOption(),
+        InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
         InputFormat.LATEX: LatexFormatOption(),
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
+        InputFormat.EBCDIC: EbcdicFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
@@ -376,7 +453,7 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert(
         self,
-        source: Union[Path, str, DocumentStream],  # TODO review naming
+        source: Union[Path, str, DocumentStream, HttpSource],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -389,10 +466,11 @@ class DocumentConverter:
         content), use the `convert_string` method.
 
         Args:
-            source: Source of input document given as file path, URL, or
-                DocumentStream.
+            source: Source of input document given as file path, URL,
+                DocumentStream, or HttpSource (a URL bundled with its own headers).
             headers: Optional headers given as a dictionary of string key-value pairs,
-                in case of URL input source.
+                in case of URL input source. Ignored for HttpSource inputs, which
+                carry their own headers (these override the batch headers per key).
             raises_on_error: Whether to raise an error on the first conversion failure.
                 If False, errors are captured in the ConversionResult objects.
             max_num_pages: Maximum number of pages accepted per document.
@@ -440,7 +518,9 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
         self,
-        source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
+        source: Iterable[
+            Union[Path, str, DocumentStream, HttpSource]
+        ],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -451,9 +531,10 @@ class DocumentConverter:
 
         Args:
             source: Source of input documents given as an iterable of file paths, URLs,
-                or DocumentStreams.
+                DocumentStreams, or HttpSources (a URL bundled with its own headers).
             headers: Optional headers given as a (single) dictionary of string
-                key-value pairs, in case of URL input source.
+                key-value pairs, in case of URL input source. Per-source HttpSource
+                headers override these (merged per key) for that source only.
             raises_on_error: Whether to raise an error on the first conversion failure.
             max_num_pages: Maximum number of pages accepted per document.
                 Documents exceeding this number will not be converted.
@@ -504,10 +585,14 @@ class DocumentConverter:
                 if conv_res.errors:
                     error_messages = [err.error_message for err in conv_res.errors]
                     error_details = f" Errors: {'; '.join(error_messages)}"
+                # Chain the underlying exception (when one was captured during
+                # input construction) so callers can classify failures via
+                # ``__cause__`` — e.g. an encrypted PDF surfaces the original
+                # ``PdfiumError``. See issue #1920.
                 raise ConversionError(
                     f"Conversion failed for: {conv_res.input.file} with status: "
-                    f"{conv_res.status}.{error_details}"
-                )
+                    f"{conv_res.status.value}.{error_details}"
+                ) from get_input_rejection_cause(conv_res.input)
             else:
                 yield conv_res
 
@@ -669,48 +754,58 @@ class DocumentConverter:
             conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
         else:
             error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                )
-                conv_res = ConversionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message=error_message,
+                category=FailureCategory.POLICY,
+            )
+            conv_res = ConversionResult(
+                input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
+            )
 
         return conv_res
+
+    def _unload_input_document(self, in_doc: InputDocument) -> None:
+        backend = getattr(in_doc, "_backend", None)
+        if backend is not None:
+            backend.unload()
 
     def _execute_pipeline(
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
         if in_doc.valid:
-            pipeline = self._get_pipeline(in_doc.format)
-            if pipeline is not None:
-                conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
-            else:
-                if raises_on_error:
-                    raise ConversionError(
-                        f"No pipeline could be initialized for {in_doc.file}."
-                    )
+            pipeline_started = False
+            try:
+                pipeline = self._get_pipeline(in_doc.format)
+                if pipeline is not None:
+                    pipeline_started = True
+                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
                 else:
-                    _log.warning(
-                        "No pipeline could be initialized for %s.", in_doc.file
-                    )
-                    conv_res = ConversionResult(
-                        input=in_doc,
-                        status=ConversionStatus.FAILURE,
-                    )
+                    if raises_on_error:
+                        raise ConversionError(
+                            f"No pipeline could be initialized for {in_doc.file}."
+                        )
+                    else:
+                        _log.warning(
+                            "No pipeline could be initialized for %s.", in_doc.file
+                        )
+                        conv_res = ConversionResult(
+                            input=in_doc,
+                            status=ConversionStatus.FAILURE,
+                        )
+            finally:
+                if not pipeline_started:
+                    self._unload_input_document(in_doc)
         else:
-            if raises_on_error:
-                raise ConversionError(f"Input document {in_doc.file} is not valid.")
-            else:
+            try:
                 _log.warning("Input document %s is not valid.", in_doc.file)
                 conv_res = ConversionResult(
                     input=in_doc,
                     status=ConversionStatus.FAILURE,
+                    errors=build_invalid_input_errors(in_doc),
                 )
+            finally:
+                self._unload_input_document(in_doc)
 
         return conv_res

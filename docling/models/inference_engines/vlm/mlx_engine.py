@@ -203,6 +203,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 _log.debug("Starting MLX generation...")
 
                 output_text = ""
+                num_tokens = 0
                 stop_reason = "unspecified"
 
                 # Use stream_generate for proper stop string handling
@@ -216,6 +217,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     temp=input_data.temperature,
                 ):
                     output_text += token.text
+                    num_tokens += 1
 
                     # Check for configured stop strings
                     if input_data.stop_strings:
@@ -270,6 +272,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         stop_reason=stop_reason,
                         metadata={
                             "generation_time": generation_time,
+                            "num_tokens": num_tokens,
                             "model": self.model_config.repo_id
                             if self.model_config
                             else "unknown",

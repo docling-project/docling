@@ -10,6 +10,7 @@ from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, T
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                 self.content = StringIO(self.path_or_stream.read_text("utf-8"))
             self.valid = True
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"CsvDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
         return

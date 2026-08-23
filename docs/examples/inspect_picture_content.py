@@ -21,7 +21,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 # Change this to a local path if desired
-source = "tests/data/pdf/amt_handbook_sample.pdf"
+source = "tests/data/pdf/sources/amt_handbook_sample.pdf"
 
 pipeline_options = PdfPipelineOptions()
 # Higher scale yields sharper crops when inspecting picture content.

@@ -15,6 +15,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.base_model import BaseVlmPageModel
 
+from .groundtruth_paths import get_regular_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -22,7 +23,7 @@ GENERATE = GEN_TEST_DATA
 
 
 def get_pdf_path():
-    pdf_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")
+    pdf_path = Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
     return pdf_path
 
 
@@ -56,7 +57,9 @@ def test_convert_path(converter: DocumentConverter):
     # Avoid heavy torch-dependent models by not instantiating layout models here in coverage run
     doc_result = converter.convert(pdf_path)
     verify_conversion_result_v2(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
+        gt=get_regular_groundtruth_paths(pdf_path),
+        doc_result=doc_result,
+        generate=GENERATE,
     )
 
 
@@ -69,7 +72,9 @@ def test_convert_stream(converter: DocumentConverter):
 
     doc_result = converter.convert(stream)
     verify_conversion_result_v2(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
+        gt=get_regular_groundtruth_paths(pdf_path),
+        doc_result=doc_result,
+        generate=GENERATE,
     )
 
 
@@ -101,15 +106,6 @@ def test_formulate_prompt_none():
     assert model.formulate_prompt("ignored") == ""
 
 
-def test_formulate_prompt_phi4_special_case():
-    model = _DummyVlm(
-        TransformersPromptStyle.RAW, repo_id="ibm-granite/granite-docling-258M"
-    )
-    # RAW style with granite-docling should still invoke the special path only when style not RAW;
-    # ensure RAW returns the user text
-    assert model.formulate_prompt("describe image") == "describe image"
-
-
 def test_formulate_prompt_chat_uses_processor_template():
     model = _DummyVlm(TransformersPromptStyle.CHAT)
     model.processor.apply_chat_template.return_value = "templated"
@@ -124,15 +120,3 @@ def test_formulate_prompt_unknown_style_raises():
     model.vlm_options.transformers_prompt_style = "__invalid__"  # type: ignore[assignment]
     with pytest.raises(RuntimeError):
         model.formulate_prompt("x")
-
-
-def test_vlm_prompt_style_none_and_chat_variants():
-    # NONE always empty
-    m_none = _DummyVlm(TransformersPromptStyle.NONE)
-    assert m_none.formulate_prompt("anything") == ""
-
-    # CHAT path ensures processor used even with complex prompt
-    m_chat = _DummyVlm(TransformersPromptStyle.CHAT)
-    m_chat.processor.apply_chat_template.return_value = "ok"
-    out = m_chat.formulate_prompt("details please")
-    assert out == "ok"

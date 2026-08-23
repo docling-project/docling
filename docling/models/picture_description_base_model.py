@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from docling_core.types.doc import (
     DescriptionMetaField,
@@ -15,6 +15,7 @@ from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
@@ -23,6 +24,9 @@ from docling.models.base_model import (
     BaseModelWithOptions,
     ItemAndImageEnrichmentElement,
 )
+
+_USAGE_META_NAMESPACE = "docling"
+_USAGE_META_FIELD_NAME = "usage"
 
 
 class PictureDescriptionBaseModel(
@@ -53,7 +57,9 @@ class PictureDescriptionBaseModel(
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[str | ApiImageRequestResult]:
         raise NotImplementedError
 
     def __call__(
@@ -95,19 +101,28 @@ class PictureDescriptionBaseModel(
         outputs = self._annotate_images(images)
 
         for item, output in zip(elements, outputs):
+            description_text, usage = _normalize_description_output(output)
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
             if self.options._keep_deprecated_annotations:
                 item.annotations.append(
-                    PictureDescriptionData(text=output, provenance=self.provenance)
+                    PictureDescriptionData(
+                        text=description_text, provenance=self.provenance
+                    )
                 )
 
-            # Store classification in the new meta field
+            # Store description in the new meta field
             if item.meta is None:
                 item.meta = PictureMeta()
             item.meta.description = DescriptionMetaField(
-                text=output,
+                text=description_text,
                 created_by=self.provenance,
             )
+            if usage is not None:
+                item.meta.description.set_custom_field(
+                    namespace=_USAGE_META_NAMESPACE,
+                    name=_USAGE_META_FIELD_NAME,
+                    value=usage,
+                )
 
             yield item
 
@@ -115,6 +130,14 @@ class PictureDescriptionBaseModel(
     @abstractmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         pass
+
+
+def _normalize_description_output(
+    output: str | ApiImageRequestResult,
+) -> tuple[str, Any | None]:
+    if isinstance(output, ApiImageRequestResult):
+        return output.text, output.usage
+    return output, None
 
 
 def _passes_classification(

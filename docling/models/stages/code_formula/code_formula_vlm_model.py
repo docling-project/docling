@@ -294,4 +294,6 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             try:
                 self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up engine: {e}")
+                # _log may be None during interpreter shutdown
+                if _log is not None:
+                    _log.warning(f"Error cleaning up engine: {e}")

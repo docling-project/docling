@@ -12,6 +12,7 @@ from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.pdf_outline import _PdfOutlineItem
 
 
 class PdfPageBackend(ABC):
@@ -32,19 +33,67 @@ class PdfPageBackend(ABC):
     def get_text_cells(self) -> Iterable[TextCell]:
         pass
 
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        """Return the subset of `get_text_cells()` that actually paints ink on the page.
+
+        Text drawn in a rendering mode that paints nothing (PDF 32000 modes 3 and 7) is left out
+        `None` means this backend cannot tell visible from invisible text at all
+        """
+        return None
+
     @abstractmethod
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        pass
+        """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
+
+    def has_content_in(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> Optional[bool]:
+        """`True` if any visible element of an enabled category overlaps bbox, else `False`
+
+        `None` means this backend cannot answer the query at all, as distinct from `False`, which
+        means it looked and found no intersecting content.
+        """
+        return None
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> Optional[list[BoundingBox]]:
+        """Return the visible horizontal and/or vertical stroked shape segments.
+
+        Boxes use top-left origin.
+        Segments are returned as degenerate (zero-height or zero-width) boxes with top-left
+        origin. `None` means this backend cannot answer the query at all
+        """
+        return None
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> Optional[list[BoundingBox]]:
+        """Return the bboxes of visible shapes merged by overlapping bboxes.
+
+        Boxes use top-left origin. `None` means this backend cannot answer the query at
+        all, as distinct from an empty list, which means it looked and found no shapes.
+        """
+        return None
 
     @abstractmethod
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
-        pass
+        """Render a logical page region at ``scale`` pixels per document point."""
 
     @abstractmethod
     def get_size(self) -> Size:
-        pass
+        """Return the page size in 72-DPI document points."""
 
     @abstractmethod
     def is_valid(self) -> bool:
@@ -85,6 +134,15 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
     def iter_pages(self) -> Iterator[PdfPageBackend]:
         for page_index in range(self.page_count()):
             yield self.load_page(page_index)
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Return the PDF bookmark / table-of-contents outline.
+
+        A flat, document-ordered list where each entry carries its own depth (``level``). The
+        default returns an empty list; PDFium-backed backends override this with the real
+        outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
+        """
+        return []
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:

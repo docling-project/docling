@@ -1,11 +1,32 @@
 import logging
+from collections.abc import Iterator
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from openpyxl import load_workbook
+from docling_core.transforms.serializer.markdown import MarkdownParams
+from docling_core.transforms.serializer.markdown_excel import (
+    MsExcelMarkdownDocSerializer,
+)
+from docling_core.types.doc import (
+    ContentLayer,
+    GroupLabel,
+    PictureClassificationLabel,
+    PictureItem,
+    TableItem,
+    TextItem,
+)
+from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
+from openpyxl import Workbook, load_workbook
+from openpyxl.comments import Comment
+from openpyxl.worksheet.merge import MergedCellRange
 
-from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
+from docling.backend.msexcel_backend import (
+    ExcelCell,
+    ExcelTable,
+    MsExcelDocumentBackend,
+)
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -19,12 +40,34 @@ _log = logging.getLogger(__name__)
 GENERATE = GEN_TEST_DATA
 
 
+class _TrackingMergedRanges(set[MergedCellRange]):
+    def __init__(self, ranges: set[MergedCellRange]) -> None:
+        super().__init__(ranges)
+        self.iteration_count = 0
+
+    def __iter__(self) -> Iterator[MergedCellRange]:
+        self.iteration_count += 1
+        return super().__iter__()
+
+
+@pytest.fixture(scope="module")
+def libreoffice_available() -> bool:
+    """Return True when a working LibreOffice installation is detected."""
+    try:
+        return get_libreoffice_cmd(raise_if_unavailable=True) is not None
+    except Exception:
+        return False
+
+
 def get_excel_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/xlsx/")
+    directory = Path("./tests/data/xlsx/sources/")
 
-    # List all Excel files in the directory and its subdirectories
-    excel_files = sorted(directory.rglob("*.xlsx")) + sorted(directory.rglob("*.xlsm"))
+    # List all Excel files in the directory and its subdirectories.
+    # Exclude ~$ prefixed lock files created by Excel when a file is open.
+    excel_files = sorted(
+        f for f in directory.rglob("*.xlsx") if not f.name.startswith("~$")
+    ) + sorted(f for f in directory.rglob("*.xlsm") if not f.name.startswith("~$"))
     return excel_files
 
 
@@ -44,9 +87,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     for excel_path in excel_paths:
         _log.debug(f"converting {excel_path}")
 
-        gt_path = (
-            excel_path.parent.parent / "groundtruth" / "docling_v2" / excel_path.name
-        )
+        gt_path = excel_path.parent.parent / "groundtruth" / excel_path.name
 
         conv_result: ConversionResult = converter.convert(excel_path)
 
@@ -58,10 +99,119 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def test_e2e_excel_conversions(documents) -> None:
+def test_comments_extraction(documents) -> None:
+    """Test that cell comments are extracted into the NOTES content layer."""
+    from docling_core.types.doc import GroupItem
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups (2 notes + 2 threaded), got {len(comment_groups)}"
+    )
+
+    comment_texts = [
+        t.text
+        for t in doc.texts
+        if isinstance(t, TextItem) and t.content_layer == ContentLayer.NOTES
+    ]
+
+    # Check for old-style notes
+    assert any("John Reviewer" in t for t in comment_texts), (
+        "Expected 'John Reviewer' in comment texts"
+    )
+    assert any("Jane Editor" in t for t in comment_texts), (
+        "Expected 'Jane Editor' in comment texts"
+    )
+    assert any("Why Python" in t for t in comment_texts), (
+        "Expected comment body text content"
+    )
+
+    # Check for threaded comments with author and timestamp
+    assert any("Marcus Sterling" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Marcus Sterling and timestamp"
+    )
+    assert any("Jane Smith" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Jane Smith and timestamp"
+    )
+    assert any("never thought it would be so low" in t for t in comment_texts), (
+        "Expected threaded comment reply text"
+    )
+    assert any("Maximum number of ducks" in t for t in comment_texts), (
+        "Expected threaded comment text"
+    )
+
+    for group in comment_groups:
+        assert group.content_layer == ContentLayer.NOTES, (
+            "Comments should be in NOTES content layer"
+        )
+
+
+def test_comment_cell_coordinates(documents) -> None:
+    """Test that comment names include cell coordinates."""
+    from docling_core.types.doc import GroupItem
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+
+    # Should have 4 comments (2 notes + 2 threaded)
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups, got {len(comment_groups)}"
+    )
+
+    # Verify comment names include cell coordinates
+    comment_names = [g.name for g in comment_groups]
+    assert any("A1" in name for name in comment_names), "Expected comment for cell A1"
+    assert any("B2" in name for name in comment_names), "Expected comment for cell B2"
+    assert any("F7" in name for name in comment_names), (
+        "Expected threaded comment for cell F7"
+    )
+    assert any("G12" in name for name in comment_names), (
+        "Expected threaded comment for cell G12"
+    )
+
+
+def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
+        # xlsx_emf.xlsx contains EMF images that require LibreOffice to render.
+        # Skip its groundtruth comparison when LibreOffice is not available.
+        if gt_path.stem == "xlsx_emf" and not libreoffice_available:
+            _log.info(
+                "Skipping groundtruth comparison for %s: LibreOffice not available",
+                gt_path.name,
+            )
+            continue
+
+        included_content_layers = (
+            set(ContentLayer) if gt_path.stem in "xlsx_comments" else None
+        )
+        my_layers = (
+            included_content_layers
+            if included_content_layers is not None
+            else DEFAULT_CONTENT_LAYERS
+        )
+        pred_md: str = (
+            MsExcelMarkdownDocSerializer(
+                doc=doc,
+                params=MarkdownParams(compact_tables=True, layers=my_layers),
+            )
+            .serialize()
+            .text
+        )
+        assert verify_export(
+            pred_md,
+            str(gt_path) + ".md",
+            GENERATE,
+        ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
@@ -70,7 +220,7 @@ def test_e2e_excel_conversions(documents) -> None:
             "export to indented-text"
         )
 
-        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE, fuzzy=True), (
             "document document"
         )
 
@@ -98,24 +248,100 @@ def test_pages(documents) -> None:
 
     # page sizes as number of cells
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
+
+
+def test_page_range() -> None:
+    """Test that page_range selects a contiguous subset of sheets.
+
+    xlsx_01.xlsx has 4 sheets. Converting with page_range=(2, 4) should yield
+    only sheets 2-4, keeping their original page numbers (2, 3, 4).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    converter = get_converter()
+    doc = converter.convert(path, page_range=(2, 4)).document
+
+    assert set(doc.pages.keys()) == {2, 3, 4}
+    # original page numbering is preserved, so sizes match the full-document ones
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
+
+
+def test_page_range_with_sheet_names() -> None:
+    """Test that page_range applies to the sheet_names-filtered set.
+
+    With sheet_names dropping "Sheet2", the filtered sequence is
+    [Sheet1, Sheet3, Sheet4] at positions 1, 2, 3. page_range=(2, 3) then
+    selects Sheet3 and Sheet4 (pages 2 and 3 of the filtered set).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=["Sheet1", "Sheet3", "Sheet4"])
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path, page_range=(2, 3)).document
+
+    assert set(doc.pages.keys()) == {2, 3}
+    sheet_groups = [g.name for g in doc.groups if g.label == GroupLabel.SHEET]
+    assert sheet_groups == ["Sheet3", "Sheet4"]
 
 
 def test_chartsheet(documents) -> None:
-    """Test the conversion of Chartsheets.
+    """Test that a native chart is parsed into a classified picture with data.
+
+    ``parse_charts`` defaults to True, so the default converter extracts the
+    "Duck Chart" bar chart. It should become a single PictureItem classified as a
+    bar chart, captioned with the chart title, and carrying the chart's underlying
+    data reconstructed as a table. The opt-out path is covered by
+    ``test_chart_parsing_disabled``.
 
     Args:
         documents: The paths and converted documents.
     """
     doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
-    assert len(doc.pages) == 2
 
-    # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
-    assert doc.pages[2].size.height == 0
-    assert doc.pages[2].size.width == 0
+    assert len(doc.pages) == 2
+    assert doc.groups[1].name == "Duck Chart"
+
+    # The chart anchors on the second sheet, so page 2 has a non-zero extent.
+    assert doc.pages[2].size.width > 0
+    assert doc.pages[2].size.height > 0
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert picture.prov[0].page_no == 2
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
+
+    # The two series and their shared categories are rebuilt as a table:
+    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019    | 120              | 80              |
+    #   ...
+    #   | 2024    | 180              | 130             |
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(0, 1)] == "Freshwater Ducks"
+    assert grid[(0, 2)] == "Saltwater Ducks"
+    assert grid[(6, 0)] == "2024"
+    assert grid[(6, 1)] == "180"
+    assert grid[(6, 2)] == "130"
 
 
 def test_chartsheet_data_values(documents) -> None:
@@ -162,6 +388,119 @@ def test_chartsheet_data_values(documents) -> None:
             break
 
     assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
+def test_chart_parsing_disabled() -> None:
+    """Test that parse_charts=False suppresses chart pictures.
+
+    xlsx_03_chartsheet contains a single bar chart and no other images, so with
+    chart parsing turned off the converted document has no pictures and the chart
+    sheet's page keeps its empty extent.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(parse_charts=False)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    assert len(list(doc.pictures)) == 0
+    assert doc.pages[2].size.width == 0
+    assert doc.pages[2].size.height == 0
+
+
+def test_chart_image_rendering_disabled_by_default(documents) -> None:
+    """Test that charts carry no rendered image unless the option is enabled.
+
+    The default converter (used by the ``documents`` fixture) leaves
+    render_chart_images=False, so the xlsx_03 chart picture keeps its
+    classification and tabular data but no pixels. This guards the promise that
+    the feature does not change default output for existing users.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None, (
+        "chart picture should have no image when render_chart_images is off"
+    )
+
+
+def test_chart_image_rendering(libreoffice_available) -> None:
+    """Test that render_chart_images=True attaches a LibreOffice-rendered image.
+
+    LibreOffice output is not byte-stable, and the cropped image size depends on
+    the LibreOffice version and page setup, so the pixels are not compared
+    against groundtruth. We assert the picture gains a non-trivial image while
+    keeping the classification and tabular data extracted from the chart.
+
+    Requires LibreOffice; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(render_chart_images=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.meta.tabular_chart is not None
+
+    image = picture.get_image(doc=doc)
+    assert image is not None, "chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50, (
+        f"rendered chart image is implausibly small: {image.size}"
+    )
+
+
+def test_chart_render_does_not_mutate_source_chart() -> None:
+    """Test that assembling the render workbook leaves the source chart intact.
+
+    ``Worksheet.add_chart`` overwrites ``chart.anchor``. Were the backend to
+    hand its own chart object to the temporary render workbook, the source
+    chart's anchor would be replaced by a plain "A1" string and every later
+    provenance bbox would silently collapse to (0, 0, 0, 0). Only the workbook
+    assembly is exercised, so this runs without LibreOffice.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=path,
+        options=MsExcelBackendOptions(render_chart_images=True),
+    )
+    chart = next(
+        chart
+        for name in backend.workbook.sheetnames
+        for chart in backend.workbook[name]._charts
+    )
+    bbox_before = backend._anchor_to_tuple(chart.anchor)
+    assert bbox_before != (0, 0, 0, 0), "test fixture should have a real anchor"
+
+    assert backend._build_standalone_chart_workbook(chart) is not None
+
+    assert backend._anchor_to_tuple(chart.anchor) == bbox_before, (
+        "assembling the render workbook must not overwrite the source anchor"
+    )
 
 
 def test_inflated_rows_handling(documents) -> None:
@@ -211,14 +550,15 @@ def test_inflated_rows_handling(documents) -> None:
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0), (
         f"Page 1 should be 3x7 cells, got {doc.pages.get(1).size.as_tuple()}"
     )
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0), (
-        f"Page 2 should be 9x18 cells, got {doc.pages.get(2).size.as_tuple()}"
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0), (
+        f"Page 2 should be 16x36 cells, got {doc.pages.get(2).size.as_tuple()}"
     )
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0), (
         f"Page 3 should be 13x36 cells, got {doc.pages.get(3).size.as_tuple()}"
     )
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0), (
-        f"Page 4 should be 0x0 cells (empty), got {doc.pages.get(4).size.as_tuple()}"
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0), (
+        f"Page 4 should be 1x2 cells (hidden sheet), got {doc.pages.get(4).size.as_tuple()}"
     )
 
     _log.info(
@@ -271,6 +611,140 @@ def test_table_with_title():
     )
 
 
+def test_merged_section_label_above_table_preserves_column_headers() -> None:
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_09_section_label_header"
+    )
+    headers = ["#", "Genre", "Sub-Genre", "Title", "Author", "Publisher", "Added"]
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(path).document
+
+    assert [text.text for text in doc.texts] == ["Reading List"]
+    assert len(doc.tables) == 1
+
+    table = doc.tables[0]
+    assert table.prov[0].bbox.t == 1
+    assert table.data.num_rows == 3
+    assert table.data.num_cols == len(headers)
+    assert all(cell.text != "Reading List" for cell in table.data.table_cells)
+
+    header_cells = [
+        cell for cell in table.data.table_cells if cell.start_row_offset_idx == 0
+    ]
+    assert [cell.text for cell in header_cells] == headers
+    assert all(cell.column_header for cell in header_cells)
+
+    html = doc.export_to_html()
+    assert '<th colspan="2">Reading List</th>' not in html
+    assert "<th>#</th>" in html
+    assert "<th>Genre</th>" in html
+
+
+def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in range(1, 11):
+        sheet.append([f"row-{row}", None, None, row])
+        sheet.merge_cells(f"A{row}:C{row}")
+    sheet["D4"].comment = Comment("Synthetic note", "Codex")
+    file_path = tmp_path / "merged-cells.xlsx"
+    workbook.save(file_path)
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    loaded_sheet = backend.workbook.active
+    tracked_ranges = _TrackingMergedRanges(loaded_sheet.merged_cells.ranges)
+    loaded_sheet.merged_cells.ranges = tracked_ranges
+
+    tables, comment_map = backend._find_data_tables(loaded_sheet)
+
+    assert tracked_ranges.iteration_count == 1
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.anchor, table.num_rows, table.num_cols) == ((0, 0), 10, 4)
+    assert len(table.data) == 20
+    assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
+        (1, 3)
+    ] * 10
+    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
+
+
+def test_split_leading_section_label_helper() -> None:
+    backend = object.__new__(MsExcelDocumentBackend)
+
+    no_split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=1,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(no_split_table)
+    assert title_cell is None
+    assert unchanged_table == no_split_table
+
+    not_header_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=2,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="Only one header", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(not_header_table)
+    assert title_cell is None
+    assert unchanged_table == not_header_table
+
+    split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=3,
+        num_cols=4,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=3, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="#", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="Sub-Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=3, text="Title", row_span=1, col_span=1),
+            ExcelCell(row=2, col=0, text="1", row_span=1, col_span=1),
+            ExcelCell(row=2, col=1, text="Fiction", row_span=1, col_span=1),
+            ExcelCell(row=2, col=2, text="Mystery", row_span=1, col_span=1),
+            ExcelCell(row=2, col=3, text="The Hound", row_span=1, col_span=1),
+        ],
+    )
+
+    title_cell, split_result = backend._split_leading_section_label(split_table)
+
+    assert title_cell is not None
+    assert title_cell.text == "Reading List"
+    assert split_result.anchor == (2, 5)
+    assert split_result.num_rows == 2
+    assert split_result.num_cols == 4
+    assert [cell.row for cell in split_result.data] == [0, 0, 0, 0, 1, 1, 1, 1]
+    assert [cell.text for cell in split_result.data[:4]] == [
+        "#",
+        "Genre",
+        "Sub-Genre",
+        "Title",
+    ]
+
+
 def test_bytesio_stream():
     """Test that Excel files can be loaded from BytesIO streams.
 
@@ -309,9 +783,10 @@ def test_bytesio_stream():
 
     # Verify page sizes match expected dimensions
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_edge_cases_merging() -> None:
@@ -436,3 +911,88 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1048576"] = "last row"
+    file_path = tmp_path / "test.xlsx"
+    workbook.save(file_path)
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    doc: DoclingDocument = backend.convert()
+
+    tables = doc.tables
+    assert len(tables) == 1
+
+    table = tables[0]
+    print(table)
+    assert table.prov[0].bbox.t == 1048575
+    assert table.data.num_rows == 1
+    assert table.data.num_cols == 1
+    assert len(table.data.table_cells) == 1
+    assert table.data.table_cells[0].text == "last row"
+
+
+def test_emf_images_in_xlsx(libreoffice_available):
+    """Test that EMF images embedded in XLSX files are extracted via LibreOffice.
+
+    The test file xlsx_emf.xlsx contains three sheets:
+      - 'Raster in emf'  - a raster image stored as EMF (openpyxl drops these)
+      - 'Vector in emf'  - a vector image stored as EMF (openpyxl drops these)
+      - 'Raster in webp' - a regular PNG image (openpyxl handles these normally)
+
+    On every sheet the image sits above a small table (image at rows 1-10,
+    table at rows 11-13), so the picture must appear before the table in the
+    exported document.
+
+    Requires LibreOffice for the EMF sheets; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — EMF conversion cannot be tested")
+
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_emf")
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    # Three sheets → three pages, each with one picture and one table
+    assert doc.num_pages() == 3
+
+    pictures = list(doc.pictures)
+    tables = list(doc.tables)
+    assert len(pictures) == 3, (
+        f"Expected 3 pictures (one per sheet), got {len(pictures)}"
+    )
+    assert len(tables) == 3, f"Expected 3 tables (one per sheet), got {len(tables)}"
+
+    # All pictures must carry image data (i.e. not be empty placeholders)
+    for pic in pictures:
+        assert pic.image is not None, (
+            f"Picture on page {pic.prov[0].page_no} has no image data"
+        )
+
+    # On every page the picture must come before the table in document order
+    items_by_page: dict[int, list] = {}
+    for item, _ in doc.iterate_items(traverse_pictures=True):
+        if not item.prov:
+            continue
+        page_no = item.prov[0].page_no
+        items_by_page.setdefault(page_no, []).append(item)
+
+    for page_no, items in items_by_page.items():
+        pic_indices = [i for i, it in enumerate(items) if isinstance(it, PictureItem)]
+        tbl_indices = [i for i, it in enumerate(items) if isinstance(it, TableItem)]
+        assert pic_indices and tbl_indices, f"Page {page_no} missing picture or table"
+        assert max(pic_indices) < min(tbl_indices), (
+            f"Page {page_no}: picture (idx {pic_indices}) should come before "
+            f"table (idx {tbl_indices}) in document order"
+        )

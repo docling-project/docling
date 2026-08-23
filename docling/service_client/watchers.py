@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from typing import Protocol
 
+from websockets.asyncio.client import connect as async_ws_connect
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.sync.client import connect
 
@@ -42,6 +44,24 @@ def _poll_sleep_duration(
     return max(0.0, min(poll_interval, remaining) - elapsed)
 
 
+def _process_ws_envelope(
+    envelope: WebsocketMessage,
+    task_id: str,
+) -> TaskStatusResponse | None:
+    """Return the TaskStatusResponse from an envelope, or None for CONNECTION frames.
+
+    Raises TaskNotFoundError or ServiceUnavailableError on error frames.
+    """
+    if envelope.error:
+        if envelope.error == "Task not found.":
+            raise TaskNotFoundError(f"Task {task_id} was not found.")
+        raise ServiceUnavailableError(
+            "WebSocket status stream failed.",
+            detail=envelope.error,
+        )
+    return envelope.task
+
+
 class StatusWatcher(Protocol):
     """Protocol for job status watchers."""
 
@@ -50,6 +70,18 @@ class StatusWatcher(Protocol):
     ) -> Iterator[TaskStatusResponse]: ...
 
     def wait_for_terminal(
+        self, task_id: str, timeout: float | None
+    ) -> TaskStatusResponse: ...
+
+
+class AsyncStatusWatcher(Protocol):
+    """Protocol for async job status watchers."""
+
+    def iter_updates(
+        self, task_id: str, timeout: float | None
+    ) -> AsyncIterator[TaskStatusResponse]: ...
+
+    async def wait_for_terminal(
         self, task_id: str, timeout: float | None
     ) -> TaskStatusResponse: ...
 
@@ -208,20 +240,13 @@ class WebSocketWatcher:
 
                 raw_message = websocket.recv(timeout=remaining)
                 envelope = WebsocketMessage.model_validate_json(raw_message)
+                status = _process_ws_envelope(envelope, task_id)
 
-                if envelope.error:
-                    if envelope.error == "Task not found.":
-                        raise TaskNotFoundError(f"Task {task_id} was not found.")
-                    raise ServiceUnavailableError(
-                        "WebSocket status stream failed.",
-                        detail=envelope.error,
-                    )
-
-                if envelope.task is None:
+                if status is None:
                     continue
 
-                yield envelope.task
-                if is_terminal_task_status(envelope.task):
+                yield status
+                if is_terminal_task_status(status):
                     return
 
                 # Only send "next" for UPDATE messages.  The server sends
@@ -242,4 +267,189 @@ class WebSocketWatcher:
                         # Once the server websocket contract is simplified to
                         # a pure push stream, remove the "next" handshake
                         # entirely instead of keeping this special case.
+                        return
+
+
+class AsyncPollingWatcher:
+    """Async status watcher using `GET /v1/status/poll/{task_id}` with server-side wait."""
+
+    def __init__(
+        self,
+        poll_status: Callable[[str, float], Awaitable[TaskStatusResponse]],
+        poll_server_wait: float,
+        poll_client_interval: float | None,
+        default_timeout: float,
+    ) -> None:
+        self._poll_status = poll_status
+        self._poll_server_wait = poll_server_wait
+        self._poll_client_interval = (
+            poll_server_wait if poll_client_interval is None else poll_client_interval
+        )
+        self._default_timeout = default_timeout
+
+    async def iter_updates(
+        self, task_id: str, timeout: float | None = None
+    ) -> AsyncIterator[TaskStatusResponse]:  # type: ignore[override]
+        wait_timeout = self._default_timeout if timeout is None else timeout
+        deadline = time.monotonic() + wait_timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TaskTimeoutError(
+                    f"Timed out waiting for task {task_id} after {wait_timeout:.2f}s."
+                )
+
+            poll_wait = min(self._poll_server_wait, remaining)
+            poll_started = time.monotonic()
+            update = await self._poll_status(task_id, poll_wait)
+            yield update
+            if is_terminal_task_status(update):
+                return
+
+            # Keep a minimum client-side poll cadence when server-side wait is ignored.
+            sleep_for = _poll_sleep_duration(
+                poll_started=poll_started,
+                poll_interval=self._poll_client_interval,
+                deadline=deadline,
+            )
+            if sleep_for > 0:
+                await asyncio.sleep(sleep_for)
+
+    async def wait_for_terminal(
+        self, task_id: str, timeout: float | None = None
+    ) -> TaskStatusResponse:
+        final_status: TaskStatusResponse | None = None
+        async for update in self.iter_updates(task_id=task_id, timeout=timeout):
+            final_status = update
+
+        if final_status is None:
+            raise TaskTimeoutError(
+                f"Timed out waiting for task {task_id} to emit status updates."
+            )
+        return final_status
+
+
+class AsyncWebSocketWatcher:
+    """Async status watcher using `WS /v1/status/ws/{task_id}` with poll fallback."""
+
+    def __init__(
+        self,
+        ws_url_for_task: Callable[[str], str],
+        poll_fallback: AsyncPollingWatcher | None,
+        fallback_to_poll: bool,
+        connect_timeout: float,
+        default_timeout: float,
+        additional_headers: dict[str, str] | None = None,
+    ) -> None:
+        self._ws_url_for_task = ws_url_for_task
+        self._poll_fallback = poll_fallback
+        self._fallback_to_poll = fallback_to_poll
+        self._connect_timeout = connect_timeout
+        self._default_timeout = default_timeout
+        self._additional_headers = additional_headers or {}
+
+    async def iter_updates(
+        self, task_id: str, timeout: float | None = None
+    ) -> AsyncIterator[TaskStatusResponse]:  # type: ignore[override]
+        wait_timeout = self._default_timeout if timeout is None else timeout
+        try:
+            async for update in self._iter_ws_updates(
+                task_id=task_id, timeout=wait_timeout
+            ):
+                yield update
+        except ServiceUnavailableError:
+            if self._fallback_to_poll and self._poll_fallback is not None:
+                async for update in self._poll_fallback.iter_updates(
+                    task_id=task_id, timeout=wait_timeout
+                ):
+                    yield update
+                return
+            raise
+
+    async def wait_for_terminal(
+        self, task_id: str, timeout: float | None = None
+    ) -> TaskStatusResponse:
+        final_status: TaskStatusResponse | None = None
+        async for update in self.iter_updates(task_id=task_id, timeout=timeout):
+            final_status = update
+
+        if final_status is None:
+            raise TaskTimeoutError(
+                f"Timed out waiting for task {task_id} to emit status updates."
+            )
+        return final_status
+
+    async def _iter_ws_updates(
+        self, task_id: str, timeout: float
+    ) -> AsyncIterator[TaskStatusResponse]:  # type: ignore[override]
+        ws_url = self._ws_url_for_task(task_id)
+        deadline = time.monotonic() + timeout
+
+        for attempt in range(WS_MAX_RECONNECT_ATTEMPTS + 1):
+            try:
+                async for update in self._iter_ws_connection(
+                    ws_url, task_id, deadline, timeout
+                ):
+                    yield update
+                return
+            except (ConnectionClosedError, OSError) as exc:
+                remaining = deadline - time.monotonic()
+                if attempt >= WS_MAX_RECONNECT_ATTEMPTS or remaining <= 0:
+                    raise ServiceUnavailableError(
+                        "WebSocket status stream is unavailable.", detail=str(exc)
+                    ) from exc
+                delay = min(WS_RECONNECT_BACKOFF_BASE_SECONDS * (2**attempt), remaining)
+                _logger.warning(
+                    "WebSocket connection dropped for task %s: %s — reconnecting in %.1fs",
+                    task_id,
+                    exc,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+            except (TaskTimeoutError, TaskNotFoundError, ServiceUnavailableError):
+                raise
+            except Exception as exc:
+                raise ServiceUnavailableError(
+                    "WebSocket status stream is unavailable.", detail=str(exc)
+                ) from exc
+
+    async def _iter_ws_connection(
+        self, ws_url: str, task_id: str, deadline: float, timeout: float
+    ) -> AsyncIterator[TaskStatusResponse]:  # type: ignore[override]
+        async with async_ws_connect(
+            ws_url,
+            open_timeout=self._connect_timeout,
+            close_timeout=self._connect_timeout,
+            additional_headers=self._additional_headers,
+        ) as websocket:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TaskTimeoutError(
+                        f"Timed out waiting for task {task_id} after {timeout:.2f}s."
+                    )
+
+                try:
+                    raw_message = await asyncio.wait_for(
+                        websocket.recv(), timeout=remaining
+                    )
+                except asyncio.TimeoutError:
+                    raise TaskTimeoutError(
+                        f"Timed out waiting for task {task_id} after {timeout:.2f}s."
+                    )
+
+                envelope = WebsocketMessage.model_validate_json(raw_message)
+                status = _process_ws_envelope(envelope, task_id)
+
+                if status is None:
+                    continue
+
+                yield status
+                if is_terminal_task_status(status):
+                    return
+
+                if envelope.message == MessageKind.UPDATE:
+                    try:
+                        await websocket.send("next")
+                    except ConnectionClosedOK:
                         return

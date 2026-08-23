@@ -38,7 +38,8 @@ class OcrMacModel(BaseOcrModel):
         )
         self.options: OcrMacOptions
 
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         if self.enabled:
             if "darwin" != sys.platform:
@@ -107,10 +108,10 @@ class OcrMacModel(BaseOcrModel):
                             x2 = x1 + w * im_width
                             y1 = y2 - h * im_height
 
-                            left = x1 / self.scale
-                            top = y1 / self.scale
-                            right = x2 / self.scale
-                            bottom = y2 / self.scale
+                            left = x1 / self.scale + ocr_rect.l
+                            top = y1 / self.scale + ocr_rect.t
+                            right = x2 / self.scale + ocr_rect.l
+                            bottom = y2 / self.scale + ocr_rect.t
 
                             cells.append(
                                 TextCell(
@@ -132,7 +133,7 @@ class OcrMacModel(BaseOcrModel):
                         all_ocr_cells.extend(cells)
 
                     # Post-process the cells
-                    self.post_process_cells(all_ocr_cells, page)
+                    self.post_process_cells(all_ocr_cells, page, conv_res)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

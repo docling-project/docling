@@ -9,6 +9,7 @@ This module defines:
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
 from pydantic import BaseModel, Field
@@ -19,6 +20,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
+from docling.datamodel.vlm_prompts import (
+    CHANDRA_OCR_LAYOUT_PROMPT,
+    DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR_GROUNDING_PROMPT,
+)
 from docling.models.inference_engines.image_classification.base import (
     ImageClassificationEngineType,
 )
@@ -159,9 +165,23 @@ class VlmModelSpec(BaseModel):
         default_factory=list, description="Stop strings for generation"
     )
 
+    temperature: float = Field(
+        default=0.0, description="Sampling temperature for generation"
+    )
+
     max_new_tokens: int = Field(
         default=4096, description="Maximum number of new tokens to generate"
     )
+
+    extra_generation_config: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional generation configuration"
+    )
+
+    _RUNTIME_INPUT_OVERRIDE_KEYS: ClassVar[Set[str]] = {
+        "transformers_prompt_style",
+        "extra_processor_kwargs",
+        "custom_stopping_criteria",
+    }
 
     def get_repo_id(self, engine_type: VlmEngineType) -> str:
         """Get the repository ID for a specific engine.
@@ -237,16 +257,47 @@ class VlmModelSpec(BaseModel):
         repo_id = self.get_repo_id(engine_type)
         revision = self.get_revision(engine_type)
 
-        # Get engine-specific extra_config
+        # Get engine-specific extra_config and torch_dtype
         extra_config = {}
+        torch_dtype = None
         if engine_type in self.engine_overrides:
             extra_config = self.engine_overrides[engine_type].extra_config.copy()
+            torch_dtype = self.engine_overrides[engine_type].torch_dtype
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
+            torch_dtype=torch_dtype,
             extra_config=extra_config,
         )
+
+    def get_runtime_input_extra_config(
+        self, engine_type: VlmEngineType
+    ) -> Dict[str, Any]:
+        """Build runtime input config for a specific engine.
+
+        This returns only the subset of model/engine configuration that should
+        flow into ``VlmEngineInput.extra_generation_config``. Load-time engine
+        options such as ``torch_dtype`` or ``transformers_model_type`` remain in
+        ``EngineModelConfig.extra_config`` and are intentionally excluded.
+        """
+
+        runtime_config: Dict[str, Any] = deepcopy(self.extra_generation_config)
+
+        if engine_type not in self.engine_overrides:
+            return runtime_config
+
+        override_config = self.engine_overrides[engine_type].extra_config
+        nested_generation_config = override_config.get("extra_generation_config")
+
+        if isinstance(nested_generation_config, dict):
+            runtime_config.update(deepcopy(nested_generation_config))
+
+        for key in self._RUNTIME_INPUT_OVERRIDE_KEYS:
+            if key in override_config:
+                runtime_config[key] = deepcopy(override_config[key])
+
+        return runtime_config
 
     def has_explicit_engine_export(self, engine_type: VlmEngineType) -> bool:
         """Check if this model has an explicit export for the given engine.
@@ -955,6 +1006,55 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
 )
 
+# Only Heron has an ONNX export, hence no engine_overrides on the variants below.
+OBJECT_DETECTION_LAYOUT_HERON_101 = ObjectDetectionStagePreset(
+    preset_id="layout_heron_101",
+    name="Layout Heron 101",
+    description="RT-DETR layout-heron model (ResNet101)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron_101",
+        repo_id="docling-project/docling-layout-heron-101",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM = ObjectDetectionStagePreset(
+    preset_id="layout_egret_medium",
+    name="Layout Egret Medium",
+    description="D-FINE layout-egret model (medium)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_medium",
+        repo_id="docling-project/docling-layout-egret-medium",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_LARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_large",
+    name="Layout Egret Large",
+    description="D-FINE layout-egret model (large)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_large",
+        repo_id="docling-project/docling-layout-egret-large",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+OBJECT_DETECTION_LAYOUT_EGRET_XLARGE = ObjectDetectionStagePreset(
+    preset_id="layout_egret_xlarge",
+    name="Layout Egret XLarge",
+    description="D-FINE layout-egret model (xlarge)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_egret_xlarge",
+        repo_id="docling-project/docling-layout-egret-xlarge",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
 
 # -----------------------------------------------------------------------------
 # IMAGE CLASSIFICATION PRESETS
@@ -1259,8 +1359,11 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="GLM-OCR-0.9B",
         default_repo_id="zai-org/GLM-OCR",
+        # GLM-OCR supports three prompts: "Text Recognition:", "Formula Recognition:",
+        # "Table Recognition:". We use text-only for full-page document conversion.
         prompt="Text Recognition:",
         response_format=ResponseFormat.MARKDOWN,
+        stop_strings=["<|user|>", "<|endoftext|>"],
         engine_overrides={
             # Native GLM-OCR support was added to mlx-vlm in v0.3.11.
             VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/GLM-OCR-bf16"),
@@ -1269,7 +1372,13 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
                     "torch_dtype": "bfloat16",
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
                 },
             ),
         },
@@ -1278,6 +1387,12 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                 params={"model": "zai-org/GLM-OCR", "max_tokens": 4096}
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
                 params={"model": "glm-ocr", "max_tokens": 4096}
             ),
         },
@@ -1497,4 +1612,163 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# -----------------------------------------------------------------------------
+# CHANDRA / DOTS VLM_CONVERT PRESETS
+# -----------------------------------------------------------------------------
+
+VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
+    preset_id="unlimited_ocr",
+    name="Unlimited-OCR",
+    description="Unlimited-OCR model for document layout parsing with bounding boxes (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR",
+        default_repo_id="baidu/Unlimited-OCR",
+        prompt=UNLIMITED_OCR_GROUNDING_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        max_new_tokens=8192,
+        api_overrides={
+            # The model has no chat template, and its grounding markers are special
+            # tokens: without skip_special_tokens=False the layout annotations are
+            # stripped from the completion and the page comes back as flat text.
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "unlimited-ocr",
+                    "max_tokens": 8192,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
+
+VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
+    preset_id="chandra_ocr2",
+    name="Chandra-OCR-2",
+    description="Chandra OCR 2 model for document layout parsing with bounding boxes (5.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Chandra-OCR-2-5.3B",
+        default_repo_id="datalab-to/chandra-ocr-2",
+        prompt=CHANDRA_OCR_LAYOUT_PROMPT,
+        response_format=ResponseFormat.CHANDRA_HTML,
+        max_new_tokens=12384,
+        trust_remote_code=True,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "datalab-to/chandra-ocr-2", "max_tokens": 12384}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# NOTE: dots.ocr/mocr require transformers<=4.57.x for the transformers engine.
+# Under transformers 5.x, generation produces incorrect coordinates (single fullpage
+# bbox). The vllm engine path is unaffected.
+VLM_CONVERT_DOTS_OCR = StageModelPreset(
+    preset_id="dots_ocr",
+    name="Dots-OCR",
+    description="dots.ocr model for multilingual document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.ocr-3B",
+        default_repo_id="rednote-hilab/dots.ocr",
+        prompt=DOTS_LAYOUT_PROMPT,
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.ocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.VLLM,
+)
+
+VLM_CONVERT_DOTS_MOCR = StageModelPreset(
+    preset_id="dots_mocr",
+    name="Dots-MOCR",
+    description="dots.mocr multimodal OCR model for document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.mocr-3B",
+        default_repo_id="rednote-hilab/dots.mocr",
+        prompt=DOTS_LAYOUT_PROMPT,
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.VLLM,
 )
