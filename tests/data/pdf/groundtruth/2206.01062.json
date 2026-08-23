@@ -28141,7 +28141,7 @@
               "l": 358.64,
               "t": 153.53,
               "r": 401.73,
-              "b": 172.29,
+              "b": 161.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -28150,7 +28150,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Class-count Split",
+            "text": "Class-count",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -28192,6 +28192,26 @@
             "end_col_offset_idx": 5,
             "text": "5",
             "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 358.64,
+              "t": 164.49,
+              "r": 375.27,
+              "b": 172.29,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Split",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
@@ -29247,7 +29267,7 @@
                 "l": 358.64,
                 "t": 153.53,
                 "r": 401.73,
-                "b": 172.29,
+                "b": 161.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -29256,7 +29276,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Class-count Split",
+              "text": "Class-count",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -29345,13 +29365,20 @@
           ],
           [
             {
+              "bbox": {
+                "l": 358.64,
+                "t": 164.49,
+                "r": 375.27,
+                "b": 172.29,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "Split",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -30767,7 +30794,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -30847,7 +30874,7 @@
             "end_col_offset_idx": 2,
             "text": "Sec-header",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -30927,7 +30954,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31007,7 +31034,7 @@
             "end_col_offset_idx": 2,
             "text": "Text",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31087,7 +31114,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31187,7 +31214,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31267,7 +31294,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31347,7 +31374,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31419,10 +31446,10 @@
               "b": 315.95,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 2,
+            "row_span": 5,
             "col_span": 1,
             "start_row_offset_idx": 10,
-            "end_row_offset_idx": 12,
+            "end_row_offset_idx": 15,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "DocLayNet (DLN)",
@@ -31447,7 +31474,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31527,7 +31554,7 @@
             "end_col_offset_idx": 2,
             "text": "Sec-header",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31607,7 +31634,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31687,7 +31714,7 @@
             "end_col_offset_idx": 2,
             "text": "Text",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -31767,7 +31794,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": false,
+            "row_header": true,
             "row_section": false,
             "fillable": false
           },
@@ -32063,7 +32090,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32165,7 +32192,7 @@
               "end_col_offset_idx": 2,
               "text": "Sec-header",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32267,7 +32294,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32369,7 +32396,7 @@
               "end_col_offset_idx": 2,
               "text": "Text",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32471,7 +32498,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32573,7 +32600,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32675,7 +32702,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32777,7 +32804,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32851,10 +32878,10 @@
                 "b": 315.95,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 2,
+              "row_span": 5,
               "col_span": 1,
               "start_row_offset_idx": 10,
-              "end_row_offset_idx": 12,
+              "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "DocLayNet (DLN)",
@@ -32879,7 +32906,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32953,10 +32980,10 @@
                 "b": 315.95,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 2,
+              "row_span": 5,
               "col_span": 1,
               "start_row_offset_idx": 10,
-              "end_row_offset_idx": 12,
+              "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "DocLayNet (DLN)",
@@ -32981,7 +33008,7 @@
               "end_col_offset_idx": 2,
               "text": "Sec-header",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33048,15 +33075,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 308.15,
+                "r": 144.67,
+                "b": 315.95,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 12,
-              "end_row_offset_idx": 13,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "DocLayNet (DLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33076,7 +33110,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33143,15 +33177,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 308.15,
+                "r": 144.67,
+                "b": 315.95,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 13,
-              "end_row_offset_idx": 14,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "DocLayNet (DLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33171,7 +33212,7 @@
               "end_col_offset_idx": 2,
               "text": "Text",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33238,15 +33279,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 308.15,
+                "r": 144.67,
+                "b": 315.95,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 14,
+              "start_row_offset_idx": 10,
               "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "DocLayNet (DLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -33266,7 +33314,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
