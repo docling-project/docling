@@ -141,6 +141,51 @@ class TestSanitizeTextLigatures:
         assert _LIGATURE_RE.search("\uf0a0") is not None, "U+F0A0 not matched by regex"
 
 
+class TestSanitizeTextHyphenation:
+    """Tests for end-of-line hyphen handling in sanitize_text()."""
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            (["algo-", "rithms"], "algorithms"),
+            (["the veri-", "fication step"], "the verification step"),
+        ],
+    )
+    def test_attached_hyphen_joins_split_word(self, model, lines, expected):
+        """A hyphen attached to the previous word marks a word split and is dropped."""
+        assert model.sanitize_text(list(lines)) == expected
+
+    def test_attached_hyphen_on_non_alnum_token_is_kept(self, model):
+        """An underscore-bearing token is not treated as a split word (unchanged)."""
+        assert model.sanitize_text(["foo_bar-", "baz"]) == "foo_bar-baz"
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            # Wrapped CLI flag, as reported: the dash must not be swallowed.
+            (
+                ["gsh create_diameter_peer -ip 10.0.8.72 -pn 1 -", "prio 3 -dh mme"],
+                "gsh create_diameter_peer -ip 10.0.8.72 -pn 1 - prio 3 -dh mme",
+            ),
+            # Separator dash between title parts.
+            (
+                ["editors, Computer Vision -", "ECCV 2020 , pages 564-580"],
+                "editors, Computer Vision - ECCV 2020 , pages 564-580",
+            ),
+            # Bullet marker isolated on its own line.
+            (
+                ["-", "Human Resources can see the unmasked TAX_ID"],
+                "- Human Resources can see the unmasked TAX_ID",
+            ),
+            # Wrapped negative number: the sign must survive.
+            (["cost is -", "5.00 USD"], "cost is - 5.00 USD"),
+        ],
+    )
+    def test_detached_hyphen_is_preserved(self, model, lines, expected):
+        """A hyphen following whitespace is a literal character, not a word split."""
+        assert model.sanitize_text(list(lines)) == expected
+
+
 def _make_page(hyperlinks: list[PdfHyperlink], page_height: float = 100.0) -> Page:
     """Create a Page with mocked parsed_page carrying the given hyperlinks."""
     page = Page(page_no=0, size=Size(width=200, height=page_height))

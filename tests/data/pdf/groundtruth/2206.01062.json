@@ -12874,12 +12874,12 @@
           },
           "charspan": [
             0,
-            279
+            281
           ]
         }
       ],
-      "orig": "[2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
-      "text": "Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
+      "orig": "[2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts - rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
+      "text": "Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts - rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
       "enumerated": true,
       "marker": "[2]"
     },
@@ -15121,10 +15121,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.79,
-            "t": 543.26,
-            "r": 554.34,
-            "b": 266.09,
+            "l": 322.78,
+            "t": 543.27,
+            "r": 554.33,
+            "b": 266.1,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

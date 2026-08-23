@@ -10,7 +10,7 @@
 <otsl><loc_258><loc_146><loc_439><loc_191><ched>1<nl></otsl>
 <text><loc_437><loc_224><loc_441><loc_228>7</text>
 <otsl><loc_258><loc_274><loc_439><loc_313><fcel>0<fcel>1 2 1<lcel><lcel><nl><fcel>3 4<fcel>5<fcel>6<fcel>7<nl><fcel>9 13<fcel>10<fcel>11<fcel>12<nl><fcel>8 2<fcel>14<fcel>15<fcel>16<nl><fcel>17<fcel>18<fcel>19<fcel>20<nl></otsl>
-<picture><loc_257><loc_143><loc_439><loc_313><caption><loc_252><loc_325><loc_445><loc_353>Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.</caption></picture>
+<picture><loc_257><loc_142><loc_440><loc_313><caption><loc_252><loc_325><loc_445><loc_353>Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.</caption></picture>
 <text><loc_252><loc_369><loc_445><loc_420>Recently, significant progress has been made with vision based approaches to extract tables in documents. For the sake of completeness, the issue of table extraction from documents is typically decomposed into two separate challenges, i.e. (1) finding the location of the table(s) on a document-page and (2) finding the structure of a given table in the document.</text>
 <text><loc_252><loc_422><loc_445><loc_450><loc_41><loc_48><loc_234><loc_61>The first problem is called table-location and has been previously addressed [30, 38, 19, 21, 23, 26, 8] with stateof-the-art object-detection networks (e.g. YOLO and later on Mask-RCNN [9]). For all practical purposes, it can be considered as a solved problem, given enough ground-truth data to train on.</text>
 <page_footer><loc_241><loc_464><loc_245><loc_469>1</page_footer>
@@ -151,7 +151,7 @@
 <list_item><loc_41><loc_376><loc_234><loc_401>Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 4651-4659, 2016. 4</list_item>
 <list_item><loc_41><loc_403><loc_234><loc_436>Xinyi Zheng, Doug Burdick, Lucian Popa, Peter Zhong, and Nancy Xin Ru Wang. Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. Winter Conference for Applications in Computer Vision (WACV) , 2021. 2, 3</list_item>
 <list_item><loc_41><loc_438><loc_234><loc_450>Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,</list_item>
-<list_item><loc_269><loc_48><loc_445><loc_74>and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7</list_item>
+<list_item><loc_269><loc_48><loc_445><loc_74>and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7</list_item>
 <list_item><loc_252><loc_76><loc_445><loc_102>Xu Zhong, Jianbin Tang, and Antonio Jimeno Yepes. Publaynet: Largest dataset ever for document layout analysis. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 1015-1022, 2019. 1</list_item>
 </unordered_list>
 <page_footer><loc_239><loc_464><loc_247><loc_469>10</page_footer>

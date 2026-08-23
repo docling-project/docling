@@ -120,13 +120,24 @@ class PageAssembleModel(BasePageModel):
                 prev_words = re.findall(r"\b[\w]+\b", prev_line)
                 line_words = re.findall(r"\b[\w]+\b", line)
 
+                # Only a hyphen attached to the preceding word marks a word
+                # split ("algo-" / "rithms"); that hyphen is dropped and the two
+                # halves are closed up. A hyphen that follows whitespace is a
+                # literal character -- a separator dash, a bullet marker, or a
+                # wrapped hyphen-prefixed token -- so it is kept, and the lines
+                # are joined with a space like any other line break.
+                hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
+
                 if (
-                    len(prev_words)
+                    hyphen_attached_to_word
+                    and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
                     and line_words[0].isalnum()
                 ):
                     lines[ix] = prev_line[:-1]
+                elif not hyphen_attached_to_word:
+                    lines[ix] += " "
             else:
                 lines[ix] += " "
 
