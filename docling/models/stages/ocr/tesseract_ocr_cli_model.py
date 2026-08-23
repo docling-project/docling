@@ -274,7 +274,9 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
-        self._tesseract_languages = df_list[0].tolist()[1:]
+        self._tesseract_languages = [
+            lang.replace("\\", "/") for lang in df_list[0].tolist()[1:]
+        ]
 
         # Decide the script prefix
         if any(lang.startswith("script/") for lang in self._tesseract_languages):
