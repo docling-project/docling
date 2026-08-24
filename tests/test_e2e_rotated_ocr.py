@@ -14,10 +14,11 @@ the impact is worse than an empty string: FURNITURE becomes ``/Artifact`` in the
 tag tree, so a "successful" conversion yields a document that assistive
 technology reads as completely empty.
 
-The image is generated synthetically (deterministic, no fixture file): a few
-lines of small text at the top margin land at the bottom margin after a 180°
-rotation, where the layout model classifies them ``page_footer``. The text is
-deliberately dense enough (multiple long lines) to clear Tesseract OSD's
+The fixture (``tests/data/ocr/sources/rotated_180_dense_text.png``, viewable
+in the repo; regenerate by running this file as a script) is an upright page
+whose few lines of small top-margin text land at the bottom margin after the
+180° rotation, where the layout model classifies them ``page_footer``. The text
+is deliberately dense enough (multiple long lines) to clear Tesseract OSD's
 minimum-character floor — so OSD detects the rotation and the text is OCR'd
 correctly, isolating the *label* bug. (A single sparse line can fall below OSD's
 floor and fail for the wrong reason — mirrored OCR text — instead of exercising
@@ -31,9 +32,9 @@ xpasses once pre-layout orientation detection lands — remove the marker then.
 
 import importlib.util
 import shutil
+from pathlib import Path
 
 import pytest
-from PIL import Image, ImageDraw, ImageFont
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
@@ -45,6 +46,8 @@ from docling.document_converter import DocumentConverter, ImageFormatOption
 
 _LINE = "Certified 2026 reference ZQXPHOENIX 7742 north garage roof warranty batch A"
 _MARKER = "ZQXPHOENIX"
+
+_FIXTURES = {180: Path("./tests/data/ocr/sources/rotated_180_dense_text.png")}
 
 _BACKENDS = [
     pytest.param(
@@ -66,21 +69,19 @@ _BACKENDS = [
 ]
 
 
-def _make_rotated_image(tmp_path, angle):
-    """An upright page with a small dense top-margin block, saved rotated ``angle``°."""
+def _generate_fixture(angle):
+    """Regenerate the checked-in fixture: an upright page with a small dense
+    top-margin block, saved rotated ``angle``°. Run this file as a script."""
+    from PIL import Image, ImageDraw, ImageFont
+
     img = Image.new("RGB", (1700, 2200), "white")
     draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("DejaVuSans.ttf", 22)
-    except OSError:
-        font = ImageFont.load_default()
+    font = ImageFont.truetype("DejaVuSans.ttf", 22)
     y = 15
     for _ in range(3):  # enough characters to clear OSD's floor; thin edge strip
         draw.text((60, y), _LINE, fill="black", font=font)
         y += 33
-    path = tmp_path / f"rotated_{angle}.png"
-    img.rotate(angle, expand=True).save(path)
-    return path
+    img.rotate(angle, expand=True).save(_FIXTURES[angle])
 
 
 def _convert(path, ocr_options_cls):
@@ -101,10 +102,10 @@ def _convert(path, ocr_options_cls):
 )
 @pytest.mark.parametrize("ocr_options_cls", _BACKENDS)
 @pytest.mark.parametrize("angle", [180])
-def test_rotated_page_ocr_text_reaches_default_export(tmp_path, angle, ocr_options_cls):
+def test_rotated_page_ocr_text_reaches_default_export(angle, ocr_options_cls):
     from docling_core.types.doc import ContentLayer
 
-    doc = _convert(_make_rotated_image(tmp_path, angle), ocr_options_cls)
+    doc = _convert(_FIXTURES[angle], ocr_options_cls)
 
     # Sanity: the text IS recognized — recoverable via the furniture layer.
     recovered = doc.export_to_markdown(
@@ -119,3 +120,8 @@ def test_rotated_page_ocr_text_reaches_default_export(tmp_path, angle, ocr_optio
         f"rotated-page ({angle}°) OCR text is silently dropped from the default "
         f"export (docling#3839) — it lands in a header/footer FURNITURE item"
     )
+
+
+if __name__ == "__main__":
+    for _angle in _FIXTURES:
+        _generate_fixture(_angle)
