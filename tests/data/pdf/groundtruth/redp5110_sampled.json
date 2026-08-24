@@ -387,16 +387,22 @@
         "$ref": "#/pictures/11"
       },
       {
+        "$ref": "#/groups/10"
+      },
+      {
         "$ref": "#/pictures/12"
       },
       {
         "$ref": "#/texts/210"
       },
       {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       {
         "$ref": "#/pictures/13"
+      },
+      {
+        "$ref": "#/groups/12"
       },
       {
         "$ref": "#/pictures/14"
@@ -658,9 +664,6 @@
       "children": [
         {
           "$ref": "#/texts/201"
-        },
-        {
-          "$ref": "#/texts/208"
         }
       ],
       "content_layer": "body",
@@ -674,8 +677,33 @@
       },
       "children": [
         {
+          "$ref": "#/texts/208"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
           "$ref": "#/texts/211"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/213"
         }
@@ -6405,7 +6433,7 @@
     {
       "self_ref": "#/texts/208",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -6488,7 +6516,7 @@
     {
       "self_ref": "#/texts/211",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -6544,7 +6572,7 @@
     {
       "self_ref": "#/texts/213",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",

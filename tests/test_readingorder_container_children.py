@@ -10,7 +10,13 @@ from docling_core.types.doc import (
     Size,
     TableCell,
 )
-from docling_core.types.doc.document import GroupItem, PictureItem, TableItem, TextItem
+from docling_core.types.doc.document import (
+    ContentLayer,
+    GroupItem,
+    PictureItem,
+    TableItem,
+    TextItem,
+)
 
 from docling.datamodel.base_models import (
     AssembledUnit,
@@ -53,11 +59,12 @@ def _conversion_result(elements: list[PageElement]) -> ConversionResult:
     )
 
 
-def test_container_preserves_typed_table_and_picture_children() -> None:
+def test_container_orders_mixed_children_uniformly() -> None:
     table_cluster = _cluster(2, DocItemLabel.TABLE, (10, 10, 150, 100))
     picture_cluster = _cluster(3, DocItemLabel.PICTURE, (200, 200, 300, 300))
+    text_cluster = _cluster(4, DocItemLabel.TEXT, (10, 120, 150, 160))
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 400, 400))
-    container_cluster.children = [table_cluster, picture_cluster]
+    container_cluster.children = [picture_cluster, text_cluster, table_cluster]
 
     table = Table(
         label=DocItemLabel.TABLE,
@@ -83,23 +90,21 @@ def test_container_preserves_typed_table_and_picture_children() -> None:
         page_no=1,
         cluster=picture_cluster,
     )
+    text = TextElement(
+        label=DocItemLabel.TEXT,
+        id=4,
+        text="middle",
+        page_no=1,
+        cluster=text_cluster,
+    )
     container = ContainerElement(
         label=DocItemLabel.FORM,
         id=1,
         page_no=1,
         cluster=container_cluster,
     )
-    conv_res = _conversion_result([container, table, picture])
-    model = object.__new__(ReadingOrderModel)
-    ro_elements = model._assembled_to_readingorder_elements(conv_res)
-
-    doc = model._readingorder_elements_to_docling_doc(
-        conv_res,
-        ro_elements,
-        el_to_captions_mapping={},
-        el_to_footnotes_mapping={},
-        el_merges_mapping={},
-    )
+    conv_res = _conversion_result([container, picture, text, table])
+    doc = ReadingOrderModel(ReadingOrderOptions())(conv_res)
 
     form = next(
         item
@@ -107,11 +112,16 @@ def test_container_preserves_typed_table_and_picture_children() -> None:
         if isinstance(item, GroupItem) and item.label == GroupLabel.FORM_AREA
     )
     children = [child.resolve(doc) for child in form.children]
-    assert [type(child) for child in children] == [TableItem, PictureItem]
+    assert [type(child) for child in children] == [
+        TableItem,
+        TextItem,
+        PictureItem,
+    ]
     assert len(doc.body.children) == 1
     assert len(doc.tables) == 1
     assert doc.tables[0].data.table_cells[0].text == "value"
     assert len(doc.pictures) == 1
+    assert [item.text for item in doc.texts] == ["middle"]
 
 
 def test_container_table_owns_picture_matched_to_rich_cell() -> None:
@@ -152,15 +162,7 @@ def test_container_table_owns_picture_matched_to_rich_cell() -> None:
         cluster=container_cluster,
     )
     conv_res = _conversion_result([container, table, picture])
-    model = object.__new__(ReadingOrderModel)
-
-    doc = model._readingorder_elements_to_docling_doc(
-        conv_res,
-        model._assembled_to_readingorder_elements(conv_res),
-        el_to_captions_mapping={},
-        el_to_footnotes_mapping={},
-        el_merges_mapping={},
-    )
+    doc = ReadingOrderModel(ReadingOrderOptions())(conv_res)
 
     form = next(group for group in doc.groups if group.label == GroupLabel.FORM_AREA)
     form_children = [child.resolve(doc) for child in form.children]
@@ -258,7 +260,7 @@ def test_container_children_follow_predicted_reading_order() -> None:
     assert [child.prov[0].bbox.t for child in children] == [490, 300]
 
 
-def test_container_regular_children_keep_cluster_order() -> None:
+def test_container_regular_children_follow_predicted_order() -> None:
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 300))
     lower_cluster = _cluster(2, DocItemLabel.TEXT, (10, 200, 100, 250))
     upper_cluster = _cluster(3, DocItemLabel.TEXT, (10, 10, 100, 60))
@@ -285,13 +287,160 @@ def test_container_regular_children_keep_cluster_order() -> None:
         cluster=upper_cluster,
     )
 
+    model = ReadingOrderModel(ReadingOrderOptions())
+    doc = model(_conversion_result([container, lower, upper]))
+    unwrapped = model(_conversion_result([lower, upper]))
+
+    form = next(group for group in doc.groups if group.label == GroupLabel.FORM_AREA)
+    children = [child.resolve(doc) for child in form.children]
+    assert (
+        [child.text for child in children]
+        == [item.text for item in unwrapped.texts]
+        == ["upper", "lower"]
+    )
+
+
+def test_container_uses_normal_text_materialization() -> None:
+    specs = [
+        (2, DocItemLabel.TEXT, "linked", (10, 10, 200, 30)),
+        (3, DocItemLabel.FORMULA, "x+y", (10, 40, 200, 60)),
+        (4, DocItemLabel.SECTION_HEADER, "Heading", (10, 70, 200, 90)),
+        (5, DocItemLabel.LIST_ITEM, "- first", (10, 100, 200, 120)),
+        (6, DocItemLabel.LIST_ITEM, "- second", (10, 130, 200, 150)),
+        (7, DocItemLabel.PAGE_FOOTER, "Footer", (10, 280, 200, 300)),
+    ]
+    child_clusters = [_cluster(cid, label, bbox) for cid, label, _, bbox in specs]
+    container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 320))
+    container_cluster.children = child_clusters
+    container = ContainerElement(
+        label=DocItemLabel.FORM,
+        id=1,
+        page_no=1,
+        cluster=container_cluster,
+    )
+    children = [
+        TextElement(
+            label=label,
+            id=cid,
+            text=text,
+            hyperlink="https://example.com" if text == "linked" else None,
+            page_no=1,
+            cluster=cluster,
+        )
+        for (cid, label, text, _), cluster in zip(specs, child_clusters)
+    ]
+
     doc = ReadingOrderModel(ReadingOrderOptions())(
-        _conversion_result([container, lower, upper])
+        _conversion_result([container, *children])
+    )
+
+    form = next(group for group in doc.groups if group.label == GroupLabel.FORM_AREA)
+    linked = next(item for item in doc.texts if item.text == "linked")
+    formula = next(item for item in doc.texts if item.label == DocItemLabel.FORMULA)
+    heading = next(
+        item for item in doc.texts if item.label == DocItemLabel.SECTION_HEADER
+    )
+    footer = next(item for item in doc.texts if item.label == DocItemLabel.PAGE_FOOTER)
+    list_group = next(group for group in doc.groups if group.label == GroupLabel.LIST)
+
+    assert str(linked.hyperlink) == "https://example.com/"
+    assert formula.text == ""
+    assert formula.orig == "x+y"
+    assert heading.parent == form.get_ref()
+    assert footer.content_layer == ContentLayer.FURNITURE
+    assert list_group.parent == form.get_ref()
+    assert [item.resolve(doc).text for item in list_group.children] == [
+        "first",
+        "second",
+    ]
+
+
+def test_table_interrupts_container_list() -> None:
+    container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 200))
+    first_cluster = _cluster(2, DocItemLabel.LIST_ITEM, (10, 10, 200, 30))
+    table_cluster = _cluster(3, DocItemLabel.TABLE, (10, 40, 200, 100))
+    second_cluster = _cluster(4, DocItemLabel.LIST_ITEM, (10, 110, 200, 130))
+    container_cluster.children = [first_cluster, table_cluster, second_cluster]
+
+    container = ContainerElement(
+        label=DocItemLabel.FORM,
+        id=1,
+        page_no=1,
+        cluster=container_cluster,
+    )
+    first = TextElement(
+        label=DocItemLabel.LIST_ITEM,
+        id=2,
+        text="- first",
+        page_no=1,
+        cluster=first_cluster,
+    )
+    table = Table(
+        label=DocItemLabel.TABLE,
+        id=3,
+        page_no=1,
+        cluster=table_cluster,
+        otsl_seq=[],
+        num_rows=1,
+        num_cols=1,
+        table_cells=[],
+    )
+    second = TextElement(
+        label=DocItemLabel.LIST_ITEM,
+        id=4,
+        text="- second",
+        page_no=1,
+        cluster=second_cluster,
+    )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(
+        _conversion_result([container, first, table, second])
     )
 
     form = next(group for group in doc.groups if group.label == GroupLabel.FORM_AREA)
     children = [child.resolve(doc) for child in form.children]
-    assert [child.text for child in children] == ["lower", "upper"]
+    assert [child.label for child in children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    assert [child.children[0].resolve(doc).text for child in children[::2]] == [
+        "first",
+        "second",
+    ]
+
+
+def test_container_children_merge_within_their_sibling_level() -> None:
+    container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 100))
+    left_cluster = _cluster(2, DocItemLabel.TEXT, (10, 10, 100, 50))
+    right_cluster = _cluster(3, DocItemLabel.TEXT, (120, 10, 220, 50))
+    container_cluster.children = [left_cluster, right_cluster]
+    container = ContainerElement(
+        label=DocItemLabel.FORM,
+        id=1,
+        page_no=1,
+        cluster=container_cluster,
+    )
+    left = TextElement(
+        label=DocItemLabel.TEXT,
+        id=2,
+        text="hello",
+        page_no=1,
+        cluster=left_cluster,
+    )
+    right = TextElement(
+        label=DocItemLabel.TEXT,
+        id=3,
+        text="world",
+        page_no=1,
+        cluster=right_cluster,
+    )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(
+        _conversion_result([container, left, right])
+    )
+
+    assert [item.text for item in doc.texts] == ["hello world"]
 
 
 def test_container_boundary_prevents_text_merge() -> None:
@@ -328,7 +477,7 @@ def test_container_boundary_prevents_text_merge() -> None:
     assert [text.text for text in doc.texts] == ["hello", "world"]
 
 
-def test_container_preserves_nested_typed_child_body_order() -> None:
+def test_container_is_one_root_sibling() -> None:
     container_cluster = _cluster(0, DocItemLabel.FORM, (0, 150, 400, 400))
     table_cluster = _cluster(1, DocItemLabel.TABLE, (20, 300, 80, 380))
     outside_cluster = _cluster(2, DocItemLabel.TEXT, (350, 100, 410, 140))
@@ -364,8 +513,11 @@ def test_container_preserves_nested_typed_child_body_order() -> None:
 
     body_items = [child.resolve(doc) for child in doc.body.children]
     assert [item.label for item in body_items] == [
-        GroupLabel.FORM_AREA,
         DocItemLabel.TEXT,
+        GroupLabel.FORM_AREA,
+    ]
+    assert [child.resolve(doc).label for child in body_items[1].children] == [
+        DocItemLabel.TABLE
     ]
 
 

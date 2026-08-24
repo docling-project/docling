@@ -251,7 +251,7 @@ class LayoutPostprocessor:
             c for c in self.regular_clusters if c.id not in contained_ids
         ]
 
-        # Combine and sort final clusters
+        # Keep a deterministic assembly order. Semantic reading order is predicted later.
         final_clusters = self._sort_clusters(
             self.regular_clusters + self.special_clusters, mode="id"
         )
@@ -300,7 +300,8 @@ class LayoutPostprocessor:
                     if cluster.cells or cluster.label == DocItemLabel.FORMULA
                 ]
 
-            # Handle orphaned cells
+            # Preserve orphan cells as ordinary text clusters. Their source-cell order is
+            # only an assembly tie-break; the reading-order stage still orders them.
             unassigned = self._find_unassigned_cells(clusters)
             if unassigned and self.options.create_orphan_clusters:
                 next_id = max((c.id for c in self.all_clusters), default=0) + 1
@@ -779,14 +780,14 @@ class LayoutPostprocessor:
         return clusters
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
-        """Sort cells in native reading order."""
+        """Sort cells by their source/parser index."""
         return sorted(cells, key=lambda c: c.index)
 
     def _sort_clusters(
         self, clusters: list[Cluster], mode: str = "id"
     ) -> list[Cluster]:
-        """Sort clusters in reading order (top-to-bottom, left-to-right)."""
-        if mode == "id":  # sort in the order the cells are printed in the PDF.
+        """Sort clusters for deterministic layout-stage storage."""
+        if mode == "id":  # Source-cell order, with geometry for empty/tied clusters.
             return sorted(
                 clusters,
                 key=lambda cluster: (

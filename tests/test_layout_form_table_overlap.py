@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import GroupLabel
+from docling_core.types.doc import DocItemLabel, GroupLabel
 from docling_core.types.doc.document import PictureItem, TableItem
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -38,10 +38,19 @@ def test_tables_and_pictures_are_nested_in_form_area() -> None:
     nested_tables = [child for child in children if isinstance(child, TableItem)]
     nested_pictures = [child for child in children if isinstance(child, PictureItem)]
 
+    assert [child.label for child in children] == [
+        DocItemLabel.TABLE,
+        DocItemLabel.TABLE,
+        DocItemLabel.TABLE,
+        DocItemLabel.PICTURE,
+        DocItemLabel.PICTURE,
+        DocItemLabel.PICTURE,
+    ]
     assert {table.self_ref for table in nested_tables} == {
         table.self_ref for table in doc.tables
     }
     assert len(nested_tables) == 3
     assert len(nested_pictures) == 3
+    assert len({picture.self_ref for picture in nested_pictures}) == 3
     assert all(table.parent == form.get_ref() for table in nested_tables)
     assert all(picture.parent == form.get_ref() for picture in nested_pictures)
