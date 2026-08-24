@@ -15,8 +15,8 @@ builds a :class:`~docling_core.types.doc.DoclingDocument` directly rather than
 rendering pages and running layout analysis over them.
 
 Paragraph styles carry the document outline in both generations, so titles and
-headings are recovered from them, and tables are read from the structures each
-generation uses for them.
+headings are recovered from them, lists from the list styles they point at, and
+tables from the structures each generation uses for them.
 """
 
 import logging
@@ -24,9 +24,10 @@ import mimetypes
 import re
 import zipfile
 import zlib
+from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, TypeVar
 from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
@@ -38,6 +39,7 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from docling_core.types.doc.items.group import ListGroup
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -55,12 +57,56 @@ from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
 
 class _Run(NamedTuple):
     """A stretch of text sharing one character style."""
 
     text: str
     formatting: Formatting | None
+
+
+class _ListLabel(NamedTuple):
+    """How Pages labels one list item: its depth, and the marker it shows."""
+
+    depth: int
+    enumerated: bool
+    marker: str
+
+
+class _ListStyle(NamedTuple):
+    """A Pages list style: what each nesting depth is labelled with.
+
+    Every field is a parallel array indexed by depth, so a style describes the
+    whole ladder of nine levels at once rather than one level at a time.
+    """
+
+    label_types: tuple[int, ...]
+    strings: tuple[str, ...]
+
+    def label(self, depth: int) -> _ListLabel | None:
+        """Return how a paragraph at ``depth`` is labelled, or None if plain.
+
+        Args:
+            depth: The paragraph's nesting depth, counted from zero.
+
+        Returns:
+            The label, or None when this style leaves the depth unlabelled —
+            which is what Pages' "None" style does at every depth, and is how a
+            paragraph that merely inherits a list style stays body text.
+        """
+        if depth >= len(self.label_types):
+            return None
+        label_type = self.label_types[depth]
+        if label_type == _LABEL_TYPE_NONE:
+            return None
+        if label_type == _LABEL_TYPE_NUMBER:
+            return _ListLabel(depth, True, "")
+        marker = self.strings[depth] if depth < len(self.strings) else ""
+        # An image bullet has no text to show, so it falls back to the marker
+        # docling uses for an unlabelled item.
+        return _ListLabel(depth, False, marker or "-")
 
 
 class _Paragraph(NamedTuple):
@@ -74,11 +120,26 @@ class _Paragraph(NamedTuple):
     runs: tuple[_Run, ...]
     label: DocItemLabel
     level: int | None
+    list_label: _ListLabel | None = None
 
     @property
     def text(self) -> str:
         """The paragraph's full text, with its runs joined back together."""
         return "".join(run.text for run in self.runs)
+
+
+class _StorageRuns(NamedTuple):
+    """The run tables of one ``TSWP.StorageArchive``.
+
+    Each table pairs a character index with the value that applies from there
+    until the next entry, so they are read together when the storage is split
+    into paragraphs.
+    """
+
+    styles: list[tuple[int, str | None]] = []
+    characters: list[tuple[int, Formatting | None]] = []
+    lists: list[tuple[int, _ListStyle | None]] = []
+    depths: list[tuple[int, int]] = []
 
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
@@ -213,6 +274,39 @@ Each entry pairs a character index with a reference to the style that applies
 from there. Entries without a reference leave the preceding style in force.
 """
 
+_TSWP_LIST_STYLE = 2023
+"""Message type of ``TSWP.ListStyleArchive``, which labels a list's levels."""
+
+_STORAGE_LIST_DEPTH_FIELD = 6
+"""Field of ``TSWP.StorageArchive`` holding each paragraph's nesting depth.
+
+Its entries carry two numbers rather than a reference; the first is the depth,
+counted from zero, and a document with no nesting carries the single entry
+``(0, 0)``.
+"""
+
+_STORAGE_LIST_STYLE_FIELD = 7
+"""Field of ``TSWP.StorageArchive`` holding the list style run table.
+
+This, not the depth, is what makes a paragraph a list item: Pages leaves a list
+style in force over plain paragraphs too, and the style's label type for the
+paragraph's depth is what says whether a marker is drawn.
+"""
+
+_LIST_LABEL_TYPES_FIELD = 11
+_LIST_STRINGS_FIELD = 16
+"""Fields of ``TSWP.ListStyleArchive``, one entry per nesting depth."""
+
+_LABEL_TYPE_NONE = 0
+_LABEL_TYPE_STRING = 2
+_LABEL_TYPE_NUMBER = 3
+"""Label types of ``TSWP.ListStyleArchive``.
+
+``kNone`` leaves the depth unlabelled and ``kNumber`` numbers it; ``kImage``
+and ``kString`` both draw a fixed marker, which for a string label is the entry
+at that depth of the style's ``strings``.
+"""
+
 _SF_NAMESPACE = "http://developer.apple.com/namespaces/sf"
 _SF_PARAGRAPH = f"{{{_SF_NAMESPACE}}}p"
 # iWork '09 placeholder text. It is what the template shows before the author
@@ -233,6 +327,26 @@ _SF_CELL_TEXT = f"{{{_SF_NAMESPACE}}}ct"
 _SF_SPAN = f"{{{_SF_NAMESPACE}}}span"
 _SF_CHARACTER_STYLE = f"{{{_SF_NAMESPACE}}}characterstyle"
 _SFA_ATTR_NUMBER = "{http://developer.apple.com/namespaces/sfa}number"
+
+_SF_LIST_STYLE = f"{{{_SF_NAMESPACE}}}liststyle"
+_SF_LIST_LABEL_TYPE = f"{{{_SF_NAMESPACE}}}list-label-typeinfo"
+_SF_TEXT_LABEL = f"{{{_SF_NAMESPACE}}}text-label"
+_SF_ATTR_TYPE = f"{{{_SF_NAMESPACE}}}type"
+_SF_ATTR_FORMAT = f"{{{_SF_NAMESPACE}}}format"
+_SF_ATTR_LIST_LEVEL = f"{{{_SF_NAMESPACE}}}list-level"
+_SF_ATTR_LIST_STYLE = f"{{{_SF_NAMESPACE}}}list-style"
+"""The iWork '09 vocabulary for lists.
+
+An ``sf:liststyle`` holds one ``sf:list-label-typeinfo`` per nesting level, and
+a paragraph joins the list by naming the style and its own ``sf:list-level``,
+which counts from one.
+"""
+
+_SF_LABEL_TYPE_NONE = "none"
+"""``sf:list-label-typeinfo`` type that leaves a level unlabelled."""
+
+_SF_BULLET_LABEL_TYPES = frozenset({"bullet", "image", "string", "text"})
+"""``sf:text-label`` types that draw a fixed marker rather than a number."""
 
 _SF_PROPERTY_LABELS = {
     f"{{{_SF_NAMESPACE}}}bold": "bold",
@@ -273,7 +387,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
           date or a formula result is left empty rather than guessed at.
         * Bold, italic, underline and strikethrough are recovered; other
           character properties, such as colour or capitalisation, have no
-          equivalent here. Lists are not recovered.
+          equivalent here.
+        * A list item whose runs differ in formatting keeps its text but loses
+          the formatting, since a list item carries a single one.
         * Text boxes are read from Pages 5+ documents, where they are floating
           drawables owned by the document. An iWork '09 document keeps them in
           the body flow, so they already appear there.
@@ -407,55 +523,11 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             )
 
         fields = read_fields(storage.payload)
-        text = "".join(
-            value.decode("utf-8", errors="replace")
-            for value in fields.get(_STORAGE_TEXT_FIELD, [])
-            if isinstance(value, bytes)
+        paragraphs = _split_paragraphs(
+            _iwa_storage_text(fields), _iwa_storage_runs(fields, objects)
         )
-        styles = self._iwa_style_runs(fields, objects)
-        characters = _iwa_character_runs(fields, objects)
-        paragraphs = _split_paragraphs(text, styles, characters)
         paragraphs.extend(_iwa_text_box_paragraphs(document, objects))
         return paragraphs, _iwa_tables(objects)
-
-    @staticmethod
-    def _iwa_style_runs(
-        fields: dict[int, list[int | bytes]],
-        objects: dict[int, IWAObject],
-    ) -> list[tuple[int, str | None]]:
-        """Resolve the paragraph style run table to (character index, style name).
-
-        Entries without a style reference leave the previous style in force, so
-        only the ones that carry a reference are returned.
-
-        Args:
-            fields: Decoded fields of the body ``TSWP.StorageArchive``.
-            objects: Every object in the document, keyed by identifier.
-
-        Returns:
-            Character index and style name pairs, in document order.
-        """
-        table = fields.get(_STORAGE_PARAGRAPH_STYLE_FIELD, [])
-        if not table or not isinstance(table[0], bytes):
-            return []
-
-        runs: list[tuple[int, str | None]] = []
-        for entry in read_fields(table[0]).get(1, []):
-            if not isinstance(entry, bytes):
-                continue
-            parsed = read_fields(entry)
-            index = parsed.get(1, [None])[0]
-            reference = parsed.get(2, [None])[0]
-            if not isinstance(index, int) or not isinstance(reference, bytes):
-                continue
-            target = read_reference(reference)
-            style = objects.get(target) if target is not None else None
-            if style is None or style.message_type != _TSWP_PARAGRAPH_STYLE:
-                continue
-            runs.append((index, _iwa_style_name(style.payload)))
-
-        runs.sort(key=lambda run: run[0])
-        return runs
 
     def _read_legacy_document(
         self, archive: zipfile.ZipFile, member: str
@@ -501,13 +573,18 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             if element.get(_SF_ATTR_IDENT)
         }
 
+        list_styles = _legacy_list_styles(root)
+
         paragraphs: list[_Paragraph] = []
         for para in _iter_body_paragraphs(root):
             runs = _legacy_runs(para, character_styles)
             if not runs:
                 continue
-            label, level = _label_for_style(style_names.get(para.get(_SF_ATTR_STYLE)))
-            paragraphs.append(_Paragraph(runs, label, level))
+            style = para.get(_SF_ATTR_STYLE)
+            label, level = _label_for_style(style_names.get(style))
+            paragraphs.append(
+                _Paragraph(runs, label, level, _legacy_list_label(para, list_styles))
+            )
 
         return paragraphs, _read_legacy_tables(root)
 
@@ -540,8 +617,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
+        lists = _ListStack(doc)
         for paragraph in self._paragraphs:
-            _add_paragraph(doc, paragraph)
+            _add_paragraph(doc, paragraph, lists)
 
         # Pages keeps tables outside the body text flow, so they cannot be
         # interleaved with the paragraphs and are appended instead.
@@ -647,45 +725,42 @@ def _iwa_style_name(payload: bytes) -> str | None:
         return None
 
 
-def _split_paragraphs(
-    text: str,
-    style_runs: list[tuple[int, str | None]],
-    character_runs: list[tuple[int, Formatting | None]],
-) -> list[_Paragraph]:
+def _split_paragraphs(text: str, runs: _StorageRuns) -> list[_Paragraph]:
     """Split a TSWP text run into labelled paragraphs of formatted runs.
 
     Apple separates paragraphs with newlines and pads empty ones, so blank
-    results are dropped rather than emitted as empty text items. Both run tables
-    are keyed by character index into ``text``, and each entry stays in force
+    results are dropped rather than emitted as empty text items. Every run table
+    is keyed by character index into ``text``, and each entry stays in force
     until the next one begins.
 
     Args:
         text: The concatenated text of the storage.
-        style_runs: Character index and paragraph style name pairs.
-        character_runs: Character index and character formatting pairs.
+        runs: The storage's run tables.
 
     Returns:
         The non-empty paragraphs, each labelled and carrying its runs.
     """
     paragraphs: list[_Paragraph] = []
     offset = 0
-    style_index = 0
-    current_style: str | None = None
 
     for line in text.split("\n"):
-        while style_runs and style_index < len(style_runs):
-            if style_runs[style_index][0] > offset:
-                break
-            current_style = style_runs[style_index][1]
-            style_index += 1
-
-        runs = _runs_for(line, offset, character_runs)
-        if runs:
-            label, level = _label_for_style(current_style)
-            paragraphs.append(_Paragraph(runs, label, level))
+        pieces = _runs_for(line, offset, runs.characters)
+        if pieces:
+            label, level = _label_for_style(_value_at(runs.styles, offset))
+            paragraphs.append(
+                _Paragraph(pieces, label, level, _list_label_at(runs, offset))
+            )
         offset += len(line) + 1  # + 1 for the newline that split consumed
 
     return paragraphs
+
+
+def _list_label_at(runs: _StorageRuns, offset: int) -> _ListLabel | None:
+    """Return how the paragraph starting at ``offset`` is labelled as a list item."""
+    style = _value_at(runs.lists, offset)
+    if style is None:
+        return None
+    return style.label(_value_at(runs.depths, offset) or 0)
 
 
 def _runs_for(
@@ -709,43 +784,106 @@ def _runs_for(
         )
         piece = _clean(line[begin - start : end - start])
         if piece:
-            runs.append(_Run(piece, _formatting_at(begin, character_runs)))
+            runs.append(_Run(piece, _value_at(character_runs, begin)))
 
     return _trim(runs)
 
 
-def _formatting_at(
-    index: int, character_runs: list[tuple[int, Formatting | None]]
-) -> Formatting | None:
-    """Return the character formatting in force at ``index``."""
-    current: Formatting | None = None
-    for position, formatting in character_runs:
+def _value_at(table: list[tuple[int, _T]], index: int) -> _T | None:
+    """Return the value a run table puts in force at ``index``.
+
+    Args:
+        table: Character index and value pairs, in document order.
+        index: The character index to look up.
+
+    Returns:
+        The value of the last entry at or before ``index``, or None when the
+        table starts after it.
+    """
+    current: _T | None = None
+    for position, value in table:
         if position > index:
             break
-        current = formatting
+        current = value
     return current
 
 
-def _iwa_character_runs(
-    fields: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> list[tuple[int, Formatting | None]]:
-    """Resolve the character style run table of a ``TSWP.StorageArchive``.
+def _iwa_storage_text(fields: dict[int, list[int | bytes]]) -> str:
+    """Join the text pieces of a ``TSWP.StorageArchive``."""
+    return "".join(
+        value.decode("utf-8", errors="replace")
+        for value in fields.get(_STORAGE_TEXT_FIELD, [])
+        if isinstance(value, bytes)
+    )
 
-    Entries without a style reference clear the formatting from that character
-    on, which is how Pages ends a bold phrase.
+
+def _iwa_storage_runs(
+    fields: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
+) -> _StorageRuns:
+    """Resolve every run table a ``TSWP.StorageArchive`` carries.
 
     Args:
         fields: Decoded fields of the storage.
         objects: Every object in the document, keyed by identifier.
 
     Returns:
-        Character index and formatting pairs, in document order.
+        The tables, each sorted by character index.
     """
-    table = fields.get(_STORAGE_CHARACTER_STYLE_FIELD, [])
+    return _StorageRuns(
+        styles=_iwa_object_runs(
+            fields,
+            _STORAGE_PARAGRAPH_STYLE_FIELD,
+            objects,
+            _TSWP_PARAGRAPH_STYLE,
+            _iwa_style_name,
+        ),
+        characters=_iwa_object_runs(
+            fields,
+            _STORAGE_CHARACTER_STYLE_FIELD,
+            objects,
+            _TSWP_CHARACTER_STYLE,
+            _iwa_formatting,
+        ),
+        lists=_iwa_object_runs(
+            fields,
+            _STORAGE_LIST_STYLE_FIELD,
+            objects,
+            _TSWP_LIST_STYLE,
+            _iwa_list_style,
+        ),
+        depths=_iwa_depth_runs(fields),
+    )
+
+
+def _iwa_object_runs(
+    fields: dict[int, list[int | bytes]],
+    field: int,
+    objects: dict[int, IWAObject],
+    message_type: int,
+    decode: Callable[[bytes], _T | None],
+) -> list[tuple[int, _T | None]]:
+    """Resolve one ``TSWP.ObjectAttributeTable`` to (character index, value) pairs.
+
+    Every run table of a storage has this shape: entries pairing a character
+    index with a reference to the object that applies from there. An entry
+    without a reference clears the value from that character on, which is how
+    Pages ends a bold phrase or leaves a list.
+
+    Args:
+        fields: Decoded fields of the storage.
+        field: The storage field holding the table.
+        objects: Every object in the document, keyed by identifier.
+        message_type: The message type the referenced objects must have.
+        decode: Reads one referenced object's payload into a value.
+
+    Returns:
+        Character index and value pairs, in document order.
+    """
+    table = fields.get(field, [])
     if not table or not isinstance(table[0], bytes):
         return []
 
-    runs: list[tuple[int, Formatting | None]] = []
+    runs: list[tuple[int, _T | None]] = []
     for entry in _safe_fields(table[0]).get(1, []):
         if not isinstance(entry, bytes):
             continue
@@ -755,16 +893,52 @@ def _iwa_character_runs(
             continue
 
         reference = parsed.get(2, [None])[0]
-        formatting: Formatting | None = None
+        value: _T | None = None
         if isinstance(reference, bytes):
             target = read_reference(reference)
-            style = objects.get(target) if target is not None else None
-            if style is not None and style.message_type == _TSWP_CHARACTER_STYLE:
-                formatting = _iwa_formatting(style.payload)
-        runs.append((index, formatting))
+            referenced = objects.get(target) if target is not None else None
+            if referenced is not None and referenced.message_type == message_type:
+                value = decode(referenced.payload)
+        runs.append((index, value))
 
     runs.sort(key=lambda run: run[0])
     return runs
+
+
+def _iwa_depth_runs(fields: dict[int, list[int | bytes]]) -> list[tuple[int, int]]:
+    """Resolve the list depth table, whose entries hold numbers, not references."""
+    table = fields.get(_STORAGE_LIST_DEPTH_FIELD, [])
+    if not table or not isinstance(table[0], bytes):
+        return []
+
+    runs: list[tuple[int, int]] = []
+    for entry in _safe_fields(table[0]).get(1, []):
+        if not isinstance(entry, bytes):
+            continue
+        parsed = _safe_fields(entry)
+        index = parsed.get(1, [None])[0]
+        depth = parsed.get(2, [None])[0]
+        if isinstance(index, int) and isinstance(depth, int):
+            runs.append((index, depth))
+
+    runs.sort(key=lambda run: run[0])
+    return runs
+
+
+def _iwa_list_style(payload: bytes) -> _ListStyle:
+    """Read a ``TSWP.ListStyleArchive`` as its per-depth label ladder."""
+    fields = _safe_fields(payload)
+    label_types = tuple(
+        value
+        for value in fields.get(_LIST_LABEL_TYPES_FIELD, [])
+        if isinstance(value, int)
+    )
+    strings = tuple(
+        value.decode("utf-8", errors="replace")
+        for value in fields.get(_LIST_STRINGS_FIELD, [])
+        if isinstance(value, bytes)
+    )
+    return _ListStyle(label_types, strings)
 
 
 def _iwa_formatting(payload: bytes) -> Formatting | None:
@@ -1111,12 +1285,11 @@ def _iwa_text_box_paragraphs(
             if storage is None or storage.message_type != _TSWP_STORAGE_ARCHIVE:
                 continue
             fields = read_fields(storage.payload)
-            text = "".join(
-                value.decode("utf-8", errors="replace")
-                for value in fields.get(_STORAGE_TEXT_FIELD, [])
-                if isinstance(value, bytes)
+            paragraphs.extend(
+                _split_paragraphs(
+                    _iwa_storage_text(fields), _iwa_storage_runs(fields, objects)
+                )
             )
-            paragraphs.extend(_split_paragraphs(text, [], []))
 
     return paragraphs
 
@@ -1152,16 +1325,62 @@ def _iwa_referenced_ids(payload: bytes, depth: int = 0) -> set[int]:
     return found
 
 
-def _add_paragraph(doc: DoclingDocument, paragraph: _Paragraph) -> None:
+class _ListStack:
+    """The list groups open while consecutive list items keep arriving.
+
+    Pages records a nesting depth per paragraph rather than opening and closing
+    lists, so the groups a :class:`DoclingDocument` needs are inferred here: a
+    deeper item opens groups down to its depth, a shallower one closes back to
+    it, and any other paragraph ends the list entirely.
+    """
+
+    def __init__(self, doc: DoclingDocument) -> None:
+        self._doc = doc
+        self._groups: list[ListGroup] = []
+
+    def close(self) -> None:
+        """End the list, so the next item starts a new one."""
+        self._groups.clear()
+
+    def group_for(self, depth: int) -> ListGroup:
+        """Return the group a list item at ``depth`` belongs in, opening it if needed.
+
+        Args:
+            depth: The item's nesting depth, counted from zero.
+
+        Returns:
+            The innermost open group.
+        """
+        del self._groups[depth + 1 :]
+        while len(self._groups) <= depth:
+            self._groups.append(
+                self._doc.add_list_group(
+                    name="list", parent=self._groups[-1] if self._groups else None
+                )
+            )
+        return self._groups[depth]
+
+
+def _add_paragraph(
+    doc: DoclingDocument, paragraph: _Paragraph, lists: _ListStack
+) -> None:
     """Add one paragraph, keeping any character formatting attached to its runs.
 
-    ``TextItem`` carries a single ``Formatting``, so a paragraph whose runs differ has to become an inline group of items — the same shape the Word and
+    ``TextItem`` carries a single ``Formatting``, so a paragraph whose runs
+    differ has to become an inline group of items — the same shape the Word and
     HTML backends produce for mixed runs.
 
     Args:
         doc: The document being built.
         paragraph: The paragraph to add.
+        lists: The list groups currently open.
     """
+    if paragraph.list_label is None:
+        lists.close()
+    else:
+        _add_list_item(doc, paragraph, paragraph.list_label, lists)
+        return
+
     if paragraph.label == DocItemLabel.TITLE:
         doc.add_title(text=paragraph.text)
         return
@@ -1189,6 +1408,22 @@ def _add_paragraph(doc: DoclingDocument, paragraph: _Paragraph) -> None:
             formatting=run.formatting,
             parent=group,
         )
+
+
+def _add_list_item(
+    doc: DoclingDocument, paragraph: _Paragraph, label: _ListLabel, lists: _ListStack
+) -> None:
+    """Add one list item under the group its nesting depth belongs to."""
+    group = lists.group_for(label.depth)
+    runs = [run for run in paragraph.runs if run.text]
+    first = runs[0].formatting if runs else None
+    doc.add_list_item(
+        text=paragraph.text,
+        enumerated=label.enumerated,
+        marker=label.marker,
+        parent=group,
+        formatting=first if all(run.formatting == first for run in runs) else None,
+    )
 
 
 def _legacy_runs(
@@ -1238,6 +1473,70 @@ def _legacy_runs(
             stack.append((child, inherited, False))
 
     return _trim(runs)
+
+
+def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
+    """Read the ``sf:liststyle`` definitions of an '09 document by identifier.
+
+    Args:
+        root: The parsed ``index.xml`` root element.
+
+    Returns:
+        The label ladder of every named list style, keyed by its identifier.
+    """
+    styles: dict[str, _ListStyle] = {}
+
+    for element in root.iter(_SF_LIST_STYLE):
+        ident = element.get(_SF_ATTR_IDENT)
+        if not ident or ident in styles:
+            continue
+
+        label_types: list[int] = []
+        strings: list[str] = []
+        for level in element.iter(_SF_LIST_LABEL_TYPE):
+            if level.get(_SF_ATTR_TYPE) == _SF_LABEL_TYPE_NONE:
+                label_types.append(_LABEL_TYPE_NONE)
+                strings.append("")
+                continue
+            text_label = next(iter(level.iter(_SF_TEXT_LABEL)), None)
+            kind = text_label.get(_SF_ATTR_TYPE) if text_label is not None else None
+            if kind is not None and kind not in _SF_BULLET_LABEL_TYPES:
+                # Anything else names a numbering sequence: decimal, upper-roman,
+                # lower-alpha and the rest, which Pages counts rather than draws.
+                label_types.append(_LABEL_TYPE_NUMBER)
+                strings.append("")
+                continue
+            label_types.append(_LABEL_TYPE_STRING)
+            strings.append(
+                (text_label.get(_SF_ATTR_FORMAT) or "")
+                if text_label is not None
+                else ""
+            )
+
+        styles[ident] = _ListStyle(tuple(label_types), tuple(strings))
+
+    return styles
+
+
+def _legacy_list_label(
+    paragraph: Element, list_styles: dict[str, _ListStyle]
+) -> _ListLabel | None:
+    """Return how an '09 paragraph is labelled as a list item, if it is one.
+
+    Args:
+        paragraph: An ``sf:p`` element.
+        list_styles: The document's list styles, keyed by identifier.
+
+    Returns:
+        The label, or None when the paragraph names no list style or the style
+        leaves its level unlabelled.
+    """
+    style = list_styles.get(paragraph.get(_SF_ATTR_LIST_STYLE) or "")
+    if style is None:
+        return None
+    # sf:list-level counts from one, unlike the depth the IWA reader works in.
+    level = _int_attr(paragraph, _SF_ATTR_LIST_LEVEL) or 1
+    return style.label(max(level - 1, 0))
 
 
 def _legacy_formatting(style: Element) -> Formatting | None:

@@ -20,9 +20,11 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.items.text import ListItem
 
 from docling.backend.iwork import iwa
 from docling.backend.iwork.iwa import (
+    IWAObject,
     decompress_snappy_block,
     iter_objects,
     read_fields,
@@ -30,6 +32,7 @@ from docling.backend.iwork.iwa import (
 from docling.backend.iwork.pages_backend import (
     IWorkPagesDocumentBackend,
     _iwa_formatting,
+    _iwa_list_style,
     _iwa_style_name,
     _label_for_style,
 )
@@ -640,3 +643,98 @@ def test_a_run_boundary_does_not_eat_the_space_around_it():
     ):
         assert sentence in modern
         assert sentence in legacy
+
+
+def _iwa_objects(path: Path) -> dict[int, IWAObject]:
+    """Every archived object of a Pages 5+ fixture, keyed by identifier."""
+    archive = zipfile.ZipFile(path)
+    return {
+        obj.identifier: obj
+        for name in archive.namelist()
+        if name.endswith(".iwa")
+        for obj in iter_objects(archive.read(name))
+    }
+
+
+def test_iwa_list_styles_decode_to_their_real_labels():
+    """Whether a paragraph is a list item is decided by the list style in force,
+    not by its nesting depth: Pages leaves a style in force over plain paragraphs
+    too and marks them with the "None" style. Check that against the styles the
+    fixture's template actually defines."""
+    by_name = {
+        _iwa_style_name(obj.payload): _iwa_list_style(obj.payload)
+        for obj in _iwa_objects(PAGES_2013).values()
+        if obj.message_type == 2023
+    }
+
+    bullet = by_name["Bullet"].label(0)
+    assert bullet is not None
+    assert not bullet.enumerated
+    assert bullet.marker == "\u2022"
+
+    numbered = by_name["Numbered List"].label(0)
+    assert numbered is not None and numbered.enumerated
+
+    # The style Pages applies to ordinary body text labels no level at all.
+    assert by_name["None"].label(0) is None
+
+
+def _snappy_literals(payload: bytes) -> bytes:
+    """Encode ``payload`` as one raw Snappy block, using literals only."""
+    out = bytearray(_varint(len(payload)))
+    for start in range(0, len(payload), 60):
+        piece = payload[start : start + 60]
+        out.append((len(piece) - 1) << 2)
+        out += piece
+    return bytes(out)
+
+
+def _with_bullets_applied(target: Path) -> Path:
+    """Copy the Pages 5+ fixture with its body text styled as a bulleted list.
+
+    The fixture is a real Apple document that defines a "Bullet" list style but
+    never applies it, so the only change made here is which style the list-style
+    run table points at: object 2708 ("None") becomes object 4078 ("Bullet"),
+    both of them written into this file by Pages. The two identifiers encode to
+    varints of the same width, so nothing else in the archive moves.
+    """
+    none_style, bullet_style = _varint(2708), _varint(4078)
+    entry = bytes([0x08, 0x00, 0x12, 0x03, 0x08]) + none_style
+    # Field 7 of TSWP.StorageArchive, holding a one-entry run table.
+    table = bytes([0x3A, len(entry) + 2, 0x0A, len(entry)]) + entry
+
+    archive = zipfile.ZipFile(PAGES_2013)
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+        for info in archive.infolist():
+            data = archive.read(info)
+            if info.filename == "Index/Document.iwa":
+                stream = iwa.decompress(data)
+                assert table in stream, "fixture no longer carries a list style run"
+                stream = stream.replace(table, table.replace(none_style, bullet_style))
+                block = _snappy_literals(stream)
+                data = bytes([0x00]) + len(block).to_bytes(3, "little") + block
+            out.writestr(info.filename, data)
+    return target
+
+
+def test_bulleted_list_is_recovered_from_the_list_style_run(tmp_path: Path):
+    """The end of the list path: a run table pointing at a labelling style turns
+    the paragraphs it covers into list items collected under one group."""
+    doc = _backend(_with_bullets_applied(tmp_path / "bullets.pages")).convert()
+
+    items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert any(_BODY_SENTENCE in item.text for item in items)
+    assert all(not item.enumerated for item in items)
+
+    # Consecutive items share one group rather than each opening their own.
+    groups = {item.parent.cref for item in items if item.parent is not None}
+    assert len(groups) == 1
+
+
+def test_body_text_is_not_a_list_when_the_style_labels_nothing():
+    """The untouched fixture carries the same run table, pointing at the "None"
+    style. Reading the nesting depth alone would turn every paragraph in the
+    document into a list item."""
+    doc = _backend(PAGES_2013).convert()
+
+    assert not [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
