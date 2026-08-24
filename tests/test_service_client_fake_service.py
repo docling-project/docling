@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import pytest
+from pydantic import ValidationError
 
 import docling.service_client.client as client_module
 from docling.datamodel.base_models import ConversionStatus
@@ -401,3 +402,37 @@ async def test_async_client_surfaces_submit_errors(async_client_kwargs, service)
     async with AsyncDoclingServiceClient(**async_client_kwargs) as remote:
         with pytest.raises(ServiceError):
             await remote.submit(SOURCE, target=InBodyTarget())
+
+
+BATCH_SOURCES = [
+    {"kind": "http", "url": "https://example.com/a.pdf"},
+    {"kind": "http", "url": "https://example.com/b.pdf"},
+]
+
+
+def test_submit_batch_reaches_the_batch_endpoint(client, service):
+    """Batch submission uses its own route, distinct from per-source submits."""
+    job = client.submit_batch(sources=BATCH_SOURCES, target=PresignedUrlTarget())
+
+    assert job.task_id
+    assert len(service.requests_for("POST", r"/v1/convert/source/batch")) == 1
+    # The per-source route must not have been used for a batch submission.
+    assert not service.requests_for("POST", r"/v1/convert/source/async")
+
+
+def test_submit_batch_rejects_a_non_storage_target(client):
+    """Batch results go to storage, so InBody is not a valid batch target."""
+    with pytest.raises(ValidationError):
+        client.submit_batch(sources=BATCH_SOURCES, target=InBodyTarget())
+
+
+def test_submit_batch_requires_exactly_one_of_target_or_targets(client):
+    with pytest.raises(ValueError, match="requires either"):
+        client.submit_batch(sources=BATCH_SOURCES)
+
+    with pytest.raises(ValueError, match="only one"):
+        client.submit_batch(
+            sources=BATCH_SOURCES,
+            target=PresignedUrlTarget(),
+            targets=[PresignedUrlTarget()],
+        )

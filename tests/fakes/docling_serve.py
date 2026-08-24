@@ -1,5 +1,19 @@
 """A docling-serve route pack for :class:`FakeHttpService`.
 
+Routes mirror docling-serve's own ``app.py``. Verified against it:
+``/health``, ``/version``, ``/v1/convert/source/async``,
+``/v1/convert/file/async``, ``/v1/convert/source/batch``,
+``/v1/chunk/{path_name}/source/async``, ``/v1/chunk/{path_name}/file/async``,
+``/v1/status/poll/{task_id}`` and ``/v1/result/{task_id}`` -- which is every
+path the service client can construct, except the WebSocket status stream
+(``/v1/status/ws/{task_id}``) that this server does not implement. Clients
+must therefore use ``StatusWatcherKind.POLLING``; the WebSocket watcher is
+not exercised here.
+
+``/artifacts/...`` is not a docling-serve route. It stands in for the
+external storage a presigned URL points at, so the client's artifact
+download runs against a real endpoint.
+
 Submitting a task returns ``pending``; each poll advances the task one step
 along ``pending -> started -> success``, so the client's polling loop and the
 watcher actually iterate instead of short-circuiting on a canned terminal
@@ -24,6 +38,7 @@ from docling.datamodel.service.responses import (
     ConvertDocumentResponse,
     DocumentArtifactItem,
     ExportDocumentResponse,
+    HealthCheckResponse,
     PresignedUrlConvertResponse,
     TaskStatusResponse,
 )
@@ -183,7 +198,7 @@ class FakeDoclingServe:
 
         @service.route("GET", r"/health")
         def _health(request: RecordedRequest, match: re.Match[str]) -> Response:
-            return Response(body={"status": "ok"})
+            return Response(body=_as_wire(HealthCheckResponse()))
 
         @service.route("GET", r"/version")
         def _version(request: RecordedRequest, match: re.Match[str]) -> Response:
@@ -196,6 +211,11 @@ class FakeDoclingServe:
 
         @service.route("POST", r"/v1/convert/file/async")
         def _submit_file(request: RecordedRequest, match: re.Match[str]) -> Response:
+            task = self.new_task(target_kind=self._requested_target(request))
+            return Response(body=self._status_payload(task))
+
+        @service.route("POST", r"/v1/convert/source/batch")
+        def _submit_batch(request: RecordedRequest, match: re.Match[str]) -> Response:
             task = self.new_task(target_kind=self._requested_target(request))
             return Response(body=self._status_payload(task))
 
