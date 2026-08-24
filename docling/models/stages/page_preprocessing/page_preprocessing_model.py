@@ -13,9 +13,24 @@ from pydantic import BaseModel
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+
+
+def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
+    """Whether the native segmented-page (text-cell) decode can be skipped.
+
+    In full-page OCR mode the native PDF text cells are discarded wholesale
+    during OCR post-processing, so extracting them is pure waste — and on
+    vector-dense pages (CAD/wiring schematics drawn as 100k+ path segments)
+    that decode costs multiple GiB regardless of cell content levels.
+    See https://github.com/docling-project/docling/issues/4058.
+    """
+    return bool(pipeline_options.do_ocr) and (
+        pipeline_options.ocr_options.mode == OcrMode.FULL_PAGE
+    )
 
 
 class PagePreprocessingOptions(BaseModel):

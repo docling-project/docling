@@ -1,8 +1,10 @@
-"""Regression tests for skip_cell_extraction (issue #4058).
+"""Regression tests for skipping native cell extraction (issue #4058).
 
-A page whose native cell extraction was skipped keeps ``parsed_page=None``;
-OCR post-processing and layout post-processing must handle that instead of
-crashing, and the flag must be reachable from ``PdfPipelineOptions``.
+In full-page OCR mode the native text cells are discarded during OCR
+post-processing, so the segmented-page decode is skipped entirely. A page
+processed that way keeps ``parsed_page=None`` until OCR runs; OCR
+post-processing and layout post-processing must handle that instead of
+crashing.
 """
 
 from types import SimpleNamespace
@@ -20,6 +22,7 @@ from docling.datamodel.base_models import (
     Size,
 )
 from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
     LayoutPostprocessorOptions,
     OcrMode,
     PdfPipelineOptions,
@@ -29,8 +32,7 @@ from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
 from docling.models.stages.page_preprocessing.page_preprocessing_model import (
-    PagePreprocessingModel,
-    PagePreprocessingOptions,
+    resolve_skip_cell_extraction,
 )
 
 
@@ -52,12 +54,29 @@ def _ocr_cell(text: str, confidence: float) -> TextCell:
     )
 
 
-def test_pdf_pipeline_options_expose_skip_cell_extraction() -> None:
-    assert PdfPipelineOptions().skip_cell_extraction is False
-    assert PdfPipelineOptions(skip_cell_extraction=True).skip_cell_extraction is True
-    # The preprocessing stage accepts the plumbed value.
-    options = PagePreprocessingOptions(images_scale=None, skip_cell_extraction=True)
-    assert PagePreprocessingModel(options=options).options.skip_cell_extraction
+def test_skip_derived_from_full_page_ocr_mode() -> None:
+    # Full-page OCR discards native cells anyway -> the decode is skipped.
+    options = PdfPipelineOptions(
+        do_ocr=True, ocr_options=EasyOcrOptions(mode=OcrMode.FULL_PAGE)
+    )
+    assert resolve_skip_cell_extraction(options) is True
+
+
+def test_no_skip_without_ocr() -> None:
+    # Skipping without OCR would silently produce text-free output.
+    options = PdfPipelineOptions(
+        do_ocr=False, ocr_options=EasyOcrOptions(mode=OcrMode.FULL_PAGE)
+    )
+    assert resolve_skip_cell_extraction(options) is False
+
+
+def test_no_skip_in_native_cell_dependent_modes() -> None:
+    # The other OCR modes merge OCR output with native cells -> keep the decode.
+    for mode in (OcrMode.LAYOUT_REGIONS, OcrMode.PDF_AWARE_LAYOUT_REGIONS):
+        options = PdfPipelineOptions(do_ocr=True, ocr_options=EasyOcrOptions(mode=mode))
+        assert resolve_skip_cell_extraction(options) is False
+    # Defaults (auto OCR mode) keep the decode too.
+    assert resolve_skip_cell_extraction(PdfPipelineOptions()) is False
 
 
 def test_empty_segmented_page_matches_page_geometry() -> None:

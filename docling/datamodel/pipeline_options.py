@@ -2066,17 +2066,6 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
-    skip_cell_extraction: Annotated[
-        bool,
-        Field(
-            description=(
-                "Skip native text-cell extraction (the backend's segmented-page decode) during page "
-                "preprocessing; pages then rely entirely on OCR for text. Escape hatch for vector-dense "
-                "pages (e.g. CAD/wiring schematics drawn as 100k+ path segments) whose native decode "
-                "costs multiple GiB regardless of cell content levels. See issue #4058."
-            )
-        ),
-    ] = False
     heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(
