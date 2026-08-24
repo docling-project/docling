@@ -390,54 +390,64 @@ class LayoutPostprocessor:
 
         return picture_clusters + wrapper_clusters
 
-    def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
-        """Handle overlaps between regular and wrapper clusters before child assignment.
+    @staticmethod
+    def _resolve_coincident_pairs(
+        losers: list[Cluster],
+        winners: list[Cluster],
+        iou_threshold: float = 0.8,
+        conf_tolerance: float = 0.1,
+    ) -> set[int]:
+        """Elect a winner for near-identical (loser, winner) label pairs.
 
-        In particular, KEY_VALUE_REGION proposals that are almost identical to a TABLE
-        should be removed. A PICTURE proposal that nearly coincides with a TABLE is also
-        removed, keeping the structured TABLE.
+        For each pair whose bboxes are near-identical (``IoU > iou_threshold``)
+        AND whose confidences are within ``conf_tolerance`` of each other, the
+        loser label is dropped so the winner label survives. Nothing else --
+        containment, area, downstream behaviour -- is considered.
+
+        Pairs outside this envelope (low IoU, or a clearly more confident
+        loser) are left alone for other passes to handle.
         """
-        clusters_to_remove = set()
+        to_drop: set[int] = set()
+        for loser in losers:
+            for winner in winners:
+                if loser.bbox.intersection_over_union(winner.bbox) <= iou_threshold:
+                    continue
+                if (loser.confidence - winner.confidence) < conf_tolerance:
+                    to_drop.add(loser.id)
+                    break
+        return to_drop
 
-        # TABLE is part of WRAPPER_TYPES and therefore always ends up in special_clusters,
-        # never in regular_clusters. Build the list from special_clusters so the check
-        # below can actually find TABLE proposals to compare against.
+    def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
+        """Elect a winner for cross-type label pairs at near-identical bboxes.
+
+        The layout model can emit the same grounded region under several
+        labels. When two labels sit at near-identical bboxes with similar
+        confidence, this step picks the label carrying the richer downstream
+        semantic. Anything outside that envelope is out of scope here.
+
+        | pair                       | loser   | winner          |
+        |----------------------------|---------|-----------------|
+        | FORM / KVR vs TABLE        | wrapper | TABLE           |
+        | DOCUMENT_INDEX vs TABLE    | TABLE   | DOCUMENT_INDEX  |
+        | PICTURE vs TABLE           | PICTURE | TABLE           |
+        """
         tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
-
-        for wrapper in special_clusters:
-            if wrapper.label not in self.WRAPPER_TYPES:
-                continue
-            if wrapper.label == DocItemLabel.TABLE:
-                continue  # TABLE cannot be a candidate for removal here
-
-            for table in tables:
-                overlap_ratio = wrapper.bbox.intersection_over_self(table.bbox)
-                conf_diff = wrapper.confidence - table.confidence
-                if overlap_ratio > 0.9 and conf_diff < 0.1:
-                    clusters_to_remove.add(wrapper.id)
-                    break
-
-        # The picture/table buckets are de-overlapped independently elsewhere, so a
-        # region the layout model proposes as BOTH a PICTURE and a TABLE survives twice.
-        # When a PICTURE nearly coincides with a TABLE (high IoU), keep the structured
-        # TABLE and drop the PICTURE. IoU (not containment) is used so a genuine small
-        # figure fully inside a large table region is not removed.
-        for picture in special_clusters:
-            if picture.label != DocItemLabel.PICTURE:
-                continue
-            for table in tables:
-                if picture.bbox.intersection_over_union(table.bbox) > 0.8:
-                    clusters_to_remove.add(picture.id)
-                    break
-
-        # Filter out the identified clusters
-        special_clusters = [
-            cluster
-            for cluster in special_clusters
-            if cluster.id not in clusters_to_remove
+        doc_indices = [
+            c for c in special_clusters if c.label == DocItemLabel.DOCUMENT_INDEX
+        ]
+        pictures = [c for c in special_clusters if c.label == DocItemLabel.PICTURE]
+        wrappers = [
+            c
+            for c in special_clusters
+            if c.label in (DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION)
         ]
 
-        return special_clusters
+        clusters_to_remove: set[int] = set()
+        clusters_to_remove |= self._resolve_coincident_pairs(wrappers, tables)
+        clusters_to_remove |= self._resolve_coincident_pairs(tables, doc_indices)
+        clusters_to_remove |= self._resolve_coincident_pairs(pictures, tables)
+
+        return [c for c in special_clusters if c.id not in clusters_to_remove]
 
     def _should_prefer_cluster(
         self, candidate: Cluster, other: Cluster, params: dict

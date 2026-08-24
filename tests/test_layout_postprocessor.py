@@ -155,6 +155,30 @@ def test_cross_type_overlaps_keeps_picture_not_overlapping_table() -> None:
     assert ids == {1, 2}
 
 
+def test_cross_type_overlaps_keeps_both_when_picture_clearly_more_confident() -> None:
+    # The near-tie label preference only fires when confidences are within 0.1.
+    # A near-identical PICTURE that is clearly more confident than the TABLE is
+    # outside our envelope, so we leave both in place. Downstream (or a future
+    # dedicated PICTURE/TABLE sieve) can decide what to do with the pair.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.55
+    )
+    picture = _cluster(
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.PICTURE,
+        confidence=0.95,
+    )
+
+    result = processor._handle_cross_type_overlaps([table, picture])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
 def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
     # A small figure fully contained in a large table (high containment but low IoU)
     # must NOT be removed -- only a near-coinciding picture is a true mislabel.
@@ -178,9 +202,14 @@ def test_cross_type_overlaps_removes_kvregion_coinciding_with_table() -> None:
     # TABLE is in WRAPPER_TYPES and therefore never appears in regular_clusters.
     processor = object.__new__(LayoutPostprocessor)
 
-    table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150), confidence=0.85)
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.85
+    )
     kvr = _cluster(
-        2, DocItemLabel.KEY_VALUE_REGION, (10, 10, 200, 150), confidence=0.80
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.KEY_VALUE_REGION,
+        confidence=0.80,
     )
 
     result = processor._handle_cross_type_overlaps([table, kvr])
@@ -194,10 +223,114 @@ def test_cross_type_overlaps_keeps_kvregion_not_overlapping_table() -> None:
     # A KEY_VALUE_REGION on a different part of the page should not be affected.
     processor = object.__new__(LayoutPostprocessor)
 
-    table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150))
-    kvr = _cluster(2, DocItemLabel.KEY_VALUE_REGION, (10, 300, 200, 450))
+    table = _cluster(1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE)
+    kvr = _cluster(
+        2, BoundingBox(l=10, t=300, r=200, b=450), DocItemLabel.KEY_VALUE_REGION
+    )
 
     result = processor._handle_cross_type_overlaps([table, kvr])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_removes_form_coinciding_with_table() -> None:
+    # A FORM whose bbox is near-identical to a TABLE should lose to the structured
+    # TABLE.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.80
+    )
+    form = _cluster(
+        2, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.FORM, confidence=0.75
+    )
+
+    result = processor._handle_cross_type_overlaps([table, form])
+
+    labels = {c.label for c in result}
+    assert DocItemLabel.TABLE in labels
+    assert DocItemLabel.FORM not in labels
+
+
+def test_cross_type_overlaps_keeps_form_containing_small_table() -> None:
+    # A TABLE that only overlaps a portion of a larger FORM must NOT drop the FORM.
+    # This is the guard-rail against the previous intersection_over_self behaviour,
+    # which would have removed the FORM whenever a TABLE landed anywhere inside it.
+    processor = object.__new__(LayoutPostprocessor)
+
+    form = _cluster(
+        1, BoundingBox(l=0, t=0, r=400, b=400), DocItemLabel.FORM, confidence=0.80
+    )
+    table = _cluster(
+        2, BoundingBox(l=20, t=20, r=120, b=120), DocItemLabel.TABLE, confidence=0.80
+    )
+
+    result = processor._handle_cross_type_overlaps([form, table])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_keeps_form_when_clearly_more_confident() -> None:
+    # Label preference only applies when the two heads are similarly confident.
+    # A near-identical FORM proposal that is clearly more confident than the TABLE
+    # must survive.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.55
+    )
+    form = _cluster(
+        2, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.FORM, confidence=0.95
+    )
+
+    result = processor._handle_cross_type_overlaps([table, form])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_keeps_document_index_over_coinciding_table() -> None:
+    # DOCUMENT_INDEX carries the "this is an index/TOC" semantic and is treated as
+    # a table downstream anyway, so a near-identical TABLE proposal must lose.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.80
+    )
+    doc_index = _cluster(
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.DOCUMENT_INDEX,
+        confidence=0.75,
+    )
+
+    result = processor._handle_cross_type_overlaps([table, doc_index])
+
+    labels = {c.label for c in result}
+    assert DocItemLabel.DOCUMENT_INDEX in labels
+    assert DocItemLabel.TABLE not in labels
+
+
+def test_cross_type_overlaps_keeps_table_when_clearly_more_confident_than_docindex() -> (
+    None
+):
+    # Same confidence gate in the DocIndex direction: a clearly-more-confident
+    # TABLE proposal is not overridden by a low-confidence DOCUMENT_INDEX.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(
+        1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE, confidence=0.95
+    )
+    doc_index = _cluster(
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.DOCUMENT_INDEX,
+        confidence=0.55,
+    )
+
+    result = processor._handle_cross_type_overlaps([table, doc_index])
 
     ids = {c.id for c in result}
     assert ids == {1, 2}
