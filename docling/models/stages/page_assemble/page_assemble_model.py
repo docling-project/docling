@@ -109,7 +109,20 @@ class PageAssembleModel(BasePageModel):
         except ValidationError:
             return Path(best_uri)
 
-    def sanitize_text(self, lines):
+    def sanitize_text(self, lines: List[str]) -> str:
+        """Join the text lines of a cluster into a single normalized string.
+
+        Lines are joined with a space, except across a hyphen that splits a
+        word over the line break ("algo-" / "rithms"), which is dropped so
+        that the two halves close up. A hyphen only splits a word when it is
+        attached to the word it splits; one that follows whitespace is a
+        literal character -- a separator dash, a bullet marker, or a wrapped
+        hyphen-prefixed token -- so it is kept and its lines are joined like
+        any other line break.
+
+        The joined text is then normalized: a few typographic characters are
+        replaced by ASCII equivalents and ligatures are expanded.
+        """
         if len(lines) == 0:
             return ""
 
@@ -120,12 +133,6 @@ class PageAssembleModel(BasePageModel):
                 prev_words = re.findall(r"\b[\w]+\b", prev_line)
                 line_words = re.findall(r"\b[\w]+\b", line)
 
-                # Only a hyphen attached to the preceding word marks a word
-                # split ("algo-" / "rithms"); that hyphen is dropped and the two
-                # halves are closed up. A hyphen that follows whitespace is a
-                # literal character -- a separator dash, a bullet marker, or a
-                # wrapped hyphen-prefixed token -- so it is kept, and the lines
-                # are joined with a space like any other line break.
                 hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
 
                 if (
