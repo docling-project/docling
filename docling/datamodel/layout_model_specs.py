@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Deprecated layout model specs, kept alive only by `LayoutOptions`.
 
 This whole module is removable once the deprecated `LayoutOptions` is dropped.

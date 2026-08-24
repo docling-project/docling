@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Configuration models for docling's automatic speech recognition (ASR) backends.
 
 This module defines the option classes that configure how audio is transcribed.

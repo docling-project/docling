@@ -321,6 +321,10 @@ pr-fast-checks = [
 dev = [
   { include-group = "typecheck" },
   "dprint-py==0.53.1.0",
+  # Test fakes serve a real socket so both httpx and requests code paths are
+  # covered by one harness; see tests/fakes/.
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",

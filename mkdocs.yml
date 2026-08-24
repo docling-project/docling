@@ -164,6 +164,7 @@ nav:
     - 🤖 Agentic / AI dev frameworks:
       - "Bee Agent Framework": integrations/bee.md
       - "Crew AI": integrations/crewai.md
+      - "haiku.rag": integrations/haiku_rag.md
       - "Haystack": integrations/haystack.md
       - "Hector": integrations/hector.md
       - "LangChain": integrations/langchain.md

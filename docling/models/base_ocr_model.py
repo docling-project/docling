@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import copy
 import logging
 from abc import abstractmethod
@@ -7,9 +10,15 @@ from pathlib import Path
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import TextCell
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfCellRenderingMode,
+    PdfPageGeometry,
+    PdfTextCell,
+    SegmentedPdfPage,
+    TextCell,
+)
 from PIL import Image, ImageDraw
-from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -18,9 +27,54 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pdf_text import split_by_render_mode_visibility
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import BoundingBoxSpatialIndex
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
+
+
+def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
+    """A minimal SegmentedPdfPage for pages whose native parse was skipped
+    (PagePreprocessingOptions.skip_cell_extraction), sized from the page."""
+    width, height = page.size.width, page.size.height
+    # CoordOrigin.BOTTOMLEFT by convention: a real backend produces the
+    # segmented page in bottom-left coordinates.
+    rect = BoundingRectangle(
+        r_x0=0,  # lower-left
+        r_y0=0,
+        r_x1=width,  # lower-right
+        r_y1=0,
+        r_x2=width,  # upper-right
+        r_y2=height,
+        r_x3=0,  # upper-left
+        r_y3=height,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    bbox = BoundingBox(l=0, t=height, r=width, b=0, coord_origin=CoordOrigin.BOTTOMLEFT)
+    # NOTE: angle is hardcoded to 0.0 rather than reflecting the page's true
+    # rotation. No PdfPageBackend currently exposes rotation (or the individual
+    # crop/media/art/bleed/trim boxes) without triggering content decoding --
+    # the very work skip_cell_extraction exists to avoid. Left for future work:
+    # add a cheap PdfPageBackend.get_page_geometry() primitive (pypdfium2:
+    # ppage.get_rotation() plus the existing get_pdf_page_geometry() helper;
+    # docling-parse sync/threaded: page_decoder.get_page_dimension()) and
+    # source the dimension from it here.
+    return SegmentedPdfPage(
+        dimension=PdfPageGeometry(
+            angle=0.0,
+            rect=rect,
+            boundary_type="crop_box",
+            art_bbox=bbox,
+            bleed_bbox=bbox,
+            crop_bbox=bbox,
+            media_bbox=bbox,
+            trim_bbox=bbox,
+        ),
+        char_cells=[],
+        word_cells=[],
+        textline_cells=[],
+    )
+
 
 try:
     import cv2
@@ -148,20 +202,17 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
-        text_index = None
-        non_text_index = None
+        text_index: BoundingBoxSpatialIndex | None = None
+        non_text_index: BoundingBoxSpatialIndex | None = None
         if not use_backend_queries:
-            p = index.Property()
-            p.dimension = 2
-
             # Index for the text PDF cells
             text_cells = backend.get_visible_text_cells()
             if text_cells is None:
                 text_cells = backend.get_text_cells()
 
-            text_index = index.Index(properties=p)
+            text_index = BoundingBoxSpatialIndex()
             for i, text_cell in enumerate(text_cells):
-                text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+                text_index.insert(i, text_cell.rect.to_bounding_box())
 
             # Index for the non-text PDF cells: bitmaps, and shapes when available
             non_text_boxes = list(backend.get_bitmap_rects())
@@ -169,15 +220,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             if shape_boxes is not None:
                 non_text_boxes.extend(shape_boxes)
 
-            non_text_index = index.Index(properties=p)
+            non_text_index = BoundingBoxSpatialIndex()
             for i, bbox in enumerate(non_text_boxes):
-                non_text_index.insert(i, bbox.as_tuple())
+                non_text_index.insert(i, bbox)
 
         # Collect the non-eliminated cluster bboxes
         ocr_rects: list[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
             cluster_bbox = cluster.bbox
-            cluster_bbox_tuple = cluster_bbox.as_tuple()
 
             if use_backend_queries:
                 has_non_text = backend.has_content_in(
@@ -186,7 +236,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             else:
                 assert non_text_index is not None
                 has_non_text = any(
-                    True for _ in non_text_index.intersection(cluster_bbox_tuple)
+                    True for _ in non_text_index.intersection(cluster_bbox)
                 )
 
             if has_non_text:
@@ -200,9 +250,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 )
             else:
                 assert text_index is not None
-                has_text = any(
-                    True for _ in text_index.intersection(cluster_bbox_tuple)
-                )
+                has_text = any(True for _ in text_index.intersection(cluster_bbox))
 
             if not has_text:
                 ocr_rects.append(cluster_bbox)
@@ -311,7 +359,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         for i, cell in enumerate(final_cells):
             cell.index = i
 
-        assert page.parsed_page is not None
+        if page.parsed_page is None:
+            # No native parse ran (e.g. skip_cell_extraction): create an empty
+            # SegmentedPdfPage so the OCR output has somewhere to live.
+            page.parsed_page = _empty_segmented_page(page)
 
         # Update parsed_page.textline_cells directly
         page.parsed_page.textline_cells = final_cells
@@ -378,9 +429,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         r"""
         Keep every prioritized cell, plus the secondary cells that overlap none of them.
         """
-        p = index.Property()
-        p.dimension = 2
-        idx = index.Index(properties=p)
+        idx = BoundingBoxSpatialIndex()
 
         # The R-tree bbox intersection is a weak criterion but it works.
         merged_cells = list(prioritized_cells)
@@ -389,11 +438,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             # Index the (smaller) prioritized cells; keep each secondary cell that
             # doesn't overlap any of them.
             for i, cell in enumerate(prioritized_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             for cell in secondary_cells:
                 overlaps = any(
-                    True
-                    for _ in idx.intersection(cell.rect.to_bounding_box().as_tuple())
+                    True for _ in idx.intersection(cell.rect.to_bounding_box())
                 )
                 if not overlaps:
                     merged_cells.append(cell)
@@ -401,12 +449,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             # Index the (smaller) secondary cells; drop the ones overlapping any
             # prioritized cell and keep the rest.
             for i, cell in enumerate(secondary_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             overlapping_ids: set[int] = set()
             for cell in prioritized_cells:
-                overlapping_ids.update(
-                    idx.intersection(cell.rect.to_bounding_box().as_tuple())
-                )
+                overlapping_ids.update(idx.intersection(cell.rect.to_bounding_box()))
             merged_cells.extend(
                 cell
                 for i, cell in enumerate(secondary_cells)

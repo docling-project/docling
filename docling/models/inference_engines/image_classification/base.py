@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Base classes for image-classification inference engines."""
 
 from __future__ import annotations

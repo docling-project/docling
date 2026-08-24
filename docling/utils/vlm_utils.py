@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared VLM utility functions for output post-processing and image sizing."""
 
 from __future__ import annotations

@@ -87,3 +87,9 @@ component_management:
       name: Utilities
       paths:
         - docling/utils/**
+
+# Preview surface, not shipped API: excluded from the coverage denominator
+# so it neither inflates nor depresses the reported number. Anything moved
+# out of docling/experimental/ must be removed from this list.
+ignore:
+  - "docling/experimental/**"

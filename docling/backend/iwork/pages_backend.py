@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backends for Apple iWork documents.
 
 Currently limited to Pages (``.pages``). A ``.pages`` file is a ZIP container, but

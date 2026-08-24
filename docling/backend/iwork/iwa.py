@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Reader for Apple's IWA (iWork Archive) container format.
 
 Pages, Numbers and Keynote from 2013 onwards store their documents as

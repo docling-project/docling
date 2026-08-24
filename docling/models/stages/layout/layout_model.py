@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Deprecated layout stage kept as a thin shim over the object-detection model.
 
 This whole module is removable once `LayoutOptions` is dropped: it exists only

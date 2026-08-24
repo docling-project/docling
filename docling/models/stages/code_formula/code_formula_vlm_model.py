@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Code and formula extraction stage using the new VLM runtime system.
 
 This module provides a runtime-agnostic code and formula extraction stage that can use

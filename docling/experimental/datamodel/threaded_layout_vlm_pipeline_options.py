@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Options for the threaded layout+VLM pipeline."""
 
 from typing import Union

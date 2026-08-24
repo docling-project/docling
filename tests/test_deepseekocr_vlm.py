@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
 import json
