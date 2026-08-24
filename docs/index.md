@@ -58,6 +58,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
 - 📊 Chart understanding (Barchart, Piechart, LinePlot): convert them into tables or code and add detailed descriptions
+- 🔠 Opt-in recovery of [PDF heading levels](usage/heading_levels.md) from the bookmarks, the outline numbering and the font styling, instead of a flat list of level-1 headings
 
 ### Coming soon
 
