@@ -161,6 +161,17 @@ class TableStructureOptions(BaseTableStructureOptions):
             )
         ),
     ] = TableFormerMode.ACCURATE
+    reconcile_rows_with_rules: Annotated[
+        bool,
+        Field(
+            description=(
+                "Reconcile predicted row boundaries with horizontal rules drawn in the PDF vector layer. "
+                "On ruled tables with dense wrapped cells, the model can cut a row one text line too early; "
+                "when the drawn rules corroborate the predicted row count, matched words are re-binned into "
+                "the ruled bands. Tables without rules are never modified."
+            )
+        ),
+    ] = False
 
 
 class TableStructureV2Options(BaseTableStructureOptions):
