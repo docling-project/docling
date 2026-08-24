@@ -149,7 +149,7 @@ def test_verify_docitems_image_size_strict(
             doc_pred=doc_pred,
             doc_true=doc_true,
             fuzzy=False,
-            pdf_filename="fixture.json",
+            pdf_filename="fixture.pdf",
         )
     else:
         with pytest.raises(AssertionError, match=expected_error):
@@ -157,7 +157,7 @@ def test_verify_docitems_image_size_strict(
                 doc_pred=doc_pred,
                 doc_true=doc_true,
                 fuzzy=False,
-                pdf_filename="fixture.json",
+                pdf_filename="fixture.pdf",
             )
 
 
@@ -175,5 +175,5 @@ def test_verify_docitems_fuzzy_skips_image_size_check() -> None:
         doc_pred=doc_pred,
         doc_true=doc_true,
         fuzzy=True,
-        pdf_filename="fixture.json",
+        pdf_filename="fixture.pdf",
     )
