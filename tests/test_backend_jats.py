@@ -63,9 +63,14 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import Script
 from PIL import Image
 
+from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.document_converter import DocumentConverter
+from docling.document_converter import (
+    DocumentConverter,
+    FormatOption,
+    XMLJatsFormatOption,
+)
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -82,8 +87,19 @@ def get_jats_paths():
     return sorted(nxml_files + xml_files)
 
 
-def get_converter():
-    converter = DocumentConverter(allowed_formats=[InputFormat.XML_JATS])
+def get_converter(backend_options: JatsBackendOptions | None = None):
+    format_options: dict[InputFormat, FormatOption] | None = (
+        {
+            InputFormat.XML_JATS: XMLJatsFormatOption(
+                backend_options=backend_options,
+            )
+        }
+        if backend_options is not None
+        else None
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XML_JATS], format_options=format_options
+    )
     return converter
 
 
@@ -117,6 +133,22 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
     return conv_result.document
 
 
+def write_jats_body(path: Path, body: str) -> None:
+    path.write_text(
+        f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
+  <body>{body}</body>
+</article>
+""",
+        encoding="utf-8",
+    )
+
+
+def get_pictures(doc: DoclingDocument) -> list[PictureItem]:
+    return [item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)]
+
+
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -133,7 +165,9 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
     return conv_result.document
 
 
-def convert_jats_body(body_content: str) -> DoclingDocument:
+def convert_jats_body(
+    body_content: str, backend_options: JatsBackendOptions | None = None
+) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
 <article article-type="research-article">
@@ -150,7 +184,7 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
 </article>
 """
     stream = DocumentStream(name="body-test.nxml", stream=BytesIO(xml.encode()))
-    conv_result: ConversionResult = get_converter().convert(stream)
+    conv_result: ConversionResult = get_converter(backend_options).convert(stream)
     return conv_result.document
 
 
@@ -484,33 +518,43 @@ def test_jats_footnotes_are_preserved():
     assert "Second footnote" in md
 
 
-def test_jats_file_embeds_relative_figure_image(tmp_path: Path):
+def test_jats_file_does_not_fetch_relative_figure_image_by_default(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+
+    doc = get_converter().convert(jats_path).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+def test_jats_file_embeds_relative_figure_image_when_enabled(tmp_path: Path):
     image_path = tmp_path / "images" / "figure.png"
     image_path.parent.mkdir()
     Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
 
     jats_path = tmp_path / "article.nxml"
-    jats_path.write_text(
-        """<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
-  <body>
+    write_jats_body(
+        jats_path,
+        """
     <fig>
       <label>Figure 1</label>
       <caption><p>A red rectangle.</p></caption>
       <graphic xlink:href="images/figure.png"/>
     </fig>
-  </body>
-</article>
 """,
-        encoding="utf-8",
     )
 
-    doc = get_converter().convert(jats_path).document
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
 
-    pictures = [
-        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
-    ]
+    pictures = get_pictures(doc)
     assert len(pictures) == 1
     assert pictures[0].image is not None
     assert pictures[0].captions[0].resolve(doc).text == "Figure 1 A red rectangle."
@@ -523,14 +567,102 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
 def test_jats_stream_does_not_resolve_relative_figure_image():
     doc = convert_jats_body(
         '<fig><graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
-        'xlink:href="figure.png"/></fig>'
+        'xlink:href="figure.png"/></fig>',
+        JatsBackendOptions(fetch_images=True, enable_local_fetch=True),
     )
 
-    pictures = [
-        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
-    ]
+    pictures = get_pictures(doc)
     assert len(pictures) == 1
     assert pictures[0].image is None
+
+
+def test_jats_stream_resolves_figure_image_from_source_uri(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    jats_path = tmp_path / "source.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+    stream = DocumentStream(name="article.nxml", stream=BytesIO(jats_path.read_bytes()))
+    converter = get_converter(
+        JatsBackendOptions(
+            fetch_images=True,
+            enable_local_fetch=True,
+            source_uri=jats_path,
+        )
+    )
+
+    doc = converter.convert(stream).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_jats_stream_does_not_fetch_relative_image_from_remote_source_uri():
+    doc = convert_jats_body(
+        '<fig><graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="figure.png"/></fig>',
+        JatsBackendOptions(
+            fetch_images=True,
+            enable_remote_fetch=True,
+            source_uri="https://example.com/article.nxml",
+        ),
+    )
+
+    assert get_pictures(doc)[0].image is None
+
+
+def test_jats_figure_image_requires_local_fetch_permission(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+
+    with pytest.warns(UserWarning, match="Fetching local resources"):
+        doc = (
+            get_converter(JatsBackendOptions(fetch_images=True, source_uri=jats_path))
+            .convert(jats_path)
+            .document
+        )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+@pytest.mark.parametrize(
+    "graphic",
+    [
+        pytest.param('<graphic xlink:href="images/figure"/>', id="direct"),
+        pytest.param(
+            "<alternatives>"
+            '<graphic xlink:href="images/unsupported.svg"/>'
+            '<graphic xlink:href="images/figure"/>'
+            "</alternatives>",
+            id="alternatives",
+        ),
+    ],
+)
+def test_jats_figure_image_resolves_extensionless_href(tmp_path: Path, graphic: str):
+    image_path = tmp_path / "images" / "figure.jpg"
+    image_path.parent.mkdir()
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, f"<fig>{graphic}</fig>")
+
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
 
 
 @pytest.mark.parametrize(
@@ -543,32 +675,42 @@ def test_jats_stream_does_not_resolve_relative_figure_image():
             '<graphic xlink:href="https://example.com/figure.png"/>',
             id="remote-href",
         ),
-        pytest.param('<graphic xlink:href="missing.png"/>', id="missing-file"),
+        pytest.param('<graphic xlink:href="figure.svg"/>', id="unsupported-svg"),
     ],
 )
 def test_jats_file_skips_unavailable_figure_image(tmp_path: Path, graphic: str):
     jats_path = tmp_path / "article.nxml"
-    jats_path.write_text(
-        f"""<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
-  <body>
-    <fig>{graphic}</fig>
-    <p>Content after the unavailable figure.</p>
-  </body>
-</article>
-""",
-        encoding="utf-8",
+    write_jats_body(
+        jats_path,
+        f"<fig>{graphic}</fig><p>Content after the unavailable figure.</p>",
     )
 
-    doc = get_converter().convert(jats_path).document
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
 
-    pictures = [
-        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
-    ]
+    pictures = get_pictures(doc)
     assert len(pictures) == 1
     assert pictures[0].image is None
     assert "Content after the unavailable figure." in doc.export_to_markdown()
+
+
+def test_jats_file_warns_for_missing_figure_image(tmp_path: Path):
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="missing.png"/></fig>')
+
+    with pytest.warns(UserWarning, match="no matching local file exists"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    assert get_pictures(doc)[0].image is None
 
 
 def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
@@ -577,25 +719,22 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     article_dir = tmp_path / "article"
     article_dir.mkdir()
     jats_path = article_dir / "article.nxml"
-    jats_path.write_text(
-        """<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
-  <body>
-    <fig><graphic xlink:href="../outside.png"/></fig>
-    <p>Content after the blocked figure.</p>
-  </body>
-</article>
-""",
-        encoding="utf-8",
+    write_jats_body(
+        jats_path,
+        '<fig><graphic xlink:href="../outside.png"/></fig>'
+        "<p>Content after the blocked figure.</p>",
     )
 
     with pytest.warns(UserWarning, match="Path traversal blocked"):
-        doc = get_converter().convert(jats_path).document
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
 
-    pictures = [
-        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
-    ]
+    pictures = get_pictures(doc)
     assert len(pictures) == 1
     assert pictures[0].image is None
     assert "Content after the blocked figure." in doc.export_to_markdown()

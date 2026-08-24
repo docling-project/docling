@@ -54,6 +54,7 @@ from docling.datamodel.backend_options import (
     EpubBackendOptions,
     HTMLBackendOptions,
     IWorkBackendOptions,
+    JatsBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
@@ -195,6 +196,7 @@ class PatentUsptoFormatOption(FormatOption):
 class XMLJatsFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
+    backend_options: Optional[JatsBackendOptions] = None
 
 
 class XMLDocLangFormatOption(FormatOption):
