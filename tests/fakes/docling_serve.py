@@ -9,17 +9,38 @@ per route.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from itertools import count
 from typing import Any
 
 from docling_core.types.doc import DoclingDocument
+from pydantic import BaseModel
 
 from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.service.responses import (
+    ArtifactRef,
+    ConvertDocumentResponse,
+    DocumentArtifactItem,
+    ExportDocumentResponse,
+    PresignedUrlConvertResponse,
+    TaskStatusResponse,
+)
+from docling.datamodel.service.tasks import TaskType
 from tests.fakes.http_service import FakeHttpService, RecordedRequest, Response
 
 DEFAULT_MARKDOWN = "# Fake service result\n\nConverted by the in-process fake.\n"
+
+
+def _as_wire(model: BaseModel) -> dict[str, Any]:
+    """Serialise a response model exactly as the service would put it on the wire.
+
+    Building every response from this repo's own response models is what keeps
+    the fake from becoming a second, drifting copy of the docling-serve API: a
+    change to the models either flows through here or fails loudly.
+    """
+    return json.loads(model.model_dump_json())
 
 
 def _fake_document(name: str) -> DoclingDocument:
@@ -98,57 +119,62 @@ class FakeDoclingServe:
         return match.group(1).decode() if match else "inbody"
 
     def _status_payload(self, task: FakeTask) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "task_id": task.task_id,
-            "task_type": task.task_type,
-            "task_status": task.status().value,
-            "task_position": 0,
-        }
-        if task.status() is ConversionStatus.FAILURE:
-            payload["error_message"] = "conversion failed in the fake service"
-        return payload
+        status = TaskStatusResponse(
+            task_id=task.task_id,
+            task_type=TaskType(task.task_type),
+            task_status=task.status(),
+            task_position=0,
+            error_message=(
+                "conversion failed in the fake service"
+                if task.status() is ConversionStatus.FAILURE
+                else None
+            ),
+        )
+        return _as_wire(status)
 
     def _result_payload(self, task: FakeTask) -> dict[str, Any]:
         """The result envelope the client expects for the requested target."""
         if task.target_kind == "presigned_url":
             failed = task.terminal_status is ConversionStatus.FAILURE
-            return {
-                "num_converted": 1,
-                "num_succeeded": 0 if failed else 1,
-                "num_failed": 1 if failed else 0,
-                "processing_time": 0.25,
-                "documents": [
-                    {
-                        "source_index": 0,
-                        "source_uri": task.source_uri,
-                        "filename": task.filename,
-                        "status": task.terminal_status.value,
-                        "errors": task.errors,
-                        "artifacts": [
-                            {
-                                "artifact_type": "json",
-                                "mime_type": "application/json",
-                                "uri": f"{self.base_url}/artifacts/{task.task_id}/json",
-                            },
-                            {
-                                "artifact_type": "markdown",
-                                "mime_type": "text/markdown",
-                                "uri": f"{self.base_url}/artifacts/{task.task_id}/md",
-                            },
+            response = PresignedUrlConvertResponse(
+                num_converted=1,
+                num_succeeded=0 if failed else 1,
+                num_failed=1 if failed else 0,
+                processing_time=0.25,
+                documents=[
+                    DocumentArtifactItem(
+                        source_index=0,
+                        source_uri=task.source_uri,
+                        filename=task.filename,
+                        status=task.terminal_status,
+                        artifacts=[
+                            ArtifactRef(
+                                artifact_type="json",
+                                mime_type="application/json",
+                                uri=f"{self.base_url}/artifacts/{task.task_id}/json",
+                            ),
+                            ArtifactRef(
+                                artifact_type="markdown",
+                                mime_type="text/markdown",
+                                uri=f"{self.base_url}/artifacts/{task.task_id}/md",
+                            ),
                         ],
-                    }
+                    )
                 ],
-            }
-        return {
-            "document": {
-                "filename": task.filename,
-                "md_content": task.markdown,
-                "json_content": _fake_document(task.filename).export_to_dict(),
-            },
-            "status": task.terminal_status.value,
-            "errors": task.errors,
-            "processing_time": 0.25,
-        }
+            )
+            return _as_wire(response)
+
+        return _as_wire(
+            ConvertDocumentResponse(
+                document=ExportDocumentResponse(
+                    filename=task.filename,
+                    md_content=task.markdown,
+                    json_content=_fake_document(task.filename),
+                ),
+                status=task.terminal_status,
+                processing_time=0.25,
+            )
+        )
 
     # -- routes ----------------------------------------------------------
 
