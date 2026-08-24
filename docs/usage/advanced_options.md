@@ -202,10 +202,10 @@ generations.
 
 !!! note "Not yet extracted"
 
-    Character formatting, lists, text boxes, headers, footers, footnotes
-    and comments are not included — only the main body and its tables are
-    read — and password-protected documents cannot be read. Table cells
-    holding anything other than text are left empty.
+    Lists, headers, footers, footnotes and comments are not included, and
+    password-protected documents cannot be read. Table cells holding anything
+    other than text are left empty. Text boxes are read from Pages 5+ documents
+    only.
 
 The container is untrusted input, so member count, total size, per-member size
 and decompressed output are all bounded. Those limits can be tuned with

@@ -29,6 +29,7 @@ from docling.backend.iwork.iwa import (
 )
 from docling.backend.iwork.pages_backend import (
     IWorkPagesDocumentBackend,
+    _iwa_formatting,
     _iwa_style_name,
     _label_for_style,
 )
@@ -42,6 +43,7 @@ SOURCES = Path("./tests/data/pages/sources")
 PAGES_2013 = SOURCES / "pages_2013.pages"
 PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
 PAGES_PASSWORD_PROTECTED = SOURCES / "pages_password_protected.pages"
+PAGES_IWORK09_FORMATTED = SOURCES / "pages_iwork09_formatted.pages"
 
 # Present in the body of both fixtures.
 _BODY_SENTENCE = "Some plain text to parse."
@@ -532,3 +534,88 @@ def test_both_generations_agree_on_the_table():
         }
 
     assert grid(PAGES_2013) == grid(PAGES_IWORK09)
+
+
+def test_modern_text_box_content_is_extracted():
+    """Text boxes are floating drawables, reached from TP.DocumentArchive rather
+    than from the body storage."""
+    doc = _backend(PAGES_2013).convert()
+
+    assert "A text box with text." in doc.export_to_markdown()
+
+
+def test_text_boxes_are_reached_by_ownership_not_by_scanning():
+    """Scanning every TSWP.StorageArchive would be simpler but would also pick up
+    headers, footers and footnotes, which are deliberately excluded. Following
+    the drawables field keeps that distinction, so the storage holding the text
+    box must not be the body storage it is read alongside."""
+    archive = zipfile.ZipFile(PAGES_2013)
+    objects = {
+        obj.identifier: obj
+        for name in archive.namelist()
+        if name.endswith(".iwa")
+        for obj in iter_objects(archive.read(name))
+    }
+
+    document = next(o for o in objects.values() if o.message_type == 10000)
+    storages_with_text = [
+        obj.identifier
+        for obj in objects.values()
+        if obj.message_type == 2001
+        and any(
+            isinstance(v, bytes) and v.strip()
+            for v in read_fields(obj.payload).get(3, [])
+        )
+    ]
+
+    # The fixture holds exactly two: the body, and the text box.
+    assert len(storages_with_text) == 2
+    assert (
+        "A text box with text." in _backend(PAGES_2013).convert().export_to_markdown()
+    )
+    assert document.message_type == 10000
+
+
+def test_legacy_character_formatting_is_recovered():
+    """iWork '09 applies character styles through sf:span. This fixture underlines
+    part of a paragraph, so the run has to keep its formatting while the rest of
+    the paragraph does not."""
+    doc = _backend(PAGES_IWORK09_FORMATTED).convert()
+
+    underlined = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.underline
+    ]
+    assert underlined, "fixture no longer carries an underlined run"
+    assert any("Both Pages 1.x and Keynote 2.x" in text for text in underlined)
+
+    # The formatting must not bleed onto text outside the span.
+    assert not all(
+        item.formatting is not None and item.formatting.underline for item in doc.texts
+    )
+
+
+def test_iwa_character_styles_map_onto_formatting():
+    """The property fields of a character style were established by correlating
+    style names across real Apple documents. Check that mapping against the
+    styles the fixture actually defines."""
+    archive = zipfile.ZipFile(PAGES_2013)
+    objects = {
+        obj.identifier: obj
+        for name in archive.namelist()
+        if name.endswith(".iwa")
+        for obj in iter_objects(archive.read(name))
+    }
+
+    by_name = {
+        _iwa_style_name(obj.payload): _iwa_formatting(obj.payload)
+        for obj in objects.values()
+        if obj.message_type == 2021
+    }
+
+    assert by_name["Emphasis"] is not None and by_name["Emphasis"].bold
+    assert by_name["Underline"] is not None and by_name["Underline"].underline
+    assert (
+        by_name["Strikethrough"] is not None and by_name["Strikethrough"].strikethrough
+    )

@@ -34,6 +34,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     TableCell,
     TableData,
 )
@@ -55,12 +56,29 @@ from docling.exceptions import DocumentLoadError
 _log = logging.getLogger(__name__)
 
 
-class _Paragraph(NamedTuple):
-    """One block of body text with the label its Pages style implies."""
+class _Run(NamedTuple):
+    """A stretch of text sharing one character style."""
 
     text: str
+    formatting: Formatting | None
+
+
+class _Paragraph(NamedTuple):
+    """One block of body text with the label its Pages style implies.
+
+    A paragraph is kept as runs rather than a single string because Pages
+    applies character styles to arbitrary stretches of it, and a bold phrase in
+    the middle of a sentence has to stay attached to that phrase.
+    """
+
+    runs: tuple[_Run, ...]
     label: DocItemLabel
     level: int | None
+
+    @property
+    def text(self) -> str:
+        """The paragraph's full text, with its runs joined back together."""
+        return "".join(run.text for run in self.runs)
 
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
@@ -78,6 +96,46 @@ _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 # legacy path decompresses incrementally against this ceiling rather than
 # trusting the member size that max_total_bytes is computed from.
 _MAX_LEGACY_XML_BYTES = 100 * 1024 * 1024
+
+_MAX_REFERENCE_DEPTH = 4
+"""How far to descend when collecting references from a message."""
+
+_REFERENCE_MAX_BYTES = 6
+"""Longest a ``TSP.Reference`` can be; anything larger is a nested message."""
+
+_TSWP_CHARACTER_STYLE = 2021
+"""Message type of ``TSWP.CharacterStyleArchive``."""
+
+_STORAGE_CHARACTER_STYLE_FIELD = 8
+"""Field of ``TSWP.StorageArchive`` holding the character style run table."""
+
+_STYLE_PROPERTIES_FIELD = 11
+"""Field of a character style holding its property map."""
+
+_CHARACTER_PROPERTY_LABELS = {
+    1: "bold",
+    2: "italic",
+    11: "underline",
+    12: "strikethrough",
+}
+"""Property fields of a character style, as they map onto ``Formatting``.
+
+Established by correlating style *names* with their properties across three real
+Apple documents: "Emphasis"/"Bold" set field 1, "Italic" field 2, "Underline"
+and "Link" field 11, and "Strikethrough" field 12. Fields carrying anything else
+— colours, fonts, capitalisation — have no equivalent here and are ignored.
+"""
+
+_TSWP_SHAPE_INFO = 2011
+"""Message type of ``TSWP.ShapeInfoArchive``, a shape that holds text."""
+
+_DOCUMENT_DRAWABLES_FIELD = 20
+"""Field of ``TP.DocumentArchive`` referencing the document's floating drawables.
+
+Text boxes hang off this rather than off the body storage. Reaching them by
+ownership matters: scanning every ``TSWP.StorageArchive`` in the document would
+also pick up headers, footers and footnotes, which are deliberately excluded.
+"""
 
 _TP_DOCUMENT_ARCHIVE = 10000
 """Message type of ``TP.DocumentArchive``, the root object of a Pages document."""
@@ -172,6 +230,17 @@ _SFA_ATTR_STRING = f"{{{_SFA_NAMESPACE}}}s"
 _SF_TABULAR_MODEL = f"{{{_SF_NAMESPACE}}}tabular-model"
 _SF_GRID = f"{{{_SF_NAMESPACE}}}grid"
 _SF_CELL_TEXT = f"{{{_SF_NAMESPACE}}}ct"
+_SF_SPAN = f"{{{_SF_NAMESPACE}}}span"
+_SF_CHARACTER_STYLE = f"{{{_SF_NAMESPACE}}}characterstyle"
+_SFA_ATTR_NUMBER = "{http://developer.apple.com/namespaces/sfa}number"
+
+_SF_PROPERTY_LABELS = {
+    f"{{{_SF_NAMESPACE}}}bold": "bold",
+    f"{{{_SF_NAMESPACE}}}italic": "italic",
+    f"{{{_SF_NAMESPACE}}}underline": "underline",
+    f"{{{_SF_NAMESPACE}}}strikethru": "strikethrough",
+}
+"""Property-map entries of an iWork '09 character style, as ``Formatting`` names."""
 
 _SF_FURNITURE = frozenset(
     {
@@ -202,9 +271,14 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
     Known limitations:
         * Only text cells are read from a table. A cell holding a number, a
           date or a formula result is left empty rather than guessed at.
-        * Character formatting and lists are not recovered.
-        * Text boxes, headers, footers, footnotes and comments are not
-          included; only the main body storage is read, in both generations.
+        * Bold, italic, underline and strikethrough are recovered; other
+          character properties, such as colour or capitalisation, have no
+          equivalent here. Lists are not recovered.
+        * Text boxes are read from Pages 5+ documents, where they are floating
+          drawables owned by the document. An iWork '09 document keeps them in
+          the body flow, so they already appear there.
+        * Headers, footers, footnotes and comments are not included in either
+          generation.
         * Password-protected documents cannot be read.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
@@ -339,7 +413,10 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(value, bytes)
         )
         styles = self._iwa_style_runs(fields, objects)
-        return _split_paragraphs(text, styles), _iwa_tables(objects)
+        characters = _iwa_character_runs(fields, objects)
+        paragraphs = _split_paragraphs(text, styles, characters)
+        paragraphs.extend(_iwa_text_box_paragraphs(document, objects))
+        return paragraphs, _iwa_tables(objects)
 
     @staticmethod
     def _iwa_style_runs(
@@ -418,16 +495,19 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             for element in root.iter(_SF_PARAGRAPH_STYLE)
             if element.get(_SF_ATTR_IDENT)
         }
+        character_styles = {
+            element.get(_SF_ATTR_IDENT): _legacy_formatting(element)
+            for element in root.iter(_SF_CHARACTER_STYLE)
+            if element.get(_SF_ATTR_IDENT)
+        }
 
         paragraphs: list[_Paragraph] = []
         for para in _iter_body_paragraphs(root):
-            # itertext() would pull in the template placeholder text, which is
-            # not document content.
-            text = _clean("".join(_iter_text_excluding_ghosts(para)))
-            if not text:
+            runs = _legacy_runs(para, character_styles)
+            if not runs:
                 continue
             label, level = _label_for_style(style_names.get(para.get(_SF_ATTR_STYLE)))
-            paragraphs.append(_Paragraph(text, label, level))
+            paragraphs.append(_Paragraph(tuple(runs), label, level))
 
         return paragraphs, _read_legacy_tables(root)
 
@@ -461,12 +541,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         for paragraph in self._paragraphs:
-            if paragraph.label == DocItemLabel.TITLE:
-                doc.add_title(text=paragraph.text)
-            elif paragraph.label == DocItemLabel.SECTION_HEADER:
-                doc.add_heading(text=paragraph.text, level=paragraph.level or 1)
-            else:
-                doc.add_text(label=paragraph.label, text=paragraph.text)
+            _add_paragraph(doc, paragraph)
 
         # Pages keeps tables outside the body text flow, so they cannot be
         # interleaved with the paragraphs and are appended instead.
@@ -538,40 +613,140 @@ def _iwa_style_name(payload: bytes) -> str | None:
 
 
 def _split_paragraphs(
-    text: str, style_runs: list[tuple[int, str | None]]
+    text: str,
+    style_runs: list[tuple[int, str | None]],
+    character_runs: list[tuple[int, Formatting | None]],
 ) -> list[_Paragraph]:
-    """Split a TSWP text run into labelled paragraphs.
+    """Split a TSWP text run into labelled paragraphs of formatted runs.
 
     Apple separates paragraphs with newlines and pads empty ones, so blank
-    results are dropped rather than emitted as empty text items. The style runs
-    are keyed by character index into ``text``, and each one stays in force until
-    the next begins.
+    results are dropped rather than emitted as empty text items. Both run tables
+    are keyed by character index into ``text``, and each entry stays in force
+    until the next one begins.
 
     Args:
-        text: The concatenated text of the body storage.
-        style_runs: Character index and style name pairs, in document order.
+        text: The concatenated text of the storage.
+        style_runs: Character index and paragraph style name pairs.
+        character_runs: Character index and character formatting pairs.
 
     Returns:
-        The non-empty paragraphs, each labelled by its style.
+        The non-empty paragraphs, each labelled and carrying its runs.
     """
     paragraphs: list[_Paragraph] = []
     offset = 0
-    run_index = 0
-    current: str | None = None
+    style_index = 0
+    current_style: str | None = None
 
     for line in text.split("\n"):
-        # Advance through the style table to whichever run covers this line.
-        while run_index < len(style_runs) and style_runs[run_index][0] <= offset:
-            current = style_runs[run_index][1]
-            run_index += 1
+        while style_runs and style_index < len(style_runs):
+            if style_runs[style_index][0] > offset:
+                break
+            current_style = style_runs[style_index][1]
+            style_index += 1
 
-        cleaned = _clean(line)
-        if cleaned:
-            label, level = _label_for_style(current)
-            paragraphs.append(_Paragraph(cleaned, label, level))
+        runs = _runs_for(line, offset, character_runs)
+        if runs:
+            label, level = _label_for_style(current_style)
+            paragraphs.append(_Paragraph(tuple(runs), label, level))
         offset += len(line) + 1  # + 1 for the newline that split consumed
 
     return paragraphs
+
+
+def _runs_for(
+    line: str, start: int, character_runs: list[tuple[int, Formatting | None]]
+) -> list[_Run]:
+    """Cut one line into runs at the character style boundaries inside it."""
+    if not _clean(line):
+        return []
+    if not character_runs:
+        return [_Run(_clean(line), None)]
+
+    # Boundaries are absolute character indices; keep the ones inside this line.
+    boundaries = [start] + [
+        index for index, _ in character_runs if start < index < start + len(line)
+    ]
+    runs: list[_Run] = []
+
+    for position, begin in enumerate(boundaries):
+        end = (
+            boundaries[position + 1]
+            if position + 1 < len(boundaries)
+            else start + len(line)
+        )
+        piece = _clean(line[begin - start : end - start])
+        if piece:
+            runs.append(_Run(piece, _formatting_at(begin, character_runs)))
+
+    return runs or [_Run(_clean(line), None)]
+
+
+def _formatting_at(
+    index: int, character_runs: list[tuple[int, Formatting | None]]
+) -> Formatting | None:
+    """Return the character formatting in force at ``index``."""
+    current: Formatting | None = None
+    for position, formatting in character_runs:
+        if position > index:
+            break
+        current = formatting
+    return current
+
+
+def _iwa_character_runs(
+    fields: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
+) -> list[tuple[int, Formatting | None]]:
+    """Resolve the character style run table of a ``TSWP.StorageArchive``.
+
+    Entries without a style reference clear the formatting from that character
+    on, which is how Pages ends a bold phrase.
+
+    Args:
+        fields: Decoded fields of the storage.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        Character index and formatting pairs, in document order.
+    """
+    table = fields.get(_STORAGE_CHARACTER_STYLE_FIELD, [])
+    if not table or not isinstance(table[0], bytes):
+        return []
+
+    runs: list[tuple[int, Formatting | None]] = []
+    for entry in _safe_fields(table[0]).get(1, []):
+        if not isinstance(entry, bytes):
+            continue
+        parsed = _safe_fields(entry)
+        index = parsed.get(1, [None])[0]
+        if not isinstance(index, int):
+            continue
+
+        reference = parsed.get(2, [None])[0]
+        formatting: Formatting | None = None
+        if isinstance(reference, bytes):
+            target = read_reference(reference)
+            style = objects.get(target) if target is not None else None
+            if style is not None and style.message_type == _TSWP_CHARACTER_STYLE:
+                formatting = _iwa_formatting(style.payload)
+        runs.append((index, formatting))
+
+    runs.sort(key=lambda run: run[0])
+    return runs
+
+
+def _iwa_formatting(payload: bytes) -> Formatting | None:
+    """Read a character style's property map as a :class:`Formatting`."""
+    properties = _safe_fields(payload).get(_STYLE_PROPERTIES_FIELD, [None])[0]
+    if not isinstance(properties, bytes):
+        return None
+
+    flags = {}
+    for field, label in _CHARACTER_PROPERTY_LABELS.items():
+        values = _safe_fields(properties).get(field, [])
+        if any(isinstance(v, int) and v for v in values):
+            flags[label] = True
+
+    return Formatting(**flags) if flags else None
 
 
 def _read_legacy_tables(root: Element) -> list[TableData]:
@@ -864,3 +1039,190 @@ def _safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
         return read_fields(payload)
     except DocumentLoadError:
         return {}
+
+
+def _iwa_text_box_paragraphs(
+    document: IWAObject, objects: dict[int, IWAObject]
+) -> list[_Paragraph]:
+    """Read the text of the document's text boxes.
+
+    Text boxes are floating drawables, so they are reached from
+    ``TP.DocumentArchive`` through its drawables field rather than from the body
+    storage. Following that ownership path is what keeps headers, footers and
+    footnotes out: they hang off other fields entirely.
+
+    Args:
+        document: The ``TP.DocumentArchive`` of the document.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The text boxes' paragraphs, ordered by the object graph.
+    """
+    drawables = read_fields(document.payload).get(_DOCUMENT_DRAWABLES_FIELD, [None])[0]
+    if not isinstance(drawables, bytes):
+        return []
+
+    container = read_reference(drawables)
+    root = objects.get(container) if container is not None else None
+    if root is None:
+        return []
+
+    paragraphs: list[_Paragraph] = []
+    for shape_id in sorted(_iwa_referenced_ids(root.payload)):
+        shape = objects.get(shape_id)
+        if shape is None or shape.message_type != _TSWP_SHAPE_INFO:
+            continue
+
+        for storage_id in sorted(_iwa_referenced_ids(shape.payload)):
+            storage = objects.get(storage_id)
+            if storage is None or storage.message_type != _TSWP_STORAGE_ARCHIVE:
+                continue
+            fields = read_fields(storage.payload)
+            text = "".join(
+                value.decode("utf-8", errors="replace")
+                for value in fields.get(_STORAGE_TEXT_FIELD, [])
+                if isinstance(value, bytes)
+            )
+            paragraphs.extend(_split_paragraphs(text, [], []))
+
+    return paragraphs
+
+
+def _iwa_referenced_ids(payload: bytes, depth: int = 0) -> set[int]:
+    """Collect the object identifiers a message references, at any nesting.
+
+    Args:
+        payload: The encoded message to scan.
+        depth: Current recursion depth, bounded to keep a hostile document from
+            driving this arbitrarily deep.
+
+    Returns:
+        Every identifier reachable from the message.
+    """
+    if depth > _MAX_REFERENCE_DEPTH:
+        return set()
+
+    found: set[int] = set()
+    for values in _safe_fields(payload).values():
+        for value in values:
+            if not isinstance(value, bytes):
+                continue
+            if len(value) <= _REFERENCE_MAX_BYTES:
+                try:
+                    target = read_reference(value)
+                except DocumentLoadError:
+                    continue
+                if isinstance(target, int):
+                    found.add(target)
+            else:
+                found |= _iwa_referenced_ids(value, depth + 1)
+    return found
+
+
+def _add_paragraph(doc: DoclingDocument, paragraph: _Paragraph) -> None:
+    """Add one paragraph, keeping any character formatting attached to its runs.
+
+    ``TextItem`` carries a single ``Formatting``, so a paragraph whose runs differ has to become an inline group of items — the same shape the Word and
+    HTML backends produce for mixed runs.
+
+    Args:
+        doc: The document being built.
+        paragraph: The paragraph to add.
+    """
+    if paragraph.label == DocItemLabel.TITLE:
+        doc.add_title(text=paragraph.text)
+        return
+    if paragraph.label == DocItemLabel.SECTION_HEADER:
+        doc.add_heading(text=paragraph.text, level=paragraph.level or 1)
+        return
+
+    runs = [run for run in paragraph.runs if run.text]
+    if len(runs) <= 1:
+        formatting = runs[0].formatting if runs else None
+        doc.add_text(label=paragraph.label, text=paragraph.text, formatting=formatting)
+        return
+
+    # Formatting is a model, so compare rather than deduplicate through a set.
+    first = runs[0].formatting
+    if all(run.formatting == first for run in runs):
+        doc.add_text(label=paragraph.label, text=paragraph.text, formatting=first)
+        return
+
+    group = doc.add_inline_group()
+    for run in runs:
+        doc.add_text(
+            label=paragraph.label,
+            text=run.text,
+            formatting=run.formatting,
+            parent=group,
+        )
+
+
+def _legacy_runs(
+    paragraph: Element, character_styles: dict[str | None, Formatting | None]
+) -> list[_Run]:
+    """Build the runs of an iWork '09 paragraph.
+
+    ``sf:span`` carries the character style, so the paragraph is walked span by
+    span rather than flattened. Template placeholder text is skipped, as
+    ``itertext()`` would otherwise emit what the template displays before the
+    author types anything.
+
+    Walked with an explicit stack: nesting depth is attacker-controlled, and a
+    recursive walk exhausts the interpreter stack on a deeply nested document.
+
+    Args:
+        paragraph: An ``sf:p`` element.
+        character_styles: Character style formatting, keyed by style identifier.
+
+    Returns:
+        The paragraph's non-empty runs, in document order.
+    """
+    runs: list[_Run] = []
+    # (element, formatting in force, whether this visit emits the tail)
+    stack: list[tuple[Element, Formatting | None, bool]] = [(paragraph, None, False)]
+
+    while stack:
+        element, formatting, want_tail = stack.pop()
+
+        if want_tail:
+            if element.tail and _clean(element.tail):
+                runs.append(_Run(_clean(element.tail), formatting))
+            continue
+
+        if element.text and _clean(element.text):
+            runs.append(_Run(_clean(element.text), formatting))
+
+        # Push in reverse so children pop in document order. A child's tail sits
+        # outside it, so it keeps the parent's formatting.
+        for child in reversed(list(element)):
+            stack.append((child, formatting, True))
+            if child.tag == _SF_GHOST_TEXT:
+                continue
+            inherited = formatting
+            if child.tag == _SF_SPAN:
+                inherited = character_styles.get(child.get(_SF_ATTR_STYLE), formatting)
+            stack.append((child, inherited, False))
+
+    return runs
+
+
+def _legacy_formatting(style: Element) -> Formatting | None:
+    """Read an iWork '09 character style's property map as a ``Formatting``."""
+    flags = {}
+    for element in style.iter():
+        label = _SF_PROPERTY_LABELS.get(element.tag)
+        if label is None:
+            continue
+        number = next(
+            (
+                child.get(_SFA_ATTR_NUMBER)
+                for child in element
+                if child.get(_SFA_ATTR_NUMBER) is not None
+            ),
+            None,
+        )
+        if number not in (None, "0"):
+            flags[label] = True
+
+    return Formatting(**flags) if flags else None
