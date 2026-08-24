@@ -1130,3 +1130,65 @@ def test_superscript_and_subscript_are_read_from_the_character_style():
 
     modern = _iwa_formatting(_len_field(11, _varint_field(10, 1)))
     assert modern is not None and modern.script == Script.SUPER
+
+
+def _current_cell(string_key: int) -> bytes:
+    """One cell in the storage layout Pages 5.2 and later write.
+
+    Byte 0 is the version and byte 1 the value type; the flags at byte 8 say
+    which values follow from byte 12, and only the string key is set here.
+    """
+    cell = bytearray(16)
+    cell[0] = 5
+    cell[1] = 3  # textCellType
+    cell[8:12] = (0x8).to_bytes(4, "little")  # a string key follows
+    cell[12:16] = string_key.to_bytes(4, "little")
+    return bytes(cell)
+
+
+def _current_tile(rows: list[list[int]], wide: bool) -> bytes:
+    """A TST.Tile whose rows use the current storage layout.
+
+    Pages keeps the older buffer and offsets in place alongside the new ones, so
+    a reader that took the first pair it found would still see the old cells.
+    Only the new pair is written here, which is what makes the test meaningful.
+    """
+    payload = b""
+    for index, keys in enumerate(rows):
+        buffer = b"".join(_current_cell(key) for key in keys)
+        offsets = b"".join(
+            ((position * 16) // (4 if wide else 1)).to_bytes(2, "little", signed=True)
+            for position in range(len(keys))
+        )
+        payload += _len_field(
+            5,
+            _varint_field(1, index)
+            + _len_field(6, buffer)
+            + _len_field(7, offsets)
+            + (_varint_field(8, 1) if wide else b""),
+        )
+    return payload
+
+
+@pytest.mark.parametrize("wide", [False, True])
+def test_table_saved_by_a_recent_pages_release_is_read(tmp_path: Path, wide: bool):
+    """Pages 5.2 moved a row's cell buffer and offsets to new fields, changed the
+    cell layout, and began scaling the offsets by four. A reader that knows only
+    the older layout finds no cells at all and drops the table silently.
+
+    The fixture's own table is rewritten into the new layout, keeping its model,
+    its geometry and the string list its cells reference by key."""
+    source = _redefined(
+        tmp_path / "recent.pages",
+        [(4027, 6002, _current_tile([[1, 2, 3], [4, 5, 6]], wide))],
+    )
+    doc = _backend(source).convert()
+
+    assert len(doc.tables) == 1
+    by_position = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in doc.tables[0].data.table_cells
+    }
+    assert by_position[(0, 0)] == "Column one"
+    assert by_position[(0, 2)] == "Column three"
+    assert by_position[(1, 1)] == "Cell two"
