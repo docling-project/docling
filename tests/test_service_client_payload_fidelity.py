@@ -39,15 +39,15 @@ from docling.datamodel.vlm_engine_options import (
 )
 from docling.service_client import DoclingServiceClient
 from docling.service_client.client import StatusWatcherKind
-from tests.fakes.http_service import FakeHttpService, RecordedRequest, Response
+from tests.fakes.http_service import FakeService, RecordedRequest, Response
 
 SOURCE = "https://example.com/report.pdf"
 
 
 @pytest.fixture
-def recorder() -> Iterator[FakeHttpService]:
+def recorder() -> Iterator[FakeService]:
     """A service that accepts a submission and records nothing else."""
-    service = FakeHttpService()
+    service = FakeService()
     service.start()
 
     def _accept(request: RecordedRequest, match: re.Match[str]) -> Response:
@@ -67,14 +67,14 @@ def recorder() -> Iterator[FakeHttpService]:
 
 
 @pytest.fixture
-def client(recorder: FakeHttpService) -> Iterator[DoclingServiceClient]:
+def client(recorder: FakeService) -> Iterator[DoclingServiceClient]:
     with DoclingServiceClient(
         url=recorder.base_url, status_watcher=StatusWatcherKind.POLLING
     ) as remote:
         yield remote
 
 
-def _submitted_options(service: FakeHttpService) -> dict[str, Any]:
+def _submitted_options(service: FakeService) -> dict[str, Any]:
     """The options block of the JSON submission the server actually received."""
     requests = service.requests_for("POST", r"/v1/convert/source/async")
     assert requests, "no submission reached the server"

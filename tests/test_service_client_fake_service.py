@@ -29,7 +29,7 @@ from docling.service_client import (
 from docling.service_client.client import ConversionItem, StatusWatcherKind
 from docling.service_client.exceptions import ServiceError, TaskNotFoundError
 from tests.fakes.docling_serve import FakeDoclingServe
-from tests.fakes.http_service import FakeHttpService, Response
+from tests.fakes.http_service import FakeService, Response
 
 SOURCE = "https://example.com/report.pdf"
 
@@ -37,21 +37,27 @@ SOURCE = "https://example.com/report.pdf"
 @pytest.fixture
 def serve() -> Iterator[FakeDoclingServe]:
     """A running fake docling-serve; also exposes the underlying HTTP service."""
-    fake_service = FakeHttpService()
-    base_url = fake_service.start()
+    fake_service = FakeService()
+    route_pack = FakeDoclingServe()
+    fake_service.include(route_pack.router)
+    fake_service.start()
+    # Presigned artifact URIs must point back at this server, whose port is
+    # only known once it is bound.
+    route_pack.base_url = fake_service.base_url
+    route_pack.service = fake_service
     try:
-        yield FakeDoclingServe(fake_service, base_url)
+        yield route_pack
     finally:
         fake_service.stop()
 
 
 @pytest.fixture
-def service(serve: FakeDoclingServe) -> FakeHttpService:
+def service(serve: FakeDoclingServe) -> FakeService:
     return serve.service
 
 
 @pytest.fixture
-def client(service: FakeHttpService) -> Iterator[DoclingServiceClient]:
+def client(service: FakeService) -> Iterator[DoclingServiceClient]:
     with DoclingServiceClient(
         url=service.base_url,
         # The fake answers polls immediately rather than long-polling, so drop
@@ -328,7 +334,7 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture
-def async_client_kwargs(service: FakeHttpService) -> dict[str, object]:
+def async_client_kwargs(service: FakeService) -> dict[str, object]:
     return {
         "url": service.base_url,
         "status_watcher": StatusWatcherKind.POLLING,

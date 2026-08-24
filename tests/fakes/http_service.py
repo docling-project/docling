@@ -1,13 +1,18 @@
-"""A real HTTP server for tests, bound to an ephemeral localhost port.
+"""A FastAPI app served by uvicorn on an ephemeral localhost port.
 
-Docling reaches remote services through two different client libraries --
-``httpx`` in the service client and ``requests`` in the KServe and image
-helpers -- and through both sync and async code paths. Serving a real socket
-covers all of them with one fake, and keeps transport behaviour (timeouts,
-connection resets, retries, redirects) reachable from tests, which a
-library-specific mock transport cannot do.
+Docling reaches remote services through two client libraries -- ``httpx`` in
+the service client, ``requests`` in the OCR/VLM API helpers -- and through
+both sync and async code paths. Only a real socket serves all of them from
+one harness, which rules out ASGI-transport and library-specific mocks
+(``respx`` sees no ``requests`` traffic, ``responses`` sees no ``httpx``).
 
-Route packs build on this: see :mod:`tests.fakes.docling_serve`.
+FastAPI is used because the services being faked are themselves FastAPI apps:
+routes can be written with the same decorators and ``response_model`` as the
+originals, so a reviewer can diff them, and ``StreamingResponse`` covers SSE
+without hand-rolling chunked encoding.
+
+Route packs build on this: see :mod:`tests.fakes.docling_serve` and
+:mod:`tests.fakes.openai_compatible`.
 """
 
 from __future__ import annotations
@@ -15,11 +20,13 @@ from __future__ import annotations
 import json
 import re
 import threading
-import time
 from dataclasses import dataclass, field
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
-from urllib.parse import parse_qs, urlsplit
+
+import uvicorn
+from fastapi import APIRouter, FastAPI, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 @dataclass
@@ -42,154 +49,156 @@ class RecordedRequest:
 
 @dataclass
 class Response:
-    """What a route handler returns.
+    """A canned response used for test overrides and fault injection.
 
     ``body`` may be ``bytes``, ``str``, or any JSON-serialisable object; the
-    last is encoded as JSON and given a JSON content type unless one is set.
-    ``delay`` holds the response open, which is how read-timeout handling is
-    exercised.
+    last is encoded as JSON. Real behaviour belongs in the route packs -- this
+    exists so a test can force a 429, a 503 or a malformed body onto an
+    otherwise healthy route.
     """
 
     status: int = 200
     body: Any = b""
     headers: dict[str, str] = field(default_factory=dict)
-    delay: float = 0.0
 
-    def encoded(self) -> tuple[bytes, dict[str, str]]:
-        headers = dict(self.headers)
-        if isinstance(self.body, bytes):
-            return self.body, headers
-        if isinstance(self.body, str):
-            headers.setdefault("Content-Type", "text/plain; charset=utf-8")
-            return self.body.encode(), headers
-        headers.setdefault("Content-Type", "application/json")
-        return json.dumps(self.body, default=str).encode(), headers
-
-
-Handler = Callable[[RecordedRequest, re.Match[str]], Response]
+    def to_starlette(self) -> JSONResponse | PlainTextResponse:
+        if isinstance(self.body, (bytes, str)):
+            content = self.body.decode() if isinstance(self.body, bytes) else self.body
+            return PlainTextResponse(
+                content, status_code=self.status, headers=self.headers
+            )
+        return JSONResponse(
+            json.loads(json.dumps(self.body, default=str)),
+            status_code=self.status,
+            headers=self.headers,
+        )
 
 
-class FakeHttpService:
-    """Routes requests to registered handlers and records what it served.
+Override = Callable[[RecordedRequest], "Response | None"]
 
-    Handlers are matched in registration order, so a test can shadow a route
-    pack's handler by registering a more specific one first.
+
+class FakeService:
+    """Hosts one or more route packs and records what it served.
+
+    Overrides registered by tests take precedence over the mounted routes,
+    which is how faults are injected without stubbing the client.
     """
 
     def __init__(self) -> None:
-        self._routes: list[tuple[str, re.Pattern[str], Handler]] = []
+        self.app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
         self.requests: list[RecordedRequest] = []
         self.base_url = ""
-        self._server: ThreadingHTTPServer | None = None
-        self._thread: threading.Thread | None = None
+        self._overrides: list[tuple[str, re.Pattern[str], Override]] = []
         self._lock = threading.Lock()
+        self._server: uvicorn.Server | None = None
+        self._thread: threading.Thread | None = None
+        self._install_middleware()
 
-    # -- registration ----------------------------------------------------
+    # -- composition -----------------------------------------------------
 
-    def route(self, method: str, pattern: str) -> Callable[[Handler], Handler]:
-        """Register a handler for ``method`` and a full-match path regex."""
+    def include(self, router: APIRouter) -> None:
+        """Mount a route pack."""
+        self.app.include_router(router)
 
-        def decorator(handler: Handler) -> Handler:
-            self.add_route(method, pattern, handler)
-            return handler
+    # -- test overrides --------------------------------------------------
 
-        return decorator
+    def add_route(
+        self, method: str, pattern: str, handler: Callable[..., Response]
+    ) -> None:
+        """Always serve ``handler`` for requests matching ``method``/``pattern``.
 
-    def add_route(self, method: str, pattern: str, handler: Handler) -> None:
-        self._routes.insert(0, (method.upper(), re.compile(pattern), handler))
+        Takes precedence over any mounted route, so a test can replace a
+        healthy endpoint with a failing one for its duration.
+        """
+        compiled = re.compile(pattern)
+
+        def override(request: RecordedRequest) -> Response:
+            return handler(request, compiled.fullmatch(request.path))
+
+        self._overrides.insert(0, (method.upper(), compiled, override))
 
     def respond_once(self, method: str, pattern: str, response: Response) -> None:
-        """Serve ``response`` for the next matching request only.
-
-        Used to inject a single fault -- a 429, a 503, a truncated body --
-        ahead of an otherwise healthy route, so retry paths can be driven
-        without stubbing the client.
-        """
+        """Serve ``response`` for the next matching request only."""
         used = threading.Event()
 
-        def handler(request: RecordedRequest, match: re.Match[str]) -> Response:
+        def override(request: RecordedRequest) -> Response | None:
             if used.is_set():
-                return self._dispatch(request, skip_first=True)
+                return None  # fall through to the real route
             used.set()
             return response
 
-        self.add_route(method, pattern, handler)
+        self._overrides.insert(0, (method.upper(), re.compile(pattern), override))
+
+    def _find_override(self, request: RecordedRequest) -> Response | None:
+        for method, pattern, override in self._overrides:
+            if method != request.method or not pattern.fullmatch(request.path):
+                continue
+            response = override(request)
+            if response is not None:
+                return response
+        return None
+
+    # -- recording -------------------------------------------------------
+
+    def _install_middleware(self) -> None:
+        service = self
+
+        class _Recorder(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                body = await request.body()
+                recorded = RecordedRequest(
+                    method=request.method,
+                    path=request.url.path,
+                    query={
+                        key: request.query_params.getlist(key)
+                        for key in request.query_params
+                    },
+                    headers={k.lower(): v for k, v in request.headers.items()},
+                    body=body,
+                )
+                with service._lock:
+                    service.requests.append(recorded)
+                forced = service._find_override(recorded)
+                if forced is not None:
+                    return forced.to_starlette()
+                return await call_next(request)
+
+        self.app.add_middleware(_Recorder)
 
     # -- lifecycle -------------------------------------------------------
 
     def start(self) -> str:
-        service = self
-
-        class _Handler(BaseHTTPRequestHandler):
-            protocol_version = "HTTP/1.1"
-
-            def log_message(self, *args: Any) -> None:
-                pass  # keep pytest output clean
-
-            def _handle(self) -> None:
-                parsed = urlsplit(self.path)
-                length = int(self.headers.get("Content-Length") or 0)
-                request = RecordedRequest(
-                    method=self.command,
-                    path=parsed.path,
-                    query=parse_qs(parsed.query),
-                    headers={k.lower(): v for k, v in self.headers.items()},
-                    body=self.rfile.read(length) if length else b"",
-                )
-                with service._lock:
-                    service.requests.append(request)
-
-                response = service._dispatch(request)
-                if response.delay:
-                    time.sleep(response.delay)
-                payload, headers = response.encoded()
-                self.send_response(response.status)
-                for key, value in headers.items():
-                    self.send_header(key, value)
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
-
-            do_GET = _handle
-            do_POST = _handle
-            do_PUT = _handle
-            do_DELETE = _handle
-            do_HEAD = _handle
-
-        self._server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
-        self._server.daemon_threads = True
-        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        config = uvicorn.Config(
+            self.app, host="127.0.0.1", port=0, log_level="warning", access_log=False
+        )
+        self._server = uvicorn.Server(config)
+        self._thread = threading.Thread(target=self._server.run, daemon=True)
         self._thread.start()
-        host, port = self._server.server_address[:2]
+
+        # port=0 means the real port is known only once the socket is bound.
+        tick = threading.Event()
+        while not self._server.started:
+            if not self._thread.is_alive():
+                raise RuntimeError("the fake service failed to start")
+            tick.wait(0.01)
+        host, port = self._server.servers[0].sockets[0].getsockname()[:2]
         self.base_url = f"http://{host}:{port}"
         return self.base_url
 
     def stop(self) -> None:
         if self._server is not None:
-            self._server.shutdown()
-            self._server.server_close()
+            self._server.should_exit = True
             self._server = None
         if self._thread is not None:
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=10)
             self._thread = None
 
-    # -- dispatch --------------------------------------------------------
+    def __enter__(self) -> FakeService:
+        self.start()
+        return self
 
-    def _dispatch(
-        self, request: RecordedRequest, *, skip_first: bool = False
-    ) -> Response:
-        matched = 0
-        for method, pattern, handler in self._routes:
-            if method != request.method:
-                continue
-            match = pattern.fullmatch(request.path)
-            if match is None:
-                continue
-            matched += 1
-            if skip_first and matched == 1:
-                continue
-            return handler(request, match)
-        return Response(status=404, body={"detail": f"no route for {request.path}"})
+    def __exit__(self, *exc: object) -> None:
+        self.stop()
 
     # -- assertions ------------------------------------------------------
 
