@@ -566,9 +566,7 @@ class ConvertDocumentsOptions(BaseModel):
                 "Whether to use compact table format without column padding in the "
                 "markdown output. When False (default), tables use padded columns "
                 "for better visual formatting. When True, tables use minimal "
-                "whitespace, which avoids exponential whitespace growth on tables "
-                "with a wide outlier cell (e.g. a merged banner/disclaimer row) and "
-                "is better for large tables and downstream processing."
+                "whitespace, which is better for large tables and downstream processing."
             ),
             examples=[False],
         ),
