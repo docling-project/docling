@@ -481,13 +481,16 @@ class ReadingOrderModel:
         def materialize_siblings(
             parent_ref: str | None, parent: NodeItem | None
         ) -> None:
+            split_lists_on_non_list = (
+                isinstance(parent, GroupItem) and parent.label == GroupLabel.FORM_AREA
+            )
             current_list: GroupItem | None = None
             for rel in ordered_siblings[parent_ref]:
                 if rel.cid in skippable_cids:
                     continue
                 element = id_to_elem[rel.ref.cref]
                 page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
-                if not (
+                if split_lists_on_non_list and not (
                     isinstance(element, TextElement)
                     and element.label == DocItemLabel.LIST_ITEM
                 ):

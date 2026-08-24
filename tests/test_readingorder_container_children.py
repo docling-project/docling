@@ -355,7 +355,7 @@ def test_container_uses_normal_text_materialization() -> None:
     ]
 
 
-def test_table_interrupts_container_list() -> None:
+def test_table_interrupts_only_form_list() -> None:
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 200))
     first_cluster = _cluster(2, DocItemLabel.LIST_ITEM, (10, 10, 200, 30))
     table_cluster = _cluster(3, DocItemLabel.TABLE, (10, 40, 200, 100))
@@ -405,6 +405,20 @@ def test_table_interrupts_container_list() -> None:
         GroupLabel.LIST,
     ]
     assert [child.children[0].resolve(doc).text for child in children[::2]] == [
+        "first",
+        "second",
+    ]
+
+    flat_doc = ReadingOrderModel(ReadingOrderOptions())(
+        _conversion_result([first, table, second])
+    )
+    flat_children = [child.resolve(flat_doc) for child in flat_doc.body.children]
+    assert [child.label for child in flat_children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+    ]
+    assert isinstance(flat_children[0], GroupItem)
+    assert [child.resolve(flat_doc).text for child in flat_children[0].children] == [
         "first",
         "second",
     ]

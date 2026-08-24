@@ -164,18 +164,16 @@
 <section_header_level_1><loc_53><loc_128><loc_167><loc_135>3.6.6  Activating RCAC</section_header_level_1>
 <text><loc_112><loc_144><loc_447><loc_165>Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:</text>
 <ordered_list><list_item><loc_112><loc_170><loc_335><loc_176>Run the SQL statements that are shown in Example 3-10.</list_item>
+<list_item><loc_112><loc_240><loc_442><loc_261>Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</list_item>
 </ordered_list>
 <picture><loc_111><loc_190><loc_449><loc_234><caption><loc_112><loc_184><loc_307><loc_189>Example 3-10   Activating RCAC on the EMPLOYEES table</caption></picture>
-<ordered_list><list_item><loc_112><loc_240><loc_442><loc_261>Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</list_item>
-</ordered_list>
 <picture><loc_52><loc_270><loc_434><loc_408><caption><loc_53><loc_410><loc_284><loc_415>Figure 3-11   Selecting the EMPLOYEES table from System i Navigator</caption></picture>
 <page_footer><loc_53><loc_477><loc_273><loc_482>28 Row and Column Access Control Support in IBM DB2 for i</page_footer>
 <page_break>
 <ordered_list><list_item><loc_112><loc_45><loc_420><loc_66>Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</list_item>
+<list_item><loc_112><loc_320><loc_447><loc_341>Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</list_item>
 </ordered_list>
 <picture><loc_111><loc_75><loc_446><loc_302><caption><loc_112><loc_303><loc_267><loc_309>Figure 4-68   Visual Explain with RCAC enabled</caption></picture>
-<ordered_list><list_item><loc_112><loc_320><loc_447><loc_341>Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</list_item>
-</ordered_list>
 <picture><loc_52><loc_349><loc_414><loc_419><caption><loc_53><loc_421><loc_186><loc_427>Figure 4-69   Index advice with no RCAC</caption></picture>
 <page_footer><loc_175><loc_477><loc_447><loc_482>Chapter 4. Implementing Row and Column Access Control: Banking example 77</page_footer>
 <page_break>
