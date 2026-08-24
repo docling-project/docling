@@ -619,3 +619,24 @@ def test_iwa_character_styles_map_onto_formatting():
     assert (
         by_name["Strikethrough"] is not None and by_name["Strikethrough"].strikethrough
     )
+
+
+def test_a_run_boundary_does_not_eat_the_space_around_it():
+    """Pages ends a character style mid-sentence, so the space on either side of
+    a formatted phrase belongs to the paragraph rather than to the run. Trimming
+    every run would silently glue the words on both sides together.
+
+    The '09 fixture splits "APXL file" and "the <key:slide-list> element" across
+    spans; the IWA fixture holds the same sentences in one piece, so the two
+    generations pin the expected text between them."""
+    legacy = " ".join(
+        item.text for item in _backend(PAGES_IWORK09_FORMATTED).convert().texts
+    )
+    modern = " ".join(item.text for item in _backend(PAGES_2013).convert().texts)
+
+    for sentence in (
+        "Keynote APXL file is the engine",
+        "slide-list> element in a text",
+    ):
+        assert sentence in modern
+        assert sentence in legacy

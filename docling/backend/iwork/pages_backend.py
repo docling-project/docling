@@ -507,7 +507,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             if not runs:
                 continue
             label, level = _label_for_style(style_names.get(para.get(_SF_ATTR_STYLE)))
-            paragraphs.append(_Paragraph(tuple(runs), label, level))
+            paragraphs.append(_Paragraph(runs, label, level))
 
         return paragraphs, _read_legacy_tables(root)
 
@@ -584,7 +584,42 @@ def _iter_text_excluding_ghosts(element: Element) -> list[str]:
 
 
 def _clean(text: str) -> str:
-    return text.replace(_OBJECT_REPLACEMENT, "").strip()
+    """Drop the placeholders Apple writes where an inline attachment sits.
+
+    Whitespace is deliberately left alone: a run boundary can fall mid-sentence,
+    so the space on either side of a formatted phrase belongs to the paragraph
+    and is trimmed once, by :func:`_trim`, rather than at every boundary.
+    """
+    return text.replace(_OBJECT_REPLACEMENT, "")
+
+
+def _trim(runs: list[_Run]) -> tuple[_Run, ...]:
+    """Trim a paragraph's outer whitespace without disturbing its run boundaries.
+
+    Args:
+        runs: The paragraph's runs, in document order.
+
+    Returns:
+        The runs with leading and trailing whitespace removed and empty ones
+        dropped, which is empty when the paragraph holds nothing but whitespace.
+    """
+    kept = [run for run in runs if run.text]
+
+    while kept:
+        head = kept[0]._replace(text=kept[0].text.lstrip())
+        if head.text:
+            kept[0] = head
+            break
+        kept.pop(0)
+
+    while kept:
+        tail = kept[-1]._replace(text=kept[-1].text.rstrip())
+        if tail.text:
+            kept[-1] = tail
+            break
+        kept.pop()
+
+    return tuple(kept)
 
 
 def _iwa_style_name(payload: bytes) -> str | None:
@@ -647,7 +682,7 @@ def _split_paragraphs(
         runs = _runs_for(line, offset, character_runs)
         if runs:
             label, level = _label_for_style(current_style)
-            paragraphs.append(_Paragraph(tuple(runs), label, level))
+            paragraphs.append(_Paragraph(runs, label, level))
         offset += len(line) + 1  # + 1 for the newline that split consumed
 
     return paragraphs
@@ -655,12 +690,10 @@ def _split_paragraphs(
 
 def _runs_for(
     line: str, start: int, character_runs: list[tuple[int, Formatting | None]]
-) -> list[_Run]:
+) -> tuple[_Run, ...]:
     """Cut one line into runs at the character style boundaries inside it."""
-    if not _clean(line):
-        return []
     if not character_runs:
-        return [_Run(_clean(line), None)]
+        return _trim([_Run(_clean(line), None)])
 
     # Boundaries are absolute character indices; keep the ones inside this line.
     boundaries = [start] + [
@@ -678,7 +711,7 @@ def _runs_for(
         if piece:
             runs.append(_Run(piece, _formatting_at(begin, character_runs)))
 
-    return runs or [_Run(_clean(line), None)]
+    return _trim(runs)
 
 
 def _formatting_at(
@@ -775,7 +808,7 @@ def _read_legacy_tables(root: Element) -> list[TableData]:
             continue
 
         values = [
-            _clean(cell.get(_SFA_ATTR_STRING) or "".join(cell.itertext()))
+            _clean(cell.get(_SFA_ATTR_STRING) or "".join(cell.itertext())).strip()
             for cell in model.iter(_SF_CELL_TEXT)
         ]
         if not values:
@@ -1160,7 +1193,7 @@ def _add_paragraph(doc: DoclingDocument, paragraph: _Paragraph) -> None:
 
 def _legacy_runs(
     paragraph: Element, character_styles: dict[str | None, Formatting | None]
-) -> list[_Run]:
+) -> tuple[_Run, ...]:
     """Build the runs of an iWork '09 paragraph.
 
     ``sf:span`` carries the character style, so the paragraph is walked span by
@@ -1186,11 +1219,11 @@ def _legacy_runs(
         element, formatting, want_tail = stack.pop()
 
         if want_tail:
-            if element.tail and _clean(element.tail):
+            if element.tail:
                 runs.append(_Run(_clean(element.tail), formatting))
             continue
 
-        if element.text and _clean(element.text):
+        if element.text:
             runs.append(_Run(_clean(element.text), formatting))
 
         # Push in reverse so children pop in document order. A child's tail sits
@@ -1204,7 +1237,7 @@ def _legacy_runs(
                 inherited = character_styles.get(child.get(_SF_ATTR_STYLE), formatting)
             stack.append((child, inherited, False))
 
-    return runs
+    return _trim(runs)
 
 
 def _legacy_formatting(style: Element) -> Formatting | None:
