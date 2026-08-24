@@ -39,6 +39,7 @@ runs:
       if: ${{ inputs.install_system_deps == 'true' }}
       shell: bash
       run: |
+        sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list
         sudo apt-get -qq update
         sudo apt-get -qq install -y build-essential ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
