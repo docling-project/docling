@@ -233,6 +233,27 @@ class MetsGbsBackendOptions(PdfBackendOptions):
     ] = 1000
 
 
+class IWorkBackendOptions(BaseBackendOptions):
+    """Options specific to the Apple iWork document backends."""
+
+    kind: Annotated[Literal["iwork"], Field(exclude=True, repr=False)] = "iwork"
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data read from the iWork archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single member read from the iWork archive"
+        ),
+    ] = 100 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to inspect")
+    ] = 5000
+
+
 class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
@@ -386,6 +407,21 @@ class LatexBackendOptions(BaseBackendOptions):
             "Allow Tectonic TikZ rendering to enable shell escape during "
             "compilation. Disabled by default for safer rendering of untrusted "
             "LaTeX."
+        ),
+    )
+
+
+class EmailBackendOptions(BaseBackendOptions):
+    """Options specific to the email backend (``.eml`` and ``.msg``)."""
+
+    kind: Literal["email"] = Field("email", exclude=True, repr=False)
+    list_attachments: bool = Field(
+        False,
+        description=(
+            "Whether to append a list of the email's attachment filenames to "
+            "the converted document. Only the attachment names (and content "
+            "types when available) are listed; the attachments' binary content "
+            "is never embedded. Opt-in (default False)."
         ),
     )
 
@@ -598,11 +634,13 @@ BackendOptions = Annotated[
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
+        IWorkBackendOptions,
         MsExcelBackendOptions,
         MsPowerpointBackendOptions,
         MsWordBackendOptions,
         OdsBackendOptions,
         LatexBackendOptions,
+        EmailBackendOptions,
         XBRLBackendOptions,
     ],
     Field(discriminator="kind"),

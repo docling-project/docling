@@ -27,6 +27,7 @@ from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -49,8 +50,10 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
     EbcdicBackendOptions,
+    EmailBackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
+    IWorkBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
@@ -221,6 +224,14 @@ class PdfFormatOption(FormatOption):
     backend_options: Optional[PdfBackendOptions] = None
 
 
+class IWorkPagesFormatOption(FormatOption):
+    """Format option for Apple Pages input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
 class MetsGbsFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = MetsGbsDocumentBackend
@@ -250,6 +261,7 @@ class LatexFormatOption(FormatOption):
 class EmailFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+    backend_options: Optional[EmailBackendOptions] = None
 
 
 class EpubFormatOption(FormatOption):
@@ -301,6 +313,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.LATEX: LatexFormatOption(),
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:

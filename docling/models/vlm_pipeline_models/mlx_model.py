@@ -256,7 +256,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                             VlmPredictionToken(
                                 text=token.text,
                                 token=token.token,
-                                logprob=token.logprobs[token.token],
+                                logprob=float(token.logprobs[token.token]),
                             )
                         )
                     elif (
@@ -266,7 +266,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                             VlmPredictionToken(
                                 text=token.text,
                                 token=token.token,
-                                logprob=token.logprobs[0, token.token],
+                                logprob=float(token.logprobs[0, token.token]),
                             )
                         )
                     else:

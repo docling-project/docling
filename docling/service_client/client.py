@@ -26,6 +26,7 @@ from urllib.parse import urlencode, urlparse
 
 import httpx
 from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
+from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
 from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
@@ -841,7 +842,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             write=http_read_timeout,
             pool=http_read_timeout,
         )
-        headers: dict[str, str] = {}
+        headers: dict[str, str] = {
+            # Tell the server the newest DoclingDocument version this client's
+            # installed docling-core can read; the server down-projects if needed.
+            "Accept-Docling-Document-Version": CURRENT_VERSION,
+        }
         if api_key:
             headers["X-Api-Key"] = api_key
         self._http_client = httpx.Client(timeout=timeout, headers=headers)

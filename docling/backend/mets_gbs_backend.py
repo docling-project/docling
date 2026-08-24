@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, cast
 
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
@@ -53,11 +53,16 @@ def _get_pdf_page_geometry(
 
 
 class MetsGbsPageBackend(PdfPageBackend):
-    def __init__(self, parsed_page: SegmentedPdfPage, page_im: PILImage, page_no: int):
+    def __init__(
+        self,
+        parsed_page: SegmentedPdfPage | None,
+        page_im: PILImage | None,
+        page_no: int,
+    ):
         self._im = page_im
         self._dpage = parsed_page
         self._page_no = page_no
-        self.valid = parsed_page is not None
+        self.valid = parsed_page is not None and page_im is not None
 
     @property
     def page_no(self) -> int:
@@ -66,7 +71,36 @@ class MetsGbsPageBackend(PdfPageBackend):
     def is_valid(self) -> bool:
         return self.valid
 
+    def _require_page(self) -> SegmentedPdfPage:
+        """Return the parsed page, raising RuntimeError if the backend is invalid or unloaded.
+
+        Raises:
+            RuntimeError: If the page was not successfully parsed or has been unloaded.
+                Callers must check :meth:`is_valid` before calling accessor methods.
+        """
+        if self._dpage is None:
+            raise RuntimeError(
+                "Page backend is invalid or was unloaded. "
+                "Check is_valid() before calling page accessor methods."
+            )
+        return self._dpage
+
+    def _require_image(self) -> PILImage:
+        """Return the page image, raising RuntimeError if the backend is invalid or unloaded.
+
+        Raises:
+            RuntimeError: If the page image was not successfully loaded or has been unloaded.
+                Callers must check :meth:`is_valid` before calling accessor methods.
+        """
+        if self._im is None:
+            raise RuntimeError(
+                "Page backend is invalid or was unloaded. "
+                "Check is_valid() before calling page accessor methods."
+            )
+        return self._im
+
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
+        dpage = self._require_page()
         # Find intersecting cells on the page
         text_piece = ""
         page_size = self.get_size()
@@ -75,7 +109,7 @@ class MetsGbsPageBackend(PdfPageBackend):
             1  # FIX - Replace with param in get_text_in_rect across backends (optional)
         )
 
-        for i, cell in enumerate(self._dpage.textline_cells):
+        for i, cell in enumerate(dpage.textline_cells):
             cell_bbox = (
                 cell.rect.to_bounding_box()
                 .to_top_left_origin(page_height=page_size.height)
@@ -91,16 +125,17 @@ class MetsGbsPageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+    def get_segmented_page(self) -> SegmentedPdfPage | None:
         return self._dpage
 
     def get_text_cells(self) -> Iterable[TextCell]:
-        return self._dpage.textline_cells
+        return self._require_page().textline_cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        dpage = self._require_page()
         AREA_THRESHOLD = 0  # 32 * 32
 
-        images = self._dpage.bitmap_resources
+        images = dpage.bitmap_resources
 
         for img in images:
             cropbox = img.rect.to_bounding_box().to_top_left_origin(
@@ -113,12 +148,15 @@ class MetsGbsPageBackend(PdfPageBackend):
                 yield cropbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
+        im = self._require_image()
         page_size = self.get_size()
-        assert (
-            page_size.width == self._im.size[0] and page_size.height == self._im.size[1]
-        )
+        if page_size.width != im.size[0] or page_size.height != im.size[1]:
+            raise RuntimeError(
+                f"Page image dimensions {im.size} do not match page geometry "
+                f"({page_size.width}x{page_size.height})."
+            )
 
         if not cropbox:
             cropbox = BoundingBox(
@@ -129,21 +167,18 @@ class MetsGbsPageBackend(PdfPageBackend):
                 coord_origin=CoordOrigin.TOPLEFT,
             )
 
-        image = self._im.resize(
+        image = im.resize(
             size=(round(page_size.width * scale), round(page_size.height * scale))
         ).crop(cropbox.scaled(scale=scale).as_tuple())
         return image
 
     def get_size(self) -> Size:
-        return Size(
-            width=self._dpage.dimension.width, height=self._dpage.dimension.height
-        )
+        dpage = self._require_page()
+        return Size(width=dpage.dimension.width, height=dpage.dimension.height)
 
     def unload(self) -> None:
-        if hasattr(self, "_im"):
-            delattr(self, "_im")
-        if hasattr(self, "_dpage"):
-            delattr(self, "_dpage")
+        self._im = None
+        self._dpage = None
 
 
 class _UseType(str, Enum):
@@ -162,12 +197,12 @@ class _FileInfo:
 
 @dataclass
 class _PageFiles:
-    image: Optional[_FileInfo] = None
-    ocr: Optional[_FileInfo] = None
-    coordOCR: Optional[_FileInfo] = None
+    image: _FileInfo | None = None
+    ocr: _FileInfo | None = None
+    coordOCR: _FileInfo | None = None
 
 
-def _extract_rect(title_str: str) -> Optional[BoundingRectangle]:
+def _extract_rect(title_str: str) -> BoundingRectangle | None:
     """
     Extracts bbox from title string like 'bbox 279 177 306 214;x_wconf 97'
     """
@@ -188,7 +223,7 @@ def _extract_rect(title_str: str) -> Optional[BoundingRectangle]:
     return None
 
 
-def _extract_confidence(title_str) -> float:
+def _extract_confidence(title_str: str) -> float:
     """Extracts x_wconf (OCR confidence) value from title string."""
     for part in title_str.split(";"):
         part = part.strip()
@@ -204,8 +239,8 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
     def __init__(
         self,
         in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[MetsGbsBackendOptions] = None,
+        path_or_stream: BytesIO | Path,
+        options: MetsGbsBackendOptions | None = None,
     ):
         if options is None:
             options = MetsGbsBackendOptions()
@@ -216,8 +251,8 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             if isinstance(self.path_or_stream, Path)
             else tarfile.open(fileobj=self.path_or_stream, mode="r:gz")
         )
-        self.root_mets: Optional[etree._Element] = None
-        self.page_map: Dict[int, _PageFiles] = {}
+        self.root_mets: etree._Element | None = None
+        self.page_map: dict[int, _PageFiles] = {}
         self._total_bytes_extracted = 0
         member_count = 0
 
@@ -261,7 +296,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             "marc": "http://www.loc.gov/MARC21/slim",
         }
 
-        file_info_by_id: Dict[str, _FileInfo] = {}
+        file_info_by_id: dict[str, _FileInfo] = {}
 
         for filegrp in self.root_mets.xpath(".//mets:fileGrp", namespaces=ns):
             use_raw = filegrp.get("USE")
@@ -314,7 +349,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
 
             self.page_map[page_no] = page_files
 
-    def _validate_mets_xml(self, xml_string) -> Optional[etree._Element]:
+    def _validate_mets_xml(self, xml_string: bytes) -> etree._Element | None:
         # Security: disable entity resolution
         parser = etree.XMLParser(
             resolve_entities=False, load_dtd=False, no_network=True
@@ -329,16 +364,32 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         _log.warning(f"The root element is not <mets:mets> with PROFILE='gbs': {root}")
         return None
 
-    def _parse_page(self, page_no: int) -> Tuple[SegmentedPdfPage, PILImage]:
-        # TODO: use better fallbacks...
+    def _parse_page(
+        self, page_no: int
+    ) -> tuple[SegmentedPdfPage | None, PILImage | None]:
+        # A page's fileGrp entries in the METS XML are independently optional (see
+        # _PageFiles), so a page can legitimately have no `image` or `coordOCR` fptr
+        # (e.g. a blank/cover page with no OCR layer). Report it as unparseable rather
+        # than asserting, so the caller can mark it invalid and skip it, consistent
+        # with how sibling PDF backends (e.g. DoclingParsePageBackend) handle a page
+        # they can't build.
         image_info = self.page_map[page_no].image
-        assert image_info is not None
         ocr_info = self.page_map[page_no].coordOCR
-        assert ocr_info is not None
+        if image_info is None or ocr_info is None:
+            _log.warning(
+                f"Page {page_no} is missing an 'image' or 'coordOCR' fileGrp entry; "
+                "skipping."
+            )
+            return None, None
 
         # Security: limit extraction size to prevent decompression bombs
         image_file = self._tar.extractfile(image_info.path)
-        assert image_file is not None
+        if image_file is None:
+            raise RuntimeError(
+                f"Archive member '{image_info.path}' is not a regular file "
+                "(directory or symlink in tar)."
+            )
+        image_file = cast(tarfile.ExFileObject, image_file)
         image_data = image_file.read(self.options.max_file_bytes + 1)
         if len(image_data) > self.options.max_file_bytes:
             raise ValueError(
@@ -356,7 +407,12 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         im: PILImage = Image.open(buf)
 
         ocr_file = self._tar.extractfile(ocr_info.path)
-        assert ocr_file is not None
+        if ocr_file is None:
+            raise RuntimeError(
+                f"Archive member '{ocr_info.path}' is not a regular file "
+                "(directory or symlink in tar)."
+            )
+        ocr_file = cast(tarfile.ExFileObject, ocr_file)
         ocr_content = ocr_file.read(self.options.max_file_bytes + 1)
         if len(ocr_content) > self.options.max_file_bytes:
             raise ValueError(
@@ -373,8 +429,8 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         parser = etree.HTMLParser(no_network=True)
         ocr_root: etree._Element = etree.fromstring(ocr_content, parser=parser)
 
-        line_cells: List[TextCell] = []
-        word_cells: List[TextCell] = []
+        line_cells: list[TextCell] = []
+        word_cells: list[TextCell] = []
 
         page_div = ocr_root.xpath("//div[@class='ocr_page']")
 
@@ -450,7 +506,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         return self.root_mets is not None and self.page_count() > 0
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.METS_GBS}
 
     @classmethod

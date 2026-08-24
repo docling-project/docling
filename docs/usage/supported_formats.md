@@ -13,6 +13,7 @@ Below you can find a listing of all supported input and output formats.
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
+| Pages | Apple Pages documents (`.pages`), both container generations: Pages 5+ (2013 onwards) via its `Index/*.iwa` archives and iWork '09 via `index.xml`. Body text only — headings, lists and tables are not yet recovered (requires the `format-iwork` extra) |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
@@ -23,6 +24,7 @@ Below you can find a listing of all supported input and output formats.
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
+| Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 
 Schema-specific support:
 

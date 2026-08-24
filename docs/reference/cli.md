@@ -50,7 +50,7 @@ docling convert [OPTIONS] source
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
 | `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
 | `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
-| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, dots_ocr, dots_mocr |
+| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
 | `--asr-model` | `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native`, `whisper_tiny_en_native`, `whisper_base_en_native`, `whisper_small_en_native`, `whisper_medium_en_native`, `whisper_distil_small_en_native`, `whisper_distil_medium_en_native`, `whisper_distil_large_v3_native`, `whisper_distil_large_v3_5_native`, `whisper_tiny_s2t`, `whisper_tiny_en_s2t`, `whisper_base_s2t`, `whisper_base_en_s2t`, `whisper_small_s2t`, `whisper_small_en_s2t`, `whisper_distil_small_en_s2t`, `whisper_medium_s2t`, `whisper_medium_en_s2t`, `whisper_distil_medium_en_s2t`, `whisper_large_v3_s2t`, `whisper_distil_large_v3_s2t`, `whisper_distil_large_v3_5_s2t`, `whisper_large_v3_turbo_s2t` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
 | `--video-sampling-mode` | `fixed`, `scene` | `fixed` | frame sampling mode. |
 | `--video-frame-interval` | `float` | `10.0` | Seconds between frames in fixed interval mode. |
@@ -61,11 +61,14 @@ docling convert [OPTIONS] source
 | `--force-ocr` / `--no-force-ocr` | flag | `false` | DEPRECATED: use `--ocr-mode full_page` instead. Replace any existing text with OCR generated text over the full content. |
 | `--ocr-mode` | `full_page`, `layout_regions`, `pdf_aware_layout_regions`, `default` | `default` | Which document regions are fed to the OCR engine. |
 | `--tables` / `--no-tables` | flag | `true` | If enabled, the table structure model will be used to extract table information. |
+| `--layout-engine` | `text` | `layout_object_detection` | The layout engine to use. When --allow-external-plugins is *not* set, the available values are: layout_object_detection, docling_layout_default, docling_experimental_table_crops_layout. Use the option --show-external-plugins to see the options allowed with external plugins. |
+| `--table-structure-engine` | `text` | `docling_tableformer` | The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: docling_tableformer, docling_tableformer_v2, granite_vision_table. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, nemotron-ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-lang` | `text` |  | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names. |
 | `--psm` | `integer` |  | Page Segmentation Mode for the OCR engine (0-13). |
 | `--pdf-backend` | `pypdfium2`, `docling_parse`, `threaded_docling_parse`, `dlparse_v1`, `dlparse_v2`, `dlparse_v4` | `docling_parse` | The PDF backend to use. |
 | `--pdf-password` | `text` |  | Password for protected PDF documents |
+| `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). Honored by the PDF, XLSX and PPTX backends. |
 | `--table-mode` | `fast`, `accurate` | `accurate` | The mode to use in the table structure model. |
 | `--enrich-code` / `--no-enrich-code` | flag | `false` | Enable the code enrichment model in the pipeline. |
 | `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the formula enrichment model in the pipeline. |
@@ -122,7 +125,7 @@ docling convert-remote [OPTIONS] source
 | --- | --- | --- | --- |
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
-| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
+| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
 | `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
@@ -194,12 +197,12 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 | `--easyocr-lang` | `text` (repeatable) |  | EasyOCR language code to prefetch. Repeat for multiple languages. |
-| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:th'). Repeat for multiple. Replaces the default set. |
+| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set. |
 
 #### `docling-tools models download-hf-repo`
 
@@ -219,7 +222,7 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 

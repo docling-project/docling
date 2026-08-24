@@ -17,6 +17,8 @@ Known gaps to improve:
 from __future__ import annotations
 
 import logging
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -48,12 +50,14 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from PIL import Image as PILImage
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -105,6 +109,27 @@ class _OdfListState:
 class _OdfTextRun:
     text: str
     formatting: Formatting | None = None
+    hyperlink: AnyUrl | Path | None = None
+
+
+_ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
+
+
+def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
+    if href is None:
+        return None
+    href = href.strip()
+    if not href:
+        return None
+    try:
+        return AnyUrl(href)
+    except ValidationError:
+        if _ODF_HREF_SCHEME_RE.match(href):
+            # Looks like an attempted absolute URL (has a scheme) that failed
+            # to parse, e.g. a malformed host. Don't guess by treating it as
+            # a filesystem path.
+            return None
+        return Path(href)
 
 
 def _load_odf_document(
@@ -147,6 +172,10 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
                 f"{self.odf_obj.get_type()!r}"
             )
         self.valid = True
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=self.options.enable_local_fetch,
+            enable_remote_fetch=self.options.enable_remote_fetch,
+        )
 
     @override
     def is_valid(self) -> bool:
@@ -302,32 +331,46 @@ def _odf_text_runs(
     element: Any,
     odf_obj: OdfDocument | None,
     inherited_formatting: Formatting | None = None,
+    inherited_hyperlink: AnyUrl | Path | None = None,
 ) -> list[_OdfTextRun]:
     style_name = element.attributes.get("text:style-name")
     formatting = _formatting_from_odf_text_style(
         odf_obj, style_name, inherited_formatting
     )
     tag = element.tag
+    hyperlink = (
+        _odf_hyperlink_from_href(element.attributes.get("xlink:href"))
+        if tag == "text:a"
+        else inherited_hyperlink
+    )
     if tag == "text:line-break":
-        return [_OdfTextRun(text=element.text or "\n", formatting=formatting)]
+        return [
+            _OdfTextRun(
+                text=element.text or "\n", formatting=formatting, hyperlink=hyperlink
+            )
+        ]
     if tag == "text:tab":
-        return [_OdfTextRun(text="\t", formatting=formatting)]
+        return [_OdfTextRun(text="\t", formatting=formatting, hyperlink=hyperlink)]
 
     runs: list[_OdfTextRun] = []
     children = element.children
     text = element.text
     if text:
-        runs.append(_OdfTextRun(text=text, formatting=formatting))
+        runs.append(_OdfTextRun(text=text, formatting=formatting, hyperlink=hyperlink))
 
     for child in children:
-        runs.extend(_odf_text_runs(child, odf_obj, formatting))
+        runs.extend(_odf_text_runs(child, odf_obj, formatting, hyperlink))
         if child.tail:
-            runs.append(_OdfTextRun(text=child.tail, formatting=formatting))
+            runs.append(
+                _OdfTextRun(text=child.tail, formatting=formatting, hyperlink=hyperlink)
+            )
 
     if not runs and not children:
         inner_text = element.inner_text
         if inner_text:
-            runs.append(_OdfTextRun(text=inner_text, formatting=formatting))
+            runs.append(
+                _OdfTextRun(text=inner_text, formatting=formatting, hyperlink=hyperlink)
+            )
 
     return runs
 
@@ -337,10 +380,24 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
     for run in runs:
         if run.text == "":
             continue
-        if merged_runs and merged_runs[-1].formatting == run.formatting:
+        if (
+            merged_runs
+            and merged_runs[-1].formatting == run.formatting
+            and merged_runs[-1].hyperlink == run.hyperlink
+        ):
             merged_runs[-1].text += run.text
-        else:
-            merged_runs.append(_OdfTextRun(text=run.text, formatting=run.formatting))
+            continue
+
+        text = run.text
+        if merged_runs and merged_runs[-1].hyperlink != run.hyperlink:
+            # A hyperlink boundary is a hard edge: strip the whitespace right
+            # at the boundary so it doesn't double up with the separator the
+            # markdown/inline serializer already inserts between runs.
+            merged_runs[-1].text = merged_runs[-1].text.rstrip()
+            text = text.lstrip()
+        merged_runs.append(
+            _OdfTextRun(text=text, formatting=run.formatting, hyperlink=run.hyperlink)
+        )
 
     while merged_runs and merged_runs[0].text.strip() == "":
         merged_runs.pop(0)
@@ -378,6 +435,7 @@ def _add_odf_text_runs(
             text=runs[0].text,
             content_layer=content_layer,
             formatting=runs[0].formatting,
+            hyperlink=runs[0].hyperlink,
         )
 
     inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
@@ -388,8 +446,50 @@ def _add_odf_text_runs(
             text=run.text,
             content_layer=content_layer,
             formatting=run.formatting,
+            hyperlink=run.hyperlink,
         )
     return inline_group
+
+
+def _add_odf_rich_block(
+    doc: DoclingDocument,
+    runs: list[_OdfTextRun],
+    *,
+    add_block: Callable[..., NodeItem],
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+) -> NodeItem | None:
+    """Add a heading/title-like block from text runs.
+
+    A single run becomes the block directly. Multiple runs (e.g. a heading
+    with a hyperlink or mixed formatting in the middle) become one empty
+    block wrapping an InlineGroup of TEXT runs, so the block stays a single
+    semantic item instead of fragmenting into several headings/titles.
+    """
+    runs = _normalize_odf_text_runs(runs)
+    if not runs:
+        return None
+    if len(runs) == 1:
+        return add_block(
+            text=runs[0].text,
+            parent=parent,
+            content_layer=content_layer,
+            formatting=runs[0].formatting,
+            hyperlink=runs[0].hyperlink,
+        )
+
+    block = add_block(text="", parent=parent, content_layer=content_layer)
+    inline_group = doc.add_inline_group(parent=block, content_layer=content_layer)
+    for run in runs:
+        doc.add_text(
+            label=DocItemLabel.TEXT,
+            parent=inline_group,
+            text=run.text,
+            content_layer=content_layer,
+            formatting=run.formatting,
+            hyperlink=run.hyperlink,
+        )
+    return block
 
 
 def _add_odf_heading(
@@ -400,31 +500,15 @@ def _add_odf_heading(
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
 ) -> None:
-    level = element.get_attribute_integer("text:outline-level") or 1
+    level = max(1, element.get_attribute_integer("text:outline-level") or 1)
     runs = _odf_text_runs(element, odf_obj)
-    runs = _normalize_odf_text_runs(runs)
-    text = _odf_text_from_runs(runs)
-    if not text:
-        return
-    if len(runs) == 1:
-        doc.add_heading(
-            parent=parent,
-            text=text,
-            level=max(1, level),
-            content_layer=content_layer,
-            formatting=runs[0].formatting,
-        )
-        return
-
-    inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
-    for run in runs:
-        doc.add_heading(
-            parent=inline_group,
-            text=run.text,
-            level=max(1, level),
-            content_layer=content_layer,
-            formatting=run.formatting,
-        )
+    _add_odf_rich_block(
+        doc,
+        runs,
+        add_block=lambda **kwargs: doc.add_heading(level=level, **kwargs),
+        parent=parent,
+        content_layer=content_layer,
+    )
 
 
 def _odf_paragraph_style_names(
@@ -458,6 +542,7 @@ def _add_odf_paragraph(
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    image_loader: ImageResourceLoader | None = None,
 ) -> None:
     chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
     images = element.get_images()
@@ -467,6 +552,7 @@ def _add_odf_paragraph(
         parent,
         content_layer,
         odf_obj,
+        image_loader=image_loader,
         skip_object_replacements=chart_count > 0,
     )
     runs = _odf_text_runs(element, odf_obj)
@@ -483,23 +569,21 @@ def _add_odf_paragraph(
 
     style_names = _odf_paragraph_style_names(odf_obj, element)
     if "Title" in style_names:
-        _add_odf_text_runs(
+        _add_odf_rich_block(
             doc,
             runs,
-            label=DocItemLabel.TITLE,
+            add_block=lambda **kwargs: doc.add_text(label=DocItemLabel.TITLE, **kwargs),
             parent=parent,
             content_layer=content_layer,
         )
     elif "Subtitle" in style_names:
-        text = _odf_text_from_runs(runs)
-        if text:
-            doc.add_heading(
-                parent=parent,
-                text=text,
-                level=1,
-                content_layer=content_layer,
-                formatting=runs[0].formatting if len(runs) == 1 else None,
-            )
+        _add_odf_rich_block(
+            doc,
+            runs,
+            add_block=lambda **kwargs: doc.add_heading(level=1, **kwargs),
+            parent=parent,
+            content_layer=content_layer,
+        )
     else:
         _add_odf_text_runs(
             doc,
@@ -754,7 +838,10 @@ def _odf_cell_is_rich(cell: Any) -> bool:
 
 
 def _image_ref_from_odf_image(
-    odf_obj: OdfDocument | None, image: Any
+    odf_obj: OdfDocument | None,
+    image: Any,
+    *,
+    image_loader: ImageResourceLoader | None = None,
 ) -> ImageRef | None:
     image_url = _odf_image_href(image)
     if not _odf_image_can_be_bitmap(image, image_url):
@@ -771,10 +858,10 @@ def _image_ref_from_odf_image(
         except Exception:
             image_data = None
 
-    if image_data is None and image_url:
-        image_path = Path(image_url)
-        if image_path.is_file():
-            image_data = image_path.read_bytes()
+    # External xlink:href values (remote URLs or local paths) are resolved through
+    # ImageResourceLoader, governed by enable_remote_fetch / enable_local_fetch.
+    if image_data is None and image_url and image_loader is not None:
+        image_data = image_loader.load_image_data(image_url, base_path=None)
 
     if image_data is None:
         return None
@@ -801,8 +888,9 @@ def _odf_image_can_be_bitmap(image: Any, image_url: str | None) -> bool:
     suffix = Path(image_url).suffix.lower()
     if suffix in {".pdf", ".svg", ".emf", ".wmf"}:
         return False
+    # Empty suffix is intentionally excluded: extension-less paths are typical of
+    # system files (e.g. /etc/passwd) and are not valid ODF image references.
     return suffix in {
-        "",
         ".bmp",
         ".gif",
         ".jpeg",
@@ -839,6 +927,7 @@ def _add_odf_images(
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
     *,
+    image_loader: ImageResourceLoader | None = None,
     skip_object_replacements: bool = False,
 ) -> int:
     image_count = 0
@@ -848,7 +937,11 @@ def _add_odf_images(
             if image_url.removeprefix("./").startswith("ObjectReplacements/"):
                 continue
         try:
-            image_ref = _image_ref_from_odf_image(odf_obj, image)
+            image_ref = _image_ref_from_odf_image(
+                odf_obj,
+                image,
+                image_loader=image_loader,
+            )
         except Exception as e:
             _log.debug("Could not extract OpenDocument image: %s", e)
             image_ref = None
@@ -866,6 +959,7 @@ def _add_odf_child(
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    image_loader: ImageResourceLoader | None = None,
 ) -> _OdfListState | None:
     if isinstance(element, Header):
         _add_odf_heading(
@@ -882,6 +976,7 @@ def _add_odf_child(
             parent=parent,
             content_layer=content_layer,
             odf_obj=odf_obj,
+            image_loader=image_loader,
         )
     elif isinstance(element, OdfList):
         return _add_odf_list(
@@ -900,6 +995,7 @@ def _add_odf_child(
             parent=parent,
             content_layer=content_layer,
             odf_obj=odf_obj,
+            image_loader=image_loader,
         )
     elif isinstance(element, Section):
         _add_odf_children(
@@ -908,6 +1004,7 @@ def _add_odf_child(
             parent=parent,
             content_layer=content_layer,
             odf_obj=odf_obj,
+            image_loader=image_loader,
         )
     elif isinstance(element, Frame):
         chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
@@ -917,12 +1014,20 @@ def _add_odf_child(
             parent,
             content_layer,
             odf_obj,
+            image_loader=image_loader,
             skip_object_replacements=chart_count > 0,
         )
     else:
         get_images = getattr(element, "get_images", None)
         if callable(get_images):
-            _add_odf_images(doc, get_images(), parent, content_layer, odf_obj)
+            _add_odf_images(
+                doc,
+                get_images(),
+                parent,
+                content_layer,
+                odf_obj,
+                image_loader=image_loader,
+            )
         else:
             _log.debug(
                 "Ignoring ODF element with tag: %s", getattr(element, "tag", None)
@@ -937,6 +1042,7 @@ def _add_odf_children(
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    image_loader: ImageResourceLoader | None = None,
 ) -> None:
     previous_list_state: _OdfListState | None = None
     for element in elements:
@@ -959,6 +1065,7 @@ def _add_odf_children(
                 parent=parent,
                 content_layer=content_layer,
                 odf_obj=odf_obj,
+                image_loader=image_loader,
             )
 
 
@@ -1156,9 +1263,13 @@ def _add_odf_list(
                 marker=marker,
                 enumerated=current_enumerated,
                 parent=list_group,
-                text=text,
+                # Prefer the run-derived text: odfdo's own text_recursive
+                # renders hyperlinked children as "[text](href)" markdown,
+                # which would otherwise leak into the plain item text.
+                text=runs[0].text if runs else text,
                 content_layer=content_layer,
                 formatting=runs[0].formatting if runs else None,
+                hyperlink=runs[0].hyperlink if runs else None,
             )
         else:
             item = doc.add_list_item(
@@ -1178,6 +1289,7 @@ def _add_odf_list(
                     text=run.text,
                     content_layer=content_layer,
                     formatting=run.formatting,
+                    hyperlink=run.hyperlink,
                 )
         previous_item = item
         for nested_list in nested:
@@ -1205,6 +1317,7 @@ def _add_rich_cell_children(
     parent: NodeItem,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
+    image_loader: ImageResourceLoader | None = None,
 ) -> None:
     for child in cell.children:
         _add_odf_child(
@@ -1213,6 +1326,7 @@ def _add_rich_cell_children(
             parent=parent,
             content_layer=content_layer,
             odf_obj=odf_obj,
+            image_loader=image_loader,
         )
 
 
@@ -1228,6 +1342,7 @@ def _add_table_from_odf(
     prov: ProvenanceItem | None = None,
     content_layer: ContentLayer | None = None,
     odf_obj: OdfDocument | None = None,
+    image_loader: ImageResourceLoader | None = None,
 ) -> TableItem | None:
     if min_row is None or max_row is None or min_col is None or max_col is None:
         min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
@@ -1287,6 +1402,7 @@ def _add_table_from_odf(
                     parent=group,
                     content_layer=content_layer,
                     odf_obj=odf_obj,
+                    image_loader=image_loader,
                 )
                 table_cell = RichTableCell(**cell_kwargs, ref=group.get_ref())
             else:
@@ -1432,6 +1548,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
             parent=parent,
             content_layer=None,
             odf_obj=self.odf_obj,
+            image_loader=self._image_loader,
         )
 
 
@@ -1558,6 +1675,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 tbl,
                 parent=parent,
                 odf_obj=self.odf_obj,
+                image_loader=self._image_loader,
             )
 
         _add_odf_images(
@@ -1566,6 +1684,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             parent,
             None,
             self.odf_obj,
+            image_loader=self._image_loader,
             skip_object_replacements=chart_count > 0,
         )
 

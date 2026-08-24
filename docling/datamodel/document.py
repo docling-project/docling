@@ -790,6 +790,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif suffix == ".pptx":
                     mime = mime_root + ".presentationml.presentation"
+                elif suffix == ".pages":
+                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -821,6 +823,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif objname.endswith(".pptx"):
                     mime = mime_root + ".presentationml.presentation"
+                elif objname.endswith(".pages"):
+                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -1007,7 +1011,11 @@ class _DocumentConversionInput(BaseModel):
         elif ext in FormatToExtensions[InputFormat.LATEX]:
             mime = FormatToMimeType[InputFormat.LATEX][0]
         elif ext in FormatToExtensions[InputFormat.EMAIL]:
-            mime = FormatToMimeType[InputFormat.EMAIL][0]
+            mime = (
+                "application/vnd.ms-outlook"
+                if ext == "msg"
+                else FormatToMimeType[InputFormat.EMAIL][0]
+            )
         return mime
 
     @staticmethod

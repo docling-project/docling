@@ -123,7 +123,14 @@ class RemoteTargetResult(BaseModel):
 
 class ArtifactRef(BaseModel):
     artifact_type: Literal[
-        "json", "html", "markdown", "text", "doctags", "doclang", "resource_bundle"
+        "json",
+        "html",
+        "markdown",
+        "text",
+        "doctags",
+        "doclang",
+        "dclx",
+        "resource_bundle",
     ]
     mime_type: str
     uri: AnyUrl

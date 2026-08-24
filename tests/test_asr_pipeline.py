@@ -454,6 +454,88 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
     mlx_whisper.transcribe.assert_not_called()
 
 
+def test_mlx_run_materializes_document_stream(monkeypatch) -> None:
+    from docling.pipeline.asr_pipeline import _MlxWhisperModel
+
+    audio_data = b"RIFF....WAVE"
+    input_doc = InputDocument(
+        path_or_stream=BytesIO(audio_data),
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+        filename="recording.ogg",
+    )
+    conv_res = ConversionResult(input=input_doc)
+    options = InlineAsrMlxWhisperOptions(
+        repo_id="mlx-community/whisper-tiny",
+        inference_framework=InferenceAsrFramework.MLX,
+        language="en",
+    )
+    model = _MlxWhisperModel(
+        enabled=False,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+        asr_options=options,
+    )
+    audio_path: Path | None = None
+
+    def transcribe(path: Path):
+        nonlocal audio_path
+        audio_path = path
+        assert path.suffix == ".ogg"
+        assert path.read_bytes() == audio_data
+        return []
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(model, "transcribe", transcribe)
+
+    out = model.run(conv_res)
+
+    assert out.status == ConversionStatus.SUCCESS
+    assert audio_path is not None
+    assert not audio_path.exists()
+
+
+def test_mlx_run_removes_document_stream_file_after_failure(monkeypatch) -> None:
+    from docling.pipeline.asr_pipeline import _MlxWhisperModel
+
+    input_doc = InputDocument(
+        path_or_stream=BytesIO(b"RIFF....WAVE"),
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+        filename="recording.wav",
+    )
+    conv_res = ConversionResult(input=input_doc)
+    options = InlineAsrMlxWhisperOptions(
+        repo_id="mlx-community/whisper-tiny",
+        inference_framework=InferenceAsrFramework.MLX,
+        language="en",
+    )
+    model = _MlxWhisperModel(
+        enabled=False,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+        asr_options=options,
+    )
+    audio_path: Path | None = None
+    existed_during_transcription = False
+
+    def transcribe(path: Path):
+        nonlocal audio_path, existed_during_transcription
+        audio_path = path
+        existed_during_transcription = path.exists()
+        raise RuntimeError("transcription failed")
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(model, "transcribe", transcribe)
+
+    out = model.run(conv_res)
+
+    assert out.status == ConversionStatus.FAILURE
+    assert existed_during_transcription
+    assert audio_path is not None
+    assert not audio_path.exists()
+
+
 def test_mlx_run_success_and_failure(tmp_path):
     """Cover _MlxWhisperModel.run success and failure paths."""
     from docling.pipeline.asr_pipeline import _MlxWhisperModel

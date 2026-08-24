@@ -123,6 +123,7 @@ class InputFormat(str, Enum):
     EMAIL = "email"
     EPUB = "epub"
     BOXNOTE = "boxnote"
+    IWORK_PAGES = "iwork_pages"
     EBCDIC = "ebcdic"
 
 
@@ -167,9 +168,10 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.VIDEO: ["mp4", "avi", "mov", "mkv", "webm"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
-    InputFormat.EMAIL: ["eml"],
+    InputFormat.EMAIL: ["eml", "msg"],
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
+    InputFormat.IWORK_PAGES: ["pages"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
@@ -250,9 +252,13 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
-    InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EMAIL: ["message/rfc822", "application/vnd.ms-outlook"],
     InputFormat.EPUB: ["application/epub+zip"],
     InputFormat.BOXNOTE: ["application/vnd.box.boxnote"],
+    InputFormat.IWORK_PAGES: [
+        "application/vnd.apple.pages",
+        "application/x-iwork-pages-sffpages",
+    ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
 
