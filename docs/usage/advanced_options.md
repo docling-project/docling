@@ -148,6 +148,33 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Recover PDF heading levels
+
+The layout model marks section headers but not how deep they sit, so by default every heading in a
+PDF comes out at level 1. Docling can infer the levels from the PDF bookmarks, from outline
+numbering and from the heading's font styling:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    HeadingHierarchyOptions,
+    PdfPipelineOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
+pipeline_options.generate_parsed_pages = True  # required by the font-style signal
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
+
 ### Convert Apple Pages documents
 
 Apple Pages (`.pages`) documents convert like any other format, and both
@@ -169,12 +196,16 @@ the document uses:
   Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
   template yields no spurious content.
 
-!!! note "Body text only"
+Titles and headings are recovered from the paragraph styles Pages applies
+("Title", "Heading 1", "Subheading"), which are named identically in both
+generations.
 
-    Only the document body is extracted, as a flat sequence of paragraphs.
-    Heading levels, lists and tables are carried by the paragraph style runs and
-    are not yet mapped, and text boxes, headers, footers, footnotes and comments
-    are not included. Password-protected documents cannot be read.
+!!! note "Not yet extracted"
+
+    Character formatting, lists, text boxes, headers, footers, footnotes
+    and comments are not included — only the main body and its tables are
+    read — and password-protected documents cannot be read. Table cells
+    holding anything other than text are left empty.
 
 The container is untrusted input, so member count, total size, per-member size
 and decompressed output are all bounded. Those limits can be tuned with
