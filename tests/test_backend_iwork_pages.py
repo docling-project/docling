@@ -2,13 +2,15 @@
 
 Test Data Attribution
 ---------------------
-``pages_2013.pages`` and ``pages_iwork09.pages`` are ``testPages2013.pages`` and
-``testPages.pages`` from the Apache Tika test corpus, licensed under the Apache
-License 2.0. They are genuine Apple Pages output, and between them cover both
-container generations: ``pages_2013.pages`` stores its content as ``Index/*.iwa``
-with no PDF render, while ``pages_iwork09.pages`` uses the iWork '09 ``index.xml``
-layout. Conveniently, both hold the same source document, so the two code paths
-can be checked against each other.
+``pages_2013.pages``, ``pages_iwork09.pages``, ``pages_iwork09_formatted.pages``
+and ``pages_iwork09_comments.pages`` are ``testPages2013.pages``,
+``testPages.pages``, ``testPagesHeadersFootersFootnotes.pages`` and
+``testPagesComments.pages`` from the Apache Tika test corpus, licensed under the
+Apache License 2.0. They are genuine Apple Pages output, and between them cover
+both container generations: ``pages_2013.pages`` stores its content as
+``Index/*.iwa`` with no PDF render, while the rest use the iWork '09
+``index.xml`` layout. Conveniently, the first two hold the same source document,
+so the two code paths can be checked against each other.
 
 See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 """
@@ -48,6 +50,7 @@ PAGES_2013 = SOURCES / "pages_2013.pages"
 PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
 PAGES_PASSWORD_PROTECTED = SOURCES / "pages_password_protected.pages"
 PAGES_IWORK09_FORMATTED = SOURCES / "pages_iwork09_formatted.pages"
+PAGES_IWORK09_COMMENTS = SOURCES / "pages_iwork09_comments.pages"
 
 # Present in the body of both fixtures.
 _BODY_SENTENCE = "Some plain text to parse."
@@ -986,3 +989,69 @@ def test_legacy_page_furniture_is_recovered_as_furniture():
     # Pages writes a first-page, an even-page and an odd-page variant of every
     # header and footer, so the same text must not be emitted three times.
     assert len(by_label[DocItemLabel.PAGE_HEADER]) == 1
+
+
+def test_legacy_comments_are_recovered_and_linked_to_what_they_annotate():
+    """An '09 comment lives in sf:annotations, outside the body, and names the
+    sf:annotation-field in the text that it targets. Walking every sf:p would
+    fold the comment text into the body flow instead."""
+    doc = _backend(PAGES_IWORK09_COMMENTS).convert()
+
+    notes = [item for item in doc.texts if item.content_layer == ContentLayer.NOTES]
+    assert "comment about the APXL file here!!" in [item.text for item in notes]
+    assert len(notes) == 3
+
+    # The comment is attached to the paragraph holding the annotated text.
+    annotated = {
+        item.text: {ref.cref for ref in item.comments}
+        for item in doc.texts
+        if item.comments
+    }
+    target = next(text for text in annotated if "Keynote APXL file" in text)
+    assert annotated[target]
+
+    # And none of it leaks into the reading order.
+    assert "comment about the APXL file" not in doc.export_to_markdown()
+
+
+def test_modern_comments_are_read_through_the_highlight_they_cover(tmp_path: Path):
+    """Pages 5 records a comment as a highlight over the words it is about, so
+    the comment run table gives the stretch rather than a character in the text.
+    Replies are comments in their own right and are followed as a chain."""
+    comment_table = _len_field(
+        23, _len_field(1, _varint_field(1, 5) + _reference_field(2, 913))
+    )
+    body = next(
+        obj for obj in _iwa_objects(PAGES_2013).values() if obj.identifier == 4038
+    )
+    source = _redefined(
+        tmp_path / "comments.pages",
+        [
+            (912, 212, _len_field(1, b"Ada Lovelace")),
+            (911, 3056, _len_field(1, b"And a reply.")),
+            (
+                910,
+                3056,
+                _len_field(1, b"Is this the right title?")
+                + _reference_field(3, 912)
+                + _reference_field(4, 911),
+            ),
+            (913, 2013, _reference_field(1, 910)),
+            (4038, 2001, body.payload + comment_table),
+        ],
+    )
+    doc = _backend(source).convert()
+
+    notes = [
+        item.text for item in doc.texts if item.content_layer == ContentLayer.NOTES
+    ]
+    assert notes == [
+        "[author: Ada Lovelace]: Is this the right title?",
+        "And a reply.",
+    ]
+
+    # The highlight starts inside the first paragraph, so that is what the
+    # comment is attached to.
+    annotated = [item for item in doc.texts if item.comments]
+    assert len(annotated) == 1
+    assert annotated[0].text == "Sample pages document"

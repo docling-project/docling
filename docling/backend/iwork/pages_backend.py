@@ -42,6 +42,7 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.items.group import ListGroup
+from docling_core.types.doc.items.text import TextItem
 from PIL import Image
 from typing_extensions import override
 
@@ -112,6 +113,13 @@ class _ListStyle(NamedTuple):
         return _ListLabel(depth, False, marker or "-")
 
 
+class _Comment(NamedTuple):
+    """One comment thread, and the identifier of the text it annotates."""
+
+    text: str
+    anchor: str
+
+
 class _Paragraph(NamedTuple):
     """One block of body text with the label its Pages style implies.
 
@@ -124,6 +132,7 @@ class _Paragraph(NamedTuple):
     label: DocItemLabel
     level: int | None
     list_label: _ListLabel | None = None
+    anchors: tuple[str, ...] = ()
 
     @property
     def text(self) -> str:
@@ -173,6 +182,7 @@ class _Content(NamedTuple):
     headers: list[_Paragraph] = []
     footers: list[_Paragraph] = []
     footnotes: list[_Paragraph] = []
+    comments: list[_Comment] = []
 
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
@@ -294,6 +304,37 @@ _ATTACHMENT_DRAWABLE_FIELD = 1
 
 _STORAGE_ATTACHMENT_FIELD = 9
 """Field of ``TSWP.StorageArchive`` holding the attachment run table."""
+
+_STORAGE_COMMENT_FIELD = 23
+"""Field of ``TSWP.StorageArchive`` holding the comment run table.
+
+Its entries mark the stretch of text a comment is attached to, which is how
+Pages 5 records a comment: as a highlight over the words being commented on
+rather than as a character in the text.
+"""
+
+_TSWP_COMMENT_FIELD = 2013
+"""Message type of ``TSWP.CommentFieldArchive``, the anchor of one comment."""
+
+_COMMENT_FIELD_STORAGE_FIELD = 1
+"""Field of ``TSWP.CommentFieldArchive`` referencing the comment itself."""
+
+_TSD_COMMENT_STORAGE = 3056
+"""Message type of ``TSD.CommentStorageArchive``, one comment or one reply."""
+
+_COMMENT_TEXT_FIELD = 1
+_COMMENT_AUTHOR_FIELD = 3
+_COMMENT_REPLIES_FIELD = 4
+"""Fields of ``TSD.CommentStorageArchive``.
+
+Replies are comments in their own right, so a thread is a chain to be followed.
+"""
+
+_TSK_ANNOTATION_AUTHOR = 212
+"""Message type of ``TSK.AnnotationAuthorArchive``, who wrote a comment."""
+
+_AUTHOR_NAME_FIELD = 1
+"""Field of ``TSK.AnnotationAuthorArchive`` holding the author's name."""
 
 _TSWP_NOTE = 2008
 """Message type of ``TSWP.NoteArchive``, one footnote or endnote."""
@@ -496,13 +537,24 @@ _SF_PROPERTY_LABELS = {
 _SF_HEADER = f"{{{_SF_NAMESPACE}}}header"
 _SF_FOOTER = f"{{{_SF_NAMESPACE}}}footer"
 _SF_FOOTNOTES = f"{{{_SF_NAMESPACE}}}footnotes"
+_SF_ANNOTATIONS = f"{{{_SF_NAMESPACE}}}annotations"
 
-_SF_FURNITURE = frozenset({_SF_HEADER, _SF_FOOTER, _SF_FOOTNOTES})
-"""Elements whose paragraphs are page furniture rather than body content.
+_SF_FURNITURE = frozenset({_SF_HEADER, _SF_FOOTER, _SF_FOOTNOTES, _SF_ANNOTATIONS})
+"""Elements whose paragraphs are not body content.
 
 Each carries its own ``sf:text-body``, so they have to be pruned from the body
 walk by element rather than by looking for the document's body, and read
 separately afterwards.
+"""
+
+_SF_ANNOTATION = f"{{{_SF_NAMESPACE}}}annotation"
+_SF_ANNOTATION_FIELD = f"{{{_SF_NAMESPACE}}}annotation-field"
+_SF_ATTR_TARGET = f"{{{_SF_NAMESPACE}}}target"
+_SFA_ATTR_ID = f"{{{_SFA_NAMESPACE}}}ID"
+"""The iWork '09 vocabulary for comments.
+
+An ``sf:annotation`` names the ``sf:annotation-field`` it targets, and that
+field wraps the stretch of body text being commented on.
 """
 
 _HEADING_PATTERN = re.compile(r"^heading\s*(\d+)?$", re.IGNORECASE)
@@ -530,8 +582,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
           drawables owned by the document. An iWork '09 document keeps them in
           the body flow, so they already appear there.
         * Headers, footers and footnotes are recovered into the furniture
-          content layer, so they stay out of the reading order by default.
-          Comments are not included in either generation.
+          content layer and comments into the notes layer, so all of them stay
+          out of the reading order by default.
+        * A comment records its author but not the date it was written.
         * Password-protected documents cannot be read.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
@@ -665,6 +718,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             headers=headers,
             footers=footers,
             footnotes=reader.footnotes(storage),
+            comments=reader.comments(storage),
         )
 
     def _read_legacy_document(self, archive: zipfile.ZipFile, member: str) -> _Content:
@@ -729,8 +783,18 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 continue
             style = element.get(_SF_ATTR_STYLE)
             label, level = _label_for_style(style_names.get(style))
+            anchors = tuple(
+                field.get(_SFA_ATTR_ID) or ""
+                for field in element.iter(_SF_ANNOTATION_FIELD)
+            )
             blocks.append(
-                _Paragraph(runs, label, level, _legacy_list_label(element, list_styles))
+                _Paragraph(
+                    runs,
+                    label,
+                    level,
+                    _legacy_list_label(element, list_styles),
+                    tuple(anchor for anchor in anchors if anchor),
+                )
             )
 
         def furniture(tag: str) -> list[_Paragraph]:
@@ -741,6 +805,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
             headers=furniture(_SF_HEADER),
             footers=furniture(_SF_FOOTER),
             footnotes=furniture(_SF_FOOTNOTES),
+            comments=_legacy_comments(root),
         )
 
     @override
@@ -773,10 +838,15 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         lists = _ListStack(doc)
+        annotated: dict[str, TextItem] = {}
         for block in self._content.blocks:
-            _add_block(doc, block, lists)
+            item = _add_block(doc, block, lists)
+            if isinstance(block, _Paragraph) and item is not None:
+                for anchor in block.anchors:
+                    annotated.setdefault(anchor, item)
 
         _add_furniture(doc, self._content)
+        _add_comments(doc, self._content.comments, annotated)
         return doc
 
 
@@ -1414,20 +1484,27 @@ class _IWAReader:
         text = _iwa_storage_text(fields)
         runs = _iwa_storage_runs(fields, self._objects)
         attachments = _iwa_attachment_runs(fields)
+        comments = _iwa_attachment_runs(fields, _STORAGE_COMMENT_FIELD)
 
         blocks: list[_Block] = []
         offset = 0
         for line in text.split("\n"):
+            end = offset + len(line) + 1
             pieces = _runs_for(line, offset, runs.characters)
             if pieces:
                 label, level = _label_for_style(_value_at(runs.styles, offset))
+                anchors = tuple(
+                    str(field) for index, field in comments if offset <= index < end
+                )
                 blocks.append(
-                    _Paragraph(pieces, label, level, _list_label_at(runs, offset))
+                    _Paragraph(
+                        pieces, label, level, _list_label_at(runs, offset), anchors
+                    )
                 )
             for index, identifier in attachments:
-                if offset <= index < offset + len(line) + 1:
+                if offset <= index < end:
                     blocks.extend(self._drawable_blocks(identifier))
-            offset += len(line) + 1  # + 1 for the newline that split consumed
+            offset = end  # the + 1 above covers the newline that split consumed
 
         return blocks
 
@@ -1519,6 +1596,71 @@ class _IWAReader:
                         target.extend(self._storage_paragraphs(text_id))
 
         return _unique_paragraphs(headers), _unique_paragraphs(footers)
+
+    def comments(self, storage: IWAObject) -> list[_Comment]:
+        """Read the comments attached to the text of one storage.
+
+        Pages 5 records a comment as a highlight over the words being commented
+        on rather than as a character in the text, so the run table gives the
+        stretch it covers. Each entry names a comment field, which holds the
+        comment; replies are comments in their own right and are followed as a
+        chain.
+
+        Args:
+            storage: The storage whose comment table to read.
+
+        Returns:
+            One comment per thread entry, anchored by the field's identifier.
+        """
+        fields = read_fields(storage.payload)
+        comments: list[_Comment] = []
+
+        for _, identifier in _iwa_attachment_runs(fields, _STORAGE_COMMENT_FIELD):
+            field = self._objects.get(identifier)
+            if field is None or field.message_type != _TSWP_COMMENT_FIELD:
+                continue
+            head = _iwa_reference_field(field.payload, _COMMENT_FIELD_STORAGE_FIELD)
+            comments.extend(
+                _Comment(text, str(identifier)) for text in self._thread(head)
+            )
+
+        return comments
+
+    def _thread(self, identifier: int | None) -> list[str]:
+        """Read one comment and its replies, as text prefixed by their authors."""
+        texts: list[str] = []
+        pending = [identifier]
+        seen: set[int] = set()
+
+        while pending:
+            current = pending.pop(0)
+            if current is None or current in seen:
+                continue
+            seen.add(current)
+            comment = self._objects.get(current)
+            if comment is None or comment.message_type != _TSD_COMMENT_STORAGE:
+                continue
+
+            fields = _safe_fields(comment.payload)
+            raw = fields.get(_COMMENT_TEXT_FIELD, [None])[0]
+            if isinstance(raw, bytes):
+                text = raw.decode("utf-8", errors="replace").strip()
+                if text:
+                    texts.append(_authored(self._author(comment.payload), text))
+            pending.extend(_iwa_reference_list(comment.payload, _COMMENT_REPLIES_FIELD))
+
+        return texts
+
+    def _author(self, payload: bytes) -> str | None:
+        """Read the name of whoever wrote a comment."""
+        identifier = _iwa_reference_field(payload, _COMMENT_AUTHOR_FIELD)
+        author = self._objects.get(identifier) if identifier is not None else None
+        if author is None or author.message_type != _TSK_ANNOTATION_AUTHOR:
+            return None
+        name = _safe_fields(author.payload).get(_AUTHOR_NAME_FIELD, [None])[0]
+        if not isinstance(name, bytes):
+            return None
+        return name.decode("utf-8", errors="replace").strip() or None
 
     def _storage_paragraphs(self, identifier: int | None) -> list[_Paragraph]:
         """Read one storage's paragraphs, ignoring anything anchored in it."""
@@ -1755,6 +1897,11 @@ class _ListStack:
         return self._groups[depth]
 
 
+def _authored(author: str | None, text: str) -> str:
+    """Prefix a comment with its author, the way the Word backend renders one."""
+    return f"[author: {author}]: {text}" if author else text
+
+
 def _unique_paragraphs(paragraphs: list[_Paragraph]) -> list[_Paragraph]:
     """Drop repeats, keeping the first of each, without reordering."""
     seen: set[str] = set()
@@ -1765,6 +1912,25 @@ def _unique_paragraphs(paragraphs: list[_Paragraph]) -> list[_Paragraph]:
         seen.add(paragraph.text)
         unique.append(paragraph)
     return unique
+
+
+def _add_comments(
+    doc: DoclingDocument, comments: list[_Comment], annotated: dict[str, TextItem]
+) -> None:
+    """Add the document's comments, linked to the text they annotate.
+
+    Comments go into the notes content layer, where the Word backend puts them
+    too, and each is attached to the item holding the text it was written about
+    whenever that text was recovered.
+
+    Args:
+        doc: The document being built.
+        comments: The comments read from the Pages document.
+        annotated: The item each comment anchor was recovered into.
+    """
+    for comment in comments:
+        target = annotated.get(comment.anchor)
+        doc.add_comment(text=comment.text, targets=[target] if target else None)
 
 
 def _add_furniture(doc: DoclingDocument, content: _Content) -> None:
@@ -1791,11 +1957,22 @@ def _add_furniture(doc: DoclingDocument, content: _Content) -> None:
             )
 
 
-def _add_block(doc: DoclingDocument, block: _Block, lists: _ListStack) -> None:
-    """Add one block of content, in the order Pages lays the document out."""
+def _add_block(
+    doc: DoclingDocument, block: _Block, lists: _ListStack
+) -> TextItem | None:
+    """Add one block of content, in the order Pages lays the document out.
+
+    Args:
+        doc: The document being built.
+        block: The block to add.
+        lists: The list groups currently open.
+
+    Returns:
+        The item a paragraph became, so a comment can be attached to it, or None
+        for anything a comment cannot annotate.
+    """
     if isinstance(block, _Paragraph):
-        _add_paragraph(doc, block, lists)
-        return
+        return _add_paragraph(doc, block, lists)
 
     # A table or a picture ends any list it follows, the same as body text.
     lists.close()
@@ -1803,6 +1980,7 @@ def _add_block(doc: DoclingDocument, block: _Block, lists: _ListStack) -> None:
         _add_picture(doc, block)
     else:
         doc.add_table(data=block)
+    return None
 
 
 def _add_picture(doc: DoclingDocument, picture: _Picture) -> None:
@@ -1827,7 +2005,7 @@ def _add_picture(doc: DoclingDocument, picture: _Picture) -> None:
 
 def _add_paragraph(
     doc: DoclingDocument, paragraph: _Paragraph, lists: _ListStack
-) -> None:
+) -> TextItem | None:
     """Add one paragraph, keeping any character formatting attached to its runs.
 
     ``TextItem`` carries a single ``Formatting``, so a paragraph whose runs
@@ -1842,46 +2020,50 @@ def _add_paragraph(
     if paragraph.list_label is None:
         lists.close()
     else:
-        _add_list_item(doc, paragraph, paragraph.list_label, lists)
-        return
+        return _add_list_item(doc, paragraph, paragraph.list_label, lists)
 
     if paragraph.label == DocItemLabel.TITLE:
-        doc.add_title(text=paragraph.text)
-        return
+        return doc.add_title(text=paragraph.text)
     if paragraph.label == DocItemLabel.SECTION_HEADER:
-        doc.add_heading(text=paragraph.text, level=paragraph.level or 1)
-        return
+        return doc.add_heading(text=paragraph.text, level=paragraph.level or 1)
 
     runs = [run for run in paragraph.runs if run.text]
     if len(runs) <= 1:
         formatting = runs[0].formatting if runs else None
-        doc.add_text(label=paragraph.label, text=paragraph.text, formatting=formatting)
-        return
+        return doc.add_text(
+            label=paragraph.label, text=paragraph.text, formatting=formatting
+        )
 
     # Formatting is a model, so compare rather than deduplicate through a set.
     first = runs[0].formatting
     if all(run.formatting == first for run in runs):
-        doc.add_text(label=paragraph.label, text=paragraph.text, formatting=first)
-        return
+        return doc.add_text(
+            label=paragraph.label, text=paragraph.text, formatting=first
+        )
 
     group = doc.add_inline_group()
-    for run in runs:
+    items = [
         doc.add_text(
             label=paragraph.label,
             text=run.text,
             formatting=run.formatting,
             parent=group,
         )
+        for run in runs
+    ]
+    # A comment annotates a stretch of the paragraph; the first item is the one
+    # that always exists, whichever run that stretch began in.
+    return items[0]
 
 
 def _add_list_item(
     doc: DoclingDocument, paragraph: _Paragraph, label: _ListLabel, lists: _ListStack
-) -> None:
+) -> TextItem:
     """Add one list item under the group its nesting depth belongs to."""
     group = lists.group_for(label.depth)
     runs = [run for run in paragraph.runs if run.text]
     first = runs[0].formatting if runs else None
-    doc.add_list_item(
+    return doc.add_list_item(
         text=paragraph.text,
         enumerated=label.enumerated,
         marker=label.marker,
@@ -1969,6 +2151,29 @@ def _legacy_furniture(
             label, level = _label_for_style(style_names.get(para.get(_SF_ATTR_STYLE)))
             paragraphs.append(_Paragraph(runs, label, level))
     return _unique_paragraphs(paragraphs)
+
+
+def _legacy_comments(root: Element) -> list[_Comment]:
+    """Read the comments of an '09 document, with the text each one annotates.
+
+    An ``sf:annotation`` holds its text in a storage of its own and names the
+    ``sf:annotation-field`` in the body that it targets.
+
+    Args:
+        root: The parsed ``index.xml`` root element.
+
+    Returns:
+        One comment per annotation, in document order.
+    """
+    comments: list[_Comment] = []
+    for annotation in root.iter(_SF_ANNOTATION):
+        text = " ".join(
+            "".join(run.text for run in _legacy_runs(para, {}))
+            for para in annotation.iter(_SF_PARAGRAPH)
+        ).strip()
+        if text:
+            comments.append(_Comment(text, annotation.get(_SF_ATTR_TARGET) or ""))
+    return comments
 
 
 def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
