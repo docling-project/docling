@@ -1,5 +1,5 @@
 import torch
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.models.stages.table_structure.table_structure_model_v2 import (
@@ -72,6 +72,20 @@ def test_match_texts_handles_unordered_bbox_coordinates() -> None:
         text_cells,
         0.3,
     ) == ["A"]
+
+
+def test_match_texts_handles_bottomleft_coordinates() -> None:
+    bbox = BoundingBox(
+        l=5,
+        t=20,
+        r=25,
+        b=5,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    text_cells = [_text_cell(0, bbox, "A")]
+    model = object.__new__(TableStructureModelV2)
+
+    assert model._match_texts([bbox], text_cells, 0.3) == ["A"]
 
 
 def test_build_table_cells_orders_model_bbox_coordinates() -> None:

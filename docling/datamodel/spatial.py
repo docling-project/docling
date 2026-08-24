@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, CoordOrigin
 from rtree import index
 
 SpatialBounds = tuple[float, float, float, float]
@@ -21,7 +21,12 @@ def has_positive_area(bbox: BoundingBox) -> bool:
 
 
 def ordered_bounding_box(bbox: BoundingBox) -> BoundingBox:
-    left, top, right, bottom = ordered_bounds(bbox)
+    left, low_y, right, high_y = ordered_bounds(bbox)
+    top, bottom = (
+        (high_y, low_y)
+        if bbox.coord_origin == CoordOrigin.BOTTOMLEFT
+        else (low_y, high_y)
+    )
     return BoundingBox(
         l=left,
         t=top,
