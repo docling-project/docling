@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Does the server receive everything the caller configured on the client?
 
 Motivated by a shipped regression: ``engine_options`` is declared as its base

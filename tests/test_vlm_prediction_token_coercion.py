@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Regression test for VlmPredictionToken logprob type coercion (#4002).
 
 MLX stream_generate returns bfloat16 scalar arrays for logprobs, which

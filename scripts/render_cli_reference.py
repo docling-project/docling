@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Generate the CLI reference page for the docs.
 
 Replaces mkdocs-click, which is not on the Zensical compatibility roadmap.

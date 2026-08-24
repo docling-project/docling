@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared VLM prompt constants owned by the datamodel layer."""
 
 CHANDRA_ALLOWED_TAGS = (

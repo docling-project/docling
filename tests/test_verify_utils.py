@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import pytest
 from docling_core.types.doc import DoclingDocument, ImageRef, ProvenanceItem
 from docling_core.types.doc.base import BoundingBox, Size

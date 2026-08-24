@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Regression tests for optional format-backend dependencies.
 
 ``DocumentConverter`` imports every format backend eagerly (see

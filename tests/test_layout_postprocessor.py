@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 

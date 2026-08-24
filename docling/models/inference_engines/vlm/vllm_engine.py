@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """vLLM-based VLM inference engine for high-throughput serving."""
 
 import logging

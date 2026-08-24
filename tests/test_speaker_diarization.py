@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for docling.utils.speaker_diarization.
 
 assign_speakers is pure overlap logic and runs fully in core CI. diarize() is

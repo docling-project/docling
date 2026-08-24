@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared image-resource loading for declarative backends.
 
 Turns an image source (a URI, a local file, or a remote URL) into a DoclingDocument

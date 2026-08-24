@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """A KServe v2 REST inference route pack.
 
 Serves the two endpoints the KServe client calls:

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for section-header level inference in the PDF/image pipeline."""
 
 from types import SimpleNamespace

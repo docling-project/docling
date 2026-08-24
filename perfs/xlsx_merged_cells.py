@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Benchmark full XLSX conversion for worksheets with many merged ranges.
 
 The script generates temporary workbooks containing horizontal ``A:C`` merges and

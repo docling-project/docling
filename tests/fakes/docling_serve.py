@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """A docling-serve route pack.
 
 Paths and response models mirror docling-serve's own ``app.py`` so the two can

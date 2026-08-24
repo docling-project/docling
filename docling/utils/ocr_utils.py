@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from typing import Optional, Tuple
 
 from docling_core.types.doc import BoundingBox, CoordOrigin

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Thread-safe, production-ready PDF pipeline
 ================================================
 A self-contained, thread-safe PDF conversion pipeline exploiting parallelism between pipeline stages and models.
