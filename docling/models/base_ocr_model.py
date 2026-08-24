@@ -33,18 +33,20 @@ def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
     """A minimal SegmentedPdfPage for pages whose native parse was skipped
     (PagePreprocessingOptions.skip_cell_extraction), sized from the page."""
     width, height = page.size.width, page.size.height
+    # CoordOrigin.BOTTOMLEFT by convention: a real backend produces the
+    # segmented page in bottom-left coordinates.
     rect = BoundingRectangle(
-        r_x0=0,
-        r_y0=height,
-        r_x1=width,
-        r_y1=height,
-        r_x2=width,
-        r_y2=0,
-        r_x3=0,
-        r_y3=0,
-        coord_origin=CoordOrigin.TOPLEFT,
+        r_x0=0,  # lower-left
+        r_y0=0,
+        r_x1=width,  # lower-right
+        r_y1=0,
+        r_x2=width,  # upper-right
+        r_y2=height,
+        r_x3=0,  # upper-left
+        r_y3=height,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
     )
-    bbox = BoundingBox(l=0, t=0, r=width, b=height, coord_origin=CoordOrigin.TOPLEFT)
+    bbox = BoundingBox(l=0, t=height, r=width, b=0, coord_origin=CoordOrigin.BOTTOMLEFT)
     return SegmentedPdfPage(
         dimension=PdfPageGeometry(
             angle=0.0,

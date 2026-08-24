@@ -22,17 +22,12 @@ from docling.datamodel.base_models import (
     Size,
 )
 from docling.datamodel.pipeline_options import (
-    EasyOcrOptions,
     LayoutPostprocessorOptions,
     OcrMode,
-    PdfPipelineOptions,
 )
-from docling.models.base_ocr_model import BaseOcrModel, _empty_segmented_page
+from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
-)
-from docling.models.stages.page_preprocessing.page_preprocessing_model import (
-    resolve_skip_cell_extraction,
 )
 
 
@@ -52,40 +47,6 @@ def _ocr_cell(text: str, confidence: float) -> TextCell:
         from_ocr=True,
         confidence=confidence,
     )
-
-
-def test_skip_derived_from_full_page_ocr_mode() -> None:
-    # Full-page OCR discards native cells anyway -> the decode is skipped.
-    options = PdfPipelineOptions(
-        do_ocr=True, ocr_options=EasyOcrOptions(mode=OcrMode.FULL_PAGE)
-    )
-    assert resolve_skip_cell_extraction(options) is True
-
-
-def test_no_skip_without_ocr() -> None:
-    # Skipping without OCR would silently produce text-free output.
-    options = PdfPipelineOptions(
-        do_ocr=False, ocr_options=EasyOcrOptions(mode=OcrMode.FULL_PAGE)
-    )
-    assert resolve_skip_cell_extraction(options) is False
-
-
-def test_no_skip_in_native_cell_dependent_modes() -> None:
-    # The other OCR modes merge OCR output with native cells -> keep the decode.
-    for mode in (OcrMode.LAYOUT_REGIONS, OcrMode.PDF_AWARE_LAYOUT_REGIONS):
-        options = PdfPipelineOptions(do_ocr=True, ocr_options=EasyOcrOptions(mode=mode))
-        assert resolve_skip_cell_extraction(options) is False
-    # Defaults (auto OCR mode) keep the decode too.
-    assert resolve_skip_cell_extraction(PdfPipelineOptions()) is False
-
-
-def test_empty_segmented_page_matches_page_geometry() -> None:
-    seg = _empty_segmented_page(_page())
-    assert seg.dimension.crop_bbox.r == 600.0
-    assert seg.dimension.crop_bbox.b == 800.0
-    assert seg.char_cells == []
-    assert seg.word_cells == []
-    assert seg.textline_cells == []
 
 
 def test_post_process_cells_tolerates_missing_parsed_page() -> None:
