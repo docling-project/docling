@@ -19,7 +19,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import ContentLayer, DocItemLabel
 from docling_core.types.doc.items.text import ListItem
 from PIL import Image as PILImage
 
@@ -470,8 +470,9 @@ def test_body_text_is_labelled_from_its_style():
 
 def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
     """Headers, footers and footnotes each carry their own sf:text-body in an '09
-    document, so iterating every sf:p would fold them into the body flow. The IWA
-    reader only ever sees the body storage, so both generations must agree."""
+    document, so iterating every sf:p would fold them into the body flow. They
+    are recovered as furniture instead, which is what keeps them out of the
+    reading order while still making them available."""
     namespace = "http://developer.apple.com/namespaces/sf"
     xml = f"""<?xml version="1.0"?>
     <sf:document xmlns:sf="{namespace}">
@@ -500,10 +501,20 @@ def test_legacy_page_furniture_stays_out_of_the_body(tmp_path: Path):
         source,
     )
 
-    text = backend.convert().export_to_markdown()
+    doc = backend.convert()
+    text = doc.export_to_markdown()
     assert "Real body text." in text
     for furniture in ("Running header", "Page footer", "A footnote body"):
         assert furniture not in text
+
+    recovered = {
+        item.text: item.label
+        for item in doc.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    }
+    assert recovered["Running header"] == DocItemLabel.PAGE_HEADER
+    assert recovered["Page footer"] == DocItemLabel.PAGE_FOOTER
+    assert recovered["A footnote body"] == DocItemLabel.FOOTNOTE
 
 
 def test_modern_table_is_extracted_from_the_tile_storage():
@@ -889,3 +900,89 @@ def test_table_is_placed_where_the_document_anchors_it():
 
     order = [child.cref for child in doc.body.children]
     assert 0 < order.index(doc.tables[0].self_ref) < len(order) - 1
+
+
+def _redefined(target: Path, objects: list[tuple[int, int, bytes]]) -> Path:
+    """Copy the Pages 5+ fixture with some of its objects redefined."""
+    archive = zipfile.ZipFile(PAGES_2013)
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+        for info in archive.infolist():
+            out.writestr(info.filename, archive.read(info))
+        out.writestr("Index/Redefined.iwa", _iwa_member(objects))
+    return target
+
+
+def _storage(text: str) -> bytes:
+    """A TSWP.StorageArchive holding nothing but text."""
+    return _len_field(3, text.encode())
+
+
+def test_modern_headers_and_footers_are_read_from_the_page_master(tmp_path: Path):
+    """Headers and footers belong to the page master a stretch of the document
+    runs under, not to the text, so they are reached through the body storage's
+    page master table. The fixture already names six such storages and leaves
+    them all empty, so two of them are given text."""
+    source = _redefined(
+        tmp_path / "furniture.pages",
+        [(4117, 2001, _storage("Running header")), (4120, 2001, _storage("Page 1"))],
+    )
+    doc = _backend(source).convert()
+
+    by_label = {
+        item.label: item.text
+        for item in doc.texts
+        if item.label in (DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER)
+    }
+    assert by_label[DocItemLabel.PAGE_HEADER] == "Running header"
+    assert by_label[DocItemLabel.PAGE_FOOTER] == "Page 1"
+
+    # Furniture stays out of the reading order.
+    assert "Running header" not in doc.export_to_markdown()
+
+
+def test_modern_footnotes_are_read_through_their_anchors(tmp_path: Path):
+    """A footnote is anchored at one of the U+FFFC placeholders in the text, and
+    the note it names holds a storage of its own. The fixture anchors a drawable
+    at character 52; a footnote table is appended to the same body storage so the
+    note path is exercised on real surrounding data."""
+    body = next(
+        obj
+        for obj in _iwa_objects(PAGES_2013).values()
+        if obj.identifier == 4038 and obj.message_type == 2001
+    )
+    note_table = _len_field(
+        16, _len_field(1, _varint_field(1, 52) + _reference_field(2, 901))
+    )
+    source = _redefined(
+        tmp_path / "footnote.pages",
+        [
+            (900, 2001, _storage("Do a lot of people really use iWork?")),
+            (901, 2008, _reference_field(2, 900)),
+            (4038, 2001, body.payload + note_table),
+        ],
+    )
+    doc = _backend(source).convert()
+
+    footnotes = [item.text for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Do a lot of people really use iWork?"]
+    assert _BODY_SENTENCE in doc.export_to_markdown()
+
+
+def test_legacy_page_furniture_is_recovered_as_furniture():
+    """The '09 fixture carries a real header, a real footer and three footnotes.
+    They belong to the page rather than to the body flow, so they are labelled
+    and kept in the furniture layer."""
+    doc = _backend(PAGES_IWORK09_FORMATTED).convert()
+
+    by_label: dict[DocItemLabel, list[str]] = {}
+    for item in doc.texts:
+        by_label.setdefault(item.label, []).append(item.text)
+
+    assert by_label[DocItemLabel.PAGE_HEADER] == ["THIS IS SOME HEADER TEXT"]
+    assert by_label[DocItemLabel.PAGE_FOOTER] == ["THIS IS SOME FOOTER TEXT"]
+    assert len(by_label[DocItemLabel.FOOTNOTE]) == 3
+    assert "What does APXL stand for?!?!?" in by_label[DocItemLabel.FOOTNOTE][1]
+
+    # Pages writes a first-page, an even-page and an odd-page variant of every
+    # header and footer, so the same text must not be emitted three times.
+    assert len(by_label[DocItemLabel.PAGE_HEADER]) == 1

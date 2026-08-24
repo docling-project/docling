@@ -32,6 +32,7 @@ from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -160,6 +161,20 @@ _Block = _Paragraph | _Picture | TableData
 """One piece of document content, in the order Pages lays it out."""
 
 
+class _Content(NamedTuple):
+    """Everything one Pages document holds.
+
+    Page furniture is kept apart from the body flow rather than interleaved with
+    it: a header belongs to every page a page master covers, not to one point in
+    the text, so there is no position in ``blocks`` that would be right for it.
+    """
+
+    blocks: list[_Block]
+    headers: list[_Paragraph] = []
+    footers: list[_Paragraph] = []
+    footnotes: list[_Paragraph] = []
+
+
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
 
 # DocumentOrigin only accepts a mimetype that the stdlib knows or that
@@ -279,6 +294,43 @@ _ATTACHMENT_DRAWABLE_FIELD = 1
 
 _STORAGE_ATTACHMENT_FIELD = 9
 """Field of ``TSWP.StorageArchive`` holding the attachment run table."""
+
+_TSWP_NOTE = 2008
+"""Message type of ``TSWP.NoteArchive``, one footnote or endnote."""
+
+_NOTE_STORAGE_FIELD = 2
+"""Field of ``TSWP.NoteArchive`` referencing the storage holding the note's text."""
+
+_STORAGE_FOOTNOTE_FIELD = 16
+"""Field of ``TSWP.StorageArchive`` holding the footnote run table.
+
+Its entries anchor a note at the character the footnote mark occupies, which is
+one of the U+FFFC placeholders in the text.
+"""
+
+_STORAGE_PAGE_MASTER_FIELD = 17
+"""Field of ``TSWP.StorageArchive`` holding the page master run table.
+
+Headers and footers hang off the page master that covers a stretch of the
+document rather than off the text itself, so this is the way in to them.
+"""
+
+_TP_PAGE_MASTER = 10011
+"""Message type of ``TP.PageMasterArchive``, the page layout of one section."""
+
+_PAGE_MASTER_HEADER_FOOTER_FIELDS = (23, 24, 25)
+"""Fields of ``TP.PageMasterArchive`` referencing its headers and footers.
+
+Pages keeps three sets — first page, even pages, odd pages — and writes all of
+them whether or not the author filled them in.
+"""
+
+_TP_HEADERS_AND_FOOTERS = 10143
+"""Message type of ``TP.HeadersAndFootersArchive``."""
+
+_HEADERS_FIELD = 1
+_FOOTERS_FIELD = 2
+"""Fields of ``TP.HeadersAndFootersArchive``, each a list of text storages."""
 
 _TSP_PACKAGE_METADATA = 11006
 """Message type of ``TSP.PackageMetadata``, which names the container's data files."""
@@ -441,19 +493,16 @@ _SF_PROPERTY_LABELS = {
 }
 """Property-map entries of an iWork '09 character style, as ``Formatting`` names."""
 
-_SF_FURNITURE = frozenset(
-    {
-        f"{{{_SF_NAMESPACE}}}header",
-        f"{{{_SF_NAMESPACE}}}footer",
-        f"{{{_SF_NAMESPACE}}}footnotes",
-    }
-)
+_SF_HEADER = f"{{{_SF_NAMESPACE}}}header"
+_SF_FOOTER = f"{{{_SF_NAMESPACE}}}footer"
+_SF_FOOTNOTES = f"{{{_SF_NAMESPACE}}}footnotes"
+
+_SF_FURNITURE = frozenset({_SF_HEADER, _SF_FOOTER, _SF_FOOTNOTES})
 """Elements whose paragraphs are page furniture rather than body content.
 
-Each carries its own ``sf:text-body``, so they have to be pruned by element
-rather than by looking for the document's body. The IWA reader only ever sees
-the body storage, so skipping them keeps both generations in agreement about
-what the document contains.
+Each carries its own ``sf:text-body``, so they have to be pruned from the body
+walk by element rather than by looking for the document's body, and read
+separately afterwards.
 """
 
 _HEADING_PATTERN = re.compile(r"^heading\s*(\d+)?$", re.IGNORECASE)
@@ -480,8 +529,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         * Text boxes are read from Pages 5+ documents, where they are floating
           drawables owned by the document. An iWork '09 document keeps them in
           the body flow, so they already appear there.
-        * Headers, footers, footnotes and comments are not included in either
-          generation.
+        * Headers, footers and footnotes are recovered into the furniture
+          content layer, so they stay out of the reading order by default.
+          Comments are not included in either generation.
         * Password-protected documents cannot be read.
         * ``.pages`` bundles saved as a *directory* package rather than a single
           file are not recognised; the converter cannot address a directory as an
@@ -500,12 +550,12 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
 
-        self._blocks: list[_Block] = []
+        self._content = _Content(blocks=[])
         self._valid = False
 
         try:
             with zipfile.ZipFile(path_or_stream) as archive:
-                self._blocks = self._read_document(archive)
+                self._content = self._read_document(archive)
         except DocumentLoadError:
             raise
         except RecursionError as exc:
@@ -533,7 +583,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
         self._valid = True
 
-    def _read_document(self, archive: zipfile.ZipFile) -> list[_Block]:
+    def _read_document(self, archive: zipfile.ZipFile) -> _Content:
         """Dispatch to the reader for whichever generation wrote the container."""
         infos = archive.infolist()
         if len(infos) > self.options.max_member_count:
@@ -571,7 +621,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
     def _read_iwa_document(
         self, archive: zipfile.ZipFile, infos: list[zipfile.ZipInfo]
-    ) -> list[_Block]:
+    ) -> _Content:
         """Read the content of a Pages 5+ document out of its IWA object graph."""
         objects: dict[int, IWAObject] = {}
         for info in infos:
@@ -609,11 +659,15 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         reader = _IWAReader(archive, objects)
         blocks = reader.storage_blocks(storage)
         blocks.extend(reader.floating_blocks(document))
-        return blocks
+        headers, footers = reader.page_furniture(storage)
+        return _Content(
+            blocks=blocks,
+            headers=headers,
+            footers=footers,
+            footnotes=reader.footnotes(storage),
+        )
 
-    def _read_legacy_document(
-        self, archive: zipfile.ZipFile, member: str
-    ) -> list[_Block]:
+    def _read_legacy_document(self, archive: zipfile.ZipFile, member: str) -> _Content:
         """Read the content of an iWork '09 document out of its ``index.xml``."""
         raw = archive.read(member)
         if member.endswith(".gz"):
@@ -679,7 +733,15 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 _Paragraph(runs, label, level, _legacy_list_label(element, list_styles))
             )
 
-        return blocks
+        def furniture(tag: str) -> list[_Paragraph]:
+            return _legacy_furniture(root, tag, style_names, character_styles)
+
+        return _Content(
+            blocks=blocks,
+            headers=furniture(_SF_HEADER),
+            footers=furniture(_SF_FOOTER),
+            footnotes=furniture(_SF_FOOTNOTES),
+        )
 
     @override
     def is_valid(self) -> bool:
@@ -711,9 +773,10 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         lists = _ListStack(doc)
-        for block in self._blocks:
+        for block in self._content.blocks:
             _add_block(doc, block, lists)
 
+        _add_furniture(doc, self._content)
         return doc
 
 
@@ -1397,6 +1460,76 @@ class _IWAReader:
             blocks.extend(self._drawable_blocks(identifier))
         return blocks
 
+    def footnotes(self, storage: IWAObject) -> list[_Paragraph]:
+        """Read the notes anchored in one storage.
+
+        The footnote run table anchors a note at the character its mark occupies
+        — one of the U+FFFC placeholders the text carries — and the note holds
+        its own storage of text.
+
+        Args:
+            storage: The storage whose footnote table to read.
+
+        Returns:
+            The notes' paragraphs, in the order they are anchored.
+        """
+        fields = read_fields(storage.payload)
+        paragraphs: list[_Paragraph] = []
+        for _, identifier in _iwa_attachment_runs(fields, _STORAGE_FOOTNOTE_FIELD):
+            note = self._objects.get(identifier)
+            if note is None or note.message_type != _TSWP_NOTE:
+                continue
+            text_id = _iwa_reference_field(note.payload, _NOTE_STORAGE_FIELD)
+            paragraphs.extend(self._storage_paragraphs(text_id))
+        return paragraphs
+
+    def page_furniture(
+        self, storage: IWAObject
+    ) -> tuple[list[_Paragraph], list[_Paragraph]]:
+        """Read the headers and footers of the page masters a storage runs under.
+
+        Pages writes three sets per master — first page, even pages, odd pages —
+        whether or not the author filled them in, and a document with several
+        sections repeats them per master, so identical text is emitted once.
+
+        Args:
+            storage: The body storage, which names its page masters.
+
+        Returns:
+            The header paragraphs and the footer paragraphs.
+        """
+        fields = read_fields(storage.payload)
+        headers: list[_Paragraph] = []
+        footers: list[_Paragraph] = []
+
+        for _, identifier in _iwa_attachment_runs(fields, _STORAGE_PAGE_MASTER_FIELD):
+            master = self._objects.get(identifier)
+            if master is None or master.message_type != _TP_PAGE_MASTER:
+                continue
+            for field in _PAGE_MASTER_HEADER_FOOTER_FIELDS:
+                pair = _iwa_reference_field(master.payload, field)
+                bundle = self._objects.get(pair) if pair is not None else None
+                if bundle is None or bundle.message_type != _TP_HEADERS_AND_FOOTERS:
+                    continue
+                for source, target in (
+                    (_HEADERS_FIELD, headers),
+                    (_FOOTERS_FIELD, footers),
+                ):
+                    for text_id in _iwa_reference_list(bundle.payload, source):
+                        target.extend(self._storage_paragraphs(text_id))
+
+        return _unique_paragraphs(headers), _unique_paragraphs(footers)
+
+    def _storage_paragraphs(self, identifier: int | None) -> list[_Paragraph]:
+        """Read one storage's paragraphs, ignoring anything anchored in it."""
+        storage = self._objects.get(identifier) if identifier is not None else None
+        if storage is None or storage.message_type != _TSWP_STORAGE_ARCHIVE:
+            return []
+        fields = read_fields(storage.payload)
+        return _split_paragraphs(
+            _iwa_storage_text(fields), _iwa_storage_runs(fields, self._objects)
+        )
+
     def _drawable_blocks(self, identifier: int) -> list[_Block]:
         """Read whichever kind of drawable ``identifier`` names."""
         if identifier in self._emitted:
@@ -1487,20 +1620,23 @@ def _iwa_reference_list(payload: bytes, field: int) -> list[int]:
 
 def _iwa_attachment_runs(
     fields: dict[int, list[int | bytes]],
+    field: int = _STORAGE_ATTACHMENT_FIELD,
 ) -> list[tuple[int, int]]:
-    """Resolve the attachment run table to (character index, object id) pairs.
+    """Resolve an anchoring run table to (character index, object id) pairs.
 
     Unlike the style tables, an entry here anchors an object at one character
     rather than putting a value in force from it, so entries without a reference
-    carry nothing and are dropped.
+    carry nothing and are dropped. Attachments, footnotes and page masters all
+    use this shape.
 
     Args:
         fields: Decoded fields of the storage.
+        field: The storage field holding the table.
 
     Returns:
         Character index and object identifier pairs, in document order.
     """
-    table = fields.get(_STORAGE_ATTACHMENT_FIELD, [])
+    table = fields.get(field, [])
     if not table or not isinstance(table[0], bytes):
         return []
 
@@ -1617,6 +1753,42 @@ class _ListStack:
                 )
             )
         return self._groups[depth]
+
+
+def _unique_paragraphs(paragraphs: list[_Paragraph]) -> list[_Paragraph]:
+    """Drop repeats, keeping the first of each, without reordering."""
+    seen: set[str] = set()
+    unique: list[_Paragraph] = []
+    for paragraph in paragraphs:
+        if paragraph.text in seen:
+            continue
+        seen.add(paragraph.text)
+        unique.append(paragraph)
+    return unique
+
+
+def _add_furniture(doc: DoclingDocument, content: _Content) -> None:
+    """Add the document's headers, footers and footnotes.
+
+    They go into the furniture layer, where the Word backend puts a header and a
+    footer too, so they are available to callers that ask for it but stay out of
+    the reading order by default.
+
+    Args:
+        doc: The document being built.
+        content: The content read from the Pages document.
+    """
+    for paragraphs, label in (
+        (content.headers, DocItemLabel.PAGE_HEADER),
+        (content.footers, DocItemLabel.PAGE_FOOTER),
+        (content.footnotes, DocItemLabel.FOOTNOTE),
+    ):
+        for paragraph in paragraphs:
+            doc.add_text(
+                label=label,
+                text=paragraph.text,
+                content_layer=ContentLayer.FURNITURE,
+            )
 
 
 def _add_block(doc: DoclingDocument, block: _Block, lists: _ListStack) -> None:
@@ -1765,6 +1937,38 @@ def _legacy_runs(
             stack.append((child, inherited, False))
 
     return _trim(runs)
+
+
+def _legacy_furniture(
+    root: Element,
+    tag: str,
+    style_names: dict[str | None, str | None],
+    character_styles: dict[str | None, Formatting | None],
+) -> list[_Paragraph]:
+    """Read the paragraphs of one kind of '09 page furniture.
+
+    Pages writes a first-page, an even-page and an odd-page variant of every
+    header and footer whether or not the author filled them in, so identical
+    text is emitted once.
+
+    Args:
+        root: The parsed ``index.xml`` root element.
+        tag: The furniture element to collect, one of :data:`_SF_FURNITURE`.
+        style_names: Paragraph style names, keyed by style identifier.
+        character_styles: Character style formatting, keyed by style identifier.
+
+    Returns:
+        The furniture's non-empty paragraphs, in document order.
+    """
+    paragraphs: list[_Paragraph] = []
+    for element in root.iter(tag):
+        for para in element.iter(_SF_PARAGRAPH):
+            runs = _legacy_runs(para, character_styles)
+            if not runs:
+                continue
+            label, level = _label_for_style(style_names.get(para.get(_SF_ATTR_STYLE)))
+            paragraphs.append(_Paragraph(runs, label, level))
+    return _unique_paragraphs(paragraphs)
 
 
 def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
