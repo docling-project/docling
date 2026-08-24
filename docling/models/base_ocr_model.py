@@ -7,11 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import (
-    PdfCellRenderingMode,
-    PdfTextCell,
-    TextCell,
-)
+from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
@@ -19,6 +15,7 @@ from scipy.ndimage import binary_dilation, find_objects, label
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pdf_text import split_by_render_mode_visibility
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
@@ -41,12 +38,6 @@ class _MergeCellsPriority(str, Enum):
     OCR_FIRST = "ocr_cells_first"
 
 
-# PDF 32000 text rendering modes that paint no ink
-_INVISIBLE_RENDERING_MODES = frozenset(
-    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
-)
-
-
 # Flag to control if the OCR cells post-processing will use all PDF cells or only the visible ones
 _PDF_CELLS_POST_PROCESSING_SEGREGATION = True
 
@@ -59,17 +50,7 @@ def _segregate_by_visibility(
     Cells carrying no rendering mode (plain `TextCell`, e.g. OCR output) count as visible,
     as does `UNKNOWN` (-1): no `Tr` operator means the PDF default mode 0 (fill).
     """
-    visible: list[TextCell] = []
-    invisible: list[TextCell] = []
-    for cell in cells:
-        if (
-            isinstance(cell, PdfTextCell)
-            and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
-        ):
-            invisible.append(cell)
-        else:
-            visible.append(cell)
-    return visible, invisible
+    return split_by_render_mode_visibility(cells)
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):

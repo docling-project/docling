@@ -1,4 +1,4 @@
-"""Invisible PDF text must not reach OCR routing or page assembly."""
+"""OCR rect selection must not treat an invisible text layer as programmatic text."""
 
 from collections.abc import Iterable
 from pathlib import Path
@@ -118,8 +118,8 @@ def test_invisible_text_still_needs_ocr(backend_cls):
     "backend_cls",
     [DoclingParseDocumentBackend, ThreadedDoclingParseDocumentBackend],
 )
-def test_page_preprocessing_removes_render_mode_invisible_text(backend_cls):
-    """Backends that expose visibility must not pass invisible cells downstream."""
+def test_page_preprocessing_preserves_render_mode_invisible_text(backend_cls):
+    """Hidden OCR layers must reach layout matching instead of being deleted early."""
     in_doc = InputDocument(
         path_or_stream=FIXTURE,
         format=InputFormat.PDF,
@@ -140,63 +140,9 @@ def test_page_preprocessing_removes_render_mode_invisible_text(backend_cls):
         )
         model._parse_page_cells(ConversionResult(input=in_doc), page)
 
-        assert {cell.text for cell in page.cells} == {"Visible heading line"}
-        assert {cell.text for cell in page_backend.get_text_cells()} == {
+        assert {cell.text for cell in page.cells} == {
             "Visible heading line",
             "Invisible OCR text layer",
         }
-    finally:
-        doc_backend.unload()
-
-
-def test_page_preprocessing_preserves_cells_without_visibility_support():
-    """A backend returning `None` must keep its segmented-page cells unchanged."""
-    in_doc = InputDocument(
-        path_or_stream=FIXTURE,
-        format=InputFormat.PDF,
-        backend=PyPdfiumDocumentBackend,
-    )
-    doc_backend = in_doc._backend
-    page_backend = doc_backend.load_page(0)
-    page = Page(page_no=0)
-    page._backend = page_backend
-
-    try:
-        assert page_backend.get_visible_text_cells() is None
-        original_texts = [
-            cell.text for cell in page_backend.get_segmented_page().textline_cells
-        ]
-
-        model = PagePreprocessingModel(
-            options=PagePreprocessingOptions(images_scale=None)
-        )
-        model._parse_page_cells(ConversionResult(input=in_doc), page)
-
-        assert [cell.text for cell in page.cells] == original_texts
-    finally:
-        doc_backend.unload()
-
-
-def test_page_preprocessing_honors_empty_visible_cell_list(monkeypatch):
-    """An empty list means visibility is supported and no text should survive."""
-    in_doc = InputDocument(
-        path_or_stream=FIXTURE,
-        format=InputFormat.PDF,
-        backend=DoclingParseDocumentBackend,
-    )
-    doc_backend = in_doc._backend
-    page_backend = doc_backend.load_page(0)
-    page = Page(page_no=0)
-    page._backend = page_backend
-    monkeypatch.setattr(page_backend, "get_visible_text_cells", list)
-
-    try:
-        model = PagePreprocessingModel(
-            options=PagePreprocessingOptions(images_scale=None)
-        )
-        model._parse_page_cells(ConversionResult(input=in_doc), page)
-
-        assert page.cells == []
-        assert len(list(page_backend.get_text_cells())) == 2
     finally:
         doc_backend.unload()

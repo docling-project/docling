@@ -8,6 +8,7 @@ from docling_core.types.doc.page import TextCell
 from rtree import index
 
 from docling.datamodel.base_models import Cluster, Page
+from docling.datamodel.pdf_text import is_render_mode_invisible
 from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
 
 _log = logging.getLogger(__name__)
@@ -634,12 +635,19 @@ class LayoutPostprocessor:
         return clusters
 
     def _find_unassigned_cells(self, clusters: list[Cluster]) -> list[TextCell]:
-        """Find cells not assigned to any cluster."""
+        """Find visible cells not assigned to any detector-backed cluster.
+
+        Invisible PDF text can still join an overlapping cluster (for example, the
+        OCR layer of a searchable scan), but it must not create a text region that
+        the layout detector did not see.
+        """
         assigned = {cell.index for cluster in clusters for cell in cluster.cells}
         return [
             cell
             for cell in self.cells
-            if cell.index not in assigned and cell.text.strip()
+            if cell.index not in assigned
+            and cell.text.strip()
+            and not is_render_mode_invisible(cell)
         ]
 
     def _adjust_cluster_bboxes(self, clusters: list[Cluster]) -> list[Cluster]:

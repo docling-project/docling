@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Optional, Union
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
-    PdfCellRenderingMode,
-    PdfTextCell,
     SegmentedPdfPage,
     TextCell,
 )
@@ -36,6 +34,7 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
+from docling.datamodel.pdf_text import split_by_render_mode_visibility
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
@@ -50,21 +49,10 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
-# natively when answering `intersects_with()`, so the cell-level view has to match it.
-_INVISIBLE_RENDERING_MODES = frozenset(
-    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
-)
-
-
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
     """Keep only the cells that paint ink on the page"""
-    return [
-        cell
-        for cell in cells
-        if not isinstance(cell, PdfTextCell)
-        or cell.rendering_mode not in _INVISIBLE_RENDERING_MODES
-    ]
+    visible, _ = split_by_render_mode_visibility(cells)
+    return visible
 
 
 def _make_docling_parse_decode_config(

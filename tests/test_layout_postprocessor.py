@@ -1,5 +1,10 @@
-from docling_core.types.doc import DocItemLabel
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc import CoordOrigin, DocItemLabel
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfCellRenderingMode,
+    PdfTextCell,
+    TextCell,
+)
 
 from docling.datamodel.base_models import BoundingBox, Cluster
 from docling.utils.layout_postprocessor import LayoutPostprocessor
@@ -36,6 +41,31 @@ def _text_cell(index: int) -> TextCell:
     )
 
 
+def _pdf_text_cell(
+    index: int,
+    rendering_mode: PdfCellRenderingMode,
+) -> PdfTextCell:
+    return PdfTextCell(
+        index=index,
+        rect=BoundingRectangle(
+            r_x0=0,
+            r_y0=0,
+            r_x1=1,
+            r_y1=0,
+            r_x2=1,
+            r_y2=1,
+            r_x3=0,
+            r_y3=1,
+        ),
+        text=str(index),
+        orig=str(index),
+        rendering_mode=rendering_mode,
+        widget=False,
+        font_key="F1",
+        font_name="Helvetica",
+    )
+
+
 def test_sort_cells_uses_native_cell_index_order() -> None:
     processor = object.__new__(LayoutPostprocessor)
     cells = [_text_cell(3), _text_cell(1), _text_cell(2)]
@@ -44,6 +74,33 @@ def test_sort_cells_uses_native_cell_index_order() -> None:
 
     assert [cell.index for cell in sorted_cells] == [1, 2, 3]
     assert [cell.index for cell in cells] == [3, 1, 2]
+
+
+def test_unassigned_invisible_pdf_cells_do_not_become_orphan_text() -> None:
+    """The layout detector remains the gate for render-mode-invisible text."""
+    visible = _pdf_text_cell(1, PdfCellRenderingMode.FILL_TEXT)
+    invisible = _pdf_text_cell(2, PdfCellRenderingMode.INVISIBLE)
+    clipping = _pdf_text_cell(3, PdfCellRenderingMode.ONLY_CLIPPING)
+    processor = object.__new__(LayoutPostprocessor)
+    processor.cells = [visible, invisible, clipping]
+
+    assert processor._find_unassigned_cells([]) == [visible]
+
+
+def test_invisible_pdf_cells_are_kept_when_layout_detects_text_region() -> None:
+    """Searchable scan text survives when it overlaps a detected text cluster."""
+    invisible = _pdf_text_cell(1, PdfCellRenderingMode.INVISIBLE)
+    processor = object.__new__(LayoutPostprocessor)
+    processor.cells = [invisible]
+    detected_text = _cluster(1, DocItemLabel.TEXT, (0, 0, 1, 1))
+    detected_text.bbox = detected_text.bbox.model_copy(
+        update={"t": 1, "b": 0, "coord_origin": CoordOrigin.BOTTOMLEFT}
+    )
+
+    assigned = processor._assign_cells_to_clusters([detected_text])
+
+    assert assigned[0].cells == [invisible]
+    assert processor._find_unassigned_cells(assigned) == []
 
 
 def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
