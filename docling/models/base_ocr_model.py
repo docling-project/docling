@@ -13,7 +13,6 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -21,6 +20,7 @@ from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import BoundingBoxSpatialIndex
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
@@ -167,20 +167,17 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
-        text_index = None
-        non_text_index = None
+        text_index: BoundingBoxSpatialIndex | None = None
+        non_text_index: BoundingBoxSpatialIndex | None = None
         if not use_backend_queries:
-            p = index.Property()
-            p.dimension = 2
-
             # Index for the text PDF cells
             text_cells = backend.get_visible_text_cells()
             if text_cells is None:
                 text_cells = backend.get_text_cells()
 
-            text_index = index.Index(properties=p)
+            text_index = BoundingBoxSpatialIndex()
             for i, text_cell in enumerate(text_cells):
-                text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+                text_index.insert(i, text_cell.rect.to_bounding_box())
 
             # Index for the non-text PDF cells: bitmaps, and shapes when available
             non_text_boxes = list(backend.get_bitmap_rects())
@@ -188,15 +185,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             if shape_boxes is not None:
                 non_text_boxes.extend(shape_boxes)
 
-            non_text_index = index.Index(properties=p)
+            non_text_index = BoundingBoxSpatialIndex()
             for i, bbox in enumerate(non_text_boxes):
-                non_text_index.insert(i, bbox.as_tuple())
+                non_text_index.insert(i, bbox)
 
         # Collect the non-eliminated cluster bboxes
         ocr_rects: list[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
             cluster_bbox = cluster.bbox
-            cluster_bbox_tuple = cluster_bbox.as_tuple()
 
             if use_backend_queries:
                 has_non_text = backend.has_content_in(
@@ -205,7 +201,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             else:
                 assert non_text_index is not None
                 has_non_text = any(
-                    True for _ in non_text_index.intersection(cluster_bbox_tuple)
+                    True for _ in non_text_index.intersection(cluster_bbox)
                 )
 
             if has_non_text:
@@ -219,9 +215,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 )
             else:
                 assert text_index is not None
-                has_text = any(
-                    True for _ in text_index.intersection(cluster_bbox_tuple)
-                )
+                has_text = any(True for _ in text_index.intersection(cluster_bbox))
 
             if not has_text:
                 ocr_rects.append(cluster_bbox)
@@ -397,9 +391,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         r"""
         Keep every prioritized cell, plus the secondary cells that overlap none of them.
         """
-        p = index.Property()
-        p.dimension = 2
-        idx = index.Index(properties=p)
+        idx = BoundingBoxSpatialIndex()
 
         # The R-tree bbox intersection is a weak criterion but it works.
         merged_cells = list(prioritized_cells)
@@ -408,11 +400,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             # Index the (smaller) prioritized cells; keep each secondary cell that
             # doesn't overlap any of them.
             for i, cell in enumerate(prioritized_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             for cell in secondary_cells:
                 overlaps = any(
-                    True
-                    for _ in idx.intersection(cell.rect.to_bounding_box().as_tuple())
+                    True for _ in idx.intersection(cell.rect.to_bounding_box())
                 )
                 if not overlaps:
                     merged_cells.append(cell)
@@ -420,12 +411,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             # Index the (smaller) secondary cells; drop the ones overlapping any
             # prioritized cell and keep the rest.
             for i, cell in enumerate(secondary_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             overlapping_ids: set[int] = set()
             for cell in prioritized_cells:
-                overlapping_ids.update(
-                    idx.intersection(cell.rect.to_bounding_box().as_tuple())
-                )
+                overlapping_ids.update(idx.intersection(cell.rect.to_bounding_box()))
             merged_cells.extend(
                 cell
                 for i, cell in enumerate(secondary_cells)
