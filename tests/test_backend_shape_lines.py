@@ -77,7 +77,9 @@ def _load_page(pdf_path: Path):
         format=InputFormat.PDF,
         backend=DoclingParseDocumentBackend,
     )
-    return in_doc._backend.load_page(0)
+    backend = in_doc._backend
+    assert isinstance(backend, DoclingParseDocumentBackend)
+    return backend.load_page(0)
 
 
 def test_reports_filled_and_stroked_horizontal_rules(ruled_page: Path):

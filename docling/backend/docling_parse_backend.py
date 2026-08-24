@@ -255,7 +255,6 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
                 try:
                     left, bottom, right, top = obj.get_bounds()
                 except AttributeError:
-                    
                     left, bottom, right, top = obj.get_pos()
                 width = right - left
                 height = top - bottom
