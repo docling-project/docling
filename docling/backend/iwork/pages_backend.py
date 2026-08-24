@@ -28,6 +28,7 @@ from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
 from typing import NamedTuple, TypeVar
+from urllib.parse import urlparse
 from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
@@ -38,12 +39,14 @@ from docling_core.types.doc import (
     DocumentOrigin,
     Formatting,
     ImageRef,
+    Script,
     TableCell,
     TableData,
 )
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import TextItem
 from PIL import Image
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -65,10 +68,11 @@ _T = TypeVar("_T")
 
 
 class _Run(NamedTuple):
-    """A stretch of text sharing one character style."""
+    """A stretch of text sharing one character style and one link."""
 
     text: str
     formatting: Formatting | None
+    hyperlink: str | None = None
 
 
 class _ListLabel(NamedTuple):
@@ -164,6 +168,7 @@ class _StorageRuns(NamedTuple):
     characters: list[tuple[int, Formatting | None]] = []
     lists: list[tuple[int, _ListStyle | None]] = []
     depths: list[tuple[int, int]] = []
+    links: list[tuple[int, str | None]] = []
 
 
 _Block = _Paragraph | _Picture | TableData
@@ -215,6 +220,15 @@ _STORAGE_CHARACTER_STYLE_FIELD = 8
 
 _STYLE_PROPERTIES_FIELD = 11
 """Field of a character style holding its property map."""
+
+_STYLE_SCRIPT_FIELD = 10
+"""Field of a character style holding its superscript or subscript setting."""
+
+_SCRIPTS = {1: Script.SUPER, 2: Script.SUB}
+"""``SuperscriptType`` values of a character style, as ``Script`` values.
+
+Zero means neither, and is the value Pages writes for ordinary text.
+"""
 
 _CHARACTER_PROPERTY_LABELS = {
     1: "bold",
@@ -439,6 +453,19 @@ Each entry pairs a character index with a reference to the style that applies
 from there. Entries without a reference leave the preceding style in force.
 """
 
+_TSWP_LINK_FIELD = 2032
+"""Message type of ``TSWP.LinkFieldArchive``, one hyperlink."""
+
+_LINK_URL_FIELD = 2
+"""Field of ``TSWP.LinkFieldArchive`` holding the address it points at."""
+
+_STORAGE_SMART_FIELD = 11
+"""Field of ``TSWP.StorageArchive`` holding the smart field run table.
+
+Pages calls a hyperlink a smart field, alongside placeholders and date fields,
+so this table is read for links and anything else in it is left alone.
+"""
+
 _TSWP_LIST_STYLE = 2023
 """Message type of ``TSWP.ListStyleArchive``, which labels a list's levels."""
 
@@ -496,7 +523,7 @@ _SFA_ATTR_NUMBER = "{http://developer.apple.com/namespaces/sfa}number"
 _SF_MEDIA = f"{{{_SF_NAMESPACE}}}media"
 _SF_IMAGE = f"{{{_SF_NAMESPACE}}}image"
 _SF_DATA = f"{{{_SF_NAMESPACE}}}data"
-_SF_ATTR_PATH = f"{{{_SF_NAMESPACE}}}path"
+_SF_ATTR_PATH = "path"
 
 _SF_MEDIA_ELEMENTS = frozenset({_SF_MEDIA, _SF_IMAGE})
 """Elements that place an image in an iWork '09 document.
@@ -525,6 +552,21 @@ _SF_LABEL_TYPE_NONE = "none"
 
 _SF_BULLET_LABEL_TYPES = frozenset({"bullet", "image", "string", "text"})
 """``sf:text-label`` types that draw a fixed marker rather than a number."""
+
+_SF_SUPERSCRIPT = f"{{{_SF_NAMESPACE}}}superscript"
+"""Property-map entry of an '09 character style holding its script setting.
+
+Its number matches the modern ``SuperscriptType``: one raises the text and two
+lowers it.
+"""
+
+_SF_LINK = f"{{{_SF_NAMESPACE}}}link"
+_SF_ATTR_HREF = "href"
+"""The iWork '09 vocabulary for hyperlinks.
+
+``href`` is one of the few attributes iWork writes unqualified, so it is read
+through :func:`_sf_attr` rather than by namespaced name alone.
+"""
 
 _SF_PROPERTY_LABELS = {
     f"{{{_SF_NAMESPACE}}}bold": "bold",
@@ -573,9 +615,9 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
           date or a formula result is left empty rather than guessed at.
         * A picture is placed where the document anchors it, but its caption,
           its cropping and its accessibility description are not read.
-        * Bold, italic, underline and strikethrough are recovered; other
-          character properties, such as colour or capitalisation, have no
-          equivalent here.
+        * Bold, italic, underline, strikethrough, superscript, subscript and
+          hyperlinks are recovered; other character properties, such as colour
+          or capitalisation, have no equivalent here.
         * A list item whose runs differ in formatting keeps its text but loses
           the formatting, since a list item carries a single one.
         * Text boxes are read from Pages 5+ documents, where they are floating
@@ -752,16 +794,10 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 f"{self.document_hash}."
             ) from exc
 
-        style_names = {
-            element.get(_SF_ATTR_IDENT): element.get(_SF_ATTR_NAME)
-            for element in root.iter(_SF_PARAGRAPH_STYLE)
-            if element.get(_SF_ATTR_IDENT)
-        }
-        character_styles = {
-            element.get(_SF_ATTR_IDENT): _legacy_formatting(element)
-            for element in root.iter(_SF_CHARACTER_STYLE)
-            if element.get(_SF_ATTR_IDENT)
-        }
+        style_names = _legacy_styles(
+            root, _SF_PARAGRAPH_STYLE, lambda element: element.get(_SF_ATTR_NAME)
+        )
+        character_styles = _legacy_styles(root, _SF_CHARACTER_STYLE, _legacy_formatting)
 
         list_styles = _legacy_list_styles(root)
 
@@ -933,7 +969,7 @@ def _split_paragraphs(text: str, runs: _StorageRuns) -> list[_Paragraph]:
     offset = 0
 
     for line in text.split("\n"):
-        pieces = _runs_for(line, offset, runs.characters)
+        pieces = _runs_for(line, offset, runs)
         if pieces:
             label, level = _label_for_style(_value_at(runs.styles, offset))
             paragraphs.append(
@@ -952,18 +988,29 @@ def _list_label_at(runs: _StorageRuns, offset: int) -> _ListLabel | None:
     return style.label(_value_at(runs.depths, offset) or 0)
 
 
-def _runs_for(
-    line: str, start: int, character_runs: list[tuple[int, Formatting | None]]
-) -> tuple[_Run, ...]:
-    """Cut one line into runs at the character style boundaries inside it."""
-    if not character_runs:
+def _runs_for(line: str, start: int, runs: _StorageRuns) -> tuple[_Run, ...]:
+    """Cut one line into runs at the style and link boundaries inside it.
+
+    Args:
+        line: One paragraph of the storage's text.
+        start: The paragraph's character index into the storage.
+        runs: The storage's run tables.
+
+    Returns:
+        The paragraph's runs, trimmed, in document order.
+    """
+    if not runs.characters and not runs.links:
         return _trim([_Run(_clean(line), None)])
 
     # Boundaries are absolute character indices; keep the ones inside this line.
-    boundaries = [start] + [
-        index for index, _ in character_runs if start < index < start + len(line)
-    ]
-    runs: list[_Run] = []
+    inside = {
+        index
+        for table in (runs.characters, runs.links)
+        for index, _ in table
+        if start < index < start + len(line)
+    }
+    boundaries = [start, *sorted(inside)]
+    pieces: list[_Run] = []
 
     for position, begin in enumerate(boundaries):
         end = (
@@ -971,11 +1018,17 @@ def _runs_for(
             if position + 1 < len(boundaries)
             else start + len(line)
         )
-        piece = _clean(line[begin - start : end - start])
-        if piece:
-            runs.append(_Run(piece, _value_at(character_runs, begin)))
+        text = _clean(line[begin - start : end - start])
+        if text:
+            pieces.append(
+                _Run(
+                    text,
+                    _value_at(runs.characters, begin),
+                    _value_at(runs.links, begin),
+                )
+            )
 
-    return _trim(runs)
+    return _trim(pieces)
 
 
 def _value_at(table: list[tuple[int, _T]], index: int) -> _T | None:
@@ -1041,6 +1094,9 @@ def _iwa_storage_runs(
             _iwa_list_style,
         ),
         depths=_iwa_depth_runs(fields),
+        links=_iwa_object_runs(
+            fields, _STORAGE_SMART_FIELD, objects, _TSWP_LINK_FIELD, _iwa_link
+        ),
     )
 
 
@@ -1114,6 +1170,14 @@ def _iwa_depth_runs(fields: dict[int, list[int | bytes]]) -> list[tuple[int, int
     return runs
 
 
+def _iwa_link(payload: bytes) -> str | None:
+    """Read the address a ``TSWP.LinkFieldArchive`` points at."""
+    url = _safe_fields(payload).get(_LINK_URL_FIELD, [None])[0]
+    if not isinstance(url, bytes):
+        return None
+    return url.decode("utf-8", errors="replace").strip() or None
+
+
 def _iwa_list_style(payload: bytes) -> _ListStyle:
     """Read a ``TSWP.ListStyleArchive`` as its per-depth label ladder."""
     fields = _safe_fields(payload)
@@ -1136,13 +1200,16 @@ def _iwa_formatting(payload: bytes) -> Formatting | None:
     if not isinstance(properties, bytes):
         return None
 
-    flags = {}
-    for field, label in _CHARACTER_PROPERTY_LABELS.items():
-        values = _safe_fields(properties).get(field, [])
-        if any(isinstance(v, int) and v for v in values):
-            flags[label] = True
-
-    return Formatting(**flags) if flags else None
+    decoded = _safe_fields(properties)
+    active = {
+        label
+        for field, label in _CHARACTER_PROPERTY_LABELS.items()
+        if any(isinstance(value, int) and value for value in decoded.get(field, []))
+    }
+    script = decoded.get(_STYLE_SCRIPT_FIELD, [None])[0]
+    return _formatting(
+        active, _SCRIPTS.get(script) if isinstance(script, int) else None
+    )
 
 
 def _legacy_table(model: Element) -> TableData | None:
@@ -1202,7 +1269,7 @@ def _legacy_picture(media: Element, archive: zipfile.ZipFile) -> _Picture | None
         The picture, or None when the element names no stored data.
     """
     for data in media.iter(_SF_DATA):
-        path = data.get(_SF_ATTR_PATH)
+        path = _sf_attr(data, _SF_ATTR_PATH)
         if not path:
             continue
         try:
@@ -1211,6 +1278,23 @@ def _legacy_picture(media: Element, archive: zipfile.ZipFile) -> _Picture | None
             _log.debug("Pages image data member %s is missing", path)
             return _Picture(None, path)
     return None
+
+
+def _sf_attr(element: Element, name: str) -> str | None:
+    """Read an attribute iWork '09 may or may not have qualified.
+
+    Most attributes carry the ``sf`` namespace, but a few — ``href`` on
+    ``sf:link`` among them — are written unqualified, and which spelling a
+    document uses varies with the release that wrote it.
+
+    Args:
+        element: The element to read.
+        name: The local name of the attribute.
+
+    Returns:
+        The attribute's value under either spelling, or None.
+    """
+    return element.get(f"{{{_SF_NAMESPACE}}}{name}") or element.get(name)
 
 
 def _int_attr(element: Element, name: str) -> int | None:
@@ -1490,7 +1574,7 @@ class _IWAReader:
         offset = 0
         for line in text.split("\n"):
             end = offset + len(line) + 1
-            pieces = _runs_for(line, offset, runs.characters)
+            pieces = _runs_for(line, offset, runs)
             if pieces:
                 label, level = _label_for_style(_value_at(runs.styles, offset))
                 anchors = tuple(
@@ -1950,11 +2034,7 @@ def _add_furniture(doc: DoclingDocument, content: _Content) -> None:
         (content.footnotes, DocItemLabel.FOOTNOTE),
     ):
         for paragraph in paragraphs:
-            doc.add_text(
-                label=label,
-                text=paragraph.text,
-                content_layer=ContentLayer.FURNITURE,
-            )
+            _add_runs(doc, paragraph, label, ContentLayer.FURNITURE)
 
 
 def _add_block(
@@ -2006,16 +2086,15 @@ def _add_picture(doc: DoclingDocument, picture: _Picture) -> None:
 def _add_paragraph(
     doc: DoclingDocument, paragraph: _Paragraph, lists: _ListStack
 ) -> TextItem | None:
-    """Add one paragraph, keeping any character formatting attached to its runs.
-
-    ``TextItem`` carries a single ``Formatting``, so a paragraph whose runs
-    differ has to become an inline group of items — the same shape the Word and
-    HTML backends produce for mixed runs.
+    """Add one paragraph, as a heading, a list item or body text.
 
     Args:
         doc: The document being built.
         paragraph: The paragraph to add.
         lists: The list groups currently open.
+
+    Returns:
+        The item the paragraph became, or its first when its runs differ.
     """
     if paragraph.list_label is None:
         lists.close()
@@ -2027,32 +2106,55 @@ def _add_paragraph(
     if paragraph.label == DocItemLabel.SECTION_HEADER:
         return doc.add_heading(text=paragraph.text, level=paragraph.level or 1)
 
+    return _add_runs(doc, paragraph, paragraph.label)
+
+
+def _add_runs(
+    doc: DoclingDocument,
+    paragraph: _Paragraph,
+    label: DocItemLabel,
+    content_layer: ContentLayer | None = None,
+) -> TextItem:
+    """Add a paragraph's runs, keeping the formatting attached to each one.
+
+    ``TextItem`` carries a single ``Formatting`` and a single hyperlink, so a
+    paragraph whose runs differ in either has to become an inline group of items
+    — the same shape the Word and HTML backends produce for mixed runs.
+
+    Args:
+        doc: The document being built.
+        paragraph: The paragraph to add.
+        label: The label to give the item, or every item of the group.
+        content_layer: The layer to add to, or None for the document's default.
+
+    Returns:
+        The item added, or the first of the group. A comment annotates a stretch
+        of the paragraph, and the first item is the one that always exists,
+        whichever run that stretch began in.
+    """
     runs = [run for run in paragraph.runs if run.text]
-    if len(runs) <= 1:
-        formatting = runs[0].formatting if runs else None
+    if _uniform(runs):
+        first = runs[0] if runs else _Run("", None)
         return doc.add_text(
-            label=paragraph.label, text=paragraph.text, formatting=formatting
+            label=label,
+            text=paragraph.text,
+            formatting=first.formatting,
+            hyperlink=_hyperlink(first.hyperlink),
+            content_layer=content_layer,
         )
 
-    # Formatting is a model, so compare rather than deduplicate through a set.
-    first = runs[0].formatting
-    if all(run.formatting == first for run in runs):
-        return doc.add_text(
-            label=paragraph.label, text=paragraph.text, formatting=first
-        )
-
-    group = doc.add_inline_group()
+    group = doc.add_inline_group(content_layer=content_layer)
     items = [
         doc.add_text(
-            label=paragraph.label,
+            label=label,
             text=run.text,
             formatting=run.formatting,
+            hyperlink=_hyperlink(run.hyperlink),
             parent=group,
+            content_layer=content_layer,
         )
         for run in runs
     ]
-    # A comment annotates a stretch of the paragraph; the first item is the one
-    # that always exists, whichever run that stretch began in.
     return items[0]
 
 
@@ -2062,14 +2164,54 @@ def _add_list_item(
     """Add one list item under the group its nesting depth belongs to."""
     group = lists.group_for(label.depth)
     runs = [run for run in paragraph.runs if run.text]
-    first = runs[0].formatting if runs else None
+    uniform = runs[0] if runs and _uniform(runs) else _Run("", None)
     return doc.add_list_item(
         text=paragraph.text,
         enumerated=label.enumerated,
         marker=label.marker,
         parent=group,
-        formatting=first if all(run.formatting == first for run in runs) else None,
+        formatting=uniform.formatting,
+        hyperlink=_hyperlink(uniform.hyperlink),
     )
+
+
+def _uniform(runs: list[_Run]) -> bool:
+    """Report whether every run shares one formatting and one link.
+
+    ``Formatting`` is a model rather than a hashable value, so the runs are
+    compared against the first rather than deduplicated through a set.
+    """
+    if len(runs) <= 1:
+        return True
+    first = runs[0]
+    return all(
+        run.formatting == first.formatting and run.hyperlink == first.hyperlink
+        for run in runs
+    )
+
+
+def _hyperlink(address: str | None) -> AnyUrl | Path | None:
+    """Resolve a link's address to a URL or a local path.
+
+    A Pages document can link to a file next to it as well as to a URL, and an
+    address Pydantic will not accept is dropped rather than allowed to fail the
+    whole conversion.
+
+    Args:
+        address: The address the document recorded, if any.
+
+    Returns:
+        The address as a URL or a path, or None when there is none to use.
+    """
+    if not address:
+        return None
+    if not urlparse(address).scheme:
+        return Path(address)
+    try:
+        return AnyUrl(address)
+    except ValidationError:
+        _log.debug("Skipping malformed Pages hyperlink address: %r", address)
+        return None
 
 
 def _legacy_runs(
@@ -2093,30 +2235,35 @@ def _legacy_runs(
         The paragraph's non-empty runs, in document order.
     """
     runs: list[_Run] = []
-    # (element, formatting in force, whether this visit emits the tail)
-    stack: list[tuple[Element, Formatting | None, bool]] = [(paragraph, None, False)]
+    # (element, formatting in force, link in force, whether this emits the tail)
+    stack: list[tuple[Element, Formatting | None, str | None, bool]] = [
+        (paragraph, None, None, False)
+    ]
 
     while stack:
-        element, formatting, want_tail = stack.pop()
+        element, formatting, link, want_tail = stack.pop()
 
         if want_tail:
             if element.tail:
-                runs.append(_Run(_clean(element.tail), formatting))
+                runs.append(_Run(_clean(element.tail), formatting, link))
             continue
 
         if element.text:
-            runs.append(_Run(_clean(element.text), formatting))
+            runs.append(_Run(_clean(element.text), formatting, link))
 
         # Push in reverse so children pop in document order. A child's tail sits
         # outside it, so it keeps the parent's formatting.
         for child in reversed(list(element)):
-            stack.append((child, formatting, True))
+            stack.append((child, formatting, link, True))
             if child.tag == _SF_GHOST_TEXT:
                 continue
             inherited = formatting
             if child.tag == _SF_SPAN:
                 inherited = character_styles.get(child.get(_SF_ATTR_STYLE), formatting)
-            stack.append((child, inherited, False))
+            nested = link
+            if child.tag == _SF_LINK:
+                nested = _sf_attr(child, _SF_ATTR_HREF) or link
+            stack.append((child, inherited, nested, False))
 
     return _trim(runs)
 
@@ -2176,6 +2323,36 @@ def _legacy_comments(root: Element) -> list[_Comment]:
     return comments
 
 
+def _legacy_styles(
+    root: Element, tag: str, decode: Callable[[Element], _T]
+) -> dict[str | None, _T]:
+    """Read one kind of iWork '09 style, keyed by every name it answers to.
+
+    A paragraph or a span names its style through ``sf:style``, and what it puts
+    there is sometimes the style's ``sf:ident`` and sometimes its ``sfa:ID``.
+    Both are indexed so a reference resolves either way; a style that carries
+    neither cannot be referenced at all and is skipped.
+
+    Args:
+        root: The parsed ``index.xml`` root element.
+        tag: The style element to collect.
+        decode: Reads one style element into the value to key.
+
+    Returns:
+        The decoded styles, keyed by identifier.
+    """
+    styles: dict[str | None, _T] = {}
+    for element in root.iter(tag):
+        keys = [element.get(_SF_ATTR_IDENT), element.get(_SFA_ATTR_ID)]
+        if not any(keys):
+            continue
+        value = decode(element)
+        for key in keys:
+            if key:
+                styles.setdefault(key, value)
+    return styles
+
+
 def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
     """Read the ``sf:liststyle`` definitions of an '09 document by identifier.
 
@@ -2188,8 +2365,8 @@ def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
     styles: dict[str, _ListStyle] = {}
 
     for element in root.iter(_SF_LIST_STYLE):
-        ident = element.get(_SF_ATTR_IDENT)
-        if not ident or ident in styles:
+        keys = [element.get(_SF_ATTR_IDENT), element.get(_SFA_ATTR_ID)]
+        if not any(key and key not in styles for key in keys):
             continue
 
         label_types: list[int] = []
@@ -2214,7 +2391,10 @@ def _legacy_list_styles(root: Element) -> dict[str, _ListStyle]:
                 else ""
             )
 
-        styles[ident] = _ListStyle(tuple(label_types), tuple(strings))
+        style = _ListStyle(tuple(label_types), tuple(strings))
+        for key in keys:
+            if key:
+                styles.setdefault(key, style)
 
     return styles
 
@@ -2242,11 +2422,10 @@ def _legacy_list_label(
 
 def _legacy_formatting(style: Element) -> Formatting | None:
     """Read an iWork '09 character style's property map as a ``Formatting``."""
-    flags = {}
+    active: set[str] = set()
+    script: Script | None = None
+
     for element in style.iter():
-        label = _SF_PROPERTY_LABELS.get(element.tag)
-        if label is None:
-            continue
         number = next(
             (
                 child.get(_SFA_ATTR_NUMBER)
@@ -2255,7 +2434,42 @@ def _legacy_formatting(style: Element) -> Formatting | None:
             ),
             None,
         )
-        if number not in (None, "0"):
-            flags[label] = True
+        if number in (None, "0"):
+            continue
 
-    return Formatting(**flags) if flags else None
+        label = _SF_PROPERTY_LABELS.get(element.tag)
+        if label is not None:
+            active.add(label)
+        elif element.tag == _SF_SUPERSCRIPT and number is not None:
+            script = _SCRIPTS.get(_as_int(number))
+
+    return _formatting(active, script)
+
+
+def _as_int(number: str) -> int:
+    """Read an iWork property number, which may be written as a float."""
+    try:
+        return int(float(number))
+    except ValueError:
+        return 0
+
+
+def _formatting(active: set[str], script: Script | None) -> Formatting | None:
+    """Build a ``Formatting`` from the character properties in force.
+
+    Args:
+        active: The names of the boolean properties that are set.
+        script: The script setting, or None for ordinary text.
+
+    Returns:
+        The formatting, or None when the style says nothing Docling records.
+    """
+    if not active and script is None:
+        return None
+    return Formatting(
+        bold="bold" in active,
+        italic="italic" in active,
+        underline="underline" in active,
+        strikethrough="strikethrough" in active,
+        script=script or Script.BASELINE,
+    )

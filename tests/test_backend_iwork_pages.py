@@ -20,8 +20,9 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 
+import defusedxml.ElementTree as ET
 import pytest
-from docling_core.types.doc import ContentLayer, DocItemLabel
+from docling_core.types.doc import ContentLayer, DocItemLabel, Script
 from docling_core.types.doc.items.text import ListItem
 from PIL import Image as PILImage
 
@@ -38,6 +39,7 @@ from docling.backend.iwork.pages_backend import (
     _iwa_list_style,
     _iwa_style_name,
     _label_for_style,
+    _legacy_formatting,
 )
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
@@ -983,8 +985,12 @@ def test_legacy_page_furniture_is_recovered_as_furniture():
 
     assert by_label[DocItemLabel.PAGE_HEADER] == ["THIS IS SOME HEADER TEXT"]
     assert by_label[DocItemLabel.PAGE_FOOTER] == ["THIS IS SOME FOOTER TEXT"]
-    assert len(by_label[DocItemLabel.FOOTNOTE]) == 3
-    assert "What does APXL stand for?!?!?" in by_label[DocItemLabel.FOOTNOTE][1]
+
+    footnotes = by_label[DocItemLabel.FOOTNOTE]
+    assert "Footnote: What does APXL stand for?!?!?" in footnotes
+    # The third footnote links to a URL partway through, so its runs differ and
+    # it becomes an inline group rather than a single item.
+    assert "www.oasis-open.org" in footnotes
 
     # Pages writes a first-page, an even-page and an odd-page variant of every
     # header and footer, so the same text must not be emitted three times.
@@ -1055,3 +1061,72 @@ def test_modern_comments_are_read_through_the_highlight_they_cover(tmp_path: Pat
     annotated = [item for item in doc.texts if item.comments]
     assert len(annotated) == 1
     assert annotated[0].text == "Sample pages document"
+
+
+def test_legacy_hyperlink_survives_as_a_run_of_its_own():
+    """An '09 link wraps the spans it covers, and href is one of the attributes
+    iWork writes without its namespace. The link covers part of a footnote in
+    this fixture, so the runs around it must not take the address with them."""
+    doc = _backend(PAGES_IWORK09_FORMATTED).convert()
+
+    linked = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(linked) == 1
+    assert linked[0].text == "www.oasis-open.org"
+    assert str(linked[0].hyperlink).startswith("http://www.oasis-open.org")
+
+
+def test_modern_hyperlink_is_read_from_the_smart_field_table(tmp_path: Path):
+    """Pages calls a hyperlink a smart field and keeps it in a run table of its
+    own, so the link and the character styling are separate boundaries that both
+    have to cut the paragraph."""
+    link_table = _len_field(
+        11, _len_field(1, _varint_field(1, 0) + _reference_field(2, 920))
+    ) + _len_field(11, b"")
+    body = next(
+        obj for obj in _iwa_objects(PAGES_2013).values() if obj.identifier == 4038
+    )
+    source = _redefined(
+        tmp_path / "link.pages",
+        [
+            (920, 2032, _len_field(2, b"https://www.apple.com/pages/")),
+            (4038, 2001, body.payload + link_table),
+        ],
+    )
+    doc = _backend(source).convert()
+
+    linked = [item for item in doc.texts if item.hyperlink is not None]
+    assert linked
+    assert linked[0].text == "Sample pages document"
+    assert str(linked[0].hyperlink) == "https://www.apple.com/pages/"
+
+
+def test_superscript_and_subscript_are_read_from_the_character_style():
+    """The script setting is one field of a character style in the modern
+    container and one property-map entry in '09, and they use the same numbering:
+    one raises the text, two lowers it. Check both against the styles the
+    fixtures actually define."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    numbers = "http://developer.apple.com/namespaces/sfa"
+    legacy = ET.fromstring(
+        f"""<sf:characterstyle xmlns:sf="{namespace}" xmlns:sfa="{numbers}">
+              <sf:property-map>
+                <sf:superscript><sf:number sfa:number="2" sfa:type="i"/></sf:superscript>
+              </sf:property-map>
+            </sf:characterstyle>""".encode()
+    )
+    formatting = _legacy_formatting(legacy)
+    assert formatting is not None and formatting.script == Script.SUB
+
+    # The '09 fixture defines a real superscript style; it must decode the same
+    # way, and the modern container must read the same numbering from field 10.
+    raw = zipfile.ZipFile(PAGES_IWORK09_FORMATTED).read("index.xml")
+    styles = [
+        _legacy_formatting(element)
+        for element in ET.fromstring(raw).iter(f"{{{namespace}}}characterstyle")
+    ]
+    assert any(
+        style is not None and style.script == Script.SUPER for style in styles
+    ), "fixture no longer defines a superscript character style"
+
+    modern = _iwa_formatting(_len_field(11, _varint_field(10, 1)))
+    assert modern is not None and modern.script == Script.SUPER
