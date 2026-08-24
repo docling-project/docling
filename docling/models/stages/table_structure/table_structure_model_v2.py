@@ -19,6 +19,11 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import (
+    BoundingBoxSpatialIndex,
+    has_positive_area,
+    ordered_bounding_box,
+)
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -149,14 +154,22 @@ class TableStructureModelV2(BaseTableStructureModel):
             otsl_seq, pred_bboxes, tbl_box
         )
 
+        cell_matches = [
+            (element, BoundingBox.model_validate(element["bbox"]))
+            for element in cell_data
+            if element["bbox"] is not None
+        ]
+        matched_texts = self._match_texts(
+            [bbox for _, bbox in cell_matches],
+            table_cluster.cells,
+            textcell_overlap,
+        )
+        for (element, _), text in zip(cell_matches, matched_texts):
+            element["text"] = text
+
         # Build TableCell objects, assigning text from text_cells by overlap
         table_cells = []
         for element in cell_data:
-            if element["bbox"] is not None:
-                bbox = BoundingBox.model_validate(element["bbox"])
-                element["text"] = self._match_text(
-                    bbox, table_cluster.cells, textcell_overlap
-                )
             tc = TableCell.model_validate(element)
             table_cells.append(tc)
 
@@ -175,14 +188,41 @@ class TableStructureModelV2(BaseTableStructureModel):
         self, bbox: BoundingBox, text_cells: list[TextCell], textcell_overlap: float
     ) -> str:
         """Return text from text_cells whose bboxes overlap sufficiently with bbox."""
-        # TODO: This matching must be improved, such that text cells are only assigned to the table cell with the highest overlap, and at most once.
-        overlapping = []
-        for tc in text_cells:
+        return self._match_texts([bbox], text_cells, textcell_overlap)[0]
+
+    def _match_texts(
+        self,
+        bboxes: list[BoundingBox],
+        text_cells: list[TextCell],
+        textcell_overlap: float,
+    ) -> list[str]:
+        """Return matched text for each bbox while preserving text-cell order."""
+        if not bboxes:
+            return []
+        if not text_cells:
+            return [""] * len(bboxes)
+
+        spatial_index = BoundingBoxSpatialIndex()
+        cell_bboxes: list[BoundingBox] = []
+
+        for cell_idx, tc in enumerate(text_cells):
             tc_bbox = tc.rect.to_bounding_box()
-            if tc_bbox.get_intersection_bbox(bbox) is not None:
-                if tc_bbox.intersection_over_self(bbox) > textcell_overlap:
-                    overlapping.append(tc.text.strip())
-        return " ".join(overlapping)
+            cell_bboxes.append(tc_bbox)
+            if has_positive_area(tc_bbox):
+                spatial_index.insert(cell_idx, tc_bbox)
+
+        matched_texts: list[str] = []
+        for bbox in bboxes:
+            ordered_bbox = ordered_bounding_box(bbox)
+            overlapping = []
+            for cell_idx in sorted(spatial_index.intersection(ordered_bbox)):
+                tc_bbox = cell_bboxes[cell_idx]
+                if tc_bbox.get_intersection_bbox(ordered_bbox) is not None:
+                    if tc_bbox.intersection_over_self(ordered_bbox) > textcell_overlap:
+                        overlapping.append(text_cells[cell_idx].text.strip())
+            matched_texts.append(" ".join(overlapping))
+
+        return matched_texts
 
     def _decode_otsl_sequence(self, token_ids: "torch.Tensor") -> list[str]:
         """
@@ -261,12 +301,15 @@ class TableStructureModelV2(BaseTableStructureModel):
                 cell_bbox = None
                 if bbox_idx < bboxes.shape[0]:
                     bbox = bboxes[bbox_idx].tolist()
-                    cell_bbox = {
-                        "l": t_x1 + bbox[0] * t_w,
-                        "t": t_y1 + bbox[1] * t_h,
-                        "r": t_x1 + bbox[2] * t_w,
-                        "b": t_y1 + bbox[3] * t_h,
-                    }
+                    raw_cell_bbox = BoundingBox(
+                        l=t_x1 + bbox[0] * t_w,
+                        t=t_y1 + bbox[1] * t_h,
+                        r=t_x1 + bbox[2] * t_w,
+                        b=t_y1 + bbox[3] * t_h,
+                    )
+                    cell_bbox = ordered_bounding_box(raw_cell_bbox).model_dump(
+                        exclude={"coord_origin"}
+                    )
                     bbox_idx += 1
 
                 # Detect colspan (lcel to the right)
@@ -435,22 +478,37 @@ class TableStructureModelV2(BaseTableStructureModel):
                         otsl_seq, pred_bboxes, table_bbox
                     )
 
+                    cell_matches = [
+                        (element, BoundingBox.model_validate(element["bbox"]))
+                        for element in cell_data
+                        if element["bbox"] is not None
+                    ]
+                    matched_texts = (
+                        self._match_texts(
+                            [bbox for _, bbox in cell_matches],
+                            table_cluster.cells,
+                            textcell_overlap=0.3,
+                        )
+                        if self.do_cell_matching
+                        else [""] * len(cell_matches)
+                    )
+
                     # Build TableCell objects
                     table_cells = []
+                    cell_match_idx = 0
                     for element in cell_data:
                         if element["bbox"] is not None:
-                            bbox = BoundingBox.model_validate(element["bbox"])
+                            bbox = cell_matches[cell_match_idx][1]
                             if self.do_cell_matching:
                                 # Prefer text from cluster cells (includes OCR-assigned cells),
                                 # then fall back to backend text extraction.
-                                text_piece = self._match_text(
-                                    bbox, table_cluster.cells, textcell_overlap=0.3
-                                )
+                                text_piece = matched_texts[cell_match_idx]
                                 if not text_piece.strip():
                                     text_piece = page._backend.get_text_in_rect(bbox)
                             else:
                                 text_piece = page._backend.get_text_in_rect(bbox)
                             element["bbox"]["token"] = text_piece
+                            cell_match_idx += 1
                         tc = TableCell.model_validate(element)
                         table_cells.append(tc)
 
