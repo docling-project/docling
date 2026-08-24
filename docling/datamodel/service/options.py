@@ -559,7 +559,7 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = ""
 
-    compact_tables: Annotated[
+    md_compact_tables: Annotated[
         bool,
         Field(
             description=(
