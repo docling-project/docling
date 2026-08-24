@@ -27,20 +27,20 @@ from docling_core.types.doc.items.text import ListItem
 from PIL import Image as PILImage
 
 from docling.backend.iwork import iwa
+from docling.backend.iwork.content import label_for_style
 from docling.backend.iwork.iwa import (
     IWAObject,
     decompress_snappy_block,
     iter_objects,
     read_fields,
 )
-from docling.backend.iwork.pages_backend import (
-    IWorkPagesDocumentBackend,
-    _iwa_formatting,
-    _iwa_list_style,
-    _iwa_style_name,
-    _label_for_style,
-    _legacy_formatting,
+from docling.backend.iwork.pages_backend import IWorkPagesDocumentBackend
+from docling.backend.iwork.pages_iwa import (
+    iwa_formatting,
+    iwa_list_style,
+    iwa_style_name,
 )
+from docling.backend.iwork.pages_xml import legacy_formatting
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
@@ -441,7 +441,7 @@ def test_legacy_table_is_extracted_with_its_header_row():
 def test_style_names_map_to_labels(style_name, expected_label, expected_level):
     """Pages uses the same built-in style names in both container generations,
     so one mapping serves the IWA and XML readers."""
-    assert _label_for_style(style_name) == (expected_label, expected_level)
+    assert label_for_style(style_name) == (expected_label, expected_level)
 
 
 def test_iwa_paragraph_styles_resolve_to_their_real_names():
@@ -456,7 +456,7 @@ def test_iwa_paragraph_styles_resolve_to_their_real_names():
     }
 
     names = {
-        _iwa_style_name(obj.payload)
+        iwa_style_name(obj.payload)
         for obj in objects.values()
         if obj.message_type == 2022
     }
@@ -629,7 +629,7 @@ def test_iwa_character_styles_map_onto_formatting():
     }
 
     by_name = {
-        _iwa_style_name(obj.payload): _iwa_formatting(obj.payload)
+        iwa_style_name(obj.payload): iwa_formatting(obj.payload)
         for obj in objects.values()
         if obj.message_type == 2021
     }
@@ -673,13 +673,13 @@ def _iwa_objects(path: Path) -> dict[int, IWAObject]:
     }
 
 
-def test_iwa_list_styles_decode_to_their_real_labels():
+def testiwa_list_styles_decode_to_their_real_labels():
     """Whether a paragraph is a list item is decided by the list style in force,
     not by its nesting depth: Pages leaves a style in force over plain paragraphs
     too and marks them with the "None" style. Check that against the styles the
     fixture's template actually defines."""
     by_name = {
-        _iwa_style_name(obj.payload): _iwa_list_style(obj.payload)
+        iwa_style_name(obj.payload): iwa_list_style(obj.payload)
         for obj in _iwa_objects(PAGES_2013).values()
         if obj.message_type == 2023
     }
@@ -1114,21 +1114,21 @@ def test_superscript_and_subscript_are_read_from_the_character_style():
               </sf:property-map>
             </sf:characterstyle>""".encode()
     )
-    formatting = _legacy_formatting(legacy)
+    formatting = legacy_formatting(legacy)
     assert formatting is not None and formatting.script == Script.SUB
 
     # The '09 fixture defines a real superscript style; it must decode the same
     # way, and the modern container must read the same numbering from field 10.
     raw = zipfile.ZipFile(PAGES_IWORK09_FORMATTED).read("index.xml")
     styles = [
-        _legacy_formatting(element)
+        legacy_formatting(element)
         for element in ET.fromstring(raw).iter(f"{{{namespace}}}characterstyle")
     ]
     assert any(
         style is not None and style.script == Script.SUPER for style in styles
     ), "fixture no longer defines a superscript character style"
 
-    modern = _iwa_formatting(_len_field(11, _varint_field(10, 1)))
+    modern = iwa_formatting(_len_field(11, _varint_field(10, 1)))
     assert modern is not None and modern.script == Script.SUPER
 
 
