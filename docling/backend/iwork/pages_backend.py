@@ -36,10 +36,12 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    ImageRef,
     TableCell,
     TableData,
 )
 from docling_core.types.doc.items.group import ListGroup
+from PIL import Image
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -128,6 +130,18 @@ class _Paragraph(NamedTuple):
         return "".join(run.text for run in self.runs)
 
 
+class _Picture(NamedTuple):
+    """An image anchored in the text flow.
+
+    ``data`` is None when the image's bytes are not in the container — Pages
+    writes a placeholder for media it has not downloaded — so the picture is
+    still placed, just without an image.
+    """
+
+    data: bytes | None
+    name: str
+
+
 class _StorageRuns(NamedTuple):
     """The run tables of one ``TSWP.StorageArchive``.
 
@@ -140,6 +154,10 @@ class _StorageRuns(NamedTuple):
     characters: list[tuple[int, Formatting | None]] = []
     lists: list[tuple[int, _ListStyle | None]] = []
     depths: list[tuple[int, int]] = []
+
+
+_Block = _Paragraph | _Picture | TableData
+"""One piece of document content, in the order Pages lays it out."""
 
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
@@ -225,6 +243,60 @@ _STYLE_NAME_FIELD = 1
 
 _TST_TABLE_MODEL = 6001
 """Message type of ``TST.TableModelArchive``, the root of one table."""
+
+_TST_TABULAR_INFO = 6000
+"""Message type of ``TST.TableInfoArchive``, the drawable a table sits in."""
+
+_TABULAR_INFO_MODEL_FIELD = 2
+"""Field of ``TST.TableInfoArchive`` referencing its ``TST.TableModelArchive``."""
+
+_TSD_IMAGE = 3005
+"""Message type of ``TSD.ImageArchive``, one placed image."""
+
+_TSD_GROUP = 3008
+"""Message type of ``TSD.GroupArchive``, several drawables grouped together."""
+
+_GROUP_CHILDREN_FIELD = 2
+"""Field of ``TSD.GroupArchive`` referencing the drawables it holds."""
+
+_IMAGE_DATA_FIELDS = (15, 13, 11, 12)
+"""Fields of ``TSD.ImageArchive`` that may carry the image's bytes.
+
+Pages keeps several renditions of a placed image and does not always write all
+of them, so they are tried in descending order of fidelity: the adjusted image
+first, then the original, then the placed data, then the thumbnail.
+"""
+
+_TSWP_DRAWABLE_ATTACHMENT = 2003
+"""Message type of ``TSWP.DrawableAttachmentArchive``.
+
+This is what a U+FFFC in the text resolves to: a drawable — an image, a table,
+a text box — anchored at that character.
+"""
+
+_ATTACHMENT_DRAWABLE_FIELD = 1
+"""Field of ``TSWP.DrawableAttachmentArchive`` referencing the anchored drawable."""
+
+_STORAGE_ATTACHMENT_FIELD = 9
+"""Field of ``TSWP.StorageArchive`` holding the attachment run table."""
+
+_TSP_PACKAGE_METADATA = 11006
+"""Message type of ``TSP.PackageMetadata``, which names the container's data files."""
+
+_PACKAGE_DATAS_FIELD = 4
+"""Field of ``TSP.PackageMetadata`` listing one ``TSP.DataInfo`` per data file."""
+
+_DATA_INFO_IDENTIFIER_FIELD = 1
+_DATA_INFO_PREFERRED_NAME_FIELD = 3
+_DATA_INFO_NAME_FIELD = 4
+"""Fields of ``TSP.DataInfo``.
+
+An image references a data file by identifier; the file itself is a ``Data/``
+member of the container, named by ``file_name`` when Pages renamed it on import
+and by ``preferred_file_name`` otherwise.
+"""
+
+_DATA_MEMBER_PREFIX = "Data/"
 
 _TST_TILE = 6002
 """Message type of ``TST.Tile``, which lays a table's cells out into rows."""
@@ -328,6 +400,19 @@ _SF_SPAN = f"{{{_SF_NAMESPACE}}}span"
 _SF_CHARACTER_STYLE = f"{{{_SF_NAMESPACE}}}characterstyle"
 _SFA_ATTR_NUMBER = "{http://developer.apple.com/namespaces/sfa}number"
 
+_SF_MEDIA = f"{{{_SF_NAMESPACE}}}media"
+_SF_IMAGE = f"{{{_SF_NAMESPACE}}}image"
+_SF_DATA = f"{{{_SF_NAMESPACE}}}data"
+_SF_ATTR_PATH = f"{{{_SF_NAMESPACE}}}path"
+
+_SF_MEDIA_ELEMENTS = frozenset({_SF_MEDIA, _SF_IMAGE})
+"""Elements that place an image in an iWork '09 document.
+
+Both wrap an ``sf:data`` naming the container member that holds the bytes, and
+neither is descended into once found: the renditions Pages keeps below them all
+name the same picture.
+"""
+
 _SF_LIST_STYLE = f"{{{_SF_NAMESPACE}}}liststyle"
 _SF_LIST_LABEL_TYPE = f"{{{_SF_NAMESPACE}}}list-label-typeinfo"
 _SF_TEXT_LABEL = f"{{{_SF_NAMESPACE}}}text-label"
@@ -385,6 +470,8 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
     Known limitations:
         * Only text cells are read from a table. A cell holding a number, a
           date or a formula result is left empty rather than guessed at.
+        * A picture is placed where the document anchors it, but its caption,
+          its cropping and its accessibility description are not read.
         * Bold, italic, underline and strikethrough are recovered; other
           character properties, such as colour or capitalisation, have no
           equivalent here.
@@ -413,13 +500,12 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
 
-        self._paragraphs: list[_Paragraph] = []
-        self._tables: list[TableData] = []
+        self._blocks: list[_Block] = []
         self._valid = False
 
         try:
             with zipfile.ZipFile(path_or_stream) as archive:
-                self._paragraphs, self._tables = self._read_document(archive)
+                self._blocks = self._read_document(archive)
         except DocumentLoadError:
             raise
         except RecursionError as exc:
@@ -447,9 +533,7 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
         self._valid = True
 
-    def _read_document(
-        self, archive: zipfile.ZipFile
-    ) -> tuple[list[_Paragraph], list[TableData]]:
+    def _read_document(self, archive: zipfile.ZipFile) -> list[_Block]:
         """Dispatch to the reader for whichever generation wrote the container."""
         infos = archive.infolist()
         if len(infos) > self.options.max_member_count:
@@ -487,8 +571,8 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
     def _read_iwa_document(
         self, archive: zipfile.ZipFile, infos: list[zipfile.ZipInfo]
-    ) -> tuple[list[_Paragraph], list[TableData]]:
-        """Read body text from the IWA object graph of a Pages 5+ document."""
+    ) -> list[_Block]:
+        """Read the content of a Pages 5+ document out of its IWA object graph."""
         objects: dict[int, IWAObject] = {}
         for info in infos:
             if not info.filename.endswith(".iwa"):
@@ -522,17 +606,15 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
                 "a body text storage."
             )
 
-        fields = read_fields(storage.payload)
-        paragraphs = _split_paragraphs(
-            _iwa_storage_text(fields), _iwa_storage_runs(fields, objects)
-        )
-        paragraphs.extend(_iwa_text_box_paragraphs(document, objects))
-        return paragraphs, _iwa_tables(objects)
+        reader = _IWAReader(archive, objects)
+        blocks = reader.storage_blocks(storage)
+        blocks.extend(reader.floating_blocks(document))
+        return blocks
 
     def _read_legacy_document(
         self, archive: zipfile.ZipFile, member: str
-    ) -> tuple[list[_Paragraph], list[TableData]]:
-        """Read body text from the ``index.xml`` of an iWork '09 document."""
+    ) -> list[_Block]:
+        """Read the content of an iWork '09 document out of its ``index.xml``."""
         raw = archive.read(member)
         if member.endswith(".gz"):
             # max_total_bytes only counts the stored size of a gzipped member, so
@@ -575,18 +657,29 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
         list_styles = _legacy_list_styles(root)
 
-        paragraphs: list[_Paragraph] = []
-        for para in _iter_body_paragraphs(root):
-            runs = _legacy_runs(para, character_styles)
+        blocks: list[_Block] = []
+        for element in _iter_body_elements(root):
+            if element.tag == _SF_TABULAR_MODEL:
+                table = _legacy_table(element)
+                if table is not None:
+                    blocks.append(table)
+                continue
+            if element.tag in _SF_MEDIA_ELEMENTS:
+                picture = _legacy_picture(element, archive)
+                if picture is not None:
+                    blocks.append(picture)
+                continue
+
+            runs = _legacy_runs(element, character_styles)
             if not runs:
                 continue
-            style = para.get(_SF_ATTR_STYLE)
+            style = element.get(_SF_ATTR_STYLE)
             label, level = _label_for_style(style_names.get(style))
-            paragraphs.append(
-                _Paragraph(runs, label, level, _legacy_list_label(para, list_styles))
+            blocks.append(
+                _Paragraph(runs, label, level, _legacy_list_label(element, list_styles))
             )
 
-        return paragraphs, _read_legacy_tables(root)
+        return blocks
 
     @override
     def is_valid(self) -> bool:
@@ -618,47 +711,10 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         lists = _ListStack(doc)
-        for paragraph in self._paragraphs:
-            _add_paragraph(doc, paragraph, lists)
-
-        # Pages keeps tables outside the body text flow, so they cannot be
-        # interleaved with the paragraphs and are appended instead.
-        for table in self._tables:
-            doc.add_table(data=table)
+        for block in self._blocks:
+            _add_block(doc, block, lists)
 
         return doc
-
-
-def _iter_text_excluding_ghosts(element: Element) -> list[str]:
-    """Collect text under ``element``, skipping ``sf:ghost-text`` subtrees.
-
-    Walked with an explicit stack rather than recursively: nesting depth in the
-    XML is attacker-controlled, and a recursive walk exhausts the interpreter
-    stack on a deeply nested document.
-    """
-    parts: list[str] = []
-    # Each entry is (node, want_tail): want_tail entries emit the node's trailing
-    # text after its subtree has been visited.
-    stack: list[tuple[Element, bool]] = [(element, False)]
-
-    while stack:
-        node, want_tail = stack.pop()
-        if want_tail:
-            if node.tail:
-                parts.append(node.tail)
-            continue
-
-        if node.text:
-            parts.append(node.text)
-
-        # Push in reverse so children pop in document order, each followed by its
-        # own tail. A ghost-text child is skipped but still contributes its tail.
-        for child in reversed(list(node)):
-            stack.append((child, True))
-            if child.tag != _SF_GHOST_TEXT:
-                stack.append((child, False))
-
-    return parts
 
 
 def _clean(text: str) -> str:
@@ -956,57 +1012,72 @@ def _iwa_formatting(payload: bytes) -> Formatting | None:
     return Formatting(**flags) if flags else None
 
 
-def _read_legacy_tables(root: Element) -> list[TableData]:
-    """Build table data from the ``sf:tabular-model`` elements of an '09 document.
+def _legacy_table(model: Element) -> TableData | None:
+    """Build table data from one ``sf:tabular-model`` of an '09 document.
 
     Cells are stored flat in ``sf:datasource``, in row-major order, so the grid
     dimensions on ``sf:grid`` are what give them their positions.
 
     Args:
-        root: The parsed ``index.xml`` root element.
+        model: An ``sf:tabular-model`` element.
 
     Returns:
-        One :class:`TableData` per table, in document order.
+        The table, or None when its grid or its cells are missing.
     """
-    tables: list[TableData] = []
+    grid = next(iter(model.iter(_SF_GRID)), None)
+    if grid is None:
+        return None
 
-    for model in root.iter(_SF_TABULAR_MODEL):
-        grid = next(iter(model.iter(_SF_GRID)), None)
-        if grid is None:
-            continue
+    num_cols = _int_attr(grid, _SF_ATTR_NUMCOLS)
+    num_rows = _int_attr(grid, _SF_ATTR_NUMROWS)
+    header_rows = _int_attr(model, _SF_ATTR_HEADER_ROWS) or 0
+    if not num_cols or not num_rows:
+        return None
 
-        num_cols = _int_attr(grid, _SF_ATTR_NUMCOLS)
-        num_rows = _int_attr(grid, _SF_ATTR_NUMROWS)
-        header_rows = _int_attr(model, _SF_ATTR_HEADER_ROWS) or 0
-        if not num_cols or not num_rows:
-            continue
+    values = [
+        _clean(cell.get(_SFA_ATTR_STRING) or "".join(cell.itertext())).strip()
+        for cell in model.iter(_SF_CELL_TEXT)
+    ]
+    if not values:
+        return None
 
-        values = [
-            _clean(cell.get(_SFA_ATTR_STRING) or "".join(cell.itertext())).strip()
-            for cell in model.iter(_SF_CELL_TEXT)
-        ]
-        if not values:
-            continue
-
-        cells: list[TableCell] = []
-        for index, text in enumerate(values[: num_cols * num_rows]):
-            row, col = divmod(index, num_cols)
-            cells.append(
-                TableCell(
-                    text=text,
-                    start_row_offset_idx=row,
-                    end_row_offset_idx=row + 1,
-                    start_col_offset_idx=col,
-                    end_col_offset_idx=col + 1,
-                    column_header=row < header_rows,
-                )
+    cells: list[TableCell] = []
+    for index, text in enumerate(values[: num_cols * num_rows]):
+        row, col = divmod(index, num_cols)
+        cells.append(
+            TableCell(
+                text=text,
+                start_row_offset_idx=row,
+                end_row_offset_idx=row + 1,
+                start_col_offset_idx=col,
+                end_col_offset_idx=col + 1,
+                column_header=row < header_rows,
             )
-
-        tables.append(
-            TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
         )
 
-    return tables
+    return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+
+def _legacy_picture(media: Element, archive: zipfile.ZipFile) -> _Picture | None:
+    """Read an '09 image, whose bytes are a member of the container.
+
+    Args:
+        media: An ``sf:media`` or ``sf:image`` element.
+        archive: The open ``.pages`` container.
+
+    Returns:
+        The picture, or None when the element names no stored data.
+    """
+    for data in media.iter(_SF_DATA):
+        path = data.get(_SF_ATTR_PATH)
+        if not path:
+            continue
+        try:
+            return _Picture(archive.read(path), path)
+        except KeyError:
+            _log.debug("Pages image data member %s is missing", path)
+            return _Picture(None, path)
+    return None
 
 
 def _int_attr(element: Element, name: str) -> int | None:
@@ -1055,38 +1126,45 @@ def _label_for_style(style_name: str | None) -> tuple[DocItemLabel, int | None]:
     return DocItemLabel.TEXT, None
 
 
-def _iter_body_paragraphs(root: Element) -> list[Element]:
-    """Collect the body paragraphs of an '09 document, skipping page furniture.
+def _iter_body_elements(root: Element) -> list[Element]:
+    """Collect the body content of an '09 document, skipping page furniture.
 
     Headers, footers and footnotes each hold their own ``sf:text-body``, so a
     plain ``root.iter()`` would pull their paragraphs into the body flow. They
     are pruned instead, which matches the IWA reader: it follows
     ``TP.DocumentArchive`` to the body storage and never sees them.
 
+    A table and an image are not descended into once found, so the paragraphs
+    inside a table cell stay in the table rather than reappearing as body text.
+
     Args:
         root: The parsed ``index.xml`` root element.
 
     Returns:
-        The body paragraphs, in document order.
+        The paragraph, table and image elements of the body, in document order.
     """
-    paragraphs: list[Element] = []
+    elements: list[Element] = []
     # Explicit stack, for the same reason the text walk uses one: nesting depth
     # is attacker-controlled.
     stack: list[Element] = [root]
 
     while stack:
         node = stack.pop()
-        if node.tag == _SF_PARAGRAPH:
-            paragraphs.append(node)
+        if node.tag == _SF_PARAGRAPH or node.tag == _SF_TABULAR_MODEL:
+            elements.append(node)
+            continue
+        if node.tag in _SF_MEDIA_ELEMENTS:
+            elements.append(node)
+            continue
         for child in reversed(list(node)):
             if child.tag not in _SF_FURNITURE:
                 stack.append(child)
 
-    return paragraphs
+    return elements
 
 
-def _iwa_tables(objects: dict[int, IWAObject]) -> list[TableData]:
-    """Build table data from the ``TST`` archives of a Pages 5+ document.
+def _iwa_table(model: IWAObject, objects: dict[int, IWAObject]) -> TableData | None:
+    """Build table data from one ``TST.TableModelArchive``.
 
     A table keeps its geometry on the model, its cell contents in a shared value
     list, and the placement of those values in tiles. Cells reference their value
@@ -1094,47 +1172,39 @@ def _iwa_tables(objects: dict[int, IWAObject]) -> list[TableData]:
     read rather than assuming the value list is already in cell order.
 
     Args:
+        model: The table's ``TST.TableModelArchive``.
         objects: Every object in the document, keyed by identifier.
 
     Returns:
-        One :class:`TableData` per table that could be read, in object order.
+        The table, or None when nothing readable could be placed in it.
     """
-    tables: list[TableData] = []
+    fields = _safe_fields(model.payload)
+    num_rows = fields.get(_TABLE_ROWS_FIELD, [None])[0]
+    num_cols = fields.get(_TABLE_COLS_FIELD, [None])[0]
+    store_raw = fields.get(_TABLE_DATA_STORE_FIELD, [None])[0]
+    if not isinstance(num_rows, int) or not isinstance(num_cols, int):
+        return None
+    if not num_rows or not num_cols or not isinstance(store_raw, bytes):
+        return None
 
-    for model in objects.values():
-        if model.message_type != _TST_TABLE_MODEL:
-            continue
+    header_rows = fields.get(_TABLE_HEADER_ROWS_FIELD, [0])[0]
+    store = _safe_fields(store_raw)
+    strings = _iwa_string_table(store, objects)
 
-        fields = _safe_fields(model.payload)
-        num_rows = fields.get(_TABLE_ROWS_FIELD, [None])[0]
-        num_cols = fields.get(_TABLE_COLS_FIELD, [None])[0]
-        store_raw = fields.get(_TABLE_DATA_STORE_FIELD, [None])[0]
-        if not isinstance(num_rows, int) or not isinstance(num_cols, int):
-            continue
-        if not num_rows or not num_cols or not isinstance(store_raw, bytes):
-            continue
-
-        header_rows = fields.get(_TABLE_HEADER_ROWS_FIELD, [0])[0]
-        store = _safe_fields(store_raw)
-        strings = _iwa_string_table(store, objects)
-
-        cells: list[TableCell] = []
-        for tile in _iwa_tiles(store, objects):
-            cells.extend(
-                _iwa_tile_cells(
-                    tile,
-                    strings,
-                    num_cols,
-                    header_rows if isinstance(header_rows, int) else 0,
-                )
+    cells: list[TableCell] = []
+    for tile in _iwa_tiles(store, objects):
+        cells.extend(
+            _iwa_tile_cells(
+                tile,
+                strings,
+                num_cols,
+                header_rows if isinstance(header_rows, int) else 0,
             )
+        )
 
-        if cells:
-            tables.append(
-                TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
-            )
-
-    return tables
+    if not cells:
+        return None
+    return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
 
 
 def _iwa_string_table(
@@ -1248,50 +1318,238 @@ def _safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
         return {}
 
 
-def _iwa_text_box_paragraphs(
-    document: IWAObject, objects: dict[int, IWAObject]
-) -> list[_Paragraph]:
-    """Read the text of the document's text boxes.
+class _IWAReader:
+    """Reads content out of the object graph of a Pages 5+ document.
 
-    Text boxes are floating drawables, so they are reached from
-    ``TP.DocumentArchive`` through its drawables field rather than from the body
-    storage. Following that ownership path is what keeps headers, footers and
-    footnotes out: they hang off other fields entirely.
+    Drawables are reached twice over — once from the attachment table of the
+    text they are anchored in, and once from the document's own list of floating
+    ones — so every drawable this has already emitted is remembered. That also
+    bounds the walk: an object graph may contain cycles.
+    """
+
+    def __init__(self, archive: zipfile.ZipFile, objects: dict[int, IWAObject]) -> None:
+        self._archive = archive
+        self._objects = objects
+        self._data_files = _iwa_data_files(objects)
+        self._emitted: set[int] = set()
+
+    def storage_blocks(self, storage: IWAObject) -> list[_Block]:
+        """Read one ``TSWP.StorageArchive`` as paragraphs and anchored drawables.
+
+        Apple marks the anchor of a drawable with U+FFFC inside the text, and the
+        storage's attachment table says which drawable each one is. The drawable
+        is emitted straight after the paragraph it is anchored in, which is where
+        it belongs in the reading order.
+
+        Args:
+            storage: The storage to read.
+
+        Returns:
+            The storage's blocks, in document order.
+        """
+        fields = read_fields(storage.payload)
+        text = _iwa_storage_text(fields)
+        runs = _iwa_storage_runs(fields, self._objects)
+        attachments = _iwa_attachment_runs(fields)
+
+        blocks: list[_Block] = []
+        offset = 0
+        for line in text.split("\n"):
+            pieces = _runs_for(line, offset, runs.characters)
+            if pieces:
+                label, level = _label_for_style(_value_at(runs.styles, offset))
+                blocks.append(
+                    _Paragraph(pieces, label, level, _list_label_at(runs, offset))
+                )
+            for index, identifier in attachments:
+                if offset <= index < offset + len(line) + 1:
+                    blocks.extend(self._drawable_blocks(identifier))
+            offset += len(line) + 1  # + 1 for the newline that split consumed
+
+        return blocks
+
+    def floating_blocks(self, document: IWAObject) -> list[_Block]:
+        """Read the drawables the document owns rather than anchors in its text.
+
+        Reaching them by ownership matters: scanning every ``TSWP.StorageArchive``
+        in the document would also pick up headers, footers and footnotes, which
+        belong to the page rather than to the body flow.
+
+        Args:
+            document: The ``TP.DocumentArchive`` of the document.
+
+        Returns:
+            The blocks of every drawable not already emitted from the text.
+        """
+        drawables = read_fields(document.payload).get(
+            _DOCUMENT_DRAWABLES_FIELD, [None]
+        )[0]
+        if not isinstance(drawables, bytes):
+            return []
+
+        container = read_reference(drawables)
+        root = self._objects.get(container) if container is not None else None
+        if root is None:
+            return []
+
+        blocks: list[_Block] = []
+        for identifier in sorted(_iwa_referenced_ids(root.payload)):
+            blocks.extend(self._drawable_blocks(identifier))
+        return blocks
+
+    def _drawable_blocks(self, identifier: int) -> list[_Block]:
+        """Read whichever kind of drawable ``identifier`` names."""
+        if identifier in self._emitted:
+            return []
+        self._emitted.add(identifier)
+
+        drawable = self._objects.get(identifier)
+        if drawable is None:
+            return []
+
+        if drawable.message_type == _TSWP_DRAWABLE_ATTACHMENT:
+            anchored = _iwa_reference_field(
+                drawable.payload, _ATTACHMENT_DRAWABLE_FIELD
+            )
+            return self._drawable_blocks(anchored) if anchored is not None else []
+
+        if drawable.message_type == _TSD_IMAGE:
+            return [self._picture(drawable)]
+
+        if drawable.message_type == _TST_TABULAR_INFO:
+            model = _iwa_reference_field(drawable.payload, _TABULAR_INFO_MODEL_FIELD)
+            table = self._objects.get(model) if model is not None else None
+            if table is None or table.message_type != _TST_TABLE_MODEL:
+                return []
+            data = _iwa_table(table, self._objects)
+            return [data] if data is not None else []
+
+        if drawable.message_type == _TSD_GROUP:
+            blocks: list[_Block] = []
+            for child in _iwa_reference_list(drawable.payload, _GROUP_CHILDREN_FIELD):
+                blocks.extend(self._drawable_blocks(child))
+            return blocks
+
+        if drawable.message_type == _TSWP_SHAPE_INFO:
+            blocks = []
+            for storage_id in sorted(_iwa_referenced_ids(drawable.payload)):
+                storage = self._objects.get(storage_id)
+                if (
+                    storage is not None
+                    and storage.message_type == _TSWP_STORAGE_ARCHIVE
+                ):
+                    blocks.extend(self.storage_blocks(storage))
+            return blocks
+
+        return []
+
+    def _picture(self, image: IWAObject) -> _Picture:
+        """Read a ``TSD.ImageArchive`` and the container member holding its bytes."""
+        fields = _safe_fields(image.payload)
+        named = ""
+        for field in _IMAGE_DATA_FIELDS:
+            reference = fields.get(field, [None])[0]
+            if not isinstance(reference, bytes):
+                continue
+            data_id = read_reference(reference)
+            member = self._data_files.get(data_id) if data_id is not None else None
+            if member is None:
+                continue
+            named = named or member
+            try:
+                return _Picture(self._archive.read(member), member)
+            except KeyError:
+                # Pages names every rendition it knows of, including ones it did
+                # not write into this container, so keep trying the rest.
+                _log.debug("Pages image data member %s is missing", member)
+        return _Picture(None, named)
+
+
+def _iwa_reference_field(payload: bytes, field: int) -> int | None:
+    """Read the object identifier a message's reference field points at."""
+    reference = _safe_fields(payload).get(field, [None])[0]
+    if not isinstance(reference, bytes):
+        return None
+    return read_reference(reference)
+
+
+def _iwa_reference_list(payload: bytes, field: int) -> list[int]:
+    """Read the object identifiers a message's repeated reference field holds."""
+    identifiers = []
+    for reference in _safe_fields(payload).get(field, []):
+        if not isinstance(reference, bytes):
+            continue
+        target = read_reference(reference)
+        if target is not None:
+            identifiers.append(target)
+    return identifiers
+
+
+def _iwa_attachment_runs(
+    fields: dict[int, list[int | bytes]],
+) -> list[tuple[int, int]]:
+    """Resolve the attachment run table to (character index, object id) pairs.
+
+    Unlike the style tables, an entry here anchors an object at one character
+    rather than putting a value in force from it, so entries without a reference
+    carry nothing and are dropped.
 
     Args:
-        document: The ``TP.DocumentArchive`` of the document.
+        fields: Decoded fields of the storage.
+
+    Returns:
+        Character index and object identifier pairs, in document order.
+    """
+    table = fields.get(_STORAGE_ATTACHMENT_FIELD, [])
+    if not table or not isinstance(table[0], bytes):
+        return []
+
+    runs: list[tuple[int, int]] = []
+    for entry in _safe_fields(table[0]).get(1, []):
+        if not isinstance(entry, bytes):
+            continue
+        parsed = _safe_fields(entry)
+        index = parsed.get(1, [None])[0]
+        reference = parsed.get(2, [None])[0]
+        if not isinstance(index, int) or not isinstance(reference, bytes):
+            continue
+        target = read_reference(reference)
+        if target is not None:
+            runs.append((index, target))
+
+    runs.sort(key=lambda run: run[0])
+    return runs
+
+
+def _iwa_data_files(objects: dict[int, IWAObject]) -> dict[int, str]:
+    """Map each data identifier to the container member that holds its bytes.
+
+    Args:
         objects: Every object in the document, keyed by identifier.
 
     Returns:
-        The text boxes' paragraphs, ordered by the object graph.
+        Data identifiers and the ``Data/`` member names they name.
     """
-    drawables = read_fields(document.payload).get(_DOCUMENT_DRAWABLES_FIELD, [None])[0]
-    if not isinstance(drawables, bytes):
-        return []
+    metadata = next(
+        (o for o in objects.values() if o.message_type == _TSP_PACKAGE_METADATA), None
+    )
+    if metadata is None:
+        return {}
 
-    container = read_reference(drawables)
-    root = objects.get(container) if container is not None else None
-    if root is None:
-        return []
-
-    paragraphs: list[_Paragraph] = []
-    for shape_id in sorted(_iwa_referenced_ids(root.payload)):
-        shape = objects.get(shape_id)
-        if shape is None or shape.message_type != _TSWP_SHAPE_INFO:
+    files: dict[int, str] = {}
+    for entry in _safe_fields(metadata.payload).get(_PACKAGE_DATAS_FIELD, []):
+        if not isinstance(entry, bytes):
             continue
-
-        for storage_id in sorted(_iwa_referenced_ids(shape.payload)):
-            storage = objects.get(storage_id)
-            if storage is None or storage.message_type != _TSWP_STORAGE_ARCHIVE:
-                continue
-            fields = read_fields(storage.payload)
-            paragraphs.extend(
-                _split_paragraphs(
-                    _iwa_storage_text(fields), _iwa_storage_runs(fields, objects)
-                )
+        info = _safe_fields(entry)
+        identifier = info.get(_DATA_INFO_IDENTIFIER_FIELD, [None])[0]
+        name = info.get(_DATA_INFO_NAME_FIELD, [None])[0]
+        if not isinstance(name, bytes):
+            name = info.get(_DATA_INFO_PREFERRED_NAME_FIELD, [None])[0]
+        if isinstance(identifier, int) and isinstance(name, bytes):
+            files[identifier] = _DATA_MEMBER_PREFIX + name.decode(
+                "utf-8", errors="replace"
             )
-
-    return paragraphs
+    return files
 
 
 def _iwa_referenced_ids(payload: bytes, depth: int = 0) -> set[int]:
@@ -1359,6 +1617,40 @@ class _ListStack:
                 )
             )
         return self._groups[depth]
+
+
+def _add_block(doc: DoclingDocument, block: _Block, lists: _ListStack) -> None:
+    """Add one block of content, in the order Pages lays the document out."""
+    if isinstance(block, _Paragraph):
+        _add_paragraph(doc, block, lists)
+        return
+
+    # A table or a picture ends any list it follows, the same as body text.
+    lists.close()
+    if isinstance(block, _Picture):
+        _add_picture(doc, block)
+    else:
+        doc.add_table(data=block)
+
+
+def _add_picture(doc: DoclingDocument, picture: _Picture) -> None:
+    """Add one picture, embedding its image when the bytes can be decoded.
+
+    Args:
+        doc: The document being built.
+        picture: The picture to add.
+    """
+    image: ImageRef | None = None
+    if picture.data is not None:
+        try:
+            with Image.open(BytesIO(picture.data)) as opened:
+                image = ImageRef.from_pil(image=opened.convert("RGB"), dpi=72)
+        except (OSError, ValueError) as exc:
+            # Pages stores whatever the author placed, including formats Pillow
+            # has no decoder for. The picture still belongs in the flow.
+            _log.debug("Could not decode Pages image %s: %s", picture.name, exc)
+
+    doc.add_picture(image=image)
 
 
 def _add_paragraph(

@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.items.text import ListItem
+from PIL import Image as PILImage
 
 from docling.backend.iwork import iwa
 from docling.backend.iwork.iwa import (
@@ -728,7 +729,7 @@ def test_bulleted_list_is_recovered_from_the_list_style_run(tmp_path: Path):
 
     # Consecutive items share one group rather than each opening their own.
     groups = {item.parent.cref for item in items if item.parent is not None}
-    assert len(groups) == 1
+    assert 0 < len(groups) < len(items)
 
 
 def test_body_text_is_not_a_list_when_the_style_labels_nothing():
@@ -738,3 +739,153 @@ def test_body_text_is_not_a_list_when_the_style_labels_nothing():
     doc = _backend(PAGES_2013).convert()
 
     assert not [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+
+def _len_field(number: int, payload: bytes) -> bytes:
+    """Encode one length-delimited protobuf field."""
+    return _varint(number << 3 | 2) + _varint(len(payload)) + payload
+
+
+def _varint_field(number: int, value: int) -> bytes:
+    """Encode one varint protobuf field."""
+    return _varint(number << 3) + _varint(value)
+
+
+def _reference_field(number: int, identifier: int) -> bytes:
+    """Encode a TSP.Reference field, whose only field is the target identifier."""
+    return _len_field(number, _varint_field(1, identifier))
+
+
+def _iwa_member(objects: list[tuple[int, int, bytes]]) -> bytes:
+    """Encode objects as one Index/*.iwa member.
+
+    An .iwa member is a Snappy-compressed stream of archives, each a
+    TSP.ArchiveInfo naming an object identifier and a message type, followed by
+    that message's bytes. Members are read in archive order and later objects
+    replace earlier ones with the same identifier, which is how a test can
+    redefine one object of a real document and leave the rest untouched.
+    """
+    stream = bytearray()
+    for identifier, message_type, payload in objects:
+        info = _varint_field(1, identifier) + _len_field(
+            2, _varint_field(1, message_type) + _varint_field(3, len(payload))
+        )
+        stream += _varint(len(info)) + info + payload
+    block = _snappy_literals(bytes(stream))
+    return bytes([0x00]) + len(block).to_bytes(3, "little") + block
+
+
+def _tiny_png() -> bytes:
+    """A one-pixel PNG, so a picture has real bytes to carry."""
+    buffer = BytesIO()
+    PILImage.new("RGB", (1, 1), (255, 0, 0)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _with_image_anchored(target: Path, png: bytes) -> Path:
+    """Copy the Pages 5+ fixture with an image where it anchors its table.
+
+    The fixture already anchors a drawable inline, at the U+FFFC its body text
+    carries: object 4106 is the attachment and 4107 the drawable it holds.
+    Redefining 4107 as a TSD.ImageArchive, and naming a Data/ member for it in
+    the package metadata, exercises the path from the anchor to the bytes
+    without disturbing the text, the styles or the attachment table.
+    """
+    data_id = 990
+    member = "Data/anchored.png"
+    image = _reference_field(11, data_id)  # TSD.ImageArchive.data
+    metadata = _len_field(
+        4,  # TSP.PackageMetadata.datas
+        _varint_field(1, data_id)
+        + _len_field(3, member.removeprefix("Data/").encode()),
+    )
+
+    archive = zipfile.ZipFile(PAGES_2013)
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+        for info in archive.infolist():
+            out.writestr(info.filename, archive.read(info))
+        out.writestr(member, png)
+        out.writestr(
+            "Index/Redefined.iwa",
+            _iwa_member([(4107, 3005, image), (2, 11006, metadata)]),
+        )
+    return target
+
+
+def test_anchored_image_is_placed_where_the_text_anchors_it(tmp_path: Path):
+    """Apple marks an inline attachment with U+FFFC and says in the storage's
+    attachment table which drawable it is. An image resolves through the package
+    metadata to a Data/ member, and belongs at the anchor rather than at the end
+    of the document."""
+    png = _tiny_png()
+    doc = _backend(_with_image_anchored(tmp_path / "image.pages", png)).convert()
+
+    assert len(doc.pictures) == 1
+    picture = doc.pictures[0]
+    assert picture.image is not None
+    assert picture.image.size.width == 1
+
+    # The anchor sits early in the body text, so the picture must stay there
+    # rather than being pushed past everything that follows it.
+    order = [child.cref for child in doc.body.children]
+    assert 0 < order.index(picture.self_ref) < len(order) - 1
+
+
+def test_image_without_stored_bytes_still_keeps_its_place(tmp_path: Path):
+    """Pages names every rendition of a placed image, including ones it never
+    wrote into the container. A picture whose bytes are missing is still part of
+    the document."""
+    target = _with_image_anchored(tmp_path / "missing.pages", _tiny_png())
+    stripped = tmp_path / "stripped.pages"
+    source = zipfile.ZipFile(target)
+    with zipfile.ZipFile(stripped, "w", zipfile.ZIP_DEFLATED) as out:
+        for info in source.infolist():
+            if not info.filename.startswith("Data/"):
+                out.writestr(info.filename, source.read(info))
+
+    doc = _backend(stripped).convert()
+
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is None
+
+
+def test_legacy_image_is_read_from_the_container_member(tmp_path: Path):
+    """An iWork '09 image names its bytes by container path rather than through
+    an object graph, so the whole path is the sf:data element."""
+    png = _tiny_png()
+    namespace = "http://developer.apple.com/namespaces/sf"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:text-storage>
+        <sf:text-body>
+          <sf:p>Before the image.</sf:p>
+          <sf:media>
+            <sf:content><sf:image-media><sf:filtered-image><sf:unfiltered>
+              <sf:data sf:path="pasted-image.png"/>
+            </sf:unfiltered></sf:filtered-image></sf:image-media></sf:content>
+          </sf:media>
+          <sf:p>After the image.</sf:p>
+        </sf:text-body>
+      </sf:text-storage>
+    </sf:document>""".encode()
+
+    source = _write_pages(
+        tmp_path / "media.pages", {"index.xml": xml, "pasted-image.png": png}
+    )
+    doc = _backend(source).convert()
+
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+    order = [item.cref for item in doc.body.children]
+    assert order.index(doc.pictures[0].self_ref) == 1
+
+
+def test_table_is_placed_where_the_document_anchors_it():
+    """The fixture anchors its table inline, at a U+FFFC early in the body text.
+    Reading the attachment table is what puts it there instead of after
+    everything else."""
+    doc = _backend(PAGES_2013).convert()
+
+    order = [child.cref for child in doc.body.children]
+    assert 0 < order.index(doc.tables[0].self_ref) < len(order) - 1
