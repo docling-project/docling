@@ -600,7 +600,8 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.preprocessing_model = PagePreprocessingModel(
             options=PagePreprocessingOptions(
-                images_scale=self.pipeline_options.images_scale
+                images_scale=self.pipeline_options.images_scale,
+                skip_cell_extraction=self.pipeline_options.skip_cell_extraction,
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)

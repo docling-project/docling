@@ -257,9 +257,12 @@ class LayoutPostprocessor:
                 for child in cluster.children:
                     child.cells = self._sort_cells(child.cells)
 
-            assert self.page.parsed_page is not None
-            self.page.parsed_page.textline_cells = self.cells
-            self.page.parsed_page.has_lines = len(self.cells) > 0
+            # parsed_page is absent when native cell extraction was skipped
+            # (PagePreprocessingOptions.skip_cell_extraction); there are no
+            # textline cells to write back in that case.
+            if self.page.parsed_page is not None:
+                self.page.parsed_page.textline_cells = self.cells
+                self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters
 
