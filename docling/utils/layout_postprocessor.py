@@ -431,11 +431,11 @@ class LayoutPostprocessor:
         confidence, this step picks the label carrying the richer downstream
         semantic. Anything outside that envelope is out of scope here.
 
-        | pair                       | loser   | winner          |
-        |----------------------------|---------|-----------------|
-        | FORM / KVR vs TABLE        | wrapper | TABLE           |
-        | DOCUMENT_INDEX vs TABLE    | TABLE   | DOCUMENT_INDEX  |
-        | PICTURE vs TABLE           | PICTURE | TABLE           |
+        | pair                          | loser   | winner              |
+        |-------------------------------|---------|---------------------|
+        | FORM / KVR vs TABLE           | wrapper | TABLE               |
+        | DOCUMENT_INDEX vs TABLE       | TABLE   | DOCUMENT_INDEX      |
+        | PICTURE vs TABLE / DOC_INDEX  | PICTURE | TABLE/DOCUMENT_INDEX|
         """
         tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
         doc_indices = [
@@ -451,7 +451,9 @@ class LayoutPostprocessor:
         clusters_to_remove: set[int] = set()
         clusters_to_remove |= self._resolve_coincident_pairs(wrappers, tables)
         clusters_to_remove |= self._resolve_coincident_pairs(tables, doc_indices)
-        clusters_to_remove |= self._resolve_coincident_pairs(pictures, tables)
+        clusters_to_remove |= self._resolve_coincident_pairs(
+            pictures, tables + doc_indices
+        )
 
         return [c for c in special_clusters if c.id not in clusters_to_remove]
 

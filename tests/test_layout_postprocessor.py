@@ -144,6 +144,32 @@ def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
     assert DocItemLabel.PICTURE not in labels
 
 
+def test_cross_type_overlaps_removes_picture_coinciding_with_document_index() -> None:
+    # Same rule as PICTURE-vs-TABLE: a near-identical PICTURE against a
+    # DOCUMENT_INDEX must be dropped so the richer structured label survives.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+
+    doc_index = _cluster(
+        1,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.DOCUMENT_INDEX,
+        confidence=0.72,
+    )
+    picture = _cluster(
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.PICTURE,
+        confidence=0.81,
+    )
+
+    result = processor._handle_cross_type_overlaps([doc_index, picture])
+
+    labels = {c.label for c in result}
+    assert DocItemLabel.DOCUMENT_INDEX in labels
+    assert DocItemLabel.PICTURE not in labels
+
+
 def test_cross_type_overlaps_keeps_picture_not_overlapping_table() -> None:
     # A genuine figure elsewhere on the page must be preserved.
     processor = object.__new__(LayoutPostprocessor)
