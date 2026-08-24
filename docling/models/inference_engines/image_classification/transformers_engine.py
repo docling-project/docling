@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import sys
 from pathlib import Path
@@ -121,10 +122,23 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
         self._id_to_label = self._load_label_mapping(model_folder)
 
         _log.debug("Loading model from %s to device %s", model_folder, self._device)
+        # transformers>=5 renamed the `torch_dtype` kwarg to `dtype`. Passing
+        # `torch_dtype=None` is not a no-op there: the None survives into the
+        # config kwargs and hits the deprecated `PretrainedConfig.torch_dtype`
+        # setter, which warns. Only pass the kwarg when a dtype was resolved.
+        dtype_kwargs = {}
+        if torch_dtype is not None:
+            dtype_arg_name = (
+                "dtype"
+                if version.parse(importlib.metadata.version("transformers")).major >= 5
+                else "torch_dtype"
+            )
+            dtype_kwargs[dtype_arg_name] = torch_dtype
+
         try:
             self._model = AutoModelForImageClassification.from_pretrained(
                 str(model_folder),
-                torch_dtype=torch_dtype,
+                **dtype_kwargs,
             )
             self._model.to(self._device)  # type: ignore[union-attr]
             self._model.eval()  # type: ignore[union-attr]

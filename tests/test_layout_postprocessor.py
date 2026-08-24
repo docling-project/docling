@@ -2,7 +2,7 @@ from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import Cluster
-from docling.datamodel.pipeline_options import LayoutOptions
+from docling.datamodel.pipeline_options import LayoutPostprocessorOptions
 from docling.utils.layout_postprocessor import LayoutPostprocessor
 
 
@@ -20,10 +20,15 @@ def _text_cell(
     )
 
 
-def _cluster(index: int, bbox: BoundingBox, confidence: float = 0.9) -> Cluster:
+def _cluster(
+    index: int,
+    bbox: BoundingBox,
+    label: DocItemLabel = DocItemLabel.TEXT,
+    confidence: float = 0.9,
+) -> Cluster:
     return Cluster(
         id=index,
-        label=DocItemLabel.TEXT,
+        label=label,
         bbox=bbox,
         confidence=confidence,
     )
@@ -88,7 +93,7 @@ def test_assign_cells_to_clusters_matches_exhaustive_selection() -> None:
     ]
     page = _PageStub(cells)
 
-    postprocessor = LayoutPostprocessor(page, clusters, LayoutOptions())
+    postprocessor = LayoutPostprocessor(page, clusters, LayoutPostprocessorOptions())
     assigned = postprocessor._assign_cells_to_clusters(clusters)
 
     assert {
@@ -100,9 +105,68 @@ def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
     cells = [_text_cell(0, BoundingBox(l=10, t=10, r=30, b=30))]
     stale_clusters = [_cluster(0, BoundingBox(l=300, t=300, r=360, b=360))]
     page = _PageStub(cells)
-    postprocessor = LayoutPostprocessor(page, stale_clusters, LayoutOptions())
+    postprocessor = LayoutPostprocessor(
+        page, stale_clusters, LayoutPostprocessorOptions()
+    )
     current_clusters = [_cluster(0, BoundingBox(l=0, t=0, r=100, b=100))]
 
     assigned = postprocessor._assign_cells_to_clusters(current_clusters)
 
     assert [cell.index for cell in assigned[0].cells] == [0]
+
+
+def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
+    # The layout model proposes the same region as both a PICTURE and a TABLE.
+    # The PICTURE (near-identical bbox, high IoU) must be removed; the TABLE kept.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+
+    table = _cluster(
+        1,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.TABLE,
+        confidence=0.72,
+    )
+    picture = _cluster(
+        2,
+        BoundingBox(l=10, t=10, r=200, b=150),
+        DocItemLabel.PICTURE,
+        confidence=0.81,
+    )
+
+    result = processor._handle_cross_type_overlaps([table, picture])
+
+    labels = {c.label for c in result}
+    assert DocItemLabel.TABLE in labels
+    assert DocItemLabel.PICTURE not in labels
+
+
+def test_cross_type_overlaps_keeps_picture_not_overlapping_table() -> None:
+    # A genuine figure elsewhere on the page must be preserved.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+
+    table = _cluster(1, BoundingBox(l=10, t=10, r=200, b=150), DocItemLabel.TABLE)
+    picture = _cluster(2, BoundingBox(l=10, t=300, r=200, b=450), DocItemLabel.PICTURE)
+
+    result = processor._handle_cross_type_overlaps([table, picture])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
+    # A small figure fully contained in a large table (high containment but low IoU)
+    # must NOT be removed -- only a near-coinciding picture is a true mislabel.
+    processor = object.__new__(LayoutPostprocessor)
+    processor.regular_clusters = []
+
+    table = _cluster(1, BoundingBox(l=0, t=0, r=400, b=400), DocItemLabel.TABLE)
+    small_picture = _cluster(
+        2, BoundingBox(l=10, t=10, r=60, b=60), DocItemLabel.PICTURE
+    )
+
+    result = processor._handle_cross_type_overlaps([table, small_picture])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}

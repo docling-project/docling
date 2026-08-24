@@ -17,12 +17,12 @@ pytestmark = pytest.mark.cross_platform
 
 
 def test_e2e_vtt_conversions():
-    directory = Path("./tests/data/webvtt/")
+    directory = Path("./tests/data/webvtt/sources/")
     vtt_paths = sorted(directory.rglob("*.vtt"))
     converter = DocumentConverter(allowed_formats=[InputFormat.VTT])
 
     for vtt in vtt_paths:
-        gt_path = vtt.parent.parent / "groundtruth" / "docling_v2" / vtt.name
+        gt_path = vtt.parent.parent / "groundtruth" / vtt.name
 
         conv_result: ConversionResult = converter.convert(vtt)
 

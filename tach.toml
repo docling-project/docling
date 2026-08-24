@@ -178,7 +178,6 @@ depends_on = [
   "docling.datamodel.vlm_model_specs",
   "docling.models.stages.chart_extraction",
   "docling.models.stages.code_formula",
-  "docling.models.stages.layout",
   "docling.models.stages.ocr",
   "docling.models.stages.picture_classifier",
   "docling.models.stages.table_structure",
@@ -287,6 +286,7 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.layout_model_specs",
+  "docling.datamodel.stage_model_specs",
   "docling.models",
   "docling.models.inference_engines.object_detection",
   "docling.models.utils",
@@ -309,7 +309,6 @@ layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.models",
-  "docling.models.stages.layout",
   "docling.utils",
 ]
 
@@ -340,6 +339,11 @@ depends_on = [
   "docling.models.utils",
   "docling.utils",
 ]
+
+[[modules]]
+path = "docling.models.stages.heading_hierarchy"
+layer = "models"
+depends_on = ["docling.datamodel"]
 
 [[modules]]
 path = "docling.models.stages.reading_order"
@@ -438,12 +442,36 @@ layer = "pipeline"
 depends_on = ["docling.datamodel"]
 
 [[modules]]
+path = "docling.pipeline.asr_transcriber"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.pipeline.asr_pipeline"
 layer = "pipeline"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
   "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_transcriber",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.video_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_transcriber",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
@@ -480,6 +508,7 @@ depends_on = [
   "docling.datamodel",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
@@ -502,6 +531,7 @@ depends_on = [
   "docling.models",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
@@ -576,7 +606,6 @@ path = "docling.experimental.datamodel"
 layer = "models"
 depends_on = [
   "docling.datamodel",
-  "docling.datamodel.layout_model_specs",
   "docling.datamodel.pipeline_options_vlm_model",
   "docling.datamodel.vlm_model_specs",
 ]

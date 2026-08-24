@@ -10,6 +10,10 @@ Below you can find a listing of all supported input and output formats.
 |--------|-------------|
 | PDF | |
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
+| DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
+| ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
+| EPUB | Electronic Publication format for e-books |
+| Pages | Apple Pages documents (`.pages`), both container generations: Pages 5+ (2013 onwards) via its `Index/*.iwa` archives and iWork '09 via `index.xml`. Body text only — headings, lists and tables are not yet recovered (requires the `format-iwork` extra) |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
@@ -19,14 +23,19 @@ Below you can find a listing of all supported input and output formats.
 | WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| BoxNote | Box Notes collaborative note format |
+| Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 
 Schema-specific support:
 
 | Format | Description |
 |--------|-------------|
+| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml`, and generic `.xml` with a `<doclang>` root element |
+| DocLang archive | Zipped DocLang bundle including page images; supported extension: `.dclx` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
+| EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md) |
 
 ## Supported output formats
@@ -36,6 +45,9 @@ Schema-specific support:
 | HTML | Both image embedding and referencing are supported |
 | Markdown | |
 | JSON | Lossless serialization of Docling Document |
+| DocLang XML | XML serialization following [DocLang](https://doclang.ai); CLI output format: `doclang` |
 | Text | Plain text, i.e. without Markdown markers |
 | [Doctags](https://arxiv.org/pdf/2503.11576) | Markup format for efficiently representing the full content and layout characteristics of a document |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| DocLang archive | Zipped DocLang bundle including page images; CLI output format: `dclx` |
+| Chunks (JSONL) | Chunked document output for RAG pipelines; configurable via `--chunks-type`, `--chunks-max-tokens`, `--chunks-tokenizer` |

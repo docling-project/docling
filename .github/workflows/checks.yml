@@ -42,12 +42,13 @@ on:
         required: false
 
 env:
+  DOCLING_INFERENCE_COMPILE_TORCH_MODELS: "false"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   HF_HUB_DOWNLOAD_TIMEOUT: "90"
   HF_HUB_ETAG_TIMEOUT: "90"
   UV_FROZEN: "1"
-  EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
-  EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model)\.py$|xbrl_conversion\.ipynb$'
+  EXAMPLES_HEAVY: '^(asr_pipeline_performance_comparison|batch_convert|chart_extraction|code_formula_granite_docling|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
+  EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|picture_description_api_usage|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model|xbrl_conversion|epub_conversion|video_pipeline)\.py$'
 
 jobs:
   changes:
@@ -222,7 +223,7 @@ jobs:
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
           echo "Running core test suite"
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
+          uv run pytest -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -272,7 +273,7 @@ jobs:
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS -m "$SUITE_MARKER" "${SUITE_ARGS[@]}"
+          uv run pytest -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS -m "$SUITE_MARKER" "${SUITE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -313,10 +314,18 @@ jobs:
           sudo apt-get clean
           df -h
 
+      # Installed here rather than added to the `examples` dependency group so
+      # this lane does not force a full re-resolution of uv.lock for a tool that
+      # only CI needs.
+      - name: Install coverage tooling
+        if: ${{ inputs.push_coverage }}
+        run: uv pip install "coverage~=7.6"
+
       - name: Run selected light examples
         env:
           RUN_ALL_EXAMPLES: ${{ needs.changes.outputs.run_examples_all }}
           CHANGED_EXAMPLE_FILES: ${{ needs.changes.outputs.changed_example_scripts_files }}
+          EXAMPLES_COVERAGE: ${{ inputs.push_coverage && '1' || '' }}
         run: |
           args=(
             --examples-dir docs/examples
@@ -327,6 +336,27 @@ jobs:
             args+=(--run-all)
           fi
           uv run --no-sync python .github/scripts/run_selected_examples.py "${args[@]}"
+
+      # The examples run as subprocesses under `coverage run -p`, so each leaves
+      # its own .coverage.* data file that has to be combined before reporting.
+      - name: Combine example coverage
+        if: ${{ inputs.push_coverage }}
+        run: |
+          if ! compgen -G ".coverage.*" > /dev/null; then
+            echo "No coverage data files produced by the examples lane." >&2
+            exit 0
+          fi
+          uv run --no-sync python -m coverage combine
+          uv run --no-sync python -m coverage xml -o coverage.xml
+          uv run --no-sync python -m coverage report --skip-covered
+
+      - name: Upload coverage to Codecov
+        if: ${{ inputs.push_coverage && hashFiles('coverage.xml') != '' }}
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: run-examples
 
   run-tests-windows:
     needs: changes

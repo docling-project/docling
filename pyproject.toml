@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.96.1"  # DO NOT EDIT, updated automatically
+version = "2.121.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.77.1,<3.0.0',
+  'docling-core>=2.91.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -95,19 +95,18 @@ extract-core = [
 format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
-
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=6.2.0,<7.0.0',
+  'docling-parse>=7.12.0,<8.0.0',
 ]
 
 format-pdf = [
   'docling-slim[format-pdf-pypdfium2,format-pdf-docling]',
 ]
 
-# --- Office Formats (office = docx + pptx + xlsx) ---
+# --- Office Formats ---
 format-docx = [
-  'python-docx>=1.1.2,<2.0.0',
+  'python-docx>=1.2.0,<2.0.0',
 ]
 
 format-pptx = [
@@ -122,10 +121,14 @@ format-office = [
   'docling-slim[format-docx,format-pptx,format-xlsx]',
 ]
 
+# --- OpenDocument Formats (ODT, ODS, ODP) ---
+format-opendocument = [
+  'odfdo>=3.22.0,<4.0.0',
+]
+
 # --- Web Formats (web = html + markdown) ---
 format-html = [
   'beautifulsoup4>=4.12.3,<5.0.0',
-  'lxml>=4.0.0,<7.0.0',
 ]
 
 format-markdown = [
@@ -141,6 +144,29 @@ format-latex = [
   'pylatexenc>=2.10,<3.0',
 ]
 
+format-email = [
+  'docling-slim[format-html]',
+  'mail-parser>=4.1.4,<5.0.0',
+  'python-oxmsg>=0.0.2,<0.1.0',
+]
+
+# Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
+# Index/*.iwa; the Snappy decompressor is implemented in pure Python, so no
+# compiled dependency is needed. iWork '09 documents are plain XML.
+format-iwork = [
+  'defusedxml>=0.7.1,<0.8.0',
+]
+
+format-xml-jats = [
+  'docling-slim[format-html]',
+  'lxml>=4.0.0,<7.0.0',
+]
+
+format-xml-uspto = [
+  'docling-slim[format-html]',
+  'defusedxml>=0.7.1,<0.8.0',
+]
+
 format-xml-xbrl = [
   'arelle-release>=2.38.17,<3.0.0',
 ]
@@ -153,17 +179,27 @@ format-audio = [
   'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'openai-whisper>=20250625',
   'numba>=0.63.0',
+  'whisper-s2t-reborn>=1.7.1,<2.0.0 ; sys_platform != "darwin" or platform_machine != "arm64"',
+]
+
+# Video pipeline: transcription (format-audio) plus speaker diarization.
+format-video = [
+  'docling-slim[format-audio]',
+  'resemblyzer>=0.1.4,<0.2.0',
+  'soundfile>=0.12.1,<1.0.0',
+  'scikit-learn>=1.3.0,<2.0.0',
+  'librosa>=0.10.0,<1.0.0',
 ]
 
 # ============================================================================
 # OCR ENGINES (feat-ocr-*)
 # ============================================================================
 feat-ocr-rapidocr = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
 ]
 
 feat-ocr-rapidocr-onnx = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
   'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
 ]
 
@@ -182,6 +218,10 @@ feat-ocr-tesserocr = [
 
 feat-ocr-mac = [
   'ocrmac>=1.0.0,<2.0.0 ; sys_platform == "darwin"',
+]
+
+feat-ocr-nemotron = [
+  'nemotron-ocr>=2.0.0 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
 ]
 
 # ============================================================================
@@ -227,22 +267,36 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
+  'typer>=0.12.5,<0.27.0',
+  'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
 
 cli = [
-  'typer>=0.12.5,<0.22.0',
+  'typer>=0.12.5,<0.27.0',
   'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
+
 
 # ============================================================================
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [
-  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  # format-video is deliberately excluded: it pulls in resemblyzer, which
+  # requires webrtcvad, which has no wheels and needs Python dev headers
+  # (Python.h) plus a C compiler to build from source. `all` must install
+  # cleanly without a compiler, so speaker diarization stays opt-in via
+  # docling-slim[format-video].
+  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]
@@ -270,7 +324,7 @@ dev = [
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",
-  "pytest~=8.3",
+  "pytest~=9.0.3",
   "pytest-cov>=6.1.1",
   "pytest-dependency~=0.6",
   "pytest-durations~=1.6.1",
@@ -317,14 +371,20 @@ constraints = [
 ]
 
 [tool.uv.workspace]
-members = ["packages/docling"]
+members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
+# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 
 [tool.uv]
 package = true
 default-groups = "all"
+
+override-dependencies = [
+  "grpcio>=1.75.1"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["docling"]
@@ -333,12 +393,14 @@ packages = ["docling"]
 only-include = ["docling", "pyproject.toml", "README.md", "LICENSE"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
   "ml_ocr: OCR tests that download or execute OCR model code.",
   "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
   "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
   "ml_asr: ASR tests that download or execute speech model code.",
   "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
+  "external_service: Tests that require a real external service and are excluded from CI.",
 ]
 
 [tool.ruff]
@@ -415,6 +477,8 @@ allowed-unresolved-imports = [
   "huggingface_hub.**",
   "lxml.**",
   "mlx_vlm.**",
+  "nemotron_ocr.**",
+  "nemotron_ocr_cpp.**",
   "networkx.**",
   "ocrmac.**",
   "onnxruntime.**",

@@ -2,6 +2,10 @@ To use Docling, simply install `docling` from your Python package manager, e.g. 
 ```bash
 pip install docling
 ```
+If you are using [uv](https://docs.astral.sh/uv/):
+```bash
+uv add docling
+```
 
 Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 architectures.
 
@@ -13,11 +17,33 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     All the different ways for installing `torch` are listed on their website <https://pytorch.org/>.
 
     One common situation is the installation on Linux systems with cpu-only support.
-    In this case, we suggest the installation of Docling with the following options
+    In this case, we suggest the installation of Docling with the following options:
 
     ```bash
     # Example for installing on the Linux cpu-only version
     pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
+    ```
+    
+    For `uv` users, add the PyTorch CPU index to your `pyproject.toml`:
+
+    ```toml
+    [[tool.uv.index]]
+    name = "pytorch-cpu"
+    url = "https://download.pytorch.org/whl/cpu"
+    explicit = true
+    ```
+
+    Then pin `torch` to that index:
+
+    ```toml
+    [tool.uv.sources]
+    torch = [{ index = "pytorch-cpu" }]
+    ```
+
+    Then run:
+
+    ```bash
+    uv add docling
     ```
 
 ??? "Installation on macOS Intel (x86_64)"
@@ -53,6 +79,7 @@ The following table summarizes the extras available in the `docling` package. Th
 | `asr` | Installs dependencies for running the ASR pipeline. |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
+| `feat-ocr-nemotron` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
@@ -68,13 +95,14 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
 | [RapidOCR](https://github.com/RapidAI/RapidOCR) | `rapidocr` extra can or via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
 | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
 
-The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
+The Docling `DocumentConverter` allows you to choose the OCR engine with the `ocr_options` settings. For example
 
 ```python
 from docling.datamodel.base_models import InputFormat
@@ -137,10 +165,27 @@ doc_converter = DocumentConverter(
     pip install --no-binary :all: tesserocr
     ```
 
+??? "Nemotron OCR installation"
+
+    [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) requires the CUDA 13 PyTorch wheels.
+    Install it with the `feat-ocr-nemotron` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
+    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+
+    ```console
+    pip install "docling[feat-ocr-nemotron]" \
+      --extra-index-url https://download.pytorch.org/whl/cu130 \
+      --index-strategy unsafe-best-match
+    ```
+
+    Nemotron OCR is currently supported only on Linux x86_64 with Python 3.12 and CUDA 13.x.
+
 ## Development setup
 
 To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
 
 ```bash
-uv sync --all-extras
+uv sync --all-extras --no-extra feat-ocr-nemotron
 ```
+
+The `feat-ocr-nemotron` extra is intentionally excluded from the default development
+setup because it is only usable on Linux x86_64 with Python 3.12 and CUDA 13.x.

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from PIL import Image
+from PIL import Image, TiffImagePlugin
 
 from docling.backend.image_backend import ImageDocumentBackend, _ImagePageBackend
 from docling.datamodel.base_models import DocumentStream, InputFormat
@@ -11,28 +11,43 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
     _DummyBackend,
+    get_input_rejection_cause,
 )
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.document_extractor import DocumentExtractor
+from docling.exceptions import DocumentLoadError
 
 
 def _make_png_stream(
-    width: int = 64, height: int = 48, color=(123, 45, 67)
+    width: int = 64,
+    height: int = 48,
+    color=(123, 45, 67),
+    dpi: tuple[float, float] | None = None,
 ) -> DocumentStream:
     img = Image.new("RGB", (width, height), color)
     buf = BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG", **({} if dpi is None else {"dpi": dpi}))
     buf.seek(0)
     return DocumentStream(name="test.png", stream=buf)
 
 
-def _make_multipage_tiff_stream(num_pages: int = 3, size=(32, 32)) -> DocumentStream:
+def _make_multipage_tiff_stream(
+    num_pages: int = 3,
+    size=(32, 32),
+    dpi: tuple[float, float] | None = (72, 72),
+) -> DocumentStream:
     frames = [
         Image.new("RGB", size, (i * 10 % 255, i * 20 % 255, i * 30 % 255))
         for i in range(num_pages)
     ]
     buf = BytesIO()
-    frames[0].save(buf, format="TIFF", save_all=True, append_images=frames[1:])
+    frames[0].save(
+        buf,
+        format="TIFF",
+        save_all=True,
+        append_images=frames[1:],
+        **({} if dpi is None else {"dpi": dpi}),
+    )
     buf.seek(0)
     return DocumentStream(name="test.tiff", stream=buf)
 
@@ -109,6 +124,13 @@ def test_get_size():
     assert size.height == height
 
 
+def test_one_dpi_defaults_to_72_dpi():
+    stream = _make_multipage_tiff_stream(num_pages=1, size=(64, 48), dpi=None)
+    page_backend = _get_backend_from_stream(stream).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == (64, 48)
+
+
 def test_get_page_image_full():
     """Test getting full page image."""
     width, height = 100, 80
@@ -130,6 +152,58 @@ def test_get_page_image_scaled():
     img = page_backend.get_page_image(scale=scale)
     assert img.width == round(width * scale)
     assert img.height == round(height * scale)
+
+
+def test_300_dpi_tiff_uses_72_dpi_document_geometry():
+    stream = _make_multipage_tiff_stream(
+        num_pages=1,
+        size=(2550, 3300),
+        dpi=(300, 300),
+    )
+    page_backend = _get_backend_from_stream(stream).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == pytest.approx((612, 792))
+    assert page_backend.get_page_image().size == (612, 792)
+    assert page_backend.get_page_image(scale=3).size == (1836, 2376)
+    assert page_backend.get_page_image(scale=300 / 72).size == (2550, 3300)
+    assert next(page_backend.get_bitmap_rects()).as_tuple() == pytest.approx(
+        (0, 0, 612, 792)
+    )
+    assert next(page_backend.get_bitmap_rects(scale=3)).as_tuple() == pytest.approx(
+        (0, 0, 1836, 2376)
+    )
+
+
+def test_tiff_centimeter_resolution_is_converted_to_dpi():
+    tiff_info = TiffImagePlugin.ImageFileDirectory_v2()
+    tiff_info[TiffImagePlugin.X_RESOLUTION] = 100
+    tiff_info[TiffImagePlugin.Y_RESOLUTION] = 50
+    tiff_info[TiffImagePlugin.RESOLUTION_UNIT] = "cm"
+    buf = BytesIO()
+    Image.new("RGB", (254, 127)).save(buf, format="TIFF", tiffinfo=tiff_info)
+    buf.seek(0)
+
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name="test.tiff", stream=buf)
+    ).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == pytest.approx((72, 72))
+
+
+@pytest.mark.parametrize(
+    ("image_format", "suffix"),
+    [("PNG", "png"), ("JPEG", "jpg"), ("BMP", "bmp")],
+)
+def test_image_dpi_is_applied_independently_per_axis(image_format, suffix):
+    buf = BytesIO()
+    Image.new("RGB", (300, 150)).save(buf, format=image_format, dpi=(300, 150))
+    buf.seek(0)
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name=f"test.{suffix}", stream=buf)
+    ).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == pytest.approx((72, 72), abs=0.01)
+    assert page_backend.get_page_image(scale=2).size == (144, 144)
 
 
 def test_crop_page_image():
@@ -158,6 +232,31 @@ def test_crop_page_image_scaled():
     img = page_backend.get_page_image(scale=scale, cropbox=cropbox)
     assert img.width == round(100 * scale)  # cropped width * scale
     assert img.height == round(90 * scale)  # cropped height * scale
+
+
+def test_crop_uses_logical_coordinates_for_high_dpi_image():
+    image = Image.new("RGB", (300, 300), "red")
+    image.paste("blue", (75, 75, 225, 225))
+    buf = BytesIO()
+    image.save(buf, format="PNG", dpi=(300, 300))
+    buf.seek(0)
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name="test.png", stream=buf)
+    ).load_page(0)
+
+    crop = page_backend.get_page_image(
+        scale=2,
+        cropbox=BoundingBox(
+            l=18,
+            t=18,
+            r=54,
+            b=54,
+            coord_origin=CoordOrigin.TOPLEFT,
+        ),
+    )
+
+    assert crop.size == (72, 72)
+    assert crop.getpixel((36, 36)) == (0, 0, 255)
 
 
 def test_get_bitmap_rects():
@@ -222,6 +321,19 @@ def test_multipage_access():
         assert size.height == 64
 
 
+def test_invalid_explicit_dpi_rejects_document():
+    stream = _make_png_stream(dpi=(0, 300))
+    in_doc = InputDocument(
+        path_or_stream=stream.stream,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        filename=stream.name,
+    )
+
+    assert in_doc.valid is False
+    assert isinstance(get_input_rejection_cause(in_doc), DocumentLoadError)
+
+
 def test_source_image_is_closed_after_backend_init(tmp_path, monkeypatch):
     image_path = tmp_path / "test.png"
     Image.new("RGB", (32, 32), (10, 20, 30)).save(image_path)
@@ -284,5 +396,6 @@ def test_unload_closes_cached_frames():
     doc_backend.unload()
 
     assert doc_backend._frames == []
+    assert doc_backend._frame_dpi == []
     for closer in tracked_closers:
         closer.assert_called_once()

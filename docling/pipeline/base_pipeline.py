@@ -17,6 +17,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
 from docling.datamodel.chart_extraction_options import (
@@ -33,10 +34,6 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.models.stages.chart_extraction.granite_vision import (
-    ChartExtractionModelGraniteVision,
-    ChartExtractionModelGraniteVisionV4,
-)
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
 )
@@ -80,6 +77,10 @@ class BasePipeline(ABC):
                 # From this stage, all operations should rely only on conv_res.output
                 conv_res = self._enrich_document(conv_res)
                 conv_res.status = self._determine_status(conv_res)
+                # A document that completed but recorded errors is not a clean
+                # success: never report SUCCESS while conv_res.errors is non-empty.
+                if conv_res.status == ConversionStatus.SUCCESS and conv_res.errors:
+                    conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
             if not raises_on_error:
@@ -180,28 +181,39 @@ class ConvertPipeline(BasePipeline):
             ),
             # Document Picture description
             picture_description_model,
-            # Document Chart Extraction
-            ChartExtractionModelGraniteVision(
-                enabled=(
-                    pipeline_options.do_chart_extraction
-                    and pipeline_options.chart_extraction_options.model
-                    == ChartExtractionModelKind.GRANITE_VISION
-                ),
-                artifacts_path=self.artifacts_path,
-                options=pipeline_options.chart_extraction_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
-            ChartExtractionModelGraniteVisionV4(
-                enabled=(
-                    pipeline_options.do_chart_extraction
-                    and pipeline_options.chart_extraction_options.model
-                    == ChartExtractionModelKind.GRANITE_VISION_V4
-                ),
-                artifacts_path=self.artifacts_path,
-                options=pipeline_options.chart_extraction_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
         ]
+
+        # Lazily import torch-backed chart extraction only when enabled so
+        # docling-slim / ONNX-only installs can import DocumentConverter without
+        # pulling torch+transformers.
+        if pipeline_options.do_chart_extraction:
+            from docling.models.stages.chart_extraction.granite_vision import (
+                ChartExtractionModelGraniteVision,
+                ChartExtractionModelGraniteVisionV4,
+            )
+
+            self.enrichment_pipe.extend(
+                [
+                    ChartExtractionModelGraniteVision(
+                        enabled=(
+                            pipeline_options.chart_extraction_options.model
+                            == ChartExtractionModelKind.GRANITE_VISION
+                        ),
+                        artifacts_path=self.artifacts_path,
+                        options=pipeline_options.chart_extraction_options,
+                        accelerator_options=pipeline_options.accelerator_options,
+                    ),
+                    ChartExtractionModelGraniteVisionV4(
+                        enabled=(
+                            pipeline_options.chart_extraction_options.model
+                            == ChartExtractionModelKind.GRANITE_VISION_V4
+                        ),
+                        artifacts_path=self.artifacts_path,
+                        options=pipeline_options.chart_extraction_options,
+                        accelerator_options=pipeline_options.accelerator_options,
+                    ),
+                ]
+            )
 
     def _get_picture_description_model(
         self, artifacts_path: Optional[Path] = None
@@ -290,9 +302,20 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         self.pipeline_options.document_timeout is not None
                         and total_elapsed_time > self.pipeline_options.document_timeout
                     ):
-                        _log.warning(
-                            f"Document processing time ({total_elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                        timeout_msg = (
+                            f"Document processing timeout: exceeded {self.pipeline_options.document_timeout:.3f}s limit "
+                            f"after {total_elapsed_time:.3f}s. Processed {total_pages_processed}/{len(conv_res.pages)} pages."
                         )
+                        _log.warning(timeout_msg)
+
+                        # Add structured timeout error
+                        timeout_error = ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name="base_pipeline",
+                            error_message=timeout_msg,
+                            category=FailureCategory.TIMEOUT,
+                        )
+                        conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
                     total_pages_processed += len(page_batch)
@@ -348,7 +371,9 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     ErrorItem(
                         component_type=DoclingComponentType.DOCUMENT_BACKEND,
                         module_name=type(page._backend).__name__,
-                        error_message=f"Page {page.page_no} failed to parse.",
+                        error_message="Page failed to parse.",
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS

@@ -354,7 +354,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         assert page._backend is not None
         assert page.size is not None
 
-        image = page._backend.get_page_image()
+        image = page._backend.get_page_image(scale=1.0)
 
         scale_x = image.width / page.size.width
         scale_y = image.height / page.size.height

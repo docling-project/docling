@@ -49,6 +49,7 @@ The currently supported connectors are:
 - HTTP endpoints
 - S3
 - Google Drive
+- Google Cloud Storage
 
 ### Google Drive
 
@@ -84,3 +85,43 @@ Step 5: Authenticate via CLI.
 
 - Run the CLI with your configuration file.
 - A browser window will open for authentication and gerate a token file that will be save on the configured `token_path` and reused for next runs.
+
+### Google Cloud Storage
+
+To use Google Drive as a source or target, you need to enable the API and set up credentials.
+
+Step 1: Enable the [Google Cloud Storage API](https://console.cloud.google.com/apis/enableflow?apiid=storage.com).
+
+- Go to the Google [Cloud Console](https://console.cloud.google.com/).
+- Search for “Google Storage API” and enable it.
+
+Step 2: Create a bucket.
+
+- Go to Cloud Storage > Buckets > "+ Create".
+- Give it a name and create it. This is your `bucket` value in the configuration file
+
+Step 3: Create a service account.
+
+- Go to IAM & Admin > Service Accounts.
+- Click "+ Create service account" and create it.
+- Grant it a role with bucket access: "Storage Object Admin" for source and target use ("Storage Object Viewer" for read-only sources, "Storage Object Creator" for write-only targets)
+
+Step 4: Create a service account key.
+
+- Open the service account > Keys tab.
+- Click “Add key” > “Create new key” > select "JSON".
+- Download the credentials JSON.
+
+Step 5: Edit configuration file.
+
+- Copy the fields from the downloaded JSON into the service_account_key block of your source or target (`project_id`, `private_key_id`, `private_key`, `client_email`, `client_id`, and the `*_uri` / `*_cert_url` fields).
+- Edit `bucket` with your bucket name.
+- Edit `key_prefix` with your source or target location within the bucket. It is an object-name prefix, obtained from the object path as follows:
+  - Folder: `gs://my-docling-bucket/source/` > prefix is `source/`.
+  - File: `gs://my-docling-bucket/target/output/` > prefix is target/output/.
+- Edit project (optional) with your GCP `project ID` for billing / ADC.
+
+Step 6: Run the CLI.
+
+- Run the CLI with your configuration file.
+- If you omit service_account_key, it falls back to Application Default Credentials, e.g. gcloud auth application-default login or Workload Identity on GKE/Cloud Run.

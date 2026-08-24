@@ -7,14 +7,6 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexGroupNode,
-    LatexMacroNode,
-    LatexMathNode,
-    LatexWalker,
-)
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -28,6 +20,27 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+_PYLATEXENC_AVAILABLE: bool = False
+_PYLATEXENC_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexGroupNode,
+        LatexMacroNode,
+        LatexMathNode,
+        LatexWalker,
+    )
+
+    _PYLATEXENC_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _PYLATEXENC_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'pylatexenc' package is required to process LaTeX files. "
+    "Install it with `pip install 'docling-slim[format-latex]'`."
+)
 
 if TYPE_CHECKING:
     import concurrent.futures
@@ -49,6 +62,8 @@ class LatexDocumentBackend(
         path_or_stream: Union[BytesIO, Path],
         options: Optional[LatexBackendOptions] = None,
     ):
+        if not _PYLATEXENC_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _PYLATEXENC_IMPORT_ERROR
         if options is None:
             options = LatexBackendOptions()
         super().__init__(in_doc, path_or_stream, options)

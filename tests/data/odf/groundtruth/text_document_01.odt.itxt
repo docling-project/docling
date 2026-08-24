@@ -1,0 +1,36 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Title
+  item-2 at level 1: section_header: Subtitle
+  item-3 at level 1: section_header: heading level 1.0
+  item-4 at level 1: text: Lorem Ipsum is simply dummy text ... ting, remaining essentially unchanged.
+  item-5 at level 1: section_header: Heading level 2: A
+  item-6 at level 1: text: Contrary to popular belief, Lore ... and Evil) by Cicero, written in 45 BC.
+  item-7 at level 1: list: group list
+    item-8 at level 2: list_item: numbered list 1
+    item-9 at level 2: list_item: numbered list 2
+      item-10 at level 3: list: group list
+        item-11 at level 4: list_item: bullet list 2.1
+        item-12 at level 4: list_item: bullet list 2.2
+          item-13 at level 5: list: group list
+            item-14 at level 6: list_item: bullet list 2.2.1
+        item-15 at level 4: list_item: bullet list 2.3
+    item-16 at level 2: list_item: numbered list 3
+      item-17 at level 3: list: group list
+        item-18 at level 4: list_item: bullet list 3.0.1
+  item-19 at level 1: section_header: Heading level 2: B
+  item-20 at level 1: inline: group group
+    item-21 at level 2: text: Contrary to popular belief, 
+    item-22 at level 2: text: Lorem Ipsum is not simply random text
+    item-23 at level 2: text: . Richard McClintock, 
+    item-24 at level 2: text: a Latin professor at Hampden-Sydney College in Virginia
+    item-25 at level 2: text: , looked up one of the more obsc ... sectetur, from a Lorem Ipsum passage, 
+    item-26 at level 2: text: and going through the cites of the word in classical literature
+    item-27 at level 2: text: , discovered the undoubtable sou ... 3 of "de Finibus Bonorum et Malorum" (
+    item-28 at level 2: text: The Extremes of Good and Evil
+    item-29 at level 2: text: ) by Cicero, written in 45 BC.
+  item-30 at level 1: inline: group group
+    item-31 at level 2: text: X
+    item-32 at level 2: text: 2
+    item-33 at level 2: text:  + Y
+    item-34 at level 2: text: 2
+    item-35 at level 2: text:  = Z

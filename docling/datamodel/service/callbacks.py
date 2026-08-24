@@ -28,13 +28,10 @@ class ProgressSetNumDocs(BaseProgress):
     num_docs: int
 
 
-class SucceededDocsItem(BaseModel):
+class ProcessedDocsItem(BaseModel):
     source: str
-
-
-class FailedDocsItem(BaseModel):
-    source: str
-    error: str
+    status: ConversionStatus
+    error: str | None = None
 
 
 class ProgressUpdateProcessed(BaseProgress):
@@ -42,10 +39,10 @@ class ProgressUpdateProcessed(BaseProgress):
 
     num_processed: int
     num_succeeded: int
+    num_partially_succeeded: int
     num_failed: int
 
-    docs_succeeded: list[SucceededDocsItem]
-    docs_failed: list[FailedDocsItem]
+    docs: list[ProcessedDocsItem]
 
 
 class DocumentCompletedItem(BaseModel):

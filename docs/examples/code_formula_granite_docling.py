@@ -1,9 +1,11 @@
-"""Example: Comparing CodeFormula models for code and formula extraction.
+# %% [markdown]
+# Example: Comparing CodeFormula models for code and formula extraction.
 
-This example demonstrates how to use both the CodeFormulaV2 model
-and the Granite Docling model for extracting code blocks and mathematical
-formulas from PDF documents, allowing you to compare their outputs.
-"""
+# This example demonstrates how to use both the CodeFormulaV2 model
+# and the Granite Docling model for extracting code blocks and mathematical
+# formulas from PDF documents, allowing you to compare their outputs.
+
+# %%
 
 from pathlib import Path
 
@@ -86,7 +88,7 @@ def extract_with_preset(preset_name: str, input_doc: Path):
 
 def main():
     """Main function to compare both presets."""
-    input_doc = Path("tests/data/pdf/code_and_formula.pdf")
+    input_doc = Path("tests/data/pdf/sources/code_and_formula.pdf")
 
     if not input_doc.exists():
         print(f"Error: Input file not found: {input_doc}")

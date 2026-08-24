@@ -33,7 +33,7 @@ pytestmark = pytest.mark.ml_asr
 
 @pytest.fixture
 def test_audio_path():
-    return Path("./tests/data/audio/sample_10s.mp3")
+    return Path("./tests/data/audio/sources/sample_10s.mp3")
 
 
 def get_asr_converter():
@@ -83,7 +83,7 @@ def test_asr_pipeline_conversion(test_audio_path):
 @pytest.fixture
 def silent_audio_path():
     """Fixture to provide the path to a silent audio file."""
-    path = Path("./tests/data/audio/silent_1s.wav")
+    path = Path("./tests/data/audio/sources/silent_1s.wav")
     if not path.exists():
         pytest.skip("Silent audio file for testing not found at " + str(path))
     return path
@@ -113,7 +113,7 @@ def test_has_text_and_determine_status_helpers():
     pipeline = AsrPipeline(pipeline_options)
 
     # Create an empty ConversionResult with proper InputDocument
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/sources/sample_10s.mp3")
 
     input_doc = InputDocument(
         path_or_stream=doc_path,
@@ -150,7 +150,7 @@ def test_is_backend_supported_noop_backend():
         pass
 
     # Create a proper NoOpBackend instance
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/sources/sample_10s.mp3")
     input_doc = InputDocument(
         path_or_stream=doc_path,
         format=InputFormat.AUDIO,
@@ -197,12 +197,43 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
     )
     with patch.dict("sys.modules", {"mlx_whisper": Mock()}):
         mm = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts_m
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts_m
         )
         mm.mlx_whisper = Mock()
         mm.mlx_whisper.transcribe.return_value = {"segments": []}
         mm.transcribe(tmp_path / "b.wav")
         mm.mlx_whisper.transcribe.assert_called()
+
+
+def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
+    """Native Whisper forwards decoding options to whisper.transcribe."""
+    from docling.pipeline.asr_pipeline import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(
+        repo_id="tiny",
+        word_timestamps=False,
+        beam_size=3,
+        condition_on_previous_text=False,
+    )
+
+    with patch.dict("sys.modules", {"whisper": Mock()}):
+        model = _NativeWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            asr_options=opts,
+        )
+
+    model.model = Mock()
+    model.model.transcribe.return_value = {"segments": []}
+
+    model.transcribe(tmp_path / "sample.wav")
+
+    model.model.transcribe.assert_called_once()
+    call_kwargs = model.model.transcribe.call_args.kwargs
+
+    assert call_kwargs["beam_size"] == 3
+    assert call_kwargs["condition_on_previous_text"] is False
 
 
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
@@ -227,6 +258,27 @@ def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
     # swap real model for mock to avoid actual load
     model.model = Mock()
     assert model.enabled is True
+
+
+def test_native_distil_artifacts_path_missing_checkpoint_raises(tmp_path):
+    """artifacts_path set but checkpoint absent must fail loudly, not download."""
+    from docling.pipeline.asr_transcriber import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(
+        repo_id="distil-small.en",
+        inference_framework=InferenceAsrFramework.WHISPER,
+        verbose=False,
+        timestamps=False,
+        word_timestamps=False,
+        temperature=0.0,
+        max_new_tokens=1,
+        max_time_chunk=1.0,
+        language="en",
+    )
+    with pytest.raises(FileNotFoundError, match="does not contain"):
+        _NativeWhisperModel(
+            True, tmp_path, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
+        )
 
 
 def test_native_run_success_with_bytesio_builds_document(tmp_path):
@@ -387,7 +439,7 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
         model = _MlxWhisperModel(
             enabled=True,
             artifacts_path=None,
-            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.MPS),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
             asr_options=options,
         )
 
@@ -400,6 +452,88 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
     assert "FFmpeg is required" in out.errors[0].error_message
     assert "PATH" in out.errors[0].error_message
     mlx_whisper.transcribe.assert_not_called()
+
+
+def test_mlx_run_materializes_document_stream(monkeypatch) -> None:
+    from docling.pipeline.asr_pipeline import _MlxWhisperModel
+
+    audio_data = b"RIFF....WAVE"
+    input_doc = InputDocument(
+        path_or_stream=BytesIO(audio_data),
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+        filename="recording.ogg",
+    )
+    conv_res = ConversionResult(input=input_doc)
+    options = InlineAsrMlxWhisperOptions(
+        repo_id="mlx-community/whisper-tiny",
+        inference_framework=InferenceAsrFramework.MLX,
+        language="en",
+    )
+    model = _MlxWhisperModel(
+        enabled=False,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+        asr_options=options,
+    )
+    audio_path: Path | None = None
+
+    def transcribe(path: Path):
+        nonlocal audio_path
+        audio_path = path
+        assert path.suffix == ".ogg"
+        assert path.read_bytes() == audio_data
+        return []
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(model, "transcribe", transcribe)
+
+    out = model.run(conv_res)
+
+    assert out.status == ConversionStatus.SUCCESS
+    assert audio_path is not None
+    assert not audio_path.exists()
+
+
+def test_mlx_run_removes_document_stream_file_after_failure(monkeypatch) -> None:
+    from docling.pipeline.asr_pipeline import _MlxWhisperModel
+
+    input_doc = InputDocument(
+        path_or_stream=BytesIO(b"RIFF....WAVE"),
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+        filename="recording.wav",
+    )
+    conv_res = ConversionResult(input=input_doc)
+    options = InlineAsrMlxWhisperOptions(
+        repo_id="mlx-community/whisper-tiny",
+        inference_framework=InferenceAsrFramework.MLX,
+        language="en",
+    )
+    model = _MlxWhisperModel(
+        enabled=False,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+        asr_options=options,
+    )
+    audio_path: Path | None = None
+    existed_during_transcription = False
+
+    def transcribe(path: Path):
+        nonlocal audio_path, existed_during_transcription
+        audio_path = path
+        existed_during_transcription = path.exists()
+        raise RuntimeError("transcription failed")
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(model, "transcribe", transcribe)
+
+    out = model.run(conv_res)
+
+    assert out.status == ConversionStatus.FAILURE
+    assert existed_during_transcription
+    assert audio_path is not None
+    assert not audio_path.exists()
 
 
 def test_mlx_run_success_and_failure(tmp_path):
@@ -421,7 +555,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
         model.mlx_whisper.transcribe.return_value = {
@@ -444,7 +578,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model2 = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts2
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts2
         )
         model2.mlx_whisper = Mock()
         model2.mlx_whisper.transcribe.side_effect = RuntimeError("fail")
@@ -523,7 +657,7 @@ def test_mlx_whisper_handles_zero_duration_timestamps(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
 
@@ -594,3 +728,51 @@ def test_native_whisper_skips_empty_zero_duration(tmp_path):
         assert len(out.document.texts) == 2
         assert out.document.texts[0].text == "valid segment"
         assert out.document.texts[1].text == "another valid"
+
+
+def test_whisper_language_defaults_to_auto_detect():
+    """Regression for #3892.
+
+    The native and MLX Whisper options defaulted ``language`` to ``"en"``, and
+    every MLX preset pinned ``language="en"`` on top of that, so transcribing
+    non-English audio with the stock presets forced English decoding instead of
+    openai-whisper's own auto-detection (which is what ``language=None``
+    selects). English-only ``.en`` checkpoints are unaffected: whisper forces
+    ``"en"`` for non-multilingual models when no language is given.
+    """
+    assert (
+        InlineAsrNativeWhisperOptions(
+            repo_id="tiny",
+            inference_framework=InferenceAsrFramework.WHISPER,
+        ).language
+        is None
+    )
+    assert (
+        InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-tiny-mlx",
+            inference_framework=InferenceAsrFramework.MLX,
+        ).language
+        is None
+    )
+
+    for preset in (
+        asr_model_specs.WHISPER_TINY,
+        asr_model_specs.WHISPER_SMALL,
+        asr_model_specs.WHISPER_MEDIUM,
+        asr_model_specs.WHISPER_BASE,
+        asr_model_specs.WHISPER_LARGE,
+        asr_model_specs.WHISPER_TURBO,
+        asr_model_specs.WHISPER_TINY_MLX,
+        asr_model_specs.WHISPER_SMALL_MLX,
+        asr_model_specs.WHISPER_MEDIUM_MLX,
+        asr_model_specs.WHISPER_BASE_MLX,
+        asr_model_specs.WHISPER_LARGE_MLX,
+        asr_model_specs.WHISPER_TURBO_MLX,
+        asr_model_specs.WHISPER_TINY_NATIVE,
+        asr_model_specs.WHISPER_LARGE_NATIVE,
+    ):
+        assert preset.language is None, preset.repo_id
+
+    # WhisperS2T is deliberately untouched: its English-only repos are
+    # validated against ``language == "en"``.
+    assert asr_model_specs.WHISPER_TINY_S2T.language == "en"

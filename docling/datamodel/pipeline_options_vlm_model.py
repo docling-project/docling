@@ -103,9 +103,12 @@ class ResponseFormat(str, Enum):
     DOCLANG = "doclang"
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
+    UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
+    CHANDRA_HTML = "chandra_html"
+    DOTS_JSON = "dots_json"
 
 
 class InferenceFramework(str, Enum):

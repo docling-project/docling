@@ -6,6 +6,7 @@ from typing import Optional, Type, Union
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
     PictureDescriptionApiOptions,
     PictureDescriptionBaseOptions,
@@ -47,20 +48,21 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                     "pipeline_options.enable_remote_services=True."
                 )
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
         def _api_request(image):
-            page_tags, _, _ = api_image_request(
+            return api_image_request(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
                 timeout=self.options.timeout,
                 headers=self.options.headers,
+                usage_response_key=self.options.usage_response_key,
                 **self.options.params,
             )
-
-            return page_tags
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_api_request, images)

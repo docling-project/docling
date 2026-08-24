@@ -10,9 +10,14 @@ from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import KserveV2OcrOptions, PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    KserveV2OcrOptions,
+    OcrMode,
+    PdfPipelineOptions,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+from .groundtruth_paths import get_ocr_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -41,7 +46,7 @@ KSERVE_OCR_LANGUAGES = [
     ),
 )
 def test_kserve_v2_ocr_conversion() -> None:
-    input_path = Path("tests/data_scanned/ocr_test.pdf")
+    input_path = Path("tests/data/ocr/sources/ocr_test.pdf")
 
     for transport in KSERVE_OCR_TRANSPORTS:
         url = os.environ[KSERVE_OCR_URL_ENVS[transport]]
@@ -69,10 +74,13 @@ def test_kserve_v2_ocr_conversion() -> None:
             doc_result: ConversionResult = converter.convert(input_path)
 
             verify_conversion_result_v2(
-                input_path=input_path,
+                gt=get_ocr_groundtruth_paths(
+                    input_path,
+                    engine=pipeline_options.ocr_options.kind,
+                    mode=OcrMode.FULL_PAGE,
+                ),
                 doc_result=doc_result,
                 generate=GEN_TEST_DATA,
-                ocr_engine="kserve_v2_ocr",
                 fuzzy=True,
             )
 
