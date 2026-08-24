@@ -72,8 +72,15 @@ class PagePreprocessingModel(BasePageModel):
     def _parse_page_cells(self, conv_res: ConversionResult, page: Page) -> Page:
         assert page._backend is not None
 
-        page.parsed_page = page._backend.get_segmented_page()
-        assert page.parsed_page is not None
+        segmented_page = page._backend.get_segmented_page()
+        assert segmented_page is not None
+
+        visible_text_cells = page._backend.get_visible_text_cells()
+        page.parsed_page = (
+            segmented_page.model_copy(update={"textline_cells": visible_text_cells})
+            if visible_text_cells is not None
+            else segmented_page
+        )
 
         # Rate the text quality from the PDF parser, and aggregate on page
         text_scores = []
