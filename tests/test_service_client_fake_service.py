@@ -199,15 +199,25 @@ def test_unknown_task_poll_raises_task_not_found(client, service):
         client.convert(SOURCE)
 
 
-def test_server_error_on_submit_raises_a_service_error(client, service):
+def test_server_error_on_submit_raises_a_service_error(service):
     service.add_route(
         "POST",
         r"/v1/convert/source/async",
         lambda request, match: Response(status=500, body={"detail": "boom"}),
     )
 
-    with pytest.raises(ServiceError):
-        client.convert(SOURCE)
+    # retries=0: this asserts the error surfaces, not that it is retried, and
+    # the default three retries would spend 7s in exponential backoff first.
+    # Retry behaviour has its own tests below.
+    with DoclingServiceClient(
+        url=service.base_url,
+        status_watcher=StatusWatcherKind.POLLING,
+        poll_server_wait=0.01,
+        poll_client_interval=0.01,
+        http_retries=0,
+    ) as remote:
+        with pytest.raises(ServiceError):
+            remote.convert(SOURCE)
 
 
 def test_unreachable_service_raises_service_unavailable(service):
@@ -405,7 +415,10 @@ async def test_async_client_surfaces_submit_errors(async_client_kwargs, service)
         lambda request, match: Response(status=500, body={"detail": "boom"}),
     )
 
-    async with AsyncDoclingServiceClient(**async_client_kwargs) as remote:
+    # See the sync counterpart: retries=0 keeps this off the 7s backoff path.
+    async with AsyncDoclingServiceClient(
+        **{**async_client_kwargs, "http_retries": 0}
+    ) as remote:
         with pytest.raises(ServiceError):
             await remote.submit(SOURCE, target=InBodyTarget())
 
