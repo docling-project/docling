@@ -33,7 +33,7 @@
         "$ref": "#/pictures/1"
       },
       {
-        "$ref": "#/texts/3"
+        "$ref": "#/texts/4"
       },
       {
         "$ref": "#/pictures/2"
@@ -79,13 +79,38 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "This is an example caption for the image.",
-      "text": "This is an example caption for the image."
+      "orig": "Image with Caption",
+      "text": "Image with Caption"
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
+        "$ref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "This is an example caption for the image.",
+      "text": "This is an example caption for the image."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
         "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image with Caption",
+      "text": "Image with Caption",
+      "hyperlink": "https://www.example.com/"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/pictures/2"
       },
       "children": [],
       "content_layer": "body",
@@ -120,7 +145,11 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/3"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [],
@@ -138,13 +167,17 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/5"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/4"
         }
       ],
       "references": [],
