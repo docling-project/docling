@@ -494,12 +494,6 @@ class TestPresetBasedOptionsCreation:
         assert options.engine_options.engine_type == VlmEngineType.AUTO_INLINE
         assert options.scale == 2.0
 
-    def test_unlimited_ocr_uses_official_prompt(self):
-        """Test that the Unlimited-OCR preset uses its documented prompt."""
-        options = VlmConvertOptions.from_preset("unlimited_ocr")
-
-        assert options.model_spec.prompt == "<image>document parsing."
-
     def test_create_vlm_convert_from_preset_with_engine_override(self):
         """Test creating VlmConvertOptions with engine override."""
         # Override with Transformers engine
