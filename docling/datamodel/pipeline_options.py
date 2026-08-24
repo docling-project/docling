@@ -1621,6 +1621,16 @@ class BaseLayoutPostprocessorOptions(BaseOptions):
             )
         ),
     ] = True
+    remove_pictures_coinciding_with_tables: Annotated[
+        bool,
+        Field(
+            description=(
+                "Remove a PICTURE cluster whose bbox nearly coincides with a TABLE cluster, keeping only the "
+                "structured TABLE. When False both are kept, so consumers that use the rendered picture crop as a "
+                "fallback for imperfect table extraction still receive it."
+            )
+        ),
+    ] = True
 
 
 class LayoutPostprocessorOptions(BaseLayoutPostprocessorOptions):
