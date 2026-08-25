@@ -7917,10 +7917,10 @@
         "table_cells": [
           {
             "bbox": {
-              "l": 136.05,
-              "t": 132.29,
+              "l": 135.24,
+              "t": 131.2,
               "r": 502.91,
-              "b": 143.63,
+              "b": 141.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -7937,10 +7937,10 @@
           },
           {
             "bbox": {
-              "l": 534.03,
-              "t": 132.82,
-              "r": 547.01,
-              "b": 143.66,
+              "l": 535.77,
+              "t": 130.19,
+              "r": 546.12,
+              "b": 140.08,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -7957,8 +7957,8 @@
           },
           {
             "bbox": {
-              "l": 136.07,
-              "t": 142.42,
+              "l": 136.03,
+              "t": 142.09,
               "r": 502.87,
               "b": 154.34,
               "coord_origin": "TOPLEFT"
@@ -7977,10 +7977,10 @@
           },
           {
             "bbox": {
-              "l": 533.78,
-              "t": 144.42,
-              "r": 547.3,
-              "b": 155.25,
+              "l": 533.06,
+              "t": 143.56,
+              "r": 545.93,
+              "b": 153.41,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -7997,10 +7997,10 @@
           },
           {
             "bbox": {
-              "l": 135.9,
-              "t": 165.74,
+              "l": 137.28,
+              "t": 165.96,
               "r": 502.94,
-              "b": 176.84,
+              "b": 177.2,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8017,10 +8017,10 @@
           },
           {
             "bbox": {
-              "l": 535.38,
-              "t": 166.18,
-              "r": 546.75,
-              "b": 177.54,
+              "l": 533.94,
+              "t": 166.52,
+              "r": 544.65,
+              "b": 177.18,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8037,10 +8037,10 @@
           },
           {
             "bbox": {
-              "l": 136.03,
-              "t": 188.87,
+              "l": 136.53,
+              "t": 188.25,
               "r": 502.91,
-              "b": 200.09,
+              "b": 199.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8057,10 +8057,10 @@
           },
           {
             "bbox": {
-              "l": 536.19,
-              "t": 188.66,
-              "r": 546.49,
-              "b": 199.24,
+              "l": 533.46,
+              "t": 188.41,
+              "r": 545.42,
+              "b": 199.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8077,8 +8077,8 @@
           },
           {
             "bbox": {
-              "l": 135.94,
-              "t": 200.47,
+              "l": 136.2,
+              "t": 200.4,
               "r": 502.89,
               "b": 211.82,
               "coord_origin": "TOPLEFT"
@@ -8097,10 +8097,10 @@
           },
           {
             "bbox": {
-              "l": 533.46,
-              "t": 200.35,
-              "r": 546.77,
-              "b": 211.82,
+              "l": 536.1,
+              "t": 201.11,
+              "r": 545.71,
+              "b": 211.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8117,8 +8117,8 @@
           },
           {
             "bbox": {
-              "l": 135.88,
-              "t": 213.44,
+              "l": 137.09,
+              "t": 213.4,
               "r": 502.91,
               "b": 224.36,
               "coord_origin": "TOPLEFT"
@@ -8137,10 +8137,10 @@
           },
           {
             "bbox": {
-              "l": 533.41,
-              "t": 213.87,
-              "r": 546.91,
-              "b": 224.34,
+              "l": 534.29,
+              "t": 213.53,
+              "r": 545.98,
+              "b": 223.98,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8157,8 +8157,8 @@
           },
           {
             "bbox": {
-              "l": 135.4,
-              "t": 225.85,
+              "l": 135.34,
+              "t": 226.24,
               "r": 502.89,
               "b": 236.84,
               "coord_origin": "TOPLEFT"
@@ -8177,10 +8177,10 @@
           },
           {
             "bbox": {
-              "l": 534.7,
-              "t": 225.96,
-              "r": 546.71,
-              "b": 236.43,
+              "l": 534.52,
+              "t": 226.15,
+              "r": 545.81,
+              "b": 236.56,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8197,10 +8197,10 @@
           },
           {
             "bbox": {
-              "l": 134.97,
-              "t": 239.15,
+              "l": 136.16,
+              "t": 238.76,
               "r": 502.88,
-              "b": 249.64,
+              "b": 249.4,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8217,10 +8217,10 @@
           },
           {
             "bbox": {
-              "l": 533.39,
-              "t": 239.38,
-              "r": 546.7,
-              "b": 249.89,
+              "l": 533.94,
+              "t": 239.29,
+              "r": 545.64,
+              "b": 249.71,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8237,8 +8237,8 @@
           },
           {
             "bbox": {
-              "l": 133.12,
-              "t": 261.1,
+              "l": 136.16,
+              "t": 261.03,
               "r": 502.92,
               "b": 271.82,
               "coord_origin": "TOPLEFT"
@@ -8258,8 +8258,8 @@
           {
             "bbox": {
               "l": 533.45,
-              "t": 260.24,
-              "r": 546.88,
+              "t": 260.65,
+              "r": 545.76,
               "b": 271.82,
               "coord_origin": "TOPLEFT"
             },
@@ -8277,8 +8277,8 @@
           },
           {
             "bbox": {
-              "l": 135.4,
-              "t": 273.2,
+              "l": 135.57,
+              "t": 272.94,
               "r": 502.91,
               "b": 283.82,
               "coord_origin": "TOPLEFT"
@@ -8298,8 +8298,8 @@
           {
             "bbox": {
               "l": 533.45,
-              "t": 272.66,
-              "r": 547.15,
+              "t": 272.92,
+              "r": 546.15,
               "b": 283.82,
               "coord_origin": "TOPLEFT"
             },
@@ -8317,10 +8317,10 @@
           },
           {
             "bbox": {
-              "l": 135.5,
-              "t": 286.32,
+              "l": 137.91,
+              "t": 286.02,
               "r": 502.91,
-              "b": 296.61,
+              "b": 296.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8338,9 +8338,9 @@
           {
             "bbox": {
               "l": 533.44,
-              "t": 285.62,
-              "r": 547.23,
-              "b": 296.36,
+              "t": 285.77,
+              "r": 546.33,
+              "b": 296.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8357,8 +8357,8 @@
           },
           {
             "bbox": {
-              "l": 135.48,
-              "t": 298.24,
+              "l": 140.47,
+              "t": 297.95,
               "r": 502.88,
               "b": 308.84,
               "coord_origin": "TOPLEFT"
@@ -8378,9 +8378,9 @@
           {
             "bbox": {
               "l": 533.41,
-              "t": 297.93,
-              "r": 547.39,
-              "b": 308.84,
+              "t": 298.41,
+              "r": 546.33,
+              "b": 309.09,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8397,10 +8397,10 @@
           },
           {
             "bbox": {
-              "l": 149.48,
-              "t": 311.28,
+              "l": 152.97,
+              "t": 311.52,
               "r": 502.86,
-              "b": 321.76,
+              "b": 322.06,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8418,9 +8418,9 @@
           {
             "bbox": {
               "l": 533.4,
-              "t": 309.97,
-              "r": 547.46,
-              "b": 321.32,
+              "t": 311.05,
+              "r": 546.26,
+              "b": 321.71,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8437,10 +8437,10 @@
           },
           {
             "bbox": {
-              "l": 145.36,
-              "t": 324.42,
+              "l": 158.55,
+              "t": 324.25,
               "r": 502.89,
-              "b": 334.99,
+              "b": 335.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8458,9 +8458,9 @@
           {
             "bbox": {
               "l": 533.44,
-              "t": 323.66,
-              "r": 547.67,
-              "b": 334.32,
+              "t": 324.65,
+              "r": 546.17,
+              "b": 335.59,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8477,10 +8477,10 @@
           },
           {
             "bbox": {
-              "l": 136.14,
-              "t": 345.91,
+              "l": 138.71,
+              "t": 345.76,
               "r": 502.92,
-              "b": 356.53,
+              "b": 356.58,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8498,8 +8498,8 @@
           {
             "bbox": {
               "l": 533.45,
-              "t": 344.57,
-              "r": 547.65,
+              "t": 344.69,
+              "r": 546.31,
               "b": 356.36,
               "coord_origin": "TOPLEFT"
             },
@@ -8517,8 +8517,8 @@
           },
           {
             "bbox": {
-              "l": 135.78,
-              "t": 356.39,
+              "l": 136.94,
+              "t": 356.5,
               "r": 502.89,
               "b": 368.36,
               "coord_origin": "TOPLEFT"
@@ -8537,10 +8537,10 @@
           },
           {
             "bbox": {
-              "l": 535.67,
-              "t": 356.5,
-              "r": 547.64,
-              "b": 367.16,
+              "l": 533.46,
+              "t": 357.07,
+              "r": 546.81,
+              "b": 368.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8557,8 +8557,8 @@
           },
           {
             "bbox": {
-              "l": 150.81,
-              "t": 369.71,
+              "l": 149.97,
+              "t": 369.27,
               "r": 502.86,
               "b": 380.84,
               "coord_origin": "TOPLEFT"
@@ -8577,10 +8577,10 @@
           },
           {
             "bbox": {
-              "l": 535.61,
-              "t": 369.42,
-              "r": 547.56,
-              "b": 380.04,
+              "l": 533.41,
+              "t": 369.43,
+              "r": 546.64,
+              "b": 380.84,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8597,10 +8597,10 @@
           },
           {
             "bbox": {
-              "l": 147.06,
-              "t": 383.04,
+              "l": 151.44,
+              "t": 383.39,
               "r": 502.85,
-              "b": 393.68,
+              "b": 394.15,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8618,9 +8618,9 @@
           {
             "bbox": {
               "l": 533.4,
-              "t": 383.14,
-              "r": 547.67,
-              "b": 393.83,
+              "t": 383.65,
+              "r": 546.33,
+              "b": 394.31,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8637,10 +8637,10 @@
           },
           {
             "bbox": {
-              "l": 142.96,
-              "t": 396.04,
+              "l": 146.74,
+              "t": 395.62,
               "r": 502.9,
-              "b": 406.83,
+              "b": 406.62,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8657,10 +8657,10 @@
           },
           {
             "bbox": {
-              "l": 536.07,
+              "l": 533.44,
               "t": 395.03,
-              "r": 547.54,
-              "b": 405.81,
+              "r": 546.21,
+              "b": 405.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8677,8 +8677,8 @@
           },
           {
             "bbox": {
-              "l": 149.69,
-              "t": 407.49,
+              "l": 152.83,
+              "t": 407.06,
               "r": 502.89,
               "b": 418.34,
               "coord_origin": "TOPLEFT"
@@ -8697,10 +8697,10 @@
           },
           {
             "bbox": {
-              "l": 535.32,
-              "t": 408.33,
-              "r": 547.77,
-              "b": 419.01,
+              "l": 533.43,
+              "t": 408.81,
+              "r": 546.2,
+              "b": 419.41,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8717,8 +8717,8 @@
           },
           {
             "bbox": {
-              "l": 145.25,
-              "t": 419.54,
+              "l": 147.96,
+              "t": 419.32,
               "r": 502.86,
               "b": 430.82,
               "coord_origin": "TOPLEFT"
@@ -8737,10 +8737,10 @@
           },
           {
             "bbox": {
-              "l": 534.93,
-              "t": 420.33,
-              "r": 547.85,
-              "b": 430.98,
+              "l": 535.78,
+              "t": 421.48,
+              "r": 546.66,
+              "b": 432.03,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8757,8 +8757,8 @@
           },
           {
             "bbox": {
-              "l": 146.81,
-              "t": 432.22,
+              "l": 151.15,
+              "t": 432.15,
               "r": 502.89,
               "b": 443.36,
               "coord_origin": "TOPLEFT"
@@ -8777,10 +8777,10 @@
           },
           {
             "bbox": {
-              "l": 533.77,
-              "t": 432.57,
-              "r": 547.89,
-              "b": 443.25,
+              "l": 533.42,
+              "t": 433.0,
+              "r": 546.54,
+              "b": 443.55,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8797,10 +8797,10 @@
           },
           {
             "bbox": {
-              "l": 138.95,
-              "t": 444.15,
-              "r": 501.85,
-              "b": 454.93,
+              "l": 139.44,
+              "t": 444.37,
+              "r": 500.52,
+              "b": 455.19,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8817,10 +8817,10 @@
           },
           {
             "bbox": {
-              "l": 534.53,
-              "t": 445.73,
-              "r": 547.93,
-              "b": 456.46,
+              "l": 533.81,
+              "t": 445.56,
+              "r": 546.69,
+              "b": 456.12,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8837,8 +8837,8 @@
           },
           {
             "bbox": {
-              "l": 134.71,
-              "t": 456.71,
+              "l": 134.76,
+              "t": 456.4,
               "r": 502.91,
               "b": 468.32,
               "coord_origin": "TOPLEFT"
@@ -8857,10 +8857,10 @@
           },
           {
             "bbox": {
-              "l": 535.91,
-              "t": 457.35,
-              "r": 547.9,
-              "b": 468.03,
+              "l": 534.42,
+              "t": 457.21,
+              "r": 545.32,
+              "b": 467.74,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8877,10 +8877,10 @@
           },
           {
             "bbox": {
-              "l": 135.33,
-              "t": 480.34,
+              "l": 135.94,
+              "t": 478.66,
               "r": 502.92,
-              "b": 490.92,
+              "b": 490.82,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8897,10 +8897,10 @@
           },
           {
             "bbox": {
-              "l": 535.0,
-              "t": 480.17,
-              "r": 547.9,
-              "b": 490.96,
+              "l": 534.19,
+              "t": 478.81,
+              "r": 545.41,
+              "b": 489.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8917,10 +8917,10 @@
           },
           {
             "bbox": {
-              "l": 135.66,
-              "t": 492.66,
+              "l": 138.32,
+              "t": 491.13,
               "r": 502.88,
-              "b": 503.2,
+              "b": 502.82,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8937,10 +8937,10 @@
           },
           {
             "bbox": {
-              "l": 535.57,
-              "t": 492.59,
-              "r": 547.96,
-              "b": 503.31,
+              "l": 534.71,
+              "t": 491.48,
+              "r": 545.7,
+              "b": 501.96,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8957,10 +8957,10 @@
           },
           {
             "bbox": {
-              "l": 143.8,
-              "t": 506.14,
+              "l": 148.82,
+              "t": 503.61,
               "r": 502.87,
-              "b": 527.84,
+              "b": 515.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8969,7 +8969,7 @@
             "end_row_offset_idx": 27,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . . 3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8977,10 +8977,10 @@
           },
           {
             "bbox": {
-              "l": 535.66,
-              "t": 506.14,
-              "r": 547.95,
-              "b": 527.72,
+              "l": 534.46,
+              "t": 504.4,
+              "r": 546.1,
+              "b": 514.89,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8997,10 +8997,30 @@
           },
           {
             "bbox": {
-              "l": 535.35,
-              "t": 518.58,
-              "r": 548.0,
-              "b": 540.38,
+              "l": 152.39,
+              "t": 515.35,
+              "r": 502.83,
+              "b": 527.84,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 27,
+            "end_row_offset_idx": 28,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 534.86,
+              "t": 516.36,
+              "r": 546.02,
+              "b": 526.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9009,7 +9029,7 @@
             "end_row_offset_idx": 28,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "16 18",
+            "text": "16",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9017,30 +9037,10 @@
           },
           {
             "bbox": {
-              "l": 136.88,
-              "t": 528.9,
+              "l": 140.76,
+              "t": 531.16,
               "r": 502.87,
-              "b": 540.38,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 27,
-            "end_row_offset_idx": 28,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 143.32,
-              "t": 543.09,
-              "r": 502.88,
-              "b": 553.76,
+              "b": 548.8,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9049,7 +9049,7 @@
             "end_row_offset_idx": 29,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9057,10 +9057,10 @@
           },
           {
             "bbox": {
-              "l": 535.42,
-              "t": 542.1,
-              "r": 547.76,
-              "b": 552.86,
+              "l": 535.16,
+              "t": 531.16,
+              "r": 547.15,
+              "b": 551.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9077,10 +9077,10 @@
           },
           {
             "bbox": {
-              "l": 149.23,
-              "t": 554.28,
-              "r": 502.89,
-              "b": 565.33,
+              "l": 153.23,
+              "t": 541.81,
+              "r": 502.88,
+              "b": 552.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9089,7 +9089,7 @@
             "end_row_offset_idx": 30,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9097,10 +9097,10 @@
           },
           {
             "bbox": {
-              "l": 535.48,
-              "t": 554.29,
-              "r": 547.67,
-              "b": 565.0,
+              "l": 535.04,
+              "t": 541.94,
+              "r": 545.91,
+              "b": 552.59,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9109,7 +9109,7 @@
             "end_row_offset_idx": 30,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "19",
+            "text": "18",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9117,10 +9117,10 @@
           },
           {
             "bbox": {
-              "l": 138.61,
-              "t": 567.16,
+              "l": 135.61,
+              "t": 567.36,
               "r": 502.82,
-              "b": 578.03,
+              "b": 578.18,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9137,10 +9137,10 @@
           },
           {
             "bbox": {
-              "l": 534.22,
-              "t": 567.38,
-              "r": 547.69,
-              "b": 578.17,
+              "l": 534.68,
+              "t": 569.34,
+              "r": 545.99,
+              "b": 579.92,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9157,10 +9157,10 @@
           },
           {
             "bbox": {
-              "l": 136.14,
-              "t": 579.34,
+              "l": 134.64,
+              "t": 580.4,
               "r": 502.92,
-              "b": 590.35,
+              "b": 591.17,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9177,10 +9177,10 @@
           },
           {
             "bbox": {
-              "l": 534.16,
-              "t": 579.39,
-              "r": 547.57,
-              "b": 590.23,
+              "l": 534.35,
+              "t": 581.12,
+              "r": 546.38,
+              "b": 591.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9197,10 +9197,10 @@
           },
           {
             "bbox": {
-              "l": 138.18,
-              "t": 589.84,
+              "l": 138.91,
+              "t": 593.62,
               "r": 502.79,
-              "b": 602.83,
+              "b": 608.09,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9209,7 +9209,7 @@
             "end_row_offset_idx": 33,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . .",
+            "text": "3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9217,10 +9217,10 @@
           },
           {
             "bbox": {
-              "l": 534.64,
-              "t": 591.36,
-              "r": 547.33,
-              "b": 602.22,
+              "l": 534.05,
+              "t": 598.73,
+              "r": 546.61,
+              "b": 609.48,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9237,10 +9237,50 @@
           },
           {
             "bbox": {
-              "l": 135.85,
-              "t": 605.14,
+              "l": 139.13,
+              "t": 603.49,
+              "r": 502.93,
+              "b": 615.37,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 33,
+            "end_row_offset_idx": 34,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . .",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 534.66,
+              "t": 603.69,
+              "r": 546.17,
+              "b": 614.38,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 33,
+            "end_row_offset_idx": 34,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "22",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 150.19,
+              "t": 618.64,
               "r": 502.86,
-              "b": 627.85,
+              "b": 629.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9249,7 +9289,7 @@
             "end_row_offset_idx": 35,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . .",
+            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9257,50 +9297,10 @@
           },
           {
             "bbox": {
-              "l": 137.02,
-              "t": 604.8,
-              "r": 502.93,
-              "b": 615.59,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 33,
-            "end_row_offset_idx": 34,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 534.28,
-              "t": 603.85,
-              "r": 547.13,
-              "b": 614.71,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 33,
-            "end_row_offset_idx": 34,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "22",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 534.38,
-              "t": 608.87,
-              "r": 547.1,
-              "b": 619.7,
+              "l": 534.73,
+              "t": 616.7,
+              "r": 546.26,
+              "b": 627.29,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9317,8 +9317,8 @@
           },
           {
             "bbox": {
-              "l": 150.59,
-              "t": 628.0,
+              "l": 153.51,
+              "t": 629.06,
               "r": 502.88,
               "b": 640.33,
               "coord_origin": "TOPLEFT"
@@ -9337,10 +9337,10 @@
           },
           {
             "bbox": {
-              "l": 533.91,
-              "t": 629.15,
-              "r": 547.44,
-              "b": 639.78,
+              "l": 534.51,
+              "t": 628.79,
+              "r": 545.96,
+              "b": 639.07,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9357,8 +9357,8 @@
           },
           {
             "bbox": {
-              "l": 147.49,
-              "t": 640.81,
+              "l": 154.79,
+              "t": 640.88,
               "r": 502.86,
               "b": 652.87,
               "coord_origin": "TOPLEFT"
@@ -9377,10 +9377,10 @@
           },
           {
             "bbox": {
-              "l": 533.52,
-              "t": 642.21,
-              "r": 547.16,
-              "b": 652.92,
+              "l": 534.23,
+              "t": 642.45,
+              "r": 546.23,
+              "b": 652.76,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9397,8 +9397,8 @@
           },
           {
             "bbox": {
-              "l": 152.09,
-              "t": 653.31,
+              "l": 152.46,
+              "t": 654.0,
               "r": 502.87,
               "b": 665.35,
               "coord_origin": "TOPLEFT"
@@ -9417,10 +9417,10 @@
           },
           {
             "bbox": {
-              "l": 533.91,
-              "t": 650.39,
-              "r": 547.12,
-              "b": 661.17,
+              "l": 533.62,
+              "t": 653.8,
+              "r": 546.72,
+              "b": 664.11,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9437,28 +9437,8 @@
           },
           {
             "bbox": {
-              "l": 152.65,
-              "t": 668.17,
-              "r": 336.42,
-              "b": 678.78,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 39,
-            "end_row_offset_idx": 40,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "3.6.5 Defining and creating column",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 152.45,
-              "t": 666.76,
+              "l": 153.11,
+              "t": 666.53,
               "r": 502.88,
               "b": 677.83,
               "coord_origin": "TOPLEFT"
@@ -9469,7 +9449,7 @@
             "end_row_offset_idx": 39,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "masks . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9477,10 +9457,10 @@
           },
           {
             "bbox": {
-              "l": 534.15,
-              "t": 665.39,
-              "r": 547.01,
-              "b": 676.28,
+              "l": 534.19,
+              "t": 667.53,
+              "r": 546.47,
+              "b": 677.93,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9497,19 +9477,19 @@
           },
           {
             "bbox": {
-              "l": 151.2,
-              "t": 680.61,
+              "l": 149.58,
+              "t": 680.06,
               "r": 502.9,
-              "b": 702.85,
+              "b": 690.56,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 40,
-            "end_row_offset_idx": 41,
+            "start_row_offset_idx": 39,
+            "end_row_offset_idx": 40,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9517,10 +9497,10 @@
           },
           {
             "bbox": {
-              "l": 534.03,
-              "t": 675.59,
-              "r": 546.99,
-              "b": 686.41,
+              "l": 534.27,
+              "t": 686.29,
+              "r": 546.21,
+              "b": 696.67,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9537,10 +9517,30 @@
           },
           {
             "bbox": {
-              "l": 533.34,
-              "t": 687.24,
-              "r": 547.09,
-              "b": 697.91,
+              "l": 154.3,
+              "t": 692.14,
+              "r": 502.88,
+              "b": 702.93,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 40,
+            "end_row_offset_idx": 41,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 534.27,
+              "t": 692.83,
+              "r": 546.06,
+              "b": 703.09,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9557,10 +9557,10 @@
           },
           {
             "bbox": {
-              "l": 154.89,
-              "t": 704.12,
+              "l": 154.35,
+              "t": 705.72,
               "r": 502.83,
-              "b": 715.33,
+              "b": 716.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9577,10 +9577,10 @@
           },
           {
             "bbox": {
-              "l": 531.64,
-              "t": 703.91,
-              "r": 547.33,
-              "b": 714.91,
+              "l": 534.02,
+              "t": 706.7,
+              "r": 546.18,
+              "b": 717.74,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9603,10 +9603,10 @@
           [
             {
               "bbox": {
-                "l": 136.05,
-                "t": 132.29,
+                "l": 135.24,
+                "t": 131.2,
                 "r": 502.91,
-                "b": 143.63,
+                "b": 141.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9623,10 +9623,10 @@
             },
             {
               "bbox": {
-                "l": 534.03,
-                "t": 132.82,
-                "r": 547.01,
-                "b": 143.66,
+                "l": 535.77,
+                "t": 130.19,
+                "r": 546.12,
+                "b": 140.08,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9645,8 +9645,8 @@
           [
             {
               "bbox": {
-                "l": 136.07,
-                "t": 142.42,
+                "l": 136.03,
+                "t": 142.09,
                 "r": 502.87,
                 "b": 154.34,
                 "coord_origin": "TOPLEFT"
@@ -9665,10 +9665,10 @@
             },
             {
               "bbox": {
-                "l": 533.78,
-                "t": 144.42,
-                "r": 547.3,
-                "b": 155.25,
+                "l": 533.06,
+                "t": 143.56,
+                "r": 545.93,
+                "b": 153.41,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9687,10 +9687,10 @@
           [
             {
               "bbox": {
-                "l": 135.9,
-                "t": 165.74,
+                "l": 137.28,
+                "t": 165.96,
                 "r": 502.94,
-                "b": 176.84,
+                "b": 177.2,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9707,10 +9707,10 @@
             },
             {
               "bbox": {
-                "l": 535.38,
-                "t": 166.18,
-                "r": 546.75,
-                "b": 177.54,
+                "l": 533.94,
+                "t": 166.52,
+                "r": 544.65,
+                "b": 177.18,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9729,10 +9729,10 @@
           [
             {
               "bbox": {
-                "l": 136.03,
-                "t": 188.87,
+                "l": 136.53,
+                "t": 188.25,
                 "r": 502.91,
-                "b": 200.09,
+                "b": 199.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9749,10 +9749,10 @@
             },
             {
               "bbox": {
-                "l": 536.19,
-                "t": 188.66,
-                "r": 546.49,
-                "b": 199.24,
+                "l": 533.46,
+                "t": 188.41,
+                "r": 545.42,
+                "b": 199.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9771,8 +9771,8 @@
           [
             {
               "bbox": {
-                "l": 135.94,
-                "t": 200.47,
+                "l": 136.2,
+                "t": 200.4,
                 "r": 502.89,
                 "b": 211.82,
                 "coord_origin": "TOPLEFT"
@@ -9791,10 +9791,10 @@
             },
             {
               "bbox": {
-                "l": 533.46,
-                "t": 200.35,
-                "r": 546.77,
-                "b": 211.82,
+                "l": 536.1,
+                "t": 201.11,
+                "r": 545.71,
+                "b": 211.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9813,8 +9813,8 @@
           [
             {
               "bbox": {
-                "l": 135.88,
-                "t": 213.44,
+                "l": 137.09,
+                "t": 213.4,
                 "r": 502.91,
                 "b": 224.36,
                 "coord_origin": "TOPLEFT"
@@ -9833,10 +9833,10 @@
             },
             {
               "bbox": {
-                "l": 533.41,
-                "t": 213.87,
-                "r": 546.91,
-                "b": 224.34,
+                "l": 534.29,
+                "t": 213.53,
+                "r": 545.98,
+                "b": 223.98,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9855,8 +9855,8 @@
           [
             {
               "bbox": {
-                "l": 135.4,
-                "t": 225.85,
+                "l": 135.34,
+                "t": 226.24,
                 "r": 502.89,
                 "b": 236.84,
                 "coord_origin": "TOPLEFT"
@@ -9875,10 +9875,10 @@
             },
             {
               "bbox": {
-                "l": 534.7,
-                "t": 225.96,
-                "r": 546.71,
-                "b": 236.43,
+                "l": 534.52,
+                "t": 226.15,
+                "r": 545.81,
+                "b": 236.56,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9897,10 +9897,10 @@
           [
             {
               "bbox": {
-                "l": 134.97,
-                "t": 239.15,
+                "l": 136.16,
+                "t": 238.76,
                 "r": 502.88,
-                "b": 249.64,
+                "b": 249.4,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9917,10 +9917,10 @@
             },
             {
               "bbox": {
-                "l": 533.39,
-                "t": 239.38,
-                "r": 546.7,
-                "b": 249.89,
+                "l": 533.94,
+                "t": 239.29,
+                "r": 545.64,
+                "b": 249.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9939,8 +9939,8 @@
           [
             {
               "bbox": {
-                "l": 133.12,
-                "t": 261.1,
+                "l": 136.16,
+                "t": 261.03,
                 "r": 502.92,
                 "b": 271.82,
                 "coord_origin": "TOPLEFT"
@@ -9960,8 +9960,8 @@
             {
               "bbox": {
                 "l": 533.45,
-                "t": 260.24,
-                "r": 546.88,
+                "t": 260.65,
+                "r": 545.76,
                 "b": 271.82,
                 "coord_origin": "TOPLEFT"
               },
@@ -9981,8 +9981,8 @@
           [
             {
               "bbox": {
-                "l": 135.4,
-                "t": 273.2,
+                "l": 135.57,
+                "t": 272.94,
                 "r": 502.91,
                 "b": 283.82,
                 "coord_origin": "TOPLEFT"
@@ -10002,8 +10002,8 @@
             {
               "bbox": {
                 "l": 533.45,
-                "t": 272.66,
-                "r": 547.15,
+                "t": 272.92,
+                "r": 546.15,
                 "b": 283.82,
                 "coord_origin": "TOPLEFT"
               },
@@ -10023,10 +10023,10 @@
           [
             {
               "bbox": {
-                "l": 135.5,
-                "t": 286.32,
+                "l": 137.91,
+                "t": 286.02,
                 "r": 502.91,
-                "b": 296.61,
+                "b": 296.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10044,9 +10044,9 @@
             {
               "bbox": {
                 "l": 533.44,
-                "t": 285.62,
-                "r": 547.23,
-                "b": 296.36,
+                "t": 285.77,
+                "r": 546.33,
+                "b": 296.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10065,8 +10065,8 @@
           [
             {
               "bbox": {
-                "l": 135.48,
-                "t": 298.24,
+                "l": 140.47,
+                "t": 297.95,
                 "r": 502.88,
                 "b": 308.84,
                 "coord_origin": "TOPLEFT"
@@ -10086,9 +10086,9 @@
             {
               "bbox": {
                 "l": 533.41,
-                "t": 297.93,
-                "r": 547.39,
-                "b": 308.84,
+                "t": 298.41,
+                "r": 546.33,
+                "b": 309.09,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10107,10 +10107,10 @@
           [
             {
               "bbox": {
-                "l": 149.48,
-                "t": 311.28,
+                "l": 152.97,
+                "t": 311.52,
                 "r": 502.86,
-                "b": 321.76,
+                "b": 322.06,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10128,9 +10128,9 @@
             {
               "bbox": {
                 "l": 533.4,
-                "t": 309.97,
-                "r": 547.46,
-                "b": 321.32,
+                "t": 311.05,
+                "r": 546.26,
+                "b": 321.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10149,10 +10149,10 @@
           [
             {
               "bbox": {
-                "l": 145.36,
-                "t": 324.42,
+                "l": 158.55,
+                "t": 324.25,
                 "r": 502.89,
-                "b": 334.99,
+                "b": 335.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10170,9 +10170,9 @@
             {
               "bbox": {
                 "l": 533.44,
-                "t": 323.66,
-                "r": 547.67,
-                "b": 334.32,
+                "t": 324.65,
+                "r": 546.17,
+                "b": 335.59,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10191,10 +10191,10 @@
           [
             {
               "bbox": {
-                "l": 136.14,
-                "t": 345.91,
+                "l": 138.71,
+                "t": 345.76,
                 "r": 502.92,
-                "b": 356.53,
+                "b": 356.58,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10212,8 +10212,8 @@
             {
               "bbox": {
                 "l": 533.45,
-                "t": 344.57,
-                "r": 547.65,
+                "t": 344.69,
+                "r": 546.31,
                 "b": 356.36,
                 "coord_origin": "TOPLEFT"
               },
@@ -10233,8 +10233,8 @@
           [
             {
               "bbox": {
-                "l": 135.78,
-                "t": 356.39,
+                "l": 136.94,
+                "t": 356.5,
                 "r": 502.89,
                 "b": 368.36,
                 "coord_origin": "TOPLEFT"
@@ -10253,10 +10253,10 @@
             },
             {
               "bbox": {
-                "l": 535.67,
-                "t": 356.5,
-                "r": 547.64,
-                "b": 367.16,
+                "l": 533.46,
+                "t": 357.07,
+                "r": 546.81,
+                "b": 368.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10275,8 +10275,8 @@
           [
             {
               "bbox": {
-                "l": 150.81,
-                "t": 369.71,
+                "l": 149.97,
+                "t": 369.27,
                 "r": 502.86,
                 "b": 380.84,
                 "coord_origin": "TOPLEFT"
@@ -10295,10 +10295,10 @@
             },
             {
               "bbox": {
-                "l": 535.61,
-                "t": 369.42,
-                "r": 547.56,
-                "b": 380.04,
+                "l": 533.41,
+                "t": 369.43,
+                "r": 546.64,
+                "b": 380.84,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10317,10 +10317,10 @@
           [
             {
               "bbox": {
-                "l": 147.06,
-                "t": 383.04,
+                "l": 151.44,
+                "t": 383.39,
                 "r": 502.85,
-                "b": 393.68,
+                "b": 394.15,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10338,9 +10338,9 @@
             {
               "bbox": {
                 "l": 533.4,
-                "t": 383.14,
-                "r": 547.67,
-                "b": 393.83,
+                "t": 383.65,
+                "r": 546.33,
+                "b": 394.31,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10359,10 +10359,10 @@
           [
             {
               "bbox": {
-                "l": 142.96,
-                "t": 396.04,
+                "l": 146.74,
+                "t": 395.62,
                 "r": 502.9,
-                "b": 406.83,
+                "b": 406.62,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10379,10 +10379,10 @@
             },
             {
               "bbox": {
-                "l": 536.07,
+                "l": 533.44,
                 "t": 395.03,
-                "r": 547.54,
-                "b": 405.81,
+                "r": 546.21,
+                "b": 405.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10401,8 +10401,8 @@
           [
             {
               "bbox": {
-                "l": 149.69,
-                "t": 407.49,
+                "l": 152.83,
+                "t": 407.06,
                 "r": 502.89,
                 "b": 418.34,
                 "coord_origin": "TOPLEFT"
@@ -10421,10 +10421,10 @@
             },
             {
               "bbox": {
-                "l": 535.32,
-                "t": 408.33,
-                "r": 547.77,
-                "b": 419.01,
+                "l": 533.43,
+                "t": 408.81,
+                "r": 546.2,
+                "b": 419.41,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10443,8 +10443,8 @@
           [
             {
               "bbox": {
-                "l": 145.25,
-                "t": 419.54,
+                "l": 147.96,
+                "t": 419.32,
                 "r": 502.86,
                 "b": 430.82,
                 "coord_origin": "TOPLEFT"
@@ -10463,10 +10463,10 @@
             },
             {
               "bbox": {
-                "l": 534.93,
-                "t": 420.33,
-                "r": 547.85,
-                "b": 430.98,
+                "l": 535.78,
+                "t": 421.48,
+                "r": 546.66,
+                "b": 432.03,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10485,8 +10485,8 @@
           [
             {
               "bbox": {
-                "l": 146.81,
-                "t": 432.22,
+                "l": 151.15,
+                "t": 432.15,
                 "r": 502.89,
                 "b": 443.36,
                 "coord_origin": "TOPLEFT"
@@ -10505,10 +10505,10 @@
             },
             {
               "bbox": {
-                "l": 533.77,
-                "t": 432.57,
-                "r": 547.89,
-                "b": 443.25,
+                "l": 533.42,
+                "t": 433.0,
+                "r": 546.54,
+                "b": 443.55,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10527,10 +10527,10 @@
           [
             {
               "bbox": {
-                "l": 138.95,
-                "t": 444.15,
-                "r": 501.85,
-                "b": 454.93,
+                "l": 139.44,
+                "t": 444.37,
+                "r": 500.52,
+                "b": 455.19,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10547,10 +10547,10 @@
             },
             {
               "bbox": {
-                "l": 534.53,
-                "t": 445.73,
-                "r": 547.93,
-                "b": 456.46,
+                "l": 533.81,
+                "t": 445.56,
+                "r": 546.69,
+                "b": 456.12,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10569,8 +10569,8 @@
           [
             {
               "bbox": {
-                "l": 134.71,
-                "t": 456.71,
+                "l": 134.76,
+                "t": 456.4,
                 "r": 502.91,
                 "b": 468.32,
                 "coord_origin": "TOPLEFT"
@@ -10589,10 +10589,10 @@
             },
             {
               "bbox": {
-                "l": 535.91,
-                "t": 457.35,
-                "r": 547.9,
-                "b": 468.03,
+                "l": 534.42,
+                "t": 457.21,
+                "r": 545.32,
+                "b": 467.74,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10611,10 +10611,10 @@
           [
             {
               "bbox": {
-                "l": 135.33,
-                "t": 480.34,
+                "l": 135.94,
+                "t": 478.66,
                 "r": 502.92,
-                "b": 490.92,
+                "b": 490.82,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10631,10 +10631,10 @@
             },
             {
               "bbox": {
-                "l": 535.0,
-                "t": 480.17,
-                "r": 547.9,
-                "b": 490.96,
+                "l": 534.19,
+                "t": 478.81,
+                "r": 545.41,
+                "b": 489.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10653,10 +10653,10 @@
           [
             {
               "bbox": {
-                "l": 135.66,
-                "t": 492.66,
+                "l": 138.32,
+                "t": 491.13,
                 "r": 502.88,
-                "b": 503.2,
+                "b": 502.82,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10673,10 +10673,10 @@
             },
             {
               "bbox": {
-                "l": 535.57,
-                "t": 492.59,
-                "r": 547.96,
-                "b": 503.31,
+                "l": 534.71,
+                "t": 491.48,
+                "r": 545.7,
+                "b": 501.96,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10695,10 +10695,10 @@
           [
             {
               "bbox": {
-                "l": 143.8,
-                "t": 506.14,
+                "l": 148.82,
+                "t": 503.61,
                 "r": 502.87,
-                "b": 527.84,
+                "b": 515.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10707,7 +10707,7 @@
               "end_row_offset_idx": 27,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . . 3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10715,10 +10715,10 @@
             },
             {
               "bbox": {
-                "l": 535.66,
-                "t": 506.14,
-                "r": 547.95,
-                "b": 527.72,
+                "l": 534.46,
+                "t": 504.4,
+                "r": 546.1,
+                "b": 514.89,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10737,10 +10737,10 @@
           [
             {
               "bbox": {
-                "l": 136.88,
-                "t": 528.9,
-                "r": 502.87,
-                "b": 540.38,
+                "l": 152.39,
+                "t": 515.35,
+                "r": 502.83,
+                "b": 527.84,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10749,7 +10749,7 @@
               "end_row_offset_idx": 28,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10757,10 +10757,10 @@
             },
             {
               "bbox": {
-                "l": 535.35,
-                "t": 518.58,
-                "r": 548.0,
-                "b": 540.38,
+                "l": 534.86,
+                "t": 516.36,
+                "r": 546.02,
+                "b": 526.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10769,7 +10769,7 @@
               "end_row_offset_idx": 28,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "16 18",
+              "text": "16",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10779,10 +10779,10 @@
           [
             {
               "bbox": {
-                "l": 143.32,
-                "t": 543.09,
-                "r": 502.88,
-                "b": 553.76,
+                "l": 140.76,
+                "t": 531.16,
+                "r": 502.87,
+                "b": 548.8,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10791,7 +10791,7 @@
               "end_row_offset_idx": 29,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10799,10 +10799,10 @@
             },
             {
               "bbox": {
-                "l": 535.42,
-                "t": 542.1,
-                "r": 547.76,
-                "b": 552.86,
+                "l": 535.16,
+                "t": 531.16,
+                "r": 547.15,
+                "b": 551.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10821,10 +10821,10 @@
           [
             {
               "bbox": {
-                "l": 149.23,
-                "t": 554.28,
-                "r": 502.89,
-                "b": 565.33,
+                "l": 153.23,
+                "t": 541.81,
+                "r": 502.88,
+                "b": 552.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10833,7 +10833,7 @@
               "end_row_offset_idx": 30,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10841,10 +10841,10 @@
             },
             {
               "bbox": {
-                "l": 535.48,
-                "t": 554.29,
-                "r": 547.67,
-                "b": 565.0,
+                "l": 535.04,
+                "t": 541.94,
+                "r": 545.91,
+                "b": 552.59,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10853,7 +10853,7 @@
               "end_row_offset_idx": 30,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "19",
+              "text": "18",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10863,10 +10863,10 @@
           [
             {
               "bbox": {
-                "l": 138.61,
-                "t": 567.16,
+                "l": 135.61,
+                "t": 567.36,
                 "r": 502.82,
-                "b": 578.03,
+                "b": 578.18,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10883,10 +10883,10 @@
             },
             {
               "bbox": {
-                "l": 534.22,
-                "t": 567.38,
-                "r": 547.69,
-                "b": 578.17,
+                "l": 534.68,
+                "t": 569.34,
+                "r": 545.99,
+                "b": 579.92,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10905,10 +10905,10 @@
           [
             {
               "bbox": {
-                "l": 136.14,
-                "t": 579.34,
+                "l": 134.64,
+                "t": 580.4,
                 "r": 502.92,
-                "b": 590.35,
+                "b": 591.17,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10925,10 +10925,10 @@
             },
             {
               "bbox": {
-                "l": 534.16,
-                "t": 579.39,
-                "r": 547.57,
-                "b": 590.23,
+                "l": 534.35,
+                "t": 581.12,
+                "r": 546.38,
+                "b": 591.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10947,10 +10947,10 @@
           [
             {
               "bbox": {
-                "l": 138.18,
-                "t": 589.84,
+                "l": 138.91,
+                "t": 593.62,
                 "r": 502.79,
-                "b": 602.83,
+                "b": 608.09,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10959,7 +10959,7 @@
               "end_row_offset_idx": 33,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . .",
+              "text": "3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10967,10 +10967,10 @@
             },
             {
               "bbox": {
-                "l": 534.64,
-                "t": 591.36,
-                "r": 547.33,
-                "b": 602.22,
+                "l": 534.05,
+                "t": 598.73,
+                "r": 546.61,
+                "b": 609.48,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10989,10 +10989,10 @@
           [
             {
               "bbox": {
-                "l": 137.02,
-                "t": 604.8,
+                "l": 139.13,
+                "t": 603.49,
                 "r": 502.93,
-                "b": 615.59,
+                "b": 615.37,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11001,7 +11001,7 @@
               "end_row_offset_idx": 34,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11009,10 +11009,10 @@
             },
             {
               "bbox": {
-                "l": 534.28,
-                "t": 603.85,
-                "r": 547.13,
-                "b": 614.71,
+                "l": 534.66,
+                "t": 603.69,
+                "r": 546.17,
+                "b": 614.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11031,10 +11031,10 @@
           [
             {
               "bbox": {
-                "l": 135.85,
-                "t": 605.14,
+                "l": 150.19,
+                "t": 618.64,
                 "r": 502.86,
-                "b": 627.85,
+                "b": 629.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11043,7 +11043,7 @@
               "end_row_offset_idx": 35,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . .",
+              "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11051,10 +11051,10 @@
             },
             {
               "bbox": {
-                "l": 534.38,
-                "t": 608.87,
-                "r": 547.1,
-                "b": 619.7,
+                "l": 534.73,
+                "t": 616.7,
+                "r": 546.26,
+                "b": 627.29,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11073,8 +11073,8 @@
           [
             {
               "bbox": {
-                "l": 150.59,
-                "t": 628.0,
+                "l": 153.51,
+                "t": 629.06,
                 "r": 502.88,
                 "b": 640.33,
                 "coord_origin": "TOPLEFT"
@@ -11093,10 +11093,10 @@
             },
             {
               "bbox": {
-                "l": 533.91,
-                "t": 629.15,
-                "r": 547.44,
-                "b": 639.78,
+                "l": 534.51,
+                "t": 628.79,
+                "r": 545.96,
+                "b": 639.07,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11115,8 +11115,8 @@
           [
             {
               "bbox": {
-                "l": 147.49,
-                "t": 640.81,
+                "l": 154.79,
+                "t": 640.88,
                 "r": 502.86,
                 "b": 652.87,
                 "coord_origin": "TOPLEFT"
@@ -11135,10 +11135,10 @@
             },
             {
               "bbox": {
-                "l": 533.52,
-                "t": 642.21,
-                "r": 547.16,
-                "b": 652.92,
+                "l": 534.23,
+                "t": 642.45,
+                "r": 546.23,
+                "b": 652.76,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11157,8 +11157,8 @@
           [
             {
               "bbox": {
-                "l": 152.09,
-                "t": 653.31,
+                "l": 152.46,
+                "t": 654.0,
                 "r": 502.87,
                 "b": 665.35,
                 "coord_origin": "TOPLEFT"
@@ -11177,10 +11177,10 @@
             },
             {
               "bbox": {
-                "l": 533.91,
-                "t": 650.39,
-                "r": 547.12,
-                "b": 661.17,
+                "l": 533.62,
+                "t": 653.8,
+                "r": 546.72,
+                "b": 664.11,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11199,8 +11199,8 @@
           [
             {
               "bbox": {
-                "l": 152.45,
-                "t": 666.76,
+                "l": 153.11,
+                "t": 666.53,
                 "r": 502.88,
                 "b": 677.83,
                 "coord_origin": "TOPLEFT"
@@ -11211,7 +11211,7 @@
               "end_row_offset_idx": 39,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "masks . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11219,10 +11219,10 @@
             },
             {
               "bbox": {
-                "l": 534.15,
-                "t": 665.39,
-                "r": 547.01,
-                "b": 676.28,
+                "l": 534.19,
+                "t": 667.53,
+                "r": 546.47,
+                "b": 677.93,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11241,10 +11241,10 @@
           [
             {
               "bbox": {
-                "l": 152.65,
-                "t": 668.17,
-                "r": 336.42,
-                "b": 678.78,
+                "l": 149.58,
+                "t": 680.06,
+                "r": 502.9,
+                "b": 690.56,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11253,7 +11253,7 @@
               "end_row_offset_idx": 40,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.5 Defining and creating column",
+              "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11261,10 +11261,10 @@
             },
             {
               "bbox": {
-                "l": 534.03,
-                "t": 675.59,
-                "r": 546.99,
-                "b": 686.41,
+                "l": 534.27,
+                "t": 686.29,
+                "r": 546.21,
+                "b": 696.67,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11283,10 +11283,10 @@
           [
             {
               "bbox": {
-                "l": 151.2,
-                "t": 680.61,
-                "r": 502.9,
-                "b": 702.85,
+                "l": 154.3,
+                "t": 692.14,
+                "r": 502.88,
+                "b": 702.93,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11295,7 +11295,7 @@
               "end_row_offset_idx": 41,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11303,10 +11303,10 @@
             },
             {
               "bbox": {
-                "l": 533.34,
-                "t": 687.24,
-                "r": 547.09,
-                "b": 697.91,
+                "l": 534.27,
+                "t": 692.83,
+                "r": 546.06,
+                "b": 703.09,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11325,10 +11325,10 @@
           [
             {
               "bbox": {
-                "l": 154.89,
-                "t": 704.12,
+                "l": 154.35,
+                "t": 705.72,
                 "r": 502.83,
-                "b": 715.33,
+                "b": 716.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11345,10 +11345,10 @@
             },
             {
               "bbox": {
-                "l": 531.64,
-                "t": 703.91,
-                "r": 547.33,
-                "b": 714.91,
+                "l": 534.02,
+                "t": 706.7,
+                "r": 546.18,
+                "b": 717.74,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -12105,8 +12105,8 @@
             "bbox": {
               "l": 136.8,
               "t": 551.96,
-              "r": 161.76,
-              "b": 584.36,
+              "r": 156.78,
+              "b": 560.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -12115,7 +12115,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "FROM ORDER",
+            "text": "FROM",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -12125,8 +12125,8 @@
             "bbox": {
               "l": 191.76,
               "t": 551.96,
-              "r": 331.68,
-              "b": 584.36,
+              "r": 261.72,
+              "b": 560.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -12135,7 +12135,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "function_usage function_id='QIBM_DB_SECADM' user_name;",
+            "text": "function_usage",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -12160,9 +12160,69 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 191.76,
+              "t": 563.96,
+              "r": 331.68,
+              "b": 572.36,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "function_id='QIBM_DB_SECADM'",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 136.8,
+              "t": 575.96,
+              "r": 176.76,
+              "b": 584.36,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "ORDER BY",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 191.76,
+              "t": 575.96,
+              "r": 241.74,
+              "b": 584.36,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "user_name;",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
           }
         ],
-        "num_rows": 3,
+        "num_rows": 4,
         "num_cols": 2,
         "orientation": "rot_0",
         "grid": [
@@ -12213,8 +12273,8 @@
               "bbox": {
                 "l": 136.8,
                 "t": 551.96,
-                "r": 161.76,
-                "b": 584.36,
+                "r": 156.78,
+                "b": 560.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -12223,7 +12283,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "FROM ORDER",
+              "text": "FROM",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -12233,8 +12293,8 @@
               "bbox": {
                 "l": 191.76,
                 "t": 551.96,
-                "r": 331.68,
-                "b": 584.36,
+                "r": 261.72,
+                "b": 560.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -12243,7 +12303,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "function_usage function_id='QIBM_DB_SECADM' user_name;",
+              "text": "function_usage",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -12272,13 +12332,62 @@
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 191.76,
+                "t": 563.96,
+                "r": 331.68,
+                "b": 572.36,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "",
+              "text": "function_id='QIBM_DB_SECADM'",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 136.8,
+                "t": 575.96,
+                "r": 176.76,
+                "b": 584.36,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "ORDER BY",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "bbox": {
+                "l": 191.76,
+                "t": 575.96,
+                "r": 241.74,
+                "b": 584.36,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "user_name;",
               "column_header": false,
               "row_header": false,
               "row_section": false,

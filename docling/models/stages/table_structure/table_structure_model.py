@@ -203,14 +203,18 @@ class TableStructureModel(BaseTableStructureModel):
                 table_prediction = TableStructurePrediction()
                 page.predictions.tablestructure = table_prediction
 
+                # Small padding (page units) added to the table bbox on all sides #3402
+                _BBOX_PAD = 5.0
                 in_tables = [
                     (
                         cluster,
                         [
-                            round(cluster.bbox.l) * self.scale,
-                            round(cluster.bbox.t) * self.scale,
-                            round(cluster.bbox.r) * self.scale,
-                            round(cluster.bbox.b) * self.scale,
+                            max(0, round(cluster.bbox.l) - _BBOX_PAD) * self.scale,
+                            max(0, round(cluster.bbox.t) - _BBOX_PAD) * self.scale,
+                            min(page.size.width, round(cluster.bbox.r) + _BBOX_PAD)
+                            * self.scale,
+                            min(page.size.height, round(cluster.bbox.b) + _BBOX_PAD)
+                            * self.scale,
                         ],
                     )
                     for cluster in page.predictions.layout.clusters
