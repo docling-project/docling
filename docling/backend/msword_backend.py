@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import logging
@@ -413,7 +416,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
-        self.processed_textbox_elements: list[int] = []
+        self.processed_textbox_elements: set[etree._Element] = set()
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
@@ -447,9 +450,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Track comment mappings: comment_id -> comment object
         self.comment_map: dict[str, Any] = {}
         # Track paragraph elements to their comment IDs
-        self.paragraph_comment_map: dict[int, list[str]] = {}
+        self.paragraph_comment_map: dict[etree._Element, list[str]] = {}
         # Track text items created from each paragraph element
-        self.paragraph_to_items: dict[int, list[RefItem]] = {}
+        self.paragraph_to_items: dict[etree._Element, list[RefItem]] = {}
         # True when the previous sibling item is a code block; lets indented,
         # punctuation-free continuation lines stay in the block.
         self._prev_sibling_is_code: bool = False
@@ -715,8 +718,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
-            element_id = id(element)
-            if element_id not in self.processed_textbox_elements:
+            if element not in self.processed_textbox_elements:
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
                     ".//w:txbxContent|.//v:textbox//w:p",
@@ -765,10 +767,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if textbox_elements:
                     # Mark the parent element as processed
-                    self.processed_textbox_elements.append(element_id)
+                    self.processed_textbox_elements.add(element)
                     # Also mark all found textbox elements as processed
                     for tb_element in textbox_elements:
-                        self.processed_textbox_elements.append(id(tb_element))
+                        self.processed_textbox_elements.add(tb_element)
 
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
@@ -783,6 +785,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(t)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
+            # Check for the sdt containers, like table of contents.
+            # This must come before the image branches: they are computed with
+            # descendant XPaths, so a control holding a picture anywhere inside
+            # would match there and its paragraphs would never be walked.
+            elif tag_name == "sdt":
+                sdt_content = element.find(
+                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                )
+                if sdt_content is not None:
+                    # Recursively walk the SDT content to catch textboxes, tables, and nested structures
+                    _, te = self._walk_linear(sdt_content, doc)
+                    added_elements.extend(te)
             # Check for Image
             elif drawing_blip:
                 pics = self._handle_pictures(drawing_blip, doc)
@@ -855,15 +869,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     is not None
                 ):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
-                    added_elements.extend(te)
-            # Check for the sdt containers, like table of contents
-            elif tag_name == "sdt":
-                sdt_content = element.find(
-                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                )
-                if sdt_content is not None:
-                    # Recursively walk the SDT content to catch textboxes, tables, and nested structures
-                    _, te = self._walk_linear(sdt_content, doc)
                     added_elements.extend(te)
             # Check for Text
             elif tag_name == "p":
@@ -1100,16 +1105,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid, ilvl or 0
         )
 
-    def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
-        """Extract outlineLvl from paragraph's style definition.
+    def _get_outline_level_from_style(self, style: ParagraphStyle | None) -> int | None:
+        """Extract outlineLvl from a paragraph style definition.
 
-        In OOXML, outlineLvl is 0-indexed (0-8 for heading levels 1-9).
-        This method returns the 1-indexed heading level (outlineLvl + 1).
+        In OOXML, outlineLvl is 0-indexed: 0-8 are heading levels 1-9 and 9 is
+        the "body text" sentinel. This method returns the 1-indexed value
+        (outlineLvl + 1), so heading levels are 1-9 and body text is 10.
         """
-        if paragraph.style is None:
+        if style is None:
             return None
 
-        style_elem = paragraph.style.element
+        style_elem = style.element
         if style_elem is None:
             return None
 
@@ -1321,6 +1327,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return not self._is_in_table_cell(paragraph)
 
     def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, int | None]:
+        """Classify a paragraph as a heading, code block or plain text.
+
+        Heading detection has two independent signals. The style *name* carries
+        the level for the usual English styles, while ``w:outlineLvl`` is
+        OOXML's own heading marker and is language-independent, which is what
+        makes localized styles (e.g. Czech ``Nadpis1``) resolvable at all. The
+        outline level therefore wins over name parsing when it denotes a real
+        heading, and it is also honoured on its own for styles that are not
+        recognizable by name. ``Title`` styles are left out of the latter so
+        they keep reaching their own branch; in practice they never carry
+        ``w:outlineLvl`` anyway.
+        """
         # Resolve the style once: python-docx's ``paragraph.style`` scans all
         # styles on every access, so re-reading it per predicate is costly.
         style = paragraph.style
@@ -1351,9 +1369,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             or (base_style_name and "heading" in base_style_name.lower())
         )
 
+        # 1-9 are real heading levels; 10 is the "body text" sentinel.
+        outline_level = self._get_outline_level_from_style(style)
+        if outline_level is not None and not 1 <= outline_level <= 9:
+            outline_level = None
+
         if is_heading:
-            # First try to get the level from outlineLvl (authoritative source)
-            outline_level = self._get_outline_level_from_style(paragraph)
+            # The outline level is authoritative when it denotes a heading.
             if outline_level is not None:
                 return "Heading", outline_level
 
@@ -1370,7 +1392,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
             return "Code", None
 
+        if outline_level is not None and not self._is_title_style(
+            label, name, base_style_label, base_style_name
+        ):
+            return "Heading", outline_level
+
         return label, None
+
+    @staticmethod
+    def _is_title_style(*labels: str | None) -> bool:
+        """Whether any of the given style ids/names denotes a title style.
+
+        Matches on the ``"title"`` substring, which reliably covers the
+        English built-in ``Title`` style.  Localized equivalents (e.g.
+        ``"Titre"``, ``"Titel"``) do not contain the substring and would
+        not be excluded — but that gap is acceptable in practice because
+        neither Word nor LibreOffice writes ``w:outlineLvl`` on a Title
+        style, so the condition this guard protects is unreachable for
+        real documents.
+        """
+        return any("title" in label.lower() for label in labels if label)
 
     @classmethod
     def _get_format_from_run(
@@ -1735,19 +1776,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
-    def _collect_textbox_paragraphs(self, textbox_elements):
+    def _collect_textbox_paragraphs(
+        self, textbox_elements: list[etree._Element]
+    ) -> dict[etree._Element | None, list[tuple[etree._Element, int | None]]]:
         """Collect and organize paragraphs from textbox elements."""
-        processed_paragraphs = []
-        container_paragraphs = {}
+        # Elements, not their ``id()`` -- see ``processed_textbox_elements``.
+        processed_paragraphs: set[etree._Element] = set()
+        container_paragraphs: dict[
+            etree._Element | None, list[tuple[etree._Element, int | None]]
+        ] = {}
 
         for element in textbox_elements:
-            element_id = id(element)
             # Skip if we've already processed this exact element
-            if element_id in processed_paragraphs:
+            if element in processed_paragraphs:
                 continue
 
             tag_name = etree.QName(element).localname
-            processed_paragraphs.append(element_id)
+            processed_paragraphs.add(element)
 
             # Handle paragraphs directly found (VML textboxes)
             if tag_name == "p":
@@ -1755,7 +1800,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 container_id = None
                 for ancestor in element.iterancestors():
                     if any(ns in ancestor.tag for ns in ["textbox", "shape", "txbx"]):
-                        container_id = id(ancestor)
+                        container_id = ancestor
                         break
 
                 if container_id not in container_paragraphs:
@@ -1767,28 +1812,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Handle txbxContent elements (Word DrawingML textboxes)
             elif tag_name == "txbxContent":
                 paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
-                container_id = id(element)
+                container_id = element
                 if container_id not in container_paragraphs:
                     container_paragraphs[container_id] = []
 
                 for p in paragraphs:
-                    p_id = id(p)
-                    if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                    if p not in processed_paragraphs:
+                        processed_paragraphs.add(p)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )
             else:
                 # Try to extract any paragraphs from unknown elements
                 paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
-                container_id = id(element)
+                container_id = element
                 if container_id not in container_paragraphs:
                     container_paragraphs[container_id] = []
 
                 for p in paragraphs:
-                    p_id = id(p)
-                    if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                    if p not in processed_paragraphs:
+                        processed_paragraphs.add(p)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )
@@ -1999,8 +2042,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         raw_paragraph_text = text
         text = text.strip()
 
-        # Track the paragraph element ID for comment linking
-        para_element_id = id(element)
+        # Track the paragraph element for comment linking.
+        para_element = element
         comment_ids = self._get_comment_ids_for_element(element)
 
         # Check if this paragraph contains a checkbox
@@ -2220,10 +2263,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._update_history(p_style_id, p_level, numid, ilevel)
 
         # Store mapping of paragraph element to created items for comment linking
-        if elem_ref and para_element_id:
-            self.paragraph_to_items[para_element_id] = elem_ref
+        if elem_ref:
+            self.paragraph_to_items[para_element] = elem_ref
             if comment_ids:
-                self.paragraph_comment_map[para_element_id] = list(comment_ids)
+                self.paragraph_comment_map[para_element] = list(comment_ids)
 
         return elem_ref
 
@@ -2496,7 +2539,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ):
                 list_gr1 = doc.add_list_group(
                     name="list",
-                    parent=self.parents[i - 1],
+                    parent=self.parents.get(i - 1),
                     content_layer=self.content_layer,
                 )
                 self.parents[i] = list_gr1
@@ -2543,7 +2586,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             list_gr = self._get_or_create_list_group(
                 doc=doc,
                 numid=numid,
-                parent=self.parents[use_level - 1],
+                parent=self.parents.get(use_level - 1),
                 elem_ref=elem_ref,
             )
 
@@ -3686,7 +3729,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Find all paragraphs with comment ranges
             body = self.docx_obj.element.body
             for paragraph in body.findall(".//w:p", namespaces):
-                para_id = id(paragraph)
+                para_id = paragraph
 
                 # Find comment range start markers in this paragraph
                 comment_starts = paragraph.findall(".//w:commentRangeStart", namespaces)

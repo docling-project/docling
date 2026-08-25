@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import base64
 from io import BytesIO
 from pathlib import Path
@@ -301,3 +304,181 @@ def test_convert_table_has_no_duplicate_cells():
         for cell in table_data.table_cells
     ]
     assert len(positions) == len(set(positions))
+
+
+def test_convert_table_without_trailing_pipes():
+    """
+    Regression test:
+    The leading and trailing pipes of a GFM table row are both optional, and the
+    backend's own row detector only requires a leading one. Splitting a row with
+    [1:-1] assumed both were present, so a row written without the trailing pipe
+    lost its last cell and the table came out one column short.
+    """
+    with_trailing = """| Region | Q1 |
+| --- | --- |
+| North | 10 |
+"""
+    without_trailing = """| Region | Q1
+| --- | ---
+| North | 10
+"""
+    expected = ["Region", "Q1", "North", "10"]
+
+    for markdown in (with_trailing, without_trailing):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+
+
+def test_convert_table_without_leading_pipes():
+    """
+    Regression test:
+    The leading pipe is optional in GFM too, but the row detector only entered
+    table mode on a leading pipe, so a table whose header starts with a bare
+    cell was never recognized: every row was emitted as plain text, delimiter
+    row included.
+    """
+    no_leading = """Region | Q1 |
+--- | --- |
+North | 10 |
+"""
+    no_edges = """Region | Q1
+--- | ---
+North | 10
+"""
+    aligned = """Region | Q1
+:--- | ---:
+North | 10
+"""
+    expected = ["Region", "Q1", "North", "10"]
+
+    for markdown in (no_leading, no_edges, aligned):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        assert len(conv_result.document.tables) == 1
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+
+
+def test_convert_table_without_leading_pipes_formatted_header():
+    """
+    Regression test:
+    A header cell in bold or a link is an inline node of its own, so reading the
+    paragraph's RawText nodes alone splits one line into several and moves the
+    delimiter row out of second place. The header then measured one cell, and
+    since rows are trimmed to the header's cell count the data cells went with
+    it -- a 2x2 table silently arrived as 1x2, first column dropped to prose.
+    """
+    bold_first = """**Region** | Q1
+--- | ---
+North | 10
+"""
+    bold_last = """Region | **Q1**
+--- | ---
+North | 10
+"""
+    linked = """[Region](https://example.com) | Q1
+--- | ---
+North | 10
+"""
+    expected = ["Region", "Q1", "North", "10"]
+
+    for markdown in (bold_first, bold_last, linked):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        assert len(conv_result.document.tables) == 1
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+        assert conv_result.document.texts == []
+
+
+def test_convert_pipes_in_prose_stay_text():
+    """
+    A header without a leading pipe is indistinguishable from prose, so the
+    delimiter row on the second line is what makes a paragraph a table. Text
+    that merely contains pipes must not be turned into one.
+    """
+    cases = [
+        "Some sentence with a | pipe in it.\n",
+        "Some sentence with a | pipe in it.\nAnother | line here.\n",
+        # GFM: the delimiter row must match the header row in cell count.
+        "Region | Q1\n--- | --- | ---\nNorth | 10\n",
+    ]
+
+    for markdown in cases:
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+        assert conv_result.document.tables == []
+
+
+def test_convert_pipeless_table_does_not_leak_into_later_text():
+    """
+    Regression guard:
+    Detecting a header without a leading pipe needs lookahead, which is only
+    available one paragraph at a time, so the decision is taken before
+    descending into the rows. If that state outlived the table, a later
+    paragraph that merely contains a pipe would be absorbed into it.
+    """
+    markdown = """Region | Q1
+--- | ---
+North | 10
+
+Some sentence with a | pipe in it.
+
+Region | Q2
+--- | ---
+South | 20
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    tables = conv_result.document.tables
+    assert len(tables) == 2
+    assert [cell.text for cell in tables[0].data.table_cells] == [
+        "Region",
+        "Q1",
+        "North",
+        "10",
+    ]
+    assert [cell.text for cell in tables[1].data.table_cells] == [
+        "Region",
+        "Q2",
+        "South",
+        "20",
+    ]
+    assert "Some sentence with a | pipe in it." in [
+        item.text for item in conv_result.document.texts
+    ]
+
+
+def test_convert_table_rows_match_header_cell_count():
+    """
+    GFM 4.10: "If a row has fewer cells than the header row, empty cells are
+    inserted. If it has greater, the excess is ignored." Without that,
+    table_cells disagreed with num_rows * num_cols and rows came out ragged.
+    """
+    short_row = """| a | b | c |
+| --- | --- | --- |
+| 1 | 2 |
+"""
+    long_row = """| a | b |
+| --- | --- |
+| 1 | 2 | 3 |
+"""
+    for markdown, expected in (
+        (short_row, ["a", "b", "c", "1", "2", ""]),
+        (long_row, ["a", "b", "1", "2"]),
+    ):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        table_data = conv_result.document.tables[0].data
+        assert [cell.text for cell in table_data.table_cells] == expected
+        assert len(table_data.table_cells) == table_data.num_rows * table_data.num_cols

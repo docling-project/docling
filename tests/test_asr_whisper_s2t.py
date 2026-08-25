@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """
 Tests for the WhisperS2T (CTranslate2-based) ASR backend.
 """

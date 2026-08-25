@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared helpers for KServe v2 binary tensor encoding and decoding."""
 
 from __future__ import annotations

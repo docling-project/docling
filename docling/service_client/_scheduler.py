@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal bounded async scheduling helpers for client-side batch work."""
 
 from __future__ import annotations

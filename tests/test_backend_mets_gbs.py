@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from pathlib import Path
 
 import pytest
@@ -75,6 +78,30 @@ def test_num_pages(test_doc_path):
     assert doc_backend.page_count() == 3
 
     # Explicitly clean up resources to prevent race conditions in CI
+    doc_backend.unload()
+
+
+def test_page_missing_coordocr_is_skipped_not_crashed():
+    """A page whose METS XML has no 'coordOCR' fptr (e.g. no OCR layer for that page)
+    must be reported as invalid, not crash the whole document with an AssertionError.
+    """
+    path = Path("tests/data/mets_gbs/sources/32044009881525_missing_coordocr.tar.gz")
+    doc_backend: MetsGbsDocumentBackend = _get_backend(path)
+
+    assert doc_backend.is_valid()
+    assert doc_backend.page_count() == 3
+
+    # Pages 0 and 1 have both image and coordOCR entries and load normally.
+    for page_index in (0, 1):
+        page_backend: MetsGbsPageBackend = doc_backend.load_page(page_index)
+        assert page_backend.is_valid()
+        page_backend.unload()
+
+    # Page 2 is missing its coordOCR fptr in the METS XML; loading it must not raise.
+    page_backend = doc_backend.load_page(2)
+    assert not page_backend.is_valid()
+
+    page_backend.unload()
     doc_backend.unload()
 
 

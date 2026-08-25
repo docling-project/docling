@@ -62,7 +62,43 @@ def ocr_engines():
     }
 ```
 
-where `YourOcrModel` must implement the [`BaseOcrModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_ocr_model.py#L23) and provide an options class derived from [`OcrOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L105).
+where `YourOcrModel` must implement the [`BaseOcrModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_ocr_model.py#L40) and provide an options class derived from [`OcrOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L184).
+
+### Layout engine factory
+
+The layout engine factory allows to provide more layout engines to the Docling users.
+
+The content of `your_package.module` registers the layout engines with a code similar to:
+
+```py
+# Factory registration
+def layout_engines():
+    return {
+        "layout_engines": [
+            YourLayoutModel,
+        ]
+    }
+```
+
+where `YourLayoutModel` must implement the [`BaseLayoutModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_layout_model.py#L35) and provide an options class derived from [`BaseLayoutOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L1454).
+
+### Table structure engine factory
+
+The table structure engine factory allows to provide more table structure recognition engines to the Docling users.
+
+The content of `your_package.module` registers the table structure engines with a code similar to:
+
+```py
+# Factory registration
+def table_structure_engines():
+    return {
+        "table_structure_engines": [
+            YourTableStructureModel,
+        ]
+    }
+```
+
+where `YourTableStructureModel` must implement the [`BaseTableStructureModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_table_model.py#L13) and provide an options class derived from [`BaseTableStructureOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L130).
 
 If you look for an example, the [default Docling plugins](https://github.com/docling-project/docling/blob/main/docling/models/plugins/defaults.py) is a good starting point.
 
@@ -76,8 +112,10 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
-pipeline_options.allow_external_plugins = True  # <-- enabled the external plugins
-pipeline_options.ocr_options = YourOptions  # <-- your options here
+pipeline_options.allow_external_plugins = True  # <-- enable external plugins
+pipeline_options.ocr_options = YourOptions  # <-- your OCR options here
+pipeline_options.layout_options = YourLayoutOptions  # <-- your layout options here
+pipeline_options.table_structure_options = YourTableStructureOptions  # <-- your table structure options here
 
 doc_converter = DocumentConverter(
     format_options={
@@ -90,12 +128,18 @@ doc_converter = DocumentConverter(
 
 ### Using the `docling` CLI
 
-Similarly, when using the `docling` users have to enable external plugins before selecting the new one.
+Similarly, when using the `docling` CLI, users have to enable external plugins before selecting the new one.
 
 ```sh
 # Show the external plugins
 docling --show-external-plugins
 
-# Run docling with the new plugin
+# Run docling with a custom OCR engine
 docling --allow-external-plugins --ocr-engine=NAME
+
+# Run docling with a custom layout engine
+docling --allow-external-plugins --layout-engine=NAME
+
+# Run docling with a custom table structure engine
+docling --allow-external-plugins --table-structure-engine=NAME
 ```

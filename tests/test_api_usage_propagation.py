@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -11,11 +15,15 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.pipeline_options import PictureDescriptionApiOptions
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    MlxVlmEngineOptions,
+)
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput
+from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
 from docling.models.stages.picture_description.picture_description_api_model import (
     PictureDescriptionApiModel,
 )
@@ -113,6 +121,28 @@ def test_api_vlm_engine_preserves_usage_on_output_metadata(
     assert output.stop_reason == expected_stop_reason
     assert output.metadata["num_tokens"] == api_result.num_tokens
     assert output.metadata["usage"] == api_result.usage
+
+
+def test_mlx_vlm_engine_records_generated_token_count() -> None:
+    engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
+    engine._initialized = True
+    engine.vlm_model = object()
+    engine.processor = object()
+    engine.config = object()
+    engine.apply_chat_template = lambda *_args, **_kwargs: "formatted prompt"
+    engine.stream_generate = lambda *_args, **_kwargs: iter(
+        [
+            SimpleNamespace(text="first "),
+            SimpleNamespace(text="second "),
+            SimpleNamespace(text="third"),
+        ]
+    )
+
+    input_data = VlmEngineInput(image=Image.new("RGB", (8, 8)), prompt="Describe")
+    output = engine.predict_batch([input_data])[0]
+
+    assert output.text == "first second third"
+    assert output.metadata["num_tokens"] == 3
 
 
 def test_picture_description_api_model_forwards_usage_response_key() -> None:

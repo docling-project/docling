@@ -547,12 +547,12 @@
           },
           "charspan": [
             0,
-            193
+            208
           ]
         }
       ],
-      "orig": "Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , [0000 -0002 -8088 -0823]",
-      "text": "Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , [0000 -0002 -8088 -0823]"
+      "orig": "Maksym Lysak [0000 - 0002 - 3723 - 6960] , Ahmed Nassar [0000 - 0002 - 9468 - 0822] , Nikolaos Livathinos [0000 - 0001 - 8513 - 3491] , Christoph Auer [0000 - 0001 - 5761 - 0422] , [0000 - 0002 - 8088 - 0823]",
+      "text": "Maksym Lysak [0000 - 0002 - 3723 - 6960] , Ahmed Nassar [0000 - 0002 - 9468 - 0822] , Nikolaos Livathinos [0000 - 0001 - 8513 - 3491] , Christoph Auer [0000 - 0001 - 5761 - 0422] , [0000 - 0002 - 8088 - 0823]"
     },
     {
       "self_ref": "#/texts/3",
@@ -3456,14 +3456,14 @@
           },
           "charspan": [
             0,
-            72
+            75
           ]
         }
       ],
-      "orig": "-\"C\" cell a new table cell that either has or does not have cell content",
-      "text": "-\"C\" cell a new table cell that either has or does not have cell content",
+      "orig": "- \"C\" cell - a new table cell that either has or does not have cell content",
+      "text": "\"C\" cell - a new table cell that either has or does not have cell content",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/109",
@@ -3485,14 +3485,14 @@
           },
           "charspan": [
             0,
-            82
+            85
           ]
         }
       ],
-      "orig": "-\"L\" cell left-looking cell , merging with the left neighbor cell to create a span",
-      "text": "-\"L\" cell left-looking cell , merging with the left neighbor cell to create a span",
+      "orig": "- \"L\" cell - left-looking cell , merging with the left neighbor cell to create a span",
+      "text": "\"L\" cell - left-looking cell , merging with the left neighbor cell to create a span",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/110",
@@ -3514,14 +3514,14 @@
           },
           "charspan": [
             0,
-            81
+            84
           ]
         }
       ],
-      "orig": "-\"U\" cell up-looking cell , merging with the upper neighbor cell to create a span",
-      "text": "-\"U\" cell up-looking cell , merging with the upper neighbor cell to create a span",
+      "orig": "- \"U\" cell - up-looking cell , merging with the upper neighbor cell to create a span",
+      "text": "\"U\" cell - up-looking cell , merging with the upper neighbor cell to create a span",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/111",
@@ -3543,14 +3543,14 @@
           },
           "charspan": [
             0,
-            71
+            74
           ]
         }
       ],
-      "orig": "-\"X\" cell cross cell , to merge with both left and upper neighbor cells",
-      "text": "-\"X\" cell cross cell , to merge with both left and upper neighbor cells",
+      "orig": "- \"X\" cell - cross cell , to merge with both left and upper neighbor cells",
+      "text": "\"X\" cell - cross cell , to merge with both left and upper neighbor cells",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/112",
@@ -3572,14 +3572,14 @@
           },
           "charspan": [
             0,
-            40
+            43
           ]
         }
       ],
-      "orig": "-\"NL\" new-line , switch to the next row.",
-      "text": "-\"NL\" new-line , switch to the next row.",
+      "orig": "- \"NL\" - new-line , switch to the next row.",
+      "text": "\"NL\" - new-line , switch to the next row.",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/113",
@@ -12406,8 +12406,8 @@
           "bbox": {
             "l": 167.44,
             "t": 609.66,
-            "r": 446.32,
-            "b": 157.99,
+            "r": 446.34,
+            "b": 158.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

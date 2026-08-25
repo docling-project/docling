@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Video frame sampling utilities.
 
 This module is intentionally free of any docling imports. It provides two

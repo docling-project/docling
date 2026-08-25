@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test chandra-ocr-2 HTML parsing in VLM pipeline."""
 
 from pathlib import Path

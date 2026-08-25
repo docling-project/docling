@@ -69,6 +69,7 @@ nav:
       - Supported formats: usage/supported_formats.md
       - Audio & video: usage/processing_audio_media.md
       - Enrichment features: usage/enrichments.md
+      - PDF heading levels: usage/heading_levels.md
       - Vision models: usage/vision_models.md
       - Model catalog: usage/model_catalog.md
       - GPU support: usage/gpu.md
@@ -109,6 +110,7 @@ nav:
       - _generated/examples/video_pipeline.md
       - "Figure export": _generated/examples/export_figures.md
       - "Table export": _generated/examples/export_tables.md
+      - "PDF heading levels": _generated/examples/heading_levels.md
       - "Force full page OCR": _generated/examples/full_page_ocr.md
       - "Automatic OCR language detection with tesseract": _generated/examples/tesseract_lang_detection.md
       - "RapidOCR with custom OCR models": _generated/examples/rapidocr_with_custom_models.md
@@ -162,6 +164,7 @@ nav:
     - 🤖 Agentic / AI dev frameworks:
       - "Bee Agent Framework": integrations/bee.md
       - "Crew AI": integrations/crewai.md
+      - "haiku.rag": integrations/haiku_rag.md
       - "Haystack": integrations/haystack.md
       - "Hector": integrations/hector.md
       - "LangChain": integrations/langchain.md
@@ -173,6 +176,7 @@ nav:
       - "Apify": integrations/apify.md
       - "Data Prep Kit": integrations/data_prep_kit.md
       - "InstructLab": integrations/instructlab.md
+      - "Label Studio": integrations/labelstudio.md
       - "NVIDIA": integrations/nvidia.md
       - "Prodigy": integrations/prodigy.md
       - "RHEL AI": integrations/rhel_ai.md

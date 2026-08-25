@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import shutil
 import sys
@@ -534,7 +537,7 @@ class _WhisperS2TModel:
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
-                    "`pip install 'whisper-s2t-reborn[pyav]>=1.6.3'`."
+                    "`pip install 'whisper-s2t-reborn[pyav]>=1.7.1'`."
                 )
 
             self.whisper_s2t = whisper_s2t

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import enum
 import math
 import warnings
@@ -123,7 +126,14 @@ class RemoteTargetResult(BaseModel):
 
 class ArtifactRef(BaseModel):
     artifact_type: Literal[
-        "json", "html", "markdown", "text", "doctags", "doclang", "resource_bundle"
+        "json",
+        "html",
+        "markdown",
+        "text",
+        "doctags",
+        "doclang",
+        "dclx",
+        "resource_bundle",
     ]
     mime_type: str
     uri: AnyUrl

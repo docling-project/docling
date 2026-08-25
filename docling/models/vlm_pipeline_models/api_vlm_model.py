@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Union

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import copy
 import logging
 import warnings
@@ -118,8 +121,8 @@ class TableStructureModel(BaseTableStructureModel):
         assert page._backend is not None
         assert page.size is not None
 
-        image = (
-            page._backend.get_page_image()
+        image = page._backend.get_page_image(
+            scale=1.0
         )  # make new image to avoid drawing on the saved ones
 
         scale_x = image.width / page.size.width

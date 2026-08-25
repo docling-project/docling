@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 

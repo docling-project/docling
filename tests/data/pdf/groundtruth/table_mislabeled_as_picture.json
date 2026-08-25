@@ -27,34 +27,34 @@
         "$ref": "#/texts/17"
       },
       {
-        "$ref": "#/groups/1"
+        "$ref": "#/texts/18"
       },
       {
-        "$ref": "#/texts/20"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/21"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/22"
       },
       {
         "$ref": "#/texts/23"
       },
       {
-        "$ref": "#/texts/24"
+        "$ref": "#/groups/2"
+      },
+      {
+        "$ref": "#/texts/25"
+      },
+      {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
       },
       {
         "$ref": "#/groups/3"
-      },
-      {
-        "$ref": "#/texts/39"
-      },
-      {
-        "$ref": "#/texts/40"
-      },
-      {
-        "$ref": "#/groups/4"
       },
       {
         "$ref": "#/texts/42"
@@ -66,7 +66,7 @@
         "$ref": "#/texts/44"
       },
       {
-        "$ref": "#/texts/45"
+        "$ref": "#/groups/4"
       },
       {
         "$ref": "#/texts/46"
@@ -75,13 +75,10 @@
         "$ref": "#/texts/47"
       },
       {
-        "$ref": "#/groups/5"
+        "$ref": "#/texts/48"
       },
       {
         "$ref": "#/texts/49"
-      },
-      {
-        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/50"
@@ -94,6 +91,27 @@
       },
       {
         "$ref": "#/texts/53"
+      },
+      {
+        "$ref": "#/groups/5"
+      },
+      {
+        "$ref": "#/texts/55"
+      },
+      {
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/56"
+      },
+      {
+        "$ref": "#/texts/57"
+      },
+      {
+        "$ref": "#/texts/58"
+      },
+      {
+        "$ref": "#/texts/59"
       }
     ],
     "content_layer": "body",
@@ -167,10 +185,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/19"
         },
         {
-          "$ref": "#/texts/19"
+          "$ref": "#/texts/20"
         }
       ],
       "content_layer": "body",
@@ -184,7 +202,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/22"
+          "$ref": "#/texts/24"
         }
       ],
       "content_layer": "body",
@@ -197,15 +215,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        },
-        {
-          "$ref": "#/texts/27"
-        },
         {
           "$ref": "#/texts/28"
         },
@@ -238,6 +247,15 @@
         },
         {
           "$ref": "#/texts/38"
+        },
+        {
+          "$ref": "#/texts/39"
+        },
+        {
+          "$ref": "#/texts/40"
+        },
+        {
+          "$ref": "#/texts/41"
         }
       ],
       "content_layer": "body",
@@ -251,7 +269,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/41"
+          "$ref": "#/texts/45"
         }
       ],
       "content_layer": "body",
@@ -265,7 +283,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/48"
+          "$ref": "#/texts/54"
         }
       ],
       "content_layer": "body",
@@ -294,12 +312,12 @@
           },
           "charspan": [
             0,
-            125
+            127
           ]
         }
       ],
-      "orig": "\u0084 They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid",
-      "text": "\u0084 They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid",
+      "orig": "\u0084 \u0084 They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid",
+      "text": "\u0084 \u0084 They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid",
       "enumerated": false,
       "marker": ""
     },
@@ -323,12 +341,12 @@
           },
           "charspan": [
             0,
-            110
+            112
           ]
         }
       ],
-      "orig": "\u0084 They coordinate appointments of private practitioners (ex officio, or panel appointments) to legal aid cases",
-      "text": "\u0084 They coordinate appointments of private practitioners (ex officio, or panel appointments) to legal aid cases",
+      "orig": "\u0084 \u0084 They coordinate appointments of private practitioners (ex officio, or panel appointments) to legal aid cases",
+      "text": "\u0084 \u0084 They coordinate appointments of private practitioners (ex officio, or panel appointments) to legal aid cases",
       "enumerated": false,
       "marker": ""
     },
@@ -352,12 +370,12 @@
           },
           "charspan": [
             0,
-            80
+            82
           ]
         }
       ],
-      "orig": "\u0084 They supervise, coach or mentor private practitioners who take legal aid cases",
-      "text": "\u0084 They supervise, coach or mentor private practitioners who take legal aid cases",
+      "orig": "\u0084 \u0084 They supervise, coach or mentor private practitioners who take legal aid cases",
+      "text": "\u0084 \u0084 They supervise, coach or mentor private practitioners who take legal aid cases",
       "enumerated": false,
       "marker": ""
     },
@@ -381,12 +399,12 @@
           },
           "charspan": [
             0,
-            73
+            75
           ]
         }
       ],
-      "orig": "\u0084 They conduct or organize training sessions for staff lawyers/paralegals",
-      "text": "\u0084 They conduct or organize training sessions for staff lawyers/paralegals",
+      "orig": "\u0084 \u0084 They conduct or organize training sessions for staff lawyers/paralegals",
+      "text": "\u0084 \u0084 They conduct or organize training sessions for staff lawyers/paralegals",
       "enumerated": false,
       "marker": ""
     },
@@ -410,12 +428,12 @@
           },
           "charspan": [
             0,
-            128
+            130
           ]
         }
       ],
-      "orig": "\u0084 They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals",
-      "text": "\u0084 They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals",
+      "orig": "\u0084 \u0084 They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals",
+      "text": "\u0084 \u0084 They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals",
       "enumerated": false,
       "marker": ""
     },
@@ -439,12 +457,12 @@
           },
           "charspan": [
             0,
-            78
+            81
           ]
         }
       ],
-      "orig": "\u0084 Other (Please specify) _____________________________________________________",
-      "text": "\u0084 Other (Please specify) _____________________________________________________",
+      "orig": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
+      "text": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
       "enumerated": false,
       "marker": ""
     },
@@ -468,12 +486,12 @@
           },
           "charspan": [
             0,
-            62
+            64
           ]
         }
       ],
-      "orig": "\u0084 Not applicable, there is no institutional legal aid provider",
-      "text": "\u0084 Not applicable, there is no institutional legal aid provider",
+      "orig": "\u0084 \u0084 Not applicable, there is no institutional legal aid provider",
+      "text": "\u0084 \u0084 Not applicable, there is no institutional legal aid provider",
       "enumerated": false,
       "marker": ""
     },
@@ -613,12 +631,12 @@
           },
           "charspan": [
             0,
-            37
+            32
           ]
         }
       ],
-      "orig": "\u0084 /.notdefThere is no such limitation",
-      "text": "\u0084 /.notdefThere is no such limitation",
+      "orig": "\u0084 \u0084 \u2610There is no such limitation",
+      "text": "\u0084 \u0084 \u2610There is no such limitation",
       "enumerated": false,
       "marker": ""
     },
@@ -671,12 +689,12 @@
           },
           "charspan": [
             0,
-            38
+            40
           ]
         }
       ],
-      "orig": "\u0084 Yes, at the national (federal) level",
-      "text": "\u0084 Yes, at the national (federal) level",
+      "orig": "\u0084 \u0084 Yes, at the national (federal) level",
+      "text": "\u0084 \u0084 Yes, at the national (federal) level",
       "enumerated": false,
       "marker": ""
     },
@@ -700,12 +718,12 @@
           },
           "charspan": [
             0,
-            35
+            37
           ]
         }
       ],
-      "orig": "\u0084 Yes, at regional (district) level",
-      "text": "\u0084 Yes, at regional (district) level",
+      "orig": "\u0084 \u0084 Yes, at regional (district) level",
+      "text": "\u0084 \u0084 Yes, at regional (district) level",
       "enumerated": false,
       "marker": ""
     },
@@ -729,12 +747,12 @@
           },
           "charspan": [
             0,
-            37
+            39
           ]
         }
       ],
-      "orig": "\u0084 Yes, at the local (municipal) level",
-      "text": "\u0084 Yes, at the local (municipal) level",
+      "orig": "\u0084 \u0084 Yes, at the local (municipal) level",
+      "text": "\u0084 \u0084 Yes, at the local (municipal) level",
       "enumerated": false,
       "marker": ""
     },
@@ -777,6 +795,33 @@
         {
           "page_no": 1,
           "bbox": {
+            "l": 158.48,
+            "t": 312.25,
+            "r": 162.08,
+            "b": 301.51,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
             "l": 166.77,
             "t": 309.41,
             "r": 177.63,
@@ -793,7 +838,7 @@
       "text": "No"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -822,7 +867,7 @@
       "marker": "25."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -841,17 +886,17 @@
           },
           "charspan": [
             0,
-            38
+            40
           ]
         }
       ],
-      "orig": "\u0084 Yes, at the national (federal) level",
-      "text": "\u0084 Yes, at the national (federal) level",
+      "orig": "\u0084 \u0084 Yes, at the national (federal) level",
+      "text": "\u0084 \u0084 Yes, at the national (federal) level",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/body"
       },
@@ -878,7 +923,34 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 158.48,
+            "t": 199.9,
+            "r": 162.08,
+            "b": 189.16,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -905,7 +977,7 @@
       "text": "Yes, at regional (district) level"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -924,17 +996,17 @@
           },
           "charspan": [
             0,
-            37
+            39
           ]
         }
       ],
-      "orig": "\u0084 Yes, at the local (municipal) level",
-      "text": "\u0084 Yes, at the local (municipal) level",
+      "orig": "\u0084 \u0084 Yes, at the local (municipal) level",
+      "text": "\u0084 \u0084 Yes, at the local (municipal) level",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -961,7 +1033,34 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 158.48,
+            "t": 164.56,
+            "r": 162.08,
+            "b": 153.82,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -988,7 +1087,7 @@
       "text": "No"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1017,7 +1116,7 @@
       "marker": "26."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1036,17 +1135,17 @@
           },
           "charspan": [
             0,
-            81
+            83
           ]
         }
       ],
-      "orig": "\u0084 Yes, there are specific guidelines for non-lawyers providing legal aid services",
-      "text": "\u0084 Yes, there are specific guidelines for non-lawyers providing legal aid services",
+      "orig": "\u0084 \u0084 Yes, there are specific guidelines for non-lawyers providing legal aid services",
+      "text": "\u0084 \u0084 Yes, there are specific guidelines for non-lawyers providing legal aid services",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1065,17 +1164,17 @@
           },
           "charspan": [
             0,
-            62
+            64
           ]
         }
       ],
-      "orig": "\u0084 Yes, there are specific guidelines on faculty/student ratios",
-      "text": "\u0084 Yes, there are specific guidelines on faculty/student ratios",
+      "orig": "\u0084 \u0084 Yes, there are specific guidelines on faculty/student ratios",
+      "text": "\u0084 \u0084 Yes, there are specific guidelines on faculty/student ratios",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1094,17 +1193,17 @@
           },
           "charspan": [
             0,
-            51
+            53
           ]
         }
       ],
-      "orig": "\u0084 No, it is up to the discretion of each university",
-      "text": "\u0084 No, it is up to the discretion of each university",
+      "orig": "\u0084 \u0084 No, it is up to the discretion of each university",
+      "text": "\u0084 \u0084 No, it is up to the discretion of each university",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1123,17 +1222,17 @@
           },
           "charspan": [
             0,
-            12
+            14
           ]
         }
       ],
-      "orig": "\u0084 Don't know",
-      "text": "\u0084 Don't know",
+      "orig": "\u0084 \u0084 Don't know",
+      "text": "\u0084 \u0084 Don't know",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1152,17 +1251,17 @@
           },
           "charspan": [
             0,
-            51
+            53
           ]
         }
       ],
-      "orig": "\u0084 There are no university-based student law clinics",
-      "text": "\u0084 There are no university-based student law clinics",
+      "orig": "\u0084 \u0084 There are no university-based student law clinics",
+      "text": "\u0084 \u0084 There are no university-based student law clinics",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1191,7 +1290,7 @@
       "marker": "27."
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1210,17 +1309,17 @@
           },
           "charspan": [
             0,
-            65
+            67
           ]
         }
       ],
-      "orig": "\u0084 There is no limitation; they have the same authority as lawyers",
-      "text": "\u0084 There is no limitation; they have the same authority as lawyers",
+      "orig": "\u0084 \u0084 There is no limitation; they have the same authority as lawyers",
+      "text": "\u0084 \u0084 There is no limitation; they have the same authority as lawyers",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1239,17 +1338,17 @@
           },
           "charspan": [
             0,
-            67
+            69
           ]
         }
       ],
-      "orig": "\u0084 They can represent people in administrative or civil law hearings",
-      "text": "\u0084 They can represent people in administrative or civil law hearings",
+      "orig": "\u0084 \u0084 They can represent people in administrative or civil law hearings",
+      "text": "\u0084 \u0084 They can represent people in administrative or civil law hearings",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1268,17 +1367,17 @@
           },
           "charspan": [
             0,
-            51
+            53
           ]
         }
       ],
-      "orig": "\u0084 They can provide primary legal aid (legal advice)",
-      "text": "\u0084 They can provide primary legal aid (legal advice)",
+      "orig": "\u0084 \u0084 They can provide primary legal aid (legal advice)",
+      "text": "\u0084 \u0084 They can provide primary legal aid (legal advice)",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1297,17 +1396,17 @@
           },
           "charspan": [
             0,
-            34
+            36
           ]
         }
       ],
-      "orig": "\u0084 They can prepare legal documents",
-      "text": "\u0084 They can prepare legal documents",
+      "orig": "\u0084 \u0084 They can prepare legal documents",
+      "text": "\u0084 \u0084 They can prepare legal documents",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1326,17 +1425,17 @@
           },
           "charspan": [
             0,
-            66
+            68
           ]
         }
       ],
-      "orig": "\u0084 They can represent people in court in civil and criminal matters",
-      "text": "\u0084 They can represent people in court in civil and criminal matters",
+      "orig": "\u0084 \u0084 They can represent people in court in civil and criminal matters",
+      "text": "\u0084 \u0084 They can represent people in court in civil and criminal matters",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1355,17 +1454,17 @@
           },
           "charspan": [
             0,
-            81
+            83
           ]
         }
       ],
-      "orig": "\u0084 They have the same authority as lawyers in criminal cases of low to mid gravity",
-      "text": "\u0084 They have the same authority as lawyers in criminal cases of low to mid gravity",
+      "orig": "\u0084 \u0084 They have the same authority as lawyers in criminal cases of low to mid gravity",
+      "text": "\u0084 \u0084 They have the same authority as lawyers in criminal cases of low to mid gravity",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -1384,17 +1483,17 @@
           },
           "charspan": [
             0,
-            89
+            91
           ]
         }
       ],
-      "orig": "\u0084 They can provide a full range of legal services in criminal cases regardless of gravity",
-      "text": "\u0084 They can provide a full range of legal services in criminal cases regardless of gravity",
+      "orig": "\u0084 \u0084 They can provide a full range of legal services in criminal cases regardless of gravity",
+      "text": "\u0084 \u0084 They can provide a full range of legal services in criminal cases regardless of gravity",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -1421,7 +1520,34 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 784.65,
+            "t": 406.75,
+            "r": 788.25,
+            "b": 396.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/body"
       },
@@ -1448,7 +1574,7 @@
       "text": "They can conduct mediation"
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -1467,17 +1593,17 @@
           },
           "charspan": [
             0,
-            106
+            108
           ]
         }
       ],
-      "orig": "\u0084 They are authorized to provide only those services that a faculty member or practicing lawyer supervises",
-      "text": "\u0084 They are authorized to provide only those services that a faculty member or practicing lawyer supervises",
+      "orig": "\u0084 \u0084 They are authorized to provide only those services that a faculty member or practicing lawyer supervises",
+      "text": "\u0084 \u0084 They are authorized to provide only those services that a faculty member or practicing lawyer supervises",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -1504,7 +1630,7 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -1531,7 +1657,61 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 784.65,
+            "t": 359.41,
+            "r": 788.25,
+            "b": 348.67,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 784.65,
+            "t": 341.75,
+            "r": 788.25,
+            "b": 331.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "\u0084",
+      "text": "\u0084"
+    },
+    {
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -1558,7 +1738,7 @@
       "text": "Don't know"
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -1585,7 +1765,7 @@
       "text": "Other"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -1612,7 +1792,7 @@
       "text": "(Please specify)"
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -1631,15 +1811,15 @@
           },
           "charspan": [
             0,
-            53
+            54
           ]
         }
       ],
-      "orig": "_____________________________________________________",
-      "text": "_____________________________________________________"
+      "orig": "______________________________________________________",
+      "text": "______________________________________________________"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -1668,7 +1848,7 @@
       "marker": "28."
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
       },
@@ -1695,7 +1875,7 @@
       "text": "(Please select all that apply)"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -1722,7 +1902,7 @@
       "text": "208"
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1749,7 +1929,7 @@
       "text": "Global Study on Legal Aid - Global Report"
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -1776,7 +1956,7 @@
       "text": "Annex"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/body"
       },
@@ -1878,8 +2058,8 @@
             "bbox": {
               "l": 773.95,
               "t": 593.55,
-              "r": 778.08,
-              "b": 601.93,
+              "r": 779.98,
+              "b": 602.16,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1888,7 +2068,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1958,8 +2138,8 @@
             "bbox": {
               "l": 773.95,
               "t": 611.64,
-              "r": 778.07,
-              "b": 620.02,
+              "r": 779.98,
+              "b": 620.25,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1968,7 +2148,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2038,8 +2218,8 @@
             "bbox": {
               "l": 773.94,
               "t": 629.73,
-              "r": 778.06,
-              "b": 638.11,
+              "r": 779.97,
+              "b": 638.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -2048,7 +2228,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2118,8 +2298,8 @@
             "bbox": {
               "l": 773.93,
               "t": 647.82,
-              "r": 778.05,
-              "b": 656.2,
+              "r": 779.96,
+              "b": 656.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -2128,7 +2308,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2198,8 +2378,8 @@
             "bbox": {
               "l": 773.92,
               "t": 665.91,
-              "r": 778.04,
-              "b": 674.29,
+              "r": 779.95,
+              "b": 674.52,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -2208,7 +2388,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2278,8 +2458,8 @@
             "bbox": {
               "l": 773.91,
               "t": 684.0,
-              "r": 778.03,
-              "b": 692.38,
+              "r": 779.94,
+              "b": 692.61,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -2288,7 +2468,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2308,7 +2488,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Refugees,asylum seekers,or stateless persons",
+            "text": "Refugees, asylum seekers, or stateless persons",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2358,8 +2538,8 @@
             "bbox": {
               "l": 773.9,
               "t": 702.09,
-              "r": 778.02,
-              "b": 710.47,
+              "r": 779.84,
+              "b": 710.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -2368,7 +2548,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "y",
+            "text": "y y",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2512,8 +2692,8 @@
               "bbox": {
                 "l": 773.95,
                 "t": 593.55,
-                "r": 778.08,
-                "b": 601.93,
+                "r": 779.98,
+                "b": 602.16,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2522,7 +2702,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2594,8 +2774,8 @@
               "bbox": {
                 "l": 773.95,
                 "t": 611.64,
-                "r": 778.07,
-                "b": 620.02,
+                "r": 779.98,
+                "b": 620.25,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2604,7 +2784,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2676,8 +2856,8 @@
               "bbox": {
                 "l": 773.94,
                 "t": 629.73,
-                "r": 778.06,
-                "b": 638.11,
+                "r": 779.97,
+                "b": 638.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2686,7 +2866,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2758,8 +2938,8 @@
               "bbox": {
                 "l": 773.93,
                 "t": 647.82,
-                "r": 778.05,
-                "b": 656.2,
+                "r": 779.96,
+                "b": 656.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2768,7 +2948,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2840,8 +3020,8 @@
               "bbox": {
                 "l": 773.92,
                 "t": 665.91,
-                "r": 778.04,
-                "b": 674.29,
+                "r": 779.95,
+                "b": 674.52,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2850,7 +3030,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2922,8 +3102,8 @@
               "bbox": {
                 "l": 773.91,
                 "t": 684.0,
-                "r": 778.03,
-                "b": 692.38,
+                "r": 779.94,
+                "b": 692.61,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2932,7 +3112,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2952,7 +3132,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Refugees,asylum seekers,or stateless persons",
+              "text": "Refugees, asylum seekers, or stateless persons",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3004,8 +3184,8 @@
               "bbox": {
                 "l": 773.9,
                 "t": 702.09,
-                "r": 778.02,
-                "b": 710.47,
+                "r": 779.84,
+                "b": 710.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -3014,7 +3194,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "y",
+              "text": "y y",
               "column_header": false,
               "row_header": false,
               "row_section": false,

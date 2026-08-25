@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -52,7 +55,7 @@ class DebugSettings(BaseModel):
 
 
 class InferenceSettings(BaseModel):
-    compile_torch_models: bool = True
+    compile_torch_models: bool = False
 
 
 class AppSettings(BaseSettings):
