@@ -53,7 +53,7 @@ Two aggregate grades provide overall document quality assessment:
 Confidence grades are calculated at two levels:
 
 - **Page-level**: Individual scores and grades for each page, stored in the `pages` field
-- **Document-level**: Overall scores and grades for the entire document, calculated as averages of the page-level grades and stored in fields equally named in the root [`ConfidenceReport`](h../../reference/document_converter/#docling.document_converter.ConversionResult.confidence)
+- **Document-level**: Overall scores and grades for the entire document, calculated as averages of the page-level grades and stored in fields equally named in the root [`ConfidenceReport`](../../reference/document_converter/#docling.document_converter.ConversionResult.confidence)
 
 ### Example
 

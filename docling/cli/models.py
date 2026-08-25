@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import warnings
@@ -249,7 +252,8 @@ def download_hf_repo(
         )
 
     for item in models:
-        typer.secho(f"\nDownloading {item} model from HuggingFace...")
+        if not quiet:
+            typer.secho(f"\nDownloading {item} model from HuggingFace...")
         download_hf_model(
             repo_id=item,
             # would be better to reuse "repo_cache_folder" property: https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options_vlm_model.py#L76

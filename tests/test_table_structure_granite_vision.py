@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import pytest
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Engine options for VLM inference.
 
 This module defines engine-specific configuration options that are independent

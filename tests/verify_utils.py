@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import json
 import math
 import os
@@ -29,8 +32,7 @@ STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
 FUZZY_BBOX_TOL_RATIO = (
     0.08  # OCR/image output varies more, but gross shifts should fail
 )
-STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
-FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
+IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 
 
 def _normalize_newlines(text: str) -> str:
@@ -203,17 +205,23 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 
 def verify_picture_image_v2(
-    true_image: PILImage.Image, pred_item: Optional[PILImage.Image], fuzzy: bool = False
+    true_image: PILImage.Image, pred_item: Optional[PILImage.Image]
 ) -> bool:
-    """Compare image properties with optional fuzziness for cross-platform variance.
+    """Compare image properties between a ground-truth image and a predicted image.
+
+    The image mode must match exactly.  The pixel dimensions are compared with a
+    percentage-based tolerance (IMAGE_SIZE_TOL_RATIO) to accommodate minor
+    cross-platform rendering differences.
+
+    Image bytes are not compared because they can differ significantly across
+    platforms even for visually identical images.
 
     Args:
-        true_image: Ground truth image
-        pred_item: Predicted image
-        fuzzy: If True, allow larger size differences (e.g., OCR/image processing variance)
+        true_image: Ground-truth PIL image loaded from the reference fixture.
+        pred_item: Predicted PIL image produced by the conversion under test.
 
-    Note:
-        We don't compare image bytes as they can vary significantly across platforms even for visually identical images
+    Returns:
+        True if all assertions pass.
     """
     assert pred_item is not None, "predicted image is None"
 
@@ -222,25 +230,23 @@ def verify_picture_image_v2(
         f"Image mode mismatch: {true_image.mode} vs {pred_item.mode}"
     )
 
-    # Check image size with percentage-based tolerance
-    tol_ratio = FUZZY_IMAGE_SIZE_TOL_RATIO if fuzzy else STRICT_IMAGE_SIZE_TOL_RATIO
+    # Check image size with a percentage-based tolerance
     true_width, true_height = true_image.size
     pred_width, pred_height = pred_item.size
 
     width_diff = abs(true_width - pred_width)
     height_diff = abs(true_height - pred_height)
 
-    # Calculate actual percentage differences
     width_diff_ratio = width_diff / true_width if true_width > 0 else 0
     height_diff_ratio = height_diff / true_height if true_height > 0 else 0
 
-    assert width_diff_ratio <= tol_ratio, (
+    assert width_diff_ratio <= IMAGE_SIZE_TOL_RATIO, (
         f"Image width mismatch: {true_width} vs {pred_width} "
-        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {IMAGE_SIZE_TOL_RATIO:.1%})"
     )
-    assert height_diff_ratio <= tol_ratio, (
+    assert height_diff_ratio <= IMAGE_SIZE_TOL_RATIO, (
         f"Image height mismatch: {true_height} vs {pred_height} "
-        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {IMAGE_SIZE_TOL_RATIO:.1%})"
     )
 
     return True
@@ -253,8 +259,39 @@ def verify_docitems(
     fuzzy: bool,
     pdf_filename: str = "",
 ):
-    # print(doc_pred.texts)
-    # print(doc_true.texts)
+    """Verify that two DoclingDocuments contain equivalent content.
+
+    For every item pair the following properties are checked:
+
+    - Label: item type must match exactly.
+    - Provenance: page number and bounding-box coordinates must match.
+      BBox tolerance is controlled by the fuzzy flag (STRICT_BBOX_TOL_RATIO vs
+      FUZZY_BBOX_TOL_RATIO).
+    - Text (TextItem): exact match in strict mode; Levenshtein distance below
+      threshold in fuzzy mode.
+    - Tables (TableItem): row/column counts and cell text must match, subject to
+      the same text-fuzziness rules.
+    - Pictures (PictureItem): only checked when the ground-truth image is
+      present. When fuzzy is False, image mode and pixel dimensions are verified
+      (see verify_picture_image_v2). When fuzzy is True, image sizes are not
+      compared — only the existence of the predicted image is asserted. This is
+      intentional for backends that rely on LibreOffice (MsWordDocumentBackend,
+      MsExcelDocumentBackend, MsPowerPointDocumentBackend), whose rendered pixel
+      dimensions are not stable across LibreOffice versions and
+      operating-system installations.
+    - Code (CodeItem): code_language must match exactly.
+
+    Args:
+        doc_pred: The DoclingDocument produced by the conversion under test.
+        doc_true: The reference DoclingDocument loaded from the ground-truth fixture.
+        fuzzy: When True, apply relaxed tolerances for text and bboxes, and skip
+            image size comparison entirely (see Pictures note above).
+        pdf_filename: Source filename included in assertion messages for easier
+            debugging.
+
+    Returns:
+        True if all assertions pass.
+    """
 
     assert len(doc_pred.texts) == len(doc_true.texts), (
         f"[{pdf_filename}] Text lengths do not match: {len(doc_pred.texts)} != {len(doc_true.texts)}"
@@ -359,11 +396,18 @@ def verify_docitems(
             )
 
             true_image = true_item.get_image(doc=doc_true)
-            pred_image = pred_item.get_image(doc=doc_pred)
             if true_image is not None:
-                assert verify_picture_image_v2(true_image, pred_image, fuzzy=fuzzy), (
-                    f"[{pdf_filename}] Picture image mismatch"
-                )
+                if fuzzy:
+                    # In fuzzy mode (used for LibreOffice-based backends whose
+                    # rendered image dimensions vary across platforms) we only
+                    # verify that the predicted image exists, not its size.
+                    assert pred_item.get_image(doc=doc_pred) is not None, (
+                        f"[{pdf_filename}] Picture image is missing"
+                    )
+                else:
+                    assert verify_picture_image_v2(
+                        true_image, pred_item.get_image(doc=doc_pred)
+                    ), f"[{pdf_filename}] Picture image mismatch"
         # TODO: check picture annotations
 
         # Validate code content

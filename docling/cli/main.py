@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import datetime
 import logging
 import re
@@ -538,7 +541,7 @@ def export_documents(
                     ser_res = ser.serialize(
                         visualizer=visualizer,
                     )
-                    with open(fname, "w") as fw:
+                    with open(fname, "w", encoding="utf-8") as fw:
                         fw.write(ser_res.text)
                 else:
                     conv_res.document.save_as_html(

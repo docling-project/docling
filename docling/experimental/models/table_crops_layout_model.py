@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal TableCrops layout model that marks full pages as table clusters."""
 
 from __future__ import annotations

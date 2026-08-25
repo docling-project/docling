@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Reader for Apple's IWA (iWork Archive) container format.
 
 Pages, Numbers and Keynote from 2013 onwards store their documents as
@@ -20,7 +23,9 @@ those live in the Pages backend rather than here.
 """
 
 import logging
-from typing import Iterator, NamedTuple
+import zipfile
+from collections.abc import Iterator
+from typing import NamedTuple
 
 from docling.exceptions import DocumentLoadError
 
@@ -254,3 +259,37 @@ def iter_objects(data: bytes) -> Iterator[IWAObject]:
                 raise DocumentLoadError("Truncated object payload in IWA stream.")
             yield IWAObject(identifier, message_type, stream[pos : pos + payload_len])
             pos += payload_len
+
+
+READABLE_COMPRESSION_METHODS = frozenset(
+    {
+        zipfile.ZIP_STORED,
+        zipfile.ZIP_DEFLATED,
+        zipfile.ZIP_BZIP2,
+        zipfile.ZIP_LZMA,
+    }
+)
+"""Compression methods ZIP defines and :mod:`zipfile` can open.
+
+A member using anything else cannot be read, which for iWork means it is
+encrypted: Pages writes a compression method outside this set instead of
+setting the standard encryption flag.
+"""
+
+
+def is_encrypted(info: zipfile.ZipInfo) -> bool:
+    """Report whether an archive member cannot be read because it is encrypted.
+
+    Standard ZIP encryption sets bit 0 of the general-purpose flags. Pages does
+    not use that: it leaves the flag clear and writes a compression method
+    outside the set ZIP defines, so both signals are needed.
+
+    Args:
+        info: The archive member to inspect.
+
+    Returns:
+        Whether the member appears to be encrypted.
+    """
+    if info.flag_bits & 0x1:
+        return True
+    return info.compress_type not in READABLE_COMPRESSION_METHODS

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for calling KServe v2 gRPC inference endpoints via tritonclient."""
 
 from __future__ import annotations

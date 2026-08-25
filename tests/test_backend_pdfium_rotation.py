@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Text-cell geometry for pages carrying a ``/Rotate`` entry.
 
 PDFium reports text coordinates in the page's unrotated (MediaBox) frame and

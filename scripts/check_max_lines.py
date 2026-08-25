@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Pre-commit hook to enforce a maximum number of lines per file."""
 
 from __future__ import annotations

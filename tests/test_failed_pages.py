@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for failed page handling in StandardPdfPipeline.
 
 These tests verify that when some PDF pages fail to parse, they are still

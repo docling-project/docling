@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for per-page VLM finalization with force_backend_text.
 
 When force_backend_text=True on a multi-page DocTags (SmolDocling) document,

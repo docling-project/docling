@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend to parse patents from the United States Patent Office (USPTO).
 
 The parsers included in this module can handle patent grants published since 1976 and

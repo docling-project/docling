@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Unit tests for the shared image-resource loader and its safety limits."""
 
 import socket

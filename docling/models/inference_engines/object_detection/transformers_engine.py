@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Transformers implementation for object-detection models."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Thread-safe, production-ready PDF pipeline
 ================================================
 A self-contained, thread-safe PDF conversion pipeline exploiting parallelism between pipeline stages and models.
@@ -72,6 +75,7 @@ from docling.models.stages.page_assemble.page_assemble_model import (
 from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
+    resolve_skip_cell_extraction,
 )
 from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
@@ -600,7 +604,10 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.preprocessing_model = PagePreprocessingModel(
             options=PagePreprocessingOptions(
-                images_scale=self.pipeline_options.images_scale
+                images_scale=self.pipeline_options.images_scale,
+                skip_cell_extraction=resolve_skip_cell_extraction(
+                    self.pipeline_options
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)

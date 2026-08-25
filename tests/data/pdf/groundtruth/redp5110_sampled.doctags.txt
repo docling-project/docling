@@ -149,10 +149,10 @@
 <page_break>
 <code><loc_112><loc_45><loc_426><loc_164><_unknown_>RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' ||  MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-'     || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE  ;</code>
 <ordered_list><list_item><loc_112><loc_174><loc_447><loc_187>The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:</list_item>
-<list_item><loc_124><loc_192><loc_383><loc_198>-Human Resources can see the unmasked TAX_ID of the employees.</list_item>
-<list_item><loc_124><loc_203><loc_330><loc_209>-Employees can see only their own unmasked TAX_ID.</list_item>
-<list_item><loc_124><loc_214><loc_445><loc_227>-Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).</list_item>
-<list_item><loc_124><loc_232><loc_433><loc_238>-Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.</list_item>
+<list_item><loc_124><loc_192><loc_383><loc_198>Human Resources can see the unmasked TAX_ID of the employees.</list_item>
+<list_item><loc_124><loc_203><loc_330><loc_209>Employees can see only their own unmasked TAX_ID.</list_item>
+<list_item><loc_124><loc_214><loc_445><loc_227>Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).</list_item>
+<list_item><loc_124><loc_232><loc_433><loc_238>Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.</list_item>
 </ordered_list>
 <text><loc_124><loc_243><loc_433><loc_249>To implement this column mask, run the SQL statement that is shown in Example 3-9.</text>
 <code><loc_112><loc_268><loc_430><loc_432><_unknown_>CREATE MASK   HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON            HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN    TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE  ;<caption><loc_112><loc_257><loc_288><loc_262>Example 3-9   Creating a mask on the TAX_ID column</caption></code>

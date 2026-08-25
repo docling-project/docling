@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """MLX-based VLM inference engine for Apple Silicon."""
 
 from __future__ import annotations
