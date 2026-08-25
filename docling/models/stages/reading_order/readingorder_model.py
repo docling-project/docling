@@ -8,6 +8,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    FloatingItem,
     GroupLabel,
     NodeItem,
     ProvenanceItem,
@@ -114,13 +115,18 @@ class ReadingOrderModel:
                     DocItemLabel.PAGE_FOOTER,
                 ):
                     content_layer = ContentLayer.FURNITURE
-                doc.add_text(
+                new_item = doc.add_text(
                     parent=doc_item,
                     label=c_label,
                     text=c_text,
                     prov=c_prov,
                     content_layer=content_layer,
                 )
+                # Serializers reach captions via `captions`, never by walking children.
+                if c_label == DocItemLabel.CAPTION and isinstance(
+                    doc_item, FloatingItem
+                ):
+                    doc_item.captions.append(new_item.get_ref())
 
     def _create_rich_cell_group(
         self, element: BasePageElement, doc: DoclingDocument, table_item: NodeItem
