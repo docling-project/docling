@@ -6,7 +6,6 @@ import json
 import re
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from enum import Enum
 from pathlib import (
     Path,
     PosixPath,
@@ -84,8 +83,6 @@ def _canonicalize(value: object, active: set[int] | None = None) -> object:
         return {"type": value_type, "value": value}
     if type(value) is float:
         return {"type": value_type, "value": value.hex()}
-    if isinstance(value, Enum):
-        return {"type": value_type, "value": value.name}
     if type(value) in _LOSSLESS_STRING_TYPES:
         return {"type": value_type, "value": str(value)}
     if type(value) in (datetime, date, time):
