@@ -1,10 +1,13 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import logging
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 import pytest
+from pydantic import ValidationError
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
@@ -14,7 +17,7 @@ from docling.models.stages.ocr.rapid_ocr_model import (
     _parse_rapidocr_model_spec,
     _resolve_rapidocr,
 )
-from docling.utils.model_downloader import download_models
+from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 pytestmark = pytest.mark.ml_ocr
 
@@ -46,12 +49,18 @@ def _install_fakes(monkeypatch, captured_params: list[dict[str, object]]) -> lis
     return downloaded_urls
 
 
-def _seed(artifacts_path: Path, backend: str, lang: str) -> None:
-    """Prefetch one `(backend, lang)` set into artifacts_path, the way a user would."""
+def _seed(
+    artifacts_path: Path,
+    backend: str,
+    lang: str,
+    model_size: Literal["tiny", "small", "medium"] = "small",
+) -> None:
+    """Prefetch one `(backend, lang, model_size)` set into artifacts_path, as a user would."""
     RapidOcrModel.download_models(
         backend=backend,
         lang=lang,
         local_dir=artifacts_path / RapidOcrModel._model_repo_folder,
+        model_size=model_size,
     )
 
 
@@ -60,7 +69,9 @@ def _build(
     options: RapidOcrOptions,
     artifacts_path: Path | None,
     *,
-    seed: tuple[str, str] | None = None,
+    seed: tuple[str, str]
+    | tuple[str, str, Literal["tiny", "small", "medium"]]
+    | None = None,
 ):
     captured_params: list[dict[str, object]] = []
     downloaded = _install_fakes(monkeypatch, captured_params)
@@ -476,3 +487,279 @@ def test_parse_rapidocr_model_spec_accepts_valid_pairs(spec: str) -> None:
 def test_parse_rapidocr_model_spec_rejects_invalid_pairs(spec: str) -> None:
     with pytest.raises(ValueError):
         _parse_rapidocr_model_spec(spec)
+
+
+# --- model_size ---------------------------------------------------------------
+
+
+def test_rapidocr_options_model_size_defaults_to_small() -> None:
+    assert RapidOcrOptions().model_size == "small"
+
+
+def test_rapidocr_options_without_model_size_still_deserializes() -> None:
+    """Old serialized configs (no `model_size` key) must still construct with the default."""
+    old_style = {"lang": ["en"], "backend": "onnxruntime"}
+    options = RapidOcrOptions.model_validate(old_style)
+    assert options.model_size == "small"
+    # A full dump/reload round-trip must also stay stable.
+    assert RapidOcrOptions.model_validate(options.model_dump()).model_size == "small"
+
+
+def test_rapidocr_options_model_size_rejects_invalid_value() -> None:
+    with pytest.raises(ValidationError):
+        RapidOcrOptions(model_size="large")  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "model_size,det_name,rec_name",
+    [
+        ("small", "PP-OCRv6_det_small.onnx", "PP-OCRv6_rec_small.onnx"),
+        ("tiny", "PP-OCRv6_det_tiny.onnx", "PP-OCRv6_rec_tiny.onnx"),
+        ("medium", "PP-OCRv6_det_medium.onnx", "PP-OCRv6_rec_medium.onnx"),
+    ],
+)
+def test_rapidocr_model_size_selects_matching_ppocrv6_assets(
+    monkeypatch,
+    tmp_path: Path,
+    model_size: Literal["tiny", "small", "medium"],
+    det_name: str,
+    rec_name: str,
+) -> None:
+    """Each size resolves to its own PP-OCRv6 det/rec checkpoint."""
+    params, downloaded = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en"], backend="onnxruntime", model_size=model_size),
+        tmp_path,
+        seed=("onnxruntime", "en", model_size),
+    )
+    assert Path(params["Det.model_path"]).name == det_name
+    assert Path(params["Rec.model_path"]).name == rec_name
+    assert downloaded == []
+
+
+@pytest.mark.parametrize("model_size", ["tiny", "small", "medium"])
+def test_rapidocr_model_size_never_affects_classification(
+    monkeypatch, tmp_path: Path, model_size: Literal["tiny", "small", "medium"]
+) -> None:
+    """The classification checkpoint is always PP-OCRv4 mobile, regardless of size."""
+    params, _ = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en"], backend="onnxruntime", model_size=model_size),
+        tmp_path,
+        seed=("onnxruntime", "en", model_size),
+    )
+    assert Path(params["Cls.model_path"]).name == "ch_ppocr_mobile_v2.0_cls_mobile.onnx"
+
+
+def test_rapidocr_model_size_tiny_rejects_japanese(monkeypatch, tmp_path: Path) -> None:
+    """`tiny` is a real, registry-enforced restriction: rapidocr itself rejects it."""
+    _install_fakes(monkeypatch, [])
+    with pytest.raises(ValueError, match=r"[Jj]apan"):
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(
+                lang=["japan"], backend="onnxruntime", model_size="tiny"
+            ),
+            accelerator_options=AcceleratorOptions(),
+        )
+
+
+@pytest.mark.parametrize("model_size", ["tiny", "medium"])
+def test_rapidocr_model_size_ignored_for_non_ppocrv6_with_warning(
+    monkeypatch,
+    tmp_path: Path,
+    caplog,
+    model_size: Literal["tiny", "small", "medium"],
+) -> None:
+    """A non-default size on a non-PP-OCRv6 language warns and still works correctly."""
+    with caplog.at_level(logging.WARNING):
+        params, _ = _build(
+            monkeypatch,
+            RapidOcrOptions(lang=["th"], backend="onnxruntime", model_size=model_size),
+            tmp_path,
+            seed=("onnxruntime", "th"),
+        )
+    # "th" resolves to PP-OCRv5, which has no tiny/small/medium axis at all.
+    assert Path(params["Det.model_path"]).name == "ch_PP-OCRv5_det_mobile.onnx"
+    assert Path(params["Rec.model_path"]).name == "th_PP-OCRv5_rec_mobile.onnx"
+    assert any(
+        "model_size" in record.message and "PP-OCRv6" in record.message
+        for record in caplog.records
+    )
+
+
+def test_rapidocr_model_size_small_no_warning_for_non_ppocrv6(
+    monkeypatch, tmp_path: Path, caplog
+) -> None:
+    """The default size must never generate a new warning for existing users."""
+    with caplog.at_level(logging.WARNING):
+        _build(
+            monkeypatch,
+            RapidOcrOptions(lang=["th"], backend="onnxruntime"),  # model_size="small"
+            tmp_path,
+            seed=("onnxruntime", "th"),
+        )
+    assert not any("model_size" in record.message for record in caplog.records)
+
+
+def test_rapidocr_model_size_applies_after_language_reduction(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Multi-language input is reduced to one language first; size still applies to it."""
+    params, _ = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en", "th"], backend="onnxruntime", model_size="tiny"),
+        tmp_path,
+        seed=("onnxruntime", "en", "tiny"),
+    )
+    # "en" (the first language) resolves to PP-OCRv6, so model_size applies to it.
+    assert Path(params["Det.model_path"]).name == "PP-OCRv6_det_tiny.onnx"
+    assert Path(params["Rec.model_path"]).name == "PP-OCRv6_rec_tiny.onnx"
+
+
+def test_rapidocr_artifacts_missing_hint_omits_model_size_when_default(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """The remediation hint should not mention --model-size unless it's non-default."""
+    _install_fakes(monkeypatch, [])
+    with pytest.raises(FileNotFoundError) as excinfo:
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(lang=["en"], backend="onnxruntime"),
+            accelerator_options=AcceleratorOptions(),
+        )
+    assert "--model-size" not in str(excinfo.value)
+
+
+def test_rapidocr_model_size_mismatch_with_prefetched_assets_raises(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Only `small` was prefetched; requesting `tiny` must fail, not silently reuse small."""
+    _install_fakes(monkeypatch, [])
+    _seed(tmp_path, "onnxruntime", "en")  # downloads the default "small" assets
+    with pytest.raises(FileNotFoundError) as excinfo:
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(
+                lang=["en"], backend="onnxruntime", model_size="tiny"
+            ),
+            accelerator_options=AcceleratorOptions(),
+        )
+    message = str(excinfo.value)
+    assert "PP-OCRv6_det_tiny.onnx" in message
+    # The suggested fix command must actually work, not just re-download small again.
+    assert "--model-size tiny" in message
+    assert "--rapidocr-backend-lang onnxruntime:en" in message
+
+
+@pytest.mark.parametrize(
+    "model_size,det_name,rec_name",
+    [
+        ("tiny", "PP-OCRv6_det_tiny.onnx", "PP-OCRv6_rec_tiny.onnx"),
+        ("medium", "PP-OCRv6_det_medium.onnx", "PP-OCRv6_rec_medium.onnx"),
+    ],
+)
+def test_download_models_respects_model_size(
+    monkeypatch,
+    tmp_path: Path,
+    model_size: Literal["tiny", "medium"],
+    det_name: str,
+    rec_name: str,
+) -> None:
+    downloaded_urls: list[str] = []
+
+    def fake_download_url_with_progress(url: str, *, progress: bool) -> BytesIO:
+        del progress
+        downloaded_urls.append(url)
+        return BytesIO(b"dummy content")
+
+    monkeypatch.setattr(
+        "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
+        fake_download_url_with_progress,
+    )
+
+    RapidOcrModel.download_models(
+        local_dir=tmp_path,
+        backend="onnxruntime",
+        force=True,
+        model_size=model_size,
+    )
+
+    assert any(det_name in url for url in downloaded_urls)
+    assert any(rec_name in url for url in downloaded_urls)
+    assert (tmp_path / det_name).exists()
+    assert (tmp_path / rec_name).exists()
+    # The classification checkpoint must be unaffected by the requested size.
+    assert any("ch_ppocr_mobile_v2.0_cls_mobile.onnx" in url for url in downloaded_urls)
+
+
+def test_model_downloader_forwards_rapidocr_model_size(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured_calls: list[dict[str, object]] = []
+
+    def fake_download_models(**kwargs: object) -> None:
+        captured_calls.append(kwargs)
+
+    monkeypatch.setattr(RapidOcrModel, "download_models", fake_download_models)
+    download_models(
+        output_dir=tmp_path,
+        with_layout=False,
+        with_tableformer=False,
+        with_tableformer_v2=False,
+        with_code_formula=False,
+        with_picture_classifier=False,
+        with_smolvlm=False,
+        with_granitedocling=False,
+        with_granitedocling_mlx=False,
+        with_smoldocling=False,
+        with_smoldocling_mlx=False,
+        with_granite_vision=False,
+        with_granite_chart_extraction=False,
+        with_granite_chart_extraction_v4=False,
+        with_rapidocr=True,
+        rapidocr_model_size="medium",
+        with_easyocr=False,
+    )
+
+    # One RapidOcrModel.download_models() call per default (backend, lang) entry --
+    # tied to the actual constant, not a magic number, so this doesn't need updating
+    # if that default set ever changes; what this test cares about is that every
+    # such call receives the requested size.
+    assert len(captured_calls) == len(_DEFAULT_RAPIDOCR_MODELS)
+    assert all(call["model_size"] == "medium" for call in captured_calls)
+
+
+def test_model_downloader_rapidocr_model_size_defaults_to_small(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Existing callers that don't pass rapidocr_model_size must keep getting `small`."""
+    captured_calls: list[dict[str, object]] = []
+
+    def fake_download_models(**kwargs: object) -> None:
+        captured_calls.append(kwargs)
+
+    monkeypatch.setattr(RapidOcrModel, "download_models", fake_download_models)
+    download_models(
+        output_dir=tmp_path,
+        with_layout=False,
+        with_tableformer=False,
+        with_tableformer_v2=False,
+        with_code_formula=False,
+        with_picture_classifier=False,
+        with_smolvlm=False,
+        with_granitedocling=False,
+        with_granitedocling_mlx=False,
+        with_smoldocling=False,
+        with_smoldocling_mlx=False,
+        with_granite_vision=False,
+        with_granite_chart_extraction=False,
+        with_granite_chart_extraction_v4=False,
+        with_rapidocr=True,
+        with_easyocr=False,
+    )
+
+    assert all(call["model_size"] == "small" for call in captured_calls)

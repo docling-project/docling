@@ -6,7 +6,7 @@ import sys
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 # Check for CLI dependencies
 try:
@@ -136,6 +136,18 @@ def download(
             ),
         ),
     ] = None,
+    rapidocr_model_size: Annotated[
+        Literal["tiny", "small", "medium"],
+        typer.Option(
+            ...,
+            "--model-size",
+            help=(
+                "RapidOCR PP-OCRv6 detection/recognition model size to prefetch. Only "
+                "affects entries in --rapidocr-backend-lang that resolve to PP-OCRv6; "
+                "has no effect on PP-OCRv5/PP-OCRv4 entries."
+            ),
+        ),
+    ] = "small",
 ):
     if models and all:
         raise typer.BadParameter(
@@ -172,6 +184,11 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-backend-lang"
             ) from error
+    if rapidocr_model_size != "small" and _AvailableModels.RAPIDOCR not in to_download:
+        raise typer.BadParameter(
+            "--model-size requires the 'rapidocr' model",
+            param_hint="--model-size",
+        )
     output_dir = download_models(
         output_dir=output_dir,
         force=force,
@@ -193,6 +210,7 @@ def download(
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
         rapidocr_models=rapidocr_backend_lang,
+        rapidocr_model_size=rapidocr_model_size,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
         easyocr_languages=easyocr_lang,
         with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,

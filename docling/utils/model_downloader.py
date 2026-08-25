@@ -29,6 +29,7 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
 )
 from docling.models.stages.ocr.rapid_ocr_model import (
     _RAPIDOCR_DEFAULT_LANGUAGE,
+    _RAPIDOCR_MODEL_TYPE,
     RapidOcrModel,
     _parse_rapidocr_model_spec,
 )
@@ -71,6 +72,7 @@ def download_models(
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     rapidocr_models: Optional[list[str]] = None,
+    rapidocr_model_size: str = _RAPIDOCR_MODEL_TYPE,
     with_easyocr: bool = False,
     easyocr_languages: Optional[list[str]] = None,
     with_nemotron_ocr: bool = False,
@@ -259,6 +261,7 @@ def download_models(
                 local_dir=output_dir / RapidOcrModel._model_repo_folder,
                 force=force,
                 progress=progress,
+                model_size=rapidocr_model_size,
             )
 
     if with_easyocr:

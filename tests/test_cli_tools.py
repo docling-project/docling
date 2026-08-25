@@ -280,6 +280,71 @@ def test_rapidocr_backend_lang_rejects_a_malformed_spec(tmp_path):
     assert result.exit_code != 0
 
 
+@pytest.mark.parametrize("model_size", ["tiny", "medium"])
+def test_rapidocr_model_size_is_forwarded_when_rapidocr_is_selected(
+    tmp_path, recorded_download, model_size: str
+):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--model-size",
+            model_size,
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_model_size"] == model_size
+
+
+def test_rapidocr_model_size_defaults_to_small_when_omitted(
+    tmp_path, recorded_download
+):
+    result = runner.invoke(app, ["models", "download", "-o", str(tmp_path), "rapidocr"])
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_model_size"] == "small"
+
+
+def test_rapidocr_model_size_requires_the_rapidocr_model(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--model-size",
+            "tiny",
+            "layout",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "requires the 'rapidocr' model" in _flat(result.output)
+
+
+def test_rapidocr_model_size_rejects_an_invalid_value(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--model-size",
+            "large",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code != 0
+
+
 def test_download_hf_repo_maps_repo_ids_to_local_directories(
     tmp_path, recorded_hf_download
 ):
