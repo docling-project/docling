@@ -64,7 +64,7 @@ docling convert [OPTIONS] source
 | `--layout-engine` | `text` | `layout_object_detection` | The layout engine to use. When --allow-external-plugins is *not* set, the available values are: layout_object_detection, docling_layout_default, docling_experimental_table_crops_layout. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--table-structure-engine` | `text` | `docling_tableformer` | The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: docling_tableformer, docling_tableformer_v2, granite_vision_table. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, nemotron-ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
-| `--ocr-lang` | `text` |  | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names. |
+| `--ocr-lang` | `text` |  | Comma-separated list of OCR languages as BCP-47 tags, e.g. 'en,de' or 'zh-Hant'. The selected engine's own language codes are accepted too and mean what that engine means by them, so '--ocr-engine rapidocr --ocr-lang ch' is Simplified Chinese. Omit the option to let the engine pick, or use 'mul' for a multilingual model and 'zxx' to skip OCR. |
 | `--psm` | `integer` |  | Page Segmentation Mode for the OCR engine (0-13). |
 | `--pdf-backend` | `pypdfium2`, `docling_parse`, `threaded_docling_parse`, `dlparse_v1`, `dlparse_v2`, `dlparse_v4` | `docling_parse` | The PDF backend to use. |
 | `--pdf-password` | `text` |  | Password for protected PDF documents |
@@ -125,7 +125,7 @@ docling convert-remote [OPTIONS] source
 | --- | --- | --- | --- |
 | `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
 | `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
-| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
+| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `iwork_pages`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
 | `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
 | `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
 | `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
@@ -134,7 +134,7 @@ docling convert-remote [OPTIONS] source
 | `--force-ocr` / `--no-force-ocr` | flag | `false` | Replace any existing text with OCR-generated text over the full content. |
 | `--tables` / `--no-tables` | flag | `true` | If enabled, the service extracts table structure. |
 | `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Pipeline the service uses to process PDF or image files. |
-| `--ocr-lang` | `text` |  | Comma-separated list of OCR languages (engine-specific names). |
+| `--ocr-lang` | `text` |  | Comma-separated list of OCR languages as BCP-47 tags, e.g. 'en,de' or 'zh-Hant'. Widely-understood engine names such as 'chinese' or 'japan' are accepted too, but engine-specific ones such as 'ch' are not, because this command does not choose the engine. Canonicalized locally before the request is sent, so the remote service must be recent enough to speak BCP-47 OCR languages. |
 | `--enrich-code` / `--no-enrich-code` | flag | `false` | Enable the service's code enrichment model. |
 | `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the service's formula enrichment model. |
 | `--enrich-picture-classes` / `--no-enrich-picture-classes` | flag | `false` | Enable the service's picture classification model. |
@@ -197,12 +197,12 @@ docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformer
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-| `--easyocr-lang` | `text` (repeatable) |  | EasyOCR language code to prefetch. Repeat for multiple languages. |
-| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set. |
+| `--easyocr-lang` | `text` (repeatable) |  | OCR language to prefetch for EasyOCR, as a BCP-47 tag (e.g. 'de', 'zh-Hant', 'ru'). Repeat for multiple. |
+| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' with a BCP-47 language (e.g. 'onnxruntime:el', 'torch:ko'). Repeat for multiple. Replaces the default set. |
 
 #### `docling-tools models download-hf-repo`
 
@@ -222,7 +222,7 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
+| `-o` / `--output-dir` | `path` | `/Users/nli/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 
