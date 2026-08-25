@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the layout debug visualisation helpers.
 
 These only run when a ``settings.debug.visualize_*`` flag is set, which no

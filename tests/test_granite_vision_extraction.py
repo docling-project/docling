@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Unit tests for extraction model prompt style dispatch."""
 
 from unittest.mock import patch

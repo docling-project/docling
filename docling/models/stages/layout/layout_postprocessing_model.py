@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Standalone layout post-processing stage.
 
 Runs after the layout (prediction) stage. It always computes the page

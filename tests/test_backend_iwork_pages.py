@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the Apple Pages (``.pages``) document backend.
 
 Test Data Attribution

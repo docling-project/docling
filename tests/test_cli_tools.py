@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the ``docling-tools`` CLI.
 
 These exercise the option surface of ``docling-tools models`` without

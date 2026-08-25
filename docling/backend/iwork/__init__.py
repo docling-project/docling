@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Support for Apple iWork documents.
 
 ``iwa`` reads the IWA container that Pages, Numbers and Keynote have used since

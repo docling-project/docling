@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """End-to-end tests for legacy binary Office format backends.
 
 .doc, .xls, and .ppt files are converted via LibreOffice to their modern Open

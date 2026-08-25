@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """VLM-based document conversion stage using the new runtime system.
 
 This stage converts document pages to structured formats (DocTags, Markdown, etc.)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Behavioral tests for the standalone LayoutPostprocessingModel stage."""
 
 from types import SimpleNamespace

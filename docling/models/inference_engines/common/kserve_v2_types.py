@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared KServe v2 protocol types and dtype mappings."""
 
 from __future__ import annotations

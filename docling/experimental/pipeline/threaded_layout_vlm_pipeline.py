@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Threaded Layout+VLM Pipeline
 ================================
 A specialized two-stage threaded pipeline that combines layout model preprocessing

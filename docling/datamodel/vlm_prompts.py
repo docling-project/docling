@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared VLM prompt constants owned by the datamodel layer."""
 
 CHANDRA_ALLOWED_TAGS = (
@@ -63,7 +66,5 @@ DOTS_LAYOUT_PROMPT = (
     "5. Final Output: The entire output must be a single JSON object."
 )
 
-# Unlimited-OCR only responds to this exact wording. Other phrasings — including generic
-# "convert to markdown" instructions — make the model return an empty completion with
-# finish_reason "stop" and no error, so the prompt is kept verbatim as a constant.
-UNLIMITED_OCR_GROUNDING_PROMPT = "<image>\n<|grounding|>OCR this image."
+# Keep the official Unlimited-OCR model-card prompt verbatim.
+UNLIMITED_OCR_GROUNDING_PROMPT = "<image>document parsing."

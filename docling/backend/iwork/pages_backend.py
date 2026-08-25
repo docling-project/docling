@@ -1,4 +1,8 @@
 """Backend for Apple Pages (``.pages``) documents.
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+"""Backends for Apple iWork documents.
 
 A ``.pages`` file is a ZIP container, but what is inside changed completely with
 Pages 5:

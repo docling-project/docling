@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for docling.utils.video_frame_sampling.
 
 The scene/frame extraction tests build a tiny synthetic video with ffmpeg when

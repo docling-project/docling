@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend to parse articles in JATS (Journal Article Tag Suite) XML format.
 
 JATS is a standard XML format used by publishers and journal archives including

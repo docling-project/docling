@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """VLM (Vision-Language Model) inference engines."""
 
 # Import base classes and types (no circular dependency)

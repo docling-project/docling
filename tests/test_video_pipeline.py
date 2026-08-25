@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for docling.pipeline.video_pipeline.
 
 Unit tests mock ffmpeg, ASR, frame sampling, and diarization so they stay in
