@@ -3,11 +3,14 @@
 
 import os
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import ValidationError
 
+import docling.pipeline.legacy_standard_pdf_pipeline as legacy_pdf_pipeline_module
+import docling.pipeline.standard_pdf_pipeline as standard_pdf_pipeline_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
@@ -26,10 +29,14 @@ from docling.datamodel.image_classification_engine_options import (
 )
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
+    GraniteVisionTableStructureOptions,
     NemotronOcrOptions,
     PdfPipelineOptions,
     TableFormerMode,
+    TableStructureOptions,
+    TableStructureV2Options,
     TesseractCliOcrOptions,
+    ThreadedPdfPipelineOptions,
 )
 from docling.document_converter import (
     ConversionError,
@@ -40,7 +47,9 @@ from docling.models.factories import get_ocr_factory
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
+from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 @pytest.fixture
@@ -64,6 +73,191 @@ def get_converters_with_table_options():
             )
 
             yield converter
+
+
+def _stub_convert_pipeline_init(pipeline, pipeline_options):
+    pipeline.pipeline_options = pipeline_options
+    pipeline.keep_images = False
+    pipeline.build_pipe = []
+    pipeline.enrichment_pipe = []
+    pipeline.artifacts_path = None
+
+
+class CustomTableStructureOptions(TableStructureOptions):
+    kind: ClassVar[str] = "custom_tableformer"
+
+
+@pytest.fixture
+def stub_pdf_pipeline_dependencies(monkeypatch):
+    layout_model = Mock(requires_layout_postprocessing=False)
+    model_factory = Mock()
+    model_factory.create_instance.return_value = layout_model
+    monkeypatch.setattr(ConvertPipeline, "__init__", _stub_convert_pipeline_init)
+    monkeypatch.setattr(
+        StandardPdfPipeline, "_make_ocr_model", Mock(return_value=Mock())
+    )
+    monkeypatch.setattr(
+        standard_pdf_pipeline_module,
+        "get_layout_factory",
+        Mock(return_value=model_factory),
+    )
+    monkeypatch.setattr(
+        standard_pdf_pipeline_module,
+        "get_table_structure_factory",
+        Mock(return_value=model_factory),
+    )
+    monkeypatch.setattr(
+        LegacyStandardPdfPipeline, "get_ocr_model", Mock(return_value=Mock())
+    )
+    monkeypatch.setattr(
+        legacy_pdf_pipeline_module,
+        "get_layout_factory",
+        Mock(return_value=model_factory),
+    )
+    monkeypatch.setattr(
+        legacy_pdf_pipeline_module,
+        "get_table_structure_factory",
+        Mock(return_value=model_factory),
+    )
+
+
+def test_standard_pdf_pipeline_forwards_orphaned_table_text_option(
+    stub_pdf_pipeline_dependencies,
+):
+    pipeline = StandardPdfPipeline(
+        ThreadedPdfPipelineOptions(recover_orphaned_table_text=True)
+    )
+
+    assert pipeline.reading_order_model.options.recover_orphaned_table_text is True
+
+
+def test_legacy_pdf_pipeline_forwards_orphaned_table_text_option(
+    stub_pdf_pipeline_dependencies,
+):
+    pipeline = LegacyStandardPdfPipeline(
+        PdfPipelineOptions(recover_orphaned_table_text=True)
+    )
+
+    assert pipeline.reading_order_model.options.recover_orphaned_table_text is True
+
+
+_ORPHANED_TABLE_TEXT_CONFIGURATION_ERROR = (
+    "recover_orphaned_table_text requires do_table_structure=True and "
+    "TableStructureOptions (TableFormer V1) with do_cell_matching=True"
+)
+
+
+@pytest.mark.parametrize(
+    ("pipeline_cls", "pipeline_options_cls"),
+    [
+        pytest.param(StandardPdfPipeline, ThreadedPdfPipelineOptions, id="standard"),
+        pytest.param(LegacyStandardPdfPipeline, PdfPipelineOptions, id="legacy"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("table_options_cls", "table_options_kwargs", "do_table_structure"),
+    [
+        pytest.param(
+            TableStructureV2Options,
+            {},
+            True,
+            id="v2-mixed-20-percent-overlap",
+        ),
+        pytest.param(
+            TableStructureOptions,
+            {"do_cell_matching": False},
+            True,
+            id="v1-matching-disabled",
+        ),
+        pytest.param(
+            GraniteVisionTableStructureOptions,
+            {},
+            True,
+            id="granite-vision",
+        ),
+        pytest.param(
+            CustomTableStructureOptions,
+            {},
+            True,
+            id="custom-table-options",
+        ),
+        pytest.param(
+            TableStructureOptions,
+            {},
+            False,
+            id="table-structure-disabled",
+        ),
+    ],
+)
+def test_pdf_pipeline_rejects_unsupported_orphaned_table_text_recovery(
+    stub_pdf_pipeline_dependencies,
+    pipeline_cls,
+    pipeline_options_cls,
+    table_options_cls,
+    table_options_kwargs,
+    do_table_structure,
+):
+    pipeline_options = pipeline_options_cls(
+        do_table_structure=do_table_structure,
+        table_structure_options=table_options_cls(**table_options_kwargs),
+        recover_orphaned_table_text=True,
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        pipeline_cls(pipeline_options)
+
+    assert str(exc_info.value) == _ORPHANED_TABLE_TEXT_CONFIGURATION_ERROR
+
+
+@pytest.mark.parametrize(
+    ("pipeline_cls", "pipeline_options_cls"),
+    [
+        pytest.param(StandardPdfPipeline, ThreadedPdfPipelineOptions, id="standard"),
+        pytest.param(LegacyStandardPdfPipeline, PdfPipelineOptions, id="legacy"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("table_options_cls", "table_options_kwargs", "do_table_structure"),
+    [
+        pytest.param(TableStructureV2Options, {}, True, id="v2"),
+        pytest.param(
+            TableStructureOptions,
+            {"do_cell_matching": False},
+            True,
+            id="v1-matching-disabled",
+        ),
+        pytest.param(
+            GraniteVisionTableStructureOptions,
+            {},
+            True,
+            id="granite-vision",
+        ),
+        pytest.param(CustomTableStructureOptions, {}, True, id="custom-table-options"),
+        pytest.param(
+            TableStructureOptions,
+            {},
+            False,
+            id="table-structure-disabled",
+        ),
+    ],
+)
+def test_pdf_pipeline_allows_unsupported_table_configuration_when_recovery_is_disabled(
+    stub_pdf_pipeline_dependencies,
+    pipeline_cls,
+    pipeline_options_cls,
+    table_options_cls,
+    table_options_kwargs,
+    do_table_structure,
+):
+    pipeline_options = pipeline_options_cls(
+        do_table_structure=do_table_structure,
+        table_structure_options=table_options_cls(**table_options_kwargs),
+        recover_orphaned_table_text=False,
+    )
+
+    pipeline = pipeline_cls(pipeline_options)
+
+    assert pipeline.reading_order_model.options.recover_orphaned_table_text is False
 
 
 def test_accelerator_options():

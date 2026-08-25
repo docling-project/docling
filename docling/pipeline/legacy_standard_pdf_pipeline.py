@@ -56,6 +56,9 @@ _log = logging.getLogger(__name__)
 
 class LegacyStandardPdfPipeline(PaginatedPipeline):
     def __init__(self, pipeline_options: PdfPipelineOptions):
+        reading_order_options = ReadingOrderOptions.from_pdf_pipeline_options(
+            pipeline_options
+        )
         super().__init__(pipeline_options)
         self.pipeline_options: PdfPipelineOptions
 
@@ -67,7 +70,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 or self.pipeline_options.generate_table_images
             )
 
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(options=reading_order_options)
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )
