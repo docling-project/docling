@@ -15,6 +15,7 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
     RapidOcrOptions,
 )
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
@@ -41,6 +42,8 @@ class OcrAutoModel(BaseOcrModel):
         self.options: OcrAutoOptions
 
         self._engine: Optional[BaseOcrModel] = None
+        # Why each candidate was passed over, for the aggregated error below.
+        rejected: list[tuple[str, str]] = []
         if self.enabled:
             if "darwin" == sys.platform:
                 try:
@@ -51,12 +54,17 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=OcrMacOptions(
                             mode=self.options.mode,
+                            lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected ocrmac.")
                 except ImportError:
                     _log.info("ocrmac cannot be used because ocrmac is not installed.")
+                    rejected.append(("ocrmac", "not installed"))
+                except OcrLanguageNotSupportedError as exc:
+                    _log.info("Auto OCR: skipping ocrmac: %s", exc)
+                    rejected.append(("ocrmac", str(exc)))
 
             if "linux" == sys.platform:
                 try:
@@ -69,14 +77,19 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=NemotronOcrOptions(
                             mode=self.options.mode,
+                            lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected nemotron.")
                 except ImportError:
                     _log.info("Nemotron cannot be used because it is not installed.")
+                    rejected.append(("nemotron", "not installed"))
                 except (RuntimeError, FileNotFoundError) as exc:
+                    # OcrLanguageNotSupportedError is a BaseError, hence a
+                    # RuntimeError, so this arm covers coverage failures too.
                     _log.warning("Nemotron OCR cannot be used: %s", exc)
+                    rejected.append(("nemotron", str(exc)))
 
             if self._engine is None:
                 try:
@@ -89,6 +102,7 @@ class OcrAutoModel(BaseOcrModel):
                         options=RapidOcrOptions(
                             backend="onnxruntime",
                             mode=self.options.mode,
+                            lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -97,6 +111,10 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info(
                         "rapidocr cannot be used because onnxruntime is not installed."
                     )
+                    rejected.append(("rapidocr (onnxruntime)", "not installed"))
+                except OcrLanguageNotSupportedError as exc:
+                    _log.info("Auto OCR: skipping rapidocr (onnxruntime): %s", exc)
+                    rejected.append(("rapidocr (onnxruntime)", str(exc)))
 
             if self._engine is None:
                 try:
@@ -107,12 +125,17 @@ class OcrAutoModel(BaseOcrModel):
                         artifacts_path=artifacts_path,
                         options=EasyOcrOptions(
                             mode=self.options.mode,
+                            lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected easyocr.")
                 except ImportError:
                     _log.info("easyocr cannot be used because it is not installed.")
+                    rejected.append(("easyocr", "not installed"))
+                except OcrLanguageNotSupportedError as exc:
+                    _log.info("Auto OCR: skipping easyocr: %s", exc)
+                    rejected.append(("easyocr", str(exc)))
 
             if self._engine is None:
                 try:
@@ -125,6 +148,7 @@ class OcrAutoModel(BaseOcrModel):
                         options=RapidOcrOptions(
                             backend="torch",
                             mode=self.options.mode,
+                            lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
                     )
@@ -133,8 +157,21 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info(
                         "rapidocr cannot be used because rapidocr or torch is not installed."
                     )
+                    rejected.append(("rapidocr (torch)", "not installed"))
+                except OcrLanguageNotSupportedError as exc:
+                    _log.info("Auto OCR: skipping rapidocr (torch): %s", exc)
+                    rejected.append(("rapidocr (torch)", str(exc)))
 
             if self._engine is None:
+                if any(reason != "not installed" for _, reason in rejected):
+                    listed = "\n".join(
+                        f"  - {name}: {reason}" for name, reason in rejected
+                    )
+                    raise OcrLanguageNotSupportedError(
+                        "Automatic OCR engine selection",
+                        ", ".join(self.options.lang),
+                        detail=f"No installed engine can serve it:\n{listed}",
+                    )
                 _log.warning("No OCR engine found. Please review the install details.")
 
     def __call__(

@@ -33,6 +33,11 @@ layer = "foundation"
 depends_on = []
 
 [[modules]]
+path = "docling.utils.ocr_language"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
 path = "docling.backend"
 layer = "core"
 depends_on = [
@@ -91,6 +96,7 @@ depends_on = [
   "docling.models.inference_engines.vlm",
   "docling.models.utils",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -190,6 +196,8 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
+  "docling.exceptions",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -298,9 +306,11 @@ path = "docling.models.stages.ocr"
 layer = "core"
 depends_on = [
   "docling.datamodel",
+  "docling.exceptions",
   "docling.models",
   "docling.models.inference_engines.common",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]

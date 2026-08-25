@@ -4,6 +4,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
@@ -17,7 +18,14 @@ from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
+from docling.utils.ocr_language import (
+    MULTIPLE,
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -45,6 +53,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
+    #: What this engine can do with a language request. Engines override it;
+    #: the conservative default suits a single-model, single-language engine.
+    language_support: ClassVar[OcrLanguageSupport] = OcrLanguageSupport()
+
     def __init__(
         self,
         *,
@@ -55,6 +67,77 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     ):
         self.enabled = enabled
         self.options = options
+
+        # `options.lang` is already canonical
+        self.languages: tuple[OcrLanguage, ...] = (
+            OcrLanguageResolver.parse_ocr_languages(
+                options.lang, kind=type(options).kind
+            )
+        )
+
+    @property
+    def _engine_name(self) -> str:
+        """Human-readable engine name for coverage errors."""
+        return type(self).__name__.removesuffix("Model")
+
+    def supported_ocr_languages(self) -> list[str]:
+        """Canonical tags this *instance* can serve, for error messages.
+
+        May be runtime-derived: the installed tessdata files, the selected
+        RapidOCR backend, the macOS version. An empty list means "unknown".
+        """
+        return []
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
+        """Map one canonical tag onto this engine's native code(s).
+
+        A list covers an engine that answers one request with several native
+        codes; most engines return a single code.
+
+        Raises:
+            OcrLanguageNotSupportedError: The engine has no model for it.
+        """
+        if language.is_passthrough or language.language == MULTIPLE:
+            # A passthrough names a script recognizer of *some* engine; an engine
+            # that has not overridden this method does not have one.
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+                detail="This engine needs an explicit language.",
+            )
+        # Most ISO-639 engines want the primary subtag and nothing else.
+        return language.language
+
+    def resolve_ocr_languages(self) -> list[str]:
+        """Turn the canonical request into the native codes to hand the engine.
+
+        An empty request stays empty: `lang=[]` means "the engine's own default",
+        and each engine decides what that is when it reads the result.
+
+        Applies the two uniform policies: too many languages for the engine are
+        dropped with a warning (list order is preference order), and a language
+        with no model is an error, never a silent substitution.
+        """
+        languages = list(self.languages)
+        if not self.language_support.multiple_languages and len(languages) > 1:
+            _log.warning(
+                "%s handles one OCR language at a time. Using %s and ignoring %s; "
+                "the order of `lang` is the order of preference.",
+                self._engine_name,
+                [languages[0].tag],
+                [lang.tag for lang in languages[1:]],
+            )
+            languages = languages[:1]
+
+        native: list[str] = []
+        for language in languages:
+            mapped = self.map_ocr_language(language)
+            codes = [mapped] if isinstance(mapped, str) else list(mapped)
+            for code in codes:
+                if code not in native:
+                    native.append(code)
+        return native
 
     def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""

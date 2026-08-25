@@ -2,10 +2,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
     _parse_rapidocr_model_spec,
@@ -99,14 +101,14 @@ def test_resolve_populates_the_whole_spec() -> None:
 def test_resolve_defaults_to_ppocrv6_chinese() -> None:
     from rapidocr.utils.typings import OCRVersion
 
-    assert _resolved("chinese", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+    assert _resolved("zh-Hans", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
     assert _resolved("zh", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
 
 
 def test_resolve_english_and_latin_use_ppocrv6() -> None:
     from rapidocr.utils.typings import OCRVersion
 
-    assert _resolved("english", "onnxruntime") == (OCRVersion.PPOCRV6, "en")
+    assert _resolved("en", "onnxruntime") == (OCRVersion.PPOCRV6, "en")
     assert _resolved("en", "torch") == (OCRVersion.PPOCRV6, "en")
     assert _resolved("de", "onnxruntime") == (OCRVersion.PPOCRV6, "de")
     assert _resolved("fr", "onnxruntime") == (OCRVersion.PPOCRV6, "fr")
@@ -120,14 +122,23 @@ def test_resolve_script_families_route_by_backend() -> None:
     assert _resolved("cyrillic", "onnxruntime") == (OCRVersion.PPOCRV5, "cyrillic")
     # torch -> PP-OCRv4
     assert _resolved("arabic", "torch") == (OCRVersion.PPOCRV4, "arabic")
+    # Devanagari picks the backbone its backend can reach.
+    assert _resolved("hi", "onnxruntime") == (OCRVersion.PPOCRV5, "devanagari")
+    assert _resolved("hi", "torch") == (OCRVersion.PPOCRV4, "devanagari")
+
+
+def test_resolve_rejects_a_malformed_tag() -> None:
+    with pytest.raises(ValueError, match="BCP-47"):
+        _resolve_rapidocr("klingon", "onnxruntime")
 
 
 def test_resolve_raises_on_unsupported_language() -> None:
-    with pytest.raises(ValueError):
-        _resolve_rapidocr("klingon", "onnxruntime")
     # Thai is a PP-OCRv5 language, not served by the torch PP-OCRv4 backbone.
-    with pytest.raises(ValueError):
+    with pytest.raises(OcrLanguageNotSupportedError):
         _resolve_rapidocr("th", "torch")
+    # PP-OCR has no Georgian recognizer; its `ka` is Kannada.
+    with pytest.raises(OcrLanguageNotSupportedError):
+        _resolve_rapidocr("ka", "onnxruntime")
 
 
 # --- model selection / pinned paths -----------------------------------------
@@ -153,9 +164,9 @@ def test_rapidocr_default_onnx_uses_ppocrv6(monkeypatch, tmp_path: Path) -> None
 def test_rapidocr_default_torch_uses_ppocrv6(monkeypatch, tmp_path: Path) -> None:
     params, downloaded = _build(
         monkeypatch,
-        RapidOcrOptions(backend="torch"),  # default lang -> chinese -> ch -> v6
+        RapidOcrOptions(backend="torch"),  # default lang -> zh-Hans -> ch -> v6
         tmp_path,
-        seed=("torch", "chinese"),
+        seed=("torch", "zh-Hans"),
     )
     assert Path(params["Det.model_path"]).name == "PP-OCRv6_det_small.pth"
     assert Path(params["Rec.model_path"]).name == "PP-OCRv6_rec_small.pth"
@@ -199,14 +210,22 @@ def test_rapidocr_arabic_torch_uses_ppocrv4(monkeypatch, tmp_path: Path) -> None
     assert params["Rec.rec_keys_path"] is not None
 
 
+def test_rapidocr_malformed_language_raises_at_options_time() -> None:
+    """A typo never reaches the model: the options validator rejects it."""
+    with pytest.raises(ValidationError, match="BCP-47"):
+        RapidOcrOptions(lang=["klingon"], backend="onnxruntime")
+
+
 def test_rapidocr_unsupported_language_raises(monkeypatch, tmp_path: Path) -> None:
     captured_params: list[dict[str, object]] = []
     _install_fakes(monkeypatch, captured_params)
-    with pytest.raises(ValueError):
+    # Georgian must be spelled out: a bare `ka` given to RapidOCR is PP-OCR's own
+    # token for Kannada.
+    with pytest.raises(OcrLanguageNotSupportedError, match="ka-Geor"):
         RapidOcrModel(
             enabled=True,
             artifacts_path=tmp_path,
-            options=RapidOcrOptions(lang=["klingon"], backend="onnxruntime"),
+            options=RapidOcrOptions(lang=["ka-Geor"], backend="onnxruntime"),
             accelerator_options=AcceleratorOptions(),
         )
 
@@ -306,7 +325,7 @@ def test_rapidocr_artifacts_missing_raises_with_prefetch_hint(
     assert "th_PP-OCRv5_rec_mobile.onnx" in message
     # The message must hand the user a command that actually fixes it.
     assert "docling-tools models download rapidocr" in message
-    assert "--rapidocr-backend-lang onnxruntime:th" in message
+    assert "--rapidocr-backend-lang onnxruntime:th-Thai" in message
     assert f"-o {tmp_path}" in message
 
 
@@ -411,7 +430,7 @@ def test_model_downloader_fetches_rapidocr_per_backend(
     assert len(captured_calls) == 2
     assert {call["backend"] for call in captured_calls} == {"torch", "onnxruntime"}
     # Both defaults resolve to PP-OCRv6, whose det/rec cover every v6 language.
-    assert {call["lang"] for call in captured_calls} == {"ch"}
+    assert {call["lang"] for call in captured_calls} == {"zh-Hans"}
 
 
 def test_model_downloader_rapidocr_models_replaces_default(
@@ -457,7 +476,7 @@ def test_model_downloader_rejects_bad_rapidocr_spec(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "spec", ["onnxruntime:th", "torch:ka", "paddle:ch", "openvino:el"]
+    "spec", ["onnxruntime:th", "torch:kn", "paddle:zh-Hans", "openvino:el"]
 )
 def test_parse_rapidocr_model_spec_accepts_valid_pairs(spec: str) -> None:
     parsed = _parse_rapidocr_model_spec(spec)

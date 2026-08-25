@@ -18,16 +18,48 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
-from docling.exceptions import SecurityError
+from docling.exceptions import OcrLanguageNotSupportedError, SecurityError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
 _log = logging.getLogger(__name__)
 
 
-def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
+# Canonical tag -> EasyOCR code, where EasyOCR deviates from ISO 639-1.
+_EASYOCR_LANGUAGE_CODES: dict[str, str] = {
+    "zh-Hans": "ch_sim",
+    "zh-Hant": "ch_tra",
+    "sr-Cyrl": "rs_cyrillic",
+    "sr-Latn": "rs_latin",
+    "tg-Cyrl": "tjk",
+    "fil-Latn": "tl",
+    # EasyOCR's `ang` is Angika and its `mah` is Magahi, both Devanagari. CLDR
+    # gives Angika a likely script of Latin and normalizes `mah` to Marshallese,
+    # so neither is reachable without an explicit entry.
+    "anp-Deva": "ang",
+    "mag-Deva": "mah",
+    # Tabasaran is written in Cyrillic; CLDR's likely script for it is Latin.
+    "tab-Cyrl": "tab",
+}
+
+_EASYOCR_CODE_TO_TAG: dict[str, str] = {
+    code: tag for tag, code in _EASYOCR_LANGUAGE_CODES.items()
+}
+
+
+def _easyocr_language_models() -> dict[str, str]:
+    """EasyOCR language code -> the recognition checkpoint that serves it.
+
+    Doubles as EasyOCR's supported-language vocabulary: a code absent from this
+    mapping has no recognizer.
+    """
     from easyocr.config import (
         arabic_lang_list,
         bengali_lang_list,
@@ -58,6 +90,43 @@ def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
             "kn": "kannada_g2",
         }
     )
+    return language_models
+
+
+def _easyocr_code(language: OcrLanguage) -> Optional[str]:
+    """The EasyOCR code for a canonical tag, or `None` when there is no model."""
+    code = _EASYOCR_LANGUAGE_CODES.get(language.tag)
+    if code is None:
+        # EasyOCR's codes are language-based, so the primary subtag only
+        # identifies the right model when the script is the usual one: its `az`
+        # is Latin Azerbaijani, not `az-Cyrl`.
+        if not language.has_default_script:
+            return None
+        code = language.language
+    return code if code in _easyocr_language_models() else None
+
+
+def resolve_easyocr_languages(tags: Iterable[str]) -> List[str]:
+    """Canonicalize language tags into the EasyOCR codes they name.
+
+    Accepts EasyOCR's own codes as well as BCP-47, matching what
+    `EasyOcrOptions.lang` accepts. Used by the prefetcher, which has no model
+    instance to ask.
+    """
+    codes: List[str] = []
+    for tag in tags:
+        language = OcrLanguageResolver.parse_ocr_language(tag, EasyOcrOptions.kind)
+        code = _easyocr_code(language)
+        if code is None:
+            raise ValueError(f"Unsupported EasyOCR language: {tag}")
+        if code not in codes:
+            codes.append(code)
+    return codes
+
+
+def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
+    """Map EasyOCR language codes onto the checkpoints the prefetcher must fetch."""
+    language_models = _easyocr_language_models()
 
     model_names: List[str] = []
     for language in languages:
@@ -72,6 +141,8 @@ def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
 
 class EasyOcrModel(BaseOcrModel):
     _model_repo_folder = "EasyOcr"
+
+    language_support = OcrLanguageSupport(multiple_languages=True)
 
     def __init__(
         self,
@@ -90,6 +161,7 @@ class EasyOcrModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
+        self._native_langs: List[str] = []
 
         if self.enabled:
             try:
@@ -99,6 +171,8 @@ class EasyOcrModel(BaseOcrModel):
                     "EasyOCR is not installed. Please install it via `pip install easyocr` to use this OCR engine. "
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
+
+            self._native_langs = self.resolve_ocr_languages()
 
             if self.options.use_gpu is None:
                 device = decide_device(accelerator_options.device)
@@ -128,13 +202,41 @@ class EasyOcrModel(BaseOcrModel):
                 if self.options.suppress_mps_warnings:
                     warnings.filterwarnings("ignore", message=".*pin_memory.*MPS.*")
                 self.reader = easyocr.Reader(
-                    lang_list=self.options.lang,
+                    lang_list=self._native_langs,
                     gpu=use_gpu,
                     model_storage_directory=model_storage_directory,
                     recog_network=self.options.recog_network,
                     download_enabled=download_enabled,
                     verbose=False,
                 )
+
+    def supported_ocr_languages(self) -> List[str]:
+        tags = set()
+        for code in _easyocr_language_models():
+            tag = _easyocr_code_to_tag(code)
+            if tag is not None:
+                tags.add(tag)
+        return sorted(tags)
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
+        if language.is_passthrough or language.is_multilingual:
+            # EasyOCR's codes are all language codes: it has neither a script
+            # recognizer nor a multilingual model.
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+                detail="EasyOCR has no multilingual model; list the languages explicitly.",
+            )
+
+        code = _easyocr_code(language)
+        if code is None:
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+            )
+        return code
 
     @staticmethod
     def download_models(
@@ -255,3 +357,13 @@ class EasyOcrModel(BaseOcrModel):
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
         return EasyOcrOptions
+
+
+def _easyocr_code_to_tag(code: str) -> Optional[str]:
+    """Render one EasyOCR language code back as a canonical tag."""
+    if code in _EASYOCR_CODE_TO_TAG:
+        return _EASYOCR_CODE_TO_TAG[code]
+    try:
+        return OcrLanguageResolver.parse_ocr_language(code, EasyOcrOptions.kind).tag
+    except ValueError:
+        return None

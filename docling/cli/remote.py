@@ -24,7 +24,7 @@ from docling.cli.export_utils import (
 )
 from docling.cli.main import ChunkerType
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import ProcessingPipeline
+from docling.datamodel.pipeline_options import OcrAutoOptions, ProcessingPipeline
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -33,8 +33,29 @@ from docling.service_client import (
     DoclingServiceClient,
     StatusWatcherKind,
 )
+from docling.utils.ocr_language import OcrLanguageResolver
 
 _log = logging.getLogger(__name__)
+
+
+def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
+    """Canonicalize --ocr-lang locally, so a typo fails here and not remotely.
+
+    This command has no `--ocr-engine`, so it cannot pick an engine's own
+    vocabulary and uses the engine-independent one: native tokens that every
+    engine agrees on are accepted, and the handful that clash with a BCP-47 tag
+    of a different language are not.
+    """
+    tags = _split_list(raw)
+    if not tags:
+        return None
+    try:
+        return OcrLanguageResolver.canonicalize_ocr_language_tags(
+            tags, kind=OcrAutoOptions.kind
+        )
+    except ValueError as err:
+        raise typer.BadParameter(str(err), param_hint="--ocr-lang") from err
+
 
 _REMOTE_HELP = """\
 Convert documents through a remote docling-serve service instead of locally.
@@ -188,7 +209,15 @@ def convert_remote(
     ocr_lang: Annotated[
         Optional[str],
         typer.Option(
-            help="Comma-separated list of OCR languages (engine-specific names).",
+            help=(
+                "Comma-separated list of OCR languages as BCP-47 tags, e.g. "
+                "'en,de' or 'zh-Hant'. Widely-understood engine names such as "
+                "'chinese' or 'japan' are accepted too, but engine-specific ones "
+                "such as 'ch' are not, because this command does not choose the "
+                "engine. Canonicalized locally before the request is sent, so the "
+                "remote service must be recent enough to speak BCP-47 OCR "
+                "languages."
+            ),
         ),
     ] = None,
     enrich_code: Annotated[
@@ -306,7 +335,7 @@ def convert_remote(
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
-        "ocr_lang": _split_list(ocr_lang),
+        "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,

@@ -16,8 +16,22 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.stages.ocr.ppocr_languages import (
+    PPOCR_DEFAULT_TOKEN,
+    PPOCRV4_LANGS,
+    PPOCRV5_LANGS,
+    PPOCRV6_LANGS,
+    ppocr_supported_tags,
+    ppocr_token,
+)
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
@@ -26,7 +40,8 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
-_RAPIDOCR_DEFAULT_LANGUAGE = "ch"
+# Default OCR language as a canonical tag, for the prefetch entry points.
+_RAPIDOCR_DEFAULT_LANGUAGE = "zh-Hans"
 
 # Recognition/detection model size for the PP-OCRv6 path; v4/v5 use "mobile".
 _RAPIDOCR_DET_MODEL_LANG = "ch"
@@ -34,35 +49,10 @@ _RAPIDOCR_CLS_MODEL_LANG = "ch"
 _RAPIDOCR_MODEL_TYPE = "small"
 _RAPIDOCR_V4V5_MODEL_TYPE = "mobile"
 
-# Docling's default language names -> rapidocr language codes.
-_DOCLING_LANG_NORMALIZE: dict[str, str] = {"chinese": "ch", "english": "en"}
-
 # Inference backends docling supports. Must stay in sync with the `backend` Literal of
 # RapidOcrOptions in docling/datamodel/pipeline_options.py and with the mapping built in
 # _backend_to_engine_type().
 _RAPIDOCR_BACKENDS: tuple[str, ...] = ("onnxruntime", "openvino", "paddle", "torch")
-
-# Recognition languages served by the PP-OCRv4 backbone
-_PPOCRV4_LANGS = frozenset(
-    {"arabic", "cyrillic", "devanagari", "ka", "korean", "latin", "ta", "te"}
-)
-# Recognition languages served by the PP-OCRv5 backbone
-_PPOCRV5_LANGS = frozenset(
-    {
-        "arabic",
-        "ch",
-        "cyrillic",
-        "devanagari",
-        "el",
-        "en",
-        "eslav",
-        "korean",
-        "latin",
-        "ta",
-        "te",
-        "th",
-    }
-)
 
 
 @dataclass(frozen=True)
@@ -106,7 +96,7 @@ def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
     if not separator or not backend or not lang or ":" in lang:
         raise ValueError(
             f"Invalid RapidOCR model spec {value!r}. "
-            "Expected '<backend>:<lang>', e.g. 'onnxruntime:th'."
+            "Expected '<backend>:<lang>', e.g. 'onnxruntime:th-Thai'."
         )
     if backend not in _RAPIDOCR_BACKENDS:
         raise ValueError(
@@ -115,7 +105,7 @@ def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
         )
     try:
         _resolve_rapidocr(lang, backend)
-    except ValueError as err:
+    except (ValueError, OcrLanguageNotSupportedError) as err:
         raise ValueError(f"Invalid RapidOCR model spec {value!r}: {err}") from err
     return _RapidOcrModelSpec(backend=backend, user_lang=lang)
 
@@ -137,50 +127,73 @@ def _backend_to_engine_type(backend: str) -> "EngineType":
     return engine_types[backend]
 
 
-def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
-    """Map one requested language + backend onto a fully populated _RapidOcrModelSpec.
+def _installed_ppocrv6_langs() -> frozenset[str]:
+    """The PP-OCRv6 recognition languages, from the installed rapidocr if present.
 
-    - Prefer PP-OCRv6 (whose recognizer is multilingual and covers ~52 codes)
-    - Otherwise fall back to PP-OCRv4 for the torch backend or PP-OCRv5 for the others.
-    - Raises when the language cannot be served by the resolved backbone.
+    Falls back to docling's static copy so the mapping stays usable for the
+    prefetcher and the KServe client, which do not require rapidocr.
+    """
+    try:
+        from rapidocr.utils.model_resolver import PP_OCRV6_LANGS
+    except ImportError:
+        return PPOCRV6_LANGS
+    return frozenset(PP_OCRV6_LANGS)
+
+
+def _rapidocr_vocabulary(backend: str) -> frozenset[str]:
+    """PP-OCR tokens a backend can serve: v6 plus its own v4/v5 fallback set."""
+    fallback = PPOCRV4_LANGS if backend == "torch" else PPOCRV5_LANGS
+    return _installed_ppocrv6_langs() | fallback
+
+
+def _ppocr_version_for_token(token: str, backend: str) -> "OCRVersion":
+    """Which PP-OCR backbone serves a token on this backend.
+
+    Prefers PP-OCRv6 (whose recognizer covers ~52 codes) and falls back to
+    PP-OCRv4 for the torch backend or PP-OCRv5 for the others.
+    """
+    from rapidocr.utils.typings import OCRVersion
+
+    if token in _installed_ppocrv6_langs():
+        return OCRVersion.PPOCRV6
+    return OCRVersion.PPOCRV4 if backend == "torch" else OCRVersion.PPOCRV5
+
+
+def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
+    """Map one language + backend onto a fully populated _RapidOcrModelSpec.
+
+    `lang` may be a BCP-47 tag or one of PP-OCR's own tokens, matching what
+    `RapidOcrOptions.lang` accepts.
+
+    Raises:
+        ValueError: `lang` is neither a PP-OCR token nor a valid BCP-47 tag.
+        OcrLanguageNotSupportedError: No PP-OCR recognizer serves it on `backend`.
 
     Callers pass a single language; reducing a multi-language request is up to them.
     """
-    from rapidocr.utils.model_resolver import COMMON_LANG_ALIASES, PP_OCRV6_LANGS
-    from rapidocr.utils.typings import OCRVersion
-
-    code = lang.strip().lower()
-    code = _DOCLING_LANG_NORMALIZE.get(code, code)
-    aliased = COMMON_LANG_ALIASES.get(code, code)
-
-    if aliased in PP_OCRV6_LANGS:
-        version = OCRVersion.PPOCRV6
-    elif backend == "torch":
-        if aliased not in _PPOCRV4_LANGS:
-            raise ValueError(
-                f"RapidOCR torch backend does not support language {lang!r}. "
-                f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV4_LANGS)}."
-            )
-        version = OCRVersion.PPOCRV4
-    elif aliased in _PPOCRV5_LANGS:
-        version = OCRVersion.PPOCRV5
-    else:
-        raise ValueError(
-            f"RapidOCR {backend} backend does not support language {lang!r}. "
-            f"Supported: {sorted(PP_OCRV6_LANGS | _PPOCRV5_LANGS)}."
+    language = OcrLanguageResolver.parse_ocr_language(lang, RapidOcrOptions.kind)
+    token = ppocr_token(language, _rapidocr_vocabulary(backend))
+    if token is None:
+        raise OcrLanguageNotSupportedError(
+            f"RapidOCR (backend={backend})",
+            language.tag,
+            supported=ppocr_supported_tags(
+                _rapidocr_vocabulary(backend), RapidOcrOptions.kind
+            ),
         )
+    version = _ppocr_version_for_token(token, backend)
 
     _log.debug(
         "RapidOCR resolved lang=%r backend=%r -> version=%s rec_lang=%r",
         lang,
         backend,
         version.value,
-        aliased,
+        token,
     )
     return _RapidOcrModelSpec(
         backend=backend,
         user_lang=lang,
-        rapidocr_lang_token=aliased,
+        rapidocr_lang_token=token,
         ppocr_version=version,
     )
 
@@ -256,6 +269,8 @@ def _rapidocr_artifacts(
 class RapidOcrModel(BaseOcrModel):
     _model_repo_folder = "RapidOcr"
 
+    language_support = OcrLanguageSupport(multiple_languages=False)
+
     def __init__(
         self,
         enabled: bool,
@@ -273,6 +288,7 @@ class RapidOcrModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
+        self._native_langs: list[str] = []
 
         if self.enabled:
             try:
@@ -293,23 +309,13 @@ class RapidOcrModel(BaseOcrModel):
                 gpu_id = int(device.split(":")[1])
             backend_enum = _backend_to_engine_type(self.options.backend)
 
-            # Reduce the user provided language list to one language
+            # One language, warn-and-truncate and coverage checks all happen here.
+            self._native_langs = self.resolve_ocr_languages()
+            rec_lang = self._native_langs[0]
             lang = (
-                self.options.lang[0]
-                if self.options.lang
-                else _RAPIDOCR_DEFAULT_LANGUAGE
+                self.languages[0].tag if self.languages else _RAPIDOCR_DEFAULT_LANGUAGE
             )
-            if len(self.options.lang) > 1:
-                _log.warning(
-                    "RapidOCR uses a single language; using %r and ignoring %r.",
-                    lang,
-                    self.options.lang[1:],
-                )
-            resolved: _RapidOcrModelSpec = _resolve_rapidocr(lang, self.options.backend)
-            assert resolved.ppocr_version is not None
-            assert resolved.rapidocr_lang_token is not None
-            ppocr_version = resolved.ppocr_version
-            rec_lang = resolved.rapidocr_lang_token
+            ppocr_version = _ppocr_version_for_token(rec_lang, self.options.backend)
 
             det_model_path = self.options.det_model_path
             cls_model_path = self.options.cls_model_path
@@ -358,7 +364,7 @@ class RapidOcrModel(BaseOcrModel):
                 ]
                 if missing:
                     listed = "\n".join(f"  - {path}" for path in missing)
-                    # `lang` is the user's own token, so the hint mirrors their config.
+                    # `lang` is the canonical tag, which is what the prefetcher takes.
                     raise FileNotFoundError(
                         "RapidOCR artifacts not found or incomplete in artifacts_path.\n"
                         f"Expected under: {target_dir}\n"
@@ -450,6 +456,34 @@ class RapidOcrModel(BaseOcrModel):
             self.reader = RapidOCR(
                 params=params,
             )
+
+    def supported_ocr_languages(self) -> list[str]:
+        return ppocr_supported_tags(
+            _rapidocr_vocabulary(self.options.backend), RapidOcrOptions.kind
+        )
+
+    def resolve_ocr_languages(self) -> list[str]:
+        # An empty `lang` list means "the engine's own default", which for PP-OCR
+        # is the Simplified Chinese recognizer.
+        if not self.languages:
+            return [PPOCR_DEFAULT_TOKEN]
+        return super().resolve_ocr_languages()
+
+    def map_ocr_language(self, language: OcrLanguage) -> str:
+        token = ppocr_token(language, _rapidocr_vocabulary(self.options.backend))
+        if token is None:
+            raise OcrLanguageNotSupportedError(
+                f"RapidOCR (backend={self.options.backend})",
+                language.tag,
+                supported=self.supported_ocr_languages(),
+                detail=(
+                    "RapidOCR has no multilingual recognizer; name the languages "
+                    "explicitly."
+                )
+                if language.is_multilingual
+                else None,
+            )
+        return token
 
     @classmethod
     def download_models(

@@ -31,9 +31,10 @@ KSERVE_OCR_URL_ENVS = {
 KSERVE_OCR_TRANSPORTS = ["http", "grpc"]
 KSERVE_OCR_LANGUAGES = [
     "en",
-    "ch",
+    "zh-Hans",
+    # PP-OCR's script recognizers, named by their own tokens.
     "arabic",
-    "korean",
+    "ko",
     "latin",
 ]
 

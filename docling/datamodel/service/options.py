@@ -375,12 +375,13 @@ class ConvertDocumentsOptions(BaseModel):
         Optional[list[str]],
         Field(
             description=(
-                "List of languages used by the OCR engine. "
-                "Note that each OCR engine has "
-                "different values for the language names. String or list of strings. "
-                "Optional, defaults to empty."
+                "OCR languages as BCP-47 tags (e.g. `en`, `de-DE`, `zh-Hant`), in "
+                "order of preference. The service canonicalizes them to a "
+                "language-script pair, so `deu`, `ger` and `de-DE` are all German. "
+                "The reserved tag `mul` must be used alone. Optional; "
+                "the selected engine's default applies when omitted or empty."
             ),
-            examples=[["fr", "de", "es", "en"]],
+            examples=[["fr", "de", "es", "en"], ["zh-Hant"], []],
         ),
     ] = None
 
