@@ -97,7 +97,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument]]):
+def test_e2e_docx_conversions(documents):
     has_libreoffice = False
     try:
         cmd = get_libreoffice_cmd(raise_if_unavailable=True)
@@ -106,8 +106,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
     except Exception:
         pass
 
-    for docx_path, doc in docx_paths:
-        if not IS_CI and not has_libreoffice and docx_path.name == "drawingml.docx":
+    for docx_path, doc in documents:
+        if (
+            not IS_CI
+            and not has_libreoffice
+            and docx_path.name
+            in {"drawingml.docx", "textbox.docx", "test_emf_docx.docx"}
+        ):
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
 
@@ -136,28 +141,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             ), f"export to html failed on {docx_path}"
 
 
-flaky_file = "textbox.docx"
-
-
-def test_e2e_docx_conversions(documents):
-    target = [item for item in documents if item[0].name != flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
-def test_textbox_conversion(documents):
-    target = [item for item in documents if item[0].name == flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
 def test_textbox_extraction(documents):
     name = "textbox.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
 
     # Verify if a particular textbox content is extracted
     textbox_found = False
-    for item, _ in doc.iterate_items():
+    for item in doc.texts:
         if item.text[:30] == """Suggested Reportable Symptoms:""":
             textbox_found = True
     assert textbox_found

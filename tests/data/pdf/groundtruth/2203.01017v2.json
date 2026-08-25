@@ -7221,11 +7221,11 @@
           },
           "charspan": [
             0,
-            55
+            56
           ]
         }
       ],
-      "orig": "l box = \u03bb iou l iou + \u03bb l 1 l = \u03bbl s +(1 -\u03bb ) l box (1)",
+      "orig": "l box = \u03bb iou l iou + \u03bb l 1 l = \u03bbl s +(1 - \u03bb ) l box (1)",
       "text": ""
     },
     {
@@ -7671,11 +7671,11 @@
           },
           "charspan": [
             0,
-            74
+            75
           ]
         }
       ],
-      "orig": "TEDS( T a , T b ) = 1 -EditDist ( T a , T b ) max( | T a | , | T b | ) (3)",
+      "orig": "TEDS( T a , T b ) = 1 - EditDist ( T a , T b ) max( | T a | , | T b | ) (3)",
       "text": ""
     },
     {
@@ -13763,12 +13763,12 @@
           },
           "charspan": [
             0,
-            192
+            194
           ]
         }
       ],
-      "orig": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
-      "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
+      "orig": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
+      "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
       "enumerated": false,
       "marker": ""
     },
@@ -16295,11 +16295,11 @@
           },
           "charspan": [
             0,
-            64
+            65
           ]
         }
       ],
-      "orig": "alignment = arg min c { D c } D c = max { x c } -min { x c } (4)",
+      "orig": "alignment = arg min c { D c } D c = max { x c } - min { x c } (4)",
       "text": ""
     },
     {
@@ -17294,9 +17294,9 @@
           "page_no": 1,
           "bbox": {
             "l": 314.77,
-            "t": 566.19,
-            "r": 537.93,
-            "b": 295.62,
+            "t": 566.39,
+            "r": 537.95,
+            "b": 295.61,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -18854,7 +18854,7 @@
           "bbox": {
             "l": 315.46,
             "t": 561.46,
-            "r": 537.05,
+            "r": 537.04,
             "b": 489.47,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -18932,10 +18932,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 315.21,
-            "t": 358.2,
+            "l": 315.2,
+            "t": 358.21,
             "r": 537.11,
-            "b": 295.44,
+            "b": 295.43,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

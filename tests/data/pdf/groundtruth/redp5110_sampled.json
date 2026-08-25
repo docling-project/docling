@@ -5857,14 +5857,14 @@
           },
           "charspan": [
             0,
-            62
+            63
           ]
         }
       ],
-      "orig": "-Human Resources can see the unmasked TAX_ID of the employees.",
-      "text": "-Human Resources can see the unmasked TAX_ID of the employees.",
+      "orig": "- Human Resources can see the unmasked TAX_ID of the employees.",
+      "text": "Human Resources can see the unmasked TAX_ID of the employees.",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/189",
@@ -5886,14 +5886,14 @@
           },
           "charspan": [
             0,
-            50
+            51
           ]
         }
       ],
-      "orig": "-Employees can see only their own unmasked TAX_ID.",
-      "text": "-Employees can see only their own unmasked TAX_ID.",
+      "orig": "- Employees can see only their own unmasked TAX_ID.",
+      "text": "Employees can see only their own unmasked TAX_ID.",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/190",
@@ -5915,14 +5915,14 @@
           },
           "charspan": [
             0,
-            129
+            130
           ]
         }
       ],
-      "orig": "-Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).",
-      "text": "-Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).",
+      "orig": "- Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).",
+      "text": "Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/191",
@@ -5944,14 +5944,14 @@
           },
           "charspan": [
             0,
-            77
+            78
           ]
         }
       ],
-      "orig": "-Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.",
-      "text": "-Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.",
+      "orig": "- Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.",
+      "text": "Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.",
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/192",
@@ -8838,7 +8838,7 @@
           {
             "bbox": {
               "l": 134.71,
-              "t": 456.71,
+              "t": 456.7,
               "r": 502.91,
               "b": 468.32,
               "coord_origin": "TOPLEFT"
@@ -9237,8 +9237,8 @@
           },
           {
             "bbox": {
-              "l": 135.85,
-              "t": 605.14,
+              "l": 135.84,
+              "t": 605.15,
               "r": 502.86,
               "b": 627.85,
               "coord_origin": "TOPLEFT"
@@ -9298,9 +9298,9 @@
           {
             "bbox": {
               "l": 534.38,
-              "t": 608.87,
+              "t": 608.89,
               "r": 547.1,
-              "b": 619.7,
+              "b": 619.72,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9357,7 +9357,7 @@
           },
           {
             "bbox": {
-              "l": 147.49,
+              "l": 147.5,
               "t": 640.81,
               "r": 502.86,
               "b": 652.87,
@@ -9418,9 +9418,9 @@
           {
             "bbox": {
               "l": 533.91,
-              "t": 650.39,
+              "t": 650.41,
               "r": 547.12,
-              "b": 661.17,
+              "b": 661.18,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9478,7 +9478,7 @@
           {
             "bbox": {
               "l": 534.15,
-              "t": 665.39,
+              "t": 665.38,
               "r": 547.01,
               "b": 676.28,
               "coord_origin": "TOPLEFT"
@@ -9518,9 +9518,9 @@
           {
             "bbox": {
               "l": 534.03,
-              "t": 675.59,
+              "t": 675.6,
               "r": 546.99,
-              "b": 686.41,
+              "b": 686.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -10570,7 +10570,7 @@
             {
               "bbox": {
                 "l": 134.71,
-                "t": 456.71,
+                "t": 456.7,
                 "r": 502.91,
                 "b": 468.32,
                 "coord_origin": "TOPLEFT"
@@ -11031,8 +11031,8 @@
           [
             {
               "bbox": {
-                "l": 135.85,
-                "t": 605.14,
+                "l": 135.84,
+                "t": 605.15,
                 "r": 502.86,
                 "b": 627.85,
                 "coord_origin": "TOPLEFT"
@@ -11052,9 +11052,9 @@
             {
               "bbox": {
                 "l": 534.38,
-                "t": 608.87,
+                "t": 608.89,
                 "r": 547.1,
-                "b": 619.7,
+                "b": 619.72,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11115,7 +11115,7 @@
           [
             {
               "bbox": {
-                "l": 147.49,
+                "l": 147.5,
                 "t": 640.81,
                 "r": 502.86,
                 "b": 652.87,
@@ -11178,9 +11178,9 @@
             {
               "bbox": {
                 "l": 533.91,
-                "t": 650.39,
+                "t": 650.41,
                 "r": 547.12,
-                "b": 661.17,
+                "b": 661.18,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11220,7 +11220,7 @@
             {
               "bbox": {
                 "l": 534.15,
-                "t": 665.39,
+                "t": 665.38,
                 "r": 547.01,
                 "b": 676.28,
                 "coord_origin": "TOPLEFT"
@@ -11262,9 +11262,9 @@
             {
               "bbox": {
                 "l": 534.03,
-                "t": 675.59,
+                "t": 675.6,
                 "r": 546.99,
-                "b": 686.41,
+                "b": 686.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,

@@ -1658,7 +1658,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.121.0"
+version = "2.122.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1714,7 +1714,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 
 [[package]]
 name = "docling-client"
-version = "2.121.0"
+version = "2.122.0"
 source = { editable = "packages/docling-client" }
 dependencies = [
     { name = "docling-slim", extra = ["service-client"] },
@@ -1828,7 +1828,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.121.0"
+version = "2.122.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -2113,7 +2113,6 @@ dev = [
     { name = "fastapi" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
-    { name = "uvicorn" },
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "matplotlib", version = "3.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "nbqa" },
@@ -2133,6 +2132,7 @@ dev = [
     { name = "types-setuptools" },
     { name = "types-tqdm" },
     { name = "types-urllib3" },
+    { name = "uvicorn" },
 ]
 docs = [
     { name = "griffe-pydantic" },

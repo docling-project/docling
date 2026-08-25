@@ -172,12 +172,15 @@ class LayoutPostprocessor:
         "wrapper": {"area_threshold": 2.0, "conf_threshold": 0.2},
     }
 
-    WRAPPER_TYPES = {
+    CONTAINER_TYPES = {
         DocItemLabel.FORM,
         DocItemLabel.KEY_VALUE_REGION,
+    }
+    TABLE_TYPES = {
         DocItemLabel.TABLE,
         DocItemLabel.DOCUMENT_INDEX,
     }
+    WRAPPER_TYPES = CONTAINER_TYPES.union(TABLE_TYPES)
     SPECIAL_TYPES = WRAPPER_TYPES.union({DocItemLabel.PICTURE})
 
     CONFIDENCE_THRESHOLDS = {
@@ -218,6 +221,7 @@ class LayoutPostprocessor:
         self.page_size = page.size
         self.all_clusters = clusters
         self.options = options
+        self.all_cluster_index = SpatialClusterIndex(clusters)
         self.regular_clusters = [
             c for c in clusters if c.label not in self.SPECIAL_TYPES
         ]
@@ -241,14 +245,15 @@ class LayoutPostprocessor:
         contained_ids = {
             child.id
             for wrapper in self.special_clusters
-            if wrapper.label in self.SPECIAL_TYPES
+            if wrapper.label in self.TABLE_TYPES
+            or wrapper.label == DocItemLabel.PICTURE
             for child in wrapper.children
         }
         self.regular_clusters = [
             c for c in self.regular_clusters if c.id not in contained_ids
         ]
 
-        # Combine and sort final clusters
+        # Keep a deterministic assembly order. Semantic reading order is predicted later.
         final_clusters = self._sort_clusters(
             self.regular_clusters + self.special_clusters, mode="id"
         )
@@ -297,7 +302,8 @@ class LayoutPostprocessor:
                     if cluster.cells or cluster.label == DocItemLabel.FORMULA
                 ]
 
-            # Handle orphaned cells
+            # Preserve orphan cells as ordinary text clusters. Their source-cell order is
+            # only an assembly tie-break; the reading-order stage still orders them.
             unassigned = self._find_unassigned_cells(clusters)
             if unassigned and self.options.create_orphan_clusters:
                 next_id = max((c.id for c in self.all_clusters), default=0) + 1
@@ -334,8 +340,6 @@ class LayoutPostprocessor:
             if c.confidence >= self.CONFIDENCE_THRESHOLDS[c.label]
         ]
 
-        special_clusters = self._handle_cross_type_overlaps(special_clusters)
-
         # Calculate page area from known page size
         assert self.page_size is not None
         page_area = self.page_size.width * self.page_size.height
@@ -350,37 +354,6 @@ class LayoutPostprocessor:
                 )
             ]
 
-        for special in special_clusters:
-            contained = []
-            for cluster in self.regular_clusters:
-                containment = cluster.bbox.intersection_over_self(special.bbox)
-                if containment > 0.8:
-                    contained.append(cluster)
-
-            if contained:
-                # Sort contained clusters by minimum cell ID:
-                contained = self._sort_clusters(contained, mode="id")
-                special.children = contained
-
-                # Adjust bbox only for Form and Key-Value-Region, not Table or Picture
-                if special.label in [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]:
-                    special.bbox = BoundingBox(
-                        l=min(c.bbox.l for c in contained),
-                        t=min(c.bbox.t for c in contained),
-                        r=max(c.bbox.r for c in contained),
-                        b=max(c.bbox.b for c in contained),
-                    )
-
-                # Conditionally collect cells from children
-                if not self.options.skip_cell_assignment:
-                    all_cells = []
-                    for child in contained:
-                        all_cells.extend(child.cells)
-                    special.cells = self._deduplicate_cells(all_cells)
-                    special.cells = self._sort_cells(special.cells)
-                else:
-                    special.cells = []
-
         picture_clusters = [
             c for c in special_clusters if c.label == DocItemLabel.PICTURE
         ]
@@ -388,14 +361,119 @@ class LayoutPostprocessor:
             picture_clusters, "picture"
         )
 
-        wrapper_clusters = [
-            c for c in special_clusters if c.label in self.WRAPPER_TYPES
+        table_clusters = [c for c in special_clusters if c.label in self.TABLE_TYPES]
+        table_clusters = self._remove_overlapping_clusters(table_clusters, "wrapper")
+
+        container_clusters = [
+            c for c in special_clusters if c.label in self.CONTAINER_TYPES
         ]
-        wrapper_clusters = self._remove_overlapping_clusters(
-            wrapper_clusters, "wrapper"
+        container_clusters = self._remove_overlapping_clusters(
+            container_clusters, "wrapper"
         )
 
-        return picture_clusters + wrapper_clusters
+        special_clusters = self._handle_cross_type_overlaps(
+            picture_clusters + table_clusters + container_clusters
+        )
+        picture_clusters = [
+            cluster
+            for cluster in special_clusters
+            if cluster.label == DocItemLabel.PICTURE
+        ]
+        table_clusters = [
+            cluster for cluster in special_clusters if cluster.label in self.TABLE_TYPES
+        ]
+        container_clusters = [
+            cluster
+            for cluster in special_clusters
+            if cluster.label in self.CONTAINER_TYPES
+        ]
+
+        nested_clusters = table_clusters + picture_clusters
+        for cluster in nested_clusters:
+            children = [
+                regular
+                for regular in self.regular_clusters
+                if regular.bbox.intersection_over_self(cluster.bbox) > 0.8
+            ]
+            self._set_cluster_children(cluster, children)
+
+        parent_by_child_id = {}
+        for child in nested_clusters:
+            parents = [
+                container
+                for container in container_clusters
+                if child.bbox.intersection_over_self(container.bbox) > 0.8
+            ]
+            if parents:
+                parent = min(
+                    parents,
+                    key=lambda container: (
+                        container.bbox.area(),
+                        -container.confidence,
+                        container.id,
+                    ),
+                )
+                parent_by_child_id[child.id] = parent.id
+
+        nested_regular_ids = {
+            regular.id for child in nested_clusters for regular in child.children
+        }
+        parent_by_regular_id = {}
+        for child in self.regular_clusters:
+            if child.id in nested_regular_ids:
+                continue
+            parents = [
+                container
+                for container in container_clusters
+                if child.bbox.intersection_over_self(container.bbox) > 0.8
+            ]
+            if parents:
+                parent = min(
+                    parents,
+                    key=lambda container: (
+                        container.bbox.area(),
+                        -container.confidence,
+                        container.id,
+                    ),
+                )
+                parent_by_regular_id[child.id] = parent.id
+
+        for container in container_clusters:
+            nested_children = [
+                child
+                for child in nested_clusters
+                if parent_by_child_id.get(child.id) == container.id
+            ]
+            direct_children = [
+                regular
+                for regular in self.regular_clusters
+                if parent_by_regular_id.get(regular.id) == container.id
+            ]
+            self._set_cluster_children(container, direct_children + nested_children)
+
+        return picture_clusters + table_clusters + container_clusters
+
+    def _set_cluster_children(self, cluster: Cluster, children: list[Cluster]) -> None:
+        if not children:
+            return
+
+        cluster.children = self._sort_clusters(children, mode="id")
+
+        if cluster.label in self.CONTAINER_TYPES:
+            cluster.bbox = BoundingBox(
+                l=min(child.bbox.l for child in cluster.children),
+                t=min(child.bbox.t for child in cluster.children),
+                r=max(child.bbox.r for child in cluster.children),
+                b=max(child.bbox.b for child in cluster.children),
+            )
+
+        if not self.options.skip_cell_assignment:
+            cluster.cells = self._deduplicate_cells(
+                [cell for child in cluster.children for cell in child.cells]
+            )
+            cluster.cells = self._sort_cells(cluster.cells)
+        else:
+            cluster.cells = []
 
     @staticmethod
     def _resolve_coincident_pairs(
@@ -432,27 +510,30 @@ class LayoutPostprocessor:
         confidence, this step picks the label carrying the richer downstream
         semantic. Anything outside that envelope is out of scope here.
 
-        | pair                       | loser   | winner          |
-        |----------------------------|---------|-----------------|
-        | FORM / KVR vs TABLE        | wrapper | TABLE           |
-        | DOCUMENT_INDEX vs TABLE    | TABLE   | DOCUMENT_INDEX  |
-        | PICTURE vs TABLE           | PICTURE | TABLE           |
+        | pair                                | loser     | winner                 |
+        |-------------------------------------|-----------|------------------------|
+        | TABLE vs DOCUMENT_INDEX             | TABLE     | DOCUMENT_INDEX         |
+        | PICTURE vs TABLE / DOC_INDEX        | PICTURE   | TABLE / DOCUMENT_INDEX |
+        | FORM / KVR vs TABLE / DOC / PICTURE | container | structured element     |
         """
         tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
         doc_indices = [
             c for c in special_clusters if c.label == DocItemLabel.DOCUMENT_INDEX
         ]
         pictures = [c for c in special_clusters if c.label == DocItemLabel.PICTURE]
-        wrappers = [
-            c
-            for c in special_clusters
-            if c.label in (DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION)
-        ]
+        containers = [c for c in special_clusters if c.label in self.CONTAINER_TYPES]
 
         clusters_to_remove: set[int] = set()
-        clusters_to_remove |= self._resolve_coincident_pairs(wrappers, tables)
         clusters_to_remove |= self._resolve_coincident_pairs(tables, doc_indices)
-        clusters_to_remove |= self._resolve_coincident_pairs(pictures, tables)
+        clusters_to_remove |= self._resolve_coincident_pairs(
+            pictures, tables + doc_indices
+        )
+        surviving_structured = [
+            c for c in tables + doc_indices + pictures if c.id not in clusters_to_remove
+        ]
+        clusters_to_remove |= self._resolve_coincident_pairs(
+            containers, surviving_structured
+        )
 
         return [c for c in special_clusters if c.id not in clusters_to_remove]
 
@@ -666,11 +747,12 @@ class LayoutPostprocessor:
         return clusters
 
     def _find_unassigned_cells(self, clusters: list[Cluster]) -> list[TextCell]:
-        """Find visible cells not assigned to any detector-backed cluster.
+        """Find cells eligible to become detector-backed orphan text clusters.
 
         Invisible PDF text can still join an overlapping cluster (for example, the
-        OCR layer of a searchable scan), but it must not create a text region that
-        the layout detector did not see.
+        OCR layer of a searchable scan). It may also become an orphan text cluster
+        inside another detected layout region, such as a table or form, but it must
+        not create text where the layout detector saw no content at all.
         """
         assigned = {cell.index for cluster in clusters for cell in cluster.cells}
         return [
@@ -678,8 +760,25 @@ class LayoutPostprocessor:
             for cell in self.cells
             if cell.index not in assigned
             and cell.text.strip()
-            and not is_render_mode_invisible(cell)
+            and (not is_render_mode_invisible(cell) or self._has_detector_support(cell))
         ]
+
+    def _has_detector_support(self, cell: TextCell, min_overlap: float = 0.2) -> bool:
+        """Return whether an accepted layout detection covers the text cell."""
+        cell_bbox = cell.rect.to_bounding_box()
+        if cell_bbox.area() <= 0:
+            return False
+
+        for cluster_id in self.all_cluster_index.find_candidates(cell_bbox):
+            cluster = self.all_cluster_index.clusters_by_id[cluster_id]
+            if cluster.confidence < self.CONFIDENCE_THRESHOLDS[cluster.label]:
+                continue
+            overlap_ratio = cell_bbox.intersection_over_self(
+                ordered_bounding_box(cluster.bbox)
+            )
+            if overlap_ratio > min_overlap:
+                return True
+        return False
 
     def _adjust_cluster_bboxes(self, clusters: list[Cluster]) -> list[Cluster]:
         """Adjust cluster bounding boxes to contain their cells."""
@@ -708,14 +807,14 @@ class LayoutPostprocessor:
         return clusters
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
-        """Sort cells in native reading order."""
+        """Sort cells by their source/parser index."""
         return sorted(cells, key=lambda c: c.index)
 
     def _sort_clusters(
         self, clusters: list[Cluster], mode: str = "id"
     ) -> list[Cluster]:
-        """Sort clusters in reading order (top-to-bottom, left-to-right)."""
-        if mode == "id":  # sort in the order the cells are printed in the PDF.
+        """Sort clusters for deterministic layout-stage storage."""
+        if mode == "id":  # Source-cell order, with geometry for empty/tied clusters.
             return sorted(
                 clusters,
                 key=lambda cluster: (
