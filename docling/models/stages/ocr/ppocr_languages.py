@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Canonical BCP-47 to PP-OCR recognizer tokens.
 
 RapidOCR and the KServe v2 OCR client both address PP-OCR recognizers by the

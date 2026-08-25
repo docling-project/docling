@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Auto-inline VLM inference engine that selects the best local engine."""
 
 from __future__ import annotations

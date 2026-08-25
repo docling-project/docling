@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for VlmPipeline._turn_dt_into_doc with force_backend_text on multipage docs.
 
 When force_backend_text=True on a multi-page DocTags (SmolDocling) document,

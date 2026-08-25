@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import csv
 import io
 import logging
@@ -318,7 +321,13 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
-        self._tesseract_languages = df_list[0].tolist()[1:]
+        # Tesseract prints script packs with the OS path separator, so on Windows
+        # `--list-langs` reports `script\Latin` rather than `script/Latin`. The
+        # forward-slash form is the one `_sanitize_lang` accepts and the one
+        # `tesseract -l` expects on every platform, so normalize on the way in.
+        self._tesseract_languages = [
+            str(lang).replace("\\", "/") for lang in df_list[0].tolist()[1:]
+        ]
 
         # Decide the script prefix
         if any(lang.startswith("script/") for lang in self._tesseract_languages):

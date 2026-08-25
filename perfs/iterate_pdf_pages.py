@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Iterate over PDFs in a directory, load them with
 ThreadedDoclingParseDocumentBackend, and extract text cells and page images for
 every page."""

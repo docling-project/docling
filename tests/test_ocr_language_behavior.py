@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Auto-engine selection, driven by the requested OCR language.
 
 `OcrAutoOptions` is the one place where a language tag changes *which engine

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.120.3"  # DO NOT EDIT, updated automatically
+version = "2.122.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -98,7 +98,7 @@ format-pdf-pypdfium2 = [
 ]
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=7.0.0,<8.0.0',
+  'docling-parse>=7.12.0,<8.0.0',
 ]
 
 format-pdf = [
@@ -322,6 +322,10 @@ pr-fast-checks = [
 dev = [
   { include-group = "typecheck" },
   "dprint-py==0.53.1.0",
+  # Test fakes serve a real socket so both httpx and requests code paths are
+  # covered by one harness; see tests/fakes/.
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",

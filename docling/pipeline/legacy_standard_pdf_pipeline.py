@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import warnings
 from pathlib import Path
@@ -38,6 +41,7 @@ from docling.models.stages.page_assemble.page_assemble_model import (
 from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
+    resolve_skip_cell_extraction,
 )
 from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
@@ -106,6 +110,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             PagePreprocessingModel(
                 options=PagePreprocessingOptions(
                     images_scale=pipeline_options.images_scale,
+                    skip_cell_extraction=resolve_skip_cell_extraction(pipeline_options),
                 )
             ),
             # OCR

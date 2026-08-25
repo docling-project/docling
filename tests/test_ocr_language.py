@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Docling's OCR language policy: canonicalize to BCP-47, or refuse.
 
 These assert docling decisions -- drop the region, keep the script, never

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Guards for the migration of layout inference onto the object-detection path.
 
 Covers the contract the deprecated `LayoutOptions` / `LayoutModel` shim owes.

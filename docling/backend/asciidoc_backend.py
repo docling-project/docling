@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import re
 from io import BytesIO
@@ -153,7 +156,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 elif in_list and item["indent"] < indents[level]:
                     # print(item["indent"], " => ", indents[level])
-                    while item["indent"] < indents[level]:
+                    while level > 0 and item["indent"] < indents[level]:
                         # print(item["indent"], " => ", indents[level])
                         parents[level] = None
                         indents[level] = None

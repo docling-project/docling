@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test dots.ocr / dots.mocr JSON parsing in VLM pipeline."""
 
 from pathlib import Path

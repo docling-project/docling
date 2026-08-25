@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test module for the XBRL backend parser.
 
 The data used in this test is in the public domain. It has been downloaded from the

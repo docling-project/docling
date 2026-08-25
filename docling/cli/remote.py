@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """`docling convert-remote` — convert documents through a docling-serve service.
 
 This command drives the synchronous ``DoclingServiceClient`` internally and reuses

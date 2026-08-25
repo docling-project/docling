@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Canonicalization of OCR language requests to BCP-47 (RFC 5646).
 
 Docling exposes exactly one language vocabulary to users -- BCP-47 tags -- and

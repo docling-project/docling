@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Per-engine translation from canonical tags to native codes.
 
 These run without any engine installed: each engine's table and mapping are

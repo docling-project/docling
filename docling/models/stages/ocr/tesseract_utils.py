@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tessdata names, orientation and box geometry, shared by both Tesseract models.
 
 `tesseract_ocr_model.py` (the tesserocr bindings) and `tesseract_ocr_cli_model.py`

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backends to parse OpenDocument formats (ODT, ODS, ODP).
 
 The backends leverage the ``odfdo`` library (https://github.com/jdum/odfdo) to

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.patent_uspto_backend.py."""
 
 import logging

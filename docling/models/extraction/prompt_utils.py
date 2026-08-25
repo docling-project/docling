@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Prompt construction utilities for the extraction pipeline.
 
 Each function takes a processor, images, and templates and returns

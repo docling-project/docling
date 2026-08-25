@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
 
 XBRL is a standard XML format used for business and financial reporting.

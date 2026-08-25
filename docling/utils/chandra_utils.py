@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for parsing chandra-ocr-2 HTML-with-bbox format.
 
 chandra-ocr-2 produces HTML where each layout element is a top-level

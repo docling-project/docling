@@ -1,17 +1,25 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from collections.abc import Iterator
 from pathlib import Path
 from statistics import median
 
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GroupItem,
     GroupLabel,
     NodeItem,
+    PictureItem,
     ProvenanceItem,
     RefItem,
     RichTableCell,
     TableData,
     TableItem,
+    TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
 from docling_ibm_models.list_item_normalizer.list_marker_processor import (
@@ -28,6 +36,7 @@ from docling.datamodel.base_models import (
     Cluster,
     ContainerElement,
     FigureElement,
+    PageElement,
     Table,
     TextElement,
 )
@@ -80,7 +89,7 @@ class ReadingOrderModel:
 
     def _add_child_elements(
         self, element: BasePageElement, doc_item: NodeItem, doc: DoclingDocument
-    ):
+    ) -> None:
         child: Cluster
         for child in element.cluster.children:
             c_label = child.label
@@ -118,6 +127,112 @@ class ReadingOrderModel:
                     prov=c_prov,
                     content_layer=content_layer,
                 )
+
+    def _add_table_element(
+        self,
+        element: Table,
+        out_doc: DoclingDocument,
+        parent: NodeItem | None = None,
+    ) -> TableItem:
+        table_data = self._table_data_from_table(element)
+        page_height = out_doc.pages[element.page_no].size.height
+        prov = ProvenanceItem(
+            page_no=element.page_no,
+            charspan=(0, 0),
+            bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
+        )
+        table_item = out_doc.add_table(
+            data=table_data,
+            prov=prov,
+            label=element.cluster.label,
+            parent=parent,
+        )
+
+        return table_item
+
+    def _add_table_children(
+        self,
+        element: Table,
+        out_doc: DoclingDocument,
+        table_item: TableItem,
+        pictures_by_cell: dict[int, list[FigureElement]] | None = None,
+    ) -> None:
+        if pictures_by_cell:
+            self._add_rich_table_pictures(
+                table_item=table_item,
+                pictures_by_cell=pictures_by_cell,
+                doc=out_doc,
+                page_height=out_doc.pages[element.page_no].size.height,
+            )
+        if element.num_rows == 0 and element.num_cols == 0 and element.cluster.children:
+            rich_cell_ref = self._create_rich_cell_group(element, out_doc, table_item)
+            rich_cell = RichTableCell(
+                text="",
+                row_span=1,
+                col_span=1,
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                column_header=False,
+                row_header=False,
+                ref=rich_cell_ref,
+            )
+            out_doc.add_table_cell(table_item=table_item, cell=rich_cell)
+
+    def _add_picture_element(
+        self,
+        element: FigureElement,
+        out_doc: DoclingDocument,
+        parent: NodeItem | None = None,
+    ) -> PictureItem:
+        page_height = out_doc.pages[element.page_no].size.height
+        prov = ProvenanceItem(
+            page_no=element.page_no,
+            charspan=(0, 0),
+            bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
+        )
+        return out_doc.add_picture(prov=prov, parent=parent)
+
+    def _add_code_element(
+        self,
+        element: TextElement,
+        out_doc: DoclingDocument,
+        parent: NodeItem | None = None,
+    ) -> CodeItem:
+        page_height = out_doc.pages[element.page_no].size.height
+        prov = ProvenanceItem(
+            page_no=element.page_no,
+            charspan=(0, len(element.text)),
+            bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
+        )
+        return out_doc.add_code(text=element.text, prov=prov, parent=parent)
+
+    def _add_related_text_items(
+        self,
+        cid: int,
+        *,
+        item: CodeItem | PictureItem | TableItem,
+        out_doc: DoclingDocument,
+        id_to_elem: dict[str, PageElement],
+        cid_to_rels: dict[int, ReadingOrderPageElement],
+        el_to_captions_mapping: dict[int, list[int]],
+        el_to_footnotes_mapping: dict[int, list[int]],
+    ) -> None:
+        page_height = out_doc.pages[cid_to_rels[cid].page_no].size.height
+        for caption_cid in el_to_captions_mapping.get(cid, []):
+            caption_elem = id_to_elem[cid_to_rels[caption_cid].ref.cref]
+            caption_item = self._add_caption_or_footnote(
+                caption_elem, out_doc, item, page_height
+            )
+            item.captions.append(caption_item.get_ref())
+
+        for footnote_cid in el_to_footnotes_mapping.get(cid, []):
+            footnote_elem = id_to_elem[cid_to_rels[footnote_cid].ref.cref]
+            footnote_item = self._add_caption_or_footnote(
+                footnote_elem, out_doc, item, page_height
+            )
+            item.footnotes.append(footnote_item.get_ref())
 
     def _create_rich_cell_group(
         self, element: BasePageElement, doc: DoclingDocument, table_item: NodeItem
@@ -304,7 +419,8 @@ class ReadingOrderModel:
     def _readingorder_elements_to_docling_doc(
         self,
         conv_res: ConversionResult,
-        ro_elements: list[ReadingOrderPageElement],
+        *,
+        ordered_siblings: dict[str | None, list[ReadingOrderPageElement]],
         el_to_captions_mapping: dict[int, list[int]],
         el_to_footnotes_mapping: dict[int, list[int]],
         el_merges_mapping: dict[int, list[int]],
@@ -312,6 +428,9 @@ class ReadingOrderModel:
         id_to_elem = {
             self._element_ref(elem): elem for elem in conv_res.assembled.elements
         }
+        ro_elements = [
+            rel for siblings in ordered_siblings.values() for rel in siblings
+        ]
         cid_to_rels = {rel.cid: rel for rel in ro_elements}
         excluded_picture_refs = {
             rel.ref.cref
@@ -328,7 +447,6 @@ class ReadingOrderModel:
             for pictures in cells.values()
             for picture in pictures
         }
-
         origin = DocumentOrigin(
             mimetype="application/pdf",
             filename=conv_res.input.file.name,
@@ -345,7 +463,6 @@ class ReadingOrderModel:
 
             out_doc.add_page(page_no=page_no, size=size)
 
-        current_list = None
         skippable_cids = {
             cid
             for mapping in (
@@ -359,162 +476,95 @@ class ReadingOrderModel:
         skippable_cids.update(
             rel.cid for rel in ro_elements if rel.ref.cref in rich_picture_refs
         )
-
         page_no_to_pages = {p.page_no: p for p in conv_res.pages}
 
-        for rel in ro_elements:
-            if rel.cid in skippable_cids:
-                continue
-            element = id_to_elem[rel.ref.cref]
+        def materialize_siblings(
+            parent_ref: str | None, parent: NodeItem | None
+        ) -> None:
+            split_lists_on_non_list = (
+                isinstance(parent, GroupItem) and parent.label == GroupLabel.FORM_AREA
+            )
+            current_list: GroupItem | None = None
+            for rel in ordered_siblings[parent_ref]:
+                if rel.cid in skippable_cids:
+                    continue
+                element = id_to_elem[rel.ref.cref]
+                page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
+                if split_lists_on_non_list and not (
+                    isinstance(element, TextElement)
+                    and element.label == DocItemLabel.LIST_ITEM
+                ):
+                    current_list = None
 
-            page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
+                if isinstance(element, TextElement):
+                    if element.label == DocItemLabel.CODE:
+                        code_item = self._add_code_element(element, out_doc, parent)
+                        self._add_related_text_items(
+                            rel.cid,
+                            item=code_item,
+                            out_doc=out_doc,
+                            id_to_elem=id_to_elem,
+                            cid_to_rels=cid_to_rels,
+                            el_to_captions_mapping=el_to_captions_mapping,
+                            el_to_footnotes_mapping=el_to_footnotes_mapping,
+                        )
+                        continue
 
-            if isinstance(element, TextElement):
-                if element.label == DocItemLabel.CODE:
-                    cap_text = element.text
-                    prov = ProvenanceItem(
-                        page_no=element.page_no,
-                        charspan=(0, len(cap_text)),
-                        bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
-                    )
-                    code_item = out_doc.add_code(text=cap_text, prov=prov)
-
-                    if rel.cid in el_to_captions_mapping.keys():
-                        for caption_cid in el_to_captions_mapping[rel.cid]:
-                            caption_elem = id_to_elem[cid_to_rels[caption_cid].ref.cref]
-                            new_cap_item = self._add_caption_or_footnote(
-                                caption_elem, out_doc, code_item, page_height
-                            )
-
-                            code_item.captions.append(new_cap_item.get_ref())
-
-                    if rel.cid in el_to_footnotes_mapping.keys():
-                        for footnote_cid in el_to_footnotes_mapping[rel.cid]:
-                            footnote_elem = id_to_elem[
-                                cid_to_rels[footnote_cid].ref.cref
-                            ]
-                            new_footnote_item = self._add_caption_or_footnote(
-                                footnote_elem, out_doc, code_item, page_height
-                            )
-
-                            code_item.footnotes.append(new_footnote_item.get_ref())
-                else:
                     new_item, current_list = self._handle_text_element(
-                        element, out_doc, current_list, page_height
-                    )
-
-                    if rel.cid in el_merges_mapping.keys():
-                        for merged_cid in el_merges_mapping[rel.cid]:
-                            merged_elem = id_to_elem[cid_to_rels[merged_cid].ref.cref]
-
-                            self._merge_elements(
-                                element, merged_elem, new_item, page_height
-                            )
-
-            elif isinstance(element, Table):
-                tbl_data = self._table_data_from_table(element)
-
-                prov = ProvenanceItem(
-                    page_no=element.page_no,
-                    charspan=(0, 0),
-                    bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
-                )
-
-                tbl = out_doc.add_table(
-                    data=tbl_data, prov=prov, label=element.cluster.label
-                )
-                if rel.ref.cref in rich_table_pictures:
-                    self._add_rich_table_pictures(
-                        table_item=tbl,
-                        pictures_by_cell=rich_table_pictures[rel.ref.cref],
-                        doc=out_doc,
+                        element,
+                        out_doc=out_doc,
+                        current_list=current_list,
+                        parent=parent,
                         page_height=page_height,
                     )
 
-                if rel.cid in el_to_captions_mapping.keys():
-                    for caption_cid in el_to_captions_mapping[rel.cid]:
-                        caption_elem = id_to_elem[cid_to_rels[caption_cid].ref.cref]
-                        new_cap_item = self._add_caption_or_footnote(
-                            caption_elem, out_doc, tbl, page_height
+                    for merged_cid in el_merges_mapping.get(rel.cid, []):
+                        merged_elem = id_to_elem[cid_to_rels[merged_cid].ref.cref]
+                        self._merge_elements(
+                            element, merged_elem, new_item, page_height
                         )
 
-                        tbl.captions.append(new_cap_item.get_ref())
-
-                if rel.cid in el_to_footnotes_mapping.keys():
-                    for footnote_cid in el_to_footnotes_mapping[rel.cid]:
-                        footnote_elem = id_to_elem[cid_to_rels[footnote_cid].ref.cref]
-                        new_footnote_item = self._add_caption_or_footnote(
-                            footnote_elem, out_doc, tbl, page_height
-                        )
-
-                        tbl.footnotes.append(new_footnote_item.get_ref())
-
-                # Handle case where table has no structure prediction but has children
-                if (
-                    element.num_rows == 0
-                    and element.num_cols == 0
-                    and element.cluster.children
-                ):
-                    # Create rich cell containing all child elements
-                    rich_cell_ref = self._create_rich_cell_group(element, out_doc, tbl)
-
-                    # Create rich table cell spanning the entire 1x1 table
-                    rich_cell = RichTableCell(
-                        text="",  # Empty text since content is in the group
-                        row_span=1,
-                        col_span=1,
-                        start_row_offset_idx=0,
-                        end_row_offset_idx=1,
-                        start_col_offset_idx=0,
-                        end_col_offset_idx=1,
-                        column_header=False,
-                        row_header=False,
-                        ref=rich_cell_ref,
+                elif isinstance(element, Table):
+                    table_item = self._add_table_element(element, out_doc, parent)
+                    self._add_related_text_items(
+                        rel.cid,
+                        item=table_item,
+                        out_doc=out_doc,
+                        id_to_elem=id_to_elem,
+                        cid_to_rels=cid_to_rels,
+                        el_to_captions_mapping=el_to_captions_mapping,
+                        el_to_footnotes_mapping=el_to_footnotes_mapping,
                     )
-                    out_doc.add_table_cell(table_item=tbl, cell=rich_cell)
+                    self._add_table_children(
+                        element,
+                        out_doc,
+                        table_item,
+                        rich_table_pictures.get(rel.ref.cref),
+                    )
 
-                # TODO: Consider adding children of Table.
+                elif isinstance(element, FigureElement):
+                    picture_item = self._add_picture_element(element, out_doc, parent)
+                    self._add_related_text_items(
+                        rel.cid,
+                        item=picture_item,
+                        out_doc=out_doc,
+                        id_to_elem=id_to_elem,
+                        cid_to_rels=cid_to_rels,
+                        el_to_captions_mapping=el_to_captions_mapping,
+                        el_to_footnotes_mapping=el_to_footnotes_mapping,
+                    )
+                    self._add_child_elements(element, picture_item, out_doc)
 
-            elif isinstance(element, FigureElement):
-                cap_text = ""
-                prov = ProvenanceItem(
-                    page_no=element.page_no,
-                    charspan=(0, len(cap_text)),
-                    bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
-                )
-                pic = out_doc.add_picture(prov=prov)
+                elif isinstance(element, ContainerElement):
+                    group_label = (
+                        GroupLabel.FORM_AREA
+                        if element.label == DocItemLabel.FORM
+                        else GroupLabel.KEY_VALUE_AREA
+                    )
+                    container_item = out_doc.add_group(label=group_label, parent=parent)
+                    materialize_siblings(rel.ref.cref, container_item)
 
-                if rel.cid in el_to_captions_mapping.keys():
-                    for caption_cid in el_to_captions_mapping[rel.cid]:
-                        caption_elem = id_to_elem[cid_to_rels[caption_cid].ref.cref]
-                        new_cap_item = self._add_caption_or_footnote(
-                            caption_elem, out_doc, pic, page_height
-                        )
-
-                        pic.captions.append(new_cap_item.get_ref())
-
-                if rel.cid in el_to_footnotes_mapping.keys():
-                    for footnote_cid in el_to_footnotes_mapping[rel.cid]:
-                        footnote_elem = id_to_elem[cid_to_rels[footnote_cid].ref.cref]
-                        new_footnote_item = self._add_caption_or_footnote(
-                            footnote_elem, out_doc, pic, page_height
-                        )
-
-                        pic.footnotes.append(new_footnote_item.get_ref())
-
-                self._add_child_elements(element, pic, out_doc)
-
-            elif isinstance(element, ContainerElement):  # Form, KV region
-                label = element.label
-                group_label = GroupLabel.UNSPECIFIED
-                if label == DocItemLabel.FORM:
-                    group_label = GroupLabel.FORM_AREA
-                elif label == DocItemLabel.KEY_VALUE_REGION:
-                    group_label = GroupLabel.KEY_VALUE_AREA
-
-                container_el = out_doc.add_group(label=group_label)
-
-                self._add_child_elements(element, container_el, out_doc)
+        materialize_siblings(None, None)
 
         return out_doc
 
@@ -535,7 +585,15 @@ class ReadingOrderModel:
         )
         return new_item
 
-    def _handle_text_element(self, element, out_doc, current_list, page_height):
+    def _handle_text_element(
+        self,
+        element: TextElement,
+        *,
+        out_doc: DoclingDocument,
+        current_list: GroupItem | None,
+        parent: NodeItem | None,
+        page_height: float,
+    ) -> tuple[TextItem, GroupItem | None]:
         cap_text = element.text
 
         prov = ProvenanceItem(
@@ -546,7 +604,9 @@ class ReadingOrderModel:
         label = element.label
         if label == DocItemLabel.LIST_ITEM:
             if current_list is None:
-                current_list = out_doc.add_group(label=GroupLabel.LIST, name="list")
+                current_list = out_doc.add_group(
+                    label=GroupLabel.LIST, name="list", parent=parent
+                )
 
             # TODO: Infer if this is a numbered or a bullet list item
             new_item = out_doc.add_list_item(
@@ -562,13 +622,20 @@ class ReadingOrderModel:
             current_list = None
 
             new_item = out_doc.add_heading(
-                text=cap_text, prov=prov, hyperlink=element.hyperlink
+                text=cap_text,
+                prov=prov,
+                parent=parent,
+                hyperlink=element.hyperlink,
             )
         elif label == DocItemLabel.FORMULA:
             current_list = None
 
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
+                label=DocItemLabel.FORMULA,
+                text="",
+                orig=cap_text,
+                prov=prov,
+                parent=parent,
             )
         else:
             current_list = None
@@ -581,6 +648,7 @@ class ReadingOrderModel:
                 label=element.label,
                 text=cap_text,
                 prov=prov,
+                parent=parent,
                 content_layer=content_layer,
                 hyperlink=element.hyperlink,
             )
@@ -623,27 +691,74 @@ class ReadingOrderModel:
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
             page_elements = self._assembled_to_readingorder_elements(conv_res)
+            assembled_by_ref = {
+                self._element_ref(element): element
+                for element in conv_res.assembled.elements
+            }
+            parent_by_child_ref: dict[str, str] = {}
+            siblings_by_parent: dict[str | None, list[ReadingOrderPageElement]] = {
+                None: []
+            }
 
-            # Apply reading order
-            sorted_elements = self.ro_model.predict_reading_order(
-                page_elements=page_elements
-            )
+            for element in conv_res.assembled.elements:
+                if not isinstance(element, ContainerElement):
+                    continue
+                container_ref = self._element_ref(element)
+                siblings_by_parent[container_ref] = []
+                for child in element.cluster.children:
+                    child_ref = f"#/{element.page_no}/{child.id}"
+                    assert child_ref in assembled_by_ref, (
+                        f"Container child {child_ref} is not an assembled element."
+                    )
+                    assert child_ref not in parent_by_child_ref, (
+                        f"Container child {child_ref} has multiple parents."
+                    )
+                    parent_by_child_ref[child_ref] = container_ref
+
+            # Preserve assembled order as the predictor's deterministic tie-break input.
+            for element in page_elements:
+                siblings_by_parent[parent_by_child_ref.get(element.ref.cref)].append(
+                    element
+                )
+
+            ordered_siblings = {
+                parent_ref: (
+                    self.ro_model.predict_reading_order(page_elements=siblings)
+                    if len(siblings) > 1
+                    else siblings
+                )
+                for parent_ref, siblings in siblings_by_parent.items()
+            }
+
+            def iterate_leaves(
+                parent_ref: str | None,
+            ) -> Iterator[ReadingOrderPageElement]:
+                for element in ordered_siblings[parent_ref]:
+                    if isinstance(assembled_by_ref[element.ref.cref], ContainerElement):
+                        yield from iterate_leaves(element.ref.cref)
+                    else:
+                        yield element
+
+            relation_elements = list(iterate_leaves(None))
             el_to_captions_mapping = self.ro_model.predict_to_captions(
-                sorted_elements=sorted_elements
+                sorted_elements=relation_elements
             )
             el_to_footnotes_mapping = self.ro_model.predict_to_footnotes(
-                sorted_elements=sorted_elements
+                sorted_elements=relation_elements
             )
-            el_merges_mapping = self.ro_model.predict_merges(
-                sorted_elements=sorted_elements
-            )
+            el_merges_mapping: dict[int, list[int]] = {}
+            for siblings in ordered_siblings.values():
+                if len(siblings) > 1:
+                    el_merges_mapping.update(
+                        self.ro_model.predict_merges(sorted_elements=siblings)
+                    )
 
             docling_doc: DoclingDocument = self._readingorder_elements_to_docling_doc(
                 conv_res,
-                sorted_elements,
-                el_to_captions_mapping,
-                el_to_footnotes_mapping,
-                el_merges_mapping,
+                ordered_siblings=ordered_siblings,
+                el_to_captions_mapping=el_to_captions_mapping,
+                el_to_footnotes_mapping=el_to_footnotes_mapping,
+                el_merges_mapping=el_merges_mapping,
             )
 
         return docling_doc

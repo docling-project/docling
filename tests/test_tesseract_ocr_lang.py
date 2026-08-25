@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tesseract's language coverage, checked against the real installation.
 
 No mocks: the installed tessdata set is read from the binary, and the assertions

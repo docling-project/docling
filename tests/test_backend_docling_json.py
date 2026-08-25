@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.json.docling_json_backend.py."""
 
 from io import BytesIO
