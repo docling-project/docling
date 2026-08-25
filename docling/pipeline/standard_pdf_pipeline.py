@@ -62,6 +62,9 @@ from docling.models.factories import (
 from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
 )
+from docling.models.stages.header_footer.header_footer_model import (
+    HeaderFooterModel,
+)
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
@@ -643,6 +646,9 @@ class StandardPdfPipeline(ConvertPipeline):
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
+        self.header_footer_model = HeaderFooterModel(
+            options=self.pipeline_options.header_footer_options
+        )
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
@@ -1053,6 +1059,7 @@ class StandardPdfPipeline(ConvertPipeline):
             conv_res.assembled = AssembledUnit(
                 elements=elements, headers=headers, body=body
             )
+            conv_res = self.header_footer_model(conv_res)
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
 
