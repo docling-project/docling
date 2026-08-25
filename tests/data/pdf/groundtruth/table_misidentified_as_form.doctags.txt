@@ -1,8 +1,64 @@
-<doctag><otsl><loc_65><loc_96><loc_358><loc_169></otsl>
-<otsl><loc_64><loc_269><loc_356><loc_293></otsl>
-<otsl><loc_65><loc_317><loc_357><loc_366></otsl>
+<doctag><page_header><loc_45><loc_38><loc_154><loc_42>aaaaaa aaaaaaaaaaa aaaaaa</page_header>
+<page_header><loc_392><loc_28><loc_484><loc_36>aaaaaaaaas$</page_header>
+<text><loc_45><loc_45><loc_371><loc_50>aaaa aaaaaaa aaaaaa aaaaaaaaa aaa aaaaa aAaaaAaAAaaaaaaa AAAAAAAaAaaAa aaaaaaaa</text>
+<text><loc_347><loc_53><loc_480><loc_58>aaaa. aaa. # aaa-aa-0000000000  \.</text>
+<unordered_list><list_item><loc_45><loc_60><loc_352><loc_88>22  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:</list_item>
+</unordered_list>
+<otsl><loc_65><loc_96><loc_358><loc_169><ecel><ched>aaaaa aaaaaa<ched>aaa aaaaaa<ched>aaa aaaaaa<nl><rhed>aaaaaaaa aaaaaa: 00 aa<fcel>000.0<fcel>000<fcel>000.0<nl><rhed>aaaaaaaa aaaa: 00 aa/aaaa<fcel>00<fcel>00<fcel>00<nl><rhed>aaaaaaaa aaaaaa: aaaaa<fcel>0.0<fcel>00<fcel>0.0<nl></otsl>
+<unordered_list><list_item><loc_45><loc_173><loc_351><loc_186>23  | aaaaaa aaaa aaa aaaaaaaa aaaa aaaaaaa aaaaaaa 00.00, 00.00, aaa 00.00 00 aa/aaaa</list_item>
+<list_item><loc_44><loc_189><loc_333><loc_202>24  | aaaaa 00% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa</list_item>
+<list_item><loc_44><loc_206><loc_354><loc_219>25  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa aaa aaa aaaaaaa aaaaaaaaaaa aa 00.00 00 aa/aaaa aaaa</list_item>
+<list_item><loc_44><loc_221><loc_343><loc_235>26  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa, aaa aaa aaa aaaa aaaa aaaaa aaa aaaaaa aaa aaaaaa aa aaaaaa</list_item>
+<list_item><loc_44><loc_237><loc_328><loc_251>27  | aaaaa 0% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa</list_item>
+<list_item><loc_44><loc_256><loc_215><loc_261>28  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:</list_item>
+</unordered_list>
+<otsl><loc_64><loc_269><loc_356><loc_293><ecel><ched>aaaaa aaaaaa<ched>aaa aaaaaa<ched>aaa aaaaaa<nl><rhed>aaaaaaaa aaaaaa: 00 aa<fcel>0<fcel>a)<fcel>0<nl></otsl>
+<unordered_list><list_item><loc_44><loc_305><loc_215><loc_309>29  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:</list_item>
+</unordered_list>
+<otsl><loc_65><loc_317><loc_357><loc_366><ecel><ched>aaaaa aaaaaa<ched>aaa aaaaaa<ched>aaa aaaaaa<nl><rhed>aaaaaaaa aaaaaa: 00 aa<fcel>000<fcel>000<fcel>000<nl><rhed>aaaaaaaa aaaa: 00 aa/aaaa<fcel>00.0<fcel>00<fcel>00.0<nl></otsl>
+<unordered_list><list_item><loc_44><loc_386><loc_355><loc_398>30  | aaaaaa aaaa aaa aaaaaaaaa aaaaaaaa aaaaaa aaaaa aaa aaaaaaaaaa aaa aaaaaaaaa aaaaaaaaaaa:</list_item>
+</unordered_list>
+<text><loc_70><loc_403><loc_112><loc_416>aaaaaaaa</text>
+<text><loc_70><loc_418><loc_129><loc_422>aaaaaa:  aaaaa</text>
 <picture><loc_97><loc_443><loc_118><loc_456></picture>
-<picture><loc_364><loc_445><loc_420><loc_457></picture>
+<text><loc_43><loc_447><loc_419><loc_459>Tested By: id  /M Date: If  -7-25 Approved By: D ke Date: WA  OSS 2S</text>
+<text><loc_171><loc_403><loc_177><loc_416>0</text>
+<text><loc_241><loc_403><loc_252><loc_416>00</text>
+<text><loc_317><loc_403><loc_323><loc_416>0</text>
+<text><loc_376><loc_61><loc_421><loc_66>aaa-aa-000</text>
+<text><loc_376><loc_68><loc_423><loc_72>aaa-aa-000</text>
+<text><loc_376><loc_76><loc_423><loc_82>aaa-aa-000</text>
+<text><loc_375><loc_173><loc_423><loc_178>aaa-aa-000</text>
+<text><loc_375><loc_181><loc_420><loc_186>aaa-aa-000</text>
+<text><loc_377><loc_189><loc_380><loc_195>/</text>
+<text><loc_375><loc_206><loc_422><loc_211>aaa-aa-000</text>
+<text><loc_375><loc_221><loc_422><loc_227>aaa-da-000</text>
+<text><loc_383><loc_229><loc_390><loc_235>/</text>
+<text><loc_375><loc_237><loc_383><loc_243>7</text>
+<text><loc_374><loc_332><loc_383><loc_343>/</text>
+<text><loc_474><loc_68><loc_479><loc_72>ny</text>
+<text><loc_474><loc_76><loc_477><loc_82>4</text>
+<text><loc_451><loc_91><loc_477><loc_100>P\s</text>
+<text><loc_453><loc_101><loc_453><loc_105>|</text>
+<text><loc_472><loc_101><loc_474><loc_105>5</text>
+<text><loc_433><loc_106><loc_457><loc_114>KF</text>
+<text><loc_440><loc_173><loc_447><loc_178>p</text>
+<text><loc_441><loc_206><loc_452><loc_211>/</text>
+<text><loc_442><loc_221><loc_451><loc_227>/</text>
 <picture><loc_440><loc_398><loc_454><loc_415></picture>
+<text><loc_471><loc_106><loc_475><loc_114>»</text>
+<text><loc_472><loc_116><loc_475><loc_121>)</text>
+<text><loc_468><loc_124><loc_475><loc_129><</text>
+<text><loc_466><loc_130><loc_476><loc_138>~</text>
+<text><loc_364><loc_189><loc_367><loc_195>'</text>
+<text><loc_366><loc_199><loc_372><loc_202>4</text>
+<text><loc_364><loc_245><loc_374><loc_251>VV</text>
+<text><loc_365><loc_279><loc_374><loc_285>V</text>
+<text><loc_364><loc_345><loc_374><loc_350><loc_378><loc_403><loc_426><loc_416>iv, aaa-aa-000</text>
+<picture><loc_364><loc_445><loc_420><loc_457></picture>
+<text><loc_67><loc_466><loc_127><loc_472>K Medical Corp.</text>
 <picture><loc_465><loc_17><loc_491><loc_59></picture>
+<text><loc_425><loc_466><loc_466><loc_470>Page 3 of 8</text>
+<text><loc_214><loc_465><loc_273><loc_471>CONFIDENTIAL</text>
+<page_footer><loc_44><loc_484><loc_454><loc_491>Document No.: 2152167.9.55  -  Version:  5.0  - Document ID:  ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10  14:50/CET)</page_footer>
 </doctag>
