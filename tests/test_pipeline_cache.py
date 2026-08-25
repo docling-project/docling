@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import re
+
 import pytest
-from pydantic import AnyUrl
+from pydantic import AnyUrl, SecretStr
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
@@ -71,6 +73,14 @@ class _FirstPictureOptions(PictureDescriptionBaseOptions):
 
 class _SecondPictureOptions(PictureDescriptionBaseOptions):
     pass
+
+
+class _SecretOptions(PipelineOptions):
+    credential: SecretStr
+
+
+class _PatternOptions(PipelineOptions):
+    pattern: re.Pattern[str]
 
 
 def _api_options(url: str, *, reverse_params: bool = False) -> PdfPipelineOptions:
@@ -169,6 +179,17 @@ def test_pipeline_options_hash_supports_non_utf8_bytes():
     }
 
     assert len(hashes) == 2
+
+
+def test_pipeline_options_hash_preserves_lossy_scalar_values():
+    assert create_pipeline_options_hash(
+        _SecretOptions(credential=SecretStr("alpha"))
+    ) != create_pipeline_options_hash(_SecretOptions(credential=SecretStr("bravo")))
+    assert create_pipeline_options_hash(
+        _PatternOptions(pattern=re.compile("value"))
+    ) != create_pipeline_options_hash(
+        _PatternOptions(pattern=re.compile("value", re.IGNORECASE))
+    )
 
 
 def test_pipeline_options_hash_rejects_cycles():

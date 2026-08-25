@@ -3,9 +3,15 @@
 
 import hashlib
 import json
+import re
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
+from enum import Enum
+from pathlib import PurePath
+from uuid import UUID
 
-from pydantic import BaseModel
-from pydantic_core import to_jsonable_python
+from pydantic import AnyUrl, BaseModel
+from pydantic_core import MultiHostUrl, Url
 
 from docling.datamodel.pipeline_options import PipelineOptions
 
@@ -13,13 +19,6 @@ from docling.datamodel.pipeline_options import PipelineOptions
 def _qualified_type_name(value: object) -> str:
     value_type = type(value)
     return f"{value_type.__module__}.{value_type.__qualname__}"
-
-
-def _opaque_value(value: object) -> dict[str, str | int]:
-    return {
-        "type": _qualified_type_name(value),
-        "identity": id(value),
-    }
 
 
 def _canonicalize(value: object, active: set[int] | None = None) -> object:
@@ -59,9 +58,30 @@ def _canonicalize(value: object, active: set[int] | None = None) -> object:
             return {"type": value_type, "items": items}
         finally:
             active.remove(value_id)
+    if value is None or isinstance(value, (bool, int, str)):
+        return {"type": value_type, "value": value}
+    if isinstance(value, float):
+        return {"type": value_type, "value": value.hex()}
+    if isinstance(value, Enum):
+        return {"type": value_type, "value": value.name}
+    if isinstance(value, (PurePath, AnyUrl, Url, MultiHostUrl, Decimal, UUID)):
+        return {"type": value_type, "value": str(value)}
+    if isinstance(value, (datetime, date, time)):
+        return {"type": value_type, "value": value.isoformat()}
+    if isinstance(value, timedelta):
+        return {
+            "type": value_type,
+            "value": [value.days, value.seconds, value.microseconds],
+        }
+    if isinstance(value, re.Pattern):
+        return {
+            "type": value_type,
+            "pattern": _canonicalize(value.pattern, active),
+            "flags": value.flags,
+        }
     return {
         "type": value_type,
-        "value": to_jsonable_python(value, fallback=_opaque_value),
+        "identity": id(value),
     }
 
 
