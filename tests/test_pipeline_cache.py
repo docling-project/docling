@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import re
+from collections import OrderedDict
 
 import pytest
 from pydantic import AnyUrl, SecretStr
@@ -190,6 +191,19 @@ def test_pipeline_options_hash_preserves_lossy_scalar_values():
     ) != create_pipeline_options_hash(
         _PatternOptions(pattern=re.compile("value", re.IGNORECASE))
     )
+
+
+def test_pipeline_options_hash_does_not_flatten_container_subclasses():
+    first = RapidOcrOptions(
+        rapidocr_params={"value": OrderedDict((("first", 1), ("second", 2)))}
+    )
+    second = RapidOcrOptions(
+        rapidocr_params={"value": OrderedDict((("second", 2), ("first", 1)))}
+    )
+
+    assert create_pipeline_options_hash(
+        PdfPipelineOptions(ocr_options=first)
+    ) != create_pipeline_options_hash(PdfPipelineOptions(ocr_options=second))
 
 
 def test_pipeline_options_hash_rejects_cycles():
