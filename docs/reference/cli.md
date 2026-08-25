@@ -14,6 +14,142 @@ Convert documents to a unified representation, locally with `convert` or through
 docling [OPTIONS] COMMAND [ARGS]...
 ```
 
+**Subcommands**
+
+| Command | Description |
+| --- | --- |
+| `docling convert` |  |
+| `docling convert-remote` | Convert via a remote docling-serve service (see `docling convert-remote --help`). |
+
+### `docling convert`
+
+**Usage**
+
+```text
+docling convert [OPTIONS] source
+```
+
+**Arguments**
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source` | `text` | yes | PDF files to convert. Can be local file / directory paths or URL. |
+
+**Options**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | `text` (repeatable) |  | Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats. |
+| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Specify output formats. Defaults to Markdown. |
+| `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
+| `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
+| `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |
+| `--show-layout` / `--no-show-layout` | flag | `false` | If enabled, the page images will show the bounding-boxes of the items. |
+| `--headers` | `text` |  | Specify http request headers used when fetching url input sources in the form of a JSON string |
+| `--html-image-headers` | `text` |  | Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string |
+| `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
+| `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
+| `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
+| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
+| `--asr-model` | `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native`, `whisper_tiny_en_native`, `whisper_base_en_native`, `whisper_small_en_native`, `whisper_medium_en_native`, `whisper_distil_small_en_native`, `whisper_distil_medium_en_native`, `whisper_distil_large_v3_native`, `whisper_distil_large_v3_5_native`, `whisper_tiny_s2t`, `whisper_tiny_en_s2t`, `whisper_base_s2t`, `whisper_base_en_s2t`, `whisper_small_s2t`, `whisper_small_en_s2t`, `whisper_distil_small_en_s2t`, `whisper_medium_s2t`, `whisper_medium_en_s2t`, `whisper_distil_medium_en_s2t`, `whisper_large_v3_s2t`, `whisper_distil_large_v3_s2t`, `whisper_distil_large_v3_5_s2t`, `whisper_large_v3_turbo_s2t` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
+| `--video-sampling-mode` | `fixed`, `scene` | `fixed` | frame sampling mode. |
+| `--video-frame-interval` | `float` | `10.0` | Seconds between frames in fixed interval mode. |
+| `--video-cuts-per-minute` | `float` | `0.0` | Target cuts per minute in scene mode (overrides prominence). |
+| `--video-prominence` | `float` | `0.0` | Scene change prominence threshold. 0 = auto (adapts sensitivity to video motion; recommended). Set a fixed value (e.g. 0.01) only to override. |
+| `--video-diarization` / `--no-video-diarization` | flag | `false` | Enable speaker diarization (who said what). Requires resemblyzer. |
+| `--ocr` / `--no-ocr` | flag | `true` | If enabled, the bitmap content will be processed using OCR. |
+| `--force-ocr` / `--no-force-ocr` | flag | `false` | DEPRECATED: use `--ocr-mode full_page` instead. Replace any existing text with OCR generated text over the full content. |
+| `--ocr-mode` | `full_page`, `layout_regions`, `pdf_aware_layout_regions`, `default` | `default` | Which document regions are fed to the OCR engine. |
+| `--tables` / `--no-tables` | flag | `true` | If enabled, the table structure model will be used to extract table information. |
+| `--layout-engine` | `text` | `layout_object_detection` | The layout engine to use. When --allow-external-plugins is *not* set, the available values are: layout_object_detection, docling_layout_default, docling_experimental_table_crops_layout. Use the option --show-external-plugins to see the options allowed with external plugins. |
+| `--table-structure-engine` | `text` | `docling_tableformer` | The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: docling_tableformer, docling_tableformer_v2, granite_vision_table. Use the option --show-external-plugins to see the options allowed with external plugins. |
+| `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, nemotron-ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
+| `--ocr-lang` | `text` |  | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names. |
+| `--psm` | `integer` |  | Page Segmentation Mode for the OCR engine (0-13). |
+| `--pdf-backend` | `pypdfium2`, `docling_parse`, `threaded_docling_parse`, `dlparse_v1`, `dlparse_v2`, `dlparse_v4` | `docling_parse` | The PDF backend to use. |
+| `--pdf-password` | `text` |  | Password for protected PDF documents |
+| `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). Honored by the PDF, XLSX and PPTX backends. |
+| `--table-mode` | `fast`, `accurate` | `accurate` | The mode to use in the table structure model. |
+| `--enrich-code` / `--no-enrich-code` | flag | `false` | Enable the code enrichment model in the pipeline. |
+| `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the formula enrichment model in the pipeline. |
+| `--enrich-picture-classes` / `--no-enrich-picture-classes` | flag | `false` | Enable the picture classification enrichment model in the pipeline. |
+| `--enrich-picture-description` / `--no-enrich-picture-description` | flag | `false` | Enable the picture description model in the pipeline. |
+| `--enrich-chart-extraction` / `--no-enrich-chart-extraction` | flag | `false` | Enable chart data extraction from bar, pie, and line charts. |
+| `--artifacts-path` | `path` |  | If provided, the location of the model artifacts. |
+| `--enable-remote-services` / `--no-enable-remote-services` | flag | `false` | Must be enabled when using models connecting to remote services. |
+| `--allow-external-plugins` / `--no-allow-external-plugins` | flag | `false` | Must be enabled for loading modules from third-party plugins. |
+| `--show-external-plugins` / `--no-show-external-plugins` | flag | `false` | List the third-party plugins which are available when the option --allow-external-plugins is set. |
+| `--abort-on-error` / `--no-abort-on-error` | flag | `false` | If enabled, the processing will be aborted when the first error is encountered. |
+| `--output` | `path` | `.` | Output directory where results are saved. |
+| `--verbose` / `-v` | `integer` | `0` | Set the verbosity level. -v for info logging, -vv for debug logging. |
+| `--quiet` / `-q` | flag | `false` | Suppress the per-file progress log emitted at default verbosity, restoring fully silent output (warnings and errors only). Has no effect when -v/--verbose is given. |
+| `--debug-visualize-cells` / `--no-debug-visualize-cells` | flag | `false` | Enable debug output which visualizes the PDF cells |
+| `--debug-visualize-ocr` / `--no-debug-visualize-ocr` | flag | `false` | Enable debug output which visualizes the OCR cells |
+| `--debug-visualize-layout` / `--no-debug-visualize-layout` | flag | `false` | Enable debug output which visualizes the layout clusters |
+| `--debug-visualize-tables` / `--no-debug-visualize-tables` | flag | `false` | Enable debug output which visualizes the table cells |
+| `--version` | flag |  | Show version information. |
+| `--document-timeout` | `float` |  | The timeout for processing each document, in seconds. |
+| `--num-threads` | `integer` | `4` | Number of threads |
+| `--release-native-memory-every-n-pages` | `integer` | `128` | Release native parser memory after every N decoded pages when using the threaded docling-parse backend. |
+| `--device` | `auto`, `cpu`, `cuda`, `mps`, `xpu` | `auto` | Accelerator device |
+| `--logo` | flag |  | Docling logo |
+| `--page-batch-size` | `integer` | `4` | Number of pages processed in one batch. Default: 4 |
+| `--profiling` / `--no-profiling` | flag | `false` | If enabled, it summarizes profiling details for all conversion stages. |
+| `--save-profiling` / `--no-save-profiling` | flag | `false` | If enabled, it saves the profiling summaries to json. |
+
+### `docling convert-remote`
+
+Convert documents through a remote docling-serve service instead of locally.
+
+Sources may be local files, local directories (walked and filtered by --from),
+or http(s) URLs. Results are written to --output in the formats given by --to,
+identical to `docling convert`. Only options the service honors are exposed here;
+local-execution flags (device, threads, pdf-backend internals, debug visualizers)
+do not apply to remote conversion and are intentionally absent.
+
+**Usage**
+
+```text
+docling convert-remote [OPTIONS] source
+```
+
+**Arguments**
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source` | `text` | yes | Documents to convert: local file/directory paths or http(s) URLs. |
+
+**Options**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--service-url` | `text` |  | Base URL of the docling-serve service (required; falls back to DOCLING_SERVICE_URL or a .env file). |
+| `--api-key` | `text` |  | API key for the service (optional; falls back to DOCLING_SERVICE_API_KEY or a .env file; omit if unauthenticated). |
+| `--from` | `docx`, `doc`, `pptx`, `ppt`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xls`, `odt`, `ods`, `odp`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `dclx`, `mets_gbs`, `json_docling`, `audio`, `video`, `vtt`, `latex`, `email`, `epub`, `boxnote`, `ebcdic` (repeatable) |  | Input formats to accept; filters directories and is sent as the server allow-list. Defaults to all supported formats. |
+| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang`, `dclx`, `chunks` (repeatable) |  | Output formats to produce and write locally. Defaults to Markdown. |
+| `--chunks-type` | `hybrid`, `hierarchical` | `hybrid` | Chunker type for '--to chunks'. |
+| `--chunks-max-tokens` | `integer` |  | Max tokens per chunk. Defaults to the tokenizer's own limit. |
+| `--chunks-tokenizer` | `text` | `sentence-transformers/all-MiniLM-L6-v2` | HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid. |
+| `--ocr` / `--no-ocr` | flag | `true` | If enabled, the service processes bitmap content using OCR. |
+| `--force-ocr` / `--no-force-ocr` | flag | `false` | Replace any existing text with OCR-generated text over the full content. |
+| `--tables` / `--no-tables` | flag | `true` | If enabled, the service extracts table structure. |
+| `--pipeline` | `legacy`, `standard`, `vlm`, `asr` | `standard` | Pipeline the service uses to process PDF or image files. |
+| `--ocr-lang` | `text` |  | Comma-separated list of OCR languages (engine-specific names). |
+| `--enrich-code` / `--no-enrich-code` | flag | `false` | Enable the service's code enrichment model. |
+| `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the service's formula enrichment model. |
+| `--enrich-picture-classes` / `--no-enrich-picture-classes` | flag | `false` | Enable the service's picture classification model. |
+| `--enrich-picture-description` / `--no-enrich-picture-description` | flag | `false` | Enable the service's picture description model. |
+| `--enrich-chart-extraction` / `--no-enrich-chart-extraction` | flag | `false` | Enable the service's chart data extraction. |
+| `--image-export-mode` | `placeholder`, `embedded`, `referenced` |  | Image export mode for image-capable outputs (JSON, YAML, HTML, Markdown): embedded, placeholder, or referenced. If unset, the service default applies. |
+| `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). |
+| `--document-timeout` | `float` |  | Server-side timeout for processing each document, in seconds. |
+| `--abort-on-error` / `--no-abort-on-error` | flag | `false` | If enabled, the service aborts the batch on the first error. |
+| `--max-concurrency` | `integer` | `8` | Maximum number of documents converted concurrently against the service. |
+| `--timeout` | `float` | `300.0` | Client-side timeout waiting for each job to finish, in seconds. |
+| `--watcher` | `websocket`, `polling` | `websocket` | How the client tracks job status: websocket (default) or polling. |
+| `--output` | `path` | `.` | Output directory where results are saved. |
+| `--verbose` / `-v` | `integer` | `0` | Set the verbosity level. -v for info logging, -vv for debug logging. |
+
 ## `docling-tools`
 
 **Usage**
@@ -21,4 +157,72 @@ docling [OPTIONS] COMMAND [ARGS]...
 ```text
 docling-tools [OPTIONS] COMMAND [ARGS]...
 ```
+
+**Subcommands**
+
+| Command | Description |
+| --- | --- |
+| `docling-tools models` |  |
+
+### `docling-tools models`
+
+**Usage**
+
+```text
+docling-tools models [OPTIONS] COMMAND [ARGS]...
+```
+
+**Subcommands**
+
+| Command | Description |
+| --- | --- |
+| `docling-tools models download` |  |
+| `docling-tools models download-hf-repo` |  |
+
+#### `docling-tools models download`
+
+**Usage**
+
+```text
+docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformerv2|code_formula|picture_classifier|smolvlm|granitedocling|granitedocling_mlx|smoldocling|smoldocling_mlx|granite_vision|granite_chart_extraction|granite_chart_extraction_v4|rapidocr|easyocr|nemotron_ocr_v2]...
+```
+
+**Arguments**
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `MODELS` | `layout`, `tableformer`, `tableformerv2`, `code_formula`, `picture_classifier`, `smolvlm`, `granitedocling`, `granitedocling_mlx`, `smoldocling`, `smoldocling_mlx`, `granite_vision`, `granite_chart_extraction`, `granite_chart_extraction_v4`, `rapidocr`, `easyocr`, `nemotron_ocr_v2` | no | Models to download (default behavior: a predefined set of models will be downloaded). |
+
+**Options**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
+| `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
+| `--all` | flag | `false` | If true, all available models will be downloaded (mutually exclusive with passing specific models). |
+| `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
+| `--easyocr-lang` | `text` (repeatable) |  | EasyOCR language code to prefetch. Repeat for multiple languages. |
+| `--rapidocr-backend-lang` | `text` (repeatable) |  | RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' (e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set. |
+
+#### `docling-tools models download-hf-repo`
+
+**Usage**
+
+```text
+docling-tools models download-hf-repo [OPTIONS] MODELS...
+```
+
+**Arguments**
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `MODELS` | `text` | yes | Specific models to download from HuggingFace identified by their repo id. For example: docling-project/docling-models . |
+
+**Options**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
+| `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
+| `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
 
