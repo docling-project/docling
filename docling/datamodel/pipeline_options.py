@@ -199,6 +199,10 @@ class OcrOptions(BaseOptions):
         configurations.
     """
 
+    # Every concrete engine overrides this with its own discriminator
+    # The empty default keeps the abstract base instantiable
+    kind: ClassVar[str] = ""
+
     mode: Annotated[
         OcrMode,
         Field(
