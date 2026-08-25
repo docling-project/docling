@@ -73,7 +73,7 @@ def normalize_label(label: str) -> str:
 
 def report_title(doc) -> str | None:
     """First title or section header of the document, if any."""
-    for item in doc.texts:
+    for item in getattr(doc, "texts", None) or []:
         if item.label in (DocItemLabel.TITLE, DocItemLabel.SECTION_HEADER):
             text = item.text.strip()
             if text:
@@ -170,45 +170,52 @@ def build_converter() -> DocumentConverter:
 def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) -> dict:
     """Convert one report and export Markdown, metrics JSON and an optional chart.
 
-    Conversion failures (e.g. an unreadable PDF or a transient model-download
-    error) are logged and returned as an error entry instead of aborting the
-    whole batch, so the example always exits cleanly.
+    Every failure path (an unreadable PDF, a transient model-download error, or
+    an unexpected extraction error on a particular table) is captured as an error
+    entry and returned, so the batch always exits cleanly instead of aborting the
+    whole run. This keeps the example CI lane green even when a single input is
+    problematic, and never raises an uncaught exception.
     """
     try:
         result = converter.convert(pdf_path)
     except Exception as exc:
         _log.error("failed to convert %s: %s", pdf_path.name, exc)
-        return {"file": pdf_path.name, "error": str(exc)}
-    doc = result.document
-    metrics = extract_metrics(doc)
-    summary = {
-        "file": pdf_path.name,
-        "title": report_title(doc) or pdf_path.stem,
-        "pages": len(doc.pages),
-        "tables": len(doc.tables),
-        "pictures": len(doc.pictures),
-        "metrics": metrics,
-    }
+        return {"file": pdf_path.name, "error": f"convert: {exc}"}
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    # Always emit the machine-readable audit so downstream consumers get a stable
-    # artifact, even when no tables/pictures are detected.
-    (out_dir / f"{pdf_path.stem}-summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    if doc.tables or doc.pictures:
-        doc.save_as_markdown(
-            out_dir / f"{pdf_path.stem}.md", image_mode=ImageRefMode.REFERENCED
+    try:
+        doc = result.document
+        metrics = extract_metrics(doc)
+        summary = {
+            "file": pdf_path.name,
+            "title": report_title(doc) or pdf_path.stem,
+            "pages": len(doc.pages),
+            "tables": len(doc.tables),
+            "pictures": len(doc.pictures),
+            "metrics": metrics,
+        }
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # Always emit the machine-readable audit so downstream consumers get a
+        # stable artifact, even when no tables/pictures are detected.
+        (out_dir / f"{pdf_path.stem}-summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        if metrics:
-            (out_dir / f"{pdf_path.stem}-metrics.json").write_text(
-                json.dumps(summary, ensure_ascii=False, indent=2),
-                encoding="utf-8",
+        if doc.tables or doc.pictures:
+            doc.save_as_markdown(
+                out_dir / f"{pdf_path.stem}.md", image_mode=ImageRefMode.REFERENCED
             )
-            chart_path = render_chart(metrics, out_dir / f"{pdf_path.stem}-metrics.png")
-            if chart_path is not None:
-                _log.info("saved chart %s", chart_path.name)
-    return summary
+            if metrics:
+                (out_dir / f"{pdf_path.stem}-metrics.json").write_text(
+                    json.dumps(summary, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                chart_path = render_chart(metrics, out_dir / f"{pdf_path.stem}-metrics.png")
+                if chart_path is not None:
+                    _log.info("saved chart %s", chart_path.name)
+        return summary
+    except Exception as exc:
+        _log.error("failed to process %s after conversion: %s", pdf_path.name, exc)
+        return {"file": pdf_path.name, "error": f"process: {exc}"}
 
 
 def print_summary(report: dict) -> None:
