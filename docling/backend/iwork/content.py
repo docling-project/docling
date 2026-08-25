@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """The content a Pages document holds, however its container spells it.
 
 Both container generations describe the same things — paragraphs made of runs,

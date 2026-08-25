@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Reader for the object graph of a Pages 5+ (2013 onwards) document.
 
 The container is a set of ``Index/*.iwa`` archives whose schemas Apple has never

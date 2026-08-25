@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Reader for the ``index.xml`` of an iWork '09 (and earlier) document.
 
 Pages wrote a plain XML tree before 2013, in the ``sf`` namespace, and the
