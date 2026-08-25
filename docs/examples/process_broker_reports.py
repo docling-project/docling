@@ -209,7 +209,9 @@ def process_report(converter: DocumentConverter, pdf_path: Path, out_dir: Path) 
                     json.dumps(summary, ensure_ascii=False, indent=2),
                     encoding="utf-8",
                 )
-                chart_path = render_chart(metrics, out_dir / f"{pdf_path.stem}-metrics.png")
+                chart_path = render_chart(
+                    metrics, out_dir / f"{pdf_path.stem}-metrics.png"
+                )
                 if chart_path is not None:
                     _log.info("saved chart %s", chart_path.name)
         return summary
