@@ -4,7 +4,8 @@
 import hashlib
 import json
 import re
-from datetime import date, datetime, time, timedelta
+import struct
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import (
     Path,
@@ -45,7 +46,7 @@ def _qualified_type_name(value: object) -> str:
 def _canonicalize(value: object, active: set[int] | None = None) -> object:
     active = active if active is not None else set()
     value_type = _qualified_type_name(value)
-    if type(value) in (bytes, bytearray, memoryview):
+    if type(value) in (bytes, bytearray):
         return {"type": value_type, "value": bytes(value).hex()}
     if isinstance(value, BaseModel) or type(value) in _CONTAINER_TYPES:
         value_id = id(value)
@@ -82,10 +83,10 @@ def _canonicalize(value: object, active: set[int] | None = None) -> object:
     if value is None or type(value) in (bool, int, str):
         return {"type": value_type, "value": value}
     if type(value) is float:
-        return {"type": value_type, "value": value.hex()}
+        return {"type": value_type, "value": struct.pack("!d", value).hex()}
     if type(value) in _LOSSLESS_STRING_TYPES:
         return {"type": value_type, "value": str(value)}
-    if type(value) in (datetime, date, time):
+    if type(value) is date:
         return {"type": value_type, "value": value.isoformat()}
     if type(value) is timedelta:
         return {

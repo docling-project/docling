@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import re
+import struct
 from collections import OrderedDict
+from datetime import datetime
 
 import pytest
 from pydantic import AnyUrl, SecretStr
@@ -82,6 +84,10 @@ class _SecretOptions(PipelineOptions):
 
 class _PatternOptions(PipelineOptions):
     pattern: re.Pattern[str]
+
+
+class _ValueOptions(PipelineOptions):
+    value: object
 
 
 def _api_options(url: str, *, reverse_params: bool = False) -> PdfPipelineOptions:
@@ -204,6 +210,25 @@ def test_pipeline_options_hash_does_not_flatten_container_subclasses():
     assert create_pipeline_options_hash(
         PdfPipelineOptions(ocr_options=first)
     ) != create_pipeline_options_hash(PdfPipelineOptions(ocr_options=second))
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        (memoryview(b"\x01\x00"), memoryview(b"\x01\x00").cast("H")),
+        (datetime(2024, 1, 1, fold=0), datetime(2024, 1, 1, fold=1)),
+        (
+            struct.unpack("!d", bytes.fromhex("7ff8000000000001"))[0],
+            struct.unpack("!d", bytes.fromhex("7ff8000000000002"))[0],
+        ),
+    ],
+)
+def test_pipeline_options_hash_preserves_hidden_scalar_semantics(
+    first: object, second: object
+):
+    assert create_pipeline_options_hash(
+        _ValueOptions(value=first)
+    ) != create_pipeline_options_hash(_ValueOptions(value=second))
 
 
 def test_pipeline_options_hash_rejects_cycles():
