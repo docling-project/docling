@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Regression test for docling#3839 — OCR text on a rotated page is dropped.
 
 A rotated page places its body text in a margin, where the layout model
@@ -56,6 +59,10 @@ from docling.datamodel.pipeline_options import (
     TesseractCliOcrOptions,
 )
 from docling.document_converter import DocumentConverter, ImageFormatOption
+
+# Executes OCR model code (Tesseract / RapidOCR): route to the ml_ocr CI lane,
+# not the core lane (which ignores ML-marked modules).
+pytestmark = pytest.mark.ml_ocr
 
 _LINE = "Certified 2026 reference ZQXPHOENIX 7742 north garage roof warranty batch A"
 _MARKER = "ZQXPHOENIX"
