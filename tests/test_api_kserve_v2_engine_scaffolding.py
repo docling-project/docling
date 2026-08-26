@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for API KServe v2 remote engine scaffolding."""
 
 from __future__ import annotations

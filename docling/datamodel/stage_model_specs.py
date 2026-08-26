@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Model specifications and presets for stage models.
 
 This module defines:
@@ -22,6 +25,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
+    DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
@@ -1084,7 +1088,7 @@ VLM_CONVERT_SMOLDOCLING = StageModelPreset(
     model_spec=VlmModelSpec(
         name="SmolDocling-256M",
         default_repo_id="docling-project/SmolDocling-256M-preview",
-        prompt="Convert this page to docling.",
+        prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
         stop_strings=["</doctag>", "<end_of_utterance>"],
         engine_overrides={
@@ -1109,7 +1113,7 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     description="IBM Granite DocTags model for document conversion (258M parameters)",
     model_spec=VlmModelSpec(
         **GRANITE_DOCLING_MODEL_SPEC_BASE,
-        prompt="Convert this page to docling.",
+        prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
     ),
     scale=2.0,

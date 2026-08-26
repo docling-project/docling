@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared protocol for KServe v2 transport clients."""
 
 from __future__ import annotations

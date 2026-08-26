@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Conversion job handles for asynchronous docling-serve tasks."""
 
 from __future__ import annotations

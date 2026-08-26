@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Picture description stage using the VLM engine system.
 
 This module provides an engine-agnostic picture description stage that can use

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for parsing dots.ocr / dots.mocr JSON layout format.
 
 dots.ocr (3B, Qwen2.5-VL based) and dots.mocr produce a JSON array of

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -5,6 +8,7 @@ from typing import Any
 
 import pytest
 from docling_core.types.doc import CoordOrigin
+from docling_core.types.doc.page import PdfCellRenderingMode
 from docling_parse.pdf_parser import ContentLevel
 from PIL import Image, ImageDraw, ImageStat
 
@@ -26,6 +30,11 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 @pytest.fixture
 def test_doc_path():
     return Path("./tests/data/pdf/sources/2206.01062.pdf")
+
+
+@pytest.fixture
+def ruled_table_path():
+    return Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
 
 def _get_backend(pdf_doc):
@@ -787,3 +796,117 @@ def test_get_page_image_crop_contains_black_square(
     white_mean = ImageStat.Stat(white_crop).mean
     assert all(channel_mean < 5.0 for channel_mean in black_mean)
     assert all(channel_mean > 250.0 for channel_mean in white_mean)
+
+
+def test_threaded_backend_reports_shape_geometry_in_top_left_origin(ruled_table_path):
+    """The ruled table on this page must surface as axis-aligned stroked segments."""
+    in_doc = InputDocument(
+        path_or_stream=ruled_table_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+    assert isinstance(doc_backend, ThreadedDoclingParseDocumentBackend)
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+        page_size = page_backend.get_size()
+
+        lines = page_backend.get_shape_lines()
+        assert lines, "the ruled table must produce stroked segments"
+        for line in lines:
+            assert line.coord_origin == CoordOrigin.TOPLEFT
+            assert 0 <= line.l <= line.r <= page_size.width
+            assert 0 <= line.t <= line.b <= page_size.height
+            # Axis-aligned segments come back as degenerate boxes.
+            assert line.l == pytest.approx(line.r) or line.t == pytest.approx(line.b)
+
+        regions = page_backend.get_connected_shape_bounding_boxes()
+        assert len(regions) == 1
+        table_region = regions[0]
+        assert table_region.coord_origin == CoordOrigin.TOPLEFT
+        for line in lines:
+            assert table_region.l <= line.l and line.r <= table_region.r
+            assert table_region.t <= line.t and line.b <= table_region.b
+    finally:
+        doc_backend.unload()
+
+
+def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
+    """`has_content_in` must discriminate between the ruled table and a blank margin."""
+    in_doc = InputDocument(
+        path_or_stream=ruled_table_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+
+        blank_margin = BoundingBox(
+            l=0, t=0, r=20, b=20, coord_origin=CoordOrigin.TOPLEFT
+        )
+        table = BoundingBox(
+            l=150, t=350, r=460, b=460, coord_origin=CoordOrigin.TOPLEFT
+        )
+
+        assert page_backend.has_content_in(bbox=table) is True
+        assert page_backend.has_content_in(bbox=blank_margin) is False
+        assert (
+            page_backend.has_content_in(
+                bbox=blank_margin, chars=True, shapes=False, bitmaps=False
+            )
+            is False
+        )
+    finally:
+        doc_backend.unload()
+
+
+def test_invisible_text_cells_report_rendering_mode():
+    """docling-parse must surface `rendering_mode` so invisible text can be told apart."""
+    doc_backend = _get_backend(Path("./tests/data/pdf/invisible_text_layer.pdf"))
+
+    try:
+        page_backend: DoclingParsePageBackend = doc_backend.load_page(0)
+        cells = {cell.text: cell for cell in page_backend.get_text_cells()}
+
+        assert set(cells) == {"Visible heading line", "Invisible OCR text layer"}
+
+        visible = cells["Visible heading line"]
+        invisible = cells["Invisible OCR text layer"]
+
+        # No `Tr` operator precedes the first line, so it keeps the UNKNOWN default, which
+        # means the PDF default mode 0 (fill).
+        assert visible.rendering_mode is PdfCellRenderingMode.UNKNOWN
+        assert invisible.rendering_mode is PdfCellRenderingMode.INVISIBLE
+
+        visible_texts = {
+            cell.text for cell in page_backend.get_visible_text_cells() or []
+        }
+        assert visible_texts == {"Visible heading line"}
+    finally:
+        doc_backend.unload()
+
+
+def test_threaded_backend_filters_invisible_text_cells():
+    """The threaded backend must answer `get_visible_text_cells()` like the paged one."""
+    in_doc = InputDocument(
+        path_or_stream=Path("./tests/data/pdf/invisible_text_layer.pdf"),
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+
+        assert {cell.text for cell in page_backend.get_text_cells()} == {
+            "Visible heading line",
+            "Invisible OCR text layer",
+        }
+        assert {cell.text for cell in page_backend.get_visible_text_cells() or []} == {
+            "Visible heading line"
+        }
+    finally:
+        doc_backend.unload()

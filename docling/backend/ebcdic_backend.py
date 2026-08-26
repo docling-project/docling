@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend for mainframe EBCDIC data files.
 
 EBCDIC files carry no self-describing structure: the byte stream is a sequence

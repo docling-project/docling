@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
@@ -272,6 +275,32 @@ def test_pptx_malformed_picture_shapes():
     assert "Slide With Wrong Content Type" in pred_md
 
 
+def test_pptx_left_flush_shape_keeps_own_bbox(tmp_path: Path):
+    """A shape positioned at x = 0 EMU must keep its own bounding box.
+
+    shape.left is an Emu, an int subclass, so a left-flush shape made the
+    old truthiness check fall into the position-unknown fallback and its
+    provenance bbox covered the entire slide.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    flush = slide.shapes.add_textbox(Inches(0), Inches(1), Inches(3), Inches(1))
+    flush.text_frame.text = "flush left"
+    pptx_path = tmp_path / "flush_left.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    item = next(t for t in doc.texts if t.text == "flush left")
+    bbox = item.prov[0].bbox
+    assert (bbox.l, bbox.r) == (0, Inches(3))
+    assert abs(bbox.t - bbox.b) == Inches(1)
+    assert bbox.r != prs.slide_width
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")
@@ -289,32 +318,39 @@ def test_pptx_page_range():
 
 
 def test_chart_parsed_as_classified_picture_with_data():
-    """A native PPTX chart becomes one classified picture carrying its data.
+    """A native PPTX chart becomes a classified picture carrying its data.
 
-    ``pptx_chart.pptx`` holds a single clustered-column chart titled "Wild Duck
-    Observations by Year" with two series over four years. It should convert to
-    exactly one PictureItem classified as a bar chart, captioned with the chart
-    title, and carrying the chart's plotted numbers reconstructed as a table:
+    ``pptx_chart.pptx`` holds two slides:
 
-        | <blank> | Freshwater Ducks | Saltwater Ducks |
-        | 2019    | 120              | 80              |
-        ...
-        | 2022    | 175              | 130             |
+    * Slide 1 — a 2-D clustered-column chart titled "Wild Duck Observations by
+      Year" with two series over four years. It should convert to a PictureItem
+      classified as a bar chart, captioned with the chart title, and carrying
+      the chart's plotted numbers reconstructed as a table::
+
+          | <blank> | Freshwater Ducks | Saltwater Ducks |
+          | 2019    | 120              | 80              |
+          ...
+          | 2022    | 175              | 130             |
+
+    * Slide 2 — a 3-D bar chart (``c:bar3DChart``) for which python-pptx has no
+      registered element class. It should degrade gracefully: the chart is
+      emitted as a PictureItem with no tabular data.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
 
     pictures = list(doc.pictures)
-    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+    assert len(pictures) == 2, f"Expected two chart pictures, got {len(pictures)}"
 
-    picture = pictures[0]
+    # --- slide 1: 2-D chart with full data ---
+    duck_pic = next(
+        p for p in pictures if p.caption_text(doc) == "Wild Duck Observations by Year"
+    )
     assert (
-        picture.meta.classification.predictions[0].class_name
+        duck_pic.meta.classification.predictions[0].class_name
         == PictureClassificationLabel.BAR_CHART
     )
-    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
-
-    chart_data = picture.meta.tabular_chart.chart_data
+    chart_data = duck_pic.meta.tabular_chart.chart_data
     assert (chart_data.num_rows, chart_data.num_cols) == (5, 3)
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
@@ -327,22 +363,28 @@ def test_chart_parsed_as_classified_picture_with_data():
     assert grid[(4, 1)] == "175"
     assert grid[(4, 2)] == "130"
 
+    # --- slide 2: 3-D chart degrades gracefully (no tabular data, no crash) ---
+    revenue_pic = next(
+        p for p in pictures if p.caption_text(doc) != "Wild Duck Observations by Year"
+    )
+    assert revenue_pic.meta is not None
+    assert revenue_pic.meta.tabular_chart is None
+
 
 def test_chart_image_not_rendered_by_default():
     """Charts carry classification and data but no image unless opted in.
 
-    render_chart_images defaults to False, so the chart picture keeps its
+    render_chart_images defaults to False, so chart pictures keep their
     classification and reconstructed data but no pixels. This guards the promise
     that the feature does not change default output size for existing users.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
 
-    picture = next(iter(doc.pictures))
-    assert picture.meta.tabular_chart is not None
-    assert picture.image is None, (
-        "chart picture should have no image when render_chart_images is off"
-    )
+    for picture in doc.pictures:
+        assert picture.image is None, (
+            "chart picture should have no image when render_chart_images is off"
+        )
 
 
 def test_chart_enrichment_skips_image_when_pages_empty():
@@ -357,8 +399,8 @@ def test_chart_enrichment_skips_image_when_pages_empty():
     result = converter.convert(CHART_PPTX, raises_on_error=True)
 
     pictures = list(result.document.pictures)
-    assert len(pictures) == 1
-    assert pictures[0].image is None
+    assert len(pictures) == 2
+    assert all(p.image is None for p in pictures)
 
 
 def test_chart_image_rendering(libreoffice_available):
@@ -366,8 +408,9 @@ def test_chart_image_rendering(libreoffice_available):
 
     LibreOffice output is not byte-stable and the cropped image size depends on
     the LibreOffice version, so pixels are not compared against groundtruth. We
-    assert the picture gains a non-trivial image while keeping the classification
-    and tabular data. Requires LibreOffice; skipped when it is not installed.
+    assert the Duck Survey picture (slide 1) gains a non-trivial image while
+    keeping the classification and tabular data. Requires LibreOffice; skipped
+    when it is not installed.
     """
     if not libreoffice_available:
         pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
@@ -380,16 +423,18 @@ def test_chart_image_rendering(libreoffice_available):
     doc = converter.convert(CHART_PPTX).document
 
     pictures = list(doc.pictures)
-    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+    assert len(pictures) == 2, f"Expected two chart pictures, got {len(pictures)}"
 
-    picture = pictures[0]
+    duck_pic = next(
+        p for p in pictures if p.caption_text(doc) == "Wild Duck Observations by Year"
+    )
     assert (
-        picture.meta.classification.predictions[0].class_name
+        duck_pic.meta.classification.predictions[0].class_name
         == PictureClassificationLabel.BAR_CHART
     )
-    assert picture.meta.tabular_chart is not None
+    assert duck_pic.meta.tabular_chart is not None
 
-    image = picture.get_image(doc=doc)
+    image = duck_pic.get_image(doc=doc)
     assert image is not None, "chart picture should carry a rendered image"
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"

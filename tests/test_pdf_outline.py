@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from docling.utils.pdf_outline import extract_outline_from_docling_parse
 
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import re
 from collections.abc import Iterable
@@ -109,7 +112,20 @@ class PageAssembleModel(BasePageModel):
         except ValidationError:
             return Path(best_uri)
 
-    def sanitize_text(self, lines):
+    def sanitize_text(self, lines: List[str]) -> str:
+        """Join the text lines of a cluster into a single normalized string.
+
+        Lines are joined with a space, except across a hyphen that splits a
+        word over the line break ("algo-" / "rithms"), which is dropped so
+        that the two halves close up. A hyphen only splits a word when it is
+        attached to the word it splits; one that follows whitespace is a
+        literal character -- a separator dash, a bullet marker, or a wrapped
+        hyphen-prefixed token -- so it is kept and its lines are joined like
+        any other line break.
+
+        The joined text is then normalized: a few typographic characters are
+        replaced by ASCII equivalents and ligatures are expanded.
+        """
         if len(lines) == 0:
             return ""
 
@@ -120,13 +136,18 @@ class PageAssembleModel(BasePageModel):
                 prev_words = re.findall(r"\b[\w]+\b", prev_line)
                 line_words = re.findall(r"\b[\w]+\b", line)
 
+                hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
+
                 if (
-                    len(prev_words)
+                    hyphen_attached_to_word
+                    and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
                     and line_words[0].isalnum()
                 ):
                     lines[ix] = prev_line[:-1]
+                elif not hyphen_attached_to_word:
+                    lines[ix] += " "
             else:
                 lines[ix] += " "
 

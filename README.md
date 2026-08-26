@@ -32,7 +32,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 ## Features
 
-- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
+- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, Apple Pages, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
 - 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 - 🧬 A unified, expressive [DoclingDocument][docling_document] representation format
 - ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, DocLang, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
@@ -53,6 +53,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
+- 🍎 Parsing of Apple Pages (`.pages`) documents, both the modern IWA container and iWork '09
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
 - 📊 Chart understanding (Barchart, Piechart, LinePlot): convert them into tables or code and add detailed descriptions
 

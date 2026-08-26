@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from docling.datamodel.service.callbacks import (
     BaseProgress,
     CallbackSpec,

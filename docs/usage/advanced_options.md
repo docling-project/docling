@@ -103,6 +103,12 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Image resolution and scale
+
+Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
+determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+Rendering at scale `n` produces `n` pixels per document point.
+
 ### Control PDF table extraction options
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.
@@ -141,6 +147,83 @@ doc_converter = DocumentConverter(
 )
 ```
 
+
+### Recover PDF heading levels
+
+The layout model marks section headers but not how deep they sit, so by default every heading in a
+PDF comes out at level 1. Docling can infer the levels from the PDF bookmarks, from outline
+numbering and from the heading's font styling:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    HeadingHierarchyOptions,
+    PdfPipelineOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
+pipeline_options.generate_parsed_pages = True  # required by the font-style signal
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
+
+### Convert Apple Pages documents
+
+Apple Pages (`.pages`) documents convert like any other format, and both
+container generations are read (requires the `format-iwork` extra):
+
+```python
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("report.pages").document
+print(doc.export_to_markdown())
+```
+
+Pages changed its container completely in 2013, so Docling reads whichever one
+the document uses:
+
+- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
+  Snappy-framed protobuf archives. Docling walks that object graph directly.
+- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
+  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
+  template yields no spurious content.
+
+Titles and headings are recovered from the paragraph styles Pages applies
+("Title", "Heading 1", "Subheading"), which are named identically in both
+generations.
+
+!!! note "Not yet extracted"
+
+    Character formatting, lists, text boxes, headers, footers, footnotes
+    and comments are not included — only the main body and its tables are
+    read — and password-protected documents cannot be read. Table cells
+    holding anything other than text are left empty.
+
+The container is untrusted input, so member count, total size, per-member size
+and decompressed output are all bounded. Those limits can be tuned with
+`IWorkBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkPagesFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+            backend_options=IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
+        )
+    }
+)
+```
 
 ## Impose limits on the document size
 
