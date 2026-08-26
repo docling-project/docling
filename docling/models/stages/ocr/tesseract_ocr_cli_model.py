@@ -25,12 +25,16 @@ from docling.datamodel.pipeline_options import (
     TesseractCliOcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.utils.ocr_utils import (
+from docling.models.stages.ocr.tesseract_utils import (
+    installed_language_tags,
+    map_tesseract_language,
     map_tesseract_script,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
 )
+from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -40,6 +44,8 @@ _VALID_LANG_RE = re.compile(r"^[a-zA-Z0-9_/][a-zA-Z0-9_/+-]*$")
 
 
 class TesseractOcrCliModel(BaseOcrModel):
+    language_support = OcrLanguageSupport(multiple_languages=True)
+
     def __init__(
         self,
         enabled: bool,
@@ -62,7 +68,10 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._version: Optional[str] = None
         self._tesseract_languages: Optional[List[str]] = None
         self._script_prefix: Optional[str] = None
-        self._is_auto: bool = "auto" in self.options.lang
+        # No languages requested: Tesseract runs orientation and script
+        # detection per page and picks a `script/` reader from the result.
+        self._auto_script: bool = not self.languages
+        self._native_langs: List[str] = []
 
         # Pre-validate and store sanitized subprocess arguments at construction time
         # so that all subsequent subprocess calls use only these already-validated values.
@@ -72,10 +81,6 @@ class TesseractOcrCliModel(BaseOcrModel):
             if self.options.path is not None
             else None
         )
-        if self.options.lang:
-            for _lang_token in self.options.lang:
-                if _lang_token != "auto":
-                    self._sanitize_lang(_lang_token)
 
         if self.enabled:
             try:
@@ -89,6 +94,42 @@ class TesseractOcrCliModel(BaseOcrModel):
                     "The actual command for Tesseract can be specified in `pipeline_options.ocr_options.tesseract_cmd='tesseract'`. "
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
+
+            if self._auto_script and "osd" not in (self._tesseract_languages or []):
+                raise ImportError(
+                    "An empty OCR language list runs Tesseract's orientation and "
+                    "script detection, which needs the 'osd' traineddata. Install "
+                    "it (e.g. the tesseract-ocr-osd package) or name a language "
+                    "explicitly in `ocr_options.lang`."
+                )
+
+            # Needs the installed language list, so it runs after the probe above.
+            self._native_langs = [
+                self._sanitize_lang(lang) for lang in self.resolve_ocr_languages()
+            ]
+
+    def supported_ocr_languages(self) -> List[str]:
+        return installed_language_tags(
+            self._tesseract_languages or [],
+            self._script_prefix or "",
+            TesseractCliOcrOptions.kind,
+        )
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
+        assert self._tesseract_languages is not None
+        name = map_tesseract_language(language, self._script_prefix or "")
+        if name is None or name not in self._tesseract_languages:
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+                detail=(
+                    f"No traineddata file {name!r} is installed."
+                    if name is not None
+                    else "Tesseract has no traineddata for it."
+                ),
+            )
+        return name
 
     @staticmethod
     def _sanitize_lang(lang: str) -> str:
@@ -170,16 +211,14 @@ class TesseractOcrCliModel(BaseOcrModel):
         Run tesseract CLI
         """
         cmd = [self._safe_tesseract_cmd]
-        if self._is_auto and osd is not None:
+        if self._auto_script and osd is not None:
             lang = self._parse_language(osd)
             if lang is not None:
                 cmd.append("-l")
                 cmd.append(self._sanitize_lang(lang))
-        elif self.options.lang is not None and len(self.options.lang) > 0:
+        elif self._native_langs:
             cmd.append("-l")
-            cmd.append(
-                "+".join(self._sanitize_lang(lang) for lang in self.options.lang)
-            )
+            cmd.append("+".join(self._native_langs))
 
         if self._safe_tessdata_path is not None:
             cmd.append("--tessdata-dir")
@@ -339,7 +378,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 )
                                 # Skipping if OSD fail when in auto mode, otherwise proceed
                                 # to OCR in the hope OCR will succeed while OSD failed
-                                if self._is_auto:
+                                if self._auto_script:
                                     continue
                             if doc_orientation != 0:
                                 high_res_image = high_res_image.rotate(

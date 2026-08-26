@@ -6,7 +6,6 @@
 The service client is faked so these run without a live docling-serve instance.
 """
 
-import re
 from pathlib import Path, PurePath
 
 import pytest
@@ -16,13 +15,10 @@ from docling.cli.main import app
 from docling.cli.remote import _parse_page_range
 from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
 
-runner = CliRunner()
+# Under CI Rich thinks it has a terminal and colours the help screen.
+# `TERM=dumb` turns that off, so the text can be matched as it is written.
+runner = CliRunner(env={"TERM": "dumb"})
 pytestmark = pytest.mark.external_service
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _strip_ansi(text: str) -> str:
-    return _ANSI_RE.sub("", text)
 
 
 class _FakeDoc:
@@ -97,7 +93,7 @@ def _patch_client(monkeypatch):
 def test_remote_help_is_self_sufficient():
     result = runner.invoke(app, ["convert-remote", "--help"])
     assert result.exit_code == 0
-    help_text = _strip_ansi(result.output)
+    help_text = result.output
     for marker in (
         "Authentication",
         "Exit codes",
@@ -196,7 +192,8 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
-    assert opts.ocr_lang == ["en", "de"]
+    # `en,de` still works; it is canonicalized rather than rejected.
+    assert opts.ocr_lang == ["en-Latn", "de-Latn"]
     assert opts.page_range == (2, 5)
     # Both requested formats are written locally.
     assert (output / "report.md").exists()

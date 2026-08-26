@@ -585,6 +585,8 @@ def test_image_export_policy_covers_all_output_formats():
 def test_split_list_handles_none_and_delimiters():
     assert _split_list(None) is None
     assert _split_list("a,b;c") == ["a", "b", "c"]
+    # Values are stripped and blanks dropped, so `--ocr-lang "en, de"` works.
+    assert _split_list("a, b ;c,") == ["a", "b", "c"]
 
 
 def test_cli_audio_auto_detection(tmp_path):

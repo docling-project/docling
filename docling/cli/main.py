@@ -11,7 +11,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, Type, cast
+from typing import Annotated, Any, Literal, Type, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -43,7 +43,7 @@ from docling_core.transforms.serializer.html import (
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 from rich.console import Console
 
 from docling.cli.export_utils import (
@@ -160,6 +160,17 @@ from docling.models.factories import (
 )
 from docling.models.factories.base_factory import BaseFactory
 from docling.utils.profiling import ProfilingItem
+
+
+def _first_error_message(err: ValidationError) -> str:
+    """The most useful line of a pydantic error, for a typer.BadParameter."""
+    errors = err.errors()
+    if not errors:
+        return str(err)
+    message = errors[0].get("msg", "")
+    # Pydantic prefixes messages raised from a validator with "Value error, ".
+    return message.removeprefix("Value error, ") or str(err)
+
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -893,7 +904,17 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             ...,
-            help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
+            help=(
+                "Comma-separated list of OCR languages as BCP-47 tags, e.g. "
+                "'en,de' or 'zh-Hant'. The selected engine's own language codes "
+                "are accepted too and mean what that engine means by them, so "
+                "'--ocr-engine rapidocr --ocr-lang ch' is Simplified Chinese. "
+                "Omit the option for the engine's default languages, or pass an "
+                "empty value (--ocr-lang '') to let the engine choose, which for "
+                "Tesseract is per-page script detection. 'mul' selects a "
+                "multilingual model on the engines that ship one; to skip OCR "
+                "entirely use --no-ocr."
+            ),
         ),
     ] = None,
     psm: Annotated[
@@ -1234,14 +1255,21 @@ def convert(  # noqa: C901
             resolved_ocr_mode = OcrMode.FULL_PAGE
         else:
             resolved_ocr_mode = ocr_mode
-        ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
-            kind=ocr_engine,
-            mode=resolved_ocr_mode,
-        )
-
+        ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
         ocr_lang_list = _split_list(ocr_lang)
+        # `_split_list` returns None only when the option was not given, so an
+        # explicitly empty value reaches the engine as `lang=[]`: "your default".
         if ocr_lang_list is not None:
-            ocr_options.lang = ocr_lang_list
+            ocr_kwargs["lang"] = ocr_lang_list
+        try:
+            ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
+                kind=ocr_engine,
+                **ocr_kwargs,
+            )
+        except ValidationError as err:
+            raise typer.BadParameter(
+                _first_error_message(err), param_hint="--ocr-lang"
+            ) from err
         if psm is not None and isinstance(
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):

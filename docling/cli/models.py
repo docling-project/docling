@@ -30,7 +30,7 @@ except ImportError as e:
 
 from docling.datamodel.settings import settings
 from docling.models.stages.ocr.easyocr_model import (
-    _resolve_easyocr_recognition_models,
+    resolve_easyocr_languages,
 )
 from docling.models.stages.ocr.rapid_ocr_model import _parse_rapidocr_model_spec
 from docling.models.utils.hf_model_download import download_hf_model
@@ -122,7 +122,12 @@ def download(
         typer.Option(
             ...,
             "--easyocr-lang",
-            help="EasyOCR language code to prefetch. Repeat for multiple languages.",
+            help=(
+                "OCR language to prefetch for EasyOCR, as a BCP-47 tag "
+                "(e.g. 'de', 'zh-Hant', 'ru'). EasyOCR's own codes are accepted "
+                "too and mean what EasyOCR means by them, so 'ch_sim' is "
+                "Simplified Chinese. Repeat for multiple."
+            ),
         ),
     ] = None,
     rapidocr_backend_lang: Annotated[
@@ -132,7 +137,11 @@ def download(
             "--rapidocr-backend-lang",
             help=(
                 "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
-                "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
+                "with a BCP-47 language (e.g. 'onnxruntime:el', 'torch:ko'). "
+                "PP-OCR's own codes are accepted too, including its script "
+                "recognizers, which no language tag can name: "
+                "'onnxruntime:cyrillic', 'torch:ch'. Repeat for multiple. "
+                "Replaces the default set."
             ),
         ),
     ] = None,
@@ -156,7 +165,7 @@ def download(
                 param_hint="--easyocr-lang",
             )
         try:
-            _resolve_easyocr_recognition_models(easyocr_lang)
+            resolve_easyocr_languages(easyocr_lang)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     if rapidocr_backend_lang is not None:

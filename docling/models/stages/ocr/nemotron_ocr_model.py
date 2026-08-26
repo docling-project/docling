@@ -23,9 +23,11 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeIntervalRecorder
 
 _log = logging.getLogger(__name__)
@@ -36,7 +38,11 @@ _NEMOTRON_OCR_COMMIT = "0e83e83f17943524b90afa6c0fd82ac2bc1a40ca"
 
 _NEMOTRON_OCR_ENGLISH = "english"
 _NEMOTRON_OCR_MULTILINGUAL = "multilingual"
-_NEMOTRON_OCR_ENGLISH_GROUP = ["en", "eng", "english"]
+
+# Canonical tags the multilingual recognizer is trained on.
+_NEMOTRON_OCR_MULTILINGUAL_TAGS = frozenset(
+    {"zh-Hans", "zh-Hant", "ja-Jpan", "ko-Kore", "ru-Cyrl"}
+)
 
 # Mappings of nemotron language to the artifacts subdir
 _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS = {
@@ -47,25 +53,6 @@ _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS = {
 
 def nemotron_ocr_model_dir() -> str:
     return _NEMOTRON_OCR_REPO_ID.replace("/", "--")
-
-
-def resolve_nemotronocr_language(req_languages: list[str] | None) -> str:
-    r"""
-    Map requested languages onto the nemotron-ocr language info
-    """
-    if not req_languages:
-        # Use english by default
-        return _NEMOTRON_OCR_ENGLISH
-
-    # Map request language to nemotron language
-    for language in req_languages:
-        # "en-US" / "en_US" -> "en"
-        normalized = language.strip().lower().replace("_", "-").split("-")[0]
-
-        # Use the multilingual model to cover english and any non-english language
-        if normalized not in _NEMOTRON_OCR_ENGLISH_GROUP:
-            return _NEMOTRON_OCR_MULTILINGUAL
-    return _NEMOTRON_OCR_ENGLISH
 
 
 class NemotronOcrPrediction(TypedDict):
@@ -109,6 +96,8 @@ class _BufferedRect:
 class NemotronOcrModel(BaseOcrModel):
     r"""Wrapper for Nvidia's nemotron-ocr-v2 model"""
 
+    language_support = OcrLanguageSupport(multiple_languages=False)
+
     def __init__(
         self,
         enabled: bool,
@@ -141,8 +130,10 @@ class NemotronOcrModel(BaseOcrModel):
                     "Python 3.12 and CUDA 13.x."
                 ) from exc
 
-            # Resolve the request language
-            language = resolve_nemotronocr_language(options.lang)
+            # Resolve the request language. An empty `lang` list means "the
+            # engine's own default", which for nemotron-OCR is English.
+            native = self.resolve_ocr_languages()
+            language = native[0] if native else _NEMOTRON_OCR_ENGLISH
 
             # Initialize the model
             model_dir = self._resolve_model_dir(language, artifacts_path=artifacts_path)
@@ -151,6 +142,24 @@ class NemotronOcrModel(BaseOcrModel):
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=language,
             )
+
+    def supported_ocr_languages(self) -> list[str]:
+        return ["en-Latn", "mul", *sorted(_NEMOTRON_OCR_MULTILINGUAL_TAGS)]
+
+    def map_ocr_language(self, language: OcrLanguage) -> str:
+        if language.tag == "en-Latn":
+            return _NEMOTRON_OCR_ENGLISH
+        if language.is_multilingual or language.tag in _NEMOTRON_OCR_MULTILINGUAL_TAGS:
+            return _NEMOTRON_OCR_MULTILINGUAL
+        raise OcrLanguageNotSupportedError(
+            self._engine_name,
+            language.tag,
+            supported=self.supported_ocr_languages(),
+            detail=(
+                "nemotron-OCR-v2 ships an English and a multilingual recognizer "
+                "only; use 'mul' to run the multilingual one."
+            ),
+        )
 
     @staticmethod
     def _fail_runtime(message: str) -> None:

@@ -24,11 +24,25 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
+from docling.models.stages.ocr.ppocr_languages import (
+    PPOCR_DEFAULT_TOKEN,
+    PPOCRV4_LANGS,
+    PPOCRV5_LANGS,
+    PPOCRV6_LANGS,
+    ppocr_supported_tags,
+    ppocr_token,
+)
+from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+# The client cannot know what the deployed model serves, so coverage is checked
+# against the whole PP-OCR token universe: a best-effort guard against typos.
+_KSERVE_PPOCR_VOCABULARY = PPOCRV4_LANGS | PPOCRV5_LANGS | PPOCRV6_LANGS
 
 
 class KserveV2OcrModel(BaseOcrModel):
@@ -46,13 +60,14 @@ class KserveV2OcrModel(BaseOcrModel):
         _kserve_client: Client for communicating with the KServe v2 endpoint.
     """
 
+    language_support = OcrLanguageSupport(multiple_languages=False)
+
     def __init__(
         self,
         enabled: bool,
         artifacts_path: Optional[Path],
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
-        default_language: str = "en",
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -75,8 +90,33 @@ class KserveV2OcrModel(BaseOcrModel):
             self._initialize_client()
 
             # Prepare the lang_input during the initialization as it stays the same for all requests
-            self._lang = options.lang[0] if len(options.lang) > 0 else default_language
+            self._lang = self.resolve_ocr_languages()[0]
             self._lang_input = np.array([[self._lang]], dtype=object)
+
+    def supported_ocr_languages(self) -> List[str]:
+        return ppocr_supported_tags(_KSERVE_PPOCR_VOCABULARY, KserveV2OcrOptions.kind)
+
+    def resolve_ocr_languages(self) -> List[str]:
+        # An empty `lang` list means "the engine's own default", which for PP-OCR
+        # is the Simplified Chinese recognizer.
+        if not self.languages:
+            return [PPOCR_DEFAULT_TOKEN]
+        return super().resolve_ocr_languages()
+
+    def map_ocr_language(self, language: OcrLanguage) -> str:
+        token = ppocr_token(language, _KSERVE_PPOCR_VOCABULARY)
+        if token is None:
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+                detail=(
+                    "No PP-OCR recognizer covers it; name the languages explicitly."
+                )
+                if language.is_multilingual
+                else None,
+            )
+        return token
 
     def _initialize_client(self) -> None:
         """Initialize the KServe v2 client for remote inference."""

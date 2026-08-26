@@ -22,6 +22,7 @@ from docling.models.stages.code_formula.code_formula_model import CodeFormulaMod
 from docling.models.stages.ocr.easyocr_model import (
     EasyOcrModel,
     _resolve_easyocr_recognition_models,
+    resolve_easyocr_languages,
 )
 from docling.models.stages.ocr.nemotron_ocr_model import (
     NemotronOcrModel,
@@ -72,7 +73,7 @@ def download_models(
     with_rapidocr: bool = True,
     rapidocr_models: Optional[list[str]] = None,
     with_easyocr: bool = False,
-    easyocr_languages: Optional[list[str]] = None,
+    easyocr_languages: Optional[list[str]] = None,  # BCP-47 tags
     with_nemotron_ocr: bool = False,
 ):
     if easyocr_languages is not None and not with_easyocr:
@@ -83,7 +84,7 @@ def download_models(
     easyocr_recognition_models = ["english_g2", "latin_g2"]
     if easyocr_languages is not None:
         easyocr_recognition_models = _resolve_easyocr_recognition_models(
-            easyocr_languages
+            resolve_easyocr_languages(easyocr_languages)
         )
 
     if output_dir is None:

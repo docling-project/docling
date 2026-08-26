@@ -83,9 +83,13 @@ def _parse_page_range(raw: str | None) -> PageRange | None:
 
 
 def _split_list(raw: str | None) -> list[str] | None:
+    """Split a comma/semicolon-separated CLI value, dropping blanks.
+
+    Stripping matters: `--ocr-lang "en, de"` must yield `de`, not `" de"`.
+    """
     if raw is None:
         return None
-    return re.split(r"[;,]", raw)
+    return [item.strip() for item in re.split(r"[;,]", raw) if item.strip()]
 
 
 def _is_empty_output(path: Path) -> bool:

@@ -64,6 +64,48 @@ def ocr_engines():
 
 where `YourOcrModel` must implement the [`BaseOcrModel`](https://github.com/docling-project/docling/blob/main/docling/models/base_ocr_model.py#L40) and provide an options class derived from [`OcrOptions`](https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options.py#L184).
 
+#### OCR languages in an external engine
+
+`OcrOptions.lang` is validated and canonicalized by the base class: your engine receives BCP-47
+tags such as `en-Latn` and `zh-Hans`, never `en` or `chinese`. See
+[OCR engines](OCR.md#language-selection) for the user-facing contract.
+
+With no further work, `BaseOcrModel.map_ocr_language` hands your engine the **primary subtag**
+(`en`, `zh`), which is what most ISO-639-based engines want. Two things still need attention:
+restate your options default in BCP-47, and note that the primary subtag alone loses the
+Simplified/Traditional distinction.
+
+To participate fully, override three members:
+
+```py
+from docling.exceptions import OcrLanguageNotSupportedError
+from docling.models.base_ocr_model import BaseOcrModel
+from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
+
+
+class YourOcrModel(BaseOcrModel):
+    # What the engine can do with a language request.
+    language_support = OcrLanguageSupport(
+        multiple_languages=False,  # True if several languages can run at once
+    )
+
+    def supported_ocr_languages(self) -> list[str]:
+        # Canonical tags this instance can serve, for error messages.
+        return ["en-Latn", "de-Latn"]
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
+        # Map one canonical tag onto your engine's native code(s).
+        if language.tag not in self.supported_ocr_languages():
+            raise OcrLanguageNotSupportedError(type(self).__name__, language.tag)
+        return language.language
+```
+
+`BaseOcrModel.resolve_ocr_languages()` then drops every language after the first on a
+single-language engine, with a warning naming what it kept. It does not touch the error path: an
+`OcrLanguageNotSupportedError` your `map_ocr_language` raises propagates unchanged, which is why
+the sample above attaches `supported=` itself. Call it once from `__init__`, inside your
+`if self.enabled:` block, and use the result in place of `options.lang`.
+
 ### Layout engine factory
 
 The layout engine factory allows to provide more layout engines to the Docling users.

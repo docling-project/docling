@@ -170,8 +170,12 @@ This is a collection of FAQ collected from the user questions on <https://github
 
     ### Which OCR languages are supported?
 
-    Docling supports multiple OCR engine, each one has its own list of supported languages.
-    Here is a collection of links to the original OCR engine's documentation listing the OCR languages.
+    Docling supports multiple OCR engines, each with its own list of supported languages, but you
+    ask for them in one vocabulary: [BCP-47](https://www.rfc-editor.org/rfc/rfc5646) language tags.
+    See [OCR engines](../concepts/OCR.md#language-selection) for the full contract, including the
+    reserved tag `mul` and what an empty language list means.
+
+    Here is a collection of links to the original OCR engines' documentation listing their coverage.
 
     - [EasyOCR](https://www.jaided.ai/easyocr/)
     - [Tesseract](https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html)
@@ -184,8 +188,11 @@ This is a collection of FAQ collected from the user questions on <https://github
     from docling.datamodel.pipeline_options import PdfPipelineOptions
 
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.ocr_options.lang = ["fr", "de", "es", "en"]  # example of languages for EasyOCR
+    pipeline_options.ocr_options.lang = ["fr", "de", "es", "en"]
     ```
+
+    A language the selected engine has no model for raises an error rather than falling back to a
+    different recognizer.
 
 
 ??? question "Some images are missing from MS Word and Powerpoint"
