@@ -176,6 +176,7 @@ nav:
       - "Apify": integrations/apify.md
       - "Data Prep Kit": integrations/data_prep_kit.md
       - "InstructLab": integrations/instructlab.md
+      - "Label Studio": integrations/labelstudio.md
       - "NVIDIA": integrations/nvidia.md
       - "Prodigy": integrations/prodigy.md
       - "RHEL AI": integrations/rhel_ai.md

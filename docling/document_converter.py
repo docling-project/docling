@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import hashlib
 import logging
 import sys
 import threading
@@ -94,6 +93,7 @@ from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
+from docling.utils.pipeline_cache import create_pipeline_options_hash
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -426,13 +426,6 @@ class DocumentConverter:
     ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
         return self.initialized_pipelines
 
-    def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
-        """Generate a hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(
-            options_str.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()
-
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format.
 
@@ -727,7 +720,7 @@ class DocumentConverter:
 
         pipeline_class = fopt.pipeline_cls
         pipeline_options = fopt.pipeline_options
-        options_hash = self._get_pipeline_options_hash(pipeline_options)
+        options_hash = create_pipeline_options_hash(pipeline_options)
 
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)
