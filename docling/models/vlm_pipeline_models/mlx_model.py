@@ -1,10 +1,13 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import threading
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 from PIL.Image import Image
@@ -39,7 +42,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
     ):
@@ -154,7 +157,8 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Use process_images for the actual inference
                 if images:  # Only if we have valid images
-                    predictions = list(self.process_images(images, user_prompts))
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        predictions = list(self.process_images(images, user_prompts))
 
                     # Attach results to pages
                     for page, prediction in zip(pages_with_images, predictions):
@@ -255,7 +259,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                             VlmPredictionToken(
                                 text=token.text,
                                 token=token.token,
-                                logprob=token.logprobs[token.token],
+                                logprob=float(token.logprobs[token.token]),
                             )
                         )
                     elif (
@@ -265,7 +269,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                             VlmPredictionToken(
                                 text=token.text,
                                 token=token.token,
-                                logprob=token.logprobs[0, token.token],
+                                logprob=float(token.logprobs[0, token.token]),
                             )
                         )
                     else:

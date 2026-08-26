@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for failed page handling in StandardPdfPipeline.
 
 These tests verify that when some PDF pages fail to parse, they are still
@@ -19,17 +22,17 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 @pytest.fixture
 def skipped_1page_path():
-    return Path("./tests/data/pdf/skipped_1page.pdf")
+    return Path("./tests/data/pdf/sources/skipped_1page.pdf")
 
 
 @pytest.fixture
 def skipped_2pages_path():
-    return Path("./tests/data/pdf/skipped_2pages.pdf")
+    return Path("./tests/data/pdf/sources/skipped_2pages.pdf")
 
 
 @pytest.fixture
 def normal_4pages_path():
-    return Path("./tests/data/pdf/normal_4pages.pdf")
+    return Path("./tests/data/pdf/sources/normal_4pages.pdf")
 
 
 def test_normal_pages_all_present(normal_4pages_path):

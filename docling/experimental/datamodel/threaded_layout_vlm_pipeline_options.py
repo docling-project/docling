@@ -1,17 +1,23 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Options for the threaded layout+VLM pipeline."""
 
 from typing import Union
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
-from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_HERON
-from docling.datamodel.pipeline_options import LayoutOptions, PaginatedPipelineOptions
+from docling.datamodel.pipeline_options import (
+    BaseLayoutOptions,
+    LayoutObjectDetectionOptions,
+    PaginatedPipelineOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
+from docling.datamodel.vlm_model_specs import GRANITEDOCLING_2STAGE_TRANSFORMERS
 
 
 class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
@@ -20,11 +26,13 @@ class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
     images_scale: float = 2.0
 
     # VLM configuration (will be enhanced with layout awareness by the pipeline)
-    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = GRANITEDOCLING_TRANSFORMERS
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
+        GRANITEDOCLING_2STAGE_TRANSFORMERS
+    )
 
     # Layout model configuration
-    layout_options: LayoutOptions = LayoutOptions(
-        model_spec=DOCLING_LAYOUT_HERON, skip_cell_assignment=True
+    layout_options: BaseLayoutOptions = Field(
+        default_factory=lambda: LayoutObjectDetectionOptions(skip_cell_assignment=True),
     )
 
     # Threading and batching controls

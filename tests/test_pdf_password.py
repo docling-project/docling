@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -16,7 +19,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf_password/2206.01062_pg3.pdf")
+    return Path("./tests/data/pdf_password/sources/2206.01062_pg3.pdf")
 
 
 @dataclass

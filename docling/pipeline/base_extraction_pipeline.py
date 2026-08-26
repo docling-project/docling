@@ -1,9 +1,17 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from docling.datamodel.base_models import ConversionStatus, ErrorItem
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+)
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import BaseOptions, PipelineOptions
@@ -42,9 +50,10 @@ class BaseExtractionPipeline(ABC):
         except Exception as e:
             ext_res.status = ConversionStatus.FAILURE
             error_item = ErrorItem(
-                component_type="extraction_pipeline",
+                component_type=DoclingComponentType.PIPELINE,
                 module_name=self.__class__.__name__,
                 error_message=str(e),
+                category=FailureCategory.UNKNOWN,
             )
             ext_res.errors.append(error_item)
             if raises_on_error:

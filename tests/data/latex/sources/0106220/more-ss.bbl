@@ -1,0 +1,230 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{BPV84}
+
+\bibitem[A{\etalchar{+}}85]{ACGH}
+E.~Arbarello et~al.
+\newblock {\em Geometry of Algebraic Curves}, volume~1.
+\newblock Springer, 1985.
+
+\bibitem[AK]{AKstabilisation}
+D.~Auroux and L.~Katzarkov.
+\newblock The degree doubling formula for braid monodromies and {L}efschetz
+  pencils.
+\newblock Preprint, 2000.
+
+\bibitem[AK80]{Altman-Kleiman}
+A.~Altman and S.~Kleiman.
+\newblock Compactifying the {P}icard scheme.
+\newblock {\em Advances in Math.}, 35:50--112, 1980.
+
+\bibitem[AL94]{AudLaf:eds}
+M.~Audin and J.~Lafontaine, editors.
+\newblock {\em Holomorphic curves in symplectic geometry}.
+\newblock Birkh\"auser, 1994.
+
+\bibitem[Alm00]{Almgren}
+F.~Almgren.
+\newblock {\em $Q$-valued functions minimizing {D}irichlet's integral and the
+  regularity of area-minimizing rectifiable currents up to codimension two}.
+\newblock World Scientific, 2000.
+
+\bibitem[Aur01]{AurouxGokova}
+D.~Auroux.
+\newblock Symplectic maps to projective spaces and symplectic invariants.
+\newblock {\em Turkish J. Math.}, 25:1--42, 2001.
+
+\bibitem[Bar82]{Barlet}
+D.~Barlet.
+\newblock Developpement asymptotique des fonctions obtenues par integration sur
+  les fibres.
+\newblock {\em Invent. Math.}, 68:129--174, 1982.
+
+\bibitem[Bir99]{Biran}
+P.~Biran.
+\newblock A stability property of symplectic packing.
+\newblock {\em Invent. Math.}, 136:123--55, 1999.
+
+\bibitem[BPV84]{BPV}
+W.~Barth, C.~Peters, and A.~{Van de Ven}.
+\newblock {\em Compact Complex Surfaces}.
+\newblock Springer, 1984.
+
+\bibitem[Cha88]{Chang}
+S.~Chang.
+\newblock Two-dimensional area-minimizing integral currents are classical
+  minimal surfaces.
+\newblock {\em J. Amer. Math. Soc.}, 1:699--788, 1988.
+
+\bibitem[Don96]{Donaldson:submflds}
+S.K. Donaldson.
+\newblock Symplectic submanifolds and almost complex geometry.
+\newblock {\em J. Diff. Geom.}, 44:666--705, 1996.
+
+\bibitem[Don99]{Donaldson:pencils}
+S.K. Donaldson.
+\newblock Lefschetz pencils on symplectic manifolds.
+\newblock {\em J. Diff. Geom.}, 53:205--36, 1999.
+
+\bibitem[DS]{SKDIS}
+S.~Donaldson and I.~Smith.
+\newblock Lefschetz pencils and the canonical class for symplectic
+  $4$-manifolds.
+\newblock Preprint, 2000, available at math.SG/0012067.
+
+\bibitem[EH89]{EH}
+D.~Eisenbud and J.~Harris.
+\newblock Irreducibility of some families of linear series with {Brill-Noether}
+  number 1. {I}.
+\newblock {\em Ann. Sci. Ecole Norm. Sup.}, 22:33--53, 1989.
+
+\bibitem[Fed69]{Federer}
+H.~Federer.
+\newblock {\em Geometric measure theory}.
+\newblock Springer, 1969.
+
+\bibitem[Fre87]{Freed}
+D.~Freed.
+\newblock On determinant line bundles.
+\newblock In S.T. Yau, editor, {\em Mathematical Aspects of String Theory {I}}.
+  World Scientific, 1987.
+
+\bibitem[Gom95]{Gompf}
+R.~Gompf.
+\newblock A new construction of symplectic manifolds.
+\newblock {\em Annals of Math.}, 142:527--595, 1995.
+
+\bibitem[Gom01]{GompfGokova}
+R.~Gompf.
+\newblock The topology of symplectic manifolds.
+\newblock {\em Turkish J. Math.}, 25:43--59, 2001.
+
+\bibitem[Gro85]{Gromov}
+M.~Gromov.
+\newblock Pseudoholomorphic curves in symplectic manifolds.
+\newblock {\em Invent. Math.}, 82:307--47, 1985.
+
+\bibitem[GS99]{GompfS}
+R.~Gompf and A.~Stipsicz.
+\newblock {\em $4$-manifolds and {K}irby calculus}.
+\newblock American Mathematical Society, 1999.
+
+\bibitem[Har66]{HartshorneRD}
+R.~Hartshorne.
+\newblock {\em Residues and Duality}.
+\newblock Springer, 1966.
+
+\bibitem[HJS96]{Jostetal}
+M.C. Hong, J.~Jost, and M.~Struwe.
+\newblock Asymptotic limits of a {Ginzburg-Landau} type functional.
+\newblock In J.~Jost, editor, {\em Geometric analysis and the calculus of
+  variations for {Stefan Hildebrandt}}, pages 99--123. International Press,
+  1996.
+
+\bibitem[HL97]{moduliofshaves}
+D.~Huybrechts and M.~Lehn.
+\newblock {\em The Geometry of Moduli Spaces of Shaves}.
+\newblock Number~31 in Aspects of Math. Max Plank-Institut, 1997.
+
+\bibitem[LL]{Li-Liu}
+T-J. Li and A-K. Liu.
+\newblock Uniqueness of symplectic canonical class, surface cone and symplectic
+  cone of four-manifolds with $b_+ = 1$.
+\newblock Preprint, 2000.
+
+\bibitem[McD98]{McDuff:DeftoIso}
+D.~McDuff.
+\newblock From symplectic deformation to isotopy.
+\newblock In {\em Topics in symplectic $4$-manifolds (Irvine, 1996)}.
+  International Press, 1998.
+
+\bibitem[MS94]{McD-S:Jhol}
+D.~McDuff and D.~Salamon.
+\newblock {\em {$J$-holomorphic} curves and quantum cohomology}.
+\newblock Amer. Math. Soc., 1994.
+
+\bibitem[MS97]{Morg-Sz}
+J.~Morgan and Z.~Szabo.
+\newblock Homotopy {$K3$} surfaces and mod $2$ {Seiberg-Witten} invariants.
+\newblock {\em Math. Res. Lett.}, 4:17--21, 1997.
+
+\bibitem[Nak99]{Nakajima}
+H.~Nakajima.
+\newblock {\em Lectures on Hilbert schemes of points on surfaces}.
+\newblock Amer. Math. Soc. Publ., 1999.
+
+\bibitem[OO96]{Ohta-Ono}
+H.~Ohta and K.~Ono.
+\newblock Notes on symplectic four-manifolds with $b_+ = 1$. {II}.
+\newblock {\em Internat. J. Math.}, 7:755--70, 1996.
+
+\bibitem[OS79]{Oda-Seshadri}
+T.~Oda and C.S. Seshadri.
+\newblock Compactifications of the generalised {J}acobian variety.
+\newblock {\em Trans. Amer. Math. Soc.}, 253:1--90, 1979.
+
+\bibitem[Pre]{Presas}
+F.~Presas.
+\newblock Submanifolds of symplectic manifolds with contact border.
+\newblock Preprint, 2000, available at math.SG/0007037.
+
+\bibitem[Sal]{Salamon:SW}
+D.~Salamon.
+\newblock Spin geometry and {Seiberg-Witten} invariants.
+\newblock Unpublished book.
+
+\bibitem[Sal99]{Salamon}
+D.~Salamon.
+\newblock {Seiberg-Witten} invariants of mapping tori, symplectic fixed points,
+  and {Lefschetz} numbers.
+\newblock {\em Turkish J. Math.}, 23:117--143, 1999.
+
+\bibitem[Sei97a]{Seidel2}
+P.~Seidel.
+\newblock $\pi_1$ of symplectic automorphism groups and invertibles in quantum
+  homology rings.
+\newblock {\em GAFA}, 7:1046--95, 1997.
+
+\bibitem[Sei97b]{Seidel:thesisdraft}
+P.~Seidel.
+\newblock Thesis draft.
+\newblock Unpublished notes, 1997.
+
+\bibitem[Sei00]{SeidelVM}
+P.~Seidel.
+\newblock Vanishing cycles and mutations.
+\newblock Preprint, available at math.SG/0007115, to appear in Proceedings of
+  the European Congress of Mathematicians, Birkhauser., 2000.
+
+\bibitem[Smi99]{ivanhodge}
+I.~Smith.
+\newblock Lefschetz fibrations and the {H}odge bundle.
+\newblock {\em Geometry and Topology}, 3:211--33, 1999.
+
+\bibitem[Smi01]{ivanmodulidivisor}
+I.~Smith.
+\newblock Lefschetz pencils and divisors in moduli space.
+\newblock {\em Geometry and Topology}, 5:579--608, 2001.
+
+\bibitem[ST]{Sieb:weier}
+B.~Siebert and G.~Tian.
+\newblock Weierstrass polynomials and plane pseudoholomorphic curves.
+\newblock Preprint, 2001.
+
+\bibitem[Tau95]{Taubes}
+C.H. Taubes.
+\newblock The {S}eiberg-{W}itten and the {G}romov invariants.
+\newblock {\em Math. Res. Letters}, 2:221--38, 1995.
+
+\bibitem[Tau96]{Taubes:SWtoGr}
+C.H. Taubes.
+\newblock {$SW \Rightarrow Gr$}: From the {Seiberg-Witten} equations to
+  pseudoholomorphic curves.
+\newblock {\em Jour. Amer. Math. Soc.}, 9:845--918, 1996.
+
+\bibitem[Tau99]{Taubes:selfdual}
+C.H. Taubes.
+\newblock {Seiberg-Witten} invariants and pseudo-holomorphic subvarieties for
+  self-dual harmonic two-forms.
+\newblock {\em Geometry and Topology}, 3:167--210, 1999.
+
+\end{thebibliography}

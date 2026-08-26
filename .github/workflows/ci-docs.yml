@@ -2,18 +2,78 @@ name: "Run Docs CI"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
-  push:
-    branches:
-      - "**"
-      - "!gh-pages"
+    types: [opened, reopened, synchronize, ready_for_review]
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_docs: ${{ steps.filter.outputs.run_docs }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            run_docs:
+              - ".github/workflows/**"
+              - ".github/actions/**"
+              - "mkdocs.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "docling/**"
+              - "docs/**"
+
   build-docs:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run_docs == 'true' }}
     uses: ./.github/workflows/docs.yml
     with:
       deploy: false
+
+  docs-status:
+    if: ${{ always() }}
+    needs:
+      - changes
+      - build-docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check docs result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          BUILD_DOCS_RESULT: ${{ needs.build-docs.result }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error title=Docs changes job failed::changes result was $CHANGES_RESULT"
+            exit 1
+          fi
+
+          case "$BUILD_DOCS_RESULT" in
+            success)
+              echo "Docs checks passed."
+              ;;
+            skipped)
+              echo "Docs checks are not required for this change set."
+              ;;
+            *)
+              echo "::error title=Docs checks failed::build-docs result was $BUILD_DOCS_RESULT"
+              exit 1
+              ;;
+          esac

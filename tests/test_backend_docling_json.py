@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.json.docling_json_backend.py."""
 
 from io import BytesIO
@@ -10,7 +13,8 @@ from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument, InputDocument
 
-GT_PATH: Path = Path("./tests/data/groundtruth/docling_v2/2206.01062.json")
+GT_PATH: Path = Path("./tests/data/pdf/groundtruth/2206.01062.json")
+pytestmark = pytest.mark.cross_platform
 
 
 def test_convert_valid_docling_json():

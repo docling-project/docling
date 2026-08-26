@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Code and formula extraction stage using the new VLM runtime system.
 
 This module provides a runtime-agnostic code and formula extraction stage that can use
@@ -294,4 +297,6 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             try:
                 self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up engine: {e}")
+                # _log may be None during interpreter shutdown
+                if _log is not None:
+                    _log.warning(f"Error cleaning up engine: {e}")

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +17,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def test_conversion_result_json_roundtrip_string():
-    pdf_doc = Path("./tests/data/pdf/redp5110_sampled.pdf")
+    pdf_doc = Path("./tests/data/pdf/sources/redp5110_sampled.pdf")
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False

@@ -1,4 +1,8 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
+import os
 import warnings
 import zipfile
 from collections.abc import Iterable
@@ -17,12 +21,56 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import SecurityError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
 _log = logging.getLogger(__name__)
+
+
+def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
+    from easyocr.config import (
+        arabic_lang_list,
+        bengali_lang_list,
+        cyrillic_lang_list,
+        devanagari_lang_list,
+        latin_lang_list,
+    )
+
+    language_models: dict[str, str] = {}
+    for language_group, model_name in (
+        (latin_lang_list, "latin_g2"),
+        (arabic_lang_list, "arabic_g1"),
+        (bengali_lang_list, "bengali_g1"),
+        (cyrillic_lang_list, "cyrillic_g2"),
+        (devanagari_lang_list, "devanagari_g1"),
+    ):
+        language_models.update(dict.fromkeys(language_group, model_name))
+    language_models.update(
+        {
+            "en": "english_g2",
+            "th": "thai_g1",
+            "ch_tra": "zh_tra_g1",
+            "ch_sim": "zh_sim_g2",
+            "ja": "japanese_g2",
+            "ko": "korean_g2",
+            "ta": "tamil_g1",
+            "te": "telugu_g2",
+            "kn": "kannada_g2",
+        }
+    )
+
+    model_names: List[str] = []
+    for language in languages:
+        try:
+            model_name = language_models[language]
+        except KeyError:
+            raise ValueError(f"Unsupported EasyOCR language code: {language}") from None
+        if model_name not in model_names:
+            model_names.append(model_name)
+    return model_names
 
 
 class EasyOcrModel(BaseOcrModel):
@@ -43,7 +91,8 @@ class EasyOcrModel(BaseOcrModel):
         )
         self.options: EasyOcrOptions
 
-        self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        # multiplier for 72 dpi; the default 3.0 == 216 dpi.
+        self.scale = self.options.scale
 
         if self.enabled:
             try:
@@ -109,20 +158,31 @@ class EasyOcrModel(BaseOcrModel):
 
         local_dir.mkdir(parents=True, exist_ok=True)
 
-        # Collect models to download
         download_list = []
         for model_name in detection_models:
             if model_name in det_models_dict:
                 download_list.append(det_models_dict[model_name])
+
+        recognition_models_by_name = {
+            model_name: model_details
+            for generation in rec_models_dict.values()
+            for model_name, model_details in generation.items()
+        }
         for model_name in recognition_models:
-            if model_name in rec_models_dict["gen2"]:
-                download_list.append(rec_models_dict["gen2"][model_name])
+            if model_name in recognition_models_by_name:
+                download_list.append(recognition_models_by_name[model_name])
 
         # Download models
         for model_details in download_list:
             buf = download_url_with_progress(model_details["url"], progress=progress)
             with zipfile.ZipFile(buf, "r") as zip_ref:
-                zip_ref.extractall(local_dir)
+                for member in zip_ref.infolist():
+                    member_path = os.path.realpath(
+                        os.path.join(local_dir, member.filename)
+                    )
+                    if not member_path.startswith(os.path.realpath(local_dir) + os.sep):
+                        raise SecurityError(f"ZIP slip attempt: {member.filename}")
+                    zip_ref.extract(member, local_dir)
 
         return local_dir
 
@@ -187,7 +247,7 @@ class EasyOcrModel(BaseOcrModel):
                         all_ocr_cells.extend(cells)
 
                     # Post-process the cells
-                    self.post_process_cells(all_ocr_cells, page)
+                    self.post_process_cells(all_ocr_cells, page, conv_res)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

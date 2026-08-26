@@ -1,6 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Type, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -12,35 +17,72 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
+from docling_core.types.doc.document import Orientation
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import DocumentStream
+from docling_core.types.io import (
+    DocumentStream as DocumentStream,
+)
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyHttpUrl,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
     FieldSerializationInfo,
+    PrivateAttr,
     computed_field,
     field_serializer,
     field_validator,
+    model_validator,
 )
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+    from docling.datamodel.backend_options import BackendOptions
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
 
 
+class HttpSource(BaseModel):
+    """A remote document source: a URL bundled with the headers used to fetch it.
+
+    Lives in the core datamodel (alongside ``DocumentStream``) so the converter
+    can accept it as an input; the serving layer subclasses it for its request
+    schema.
+    """
+
+    url: Annotated[
+        AnyHttpUrl,
+        Field(
+            description="HTTP url to process",
+            examples=["https://arxiv.org/pdf/2206.01062"],
+        ),
+    ]
+    headers: Annotated[
+        dict[str, Any],
+        Field(
+            description="Additional headers used to fetch the urls, "
+            "e.g. authorization, agent, etc"
+        ),
+    ] = {}
+
+
 class BaseFormatOption(BaseModel):
     """Base class for format options used by _DocumentConversionInput."""
 
-    pipeline_options: Optional[PipelineOptions] = None
+    pipeline_options: PipelineOptions | None = None
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> "BackendOptions | None":
+        return None
 
 
 class ConversionStatus(str, Enum):
@@ -56,7 +98,9 @@ class InputFormat(str, Enum):
     """A document format supported by document backend parsers."""
 
     DOCX = "docx"
+    DOC = "doc"
     PPTX = "pptx"
+    PPT = "ppt"
     HTML = "html"
     IMAGE = "image"
     PDF = "pdf"
@@ -64,13 +108,26 @@ class InputFormat(str, Enum):
     MD = "md"
     CSV = "csv"
     XLSX = "xlsx"
+    XLS = "xls"
+    ODT = "odt"
+    ODS = "ods"
+    ODP = "odp"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
+    XML_XBRL = "xml_xbrl"
+    XML_DOCLANG = "xml_doclang"
+    DCLX = "dclx"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
+    VIDEO = "video"
     VTT = "vtt"
     LATEX = "latex"
+    EMAIL = "email"
+    EPUB = "epub"
+    BOXNOTE = "boxnote"
+    IWORK_PAGES = "iwork_pages"
+    EBCDIC = "ebcdic"
 
 
 class OutputFormat(str, Enum):
@@ -81,25 +138,44 @@ class OutputFormat(str, Enum):
     HTML_SPLIT_PAGE = "html_split_page"
     TEXT = "text"
     DOCTAGS = "doctags"
+    VTT = "vtt"
+    DOCLANG = "doclang"
+    DCLX = "dclx"
+    CHUNKS = "chunks"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
+    InputFormat.DOC: ["doc", "dot"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
+    InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md"],
+    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
+    InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
+    InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.XLS: ["xls", "xlt"],
+    InputFormat.ODT: ["odt", "ott"],
+    InputFormat.ODS: ["ods", "ots"],
+    InputFormat.ODP: ["odp", "otp"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
-    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
+    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac"],
+    InputFormat.VIDEO: ["mp4", "avi", "mov", "mkv", "webm"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
+    InputFormat.EMAIL: ["eml", "msg"],
+    InputFormat.EPUB: ["epub"],
+    InputFormat.BOXNOTE: ["boxnote"],
+    InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -107,13 +183,22 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
     ],
+    InputFormat.DOC: [
+        "application/msword",
+        "application/x-msword",
+    ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",
         "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ],
+    InputFormat.PPT: [
+        "application/vnd.ms-powerpoint",
+    ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
+    InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -124,10 +209,26 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.PDF: ["application/pdf"],
     InputFormat.ASCIIDOC: ["text/asciidoc"],
-    InputFormat.MD: ["text/markdown", "text/x-markdown"],
+    InputFormat.MD: ["text/markdown", "text/x-markdown", "text/plain"],
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ],
+    InputFormat.XLS: [
+        "application/vnd.ms-excel",
+        "application/x-msexcel",
+    ],
+    InputFormat.ODT: [
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.text-template",
+    ],
+    InputFormat.ODS: [
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.spreadsheet-template",
+    ],
+    InputFormat.ODP: [
+        "application/vnd.oasis.opendocument.presentation",
+        "application/vnd.oasis.opendocument.presentation-template",
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],
@@ -143,13 +244,25 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "audio/ogg",
         "audio/flac",
         "audio/x-flac",
+    ],
+    InputFormat.VIDEO: [
         "video/mp4",
         "video/avi",
         "video/x-msvideo",
         "video/quicktime",
+        "video/x-matroska",
+        "video/webm",
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
+    InputFormat.EMAIL: ["message/rfc822", "application/vnd.ms-outlook"],
+    InputFormat.EPUB: ["application/epub+zip"],
+    InputFormat.BOXNOTE: ["application/vnd.box.boxnote"],
+    InputFormat.IWORK_PAGES: [
+        "application/vnd.apple.pages",
+        "application/x-iwork-pages-sffpages",
+    ],
+    InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -176,13 +289,51 @@ class VlmStopReason(str, Enum):
     LENGTH = "length"  # max tokens reached
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
+class FailureCategory(str, Enum):
+    """Error category shared by task-scope (``PublicFailureInfo``) and
+    document/page-scope (``ErrorItem``) errors, so the jobkit bridge can pass one
+    to the other without translation.
+
+    Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+    Document/page-scope only: BACKEND_FAILURE, INFERENCE_FAILURE.
+    Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
+
+    UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
+    known service defect).
+    """
+
+    POLICY = "policy"
+    CAPACITY = "capacity"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+    TARGET_UNAVAILABLE = "target_unavailable"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
+    BACKEND_FAILURE = "backend_failure"
+    INFERENCE_FAILURE = "inference_failure"
+    UNKNOWN = "unknown"
+
+
 class ErrorItem(BaseModel):
+    """Structured error information from document conversion.
+
+    Attributes:
+        component_type: The component that generated the error.
+        module_name: The module where the error occurred.
+        error_message: Human-readable error description.
+        category: Semantic category of the error for filtering.
+        page_no: 1-indexed page the error is attributable to, or None for
+            document-scoped errors.
+    """
+
     component_type: DoclingComponentType
     module_name: str
     error_message: str
+    category: FailureCategory = FailureCategory.UNKNOWN
+    page_no: int | None = None
 
 
 class Cluster(BaseModel):
@@ -203,7 +354,7 @@ class BasePageElement(BaseModel):
     id: int
     page_no: int
     cluster: Cluster
-    text: Optional[str] = None
+    text: str | None = None
 
 
 class LayoutPrediction(BaseModel):
@@ -220,9 +371,31 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
-    num_tokens: Optional[int] = None
+    num_tokens: int | None = None
+    usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
-    input_prompt: Optional[str] = None
+    input_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageRequestResult:
+    """Image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    stop_reason: VlmStopReason
+    usage: Any | None = None
+    logprobs: Any | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageStreamingRequestResult:
+    """Streaming image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    usage: Any | None = None
+    logprobs: Any | None = None
 
 
 class ContainerElement(
@@ -235,6 +408,7 @@ class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
+    orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
 
 
@@ -244,18 +418,19 @@ class TableStructurePrediction(BaseModel):
 
 class TextElement(BasePageElement):
     text: str
+    hyperlink: Optional[Union[AnyUrl, Path]] = None
 
 
 class FigureElement(BasePageElement):
     annotations: list[PictureDataType] = []
-    provenance: Optional[str] = None
-    predicted_class: Optional[str] = None
-    confidence: Optional[float] = None
+    provenance: str | None = None
+    predicted_class: str | None = None
+    confidence: float | None = None
 
     @field_serializer("confidence")
     def _serialize(
-        self, value: Optional[float], info: FieldSerializationInfo
-    ) -> Optional[float]:
+        self, value: float | None, info: FieldSerializationInfo
+    ) -> float | None:
         return (
             round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
             if value is not None
@@ -274,11 +449,11 @@ class EquationPrediction(BaseModel):
 
 
 class PagePredictions(BaseModel):
-    layout: Optional[LayoutPrediction] = None
-    tablestructure: Optional[TableStructurePrediction] = None
-    figures_classification: Optional[FigureClassificationPrediction] = None
-    equations_prediction: Optional[EquationPrediction] = None
-    vlm_response: Optional[VlmPrediction] = None
+    layout: LayoutPrediction | None = None
+    tablestructure: TableStructurePrediction | None = None
+    figures_classification: FigureClassificationPrediction | None = None
+    equations_prediction: EquationPrediction | None = None
+    vlm_response: VlmPrediction | None = None
 
 
 PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
@@ -302,10 +477,10 @@ class Page(BaseModel):
 
     page_no: int
     # page_hash: Optional[str] = None
-    size: Optional[Size] = None
-    parsed_page: Optional[SegmentedPdfPage] = None
+    size: Size | None = None
+    parsed_page: SegmentedPdfPage | None = None
     predictions: PagePredictions = PagePredictions()
-    assembled: Optional[AssembledUnit] = None
+    assembled: AssembledUnit | None = None
 
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
@@ -326,9 +501,9 @@ class Page(BaseModel):
     def get_image(
         self,
         scale: float = 1.0,
-        max_size: Optional[int] = None,
-        cropbox: Optional[BoundingBox] = None,
-    ) -> Optional[Image]:
+        max_size: int | None = None,
+        cropbox: BoundingBox | None = None,
+    ) -> Image | None:
         if self._backend is None:
             return self._image_cache.get(scale, None)
 
@@ -354,7 +529,7 @@ class Page(BaseModel):
             )
 
     @property
-    def image(self) -> Optional[Image]:
+    def image(self) -> Image | None:
         return self.get_image(scale=self._default_image_scale)
 
 
@@ -363,13 +538,33 @@ class Page(BaseModel):
 
 class OpenAiChatMessage(BaseModel):
     role: str
-    content: str
+    content: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+
+
+class OpenAiTopLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+
+
+class OpenAiTokenLogprob(BaseModel):
+    token: str
+    bytes: list[int] | None = None
+    logprob: float
+    top_logprobs: list[OpenAiTopLogprob] | None = None
+
+
+class OpenAiResponseLogprobs(BaseModel):
+    content: list[OpenAiTokenLogprob] | None = None
+    refusal: list[OpenAiTokenLogprob] | None = None
 
 
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
-    finish_reason: Optional[str]
+    finish_reason: str | None
+    logprobs: OpenAiResponseLogprobs | None = None
 
 
 class OpenAiResponseUsage(BaseModel):
@@ -384,10 +579,10 @@ class OpenAiApiResponse(BaseModel):
     )
 
     id: str
-    model: Optional[str] = None  # returned by openai
+    model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
-    usage: OpenAiResponseUsage
+    usage: OpenAiResponseUsage | None = None
 
 
 # Create a type alias for score values
@@ -476,10 +671,50 @@ class ConfidenceReport(PageConfidenceScores):
     pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
+    _mean_score_override: ScoreValue = PrivateAttr(default=np.nan)
+    _low_score_override: ScoreValue = PrivateAttr(default=np.nan)
+
+    @staticmethod
+    def _coerce_override_score(value: Any) -> ScoreValue:
+        if value is None:
+            return ScoreValue(np.nan)
+        if isinstance(value, str) and value.strip().lower() in {
+            "nan",
+            "null",
+            "none",
+            "",
+        }:
+            return ScoreValue(np.nan)
+        return ScoreValue(value)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _accept_flat_confidence_scores(cls, value, handler):
+        mean_override = ScoreValue(np.nan)
+        low_override = ScoreValue(np.nan)
+
+        if isinstance(value, dict):
+            mean_override = cls._coerce_override_score(value.get("mean_score"))
+            low_override = cls._coerce_override_score(value.get("low_score"))
+            value = dict(value)
+            value.pop("mean_score", None)
+            value.pop("low_score", None)
+            value.pop("mean_grade", None)
+            value.pop("low_grade", None)
+
+        model = handler(value)
+        if not model.pages:
+            model._mean_score_override = mean_override
+            model._low_score_override = low_override
+        return model
 
     @computed_field  # type: ignore
     @property
     def mean_score(self) -> ScoreValue:
+        if not np.isnan(self._mean_score_override):
+            return self._mean_score_override
+        if not self.pages:
+            return super().mean_score
         return ScoreValue(
             np.nanmean(
                 [c.mean_score for c in self.pages.values()],
@@ -489,6 +724,10 @@ class ConfidenceReport(PageConfidenceScores):
     @computed_field  # type: ignore
     @property
     def low_score(self) -> ScoreValue:
+        if not np.isnan(self._low_score_override):
+            return self._low_score_override
+        if not self.pages:
+            return super().low_score
         return ScoreValue(
             np.nanmean(
                 [c.low_score for c in self.pages.values()],

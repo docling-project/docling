@@ -1,10 +1,15 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """MLX-based VLM inference engine for Apple Silicon."""
+
+from __future__ import annotations
 
 import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Union
 
 from PIL.Image import Image
 
@@ -26,6 +31,7 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
+
 # Global lock for MLX model calls - MLX models are not thread-safe
 # All MLX models share this lock to prevent concurrent MLX operations
 _MLX_GLOBAL_LOCK = threading.Lock()
@@ -43,8 +49,8 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         options: MlxVlmEngineOptions,
-        artifacts_path: Optional[Union[Path, str]],
-        model_config: Optional["EngineModelConfig"] = None,
+        artifacts_path: Union[Path, str] | None,
+        model_config: EngineModelConfig | None = None,
     ):
         """Initialize the MLX engine.
 
@@ -200,6 +206,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 _log.debug("Starting MLX generation...")
 
                 output_text = ""
+                num_tokens = 0
                 stop_reason = "unspecified"
 
                 # Use stream_generate for proper stop string handling
@@ -213,6 +220,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     temp=input_data.temperature,
                 ):
                     output_text += token.text
+                    num_tokens += 1
 
                     # Check for configured stop strings
                     if input_data.stop_strings:
@@ -267,6 +275,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         stop_reason=stop_reason,
                         metadata={
                             "generation_time": generation_time,
+                            "num_tokens": num_tokens,
                             "model": self.model_config.repo_id
                             if self.model_config
                             else "unknown",

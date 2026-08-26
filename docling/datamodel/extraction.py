@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Data models for document extraction functionality."""
 
 from typing import Any, Dict, List, Optional, Type, Union

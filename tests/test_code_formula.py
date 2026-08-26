@@ -1,5 +1,9 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from pathlib import Path
 
+import pytest
 from docling_core.types.doc import CodeItem, TextItem
 from docling_core.types.doc.labels import CodeLanguageLabel, DocItemLabel
 
@@ -8,6 +12,8 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+pytestmark = pytest.mark.ml_pdf_model
 
 
 def get_converter():
@@ -32,7 +38,7 @@ def get_converter():
 
 
 def test_code_and_formula_conversion():
-    pdf_path = Path("tests/data/pdf/code_and_formula.pdf")
+    pdf_path = Path("tests/data/pdf/sources/code_and_formula.pdf")
     converter = get_converter()
 
     print(f"converting {pdf_path}")
@@ -63,7 +69,7 @@ def test_code_and_formula_conversion():
 
 
 def test_formula_conversion_with_page_range():
-    pdf_path = Path("tests/data/pdf/code_and_formula.pdf")
+    pdf_path = Path("tests/data/pdf/sources/code_and_formula.pdf")
     converter = get_converter()
 
     print(f"converting {pdf_path} with page range")

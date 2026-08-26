@@ -1,9 +1,12 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import json
+import math
 import os
 from pathlib import Path
 from typing import Optional
 
-import pytest
 from docling_core.types.doc import (
     CodeItem,
     DocItem,
@@ -13,16 +16,22 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
-from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
+from docling_core.types.doc.base import BoundingBox
 from PIL import Image as PILImage
 from pydantic import BaseModel, TypeAdapter
-from pydantic.json import pydantic_encoder
 
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 
+from .groundtruth_paths import GroundTruthPaths
+
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
+STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
+FUZZY_BBOX_TOL_RATIO = (
+    0.08  # OCR/image output varies more, but gross shifts should fail
+)
+IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 
 
 class _TestPagesMeta(BaseModel):
@@ -31,6 +40,40 @@ class _TestPagesMeta(BaseModel):
     @classmethod
     def from_page(cls, page: Page):
         return cls(num_cells=len(page.cells))
+
+
+def _assert_bbox_close(
+    *,
+    true_bbox: BoundingBox,
+    pred_bbox: BoundingBox,
+    fuzzy: bool,
+    page_extent: Optional[float],
+    pdf_filename: str,
+):
+    """Compare bbox coordinates at the same precision used in serialized fixtures."""
+
+    tol_ratio = FUZZY_BBOX_TOL_RATIO if fuzzy else STRICT_BBOX_TOL_RATIO
+    tol = max(10 ** (-COORD_PREC), (page_extent or 0.0) * tol_ratio)
+
+    assert true_bbox.coord_origin == pred_bbox.coord_origin, (
+        f"[{pdf_filename}] BBox coord_origin mismatch"
+    )
+
+    for label, true_value, pred_value in (
+        ("left", true_bbox.l, pred_bbox.l),
+        ("top", true_bbox.t, pred_bbox.t),
+        ("right", true_bbox.r, pred_bbox.r),
+        ("bottom", true_bbox.b, pred_bbox.b),
+    ):
+        true_rounded = round(true_value, COORD_PREC)
+        pred_rounded = round(pred_value, COORD_PREC)
+        diff = abs(true_rounded - pred_rounded)
+
+        assert math.isclose(true_rounded, pred_rounded, rel_tol=0.0, abs_tol=tol), (
+            f"[{pdf_filename}] BBox {label} mismatch:"
+            f" {true_rounded} vs {pred_rounded}"
+            f" (raw pred: {pred_value}, diff: {diff:.2f}, tol: {tol:.2f})"
+        )
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -92,78 +135,6 @@ def verify_cells(
     return True
 
 
-# def verify_maintext(doc_pred: DsDocument, doc_true: DsDocument):
-#     assert doc_true.main_text is not None, "doc_true cannot be None"
-#     assert doc_pred.main_text is not None, "doc_true cannot be None"
-#
-#     assert len(doc_true.main_text) == len(
-#         doc_pred.main_text
-#     ), f"document has different length of main-text than expected. {len(doc_true.main_text)}!={len(doc_pred.main_text)}"
-#
-#     for l, true_item in enumerate(doc_true.main_text):
-#         pred_item = doc_pred.main_text[l]
-#         # Validate type
-#         assert (
-#             true_item.obj_type == pred_item.obj_type
-#         ), f"Item[{l}] type does not match. expected[{true_item.obj_type}] != predicted [{pred_item.obj_type}]"
-#
-#         # Validate text ceels
-#         if isinstance(true_item, BaseText):
-#             assert isinstance(
-#                 pred_item, BaseText
-#             ), f"{pred_item} is not a BaseText element, but {true_item} is."
-#             assert true_item.text == pred_item.text
-#
-#     return True
-
-
-def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
-    if doc_true.tables is None:
-        # No tables to check
-        assert doc_pred.tables is None, "not expecting any table on this document"
-        return True
-
-    assert doc_pred.tables is not None, "no tables predicted, but expected in doc_true"
-
-    # print("Expected number of tables: {}, result: {}".format(len(doc_true.tables), len(doc_pred.tables)))
-
-    assert len(doc_true.tables) == len(doc_pred.tables), (
-        "document has different count of tables than expected."
-    )
-
-    for ix, true_item in enumerate(doc_true.tables):
-        pred_item = doc_pred.tables[ix]
-
-        assert true_item.num_rows == pred_item.num_rows, (
-            "table does not have the same #-rows"
-        )
-        assert true_item.num_cols == pred_item.num_cols, (
-            "table does not have the same #-cols"
-        )
-
-        assert true_item.data is not None, "documents are expected to have table data"
-        assert pred_item.data is not None, "documents are expected to have table data"
-
-        print("True: \n", true_item.export_to_dataframe().to_markdown())
-        print("Pred: \n", true_item.export_to_dataframe().to_markdown())
-
-        for i, row in enumerate(true_item.data):
-            for j, col in enumerate(true_item.data[i]):
-                # print("true: ", true_item.data[i][j].text)
-                # print("pred: ", pred_item.data[i][j].text)
-                # print("")
-
-                verify_text(
-                    true_item.data[i][j].text, pred_item.data[i][j].text, fuzzy=fuzzy
-                )
-
-                assert true_item.data[i][j].obj_type == pred_item.data[i][j].obj_type, (
-                    "table-cell does not have the same type"
-                )
-
-    return True
-
-
 def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
     assert true_item.data.num_rows == pred_item.data.num_rows, (
         "table does not have the same #-rows"
@@ -207,18 +178,50 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 def verify_picture_image_v2(
     true_image: PILImage.Image, pred_item: Optional[PILImage.Image]
-):
+) -> bool:
+    """Compare image properties between a ground-truth image and a predicted image.
+
+    The image mode must match exactly.  The pixel dimensions are compared with a
+    percentage-based tolerance (IMAGE_SIZE_TOL_RATIO) to accommodate minor
+    cross-platform rendering differences.
+
+    Image bytes are not compared because they can differ significantly across
+    platforms even for visually identical images.
+
+    Args:
+        true_image: Ground-truth PIL image loaded from the reference fixture.
+        pred_item: Predicted PIL image produced by the conversion under test.
+
+    Returns:
+        True if all assertions pass.
+    """
     assert pred_item is not None, "predicted image is None"
-    assert true_image.size == pred_item.size
-    assert true_image.mode == pred_item.mode
-    # assert true_image.tobytes() == pred_item.tobytes()
+
+    # Check image mode (should be exact)
+    assert true_image.mode == pred_item.mode, (
+        f"Image mode mismatch: {true_image.mode} vs {pred_item.mode}"
+    )
+
+    # Check image size with a percentage-based tolerance
+    true_width, true_height = true_image.size
+    pred_width, pred_height = pred_item.size
+
+    width_diff = abs(true_width - pred_width)
+    height_diff = abs(true_height - pred_height)
+
+    width_diff_ratio = width_diff / true_width if true_width > 0 else 0
+    height_diff_ratio = height_diff / true_height if true_height > 0 else 0
+
+    assert width_diff_ratio <= IMAGE_SIZE_TOL_RATIO, (
+        f"Image width mismatch: {true_width} vs {pred_width} "
+        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {IMAGE_SIZE_TOL_RATIO:.1%})"
+    )
+    assert height_diff_ratio <= IMAGE_SIZE_TOL_RATIO, (
+        f"Image height mismatch: {true_height} vs {pred_height} "
+        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {IMAGE_SIZE_TOL_RATIO:.1%})"
+    )
+
     return True
-
-
-# def verify_output(doc_pred: DsDocument, doc_true: DsDocument):
-#     #assert verify_maintext(doc_pred, doc_true), "verify_maintext(doc_pred, doc_true)"
-#     assert verify_tables_v1(doc_pred, doc_true), "verify_tables(doc_pred, doc_true)"
-#     return True
 
 
 def verify_docitems(
@@ -228,8 +231,39 @@ def verify_docitems(
     fuzzy: bool,
     pdf_filename: str = "",
 ):
-    print(doc_pred.texts)
-    print(doc_true.texts)
+    """Verify that two DoclingDocuments contain equivalent content.
+
+    For every item pair the following properties are checked:
+
+    - Label: item type must match exactly.
+    - Provenance: page number and bounding-box coordinates must match.
+      BBox tolerance is controlled by the fuzzy flag (STRICT_BBOX_TOL_RATIO vs
+      FUZZY_BBOX_TOL_RATIO).
+    - Text (TextItem): exact match in strict mode; Levenshtein distance below
+      threshold in fuzzy mode.
+    - Tables (TableItem): row/column counts and cell text must match, subject to
+      the same text-fuzziness rules.
+    - Pictures (PictureItem): only checked when the ground-truth image is
+      present. When fuzzy is False, image mode and pixel dimensions are verified
+      (see verify_picture_image_v2). When fuzzy is True, image sizes are not
+      compared — only the existence of the predicted image is asserted. This is
+      intentional for backends that rely on LibreOffice (MsWordDocumentBackend,
+      MsExcelDocumentBackend, MsPowerPointDocumentBackend), whose rendered pixel
+      dimensions are not stable across LibreOffice versions and
+      operating-system installations.
+    - Code (CodeItem): code_language must match exactly.
+
+    Args:
+        doc_pred: The DoclingDocument produced by the conversion under test.
+        doc_true: The reference DoclingDocument loaded from the ground-truth fixture.
+        fuzzy: When True, apply relaxed tolerances for text and bboxes, and skip
+            image size comparison entirely (see Pictures note above).
+        pdf_filename: Source filename included in assertion messages for easier
+            debugging.
+
+    Returns:
+        True if all assertions pass.
+    """
 
     assert len(doc_pred.texts) == len(doc_true.texts), (
         f"[{pdf_filename}] Text lengths do not match: {len(doc_pred.texts)} != {len(doc_true.texts)}"
@@ -237,6 +271,9 @@ def verify_docitems(
 
     assert len(doc_true.tables) == len(doc_pred.tables), (
         f"[{pdf_filename}] document has different count of tables than expected."
+    )
+    assert len(doc_true.pictures) == len(doc_pred.pictures), (
+        f"[{pdf_filename}] Picture lengths do not match: {len(doc_true.pictures)} != {len(doc_pred.pictures)}"
     )
 
     for (true_item, _true_level), (pred_item, _pred_level) in zip(
@@ -260,12 +297,28 @@ def verify_docitems(
         if len(true_item.prov) > 0:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
+            true_page = doc_true.pages.get(true_prov.page_no)
+            pred_page = doc_pred.pages.get(pred_prov.page_no)
 
             assert true_prov.page_no == pred_prov.page_no, (
                 f"[{pdf_filename}] Page provenance mistmatch"
             )
+            assert (true_prov.bbox is None) == (pred_prov.bbox is None), (
+                f"[{pdf_filename}] BBox presence mismatch"
+            )
 
-            # TODO: add bbox check with tolerance
+            if true_prov.bbox is not None and pred_prov.bbox is not None:
+                _assert_bbox_close(
+                    true_bbox=true_prov.bbox,
+                    pred_bbox=pred_prov.bbox,
+                    fuzzy=fuzzy,
+                    page_extent=(
+                        max(page.size.width, page.size.height)
+                        if (page := true_page or pred_page) is not None
+                        else None
+                    ),
+                    pdf_filename=pdf_filename,
+                )
 
         # Validate source
         assert bool(true_item.source) == bool(pred_item.source), (
@@ -305,11 +358,18 @@ def verify_docitems(
             )
 
             true_image = true_item.get_image(doc=doc_true)
-            pred_image = true_item.get_image(doc=doc_pred)
             if true_image is not None:
-                assert verify_picture_image_v2(true_image, pred_image), (
-                    f"[{pdf_filename}] Picture image mismatch"
-                )
+                if fuzzy:
+                    # In fuzzy mode (used for LibreOffice-based backends whose
+                    # rendered image dimensions vary across platforms) we only
+                    # verify that the predicted image exists, not its size.
+                    assert pred_item.get_image(doc=doc_pred) is not None, (
+                        f"[{pdf_filename}] Picture image is missing"
+                    )
+                else:
+                    assert verify_picture_image_v2(
+                        true_image, pred_item.get_image(doc=doc_pred)
+                    ), f"[{pdf_filename}] Picture image mismatch"
         # TODO: check picture annotations
 
         # Validate code content
@@ -338,86 +398,17 @@ def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
     return verify_text(doc_true_dt, doc_pred_dt, fuzzy)
 
 
-"""
-def verify_conversion_result_v1(
-    input_path: Path,
-    doc_result: ConversionResult,
-    generate: bool = False,
-    ocr_engine: Optional[str] = None,
-    fuzzy: bool = False,
-    indent: int = 2,
-):
-    assert doc_result.status == ConversionStatus.SUCCESS, (
-        f"Doc {input_path} did not convert successfully."
-    )
-
-    with pytest.warns(DeprecationWarning, match="Use document instead"):
-        doc_pred: DsDocument = doc_result.legacy_document
-        doc_pred_md = doc_result.legacy_document.export_to_markdown()
-        doc_pred_dt = doc_result.legacy_document.export_to_document_tokens()
-
-    engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
-
-    gt_subpath = input_path.parent / "groundtruth" / "docling_v1" / input_path.name
-    if str(input_path.parent).endswith("pdf"):
-        gt_subpath = (
-            input_path.parent.parent / "groundtruth" / "docling_v1" / input_path.name
-        )
-
-    json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
-    md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
-    dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
-
-    if generate:  # only used when re-generating truth
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(json_path, mode="w", encoding="utf-8") as fw:
-            fw.write(json.dumps(doc_pred, default=pydantic_encoder, indent=indent))
-
-        md_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(md_path, mode="w", encoding="utf-8") as fw:
-            fw.write(doc_pred_md)
-
-        dt_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(dt_path, mode="w", encoding="utf-8") as fw:
-            fw.write(doc_pred_dt)
-    else:  # default branch in test
-        with open(json_path, encoding="utf-8") as fr:
-            doc_true: DsDocument = DsDocument.model_validate_json(fr.read())
-
-        with open(md_path, encoding="utf-8") as fr:
-            doc_true_md = fr.read()
-
-        with open(dt_path, encoding="utf-8") as fr:
-            doc_true_dt = fr.read()
-
-        # assert verify_output(
-        #    doc_pred, doc_true
-        # ), f"Mismatch in JSON prediction for {input_path}"
-
-        assert verify_tables_v1(doc_pred, doc_true, fuzzy=fuzzy), (
-            f"verify_tables(doc_pred, doc_true) mismatch for {input_path}"
-        )
-
-        assert verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy), (
-            f"Mismatch in Markdown prediction for {input_path}"
-        )
-
-        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
-            f"Mismatch in DocTags prediction for {input_path}"
-        )
-"""
-
-
 def verify_conversion_result_v2(
-    input_path: Path,
+    gt: GroundTruthPaths,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
     verify_doctags: bool = True,
     indent: int = 2,
 ):
     PageMetaList = TypeAdapter(list[_TestPagesMeta])
+
+    input_path = doc_result.input.file
 
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
@@ -428,33 +419,27 @@ def verify_conversion_result_v2(
         _TestPagesMeta.from_page(page) for page in doc_pred_pages
     ]
     doc_pred: DoclingDocument = doc_result.document
-    doc_pred_md = doc_result.document.export_to_markdown()
+    doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
 
-    engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
+    pages_path = gt.pages_meta
+    json_path = gt.doc_json
+    md_path = gt.md
+    dt_path = gt.doctags
 
-    gt_subpath = input_path.parent / "groundtruth" / "docling_v2" / input_path.name
-    if str(input_path.parent).endswith("pdf"):
-        gt_subpath = (
-            input_path.parent.parent / "groundtruth" / "docling_v2" / input_path.name
-        )
-
-    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.meta.json")
-    json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
-    md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
-    dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
-
-    # print("generate: ", generate)
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
 
-        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=2)
+        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=indent)
         with open(pages_path, mode="w", encoding="utf-8") as fw:
             fw.write(pages_data.decode())
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         doc_pred.save_as_json(
-            json_path, coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+            json_path,
+            indent=indent,
+            coord_precision=COORD_PREC,
+            confid_precision=CONFID_PREC,
         )
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
@@ -499,7 +484,9 @@ def verify_conversion_result_v2(
             )
 
 
-def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
+def verify_document(
+    pred_doc: DoclingDocument, gtfile: str, generate: bool = False, fuzzy: bool = False
+):
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, mode="w", encoding="utf-8") as fw:
             pred_dict = pred_doc.export_to_dict(
@@ -514,11 +501,13 @@ def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = Fal
             true_doc = DoclingDocument.model_validate_json(fr.read())
 
         return verify_docitems(
-            doc_pred=pred_doc, doc_true=true_doc, fuzzy=False, pdf_filename=gtfile
+            doc_pred=pred_doc, doc_true=true_doc, fuzzy=fuzzy, pdf_filename=gtfile
         )
 
 
-def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
+def verify_export(
+    pred_text: str, gtfile: str, generate: bool = False, fuzzy: bool = False
+) -> bool:
     file = Path(gtfile)
 
     if not file.exists() or generate:
@@ -528,5 +517,8 @@ def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
 
     with file.open(encoding="utf-8") as fr:
         true_text = fr.read()
+
+    if fuzzy:
+        return verify_text(true_text, pred_text, fuzzy=True)
 
     return pred_text == true_text

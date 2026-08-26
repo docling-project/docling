@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from pathlib import Path
 
 import pytest
@@ -7,7 +10,7 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
-INPUT_FILE = "./tests/data/pdf/2206.01062.pdf"
+INPUT_FILE = "./tests/data/pdf/sources/2206.01062.pdf"
 
 
 @pytest.mark.parametrize(

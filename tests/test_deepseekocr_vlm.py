@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
 import json
@@ -26,11 +29,12 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.ml_vlm
 
 
 def get_md_deepseek_paths():
     """Get all DeepSeek markdown test files."""
-    directory = Path("./tests/data/md_deepseek/")
+    directory = Path("./tests/data/md_deepseek/sources/")
     md_files = sorted(directory.glob("*.md"))
     return md_files
 
@@ -66,13 +70,13 @@ def test_e2e_deepseekocr_parsing():
             annotated_content = f.read()
 
         # Define groundtruth path
-        gt_path = md_path.parent.parent / "groundtruth" / "docling_v2" / md_path.name
+        gt_path = md_path.parent.parent / "groundtruth" / md_path.name
 
         # Parse the markdown using mock_parsing
         doc: DoclingDocument = mock_parsing(annotated_content, md_path.name)
 
         # Export to markdown
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
 
         # Export to indented text
@@ -122,11 +126,11 @@ def test_e2e_deepseekocr_conversion():
     )
 
     # Convert the PDF
-    pdf_path = Path("./tests/data/pdf/2206.01062.pdf")
+    pdf_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     conv_result = converter.convert(pdf_path)
 
     # Load reference document
-    ref_path = Path("./tests/data/groundtruth/docling_v2/deepseek_title.md.json")
+    ref_path = Path("./tests/data/md_deepseek/groundtruth/deepseek_title.md.json")
     ref_doc = DoclingDocument.load_from_json(ref_path)
 
     # Validate conversion result

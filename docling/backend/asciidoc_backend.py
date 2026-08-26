@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import re
 from io import BytesIO
@@ -19,11 +22,16 @@ from docling_core.types.doc import (
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
 DEFAULT_IMAGE_WIDTH: Final = 128
 DEFAULT_IMAGE_HEIGHT: Final = 128
+
+# Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
+# "^.^h|Header": span (3*, 2+), alignment (<, ^, >, .^), style (a/d/e/h/l/m/s).
+_CELL_SPEC: Final = r"(?:\d+(?:\.\d+)?[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -42,7 +50,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             self.valid = True
 
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize AsciiDoc backend for file with hash {self.document_hash}."
             ) from e
         return
@@ -148,7 +156,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 elif in_list and item["indent"] < indents[level]:
                     # print(item["indent"], " => ", indents[level])
-                    while item["indent"] < indents[level]:
+                    while level > 0 and item["indent"] < indents[level]:
                         # print(item["indent"], " => ", indents[level])
                         parents[level] = None
                         indents[level] = None
@@ -204,9 +212,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_picture(line)
 
                 size: Size
-                if "width" in item and "height" in item:
+                try:
                     size = Size(width=int(item["width"]), height=int(item["height"]))
-                else:
+                except (KeyError, ValueError):
+                    # width/height may be absent or non-numeric (e.g. "50%", "auto")
                     size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
 
                 uri = None
@@ -357,19 +366,24 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Tables
     @staticmethod
     def _is_table_line(line):
-        return re.match(r"^\|.*\|", line)
+        return re.match(rf"^{_CELL_SPEC}\|.*\|", line)
 
     @staticmethod
     def _parse_table_line(line):
-        # Split table cells and trim extra spaces
-        return [cell.strip() for cell in line.split("|") if cell.strip()]
+        # Drop cell specifiers glued to a "|" (e.g. "^.^h"); anchored to
+        # whitespace so content ending in a style letter (e.g. "Eth") survives.
+        line = re.sub(rf"(^|\s){_CELL_SPEC}(?=\|)", r"\1", line)
+        # Split by "|" and remove the leading empty string from the first "|"
+        cells = line.split("|")[1:]
+        # Strip whitespace from each cell (empty cells become empty strings)
+        return [cell.strip() for cell in cells]
 
     @staticmethod
     def _populate_table_as_grid(table_data):
         num_rows = len(table_data)
 
         # Adjust the table data into a grid format
-        num_cols = max(len(row) for row in table_data)
+        num_cols = max((len(row) for row in table_data), default=0)
 
         data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
         for row_idx, row in enumerate(table_data):

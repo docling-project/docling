@@ -41,7 +41,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-from docling.datamodel.vlm_model_specs import DOCLING_BASE_PAGE_PROMPT
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -214,7 +214,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../../tests/data"
-    input_doc_path = data_folder / "pdf/2305.03393v1-pg9.pdf"
+    input_doc_path = data_folder / "pdf/sources/2305.03393v1-pg9.pdf"
 
     # Configure the VLM pipeline. Enabling remote services allows HTTP calls to
     # locally hosted APIs (LM Studio, Ollama) or cloud services.

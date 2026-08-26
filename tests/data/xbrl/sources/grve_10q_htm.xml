@@ -1,0 +1,2671 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xbrl
+  xmlns="http://www.xbrl.org/2003/instance"
+  xmlns:dei="http://xbrl.sec.gov/dei/2025"
+  xmlns:ecd="http://xbrl.sec.gov/ecd/2025"
+  xmlns:grve="http://grve.com/20251231"
+  xmlns:iso4217="http://www.xbrl.org/2003/iso4217"
+  xmlns:link="http://www.xbrl.org/2003/linkbase"
+  xmlns:us-gaap="http://fasb.org/us-gaap/2025"
+  xmlns:xbrldi="http://xbrl.org/2006/xbrldi"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+    <link:schemaRef xlink:href="grve-20251231.xsd" xlink:type="simple"/>
+    <context id="From2025-04-01to2025-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:RelatedPartyTransactionsByRelatedPartyAxis">grve:KentRodriguezMember</xbrldi:explicitMember>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-12-31_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-12-31_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-12-31_us-gaap_SeriesAPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesAPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_grve_AuthorizedToIssuedMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:PlanNameAxis">grve:AuthorizedToIssuedMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:RelatedPartyTransactionsByRelatedPartyAxis">grve:KentRodriguezMember</xbrldi:explicitMember>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:RelatedPartyTransactionsByRelatedPartyAxis">grve:KentRodriguezMember</xbrldi:explicitMember>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-12-31_us-gaap_SeriesAPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesAPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:RelatedPartyTransactionsByRelatedPartyAxis">grve:KentRodriguezMember</xbrldi:explicitMember>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-07-30_us-gaap_SeriesAPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesAPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-07-30</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-09-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-09-30</instant>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-07-01to2025-09-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-07-01</startDate>
+            <endDate>2025-09-30</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-06-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-06-30</instant>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2025-04-01to2025-06-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2025-04-01</startDate>
+            <endDate>2025-06-30</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-12-31_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-12-31</instant>
+        </period>
+    </context>
+    <context id="From2024-10-01to2024-12-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-10-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-09-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-09-30</instant>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-07-01to2024-09-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-07-01</startDate>
+            <endDate>2024-09-30</endDate>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-06-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-06-30</instant>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-06-30_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-06-30</endDate>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31_us-gaap_RetainedEarningsMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:RetainedEarningsMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31_us-gaap_AdditionalPaidInCapitalMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:AdditionalPaidInCapitalMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31_us-gaap_CommonStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">us-gaap:CommonStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31_grve_PreferredStockSeriesBStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesBStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2024-03-31_grve_PreferredStockSeriesAStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementEquityComponentsAxis">grve:PreferredStockSeriesAStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2024-03-31</instant>
+        </period>
+    </context>
+    <context id="From2024-04-01to2024-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2024-04-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2024-10-01to2024-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2024-10-01</startDate>
+            <endDate>2024-12-31</endDate>
+        </period>
+    </context>
+    <context id="From2025-10-01to2025-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <startDate>2025-10-01</startDate>
+            <endDate>2025-12-31</endDate>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesBPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesAPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+            <segment>
+                <xbrldi:explicitMember dimension="us-gaap:StatementClassOfStockAxis">us-gaap:SeriesAPreferredStockMember</xbrldi:explicitMember>
+            </segment>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-03-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2025-03-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2025-12-31">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2025-12-31</instant>
+        </period>
+    </context>
+    <context id="AsOf2026-02-17">
+        <entity>
+            <identifier scheme="http://www.sec.gov/CIK">0000918573</identifier>
+        </entity>
+        <period>
+            <instant>2026-02-17</instant>
+        </period>
+    </context>
+    <unit id="USD">
+        <measure>iso4217:USD</measure>
+    </unit>
+    <unit id="Shares">
+        <measure>shares</measure>
+    </unit>
+    <unit id="USDPShares">
+        <divide>
+            <unitNumerator>
+                <measure>iso4217:USD</measure>
+            </unitNumerator>
+            <unitDenominator>
+                <measure>shares</measure>
+            </unitDenominator>
+        </divide>
+    </unit>
+    <unit id="Pure">
+        <measure>pure</measure>
+    </unit>
+    <dei:EntityCentralIndexKey contextRef="From2025-04-01to2025-12-31" id="ixv-5294">0000918573</dei:EntityCentralIndexKey>
+    <dei:AmendmentFlag contextRef="From2025-04-01to2025-12-31" id="ixv-5295">false</dei:AmendmentFlag>
+    <dei:CurrentFiscalYearEndDate contextRef="From2025-04-01to2025-12-31" id="ixv-5296">--03-31</dei:CurrentFiscalYearEndDate>
+    <dei:DocumentFiscalPeriodFocus contextRef="From2025-04-01to2025-12-31" id="ixv-5297">Q3</dei:DocumentFiscalPeriodFocus>
+    <dei:DocumentFiscalYearFocus contextRef="From2025-04-01to2025-12-31" id="ixv-5298">2026</dei:DocumentFiscalYearFocus>
+    <us-gaap:PreferredStockValue
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5299"
+      unitRef="USD">10</us-gaap:PreferredStockValue>
+    <us-gaap:PreferredStockValue
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5300"
+      unitRef="USD">10</us-gaap:PreferredStockValue>
+    <us-gaap:PreferredStockParOrStatedValuePerShare
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="INF"
+      id="ixv-5301"
+      unitRef="USDPShares">0.10</us-gaap:PreferredStockParOrStatedValuePerShare>
+    <us-gaap:PreferredStockParOrStatedValuePerShare
+      contextRef="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="INF"
+      id="ixv-5302"
+      unitRef="USDPShares">0.10</us-gaap:PreferredStockParOrStatedValuePerShare>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5303"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5304"
+      unitRef="Shares">2000</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5305"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5306"
+      unitRef="Shares">1983</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:PreferredStockSharesOutstanding
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5307"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesOutstanding>
+    <us-gaap:PreferredStockSharesOutstanding
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="ixv-5308"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesOutstanding>
+    <us-gaap:PreferredStockSharesOutstanding
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5309"
+      unitRef="Shares">1983</us-gaap:PreferredStockSharesOutstanding>
+    <us-gaap:PreferredStockSharesOutstanding
+      contextRef="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5310"
+      unitRef="Shares">1983</us-gaap:PreferredStockSharesOutstanding>
+    <us-gaap:CommonStockParOrStatedValuePerShare
+      contextRef="AsOf2025-03-31"
+      decimals="INF"
+      id="ixv-5311"
+      unitRef="USDPShares">0.001</us-gaap:CommonStockParOrStatedValuePerShare>
+    <us-gaap:CommonStockSharesAuthorized
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="ixv-5312"
+      unitRef="Shares">200000000</us-gaap:CommonStockSharesAuthorized>
+    <us-gaap:CommonStockSharesIssued
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="ixv-5313"
+      unitRef="Shares">59643062</us-gaap:CommonStockSharesIssued>
+    <us-gaap:CommonStockSharesOutstanding
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="ixv-5314"
+      unitRef="Shares">59643062</us-gaap:CommonStockSharesOutstanding>
+    <us-gaap:CommonStockSharesOutstanding
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="ixv-5315"
+      unitRef="Shares">59643062</us-gaap:CommonStockSharesOutstanding>
+    <ecd:Rule10b51ArrAdoptedFlag contextRef="From2025-04-01to2025-12-31" id="ixv-5316">false</ecd:Rule10b51ArrAdoptedFlag>
+    <ecd:NonRule10b51ArrAdoptedFlag contextRef="From2025-04-01to2025-12-31" id="ixv-5317">false</ecd:NonRule10b51ArrAdoptedFlag>
+    <ecd:Rule10b51ArrTrmntdFlag contextRef="From2025-04-01to2025-12-31" id="ixv-5318">false</ecd:Rule10b51ArrTrmntdFlag>
+    <ecd:NonRule10b51ArrTrmntdFlag contextRef="From2025-04-01to2025-12-31" id="ixv-5319">false</ecd:NonRule10b51ArrTrmntdFlag>
+    <grve:DividendOnPreferredStock
+      contextRef="From2024-04-01to2024-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5320"
+      unitRef="USD">24896</grve:DividendOnPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2024-04-01to2024-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="ixv-5321"
+      unitRef="USD">133853</us-gaap:DividendsPreferredStock>
+    <dei:DocumentType contextRef="From2025-04-01to2025-12-31" id="ixv-6027">10-Q</dei:DocumentType>
+    <dei:DocumentQuarterlyReport contextRef="From2025-04-01to2025-12-31" id="ixv-6028">true</dei:DocumentQuarterlyReport>
+    <dei:DocumentPeriodEndDate contextRef="From2025-04-01to2025-12-31" id="ixv-6029">2025-12-31</dei:DocumentPeriodEndDate>
+    <dei:DocumentTransitionReport contextRef="From2025-04-01to2025-12-31" id="ixv-6030">false</dei:DocumentTransitionReport>
+    <dei:EntityFileNumber contextRef="From2025-04-01to2025-12-31" id="ixv-6031">000-23476</dei:EntityFileNumber>
+    <dei:EntityRegistrantName contextRef="From2025-04-01to2025-12-31" id="ixv-6032">GROOVE BOTANICALS, INC.</dei:EntityRegistrantName>
+    <dei:EntityIncorporationStateCountryCode contextRef="From2025-04-01to2025-12-31" id="ixv-6033">NV</dei:EntityIncorporationStateCountryCode>
+    <dei:EntityTaxIdentificationNumber contextRef="From2025-04-01to2025-12-31" id="ixv-6034">84-1168832</dei:EntityTaxIdentificationNumber>
+    <dei:EntityAddressAddressLine1 contextRef="From2025-04-01to2025-12-31" id="ixv-6035">310 Fourth Avenue South</dei:EntityAddressAddressLine1>
+    <dei:EntityAddressAddressLine2 contextRef="From2025-04-01to2025-12-31" id="ixv-6036">Suite 7000</dei:EntityAddressAddressLine2>
+    <dei:EntityAddressCityOrTown contextRef="From2025-04-01to2025-12-31" id="ixv-6037">Minneapolis</dei:EntityAddressCityOrTown>
+    <dei:EntityAddressStateOrProvince contextRef="From2025-04-01to2025-12-31" id="ixv-6038">MN</dei:EntityAddressStateOrProvince>
+    <dei:EntityAddressPostalZipCode contextRef="From2025-04-01to2025-12-31" id="ixv-6039">55415</dei:EntityAddressPostalZipCode>
+    <dei:CityAreaCode contextRef="From2025-04-01to2025-12-31" id="ixv-6040">612</dei:CityAreaCode>
+    <dei:LocalPhoneNumber contextRef="From2025-04-01to2025-12-31" id="ixv-6041">315-5068</dei:LocalPhoneNumber>
+    <dei:EntityCurrentReportingStatus contextRef="From2025-04-01to2025-12-31" id="ixv-6042">Yes</dei:EntityCurrentReportingStatus>
+    <dei:EntityInteractiveDataCurrent contextRef="From2025-04-01to2025-12-31" id="ixv-6043">Yes</dei:EntityInteractiveDataCurrent>
+    <dei:EntityFilerCategory contextRef="From2025-04-01to2025-12-31" id="ixv-6044">Non-accelerated Filer</dei:EntityFilerCategory>
+    <dei:EntitySmallBusiness contextRef="From2025-04-01to2025-12-31" id="ixv-6045">true</dei:EntitySmallBusiness>
+    <dei:EntityEmergingGrowthCompany contextRef="From2025-04-01to2025-12-31" id="ixv-6046">false</dei:EntityEmergingGrowthCompany>
+    <dei:EntityShellCompany contextRef="From2025-04-01to2025-12-31" id="ixv-6047">false</dei:EntityShellCompany>
+    <dei:EntityCommonStockSharesOutstanding
+      contextRef="AsOf2026-02-17"
+      decimals="INF"
+      id="ixv-6048"
+      unitRef="Shares">59643062</dei:EntityCommonStockSharesOutstanding>
+    <us-gaap:CashAndCashEquivalentsAtCarryingValue
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_540"
+      unitRef="USD">1494</us-gaap:CashAndCashEquivalentsAtCarryingValue>
+    <us-gaap:CashAndCashEquivalentsAtCarryingValue
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_541"
+      unitRef="USD">2042</us-gaap:CashAndCashEquivalentsAtCarryingValue>
+    <us-gaap:PrepaidExpenseCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_542"
+      unitRef="USD">4766</us-gaap:PrepaidExpenseCurrent>
+    <us-gaap:PrepaidExpenseCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_543"
+      unitRef="USD">2478</us-gaap:PrepaidExpenseCurrent>
+    <us-gaap:AssetsCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_544"
+      unitRef="USD">6260</us-gaap:AssetsCurrent>
+    <us-gaap:AssetsCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_545"
+      unitRef="USD">4520</us-gaap:AssetsCurrent>
+    <us-gaap:Assets
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_546"
+      unitRef="USD">6260</us-gaap:Assets>
+    <us-gaap:Assets
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_547"
+      unitRef="USD">4520</us-gaap:Assets>
+    <us-gaap:AccountsPayableAndAccruedLiabilitiesCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_550"
+      unitRef="USD">63641</us-gaap:AccountsPayableAndAccruedLiabilitiesCurrent>
+    <us-gaap:AccountsPayableAndAccruedLiabilitiesCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_551"
+      unitRef="USD">68608</us-gaap:AccountsPayableAndAccruedLiabilitiesCurrent>
+    <grve:RelatedPartyPayablesCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_552"
+      unitRef="USD">719961</grve:RelatedPartyPayablesCurrent>
+    <grve:RelatedPartyPayablesCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_553"
+      unitRef="USD">608833</grve:RelatedPartyPayablesCurrent>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_554"
+      unitRef="USD">399506</us-gaap:DividendsPayableCurrent>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_555"
+      unitRef="USD">290550</us-gaap:DividendsPayableCurrent>
+    <grve:DividendPayableRelatedParties
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_556"
+      unitRef="USD">201286</grve:DividendPayableRelatedParties>
+    <grve:DividendPayableRelatedParties
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_557"
+      unitRef="USD">146390</grve:DividendPayableRelatedParties>
+    <us-gaap:LiabilitiesCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_558"
+      unitRef="USD">1384394</us-gaap:LiabilitiesCurrent>
+    <us-gaap:LiabilitiesCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_559"
+      unitRef="USD">1114381</us-gaap:LiabilitiesCurrent>
+    <us-gaap:Liabilities
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_560"
+      unitRef="USD">1384394</us-gaap:Liabilities>
+    <us-gaap:Liabilities
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_561"
+      unitRef="USD">1114381</us-gaap:Liabilities>
+    <us-gaap:PreferredStockParOrStatedValuePerShare
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="INF"
+      id="fid_39"
+      unitRef="USDPShares">0.10</us-gaap:PreferredStockParOrStatedValuePerShare>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_43"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_47"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:PreferredStockParOrStatedValuePerShare
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="INF"
+      id="fid_41"
+      unitRef="USDPShares">0.10</us-gaap:PreferredStockParOrStatedValuePerShare>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_45"
+      unitRef="Shares">2000</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_49"
+      unitRef="Shares">1983</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:PreferredStockValue
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_579"
+      unitRef="USD">198</us-gaap:PreferredStockValue>
+    <us-gaap:PreferredStockValue
+      contextRef="AsOf2025-03-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_580"
+      unitRef="USD">198</us-gaap:PreferredStockValue>
+    <us-gaap:CommonStockParOrStatedValuePerShare
+      contextRef="AsOf2025-12-31"
+      decimals="INF"
+      id="fid_55"
+      unitRef="USDPShares">0.001</us-gaap:CommonStockParOrStatedValuePerShare>
+    <us-gaap:CommonStockSharesAuthorized
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_57"
+      unitRef="Shares">200000000</us-gaap:CommonStockSharesAuthorized>
+    <us-gaap:CommonStockSharesIssued
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_59"
+      unitRef="Shares">59643062</us-gaap:CommonStockSharesIssued>
+    <us-gaap:CommonStockValue
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_567"
+      unitRef="USD">59643</us-gaap:CommonStockValue>
+    <us-gaap:CommonStockValue
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_568"
+      unitRef="USD">59643</us-gaap:CommonStockValue>
+    <us-gaap:AdditionalPaidInCapital
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_569"
+      unitRef="USD">34026869</us-gaap:AdditionalPaidInCapital>
+    <us-gaap:AdditionalPaidInCapital
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_570"
+      unitRef="USD">34026869</us-gaap:AdditionalPaidInCapital>
+    <us-gaap:RetainedEarningsAccumulatedDeficit
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_571"
+      unitRef="USD">-35464854</us-gaap:RetainedEarningsAccumulatedDeficit>
+    <us-gaap:RetainedEarningsAccumulatedDeficit
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_572"
+      unitRef="USD">-35196581</us-gaap:RetainedEarningsAccumulatedDeficit>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_573"
+      unitRef="USD">-1378134</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_574"
+      unitRef="USD">-1109861</us-gaap:StockholdersEquity>
+    <us-gaap:LiabilitiesAndStockholdersEquity
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_575"
+      unitRef="USD">6260</us-gaap:LiabilitiesAndStockholdersEquity>
+    <us-gaap:LiabilitiesAndStockholdersEquity
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_576"
+      unitRef="USD">4520</us-gaap:LiabilitiesAndStockholdersEquity>
+    <us-gaap:SellingGeneralAndAdministrativeExpense
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_494"
+      unitRef="USD">16041</us-gaap:SellingGeneralAndAdministrativeExpense>
+    <us-gaap:SellingGeneralAndAdministrativeExpense
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_495"
+      unitRef="USD">17255</us-gaap:SellingGeneralAndAdministrativeExpense>
+    <us-gaap:SellingGeneralAndAdministrativeExpense
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_496"
+      unitRef="USD">51523</us-gaap:SellingGeneralAndAdministrativeExpense>
+    <us-gaap:SellingGeneralAndAdministrativeExpense
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_497"
+      unitRef="USD">52187</us-gaap:SellingGeneralAndAdministrativeExpense>
+    <grve:Rent
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_498"
+      unitRef="USD">3600</grve:Rent>
+    <grve:Rent
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_499"
+      unitRef="USD">3600</grve:Rent>
+    <grve:Rent
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_500"
+      unitRef="USD">10800</grve:Rent>
+    <grve:Rent
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_501"
+      unitRef="USD">11835</grve:Rent>
+    <us-gaap:ProfessionalAndContractServicesExpense
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_502"
+      unitRef="USD">8476</us-gaap:ProfessionalAndContractServicesExpense>
+    <us-gaap:ProfessionalAndContractServicesExpense
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_503"
+      unitRef="USD">12176</us-gaap:ProfessionalAndContractServicesExpense>
+    <us-gaap:ProfessionalAndContractServicesExpense
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_504"
+      unitRef="USD">34847</us-gaap:ProfessionalAndContractServicesExpense>
+    <us-gaap:ProfessionalAndContractServicesExpense
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_505"
+      unitRef="USD">34132</us-gaap:ProfessionalAndContractServicesExpense>
+    <grve:ConsultingExpense
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_506"
+      unitRef="USD">5750</grve:ConsultingExpense>
+    <grve:ConsultingExpense
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_507"
+      unitRef="USD">0</grve:ConsultingExpense>
+    <grve:ConsultingExpense
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_508"
+      unitRef="USD">7250</grve:ConsultingExpense>
+    <grve:ConsultingExpense
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_509"
+      unitRef="USD">1250</grve:ConsultingExpense>
+    <us-gaap:OperatingExpenses
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_510"
+      unitRef="USD">33867</us-gaap:OperatingExpenses>
+    <us-gaap:OperatingExpenses
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_511"
+      unitRef="USD">33031</us-gaap:OperatingExpenses>
+    <us-gaap:OperatingExpenses
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_512"
+      unitRef="USD">104420</us-gaap:OperatingExpenses>
+    <us-gaap:OperatingExpenses
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_513"
+      unitRef="USD">99404</us-gaap:OperatingExpenses>
+    <us-gaap:OperatingIncomeLoss
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_514"
+      unitRef="USD">-33867</us-gaap:OperatingIncomeLoss>
+    <us-gaap:OperatingIncomeLoss
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_515"
+      unitRef="USD">-33031</us-gaap:OperatingIncomeLoss>
+    <us-gaap:OperatingIncomeLoss
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_516"
+      unitRef="USD">-104420</us-gaap:OperatingIncomeLoss>
+    <us-gaap:OperatingIncomeLoss
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_517"
+      unitRef="USD">-99404</us-gaap:OperatingIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_518"
+      unitRef="USD">-33867</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_519"
+      unitRef="USD">-33031</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_520"
+      unitRef="USD">-104420</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_521"
+      unitRef="USD">-99404</us-gaap:NetIncomeLoss>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_522"
+      unitRef="USD">54618</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_523"
+      unitRef="USD">54618</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_524"
+      unitRef="USD">163852</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_525"
+      unitRef="USD">163854</us-gaap:DividendsPreferredStock>
+    <us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_526"
+      unitRef="USD">-88485</us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic>
+    <us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_527"
+      unitRef="USD">-87649</us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic>
+    <us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_528"
+      unitRef="USD">-268272</us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic>
+    <us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_529"
+      unitRef="USD">-263258</us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic>
+    <us-gaap:EarningsPerShareDiluted
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="INF"
+      id="fid_530"
+      unitRef="USDPShares">-0.00</us-gaap:EarningsPerShareDiluted>
+    <us-gaap:EarningsPerShareDiluted
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="INF"
+      id="fid_531"
+      unitRef="USDPShares">-0.00</us-gaap:EarningsPerShareDiluted>
+    <us-gaap:EarningsPerShareDiluted
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="INF"
+      id="fid_532"
+      unitRef="USDPShares">-0.00</us-gaap:EarningsPerShareDiluted>
+    <us-gaap:EarningsPerShareDiluted
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="INF"
+      id="fid_533"
+      unitRef="USDPShares">-0.00</us-gaap:EarningsPerShareDiluted>
+    <us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_534"
+      unitRef="Shares">59643062</us-gaap:WeightedAverageNumberOfSharesOutstandingBasic>
+    <us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_535"
+      unitRef="Shares">59643062</us-gaap:WeightedAverageNumberOfSharesOutstandingBasic>
+    <us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_536"
+      unitRef="Shares">59643062</us-gaap:WeightedAverageNumberOfSharesOutstandingBasic>
+    <us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_537"
+      unitRef="Shares">59643062</us-gaap:WeightedAverageNumberOfSharesOutstandingBasic>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-03-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_653"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_656"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-03-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_654"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_657"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-03-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_655"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_658"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_659"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_660"
+      unitRef="USD">-35196581</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_661"
+      unitRef="USD">-1109861</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_662"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_663"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_664"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_665"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_666"
+      unitRef="USD">-54617</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-04-01to2025-06-30"
+      decimals="0"
+      id="fid_667"
+      unitRef="USD">-54617</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_668"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_669"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_670"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_671"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_672"
+      unitRef="USD">-38170</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-06-30"
+      decimals="0"
+      id="fid_673"
+      unitRef="USD">-38170</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_674"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_677"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_675"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_678"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_676"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_679"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_680"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_681"
+      unitRef="USD">-35289368</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-06-30"
+      decimals="0"
+      id="fid_682"
+      unitRef="USD">-1202648</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_683"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_684"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_685"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_686"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_687"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-07-01to2025-09-30"
+      decimals="0"
+      id="fid_688"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_689"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_690"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_691"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_692"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_693"
+      unitRef="USD">-32383</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-07-01to2025-09-30"
+      decimals="0"
+      id="fid_694"
+      unitRef="USD">-32383</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_695"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_698"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_696"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_699"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_697"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_700"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_701"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_702"
+      unitRef="USD">-35376369</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-09-30"
+      decimals="0"
+      id="fid_703"
+      unitRef="USD">-1289649</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_704"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_705"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_706"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_707"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_708"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_709"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_710"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_711"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_712"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_713"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_714"
+      unitRef="USD">-33867</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-10-01to2025-12-31"
+      decimals="0"
+      id="fid_715"
+      unitRef="USD">-33867</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_716"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_719"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_717"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_720"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2025-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_718"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_721"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_722"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_723"
+      unitRef="USD">-35464854</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_724"
+      unitRef="USD">-1378134</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-03-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_581"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_584"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-03-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_582"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_585"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-03-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_583"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_586"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_587"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_588"
+      unitRef="USD">-34847277</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-03-31"
+      decimals="0"
+      id="fid_589"
+      unitRef="USD">-760557</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_590"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_591"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_592"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_593"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_594"
+      unitRef="USD">-54617</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-04-01to2024-06-30"
+      decimals="0"
+      id="fid_595"
+      unitRef="USD">-54617</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_596"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_597"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_598"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_599"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_600"
+      unitRef="USD">-36539</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-06-30"
+      decimals="0"
+      id="fid_601"
+      unitRef="USD">-36539</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_602"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_605"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_603"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_606"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_604"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_607"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_608"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_609"
+      unitRef="USD">-34938433</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-06-30"
+      decimals="0"
+      id="fid_610"
+      unitRef="USD">-851713</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_611"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_612"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_613"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_614"
+      unitRef="USD">0</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_615"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-07-01to2024-09-30"
+      decimals="0"
+      id="fid_616"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_617"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_618"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_619"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_620"
+      unitRef="USD">0</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_621"
+      unitRef="USD">-29833</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-07-01to2024-09-30"
+      decimals="0"
+      id="fid_622"
+      unitRef="USD">-29833</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_623"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_626"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_624"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_627"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_625"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_628"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_629"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_630"
+      unitRef="USD">-35022884</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-09-30"
+      decimals="0"
+      id="fid_631"
+      unitRef="USD">-936164</us-gaap:StockholdersEquity>
+    <grve:AccruedDividend
+      contextRef="From2024-10-01to2024-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_636"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <grve:AccruedDividend
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_637"
+      unitRef="USD">-54618</grve:AccruedDividend>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-10-01to2024-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_642"
+      unitRef="USD">-33031</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-10-01to2024-12-31"
+      decimals="0"
+      id="fid_643"
+      unitRef="USD">-33031</us-gaap:NetIncomeLoss>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_644"
+      unitRef="Shares">100</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31_grve_PreferredStockSeriesAStockMember"
+      decimals="0"
+      id="fid_647"
+      unitRef="USD">10</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_645"
+      unitRef="Shares">1983</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31_grve_PreferredStockSeriesBStockMember"
+      decimals="0"
+      id="fid_648"
+      unitRef="USD">198</us-gaap:StockholdersEquity>
+    <us-gaap:SharesIssued
+      contextRef="AsOf2024-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_646"
+      unitRef="Shares">59643062</us-gaap:SharesIssued>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31_us-gaap_CommonStockMember"
+      decimals="0"
+      id="fid_649"
+      unitRef="USD">59643</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31_us-gaap_AdditionalPaidInCapitalMember"
+      decimals="0"
+      id="fid_650"
+      unitRef="USD">34026869</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31_us-gaap_RetainedEarningsMember"
+      decimals="0"
+      id="fid_651"
+      unitRef="USD">-35110533</us-gaap:StockholdersEquity>
+    <us-gaap:StockholdersEquity
+      contextRef="AsOf2024-12-31"
+      decimals="0"
+      id="fid_652"
+      unitRef="USD">-1023813</us-gaap:StockholdersEquity>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_726"
+      unitRef="USD">-104420</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_727"
+      unitRef="USD">-99404</us-gaap:NetIncomeLoss>
+    <grve:AccruedPayroll
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_729"
+      unitRef="USD">36000</grve:AccruedPayroll>
+    <grve:AccruedPayroll
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_730"
+      unitRef="USD">36000</grve:AccruedPayroll>
+    <us-gaap:IncreaseDecreaseInPrepaidExpense
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_732"
+      unitRef="USD">2288</us-gaap:IncreaseDecreaseInPrepaidExpense>
+    <us-gaap:IncreaseDecreaseInPrepaidExpense
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_733"
+      unitRef="USD">3028</us-gaap:IncreaseDecreaseInPrepaidExpense>
+    <us-gaap:IncreaseDecreaseInAccountsPayableAndAccruedLiabilities
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_734"
+      unitRef="USD">-4967</us-gaap:IncreaseDecreaseInAccountsPayableAndAccruedLiabilities>
+    <us-gaap:IncreaseDecreaseInAccountsPayableAndAccruedLiabilities
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_735"
+      unitRef="USD">-22897</us-gaap:IncreaseDecreaseInAccountsPayableAndAccruedLiabilities>
+    <us-gaap:NetCashProvidedByUsedInOperatingActivities
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_736"
+      unitRef="USD">-75675</us-gaap:NetCashProvidedByUsedInOperatingActivities>
+    <us-gaap:NetCashProvidedByUsedInOperatingActivities
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_737"
+      unitRef="USD">-89329</us-gaap:NetCashProvidedByUsedInOperatingActivities>
+    <us-gaap:ProceedsFromRelatedPartyDebt
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_739"
+      unitRef="USD">79319</us-gaap:ProceedsFromRelatedPartyDebt>
+    <us-gaap:ProceedsFromRelatedPartyDebt
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_740"
+      unitRef="USD">88892</us-gaap:ProceedsFromRelatedPartyDebt>
+    <us-gaap:RepaymentsOfRelatedPartyDebt
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_741"
+      unitRef="USD">4192</us-gaap:RepaymentsOfRelatedPartyDebt>
+    <us-gaap:RepaymentsOfRelatedPartyDebt
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_742"
+      unitRef="USD">0</us-gaap:RepaymentsOfRelatedPartyDebt>
+    <us-gaap:NetCashProvidedByUsedInFinancingActivities
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_743"
+      unitRef="USD">75127</us-gaap:NetCashProvidedByUsedInFinancingActivities>
+    <us-gaap:NetCashProvidedByUsedInFinancingActivities
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_744"
+      unitRef="USD">88892</us-gaap:NetCashProvidedByUsedInFinancingActivities>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseExcludingExchangeRateEffect
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_745"
+      unitRef="USD">-548</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseExcludingExchangeRateEffect>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseExcludingExchangeRateEffect
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_746"
+      unitRef="USD">-437</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseExcludingExchangeRateEffect>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_747"
+      unitRef="USD">2042</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+      contextRef="AsOf2024-03-31"
+      decimals="0"
+      id="fid_748"
+      unitRef="USD">1688</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_749"
+      unitRef="USD">1494</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents>
+    <us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+      contextRef="AsOf2024-12-31"
+      decimals="0"
+      id="fid_750"
+      unitRef="USD">1251</us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents>
+    <us-gaap:InterestPaidNet
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_752"
+      unitRef="USD">0</us-gaap:InterestPaidNet>
+    <us-gaap:InterestPaidNet
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_753"
+      unitRef="USD">0</us-gaap:InterestPaidNet>
+    <us-gaap:IncomeTaxesPaidNet
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_754"
+      unitRef="USD">0</us-gaap:IncomeTaxesPaidNet>
+    <us-gaap:IncomeTaxesPaidNet
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_755"
+      unitRef="USD">0</us-gaap:IncomeTaxesPaidNet>
+    <us-gaap:BusinessDescriptionAndBasisOfPresentationTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_280">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 1 &#x2013; ORGANIZATION AND OPERATIONS&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;Current Operations&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Groove Botanicals, Inc. (the &#x201c;Company&#x201d;), (formerly known as Avalon Oil &amp;amp; Gas, Inc.), was originally incorporated in Colorado on April 25, 1991, under the name Snow Runner (USA), Inc. The Company was the general partner of Snow Runner (USA) Ltd.; a Colorado limited partnership to sell proprietary snow skates under the name &#x201c;Sled Dogs&#x201d; which was dissolved in August 1992. In late 1993, the Company relocated its operations to Minnesota and in January 1994 changed our name to Snow Runner, Inc. In November 1994 we changed our name to the Sled Dogs Company. On May 25, 1999, we filed articles of merger with Xdogs.com Inc., changing our state of domicile to Nevada. On June 22, 2005, the Corporation changed our name from XDOGS.com, Inc. to Avalon Oil and Gas, Inc. On May 14, 2018, the Corporation changed our name from Avalon Oil and Gas, Inc., to Groove Botanicals, Inc. Until August 2, 2021, when we filed a 15-12B to suspend duty to file reports under sections 13 and 15(d) of the securities exchange act of 1934, we were a reporting company. Subsequently, on September 14, 2023, we filed a Form 10 with the Securities and Exchange Commission, which became effective 60 days later.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Since inception we have operated unsuccessfully, in various different industries. Currently, we plan to assemble a portfolio of early-stage EV Battery Technologies developed from Universities in Norway, Sweden and Finland, and seek grants from the State of Minnesota Department of Economic Development to find and identify corporate partners to commercialize these technologies and ultimately produce revenues for the Company. The Company does not currently own any patents or technologies related to the EV battery industry, and the process to acquire patents and technologies can be costly, and as such, the Company is not guaranteed to acquire any such patents.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Management believes that the technologies available in the specialized energy industry present a stable business model with high growth potential and we are actively working towards an impactful acquisition in this space.&lt;/p&gt;</us-gaap:BusinessDescriptionAndBasisOfPresentationTextBlock>
+    <us-gaap:SignificantAccountingPoliciesTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_281">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 2 &#x2013; SUMMARY OF SIGNIFICANT ACCOUNTING POLICIES&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Basis of Presentation&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The accompanying unaudited condensed financial statements of the Company have been prepared in accordance with the rules and regulations of the Securities and Exchange Commission (the &#x201c;SEC&#x201d;), including the instructions to Form 10-Q and Regulation S-X. Certain information and note disclosures normally included in financial statements prepared in accordance with generally accepted accounting principles in the United States of America (&#x201c;U.S. GAAP&#x201d;), have been condensed or omitted from these statements pursuant to such rules and regulations and, accordingly, they do not include all the information and notes necessary for comprehensive financial statements and should be read in conjunction with our audited financial statements included in our Annual Report on Form 10-K for the year ended March 31, 2025.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In the opinion of the management of the Company, all adjustments, which are of a normal recurring nature, necessary for a fair statement of the results for the three and nine-month periods have been made. Results for the interim periods presented are not necessarily indicative of the results that might be expected for the entire fiscal year.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Basis of Consolidation&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company&#x2019;s condensed consolidated financial statements include the accounts of Groove Botanicals, Inc., and its&#160;two 100% controlled non-operating subsidiaries formed in Wyoming, Biotrex, Inc., and Maxidyne, Inc. Intercompany accounts and transactions have been eliminated in consolidation.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Use of Estimates&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The preparation of consolidated financial statements in conformity with generally accepted accounting principles requires management to make estimates and assumptions that affect reported amounts of assets and liabilities and disclosure of contingent assets and liabilities at the date of the financial statements and the reported amounts of revenues and expenses during the reporting period. Specifically, such estimates were made by the Company for the valuation of derivative liability, stock compensation and beneficial conversion feature expenses. Actual results could differ from those estimates.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Financial Instruments&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company's financial instruments primarily consist of cash and cash equivalents, accounts payable and accrued liabilities, related party payables, dividends payable and other debt. The carrying values of the Company's financial instruments approximate fair value. FASB ASC 820, Fair Value Measurements and Disclosures ("ASC 820") establishes a framework for all fair value measurements and expands disclosures related to fair value measurement and developments. ASC 820 defines fair value as the price that would be received to sell an asset or paid to transfer a liability in an orderly transaction between market participants at the measurement date. ASC 820 requires that assets and liabilities measured at fair value are classified and disclosed in one of the following three categories: Level 1&#x2014;Quoted market prices for identical assets or liabilities in active markets or observable inputs; Level 2&#x2014;Significant other observable inputs that can be corroborated by observable market data; and Level 3&#x2014;Significant unobservable inputs that cannot be corroborated by observable market data. The Company believes that the carrying amounts of cash and cash equivalents, accounts payable, related party payables, accrued dividends and debt approximate fair value based on either their short-term nature or on terms currently available to the Company in financial markets.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Net Loss Per Share&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company computes net income (loss) per share in accordance with ASC 260, Earning per Share. ASC 260 requires presentation of both basic and diluted earnings per share (EPS) on the face of the income statement. Basic EPS is computed by dividing net income (loss) available to common shareholders (numerator) by the weighted average number of shares outstanding (denominator) during the period. Diluted EPS gives effect to all dilutive potential common shares outstanding during the period using the treasury stock method and convertible preferred stock using the if-converted method. In computing Diluted EPS, the average stock price for the period is used in determining the number of shares assumed to be purchased from the exercise of stock options or warrants. Diluted EPS excludes all dilutive potential shares if their effect is anti-dilutive. As the Company has continued to report operating losses for the periods covered by this report, the impact of potentially dilutive securities would be anti-dilutive and therefore is not presented.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Income Taxes&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company is taxed as a C corporation for income tax purposes. The Company accounts for income taxes under the liability method, and deferred tax assets and liabilities are recognized for the future tax consequences attributable to differences between the financial statement carrying values of existing assets and liabilities and their respective tax bases. Deferred tax assets and liabilities are measured using enacted tax rates in effect for the year in which those temporary differences are expected to be recovered or settled. A valuation allowance is provided on deferred tax assets if it is determined that it is more likely than not that the deferred tax asset will not be realized. The Company records interest, net of any applicable related income tax benefit, on potential income tax contingencies as a component of income tax expense. The Company records tax positions taken or expected to be taken in a tax return based upon the amount that is more likely than not to be realized or paid, including in connection with the resolution of any related appeals or other legal processes. Accordingly, the Company recognizes liabilities for certain unrecognized tax benefits based on the amounts that are more likely than not to be settled with the relevant taxing authority. The Company recognizes interest and/or penalties related to unrecognized tax benefits as a component of income tax expense.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;Recent Accounting Standard Adopted&lt;/strong&gt;:&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In November 2023, the FASB issued Accounting Standards Update (&#x201c;ASU&#x201d;) 2023-07 &#x2013; Improvements to Reportable Segment Disclosures, which enhances the disclosures required for reportable segments in annual and interim financial statements, including additional, more detailed information about a reportable segment&#x2019;s expenses. The standard is effective for fiscal years beginning after December 15, 2023, and interim periods within fiscal years beginning after December 15, 2024. The Company adopted ASU 2023-07 for the year ended March 31, 2025, retrospectively to all periods presented in the financial statements. The adoption of this ASU had no impact on reportable segments identified and had no effect on the Company&#x2019;s financial position, results of operations, or cash flows.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In December 2023, the Financial Accounting Standards Board issued Accounting Standards Update (&#x201c;ASU&#x201d;) 2023-09 &#x2013; Improvements to Income Tax Disclosures, which enhances the transparency and decision usefulness of income tax disclosures. The standard is effective for public companies for annual periods beginning after December 15, 2024. Early adoption is available. The Company adopted ASU 2023-09 for the year beginning April 1, 2025.&#160; The adoption of this ASU had no impact on the Company&#x2019;s financial position, results of operations, or cash flows. &lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;Recent Accounting Standard Not Yet Adopted:&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In November 2024, the FASB issued ASU 2024-03, &#x2013; Income Statement&#x2014;Reporting Comprehensive Income&#x2014;Expense Disaggregation Disclosures (Subtopic 220-40): Disaggregation of Income Statement Expenses (&#x201c;ASU 2024-03&#x201d;). This ASU requires disclosures about specific types of expenses included in the expense captions presented on the face of the statement of operations as well as disclosures about selling expenses. The standard is effective for annual reporting periods beginning after December 15, 2026, and interim reporting periods beginning after December 15, 2027. The requirements will be applied prospectively with the option for retrospective application. Early adoption is permitted. The Company will evaluate the full extent of the adoption of ASU 2024-03 but believes it will not have a material impact on its consolidated financial statements and disclosures.&lt;/p&gt;</us-gaap:SignificantAccountingPoliciesTextBlock>
+    <us-gaap:BasisOfAccountingPolicyPolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_289">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The accompanying unaudited condensed financial statements of the Company have been prepared in accordance with the rules and regulations of the Securities and Exchange Commission (the &#x201c;SEC&#x201d;), including the instructions to Form 10-Q and Regulation S-X. Certain information and note disclosures normally included in financial statements prepared in accordance with generally accepted accounting principles in the United States of America (&#x201c;U.S. GAAP&#x201d;), have been condensed or omitted from these statements pursuant to such rules and regulations and, accordingly, they do not include all the information and notes necessary for comprehensive financial statements and should be read in conjunction with our audited financial statements included in our Annual Report on Form 10-K for the year ended March 31, 2025.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In the opinion of the management of the Company, all adjustments, which are of a normal recurring nature, necessary for a fair statement of the results for the three and nine-month periods have been made. Results for the interim periods presented are not necessarily indicative of the results that might be expected for the entire fiscal year.&lt;/p&gt;</us-gaap:BasisOfAccountingPolicyPolicyTextBlock>
+    <us-gaap:ConsolidationPolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_290">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company&#x2019;s condensed consolidated financial statements include the accounts of Groove Botanicals, Inc., and its&#160;two 100% controlled non-operating subsidiaries formed in Wyoming, Biotrex, Inc., and Maxidyne, Inc. Intercompany accounts and transactions have been eliminated in consolidation.&lt;/p&gt;</us-gaap:ConsolidationPolicyTextBlock>
+    <us-gaap:UseOfEstimates contextRef="From2025-04-01to2025-12-31" id="fid_291">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The preparation of consolidated financial statements in conformity with generally accepted accounting principles requires management to make estimates and assumptions that affect reported amounts of assets and liabilities and disclosure of contingent assets and liabilities at the date of the financial statements and the reported amounts of revenues and expenses during the reporting period. Specifically, such estimates were made by the Company for the valuation of derivative liability, stock compensation and beneficial conversion feature expenses. Actual results could differ from those estimates.&lt;/p&gt;</us-gaap:UseOfEstimates>
+    <us-gaap:FairValueOfFinancialInstrumentsPolicy contextRef="From2025-04-01to2025-12-31" id="fid_292">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company's financial instruments primarily consist of cash and cash equivalents, accounts payable and accrued liabilities, related party payables, dividends payable and other debt. The carrying values of the Company's financial instruments approximate fair value. FASB ASC 820, Fair Value Measurements and Disclosures ("ASC 820") establishes a framework for all fair value measurements and expands disclosures related to fair value measurement and developments. ASC 820 defines fair value as the price that would be received to sell an asset or paid to transfer a liability in an orderly transaction between market participants at the measurement date. ASC 820 requires that assets and liabilities measured at fair value are classified and disclosed in one of the following three categories: Level 1&#x2014;Quoted market prices for identical assets or liabilities in active markets or observable inputs; Level 2&#x2014;Significant other observable inputs that can be corroborated by observable market data; and Level 3&#x2014;Significant unobservable inputs that cannot be corroborated by observable market data. The Company believes that the carrying amounts of cash and cash equivalents, accounts payable, related party payables, accrued dividends and debt approximate fair value based on either their short-term nature or on terms currently available to the Company in financial markets.&lt;/p&gt;</us-gaap:FairValueOfFinancialInstrumentsPolicy>
+    <us-gaap:EarningsPerSharePolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_293">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company computes net income (loss) per share in accordance with ASC 260, Earning per Share. ASC 260 requires presentation of both basic and diluted earnings per share (EPS) on the face of the income statement. Basic EPS is computed by dividing net income (loss) available to common shareholders (numerator) by the weighted average number of shares outstanding (denominator) during the period. Diluted EPS gives effect to all dilutive potential common shares outstanding during the period using the treasury stock method and convertible preferred stock using the if-converted method. In computing Diluted EPS, the average stock price for the period is used in determining the number of shares assumed to be purchased from the exercise of stock options or warrants. Diluted EPS excludes all dilutive potential shares if their effect is anti-dilutive. As the Company has continued to report operating losses for the periods covered by this report, the impact of potentially dilutive securities would be anti-dilutive and therefore is not presented.&lt;/p&gt;</us-gaap:EarningsPerSharePolicyTextBlock>
+    <us-gaap:IncomeTaxPolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_294">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company is taxed as a C corporation for income tax purposes. The Company accounts for income taxes under the liability method, and deferred tax assets and liabilities are recognized for the future tax consequences attributable to differences between the financial statement carrying values of existing assets and liabilities and their respective tax bases. Deferred tax assets and liabilities are measured using enacted tax rates in effect for the year in which those temporary differences are expected to be recovered or settled. A valuation allowance is provided on deferred tax assets if it is determined that it is more likely than not that the deferred tax asset will not be realized. The Company records interest, net of any applicable related income tax benefit, on potential income tax contingencies as a component of income tax expense. The Company records tax positions taken or expected to be taken in a tax return based upon the amount that is more likely than not to be realized or paid, including in connection with the resolution of any related appeals or other legal processes. Accordingly, the Company recognizes liabilities for certain unrecognized tax benefits based on the amounts that are more likely than not to be settled with the relevant taxing authority. The Company recognizes interest and/or penalties related to unrecognized tax benefits as a component of income tax expense.&lt;/p&gt;</us-gaap:IncomeTaxPolicyTextBlock>
+    <us-gaap:NewAccountingPronouncementsPolicyPolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_295">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In November 2023, the FASB issued Accounting Standards Update (&#x201c;ASU&#x201d;) 2023-07 &#x2013; Improvements to Reportable Segment Disclosures, which enhances the disclosures required for reportable segments in annual and interim financial statements, including additional, more detailed information about a reportable segment&#x2019;s expenses. The standard is effective for fiscal years beginning after December 15, 2023, and interim periods within fiscal years beginning after December 15, 2024. The Company adopted ASU 2023-07 for the year ended March 31, 2025, retrospectively to all periods presented in the financial statements. The adoption of this ASU had no impact on reportable segments identified and had no effect on the Company&#x2019;s financial position, results of operations, or cash flows.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In December 2023, the Financial Accounting Standards Board issued Accounting Standards Update (&#x201c;ASU&#x201d;) 2023-09 &#x2013; Improvements to Income Tax Disclosures, which enhances the transparency and decision usefulness of income tax disclosures. The standard is effective for public companies for annual periods beginning after December 15, 2024. Early adoption is available. The Company adopted ASU 2023-09 for the year beginning April 1, 2025.&#160; The adoption of this ASU had no impact on the Company&#x2019;s financial position, results of operations, or cash flows. &lt;/p&gt;</us-gaap:NewAccountingPronouncementsPolicyPolicyTextBlock>
+    <grve:RecentAccountingStandardNotYetAdoptedPolicyTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_296">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;In November 2024, the FASB issued ASU 2024-03, &#x2013; Income Statement&#x2014;Reporting Comprehensive Income&#x2014;Expense Disaggregation Disclosures (Subtopic 220-40): Disaggregation of Income Statement Expenses (&#x201c;ASU 2024-03&#x201d;). This ASU requires disclosures about specific types of expenses included in the expense captions presented on the face of the statement of operations as well as disclosures about selling expenses. The standard is effective for annual reporting periods beginning after December 15, 2026, and interim reporting periods beginning after December 15, 2027. The requirements will be applied prospectively with the option for retrospective application. Early adoption is permitted. The Company will evaluate the full extent of the adoption of ASU 2024-03 but believes it will not have a material impact on its consolidated financial statements and disclosures.&lt;/p&gt;</grve:RecentAccountingStandardNotYetAdoptedPolicyTextBlock>
+    <us-gaap:SubstantialDoubtAboutGoingConcernTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_282">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 3 &#x2013; GOING CONCERN&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The accompanying consolidated financial statements&#160;have been prepared on a going concern basis which contemplates the realization of assets and the satisfaction of liabilities in the normal course of business. As shown in the consolidated financial statements, the Company has incurred recurring net losses since its inception and has raised limited capital. The Company had a net loss of $104,420 and $99,404 for the nine months ended December 31, 2025, and December 31, 2024, respectively. The Company&#x2019;s accumulated deficit was $35,464,854 and $35,196,581 as of&#160;December 31, 2025, and March 31, 2025, respectively. These factors raise substantial doubt regarding the Company&#x2019;s ability to continue as a going concern. The consolidated financial statements do not include any adjustment relating to the recoverability and classification of liabilities that might be necessary should the Company be unable to continue as a going concern. The Company is taking certain steps to provide the necessary capital to continue its operations. These steps include but are not limited to: 1) focus on our new business model and 2) raising equity or debt financing. Our auditors express substantial doubt about our ability to continue as a going concern.&lt;/p&gt;</us-gaap:SubstantialDoubtAboutGoingConcernTextBlock>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2025-04-01to2025-12-31"
+      decimals="0"
+      id="fid_298"
+      unitRef="USD">-104420</us-gaap:NetIncomeLoss>
+    <us-gaap:NetIncomeLoss
+      contextRef="From2024-04-01to2024-12-31"
+      decimals="0"
+      id="fid_299"
+      unitRef="USD">-99404</us-gaap:NetIncomeLoss>
+    <us-gaap:RetainedEarningsAccumulatedDeficit
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_300"
+      unitRef="USD">-35464854</us-gaap:RetainedEarningsAccumulatedDeficit>
+    <us-gaap:RetainedEarningsAccumulatedDeficit
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_301"
+      unitRef="USD">-35196581</us-gaap:RetainedEarningsAccumulatedDeficit>
+    <us-gaap:CashAndCashEquivalentsDisclosureTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_283">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 4 &#x2013; CASH&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company considers all highly liquid investments purchased with an original maturity of three months or less to be cash equivalents. As of December 31, 2025, the Company&#x2019;s cash consisted of non-restricted cash.&lt;/p&gt;</us-gaap:CashAndCashEquivalentsDisclosureTextBlock>
+    <us-gaap:RelatedPartyTransactionsDisclosureTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_284">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 5 &#x2013; RELATED PARTY TRANSACTIONS&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company had related party payables of $719,961&#160;and $608,833&#160;as of December 31, 2025, and March 31, 2025, respectively. These amounts consist of funds contributed by the management for the purpose of providing financing during periods of low or negative cashflow in order to cover essential costs of continuing operations, as well as funds payable to management as compensation. On an annual basis the Company accrues $48,000 of wages payable to its CEO,&#160;Kent Rodriguez, under the terms of a four-year employment agreement entered into April 1, 2020, which designates monthly payments due Mr. Rodriguez in the amount of $4,000. On July 30, 2024, the Company and Mr. Kent Rodriguez agreed to extend the term of this Employment Contract, which expired on March 31, 2024, for a further two-year term to March 31, 2026, retroactive to April 1, 2024, on the same terms and conditions.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;During each of the nine months ended December 31, 2025, and 2024, the Company accrued $30,000 in preferred dividends from the Series A preferred shares to Mr. Kent Rodriguez, the sole shareholder of the Series A Preferred shares. Upon conversion the number of shares of common stock to be exchanged for the Series A Preferred shares shall equal 51% of the then fully diluted issued and outstanding common stock at the time of conversion. Further the Company accrued dividends of $24,896 in each of the nine months ended December 31, 2025, and 2024 with respect to 18.6% of the Series B Preferred shares controlled by Kent Rodriguez.&lt;/p&gt;</us-gaap:RelatedPartyTransactionsDisclosureTextBlock>
+    <grve:RelatedPartyPayableCurrent
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_302"
+      unitRef="USD">719961</grve:RelatedPartyPayableCurrent>
+    <grve:RelatedPartyPayableCurrent
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_303"
+      unitRef="USD">608833</grve:RelatedPartyPayableCurrent>
+    <grve:WagesPayable
+      contextRef="AsOf2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_364"
+      unitRef="USD">48000</grve:WagesPayable>
+    <grve:MonthlyPaymentsDue
+      contextRef="AsOf2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_363"
+      unitRef="USD">4000</grve:MonthlyPaymentsDue>
+    <grve:DescriptionOfEmploymentAgreement
+      contextRef="From2024-07-01to2024-07-30_us-gaap_SeriesAPreferredStockMember"
+      id="fid_304">Mr. Kent Rodriguez agreed to extend the term of this Employment Contract, which expired on March 31, 2024, for a further two-year term to March 31, 2026, retroactive to April 1, 2024, on the same terms and conditions</grve:DescriptionOfEmploymentAgreement>
+    <grve:AccuredDividend
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_360"
+      unitRef="USD">30000</grve:AccuredDividend>
+    <grve:PreferredStockPercentage
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="2"
+      id="fid_361"
+      unitRef="Pure">0.51</grve:PreferredStockPercentage>
+    <grve:DividendOnPreferredStock
+      contextRef="From2025-04-01to2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_309"
+      unitRef="USD">24896</grve:DividendOnPreferredStock>
+    <grve:PreferredStockPercentage
+      contextRef="From2025-04-01to2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="3"
+      id="fid_362"
+      unitRef="Pure">0.186</grve:PreferredStockPercentage>
+    <us-gaap:PreferredStockTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_285">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 6 &#x2013; PREFERRED STOCK&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company is authorized to issue 1,000,000 shares of Preferred Stock.&#160;We have authorized&#160;100&#160;shares of Series A Preferred Stock and&#160;2,000&#160;shares of Series B Preferred Stock, respectively, both with a par value of $0.10. As of December 31, 2025, and December 31, 2024, there were&#160;100&#160;and&#160;1,983&#160;shares issued and outstanding for Series A Preferred Stock and Series B Preferred Stock, respectively.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Series A Preferred Stock holds designations of cash dividends at the rate of 8% of the amount per share of Series A Preferred Stock per annum in the form of &#x201c;Preferred Dividends&#x201d;, voting rights on an as-converted to Common Stock basis, liquidation preferences, and conversion rights in which each share of Series A Preferred Stock shall, upon conversion, represent 0.51% of the then &#x201c;Fully-Diluted Shares Outstanding&#x201d; of the Company. On January 12, 2018, our Board of Directors agreed to amend Designation of the Series A Convertible Preferred Stock be amended by changing the ratio for conversion, in Article IV, subparagraph (a), from 0.4% to 0.51% so that upon conversion the number of shares of common stock to be exchanged shall equal 51% of the then issued and outstanding common stock. In addition, on January 12, 2018, the Company and the Series A Holder agreed to forgive all accrued interest to date on Series A, and to pause any accruals until April 1, 2023. The Series A Convertible Preferred Stock carries liquidating preference, over all other classes of stock, equal to the amount paid for the stock plus any unpaid dividends. Currently the value of the liquidation preference is $500,000, the amount of debt that the related party converted into the preferred stock. If this Preferred Stock were to be redeemed by the holder, it would result in an aggregate of the $500,000 liquidation preference, on a per share basis, this would equal $5,000&#160;per share. The Company and Series A Preferred Holder agreed to forgive all accrued interest and arrearages in preferred share dividends of Series A Preferred Stock through March 31, 2023. Dividends began to accrue on the Series A Preferred Stock as of April 1, 2023. During the three and nine months ended December 31, 2025, and 2024, the holder of the Series A preferred shares, Mr. Kent Rodriguez, CEO, accrued $10,000 and $30,000, respectively in preferred dividends from the Series A preferred shares. A total of $110,000 and $80,000 in accrued dividends with respect to the Series A preferred shares held by Mr. Rodriquez was outstanding at December 31, 2025, and March 31, 2025, respectively.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Series B Preferred Stock holds designations of being ranked junior to the Series A Preferred Stock, cash dividends at the rate of 9% of the amount per share of Series B Preferred Stock per annum in the form of &#x201c;Preferred Dividends&#x201d;, a dividend received deduction for federal income tax purposes, liquidation preferences ranked junior to the Series A Preferred Stock, redemption of the Series B Preferred Stock by the Company at 105% of the Stated Value, plus accrued and unpaid Dividends, if prior to the two year anniversary of the Issuance Date, or at 100% of the State Value, plus accrued and unpaid Dividends, if on or after the two year anniversary of the Issuance Date, no voting rights, and right&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;to notice of certain corporate actions. All accrued dividends on the Series B were settled through March 31, 2023, and none remained outstanding at March 31, 2023. Dividends began to accrue on the Series B Preferred Stock as of April 1, 2023. During the nine months ended December 31, 2025, and 2024, the holders of the Series B preferred shares accrued $133,853 in preferred dividends from the Series B preferred shares. A total of $490,792 and $356,940 in Preferred B dividends was outstanding at December 31, 2025 and March 31, 2025, respectively, including dividends accrued for the benefit of Mr. Kent Rodriguez, CEO, of $8,299 and $24,896 for each respective three and nine-month period ended December 31, 2025 and 2024. Mr. Rodriguez holds 18.6% of the Series B preferred shares.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;A summary of accrued dividends payable with respect to the Series A and B Preferred shares on the Company&#x2019;s balance sheets are set out below. Dividends accrued for the benefit of the Company&#x2019;s CEO are included in Dividends payable, related party:&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;table cellpadding="0" style="border-spacing:0;text-align:left;font:10pt times new roman;width:100%"&gt;&lt;tbody&gt;&lt;tr style="height:15px"&gt;&lt;td style="vertical-align:bottom;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Schedule of dividends payable, related party&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="width:9%;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="width:9%;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px"&gt;&lt;td&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:center;"&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;December 31, 2025&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;$&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:center;"&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;March 31, 2025 &lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;$&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px;background-color:#cceeff"&gt;&lt;td style="vertical-align:top;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Dividends payable&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="width:9%;vertical-align:bottom;text-align:right;"&gt;399,506&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="width:9%;vertical-align:bottom;text-align:right;"&gt;290,550&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px;background-color:#ffffff"&gt;&lt;td style="vertical-align:top;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Dividends payable, related party&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="BORDER-BOTTOM: 1px solid;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:right;"&gt;201,286&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="BORDER-BOTTOM: 1px solid;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:right;"&gt;146,390&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;</us-gaap:PreferredStockTextBlock>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-12-31_grve_AuthorizedToIssuedMember"
+      decimals="0"
+      id="fid_453"
+      unitRef="Shares">1000000</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_317"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockSharesAuthorized
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_319"
+      unitRef="Shares">2000</us-gaap:PreferredStockSharesAuthorized>
+    <us-gaap:PreferredStockParOrStatedValuePerShare
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="INF"
+      id="fid_321"
+      unitRef="USDPShares">0.10</us-gaap:PreferredStockParOrStatedValuePerShare>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_325"
+      unitRef="Shares">100</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:PreferredStockSharesIssued
+      contextRef="AsOf2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_327"
+      unitRef="Shares">1983</us-gaap:PreferredStockSharesIssued>
+    <us-gaap:ConvertiblePreferredStockTermsOfConversion
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      id="fid_365">from 0.4% to 0.51% so that upon conversion the number of shares of common stock to be exchanged shall equal 51% of the then issued and outstanding common stock</us-gaap:ConvertiblePreferredStockTermsOfConversion>
+    <us-gaap:PreferredStockLiquidationPreferenceValue
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_333"
+      unitRef="USD">500000</us-gaap:PreferredStockLiquidationPreferenceValue>
+    <grve:LiquidationPreferenceAmount
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_345"
+      unitRef="USD">500000</grve:LiquidationPreferenceAmount>
+    <us-gaap:PreferredStockLiquidationPreference
+      contextRef="AsOf2025-12-31"
+      decimals="INF"
+      id="fid_334"
+      unitRef="USDPShares">5000</us-gaap:PreferredStockLiquidationPreference>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_337"
+      unitRef="USD">10000</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2024-04-01to2024-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_338"
+      unitRef="USD">30000</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPayableCurrentAndNoncurrent
+      contextRef="AsOf2025-12-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_343"
+      unitRef="USD">110000</us-gaap:DividendsPayableCurrentAndNoncurrent>
+    <us-gaap:DividendsPayableCurrentAndNoncurrent
+      contextRef="AsOf2025-03-31_us-gaap_SeriesAPreferredStockMember"
+      decimals="0"
+      id="fid_344"
+      unitRef="USD">80000</us-gaap:DividendsPayableCurrentAndNoncurrent>
+    <us-gaap:ConvertiblePreferredStockTermsOfConversion
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      id="fid_366">Series A Preferred Stock, redemption of the Series B Preferred Stock by the Company at 105% of the Stated Value</us-gaap:ConvertiblePreferredStockTermsOfConversion>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2025-04-01to2025-12-31_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_341"
+      unitRef="USD">133853</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_347"
+      unitRef="USD">490792</us-gaap:DividendsPayableCurrent>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-03-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_348"
+      unitRef="USD">356940</us-gaap:DividendsPayableCurrent>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2025-04-01to2025-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_339"
+      unitRef="USD">8299</us-gaap:DividendsPreferredStock>
+    <us-gaap:DividendsPreferredStock
+      contextRef="From2024-04-01to2024-12-31_grve_KentRodriguezMember_us-gaap_SeriesBPreferredStockMember"
+      decimals="0"
+      id="fid_340"
+      unitRef="USD">24896</us-gaap:DividendsPreferredStock>
+    <us-gaap:ScheduleOfDividendsPayableTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_297">&lt;table cellpadding="0" style="border-spacing:0;text-align:left;font:10pt times new roman;width:100%"&gt;&lt;tbody&gt;&lt;tr style="height:15px"&gt;&lt;td style="vertical-align:bottom;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Schedule of dividends payable, related party&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="width:9%;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="width:9%;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px"&gt;&lt;td&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:center;"&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;December 31, 2025&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;$&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="hdcell" colspan="2" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:center;"&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;March 31, 2025 &lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:center;"&gt;&lt;strong&gt;$&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px;background-color:#cceeff"&gt;&lt;td style="vertical-align:top;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Dividends payable&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="width:9%;vertical-align:bottom;text-align:right;"&gt;399,506&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="width:9%;vertical-align:bottom;text-align:right;"&gt;290,550&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr style="height:15px;background-color:#ffffff"&gt;&lt;td style="vertical-align:top;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;Dividends payable, related party&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="BORDER-BOTTOM: 1px solid;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:right;"&gt;201,286&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td style="BORDER-BOTTOM: 1px solid;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;td class="ffcell" style="BORDER-BOTTOM: 1px solid;width:9%;vertical-align:bottom;text-align:right;"&gt;146,390&lt;/td&gt;&lt;td style="PADDING-BOTTOM: 1px;width:1%;white-space: nowrap;"&gt;&lt;p style="font-size:10pt;font-family:times new roman;margin:0px"&gt;&#160;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;</us-gaap:ScheduleOfDividendsPayableTextBlock>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_313"
+      unitRef="USD">399506</us-gaap:DividendsPayableCurrent>
+    <us-gaap:DividendsPayableCurrent
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_314"
+      unitRef="USD">290550</us-gaap:DividendsPayableCurrent>
+    <grve:DividendsPayableRelatedParty
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_315"
+      unitRef="USD">201286</grve:DividendsPayableRelatedParty>
+    <grve:DividendsPayableRelatedParty
+      contextRef="AsOf2025-03-31"
+      decimals="0"
+      id="fid_316"
+      unitRef="USD">146390</grve:DividendsPayableRelatedParty>
+    <us-gaap:StockholdersEquityNoteDisclosureTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_286">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 7 &#x2013; COMMON STOCK&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company is authorized to issue&#160;200,000,000&#160;shares of Common Stock, with a par value of $0.001.&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;The Company did not issue any shares of common stock during the nine months ended December 31, 2025, or December 31, 2024, and had&#160;59,643,062&#160;shares of common stock issued and outstanding as of December 31, 2025, and March 31, 2025, respectively.&lt;/p&gt;</us-gaap:StockholdersEquityNoteDisclosureTextBlock>
+    <us-gaap:CommonStockSharesAuthorized
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_349"
+      unitRef="Shares">200000000</us-gaap:CommonStockSharesAuthorized>
+    <us-gaap:CommonStockParOrStatedValuePerShare
+      contextRef="AsOf2025-12-31"
+      decimals="INF"
+      id="fid_351"
+      unitRef="USDPShares">0.001</us-gaap:CommonStockParOrStatedValuePerShare>
+    <us-gaap:CommonStockSharesIssued
+      contextRef="AsOf2025-12-31"
+      decimals="0"
+      id="fid_353"
+      unitRef="Shares">59643062</us-gaap:CommonStockSharesIssued>
+    <us-gaap:CommitmentsAndContingenciesDisclosureTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_287">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 8 &#x2013; COMMITMENTS AND CONTINGENCIES&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;As of December 31, 2025, the&#160;Company has a month-to-month verbal lease agreement with the landlord, in which the Company pays $1,200 on a monthly basis.&lt;/p&gt;</us-gaap:CommitmentsAndContingenciesDisclosureTextBlock>
+    <grve:VerbalLeaseAgreementDescription contextRef="From2025-04-01to2025-12-31" id="fid_357">Company has a month-to-month verbal lease agreement with the landlord, in which the Company pays $1,200 on a monthly basis</grve:VerbalLeaseAgreementDescription>
+    <us-gaap:SubsequentEventsTextBlock contextRef="From2025-04-01to2025-12-31" id="fid_288">&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&lt;strong&gt;&lt;span style="text-decoration:underline"&gt;NOTE 9 &#x2013; SUBSEQUENT EVENTS&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;&#160;&lt;/p&gt;&lt;p style="FONT-SIZE: 10pt; FONT-FAMILY: times new roman; MARGIN: 0px; text-align:justify;"&gt;Management has evaluated subsequent events pursuant to the requirements of ASC Topic 855 and has determined that no material subsequent events exist through the date of this filing other than as set out below.&lt;/p&gt;</us-gaap:SubsequentEventsTextBlock>
+</xbrl>

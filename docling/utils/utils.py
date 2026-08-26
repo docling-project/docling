@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import hashlib
 from io import BytesIO
 from itertools import islice
@@ -46,7 +49,9 @@ def create_hash(string: str):
 
 def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
     buf = BytesIO()
-    with requests.get(url, stream=True, allow_redirects=True) as response:
+    with requests.get(
+        url, stream=True, allow_redirects=True, timeout=(5, 30)
+    ) as response:
         total_size = int(response.headers.get("content-length", 0))
         progress_bar = tqdm(
             total=total_size,
@@ -63,3 +68,20 @@ def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
 
     buf.seek(0)
     return buf
+
+
+def safe_version(name: str) -> str:
+    """Return the installed version of `name`, or `"unknown"` if the
+    distribution is not present.
+
+    Slim installs may not have every distribution available (e.g. the
+    `docling` meta-package is absent when only `docling-slim` is
+    installed; `docling-ibm-models` and `docling-parse` are gated behind
+    optional extras).
+    """
+    import importlib.metadata
+
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"

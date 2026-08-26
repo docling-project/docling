@@ -1,0 +1,7 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: paragraph: Slide With Missing BlipFill
+  item-3 at level 1: chapter: group slide-1
+    item-4 at level 2: paragraph: Slide With Dangling Rel
+  item-5 at level 1: chapter: group slide-2
+    item-6 at level 2: paragraph: Slide With Wrong Content Type

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal utilities for VLM runtimes.
 
 This module contains shared utility functions used across different VLM runtime
@@ -182,7 +185,6 @@ def format_prompt_for_vlm(
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "This is a page from a document."},
                     {"type": "image"},
                     {"type": "text", "text": prompt},
                 ],

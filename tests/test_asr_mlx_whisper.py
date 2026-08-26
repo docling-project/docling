@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """
-Test MLX Whisper integration for Apple Silicon ASR pipeline.
+Tests for the MLX Whisper ASR backend (Apple Silicon).
 """
 
 import sys
@@ -25,6 +28,8 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
 )
 from docling.pipeline.asr_pipeline import AsrPipeline, _MlxWhisperModel
+
+pytestmark = pytest.mark.ml_asr
 
 
 class TestMlxWhisperIntegration:
@@ -79,9 +84,15 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return True
 
+        class _Cuda:
+            def is_available(self):
+                return False
+
         class _Torch:
             class backends:
                 mps = _Mps()
+
+            cuda = _Cuda()
 
         monkeypatch.setitem(sys.modules, "torch", _Torch())
         monkeypatch.setitem(sys.modules, "mlx_whisper", object())
@@ -117,9 +128,10 @@ class TestMlxWhisperIntegration:
             and m_turbo.repo_id.endswith("whisper-turbo")
         )
 
-        # Force native path (no mlx or no mps)
+        # Force native path (no mlx, no mps, no whisper_s2t)
         if "mlx_whisper" in sys.modules:
             del sys.modules["mlx_whisper"]
+        monkeypatch.setitem(sys.modules, "whisper_s2t", None)
 
         class _MpsOff:
             def is_built(self):
@@ -128,9 +140,16 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return False
 
+        # additional tests
+        class _CudaOff:
+            def is_available(self):
+                return False
+
         class _TorchOff:
             class backends:
                 mps = _MpsOff()
+
+            cuda = _CudaOff()
 
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
         n_tiny = specs._get_whisper_tiny_model()
@@ -176,13 +195,20 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return False
 
+        class _CudaOff:
+            def is_available(self):
+                return False
+
         class _TorchOff:
             class backends:
                 mps = _MpsOff()
 
+            cuda = _CudaOff()
+
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
         if "mlx_whisper" in sys.modules:
             del sys.modules["mlx_whisper"]
+        monkeypatch.setitem(sys.modules, "whisper_s2t", None)
 
         model = specs._get_whisper_base_model()
         assert model.inference_framework == InferenceAsrFramework.WHISPER

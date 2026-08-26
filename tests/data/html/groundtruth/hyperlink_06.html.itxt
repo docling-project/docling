@@ -1,0 +1,13 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Anchor Links Test
+    item-2 at level 2: inline: group group
+      item-3 at level 3: text: Jump to
+      item-4 at level 3: text: Section 2
+      item-5 at level 3: text: or visit
+      item-6 at level 3: text: Example
+      item-7 at level 3: text: .
+    item-8 at level 2: section_header: Section 2
+      item-9 at level 3: inline: group group
+        item-10 at level 4: text: Content for section 2 with a
+        item-11 at level 4: text: top link
+        item-12 at level 4: text: .

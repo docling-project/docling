@@ -1,9 +1,0 @@
-item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: title: Header
-    item-2 at level 2: text: This is the first paragraph.
-    item-3 at level 2: table with [2x2]
-      item-4 at level 3: unspecified: group rich_cell_group_1_0_1
-        item-5 at level 4: text: First Paragraph
-        item-6 at level 4: text: Second Paragraph
-        item-7 at level 4: text: Third Paragraph
-    item-8 at level 2: text: After table

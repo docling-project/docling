@@ -1,0 +1,8 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Page header/footer regression fixture
+      item-3 at level 3: text: This document has different_firs ... how the regular header/footer instead.
+      item-4 at level 3: text: This is body text on page 1.
+      item-5 at level 3: text: 
+      item-6 at level 3: section_header: Page 2
+        item-7 at level 4: text: This is body text on page 2.

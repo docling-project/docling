@@ -1,11 +1,15 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Engine option helpers for image-classification runtimes."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import List, Literal
 
-from pydantic import AnyUrl, Field
+from pydantic import Field
 
+from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.image_classification.base import (
     BaseImageClassificationEngineOptions,
@@ -30,6 +34,17 @@ class OnnxRuntimeImageClassificationEngineOptions(BaseImageClassificationEngineO
         description="Ordered list of ONNX Runtime execution providers to try",
     )
 
+    graph_optimization_level: int = Field(
+        default=99,
+        description=(
+            "ONNX Runtime graph optimization level. "
+            "Accepts onnxruntime.GraphOptimizationLevel int values: "
+            "0 (ORT_DISABLE_ALL), 1 (ORT_ENABLE_BASIC), "
+            "2 (ORT_ENABLE_EXTENDED), 99 (ORT_ENABLE_ALL). "
+            "Default enables all optimizations including layout optimizations."
+        ),
+    )
+
 
 class TransformersImageClassificationEngineOptions(
     BaseImageClassificationEngineOptions
@@ -51,45 +66,11 @@ class TransformersImageClassificationEngineOptions(
     )
 
 
-class ApiKserveV2ImageClassificationEngineOptions(BaseImageClassificationEngineOptions):
+class ApiKserveV2ImageClassificationEngineOptions(
+    BaseImageClassificationEngineOptions, KserveV2OptionsMixin
+):
     """Runtime configuration for remote KServe v2 inference."""
 
     engine_type: Literal[ImageClassificationEngineType.API_KSERVE_V2] = (
         ImageClassificationEngineType.API_KSERVE_V2
-    )
-
-    url: AnyUrl = Field(
-        description=(
-            "Base URL of the KServe v2 server (e.g., 'http://localhost:8000'). "
-            "The full endpoint path is constructed automatically as "
-            "/v2/models/{model_name}[/versions/{version}]/infer."
-        ),
-    )
-
-    model_name: Optional[str] = Field(
-        default=None,
-        description=(
-            "Remote model name registered in the KServe v2 endpoint. "
-            "If omitted, a repo_id-derived default is used."
-        ),
-    )
-
-    model_version: Optional[str] = Field(
-        default=None,
-        description="Optional model version. If omitted, the server default is used.",
-    )
-
-    headers: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Optional HTTP headers for authentication/routing.",
-    )
-
-    timeout: float = Field(
-        default=60.0,
-        description="HTTP request timeout in seconds.",
-    )
-
-    request_parameters: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional top-level KServe v2 infer request parameters.",
     )

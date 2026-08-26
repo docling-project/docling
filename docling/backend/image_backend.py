@@ -1,9 +1,14 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
+import math
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Optional, Union
+from typing import SupportsFloat
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfPageBoundaryType,
@@ -16,16 +21,50 @@ from PIL import Image
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import InputFormat, Size
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
+_POINTS_PER_INCH = 72.0
+_DEFAULT_DPI = (_POINTS_PER_INCH, _POINTS_PER_INCH)
+
+
+def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, float]:
+    if not isinstance(dpi, tuple) or len(dpi) != 2:
+        raise ValueError(f"Invalid image DPI metadata: {dpi!r}")
+
+    try:
+        dpi_x, dpi_y = float(dpi[0]), float(dpi[1])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid image DPI metadata: {dpi!r}") from exc
+
+    if not math.isfinite(dpi_x) or not math.isfinite(dpi_y):
+        raise ValueError(f"Invalid image DPI metadata: {dpi!r}")
+    if dpi_x <= 0 or dpi_y <= 0:
+        raise ValueError(f"Invalid image DPI metadata: {dpi!r}")
+
+    return dpi_x, dpi_y
+
+
+def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
+    dpi = image.info.get("dpi")
+    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+
 
 class _ImagePageBackend(PdfPageBackend):
-    def __init__(self, image: Image.Image):
-        self._image: Optional[Image.Image] = image
+    def __init__(
+        self, image: Image.Image, page_no: int, dpi: tuple[float, float]
+    ) -> None:
+        self._image: Image.Image | None = image
+        self._page_no = page_no
+        self._dpi = dpi
         self.valid: bool = self._image is not None
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def is_valid(self) -> bool:
         return self.valid
@@ -85,33 +124,52 @@ class _ImagePageBackend(PdfPageBackend):
         yield full_page_bbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         assert self._image is not None
-        img = self._image
+        page_size = self.get_size()
 
-        if cropbox is not None:
-            # Expected cropbox comes in TOPLEFT coords in our pipeline
+        if cropbox is None:
+            left, top, right, bottom = 0.0, 0.0, page_size.width, page_size.height
+        else:
             if cropbox.coord_origin != CoordOrigin.TOPLEFT:
-                # Convert to TOPLEFT relative to current image height
-                cropbox = cropbox.to_top_left_origin(img.height)
+                cropbox = cropbox.to_top_left_origin(page_size.height)
             left, top, right, bottom = cropbox.as_tuple()
-            left = max(0, round(left))
-            top = max(0, round(top))
-            right = min(img.width, round(right))
-            bottom = min(img.height, round(bottom))
-            img = img.crop((left, top, right, bottom))
+            left = min(max(0.0, left), page_size.width)
+            top = min(max(0.0, top), page_size.height)
+            right = min(max(0.0, right), page_size.width)
+            bottom = min(max(0.0, bottom), page_size.height)
 
-        if scale != 1:
-            new_w = max(1, round(img.width * scale))
-            new_h = max(1, round(img.height * scale))
-            img = img.resize((new_w, new_h))
+        target_size = (
+            max(1, round((right - left) * scale)),
+            max(1, round((bottom - top) * scale)),
+        )
+        source_box = (
+            left * self._dpi[0] / _POINTS_PER_INCH,
+            top * self._dpi[1] / _POINTS_PER_INCH,
+            right * self._dpi[0] / _POINTS_PER_INCH,
+            bottom * self._dpi[1] / _POINTS_PER_INCH,
+        )
+        if target_size == self._image.size and source_box == (
+            0.0,
+            0.0,
+            float(self._image.width),
+            float(self._image.height),
+        ):
+            return self._image
 
-        return img
+        return self._image.resize(
+            target_size,
+            resample=Image.Resampling.LANCZOS,
+            box=source_box,
+        )
 
     def get_size(self) -> Size:
         assert self._image is not None
-        return Size(width=self._image.width, height=self._image.height)
+        return Size(
+            width=self._image.width * _POINTS_PER_INCH / self._dpi[0],
+            height=self._image.height * _POINTS_PER_INCH / self._dpi[1],
+        )
 
     def unload(self):
         # Help GC and free memory
@@ -132,9 +190,11 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def __init__(
         self,
         in_doc: InputDocument,
-        path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
-    ):
+        path_or_stream: BytesIO | Path,
+        options: PdfBackendOptions | None = None,
+    ) -> None:
+        if options is None:
+            options = PdfBackendOptions()
         # Bypass PdfDocumentBackend.__init__ to avoid image→PDF conversion
         AbstractDocumentBackend.__init__(self, in_doc, path_or_stream, options)
         self.options: PdfBackendOptions = options
@@ -145,23 +205,31 @@ class ImageDocumentBackend(PdfDocumentBackend):
             )
 
         # Load frames eagerly for thread-safety across pages
-        self._frames: List[Image.Image] = []
+        self._frames: list[Image.Image] = []
+        self._frame_dpi: list[tuple[float, float]] = []
         try:
-            img = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
+                # Handle multi-frame and single-frame images
+                # - multiframe formats: TIFF, GIF, ICO
+                # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
+                frame_count = getattr(img, "n_frames", 1)
 
-            # Handle multi-frame and single-frame images
-            # - multiframe formats: TIFF, GIF, ICO
-            # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
-            frame_count = getattr(img, "n_frames", 1)
-
-            if frame_count > 1:
-                for i in range(frame_count):
-                    img.seek(i)
-                    self._frames.append(img.copy().convert("RGB"))
-            else:
-                self._frames.append(img.convert("RGB"))
+                if frame_count > 1:
+                    for i in range(frame_count):
+                        img.seek(i)
+                        self._frame_dpi.append(_get_frame_dpi(img))
+                        self._frames.append(img.copy().convert("RGB"))
+                else:
+                    self._frame_dpi.append(_get_frame_dpi(img))
+                    self._frames.append(img.convert("RGB"))
         except Exception as e:
-            raise RuntimeError(f"Could not load image for document {self.file}") from e
+            for frame in self._frames:
+                frame.close()
+            self._frames = []
+            self._frame_dpi = []
+            raise DocumentLoadError(
+                f"Could not load image for document {self.file}"
+            ) from e
 
     def is_valid(self) -> bool:
         return len(self._frames) > 0
@@ -172,7 +240,9 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def load_page(self, page_no: int) -> _ImagePageBackend:
         if not (0 <= page_no < len(self._frames)):
             raise IndexError(f"Page index out of range: {page_no}")
-        return _ImagePageBackend(self._frames[page_no])
+        return _ImagePageBackend(
+            self._frames[page_no], page_no, self._frame_dpi[page_no]
+        )
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
@@ -184,5 +254,8 @@ class ImageDocumentBackend(PdfDocumentBackend):
         return True
 
     def unload(self):
-        super().unload()
+        for frame in self._frames:
+            frame.close()
         self._frames = []
+        self._frame_dpi = []
+        super().unload()

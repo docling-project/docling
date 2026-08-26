@@ -82,7 +82,7 @@ The picture classification step classifies the `PictureItem` elements in the doc
 This model is specialized to understand the classes of pictures found in documents, e.g. different chart types, flow diagrams,
 logos, signatures, etc.
 
-Model specs: see the [`DocumentFigureClassifier` model card](https://huggingface.co/ds4sd/DocumentFigureClassifier).
+Model specs: see the [`DocumentFigureClassifier-v2.5` model card](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.5).
 
 Example command line:
 
@@ -205,6 +205,30 @@ pipeline_options.picture_description_options = PictureDescriptionApiOptions(
 End-to-end code snippets for cloud providers are available in the examples section:
 
 - [IBM watsonx.ai](../examples/pictures_description_api.py)
+
+#### Capturing API usage metadata
+
+`PictureDescriptionApiOptions` can preserve a raw usage payload from the API response on each generated picture description. By default, Docling reads the `usage` field from OpenAI-compatible chat-completions responses.
+
+Set `usage_response_key` to another JSON key or dotted path when your provider returns usage data elsewhere, for example `providerUsage` or `meta.usage`.
+
+```py
+pipeline_options.picture_description_options = PictureDescriptionApiOptions(
+    url="https://example.com/v1/chat/completions",
+    headers={"Authorization": "Bearer ..."},
+    params={"model": "my-vision-model"},
+    prompt="Describe the image.",
+    usage_response_key="usage",
+)
+```
+
+The payload is stored on the picture description metadata:
+
+```py
+usage = picture.meta.description.get_custom_part()["docling__usage"]
+```
+
+See the [API usage capture example](../examples/picture_description_api_usage.py) for an end-to-end script, including Azure OpenAI endpoint construction.
 
 
 ## Develop new enrichment models

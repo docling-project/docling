@@ -1,8 +1,12 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
+import warnings
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, ClassVar, Literal, Optional, Union
+from typing import Annotated, Any, ClassVar, Literal
 
 from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
@@ -11,6 +15,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
 )
 from typing_extensions import deprecated
 
@@ -22,6 +27,12 @@ from docling.datamodel import (
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
+from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
     DOCLING_LAYOUT_EGRET_MEDIUM,
@@ -52,6 +63,7 @@ from docling.datamodel.stage_model_specs import (
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     NU_EXTRACT_2B_TRANSFORMERS,
@@ -68,9 +80,37 @@ _log = logging.getLogger(__name__)
 
 
 class BaseOptions(BaseModel):
-    """Base class for options."""
+    """Base class for all pipeline option models.
+
+    Every option class in the pipeline configuration hierarchy inherits from
+    `BaseOptions`. Subclasses must declare a `kind` ClassVar that serves as
+    a discriminator for polymorphic deserialization in Pydantic unions.
+
+    Attributes:
+        kind: String discriminator identifying the concrete option type.
+            Must be declared as a ``ClassVar[str]`` or
+            ``ClassVar[Literal[...]]`` in each subclass.
+    """
 
     kind: ClassVar[str]
+
+
+class OcrMode(str, Enum):
+    r"""
+    How to generate the input for the OCR model
+    """
+
+    # Force OCR to work on the full page
+    FULL_PAGE = "full_page"
+
+    # Layout detections only. No PDF information is needed/used.
+    LAYOUT_REGIONS = "layout_regions"
+
+    # Eliminate those clusters that contain exclusively text PDF cells
+    PDF_AWARE_LAYOUT_REGIONS = "pdf_aware_layout_regions"
+
+    # Currently DEFAULT is wired to run PDF_AWARE_LAYOUT_REGIONS
+    DEFAULT = "default"
 
 
 class TableFormerMode(str, Enum):
@@ -91,11 +131,19 @@ class TableFormerMode(str, Enum):
 
 
 class BaseTableStructureOptions(BaseOptions):
-    """Base options for table structure models."""
+    """Base options for table structure extraction models.
+
+    Serves as the abstract base for all table structure backends. Concrete
+    implementations (e.g., `TableStructureOptions` for TableFormer) inherit
+    from this class and register their own `kind` discriminator.
+
+    See Also:
+        `TableStructureOptions`: Default TableFormer-based implementation.
+    """
 
 
 class TableStructureOptions(BaseTableStructureOptions):
-    """Configuration for table structure extraction using the TableFormer model."""
+    """Options for the table structure (TableFormer V1)."""
 
     kind: ClassVar[str] = "docling_tableformer"
     do_cell_matching: Annotated[
@@ -118,8 +166,50 @@ class TableStructureOptions(BaseTableStructureOptions):
     ] = TableFormerMode.ACCURATE
 
 
+class TableStructureV2Options(BaseTableStructureOptions):
+    """Options for the table structure (TableFormer V2)."""
+
+    kind: ClassVar[str] = "docling_tableformer_v2"
+    do_cell_matching: bool = (
+        True
+        # True:  Matches predictions back to PDF cells. Can break table output if PDF cells
+        #        are merged across table columns.
+        # False: Let table structure model define the text cells, ignore PDF cells.
+    )
+
+
+class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
+    """Options for the table structure model using Granite Vision (VLM-based)."""
+
+    kind: ClassVar[str] = "granite_vision_table"
+
+
 class OcrOptions(BaseOptions):
-    """OCR options."""
+    """Base configuration for Optical Character Recognition engines.
+
+    Defines the common interface shared by all OCR engine implementations.
+    Subclasses provide engine-specific parameters while inheriting the shared
+    language selection, full-page OCR toggle, and bitmap area threshold.
+
+    See Also:
+        `OcrAutoOptions`: Automatic engine selection based on availability.
+        `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
+        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
+        configurations.
+    """
+
+    mode: Annotated[
+        OcrMode,
+        Field(
+            description="Which document regions to feed as input to the OCR",
+            examples=[
+                OcrMode.FULL_PAGE,
+                OcrMode.LAYOUT_REGIONS,
+                OcrMode.PDF_AWARE_LAYOUT_REGIONS,
+                OcrMode.DEFAULT,
+            ],
+        ),
+    ] = OcrMode.DEFAULT
 
     lang: Annotated[
         list[str],
@@ -128,24 +218,62 @@ class OcrOptions(BaseOptions):
             examples=[["deu", "eng"]],
         ),
     ]
+
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Image scale multiplier applied before running OCR. The page is "
+                "rendered at 72 DPI times this factor, so the default 3 yields "
+                "216 DPI. Lower it when the source image is already high "
+                "resolution and upscaling degrades recognition."
+            ),
+            examples=[1.0, 3.0],
+            gt=0.0,
+        ),
+    ] = 3.0
+
+    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
+    # When set to True it forces `mode` to FULL_PAGE
     force_full_page_ocr: Annotated[
         bool,
         Field(
             description="If enabled, a full-page OCR is always applied.",
             examples=[False],
+            deprecated=(
+                "`force_full_page_ocr` is deprecated; set "
+                "`mode=OcrMode.FULL_PAGE` instead."
+            ),
         ),
     ] = False
-    bitmap_area_threshold: Annotated[
-        float,
-        Field(
-            description="Percentage of the page area for a bitmap to be processed with OCR.",
-            examples=[0.05, 0.1],
-        ),
-    ] = 0.05
+
+    @model_validator(mode="after")
+    def _apply_force_full_page_ocr(self) -> "OcrOptions":
+        r"""
+        Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
+        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE`.
+        """
+        with warnings.catch_warnings():  # deprecated force_full_page_ocr
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            forced = self.force_full_page_ocr
+        if forced:
+            self.mode = OcrMode.FULL_PAGE
+        return self
 
 
 class OcrAutoOptions(OcrOptions):
-    """Automatic OCR engine selection based on system availability."""
+    """Automatic OCR engine selection based on system availability.
+
+    When this option is used, Docling probes the runtime environment at
+    pipeline initialization and selects the best available OCR engine
+    (e.g., EasyOCR if GPU is present, Tesseract otherwise). Language
+    settings are deferred to the chosen engine's defaults.
+
+    Notes:
+        The `lang` field is intentionally defaulted to an empty list.
+        To control language selection, specify an explicit OCR engine
+        option class instead.
+    """
 
     kind: ClassVar[Literal["auto"]] = "auto"
     lang: Annotated[
@@ -168,22 +296,30 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR does not currently support language selection; "
-                "this parameter is reserved for future compatibility. See RapidOCR documentation for supported languages."
+                "Recognition language. RapidOCR uses a single language per run; if more than one "
+                "value is given only the first is used. Accepted values resolve to a PP-OCR "
+                "recognizer: PP-OCRv6 covers ~52 language codes (e.g. 'ch', 'en', 'de', 'fr', "
+                "'japan'; the docling defaults 'chinese'/'english' map to 'ch'/'en'). Script-family "
+                "names route to PP-OCRv5 on the onnxruntime/openvino/paddle backends ('arabic', "
+                "'ch', 'cyrillic', 'devanagari', 'el', 'en', 'eslav', 'korean', 'latin', 'ta', "
+                "'te', 'th') or to PP-OCRv4 on the torch backend ('arabic', 'cyrillic', "
+                "'devanagari', 'ka', 'korean', 'latin', 'ta', 'te'). A language the resolved "
+                "backend cannot serve raises an error rather than falling back silently."
             )
         ),
-    ] = ["english", "chinese"]
+    ] = ["chinese"]
     backend: Annotated[
         Literal["onnxruntime", "openvino", "paddle", "torch"],
         Field(
             description=(
                 "Inference backend for RapidOCR. Options: `onnxruntime` (default, cross-platform), `openvino` (Intel), "
-                "`paddle` (PaddlePaddle), `torch` (PyTorch). Choose based on your hardware and available libraries."
+                "`paddle` (PaddlePaddle), `torch` (PyTorch). Choose based on your hardware and available libraries. "
+                "Note: for languages outside the PP-OCRv6 set, `torch` is limited to the PP-OCRv4 script models while "
+                "the other backends use the wider PP-OCRv5 set (see `lang`)."
             )
         ),
     ] = "onnxruntime"
@@ -197,19 +333,19 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = 0.5
     use_det: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text detection stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_cls: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_rec: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text recognition stage. If None, uses RapidOCR default behavior."
         ),
@@ -221,38 +357,38 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = False
     det_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text detection model. If None, uses default RapidOCR model."
         ),
     ] = None
     cls_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text classification model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text recognition model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_keys_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to recognition keys file. If None, uses default RapidOCR keys."
         ),
     ] = None
     rec_font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Deprecated. Use font_path instead.",
             deprecated=True,
         ),
     ] = None
     font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to font file for text rendering in visualization."
         ),
@@ -271,6 +407,45 @@ class RapidOcrOptions(OcrOptions):
     )
 
 
+class NemotronOcrOptions(OcrOptions):
+    """Configuration for NVIDIA Nemotron OCR.
+
+    Notes:
+        Use the pipeline-level `artifacts_path` to point to pre-downloaded checkpoint artifacts.
+    """
+
+    kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "List of OCR languages. nemotron-OCR-v2 supports 'english' and 'multilingual'"
+            )
+        ),
+    ] = []
+    merge_level: Annotated[
+        Literal["word", "sentence", "paragraph"],
+        Field(
+            description=(
+                "Granularity requested from Nemotron OCR. `sentence` is the default "
+                "because it maps most directly to Docling OCR cells."
+            )
+        ),
+    ] = "sentence"
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of images within the same page to process. "
+                "In practice a batch>1 happens only with PDF inputs with many OCR rectangles."
+            )
+        ),
+    ] = 8
+
+
 class EasyOcrOptions(OcrOptions):
     """Configuration for EasyOCR engine."""
 
@@ -285,7 +460,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = ["fr", "de", "es", "en"]
     use_gpu: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description=(
                 "Enable GPU acceleration for EasyOCR. If None, automatically detects and uses GPU if available. "
@@ -303,7 +478,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = 0.5
     model_storage_directory: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Directory path for storing downloaded EasyOCR models. If None, uses default EasyOCR cache location. "
@@ -312,7 +487,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = None
     recog_network: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Recognition network architecture to use. Options: `standard` (default, balanced), `craft` (higher "
@@ -367,7 +542,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = "tesseract"
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -376,7 +551,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -403,7 +578,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = ["fra", "deu", "spa", "eng"]
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -412,7 +587,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -461,8 +636,70 @@ class OcrMacOptions(OcrOptions):
     )
 
 
+class KserveV2OcrOptions(OcrOptions, KserveV2OptionsMixin):
+    """Configuration for KServe v2-based OCR (e.g., Triton Inference Server).
+
+    This OCR engine connects to a remote KServe v2-compatible inference server
+    (such as Triton) to perform OCR via gRPC or HTTP. It combines standard OCR
+    options with KServe v2 connection settings inherited from KserveV2OptionsMixin.
+
+    The engine handles custom preprocessing (RGB conversion, transpose, batching)
+    to match the expected input format of typical OCR models deployed on KServe v2
+    endpoints.
+
+    See Also:
+        `KserveV2OptionsMixin`: Provides all KServe v2 connection configuration.
+        `RapidOcrOptions`: Local OCR engine for comparison.
+    """
+
+    kind: ClassVar[Literal["kserve_v2_ocr"]] = "kserve_v2_ocr"
+
+    model_name: str = Field(
+        default="ocr",
+        description="Remote model name registered in the KServe v2 endpoint.",
+    )
+
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "List of OCR languages. Note: Language selection depends on the deployed model. "
+                "This parameter is passed to the server but may not be used by all models."
+            )
+        ),
+    ] = ["english", "chinese"]
+
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Image scale multiplier for OCR processing. Higher values increase resolution "
+                "for better text recognition. Default 2.0 converts 72 DPI to 144 DPI."
+            ),
+            gt=0.0,
+        ),
+    ] = 2.0
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
 class PictureDescriptionBaseOptions(BaseOptions):
-    """Base configuration for picture description models."""
+    """Base configuration for picture description models.
+
+    Provides shared parameters for all picture description backends,
+    including batch processing, image scaling, area thresholds, and
+    classification-based filtering (allow/deny lists). Concrete
+    implementations supply the actual model integration.
+
+    See Also:
+        `PictureDescriptionApiOptions`: OpenAI-compatible API backend.
+        `PictureDescriptionVlmOptions`: Legacy HuggingFace Transformers
+            backend.
+        `PictureDescriptionVlmEngineOptions`: New runtime-based backend
+            with preset support (recommended).
+    """
 
     # TODO: default should become False in a future release, and this field
     # may be removed entirely once docling-core drops the deprecated
@@ -472,19 +709,21 @@ class PictureDescriptionBaseOptions(BaseOptions):
     batch_size: Annotated[
         int,
         Field(
+            ge=1,
             description=(
                 "Number of images to process in a single batch during picture description. Higher values improve "
                 "throughput but increase memory usage. Adjust based on available GPU/CPU memory."
-            )
+            ),
         ),
     ] = 8
     scale: Annotated[
         float,
         Field(
+            gt=0,
             description=(
                 "Scaling factor for image resolution before processing. Higher values (e.g., 2.0) provide more detail "
                 "for the vision model but increase processing time and memory. Range: 0.5-4.0 typical."
-            )
+            ),
         ),
     ] = 2.0
     picture_area_threshold: Annotated[
@@ -497,7 +736,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = 0.05
     classification_allow: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to allow for description. Only pictures classified with these "
@@ -507,7 +746,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = None
     classification_deny: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to exclude from description. Pictures classified with these "
@@ -529,7 +768,16 @@ class PictureDescriptionBaseOptions(BaseOptions):
 
 
 class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
-    """Configuration for API-based picture description services."""
+    """Configuration for API-based picture description services.
+
+    Sends images to an OpenAI-compatible chat completions endpoint for
+    description generation. Supports custom headers for authentication,
+    configurable timeouts, and concurrent request control.
+
+    Notes:
+        Requires ``enable_remote_services=True`` on the parent pipeline
+        options to permit external API calls.
+    """
 
     kind: ClassVar[Literal["api"]] = "api"
     url: Annotated[
@@ -597,6 +845,17 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = ""
+    usage_response_key: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response JSON key, or dotted path, whose value should be preserved as the raw usage payload "
+                "on picture description metadata. The default captures OpenAI-compatible `usage` objects. "
+                "Set to None to disable usage payload capture."
+            ),
+            examples=["usage", "providerUsage", "meta.usage"],
+        ),
+    ] = "usage"
 
 
 class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
@@ -642,9 +901,23 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = {"max_new_tokens": 200, "do_sample": False}
+    padding_side: Annotated[
+        Literal["left", "right"],
+        Field(
+            description=(
+                "Tokenizer padding side used for batched generation. Defaults to left to preserve the legacy "
+                "behavior, but can be overridden for models that require right padding."
+            )
+        ),
+    ] = "left"
 
     @property
     def repo_cache_folder(self) -> str:
+        """Return the local cache folder name derived from the HuggingFace repo ID.
+
+        Converts the ``repo_id`` (e.g., ``"org/model"``) to a filesystem-safe
+        folder name by replacing ``/`` with ``--``.
+        """
         return self.repo_id.replace("/", "--")
 
 
@@ -749,7 +1022,7 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=2.0, description="Image scaling factor for preprocessing"
     )
 
-    max_size: Optional[int] = Field(
+    max_size: int | None = Field(
         default=None, description="Maximum image dimension (width or height)"
     )
 
@@ -785,7 +1058,7 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=2.0, description="Image scaling factor for preprocessing"
     )
 
-    max_size: Optional[int] = Field(
+    max_size: int | None = Field(
         default=None, description="Maximum image dimension (width or height)"
     )
 
@@ -809,9 +1082,17 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GOT_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_MOCR)
 
 # Register PictureDescription presets (for new runtime-based implementation)
 PictureDescriptionVlmEngineOptions.register_preset(
@@ -860,18 +1141,26 @@ _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2
 class PdfBackend(str, Enum):
     """Available PDF parsing backends for document processing.
 
-    Different backends offer varying levels of text extraction quality, layout preservation,
-    and processing speed. Choose based on your document complexity and quality requirements.
+    Different backends offer varying levels of text extraction quality, layout
+    preservation, and processing speed. Choose based on your document complexity
+    and quality requirements.
 
     Attributes:
-        PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and reliable for basic text extraction.
-        DLPARSE_V1: Docling Parse v1 backend with enhanced layout analysis and structure preservation.
-        DLPARSE_V2: Docling Parse v2 backend with improved table detection and complex layout handling.
-        DLPARSE_V4: Docling Parse v4 backend (latest) with advanced features and best accuracy for complex documents.
+        PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and
+            reliable for basic text extraction.
+        DOCLING_PARSE: Docling Parse backend providing enhanced layout
+            analysis, structure preservation, and advanced table detection.
+            This is the recommended backend for most use cases.
+        THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
+            concurrent page parsing in the standard PDF pipeline.
+        DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
     """
 
     PYPDFIUM2 = "pypdfium2"
     DOCLING_PARSE = "docling_parse"
+    THREADED_DOCLING_PARSE = "threaded_docling_parse"
 
     # Deprecated - these map to DOCLING_PARSE
     DLPARSE_V1 = "dlparse_v1"  # deprecated
@@ -938,15 +1227,28 @@ class OcrEngine(str, Enum):
 
 
 class PipelineOptions(BaseOptions):
-    """Base configuration for document processing pipelines."""
+    """Base configuration for document processing pipelines.
+
+    Provides the foundational settings shared by every pipeline type:
+    document-level timeout, hardware accelerator selection, remote service
+    permissions, external plugin control, and model artifact paths. All
+    specialized pipeline option classes inherit from this base.
+
+    See Also:
+        `ConvertPipelineOptions`: Adds picture classification and description.
+        `AsrPipelineOptions`: Audio/speech recognition pipeline.
+        `VlmExtractionPipelineOptions`: VLM-based structured extraction.
+    """
 
     document_timeout: Annotated[
-        Optional[float],
+        float | None,
         Field(
             description=(
                 "Maximum processing time in seconds before aborting document conversion. When exceeded, the pipeline "
-                "stops processing and returns partial results with PARTIAL_SUCCESS status. If None, no timeout is "
-                "enforced. Recommended: 90-120 seconds for production systems."
+                "stops processing and returns partial results with PARTIAL_SUCCESS status. Timeout errors are recorded "
+                "in ConversionResult.errors with category=TIMEOUT and descriptive error messages. "
+                "Use ConversionResult.has_timeout_errors() to detect timeouts. If None, no timeout is enforced. "
+                "Recommended: 90-120 seconds for production systems."
             ),
             examples=[10.0, 20.0],
         ),
@@ -981,7 +1283,7 @@ class PipelineOptions(BaseOptions):
         ),
     ] = False
     artifacts_path: Annotated[
-        Optional[Union[Path, str]],
+        Path | str | None,
         Field(
             description=(
                 "Local directory containing pre-downloaded model artifacts (weights, configs). If None, models are "
@@ -994,7 +1296,17 @@ class PipelineOptions(BaseOptions):
 
 
 class ConvertPipelineOptions(PipelineOptions):
-    """Base configuration for document conversion pipelines."""
+    """Base configuration for document conversion pipelines.
+
+    Extends `PipelineOptions` with picture-related features: classification
+    (categorizing images by type) and description (generating textual
+    captions via vision-language models). Also supports chart data extraction
+    from bar, pie, and line charts.
+
+    See Also:
+        `PaginatedPipelineOptions`: Adds page image generation for paginated
+            formats.
+    """
 
     do_picture_classification: Annotated[
         bool,
@@ -1034,13 +1346,39 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = _default_picture_description_options
 
-    do_chart_extraction: bool = (
-        False  # True: extract data in tabular format from bar-, pie and line-charts
-    )
+    do_chart_extraction: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable chart data extraction to convert bar, pie, and line charts into structured tabular data. "
+                "Automatically enables picture classification. "
+                "Only applicable when `do_chart_extraction=True`."
+            )
+        ),
+    ] = False
+    chart_extraction_options: Annotated[
+        ChartExtractionModelOptions,
+        Field(
+            description=(
+                "Configuration for the chart extraction model, including which model variant to use "
+                "and which output formats to generate (CSV, code, summary)."
+            )
+        ),
+    ] = ChartExtractionModelOptions()
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
-    """Configuration for pipelines processing paginated documents."""
+    """Configuration for pipelines processing paginated documents.
+
+    Extends `ConvertPipelineOptions` with page-level image generation
+    controls for formats that have a concept of discrete pages (PDF, PPTX,
+    images). Controls the resolution scaling and whether page/picture images
+    are generated during conversion.
+
+    See Also:
+        `PdfPipelineOptions`: Full PDF pipeline with OCR, layout, and tables.
+        `VlmPipelineOptions`: VLM-based document understanding pipeline.
+    """
 
     images_scale: Annotated[
         float,
@@ -1073,7 +1411,18 @@ class PaginatedPipelineOptions(ConvertPipelineOptions):
 
 
 class VlmPipelineOptions(PaginatedPipelineOptions):
-    """Pipeline configuration for vision-language model based document processing."""
+    """Pipeline configuration for vision-language model based document processing.
+
+    Uses a VLM to understand document pages holistically from rendered page
+    images rather than composing results from separate layout, OCR, and
+    table-structure models. Page image generation is enabled by default
+    since the VLM requires visual input.
+
+    Notes:
+        Unlike `PdfPipelineOptions`, this pipeline does not run separate
+        layout analysis or OCR stages. Set ``force_backend_text=True`` to
+        use the PDF backend's native text instead of VLM-predicted text.
+    """
 
     generate_page_images: Annotated[
         bool,
@@ -1094,7 +1443,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         ),
     ] = False
     vlm_options: Annotated[
-        Union[VlmConvertOptions, InlineVlmOptions, ApiVlmOptions],
+        VlmConvertOptions | InlineVlmOptions | ApiVlmOptions,
         Field(
             description=(
                 "Vision-Language Model configuration for document understanding. Uses new VlmConvertOptions "
@@ -1106,7 +1455,18 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
 
 
 class BaseLayoutOptions(BaseOptions):
-    """Base options for layout models."""
+    """Base options for document layout analysis models.
+
+    Layout analysis detects the structural regions of a document page
+    (text blocks, tables, figures, headers, etc.) and assigns content
+    cells to those regions. This base class provides the shared controls
+    for empty-cluster retention and cell-assignment skipping.
+
+    See Also:
+        `LayoutObjectDetectionOptions`: Default layout options; object-detection
+            runtime with preset support.
+        `LayoutOptions`: Deprecated predecessor, translated onto the above.
+    """
 
     keep_empty_clusters: Annotated[
         bool,
@@ -1126,12 +1486,6 @@ class BaseLayoutOptions(BaseOptions):
             )
         ),
     ] = False
-
-
-class LayoutOptions(BaseLayoutOptions):
-    """Options for layout processing."""
-
-    kind: ClassVar[str] = "docling_layout_default"
     create_orphan_clusters: Annotated[
         bool,
         Field(
@@ -1141,6 +1495,30 @@ class LayoutOptions(BaseLayoutOptions):
             )
         ),
     ] = True
+
+
+class LayoutOptions(BaseLayoutOptions):
+    """Deprecated. Use `LayoutObjectDetectionOptions` instead.
+
+    Retained so existing code keeps working: it still constructs, still
+    selects any of the supported layout models, and is translated onto
+    `LayoutObjectDetectionOptions` by the `LayoutModel` shim.
+
+    Notes:
+        ``DOCLING_LAYOUT_V2`` is no longer supported and falls back to
+        ``DOCLING_LAYOUT_HERON`` with a warning.
+
+        Removing this class also retires `layout_model_specs` (including every
+        ``DOCLING_LAYOUT_*`` constant and `LayoutModelConfig`) and the
+        `models/stages/layout/layout_model.py` shim, which exist solely to
+        serve it.
+
+    Example:
+        >>> LayoutObjectDetectionOptions.from_preset("layout_heron_default")
+    """
+
+    kind: ClassVar[str] = "docling_layout_default"
+
     model_spec: Annotated[
         LayoutModelConfig,
         Field(
@@ -1151,29 +1529,44 @@ class LayoutOptions(BaseLayoutOptions):
         ),
     ] = DOCLING_LAYOUT_HERON
 
+    def model_post_init(self, context: Any, /) -> None:
+        super().model_post_init(context)
+        warnings.warn(
+            "LayoutOptions is deprecated and will be removed in a future release. "
+            "Use LayoutObjectDetectionOptions, e.g. "
+            'LayoutObjectDetectionOptions.from_preset("layout_heron_default").',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
 
 class LayoutObjectDetectionOptions(
     ObjectDetectionStagePresetMixin,
     ObjectDetectionEngineOptionsMixin,
     BaseLayoutOptions,
 ):
-    """Options for layout detection using object-detection runtimes."""
+    """Options for layout detection using object-detection runtimes.
+
+    The default layout options. Uses the pluggable object-detection engine
+    system with preset support via `ObjectDetectionStagePresetMixin`; use
+    ``from_preset()`` to create instances from registered model presets.
+
+    Notes:
+        The default model is ``layout_heron_default``. For higher accuracy on
+        complex documents, consider the ``layout_egret_large`` or
+        ``layout_egret_xlarge`` presets.
+
+    Example:
+        >>> LayoutObjectDetectionOptions.from_preset("layout_egret_large")
+    """
 
     kind: ClassVar[str] = "layout_object_detection"
 
-    create_orphan_clusters: Annotated[
-        bool,
-        Field(
-            description=(
-                "Create clusters for orphaned elements not assigned to any structure. When True, isolated text or "
-                "elements are grouped into their own clusters. Recommended for complete document coverage."
-            )
-        ),
-    ] = False
-
     model_spec: ObjectDetectionModelSpec = Field(
-        default_factory=lambda: stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
-            deep=True
+        default_factory=lambda: (
+            stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
+                deep=True
+            )
         ),
         description="Object-detection model specification for layout analysis",
     )
@@ -1182,6 +1575,76 @@ class LayoutObjectDetectionOptions(
 LayoutObjectDetectionOptions.register_preset(
     stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
 )
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON_101
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_MEDIUM
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_LARGE
+)
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_EGRET_XLARGE
+)
+
+
+class BaseLayoutPostprocessorOptions(BaseOptions):
+    """Algorithm parameters consumed by ``LayoutPostprocessor``.
+
+    These controls drive the post-processing of raw layout clusters
+    (cell assignment, empty-cluster handling, orphan-cluster creation).
+    They are decoupled from the layout (prediction) options so the
+    post-processing stage and the predictor models can evolve
+    independently.
+    """
+
+    keep_empty_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Retain empty clusters in layout analysis results. When False, clusters without content are removed."
+            )
+        ),
+    ] = False
+    skip_cell_assignment: Annotated[
+        bool,
+        Field(
+            description=(
+                "Skip assignment of cells to clusters during layout post-processing. When True, cells are detected "
+                "but not associated with clusters."
+            )
+        ),
+    ] = False
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure."
+            )
+        ),
+    ] = True
+
+
+class LayoutPostprocessorOptions(BaseLayoutPostprocessorOptions):
+    """Stage options for ``LayoutPostprocessingModel``.
+
+    Extends the algorithm parameters with the stage-level toggle
+    ``run_postprocessor``. When disabled, the stage only computes the
+    layout confidence score and leaves the raw clusters untouched
+    (used by the table-crops layout model).
+    """
+
+    kind: ClassVar[str] = "layout_postprocessor"
+    run_postprocessor: Annotated[
+        bool,
+        Field(
+            description=(
+                "Run the layout post-processor. When False, raw clusters are passed through unchanged and only the "
+                "layout confidence score is computed."
+            )
+        ),
+    ] = True
 
 
 class AsrPipelineOptions(PipelineOptions):
@@ -1202,8 +1665,116 @@ class AsrPipelineOptions(PipelineOptions):
     ] = asr_model_specs.WHISPER_TINY
 
 
+from docling.utils.video_frame_sampling import VideoFrameSamplingMode  # noqa: E402
+
+
+class VideoPipelineOptions(PipelineOptions):
+    """Configuration options for the video pipeline.
+
+    Controls ASR transcription, frame sampling strategy, and optional
+    scene description for video documents.
+
+    Recommended configs by use case:
+      - Business meetings:  frame_sampling_mode=SCENE_CHANGE, scene_change_prominence=0.03
+      - Lecture recordings: frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0
+      - General video:      frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0
+    """
+
+    asr_options: Annotated[
+        InlineAsrOptions,
+        Field(description="ASR model configuration for the video audio track."),
+    ] = asr_model_specs.WHISPER_TINY
+
+    frame_sampling_mode: Annotated[
+        VideoFrameSamplingMode,
+        Field(description="How representative video frames are selected."),
+    ] = VideoFrameSamplingMode.FIXED_INTERVAL
+
+    frame_interval_seconds: Annotated[
+        float,
+        Field(gt=0, description="Fixed frame sampling interval in seconds."),
+    ] = 10.0
+
+    scene_change_prominence: Annotated[
+        float | None,
+        Field(
+            default=None,
+            ge=0,
+            description="Prominence for local peak detection. None = auto-calibrate.",
+        ),
+    ] = None
+
+    scene_change_probe_fps: Annotated[
+        float,
+        Field(gt=0, description="Low frame rate used for scene-change probing."),
+    ] = 1.0
+
+    min_scene_duration_seconds: Annotated[
+        float,
+        Field(ge=0, description="Minimum duration before accepting a new scene."),
+    ] = 2.0
+
+    max_sampled_frames: Annotated[
+        int | None,
+        Field(default=None, gt=0, description="Optional cap on sampled frames."),
+    ] = None
+
+    scene_change_smooth_window: Annotated[
+        int,
+        Field(
+            default=2,
+            ge=0,
+            description=(
+                "Smoothing window (in frames) applied when detecting scene-change peaks. "
+                "Higher values produce smoother detection."
+            ),
+        ),
+    ] = 2
+
+    cuts_per_minute: Annotated[
+        float | None,
+        Field(
+            default=None,
+            gt=0,
+            description=(
+                "Optional target density of cuts per minute for scene-change sampling. "
+                "If set, the sampler will aim to produce approximately this many cuts per minute."
+            ),
+        ),
+    ] = None
+
+    generate_frame_images: Annotated[
+        bool,
+        Field(
+            default=True,
+            description=(
+                "When True, representative frames are sampled and embedded in the "
+                "output DoclingDocument as picture items."
+            ),
+        ),
+    ] = True
+
+    enable_diarization: Annotated[
+        bool,
+        Field(
+            default=False,
+            description=("Enable speaker diarization on audio tracks when available."),
+        ),
+    ] = False
+
+
 class VlmExtractionPipelineOptions(PipelineOptions):
-    """Options for extraction pipeline."""
+    """Options for VLM-based structured information extraction pipeline.
+
+    Configures a pipeline that uses a vision-language model (default:
+    NuExtract-2B) to extract structured data fields from document images.
+    Unlike `VlmPipelineOptions` which converts pages to document format,
+    this pipeline targets extraction of specific entities or key-value pairs.
+
+    Supported models:
+        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) with ``ExtractionPromptStyle.NUEXTRACT``
+        - ``GRANITE_VISION_4_1_TRANSFORMERS`` with ``ExtractionPromptStyle.GRANITE_VISION``
+    """
 
     vlm_options: Annotated[
         InlineVlmOptions,
@@ -1214,6 +1785,139 @@ class VlmExtractionPipelineOptions(PipelineOptions):
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
+
+    extraction_prompt_style: Annotated[
+        "ExtractionPromptStyle",
+        Field(
+            description=(
+                "Prompt style to use for extraction. Determines how the template "
+                "is formatted and passed to the model."
+            )
+        ),
+    ] = ExtractionPromptStyle.NUEXTRACT
+
+
+class HeadingHierarchyOptions(BaseModel):
+    """Options for inferring section-header levels in the PDF/image pipeline.
+
+    The layout model only flags regions as ``SECTION_HEADER`` without a level, so every
+    heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
+    flattened. When ``enabled``, :class:`HeadingHierarchyModel` runs right after the
+    reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
+    PDF bookmarks/ToC, numbering and font style. The step changes heading levels and may
+    promote a heading mis-classified as a list-item when it confidently matches a bookmark;
+    otherwise it never adds, removes or reorders items, and headings for which no signal
+    applies keep their current level.
+
+    Notes:
+        - ``use_bookmarks`` reads the PDF outline surfaced on ``ConversionResult._pdf_outline``.
+          When a bookmark confidently matches a detected heading it is authoritative; entries
+          that match nothing fall back to numbering/style, so partial/noisy outlines never
+          degrade the numbering result.
+        - ``use_style`` requires the parsed PDF cells to still be available when the
+          heading-hierarchy step runs, i.e.
+          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
+          silently skipped (numbering still applies).
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable inference of section-header levels for the PDF/image pipeline. When "
+                "disabled (default), all detected headings remain at level 1 (unchanged "
+                "behavior)."
+            )
+        ),
+    ] = False
+    use_bookmarks: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use the PDF bookmarks / table-of-contents (when present) as the authoritative "
+                "heading signal. Bookmarks are fuzzily matched to detected headings by title "
+                "and page; confident matches win over numbering and style, and a confidently "
+                "matched list-item is promoted to a heading. Unmatched entries fall back to "
+                "numbering/style."
+            )
+        ),
+    ] = True
+    use_numbering: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use legal/outline numbering (e.g. PART I -> 1. -> 1.1 -> (a) -> (i), Roman "
+                "vs Arabic numerals) as the primary signal for headings without a bookmark match."
+            )
+        ),
+    ] = True
+    use_style: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use the visual style of the heading (font size, and with `use_font_style` also "
+                "weight, slant and letter case) as a fallback for headings without recognizable "
+                "numbering. Requires `generate_parsed_pages=True`."
+            )
+        ),
+    ] = True
+    use_font_style: Annotated[
+        bool,
+        Field(
+            description=(
+                "Refine the style fallback with the font weight and slant read from the embedded "
+                "PDF font names, plus all-caps detection, so that headings sharing a font size "
+                "are still ranked (bold above regular, upright above italic, all-caps above "
+                "mixed case). Ignored when `use_style` is disabled; font names that carry no "
+                "recognizable styling fall back to font size alone."
+            )
+        ),
+    ] = True
+    style_size_tolerance: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "Relative difference below which two heading font sizes are treated as one size "
+                "by the style fallback. The size of a heading is measured from its cells, so the "
+                "same font measures a little taller on a heading that has descenders; without "
+                "this tolerance such headings would land on different levels. Higher = more "
+                "sizes collapse into one level."
+            ),
+        ),
+    ] = 0.05
+    numbering_schemes: Annotated[
+        list[str] | None,
+        Field(
+            description=(
+                "Optional override of the numbering-scheme precedence (highest level first). "
+                "Known schemes: 'part', 'chapter', 'article', 'roman_u', 'arabic', "
+                "'alpha_u', 'alpha_l', 'roman_l'. When None, a default legal/regulatory "
+                "ordering is used."
+            )
+        ),
+    ] = None
+    max_level: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=100,
+            description="Maximum heading level to assign. Deeper levels are clamped.",
+        ),
+    ] = 6
+    bookmark_match_threshold: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "Minimum normalized title-similarity (0..1) for a bookmark to be considered a "
+                "match to a detected heading/list-item. Below this, the bookmark is ignored and "
+                "the heading falls back to numbering/style. Higher = stricter."
+            ),
+        ),
+    ] = 0.8
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
@@ -1307,7 +2011,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
                 "Specifies which layout model to use (default: Heron)."
             )
         ),
-    ] = LayoutOptions()
+    ] = Field(default_factory=LayoutObjectDetectionOptions)
     code_formula_options: Annotated[
         CodeFormulaVlmOptions,
         Field(
@@ -1365,6 +2069,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    heading_hierarchy_options: Annotated[
+        HeadingHierarchyOptions,
+        Field(
+            description=(
+                "Configuration for inferring section-header levels from PDF bookmarks, "
+                "numbering and font style. Disabled by default; when enabled, the "
+                "reading-order stage assigns SectionHeaderItem.level instead of leaving every "
+                "heading at level 1."
+            )
+        ),
+    ] = HeadingHierarchyOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
@@ -1422,6 +2137,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+    # Shutdown control
+    stage_shutdown_timeout_seconds: Annotated[
+        float,
+        Field(
+            description=(
+                "Seconds to wait for each pipeline stage thread to terminate during shutdown before it is "
+                "abandoned as stuck (its resources may then leak for the rest of the process lifetime). Only "
+                "used by `StandardPdfPipeline` (threaded mode)."
+            )
+        ),
+    ] = 15.0
 
 
 class ProcessingPipeline(str, Enum):
@@ -1444,4 +2170,14 @@ class ProcessingPipeline(str, Enum):
 
 
 class ThreadedPdfPipelineOptions(PdfPipelineOptions):
-    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control.
+
+    Inherits all settings from `PdfPipelineOptions`. The threaded pipeline
+    processes pages through concurrent stages (OCR, layout analysis, table
+    structure extraction) connected by bounded queues, enabling pipelined
+    parallelism within a single document. Batch sizes, polling intervals,
+    and queue limits are inherited from the parent class.
+
+    See Also:
+        `PdfPipelineOptions`: Base class with all batch and queue settings.
+    """

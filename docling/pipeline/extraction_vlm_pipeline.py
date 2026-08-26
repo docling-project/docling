@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import inspect
 import json
 import logging
@@ -7,8 +10,15 @@ from PIL.Image import Image
 from pydantic import BaseModel
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    VlmStopReason,
+)
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
     ExtractedPageData,
@@ -20,8 +30,8 @@ from docling.datamodel.pipeline_options import (
     VlmExtractionPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.extraction.nuextract_transformers_model import (
-    NuExtractTransformersModel,
+from docling.models.extraction.transformers_extraction_model import (
+    TransformersExtractionModel,
 )
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.utils.accelerator_utils import decide_device
@@ -29,20 +39,30 @@ from docling.utils.accelerator_utils import decide_device
 _log = logging.getLogger(__name__)
 
 
+def _raise_if_unsupported_threaded_backend(
+    backend: PaginatedDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
+
+
 class ExtractionVlmPipeline(BaseExtractionPipeline):
     def __init__(self, pipeline_options: VlmExtractionPipelineOptions):
         super().__init__(pipeline_options)
 
-        # Initialize VLM model with default options
         self.accelerator_options = pipeline_options.accelerator_options
         self.pipeline_options: VlmExtractionPipelineOptions
 
-        # Create VLM model instance
-        self.vlm_model = NuExtractTransformersModel(
+        self.vlm_model = TransformersExtractionModel(
             enabled=True,
-            artifacts_path=self.artifacts_path,  # Will download automatically
+            artifacts_path=self.artifacts_path,
             accelerator_options=self.accelerator_options,
             vlm_options=pipeline_options.vlm_options,
+            prompt_style=pipeline_options.extraction_prompt_style,
         )
 
     def _extract_data(
@@ -51,6 +71,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         """Extract data using the VLM model."""
+        backend = ext_res.input._backend
+        if isinstance(backend, PdfDocumentBackend):
+            _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
+
         try:
             # Get images from input document using the backend
             images = self._get_images_from_input(ext_res.input)
@@ -58,9 +82,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 ext_res.status = ConversionStatus.FAILURE
                 ext_res.errors.append(
                     ErrorItem(
-                        component_type="extraction_pipeline",
+                        component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
                         error_message="No images found in document",
+                        category=FailureCategory.BACKEND_FAILURE,
                     )
                 )
                 return ext_res
@@ -123,9 +148,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             _log.error(f"Error during extraction: {e}")
             ext_res.errors.append(
                 ErrorItem(
-                    component_type="extraction_pipeline",
+                    component_type=DoclingComponentType.PIPELINE,
                     module_name=self.__class__.__name__,
                     error_message=str(e),
+                    category=FailureCategory.UNKNOWN,
                 )
             )
 

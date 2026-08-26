@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -13,21 +16,22 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.cross_platform
 
 
 def test_e2e_vtt_conversions():
-    directory = Path("./tests/data/webvtt/")
+    directory = Path("./tests/data/webvtt/sources/")
     vtt_paths = sorted(directory.rglob("*.vtt"))
     converter = DocumentConverter(allowed_formats=[InputFormat.VTT])
 
     for vtt in vtt_paths:
-        gt_path = vtt.parent.parent / "groundtruth" / "docling_v2" / vtt.name
+        gt_path = vtt.parent.parent / "groundtruth" / vtt.name
 
         conv_result: ConversionResult = converter.convert(vtt)
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown(escape_html=False)
+        pred_md: str = doc.export_to_markdown(escape_html=False, compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
         )

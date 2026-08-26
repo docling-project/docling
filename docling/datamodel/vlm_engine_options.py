@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Engine options for VLM inference.
 
 This module defines engine-specific configuration options that are independent
@@ -5,9 +8,10 @@ of model specifications and prompts.
 """
 
 import logging
+from enum import Enum
 from typing import Any, Dict, Literal, Optional
 
-from pydantic import AnyUrl, Field
+from pydantic import AnyUrl, Field, model_validator
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.settings import default_compile_model
@@ -105,6 +109,48 @@ class MlxVlmEngineOptions(BaseVlmEngineOptions):
 # =============================================================================
 
 
+class VllmCudaGraphMode(str, Enum):
+    """CUDA graph capture mode for the vLLM v1 engine.
+
+    Controls whether and how vLLM captures CUDA graphs to speed up inference.
+    CUDA graphs reduce kernel-launch overhead by replaying a recorded sequence
+    of CUDA operations instead of launching each kernel individually.
+
+    NONE:
+        Disable CUDA graphs entirely; everything runs in eager mode.
+        Fastest startup, lowest steady-state throughput.
+        Best for short-lived processes, notebooks, and debugging.
+
+    FULL:
+        Capture the entire forward pass as one monolithic CUDA graph.
+        Maximum graph coverage but requires very static execution shapes;
+        may fail with some models or dynamic workloads.
+
+    PIECEWISE:
+        Capture segments of the model (e.g. transformer blocks) as multiple
+        smaller graphs between selected ops.  Handles dynamic shapes better
+        than FULL while still accelerating most of the forward pass.
+
+    FULL_AND_PIECEWISE:
+        Hybrid mode (default in many vLLM versions): FULL graphs for
+        decode-only batches; PIECEWISE graphs for prefill and mixed
+        prefill+decode batches.  Usually the best throughput option for
+        typical LLM serving workloads.
+
+    FULL_DECODE_ONLY:
+        FULL CUDA graphs only for decode batches; prefill and mixed batches
+        run in eager mode.  Dramatically reduces graph-capture time and
+        memory footprint compared to FULL_AND_PIECEWISE while still
+        accelerating token generation.
+    """
+
+    NONE = "NONE"
+    FULL = "FULL"
+    PIECEWISE = "PIECEWISE"
+    FULL_AND_PIECEWISE = "FULL_AND_PIECEWISE"
+    FULL_DECODE_ONLY = "FULL_DECODE_ONLY"
+
+
 class VllmVlmEngineOptions(BaseVlmEngineOptions):
     """Options for vLLM inference engine (high-throughput serving)."""
 
@@ -126,6 +172,26 @@ class VllmVlmEngineOptions(BaseVlmEngineOptions):
         default=False, description="Allow execution of custom code from model repo"
     )
 
+    cudagraph_mode: VllmCudaGraphMode = Field(
+        default=VllmCudaGraphMode.PIECEWISE,
+        description=(
+            "CUDA graph capture mode (vLLM v1 engine only). "
+            "See VllmCudaGraphMode for the available options and their trade-offs."
+        ),
+    )
+
+    model_impl: str = Field(
+        default="auto",
+        description=(
+            "vLLM model implementation backend. "
+            "Accepted values depend on the installed vLLM version; common values are "
+            "'auto', 'vllm', and 'transformers'. "
+            "'auto' uses vLLM's native implementation when available and otherwise falls back "
+            "to the Transformers modeling backend; 'vllm' forces the native implementation; "
+            "'transformers' forces the Transformers modeling backend."
+        ),
+    )
+
 
 # =============================================================================
 # API ENGINE OPTIONS
@@ -142,9 +208,7 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
     - OpenAI
     """
 
-    engine_type: VlmEngineType = Field(
-        default=VlmEngineType.API, description="API variant to use"
-    )
+    engine_type: VlmEngineType = Field(description="API variant to use")
 
     url: AnyUrl = Field(
         default=AnyUrl("http://localhost:11434/v1/chat/completions"),
@@ -164,15 +228,20 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
 
     concurrency: int = Field(default=1, description="Number of concurrent requests")
 
-    def __init__(self, **data):
-        """Initialize with default URLs based on engine type."""
-        if "engine_type" in data and "url" not in data:
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_defaults(cls, data: Any) -> Any:
+        """Supply default engine_type and URL when not explicitly provided."""
+        if not isinstance(data, dict):
+            return data
+        if "engine_type" not in data:
+            data = {**data, "engine_type": VlmEngineType.API}
+        if "url" not in data:
             engine_type = data["engine_type"]
             if engine_type == VlmEngineType.API_OLLAMA:
-                data["url"] = "http://localhost:11434/v1/chat/completions"
+                data = {**data, "url": "http://localhost:11434/v1/chat/completions"}
             elif engine_type == VlmEngineType.API_LMSTUDIO:
-                data["url"] = "http://localhost:1234/v1/chat/completions"
+                data = {**data, "url": "http://localhost:1234/v1/chat/completions"}
             elif engine_type == VlmEngineType.API_OPENAI:
-                data["url"] = "https://api.openai.com/v1/chat/completions"
-
-        super().__init__(**data)
+                data = {**data, "url": "https://api.openai.com/v1/chat/completions"}
+        return data

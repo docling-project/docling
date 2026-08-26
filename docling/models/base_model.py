@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
@@ -125,10 +128,6 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text",
-                            "text": "This is a page from a document.",
-                        },
                         {"type": "image"},
                         {"type": "text", "text": user_prompt},
                     ],
@@ -195,22 +194,14 @@ class BaseItemAndImageEnrichmentModel(
             embedded_im = element.get_image(conv_res.document)
             if embedded_im is not None:
                 return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
-            elif len(element.prov) == 0:
+            elif len(element.prov) == 0 or not conv_res.pages:
                 return None
 
         # Crop the image form the page
         element_prov = element.prov[0]
         bbox = element_prov.bbox
-        width = bbox.r - bbox.l
-        height = bbox.t - bbox.b
-
-        # TODO: move to a utility in the BoundingBox class
-        expanded_bbox = BoundingBox(
-            l=bbox.l - width * self.expansion_factor,
-            t=bbox.t + height * self.expansion_factor,
-            r=bbox.r + width * self.expansion_factor,
-            b=bbox.b - height * self.expansion_factor,
-            coord_origin=bbox.coord_origin,
+        expanded_bbox = bbox.expand_by_scale(
+            self.expansion_factor, self.expansion_factor
         )
 
         page_ix = element_prov.page_no - conv_res.pages[0].page_no

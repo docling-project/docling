@@ -1,8 +1,12 @@
-import sys
-from pathlib import Path
-from typing import Annotated, Optional, Tuple
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
 
-from pydantic import BaseModel, PlainValidator
+import sys
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Annotated, Iterator, Optional, Tuple
+
+from pydantic import AfterValidator, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +18,7 @@ def _validate_page_range(v: Tuple[int, int]) -> Tuple[int, int]:
     return v
 
 
-PageRange = Annotated[Tuple[int, int], PlainValidator(_validate_page_range)]
+PageRange = Annotated[Tuple[int, int], AfterValidator(_validate_page_range)]
 
 DEFAULT_PAGE_RANGE: PageRange = (1, sys.maxsize)
 
@@ -51,7 +55,7 @@ class DebugSettings(BaseModel):
 
 
 class InferenceSettings(BaseModel):
-    compile_torch_models: bool = True
+    compile_torch_models: bool = False
 
 
 class AppSettings(BaseSettings):
@@ -68,6 +72,39 @@ class AppSettings(BaseSettings):
 
 
 settings = AppSettings()
+
+
+def defaults() -> AppSettings:
+    """Return a fresh settings instance populated from the current environment."""
+    return AppSettings()
+
+
+@contextmanager
+def scoped(
+    *,
+    perf: BatchConcurrencySettings | None = None,
+    debug: DebugSettings | None = None,
+    inference: InferenceSettings | None = None,
+) -> Iterator[AppSettings]:
+    """Temporarily override selected settings and restore them on exit."""
+    saved = {
+        "perf": settings.perf.model_copy(deep=True),
+        "debug": settings.debug.model_copy(deep=True),
+        "inference": settings.inference.model_copy(deep=True),
+    }
+
+    try:
+        if perf is not None:
+            settings.perf = perf
+        if debug is not None:
+            settings.debug = debug
+        if inference is not None:
+            settings.inference = inference
+        yield settings
+    finally:
+        settings.perf = saved["perf"].model_copy(deep=True)
+        settings.debug = saved["debug"].model_copy(deep=True)
+        settings.inference = saved["inference"].model_copy(deep=True)
 
 
 def default_compile_model() -> bool:

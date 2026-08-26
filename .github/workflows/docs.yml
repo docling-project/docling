@@ -3,24 +3,38 @@ on:
         inputs:
             deploy:
                 type: boolean
-                description: "If true, the docs will be deployed."
+                description: "If true, upload the build as a Pages artifact for a follow-on deploy job in the caller."
                 default: false
+            python_version:
+                type: string
+                description: "Python version used for the docs environment."
+                default: "3.12"
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
 
+# This reusable workflow only builds the docs. The actual GitHub Pages
+# deployment lives in cd-docs.yml so the build path (called by ci-docs.yml
+# from PRs) doesn't need to request pages/id-token permissions it never uses.
+
 jobs:
-    run-docs:
+    build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
-        - name: Install uv and set the python version
-          uses: astral-sh/setup-uv@v7
+        - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        - uses: ./.github/actions/setup-ubuntu-ci
           with:
-            python-version: ${{ matrix.python-version }}
-            enable-cache: true
+            python_version: ${{ inputs.python_version }}
+            uv_sync_args: --frozen --group docs --all-extras --all-packages --no-group dev --no-group examples
+        - name: Render notebooks to markdown
+          run: uv run --no-sync python scripts/render_notebooks.py
+        - name: Render CLI reference
+          run: uv run --no-sync python scripts/render_cli_reference.py
         - name: Build docs
-          run: uv run mkdocs build --verbose --clean
-        - name: Build and push docs
+          run: uv run --no-sync zensical build
+        - name: Upload Pages artifact
           if: inputs.deploy
-          run: uv run --no-sync mkdocs gh-deploy --force
+          uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+          with:
+            path: ./site

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Threaded Layout+VLM Pipeline
 ================================
 A specialized two-stage threaded pipeline that combines layout model preprocessing
@@ -20,22 +23,28 @@ if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import (
+    LayoutPostprocessorOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
     InlineVlmOptions,
 )
 from docling.datamodel.settings import settings
-from docling.datamodel.vlm_model_specs import DOCLING_BASE_PAGE_PROMPT
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.stages.layout.layout_model import LayoutModel
+from docling.models.factories import get_layout_factory
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
+)
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
@@ -52,6 +61,17 @@ from docling.pipeline.standard_pdf_pipeline import (
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+
+def _raise_if_unsupported_threaded_backend(
+    backend: AbstractDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
 
 
 class ThreadedLayoutVlmPipeline(BasePipeline):
@@ -72,16 +92,27 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Initialize layout and VLM models."""
         art_path = self._resolve_artifacts_path()
 
-        # The layout model is forced to run on CPU.
-        # In this threaded pipeline, the VLM exclusively owns the GPU.
-        # Allowing multiple models to use the GPU concurrently can cause
-        # device contention, memory spikes, and unstable inference behavior.
-        # Since the layout model is lightweight, running it on CPU avoids
-        # cross-thread GPU contention without significantly impacting latency.
-        self.layout_model = LayoutModel(
-            artifacts_path=art_path,
-            accelerator_options=AcceleratorOptions(device="cpu"),
+        # Layout model
+        layout_factory = get_layout_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        self.layout_model = layout_factory.create_instance(
             options=self.pipeline_options.layout_options,
+            artifacts_path=art_path,
+            accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+        )
+
+        # Standalone layout post-processing stage; the VLM prompt augmentation
+        # reads processed clusters from page.predictions.layout.
+        lo = self.pipeline_options.layout_options
+        self.layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=lo.create_orphan_clusters,
+                run_postprocessor=self.layout_model.requires_layout_postprocessing,
+            )
         )
 
         # VLM model based on options type
@@ -221,6 +252,15 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             queue_max_size=opts.queue_max_size,
         )
 
+        # Layout post-processing stage
+        layout_postprocess_stage = ThreadedPipelineStage(
+            name="layout_postprocess",
+            model=self.layout_postprocessing_model,
+            batch_size=1,
+            batch_timeout=opts.batch_timeout_seconds,
+            queue_max_size=opts.queue_max_size,
+        )
+
         # VLM stage - now layout-aware through enhanced build_prompt
         vlm_stage = ThreadedPipelineStage(
             name="vlm",
@@ -232,19 +272,21 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
         # Wire stages
         output_q = ThreadedQueue(opts.queue_max_size)
-        layout_stage.add_output_queue(vlm_stage.input_queue)
+        layout_stage.add_output_queue(layout_postprocess_stage.input_queue)
+        layout_postprocess_stage.add_output_queue(vlm_stage.input_queue)
         vlm_stage.add_output_queue(output_q)
 
-        stages = [layout_stage, vlm_stage]
+        stages = [layout_stage, layout_postprocess_stage, vlm_stage]
         return RunContext(
             stages=stages, first_stage=layout_stage, output_queue=output_q
         )
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Build document using threaded layout+VLM pipeline."""
-        run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
+        _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
+        run_id = next(self._run_seq)
 
         # Initialize pages
         start_page, end_page = conv_res.input.limits.page_range

@@ -350,13 +350,13 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# docs site build output (zensical, mkdocs)
 /site
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# generated docs sources — produced by scripts/render_notebooks.py and
+# scripts/render_cli_reference.py at build time
+/docs/_generated/
+/docs/reference/cli.md
 
 # Pyre type checker
 .pyre/
@@ -439,3 +439,6 @@ pip-selfcheck.json
 # Docs
 # docs/**/*.png
 # docs/**/*.svg
+
+# AI agents
+**/.bob/

@@ -19,7 +19,7 @@
 #   as needed.
 #
 # Notes
-# - Enabling `do_chart_extraction` automatically enables picture classification.
+# - Setting `do_chart_extraction=True` automatically enables picture classification.
 # - Supported chart types: bar chart, pie chart, line chart.
 
 # %%
