@@ -57,8 +57,6 @@ ibm.com /redbooks Redpaper
 | 3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . | 29 |
 | 3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . . | 32 |
 
-© Copyright IBM Corp. 2014. All rights reserved.
-
 DB2 for i Center of Excellence
 
 Solution Brief IBM Systems Lab Services and Training
@@ -136,8 +134,6 @@ This chapter describes how you can secure and protect data in DB2 for i. The fol
 1   http://www.idtheftcenter.org
 
 2 http://www.ponemon.org /
-
-© Copyright IBM Corp. 2014. All rights reserved.
 
 ## 1.1  Security fundamentals
 
@@ -384,8 +380,6 @@ Protect columns by defining column masks This IBM Redpaper publication provides 
 This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.
 
 <!-- image -->
-
-®
 
 <!-- image -->
 

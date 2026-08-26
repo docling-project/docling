@@ -444,9 +444,6 @@
         "$ref": "#/pictures/15"
       },
       {
-        "$ref": "#/texts/224"
-      },
-      {
         "$ref": "#/pictures/16"
       },
       {
@@ -947,8 +944,8 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
-      "label": "footnote",
+      "content_layer": "furniture",
+      "label": "page_footer",
       "prov": [
         {
           "page_no": 2,
@@ -2140,8 +2137,8 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
-      "label": "footnote",
+      "content_layer": "furniture",
+      "label": "page_footer",
       "prov": [
         {
           "page_no": 5,
@@ -6899,7 +6896,7 @@
     {
       "self_ref": "#/texts/224",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/15"
       },
       "children": [],
       "content_layer": "body",
@@ -7199,8 +7196,8 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 143.85,
-            "t": 521.74,
+            "l": 143.84,
+            "t": 521.75,
             "r": 179.45,
             "b": 506.95,
             "coord_origin": "BOTTOMLEFT"
@@ -7228,10 +7225,10 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 64.0,
-            "t": 187.87,
-            "r": 259.12,
-            "b": 104.12,
+            "l": 64.07,
+            "t": 187.98,
+            "r": 259.09,
+            "b": 104.28,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7257,10 +7254,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 142.35,
-            "t": 416.89,
-            "r": 251.54,
-            "b": 289.13,
+            "l": 142.37,
+            "t": 416.94,
+            "r": 251.53,
+            "b": 289.1,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7286,10 +7283,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 145.23,
+            "l": 145.22,
             "t": 264.66,
-            "r": 252.23,
-            "b": 156.46,
+            "r": 252.12,
+            "b": 156.57,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7315,10 +7312,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 32.3,
-            "t": 721.34,
-            "r": 240.5,
-            "b": 553.65,
+            "l": 32.2,
+            "t": 721.53,
+            "r": 241.6,
+            "b": 553.26,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7818,17 +7815,21 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/224"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [
         {
           "page_no": 18,
           "bbox": {
-            "l": 485.63,
-            "t": 766.6,
-            "r": 563.25,
-            "b": 737.7,
+            "l": 485.6,
+            "t": 766.56,
+            "r": 566.27,
+            "b": 737.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7861,10 +7862,10 @@
         {
           "page_no": 18,
           "bbox": {
-            "l": 474.25,
-            "t": 712.36,
-            "r": 592.27,
-            "b": 602.7,
+            "l": 474.23,
+            "t": 712.2,
+            "r": 592.18,
+            "b": 602.77,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7892,10 +7893,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 136.03,
-            "t": 660.6,
-            "r": 547.77,
-            "b": 77.01,
+            "l": 136.0,
+            "t": 660.73,
+            "r": 547.8,
+            "b": 77.14,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -11572,7 +11573,7 @@
           "bbox": {
             "l": 135.63,
             "t": 502.54,
-            "r": 546.46,
+            "r": 546.47,
             "b": 349.8,
             "coord_origin": "BOTTOMLEFT"
           },

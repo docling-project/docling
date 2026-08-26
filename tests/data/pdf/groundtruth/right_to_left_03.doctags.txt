@@ -1,5 +1,5 @@
 <doctag><section_header_level_1><loc_52><loc_37><loc_225><loc_48>اميدنامه پذيرش در بازار اصلی - کالای داخلی</section_header_level_1>
-<picture><loc_347><loc_22><loc_385><loc_50></picture>
+<picture><loc_327><loc_22><loc_405><loc_61></picture>
 <section_header_level_1><loc_322><loc_55><loc_404><loc_62>شرکت بورس کالای ايران</section_header_level_1>
 <section_header_level_1><loc_308><loc_82><loc_403><loc_93>-2-5 استاندارد کالا</section_header_level_1>
 <text><loc_56><loc_96><loc_222><loc_125>شمشه  و  شمشال  توليد  شده  به  روش  ريخته  گری پيوسته مورد مصرف  در  فولادهای  سازه  ای  - مطابق آناليز پيوست</text>
@@ -15,6 +15,6 @@
 <text><loc_321><loc_155><loc_436><loc_165>مرجع صادرکننده استاندارد</text>
 <text><loc_245><loc_169><loc_436><loc_192>آيا توليدکننده محصول، استاندارد مذکور را اخذ نموده است؟</text>
 <section_header_level_1><loc_344><loc_209><loc_425><loc_219>-3 پذيرش در بورس</section_header_level_1>
-<otsl><loc_60><loc_218><loc_421><loc_355><fcel>1403/09/19<fcel>مدارک ارائه تاريخ<nl><fcel>1403/10/04<fcel>پذيرش تاريخ<nl><fcel>436<fcel>جلسه شماره عرضه کميته<nl><fcel>1403/10/05<fcel>اميدنامه درج تاريخ<nl><fcel>کارگزاری آ رمون بورس<fcel>پذيرش مشاور<nl><fcel>بر قيمت اساس های جهانی<fcel>در کالا پذيرش از پس پايه قيمت تعيين نحوة بورس<nl><fcel>حداقل %50 يا ساليانه توليد از 47.500 تن<fcel>توليد از عرضه درصد حداقل / کل فروش/ فروش داخلی<nl><fcel>5% تحويل قابل محموله آخرين<fcel>تحويل مجاز خطای<nl></otsl>
+<otsl><loc_60><loc_217><loc_421><loc_355><fcel>1403/09/19<fcel>مدارک ارائه تاريخ<nl><fcel>1403/10/04<fcel>پذيرش تاريخ<nl><fcel>436<fcel>جلسه شماره عرضه کميته<nl><fcel>1403/10/05<fcel>اميدنامه درج تاريخ<nl><fcel>کارگزاری آ رمون بورس<fcel>پذيرش مشاور<nl><fcel>بر قيمت اساس های جهانی<fcel>در کالا پذيرش از پس پايه قيمت تعيين نحوة بورس<nl><fcel>حداقل %50 يا ساليانه توليد از 47.500 تن<fcel>توليد از عرضه درصد حداقل / کل فروش/ فروش داخلی<nl><fcel>5% تحويل قابل محموله آخرين<fcel>تحويل مجاز خطای<nl></otsl>
 <page_footer><loc_224><loc_464><loc_247><loc_469>Page 7</page_footer>
 </doctag>
