@@ -100,10 +100,11 @@ class YourOcrModel(BaseOcrModel):
         return language.language
 ```
 
-`BaseOcrModel.resolve_ocr_languages()` then applies the two uniform policies for you: on a
-single-language engine every language after the first is dropped with a warning, and an
-`OcrLanguageNotSupportedError` is re-raised with your supported list attached. Call it once from
-`__init__`, inside your `if self.enabled:` block, and use the result in place of `options.lang`.
+`BaseOcrModel.resolve_ocr_languages()` then drops every language after the first on a
+single-language engine, with a warning naming what it kept. It does not touch the error path: an
+`OcrLanguageNotSupportedError` your `map_ocr_language` raises propagates unchanged, which is why
+the sample above attaches `supported=` itself. Call it once from `__init__`, inside your
+`if self.enabled:` block, and use the result in place of `options.lang`.
 
 ### Layout engine factory
 

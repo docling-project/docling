@@ -1,4 +1,4 @@
-docs/concepts/OCR.md# OCR engines in Docling
+# OCR in Docling
 
 ## Overview
 
@@ -24,8 +24,8 @@ from docling.datamodel.pipeline_options import TesseractCliOcrOptions
 TesseractCliOcrOptions(lang=["de", "en"])  # -> tesseract -l deu+eng
 ```
 
-Canonicalization drops the region once it has told us the script, because no OCR engine docling
-supports distinguishes `de-DE` from `de-AT`:
+Canonicalization drops the region once it has told us the script, because no OCR engine
+distinguishes `de-DE` from `de-AT`:
 
 | You write                     | Docling stores | Why                                       |
 | ----------------------------- | -------------- | ----------------------------------------- |
@@ -48,10 +48,9 @@ One tag carries engine-independent meaning, and it must be used **alone**.
 | ----- | ------------------ | ---------------------------------------- |
 | `mul` | multiple languages | The engine's broadest multilingual model |
 
-There is no tag for "undetermined" and none for a script family. An **empty list** is how you
-say "let the engine decide", and a script is named by naming a language written in it. To skip OCR
-altogether, turn the stage off — `--no-ocr` on the CLI, `do_ocr=False` in the pipeline options —
-rather than naming a language.
+An **empty list** is how you say "let the engine decide", and a script is named by naming a
+language written in it. To skip OCR altogether, turn the stage off — `--no-ocr` on the CLI,
+`do_ocr=False` in the pipeline options.
 
 What each engine does with an empty `lang` and with `mul`:
 
@@ -63,6 +62,9 @@ What each engine does with an empty `lang` and with `mul`:
 | RapidOCR / KServe | The Simplified Chinese default     | Error -- list the languages |
 | Nemotron-OCR      | The English model                  | The multilingual model      |
 | ocrmac            | Vision's own automatic behaviour   | Error                       |
+
+On the CLI, omitting `--ocr-lang` applies the engine's default languages; an empty value,
+`--ocr-lang ""`, is how you ask for the `lang=[]` column above.
 
 Engines that ship a recognizer named after a script rather than a language expose it under
 that engine's own token: `latin`, `cyrillic`, `arabic` and `devanagari` for RapidOCR and
@@ -126,8 +128,11 @@ RapidOcrOptions(lang=["ka-Geor"])   # Georgian, not Kannada
 EasyOcrOptions(lang=["ang-Latn"])   # Old English, not Angika
 ```
 
-`docling remote` is the exception: it has no `--ocr-engine`, so it accepts only the codes every
-engine agrees on. The six above have to be written as tags there.
+With no engine selected -- `docling convert-remote`, or `--ocr-engine auto` before it has picked one
+-- there is nothing to prefer an engine's reading over the standard one, so only the codes every
+engine agrees on carry their engine meaning. `ch` is refused there and names `zh-Hans` in the
+message; the other five parse as ordinary BCP-47 and mean the *BCP-47* column above, so `ka` is
+Georgian and `ang` is Old English. Name the engine, or write the qualified tag, to be explicit.
 
 ### Codes with no tag
 
@@ -142,20 +147,6 @@ them rather than quietly selecting a neighbouring recognizer:
 
 Custom traineddata files you trained yourself fall in the same category and are not reachable
 through `lang`.
-
-### Retired codes
-
-These belonged to no engine, or to an engine you did not select. They raise, with the replacement
-named in the message:
-
-| Was                     | Now                     |
-| ----------------------- | ----------------------- |
-| `auto`, `osd`, `und`    | an empty list           |
-| `jp`                    | `ja`                    |
-| `multi`                 | `mul`                   |
-| `zh_cn` / `zh_tw`       | `zh-Hans` / `zh-Hant`   |
-| `latin`, `cyrillic`,    | a language written in   |
-| `bengali`               | that script             |
 
 ### When an engine has no model
 
@@ -291,11 +282,11 @@ own, shown here to explain the grouping):
 | `cyrillic_g2.pth`      | `ru`, `rs_cyrillic`, `be`, `bg`, `uk`, `mn`, `abq`, `ady`, `kbd`,       |
 |                        | `ava`, `dar`, `inh`, `che`, `lbe`, `lez`, `tab`, `tjk`, `en`            |
 
-<u>Notice</u>: keep the requested language list as short and specific as possible. Because the resolution
-picks a model that covers *all* requested languages, adding a language you do not need downgrades the
-model for the ones you do. For example, `["en"]` selects the English-specific `english_g2.pth`, while
-`["en", "de"]` falls back to the broader `latin_g2.pth`, which is generally less accurate on English
-text.
+<u>Notice</u>: keep the requested language list as short and specific as possible. Because the
+resolution picks a model that covers *all* requested languages, adding a language you do not need
+downgrades the model for the ones you do. For example, `["en"]` selects the English-specific
+`english_g2.pth`, while `["en", "de"]` falls back to the broader `latin_g2.pth`, which is generally
+less accurate on English text.
 
 Check the semantic of easyocr language inputs here: https://www.jaided.ai/easyocr/
 
@@ -323,7 +314,8 @@ Russian. Any other language raises rather than silently loading the multilingual
 
 ## Tesseract - TesserOCR
 
-Tesseract must be installed as a system package (see [installation](../getting_started/installation.md)).
+Tesseract must be installed as a system package (see
+[installation](../getting_started/installation.md)).
 TesserOCR is a python library that wraps the Tesseract engine.
 
 Tesseract's own vocabulary *is* ISO 639-2/T, so most tags map straight through: `de` becomes `deu`,
