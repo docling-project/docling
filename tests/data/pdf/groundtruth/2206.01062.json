@@ -9118,12 +9118,12 @@
           },
           "charspan": [
             0,
-            167
+            170
           ]
         }
       ],
-      "orig": "\u00b7 Informationsystems \u2192 Documentstructure ; \u00b7 Appliedcomputing \u2192 Document analysis ; \u00b7 Computing methodologies \u2192 Machine learning ; Computer vision ; Object detection ;",
-      "text": "\u00b7 Informationsystems \u2192 Documentstructure ; \u00b7 Appliedcomputing \u2192 Document analysis ; \u00b7 Computing methodologies \u2192 Machine learning ; Computer vision ; Object detection ;"
+      "orig": "\u00b7 Information systems \u2192 Document structure ; \u00b7 Applied computing \u2192 Document analysis ; \u00b7 Computing methodologies \u2192 Machine learning ; Computer vision ; Object detection ;",
+      "text": "\u00b7 Information systems \u2192 Document structure ; \u00b7 Applied computing \u2192 Document analysis ; \u00b7 Computing methodologies \u2192 Machine learning ; Computer vision ; Object detection ;"
     },
     {
       "self_ref": "#/texts/317",
@@ -11581,12 +11581,12 @@
           },
           "charspan": [
             0,
-            322
+            329
           ]
         }
       ],
-      "orig": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNNnetworkwithResNet50backbonetrainedonincreasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions.",
-      "text": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNNnetworkwithResNet50backbonetrainedonincreasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions."
+      "orig": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNN network with ResNet50 backbone trained on increasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions.",
+      "text": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNN network with ResNet50 backbone trained on increasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions."
     },
     {
       "self_ref": "#/texts/404",
