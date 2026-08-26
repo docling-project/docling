@@ -6,7 +6,6 @@
 The service client is faked so these run without a live docling-serve instance.
 """
 
-import re
 from pathlib import Path, PurePath
 
 import pytest
@@ -16,13 +15,10 @@ from docling.cli.main import app
 from docling.cli.remote import _parse_page_range
 from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
 
-runner = CliRunner()
+# Under CI Rich thinks it has a terminal and colours the help screen.
+# `TERM=dumb` turns that off, so the text can be matched as it is written.
+runner = CliRunner(env={"TERM": "dumb"})
 pytestmark = pytest.mark.external_service
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _strip_ansi(text: str) -> str:
-    return _ANSI_RE.sub("", text)
 
 
 class _FakeDoc:
@@ -97,7 +93,7 @@ def _patch_client(monkeypatch):
 def test_remote_help_is_self_sufficient():
     result = runner.invoke(app, ["convert-remote", "--help"])
     assert result.exit_code == 0
-    help_text = _strip_ansi(result.output)
+    help_text = result.output
     for marker in (
         "Authentication",
         "Exit codes",

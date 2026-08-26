@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -16,20 +15,15 @@ from docling.utils.model_downloader import download_models
 
 pytestmark = pytest.mark.ml_ocr
 
-runner = CliRunner()
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+# Under CI Rich thinks it has a terminal and styles the error panel, landing
+# escapes between the border and the wrapped halves of a sentence.
+# `TERM=dumb` turns that off, so the panel arrives as plain wrapped text.
+runner = CliRunner(env={"TERM": "dumb"})
 
 
 def _single_line_cli_output(output: str) -> str:
-    return " ".join(_ANSI_RE.sub("", output).replace("│", "").split())
-
-
-def test_single_line_cli_output_strips_ansi_styles() -> None:
-    output = "\x1b[1;33m--easyocr-lang\x1b[0m requires the 'easyocr'\n│ model"
-
-    assert _single_line_cli_output(output) == (
-        "--easyocr-lang requires the 'easyocr' model"
-    )
+    """The error panel still wraps and draws borders: flatten it to one line."""
+    return " ".join(output.replace("│", "").split())
 
 
 @pytest.mark.parametrize(

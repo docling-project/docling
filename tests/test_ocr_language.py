@@ -629,9 +629,15 @@ def test_every_engine_kind_selects_its_native_vocabulary(cls) -> None:
 #
 # `--ocr-lang`: construction, canonicalization, and error reporting.
 
-runner = CliRunner()
+# TERM=dumb disables the Rich styling in the CI
+runner = CliRunner(env={"TERM": "dumb"})
 
 _SOURCE = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+
+
+def _flat_cli_output(output: str) -> str:
+    """The error box still wraps and draws borders: flatten it to one line."""
+    return " ".join(output.replace("│", "").split())
 
 
 def _capture_ocr_options(monkeypatch, extra_args: list[str], tmp_path: Path):
@@ -707,7 +713,7 @@ def test_retired_or_malformed_ocr_lang_fails_with_a_hint(
     )
 
     assert result.exit_code != 0
-    assert hint in " ".join(result.output.replace("│", "").split())
+    assert hint in _flat_cli_output(result.output)
 
 
 @pytest.mark.parametrize(
@@ -755,4 +761,4 @@ def test_another_engines_native_code_is_rejected(tmp_path: Path) -> None:
     )
 
     assert result.exit_code != 0
-    assert "zh-Hans" in " ".join(result.output.replace("│", "").split())
+    assert "zh-Hans" in _flat_cli_output(result.output)
