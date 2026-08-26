@@ -33,6 +33,15 @@ TABLE_LABELS = [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
 FIGURE_LABEL = DocItemLabel.PICTURE
 FORMULA_LABEL = DocItemLabel.FORMULA
 CONTAINER_LABELS = [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]
+# Labels whose items never carry character formatting: heading markup already conveys prominence,
+# and code and formulas are serialized inside their own delimiters, where emphasis markers would
+# end up wrapping the fence rather than the text.
+UNSTYLED_LABELS = [
+    DocItemLabel.SECTION_HEADER,
+    DocItemLabel.TITLE,
+    DocItemLabel.CODE,
+    DocItemLabel.FORMULA,
+]
 
 
 class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):

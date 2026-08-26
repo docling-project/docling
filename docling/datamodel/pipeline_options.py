@@ -1920,6 +1920,49 @@ class HeadingHierarchyOptions(BaseModel):
     ] = 0.8
 
 
+class TextFormattingOptions(BaseModel):
+    """Options for recovering character formatting in the PDF/image pipeline.
+
+    The PDF path never sets ``TextItem.formatting``, so bold and italic text converts
+    indistinguishably from body text, unlike the Word, HTML, Markdown and ODF backends. When
+    ``enabled``, the reading-order stage reads the weight and slant of the embedded PDF font
+    names and sets ``formatting`` on the text items whose cells agree on it. Only ``bold`` and
+    ``italic`` are set; underline, strikethrough and script leave no trace in a font name.
+
+    Notes:
+        - Formatting describes a whole text item, while a PDF carries a font per cell. An item
+          whose cells disagree -- a bold "Figure 7." in front of an italic caption -- is left
+          unformatted rather than emphasized as a whole.
+        - Section headers, titles, code and formulas are never formatted: heading markup already
+          conveys prominence, and emphasis markers around a code fence corrupt it.
+        - Items with no digital text layer (OCR results, the pypdfium2 backend) carry no font
+          information and are left unformatted.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable recovery of bold and italic text for the PDF/image pipeline. When "
+                "disabled (default), TextItem.formatting is left unset and emphasis is dropped "
+                "from the converted document (unchanged behavior)."
+            )
+        ),
+    ] = False
+    use_rendering_mode: Annotated[
+        bool,
+        Field(
+            description=(
+                "Also read text drawn with a stroked outline as bold, which is how a PDF fakes a "
+                "bold face when no bold font is embedded. Applies only to text whose font name "
+                "carries no recognizable weight, so an explicit regular weight is never "
+                "overridden. Most PDFs never record a rendering mode, in which case this has no "
+                "effect."
+            )
+        ),
+    ] = True
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -2080,6 +2123,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    text_formatting_options: Annotated[
+        TextFormattingOptions,
+        Field(
+            description=(
+                "Configuration for recovering bold and italic text from the embedded PDF font "
+                "names. Disabled by default; when enabled, the reading-order stage sets "
+                "TextItem.formatting instead of dropping emphasis."
+            )
+        ),
+    ] = TextFormattingOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 

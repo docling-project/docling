@@ -33,18 +33,17 @@ drive the style fallback.
 """
 
 import re
-from collections import Counter
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from statistics import median
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
-from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
+from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
-from docling.utils.font_style import parse_font_style, weight_class
+from docling.utils.font_style import tally_cell_styles
 from docling.utils.pdf_outline import _PdfOutlineItem
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
@@ -248,39 +247,25 @@ def _heading_style(
 
     page_height = parsed.dimension.height
     hbox = prov.bbox.to_top_left_origin(page_height)
-    heights: list[float] = []
-    weights: Counter[int] = Counter()
-    styled_chars = 0
-    italic_chars = 0
-    for cell in parsed.textline_cells:
-        if not cell.text or not cell.text.strip():
-            continue
-        cbox = cell.rect.to_bounding_box().to_top_left_origin(page_height)
-        if not hbox.overlaps(cbox):
-            continue
-        heights.append(cell.rect.height)
-
-        if not options.use_font_style or not isinstance(cell, PdfTextCell):
-            continue
-        style = parse_font_style(cell.font_name)
-        if not style.known:
-            continue
-        chars = len(cell.text.strip())
-        weights[weight_class(style.weight)] += chars
-        styled_chars += chars
-        if style.italic:
-            italic_chars += chars
-
-    if not heights:
+    overlapping = [
+        cell
+        for cell in parsed.textline_cells
+        if cell.text
+        and cell.text.strip()
+        and hbox.overlaps(cell.rect.to_bounding_box().to_top_left_origin(page_height))
+    ]
+    if not overlapping:
         return None
-    size = median(heights)
+
+    size = median(cell.rect.height for cell in overlapping)
     if not options.use_font_style:
         return _HeadingStyle(size=size)
+    tally = tally_cell_styles(overlapping)
     return _HeadingStyle(
         size=size,
         # On a tie, the heavier class wins: emphasis is what makes a heading stand out.
-        weight_cls=max(weights, key=lambda cls: (weights[cls], cls), default=0),
-        italic=bool(styled_chars) and italic_chars / styled_chars >= _ITALIC_RATIO,
+        weight_cls=tally.dominant_weight_class(),
+        italic=tally.italic_share >= _ITALIC_RATIO,
         caps=_is_all_caps(item.text),
     )
 

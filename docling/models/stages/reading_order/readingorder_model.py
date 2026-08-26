@@ -21,6 +21,7 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.common.formatting import Formatting
 from docling_core.types.doc.document import ContentLayer
 from docling_ibm_models.list_item_normalizer.list_marker_processor import (
     ListItemMarkerProcessor,
@@ -41,6 +42,9 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import TextFormattingOptions
+from docling.models.base_layout_model import UNSTYLED_LABELS
+from docling.utils.font_style import formatting_from_cells
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
@@ -48,6 +52,7 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    text_formatting: TextFormattingOptions = TextFormattingOptions()
 
 
 class ReadingOrderModel:
@@ -57,6 +62,15 @@ class ReadingOrderModel:
         self.options = options
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
+
+    def _cluster_formatting(self, cluster: Cluster) -> Formatting | None:
+        """Bold/italic of a cluster's text, or None when it is not determined."""
+        options = self.options.text_formatting
+        if not options.enabled or cluster.label in UNSTYLED_LABELS:
+            return None
+        return formatting_from_cells(
+            cluster.cells, use_rendering_mode=options.use_rendering_mode
+        )
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
@@ -109,7 +123,12 @@ class ReadingOrderModel:
             )
             if c_label == DocItemLabel.LIST_ITEM:
                 # TODO: Infer if this is a numbered or a bullet list item
-                l_item = doc.add_list_item(parent=doc_item, text=c_text, prov=c_prov)
+                l_item = doc.add_list_item(
+                    parent=doc_item,
+                    text=c_text,
+                    prov=c_prov,
+                    formatting=self._cluster_formatting(child),
+                )
                 self.list_item_processor.process_list_item(l_item)
             elif c_label == DocItemLabel.SECTION_HEADER:
                 doc.add_heading(parent=doc_item, text=c_text, prov=c_prov)
@@ -126,6 +145,7 @@ class ReadingOrderModel:
                     text=c_text,
                     prov=c_prov,
                     content_layer=content_layer,
+                    formatting=self._cluster_formatting(child),
                 )
 
     def _add_table_element(
@@ -582,6 +602,7 @@ class ReadingOrderModel:
             prov=prov,
             parent=parent,
             hyperlink=elem.hyperlink,
+            formatting=self._cluster_formatting(elem.cluster),
         )
         return new_item
 
@@ -615,12 +636,14 @@ class ReadingOrderModel:
                 prov=prov,
                 parent=current_list,
                 hyperlink=element.hyperlink,
+                formatting=self._cluster_formatting(element.cluster),
             )
             self.list_item_processor.process_list_item(new_item)
 
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
 
+            # No formatting: the heading markup already conveys the emphasis.
             new_item = out_doc.add_heading(
                 text=cap_text,
                 prov=prov,
@@ -651,6 +674,7 @@ class ReadingOrderModel:
                 parent=parent,
                 content_layer=content_layer,
                 hyperlink=element.hyperlink,
+                formatting=self._cluster_formatting(element.cluster),
             )
         return new_item, current_list
 
@@ -687,6 +711,11 @@ class ReadingOrderModel:
 
         if new_item.hyperlink != merged_elem.hyperlink:
             new_item.hyperlink = None
+
+        # The halves of a paragraph split across columns or pages are one item; if they are not
+        # emphasized alike, the concatenation is not uniformly emphasized either.
+        if new_item.formatting != self._cluster_formatting(merged_elem.cluster):
+            new_item.formatting = None
 
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
