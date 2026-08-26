@@ -34,18 +34,17 @@ DEFAULT_GAP_RATIO = 0.2
 
 def _sorted_chars_in_line(line: TextCell, char_cells: list[_C]) -> list[_C]:
     """Return the character cells lying within ``line``, ordered left to right."""
-    lo, hi = line.rect.to_bounding_box().t, line.rect.to_bounding_box().b
-    top, bottom = min(lo, hi), max(lo, hi)
+    line_box = line.rect.to_bounding_box()
+    top, bottom = min(line_box.t, line_box.b), max(line_box.t, line_box.b)
 
     inside = []
     for char in char_cells:
         box = char.rect.to_bounding_box()
         mid_y = (box.t + box.b) / 2
-        if top <= mid_y <= bottom and line.rect.to_bounding_box().l <= box.l:
-            if box.r <= line.rect.to_bounding_box().r:
-                inside.append(char)
+        if top <= mid_y <= bottom and line_box.l <= box.l and box.r <= line_box.r:
+            inside.append((box.l, char))
 
-    return sorted(inside, key=lambda c: c.rect.to_bounding_box().l)
+    return [char for _, char in sorted(inside, key=lambda pair: pair[0])]
 
 
 def _respace(chars: list[_C], gap_ratio: float) -> str:
