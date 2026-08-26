@@ -278,7 +278,12 @@ class OcrOptions(BaseOptions):
         `cls.kind` names the engine -- this is the only point that knows both the
         engine and the string the user wrote.
         """
-        return OcrLanguageResolver.canonicalize_ocr_language_tags(value, kind=cls.kind)
+        return [
+            language.tag
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(
+                value, kind=cls.kind
+            )
+        ]
 
     @model_validator(mode="after")
     def _apply_force_full_page_ocr(self) -> "OcrOptions":

@@ -43,6 +43,10 @@ _EASYOCR_LANGUAGE_CODES: dict[str, str] = {
     "sr-Latn": "rs_latin",
     "tg-Cyrl": "tjk",
     "fil-Latn": "tl",
+    # EasyOCR names these two with their ISO 639-3 codes; canonicalization
+    # reaches the 639-1 `av`/`ce`, which EasyOCR has no recognizer under.
+    "av-Cyrl": "ava",
+    "ce-Cyrl": "che",
     # EasyOCR's `ang` is Angika and its `mah` is Magahi, both Devanagari. CLDR
     # gives Angika a likely script of Latin and normalizes `mah` to Marshallese,
     # so neither is reachable without an explicit entry.
@@ -118,7 +122,9 @@ def resolve_easyocr_languages(tags: Iterable[str]) -> List[str]:
     """
     codes: List[str] = []
     for tag in tags:
-        language = OcrLanguageResolver.parse_ocr_language(tag, EasyOcrOptions.kind)
+        language = OcrLanguageResolver.canonicalize_ocr_language(
+            tag, EasyOcrOptions.kind
+        )
         code = _easyocr_code(language)
         if code is None:
             raise ValueError(f"Unsupported EasyOCR language: {tag}")
@@ -367,6 +373,8 @@ def _easyocr_code_to_tag(code: str) -> Optional[str]:
     if code in _EASYOCR_CODE_TO_TAG:
         return _EASYOCR_CODE_TO_TAG[code]
     try:
-        return OcrLanguageResolver.parse_ocr_language(code, EasyOcrOptions.kind).tag
+        return OcrLanguageResolver.canonicalize_ocr_language(
+            code, EasyOcrOptions.kind
+        ).tag
     except ValueError:
         return None

@@ -154,8 +154,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self.options = options
 
         # `options.lang` is already canonical
-        self.languages: tuple[OcrLanguage, ...] = (
-            OcrLanguageResolver.parse_ocr_languages(
+        self.languages: list[OcrLanguage] = (
+            OcrLanguageResolver.canonicalize_ocr_languages(
                 options.lang, kind=type(options).kind
             )
         )

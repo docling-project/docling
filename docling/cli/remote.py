@@ -53,9 +53,12 @@ def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
     if not tags:
         return None
     try:
-        return OcrLanguageResolver.canonicalize_ocr_language_tags(
-            tags, kind=OcrAutoOptions.kind
-        )
+        return [
+            language.tag
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(
+                tags, kind=OcrAutoOptions.kind
+            )
+        ]
     except ValueError as err:
         raise typer.BadParameter(str(err), param_hint="--ocr-lang") from err
 

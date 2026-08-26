@@ -28,11 +28,11 @@ from docling.datamodel.settings import settings
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.tesseract_utils import (
+    installed_language_tags,
     map_tesseract_language,
     map_tesseract_script,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
-    tesseract_language_to_tag,
 )
 from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
@@ -109,16 +109,11 @@ class TesseractOcrCliModel(BaseOcrModel):
             ]
 
     def supported_ocr_languages(self) -> List[str]:
-        tags = {
-            tag
-            for name in self._tesseract_languages or []
-            if (
-                tag := tesseract_language_to_tag(
-                    name, self._script_prefix or "", TesseractCliOcrOptions.kind
-                )
-            )
-        }
-        return sorted(tags)
+        return installed_language_tags(
+            self._tesseract_languages or [],
+            self._script_prefix or "",
+            TesseractCliOcrOptions.kind,
+        )
 
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
         assert self._tesseract_languages is not None

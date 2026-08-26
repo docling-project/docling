@@ -909,7 +909,9 @@ def convert(  # noqa: C901
                 "'en,de' or 'zh-Hant'. The selected engine's own language codes "
                 "are accepted too and mean what that engine means by them, so "
                 "'--ocr-engine rapidocr --ocr-lang ch' is Simplified Chinese. "
-                "Omit the option to let the engine pick. 'mul' selects a "
+                "Omit the option for the engine's default languages, or pass an "
+                "empty value (--ocr-lang '') to let the engine choose, which for "
+                "Tesseract is per-page script detection. 'mul' selects a "
                 "multilingual model on the engines that ship one; to skip OCR "
                 "entirely use --no-ocr."
             ),
@@ -1255,7 +1257,9 @@ def convert(  # noqa: C901
             resolved_ocr_mode = ocr_mode
         ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
         ocr_lang_list = _split_list(ocr_lang)
-        if ocr_lang_list:
+        # `_split_list` returns None only when the option was not given, so an
+        # explicitly empty value reaches the engine as `lang=[]`: "your default".
+        if ocr_lang_list is not None:
             ocr_kwargs["lang"] = ocr_lang_list
         try:
             ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore

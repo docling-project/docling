@@ -9,6 +9,7 @@ Tesseract itself rather than about either front-end lives here -- the same reaso
 `ppocr_languages.py` sits beside the two engines that speak PP-OCR.
 """
 
+from collections.abc import Sequence
 from typing import Optional, Tuple
 
 import langcodes
@@ -90,12 +91,38 @@ def tesseract_language_to_tag(name: str, script_prefix: str, kind: str) -> str |
         return _TESSERACT_TO_CANONICAL[name]
     if script_prefix and name.startswith(script_prefix):
         # A script traineddata file is named back as itself: that is what the
-        # user has to type to select it.
+        # user has to type to select it -- except the vertical-text ones, which
+        # `canonicalize_ocr_language` refuses, so naming them back would advertise a
+        # value that cannot be asked for.
+        if name.lower().endswith("_vert"):
+            return None
         return name
     try:
-        return OcrLanguageResolver.parse_ocr_language(name, kind).tag
+        return OcrLanguageResolver.canonicalize_ocr_language(name, kind).tag
     except ValueError:
         return None
+
+
+def installed_language_tags(
+    names: Sequence[str], script_prefix: str, kind: str
+) -> list[str]:
+    """The canonical tags this install can actually serve.
+
+    A name is reported only if the tag it renders as maps back to a file that is
+    installed. Without that round trip the list can offer a tag this install
+    cannot load: `frk` and `deu_latf` are both `de-Latf`, but only `deu_latf` is
+    what the tag maps to, so an install carrying just `frk` would advertise a
+    language it then refuses.
+    """
+    tags = set()
+    for name in names:
+        tag = tesseract_language_to_tag(name, script_prefix, kind)
+        if tag is None:
+            continue
+        language = OcrLanguageResolver.canonicalize_ocr_language(tag, kind)
+        if map_tesseract_language(language, script_prefix) in names:
+            tags.add(tag)
+    return sorted(tags)
 
 
 def parse_tesseract_orientation(orientation: str) -> int:

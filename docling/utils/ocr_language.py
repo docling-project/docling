@@ -156,7 +156,7 @@ class OcrLanguage(BaseModel):
 
 
 class OcrLanguageResolver:
-    """Parses user-supplied OCR language tokens into `OcrLanguage`.
+    """Canonicalizes user-supplied OCR language tokens into `OcrLanguage`.
 
     A namespace rather than an object: every entry point is a `@staticmethod`,
     the vocabularies and legacy tables are class variables, and the expensive
@@ -404,24 +404,15 @@ class OcrLanguageResolver:
     _AUTO_VOCABULARY: ClassVar[_NativeVocabulary]
 
     @staticmethod
-    def canonicalize_ocr_language_tags(
+    def canonicalize_ocr_languages(
         values: Sequence[str], kind: str | None = None
-    ) -> list[str]:
-        """Canonicalize a user-supplied language list into BCP-47 tags.
+    ) -> list[OcrLanguage]:
+        """Canonicalize a list of language requests, enforcing the reserved-tag rule.
 
         `kind` is the `OcrOptions.kind` of the selected engine, whose native
-        codes are accepted alongside BCP-47; see `parse_ocr_language`.
-        """
-        return [
-            language.tag
-            for language in OcrLanguageResolver.parse_ocr_languages(values, kind)
-        ]
-
-    @staticmethod
-    def parse_ocr_languages(
-        values: Sequence[str], kind: str | None = None
-    ) -> tuple[OcrLanguage, ...]:
-        """Parse a list of language requests, enforcing the reserved-tag rule.
+        codes are accepted alongside BCP-47; see `canonicalize_ocr_language`. Callers
+        that store strings -- `OcrOptions.lang`, the remote CLI -- read `.tag`
+        off each result.
 
         An empty list is valid and means "the engine's own default"; every
         engine decides what that is, and for Tesseract it is per-page script
@@ -433,7 +424,7 @@ class OcrLanguageResolver:
         """
         languages: list[OcrLanguage] = []
         for value in values:
-            language = OcrLanguageResolver.parse_ocr_language(value, kind)
+            language = OcrLanguageResolver.canonicalize_ocr_language(value, kind)
             if language not in languages:
                 languages.append(language)
 
@@ -444,11 +435,11 @@ class OcrLanguageResolver:
                 f"own, but it was combined with "
                 f"{[lang.tag for lang in languages if lang.tag != reserved[0]]}."
             )
-        return tuple(languages)
+        return languages
 
     @staticmethod
-    def parse_ocr_language(value: str, kind: str | None = None) -> OcrLanguage:
-        """Parse and canonicalize one user-supplied OCR language.
+    def canonicalize_ocr_language(value: str, kind: str | None = None) -> OcrLanguage:
+        """Canonicalize one user-supplied OCR language.
 
         `kind` is the `OcrOptions.kind` of the selected engine, whose own
         language codes are then accepted alongside BCP-47, e.g. `"rapidocr"` so

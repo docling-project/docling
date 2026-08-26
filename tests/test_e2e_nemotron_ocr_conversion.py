@@ -150,7 +150,8 @@ def get_converter(ocr_options: OcrOptions, ocr_batch_size: Optional[int] = None)
 def test_nemotron_language_mapping(tag, expected):
     model = NemotronOcrModel.__new__(NemotronOcrModel)
     assert (
-        model.map_ocr_language(OcrLanguageResolver.parse_ocr_language(tag)) == expected
+        model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
+        == expected
     )
 
 
@@ -160,7 +161,7 @@ def test_nemotron_rejects_uncovered_language(tag):
     falling back to the multilingual model, which is what used to happen."""
     model = NemotronOcrModel.__new__(NemotronOcrModel)
     with pytest.raises(OcrLanguageNotSupportedError, match="mul"):
-        model.map_ocr_language(OcrLanguageResolver.parse_ocr_language(tag))
+        model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
 
 
 def test_e2e_nemotron_ocr_conversions():

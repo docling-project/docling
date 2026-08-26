@@ -108,7 +108,20 @@ class OcrMacModel(BaseOcrModel):
             self._native_langs = self.resolve_ocr_languages()
 
     def supported_ocr_languages(self) -> list[str]:
-        return list(self._vision_languages)
+        # Map the Vision language tags to the canonical tags
+        tags = set()
+        for language in self._vision_languages:
+            for candidate in (language, language.split("-")[0]):
+                try:
+                    tags.add(
+                        OcrLanguageResolver.canonicalize_ocr_language(
+                            candidate, OcrMacOptions.kind
+                        ).tag
+                    )
+                except ValueError:
+                    continue
+                break
+        return sorted(tags)
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         if language.is_passthrough or language.is_multilingual:

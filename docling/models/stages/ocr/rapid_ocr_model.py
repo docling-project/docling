@@ -174,7 +174,7 @@ def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
 
     Callers pass a single language; reducing a multi-language request is up to them.
     """
-    language = OcrLanguageResolver.parse_ocr_language(lang, RapidOcrOptions.kind)
+    language = OcrLanguageResolver.canonicalize_ocr_language(lang, RapidOcrOptions.kind)
     token = ppocr_token(language, _rapidocr_vocabulary(backend))
     if token is None:
         raise OcrLanguageNotSupportedError(
