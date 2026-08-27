@@ -257,6 +257,21 @@ class OcrOptions(BaseOptions):
             self.mode = OcrMode.FULL_PAGE
         return self
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        r"""
+        Keep the deprecated `force_full_page_ocr` bridge working for attribute
+        assignment, not just construction.
+
+        `_apply_force_full_page_ocr` is a model validator, so it only runs while
+        the model is being validated (`__init__`, `model_validate`, ...). These
+        option models deliberately do not enable `validate_assignment`, so
+        `options.force_full_page_ocr = True` on an already-built instance would
+        otherwise leave `mode` untouched and silently skip full-page OCR.
+        """
+        super().__setattr__(name, value)
+        if name == "force_full_page_ocr" and value:
+            super().__setattr__("mode", OcrMode.FULL_PAGE)
+
 
 class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
