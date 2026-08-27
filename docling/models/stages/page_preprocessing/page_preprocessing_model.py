@@ -93,6 +93,10 @@ class PagePreprocessingModel(BasePageModel):
         page.parsed_page = page._backend.get_segmented_page()
         assert page.parsed_page is not None
 
+        visible_text_cells = page._backend.get_visible_text_cells()
+        if visible_text_cells is not None:
+            page.parsed_page.textline_cells = visible_text_cells
+
         # Rate the text quality from the PDF parser, and aggregate on page
         text_scores = []
         for c in page.cells:

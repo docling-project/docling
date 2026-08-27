@@ -32,6 +32,10 @@ from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
+from docling.models.stages.page_preprocessing.page_preprocessing_model import (
+    PagePreprocessingModel,
+    PagePreprocessingOptions,
+)
 
 
 def _page() -> Page:
@@ -102,3 +106,20 @@ def test_layout_write_back_guarded_without_parsed_page() -> None:
     assert len(out_pages) == 1
     assert out_pages[0].predictions.layout.clusters
     assert page.parsed_page is None  # nothing to write back, and no crash
+
+
+def test_page_preprocessing_excludes_invisible_text_cells() -> None:
+    visible = _ocr_cell("visible", confidence=1.0)
+    invisible = _ocr_cell("invisible", confidence=1.0)
+    parsed_page = SimpleNamespace(textline_cells=[visible, invisible])
+    page = _page()
+    page._backend = SimpleNamespace(  # type: ignore[assignment]
+        get_segmented_page=lambda: parsed_page,
+        get_visible_text_cells=lambda: [visible],
+    )
+    conv_res = SimpleNamespace(confidence=ConfidenceReport())
+    model = PagePreprocessingModel(PagePreprocessingOptions(images_scale=None))
+
+    model._parse_page_cells(conv_res, page)
+
+    assert page.cells == [visible]
