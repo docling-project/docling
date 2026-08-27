@@ -22,12 +22,12 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
-from docling.exceptions import DoclingModelDownloadError
 from docling.datamodel.spatial import (
     BoundingBoxSpatialIndex,
     has_positive_area,
     ordered_bounding_box,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
