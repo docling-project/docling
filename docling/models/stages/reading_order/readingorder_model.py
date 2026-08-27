@@ -52,6 +52,9 @@ class ReadingOrderOptions(BaseModel):
 
 class ReadingOrderModel:
     _RICH_CELL_PICTURE_COVERAGE_THRESHOLD = 0.8
+    # A container's children share a row when their vertical extents overlap by
+    # more than this fraction of the shorter one.
+    _ROW_OVERLAP_FRACTION = 0.5
 
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
@@ -272,6 +275,69 @@ class ReadingOrderModel:
     @staticmethod
     def _element_ref(element: BasePageElement) -> str:
         return f"#/{element.page_no}/{element.cluster.id}"
+
+    @classmethod
+    def _predict_container_reading_order(
+        cls, siblings: list[ReadingOrderPageElement]
+    ) -> list[ReadingOrderPageElement]:
+        """Order a container's direct children row by row, top to bottom.
+
+        `ReadingOrderPredictor` reads column first, which is right for running
+        text and wrong for a form: a form is a two-dimensional layout whose
+        cells are read across before they are read down. Applied to a form,
+        column-first ordering walks the whole left-hand column of questions
+        before reaching the first answer.
+
+        Print order cannot stand in for the row structure either. Flattening an
+        AcroForm appends every field's appearance after the whole static form,
+        so a filled form prints as "all the labels, then all the values", and
+        the answers heap up at the end of the container.
+
+        So geometry decides the rows, and the input order -- the assembled
+        order, i.e. print order -- decides the sequence within a row. Keeping
+        print order inside a row is what leaves right-to-left documents alone:
+        print order is the only signal docling has for reading direction, and
+        sorting on `l` instead would impose left-to-right on all of them.
+
+        Grouping by overlap rather than sorting on `(t, l)` matters in
+        practice. An answer glyph typically sits a fraction of a point off its
+        question's baseline, which is enough for a `t` sort to emit it first,
+        and a question that wraps to several lines has to stay on the same row
+        as the short answer beside it.
+        """
+        input_order = {elem.cid: position for position, elem in enumerate(siblings)}
+        rows: list[list[ReadingOrderPageElement]] = []
+
+        # Coordinates are bottom-left origin here, so `t` descends down the page.
+        for elem in sorted(siblings, key=lambda e: (-e.t, e.l)):
+            anchor = rows[-1][0] if rows else None
+            if anchor is not None:
+                overlap = min(anchor.t, elem.t) - max(anchor.b, elem.b)
+                shorter = min(anchor.t - anchor.b, elem.t - elem.b)
+                if shorter > 0 and overlap > cls._ROW_OVERLAP_FRACTION * shorter:
+                    rows[-1].append(elem)
+                    continue
+            rows.append([elem])
+
+        return [
+            elem
+            for row in rows
+            for elem in sorted(row, key=lambda e: input_order[e.cid])
+        ]
+
+    def _order_siblings(
+        self, parent_ref: str | None, siblings: list[ReadingOrderPageElement]
+    ) -> list[ReadingOrderPageElement]:
+        """Order one level of siblings.
+
+        `parent_ref` is `None` for the document root and the ref of a
+        `ContainerElement` -- a form or key-value region -- for every other
+        level, so it is also the test for which ordering applies.
+        """
+        if parent_ref is None:
+            return self.ro_model.predict_reading_order(page_elements=siblings)
+
+        return self._predict_container_reading_order(siblings)
 
     @classmethod
     def _match_table_pictures(
@@ -715,15 +781,19 @@ class ReadingOrderModel:
                     )
                     parent_by_child_ref[child_ref] = container_ref
 
-            # Preserve assembled order as the predictor's deterministic tie-break input.
+            # Assembled order is print order. It is the predictor's
+            # deterministic tie-break at the root, and inside a container it
+            # decides the sequence within a row.
             for element in page_elements:
                 siblings_by_parent[parent_by_child_ref.get(element.ref.cref)].append(
                     element
                 )
 
+            # Only the root goes through the column-first predictor. A
+            # container is a two-dimensional layout and is read row first.
             ordered_siblings = {
                 parent_ref: (
-                    self.ro_model.predict_reading_order(page_elements=siblings)
+                    self._order_siblings(parent_ref, siblings)
                     if len(siblings) > 1
                     else siblings
                 )

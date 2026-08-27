@@ -230,6 +230,8 @@ def test_container_does_not_interrupt_caption_assignment(
 
 
 def test_container_children_follow_predicted_reading_order() -> None:
+    # A vertical stack: one child per row, so row-first ordering inside the
+    # container and the predictor's column-first order agree.
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 300))
     lower_cluster = _cluster(2, DocItemLabel.PICTURE, (10, 200, 100, 250))
     upper_cluster = _cluster(3, DocItemLabel.PICTURE, (10, 10, 100, 60))
@@ -264,6 +266,8 @@ def test_container_children_follow_predicted_reading_order() -> None:
 
 
 def test_container_regular_children_follow_predicted_order() -> None:
+    # Also a vertical stack, so wrapping the children in a form leaves their
+    # order identical to the predictor's.
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 300))
     lower_cluster = _cluster(2, DocItemLabel.TEXT, (10, 200, 100, 250))
     upper_cluster = _cluster(3, DocItemLabel.TEXT, (10, 10, 100, 60))
@@ -605,3 +609,107 @@ def test_container_between_texts_prevents_merge() -> None:
     )
 
     assert [text.text for text in doc.texts] == ["foo", "bar"]
+
+
+def _text(
+    cid: int,
+    text: str,
+    bbox: tuple[float, ...],
+    label: DocItemLabel = DocItemLabel.TEXT,
+) -> TextElement:
+    return TextElement(
+        label=label,
+        id=cid,
+        text=text,
+        page_no=1,
+        cluster=_cluster(cid, label, bbox),
+    )
+
+
+def _form_children(children: list[TextElement]) -> list[str]:
+    """Texts of a form's children, in the order the form materializes them.
+
+    `children` is given in print order, which is what the assembled unit
+    carries.
+    """
+    container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 500, 500))
+    container_cluster.children = [child.cluster for child in children]
+    container = ContainerElement(
+        label=DocItemLabel.FORM,
+        id=1,
+        page_no=1,
+        cluster=container_cluster,
+    )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(
+        _conversion_result([container, *children])
+    )
+    form = next(group for group in doc.groups if group.label == GroupLabel.FORM_AREA)
+    return [child.resolve(doc).text for child in form.children]
+
+
+def test_form_pairs_each_value_with_its_label() -> None:
+    # Flattening an AcroForm appends every field's appearance after the whole
+    # static form, so a filled form prints as "all the labels, then all the
+    # values" even though each value sits on its label's baseline.
+    labels = [
+        _text(2, "label-1", (10, 10, 200, 30)),
+        _text(3, "label-2", (10, 50, 200, 70)),
+        _text(4, "label-3", (10, 90, 200, 110)),
+    ]
+    values = [
+        _text(5, "value-1", (400, 10, 450, 30)),
+        _text(6, "value-2", (400, 50, 450, 70)),
+        _text(7, "value-3", (400, 90, 450, 110)),
+    ]
+
+    assert _form_children([*labels, *values]) == [
+        "label-1",
+        "value-1",
+        "label-2",
+        "value-2",
+        "label-3",
+        "value-3",
+    ]
+
+
+def test_form_row_survives_subpoint_baseline_offset() -> None:
+    # The ticked box sits 0.1pt above the question it answers. Ordering on the
+    # top edge alone would emit it first; sharing a row keeps it second.
+    question = _text(2, "question", (10, 57.0, 200, 63.5))
+    answer = _text(
+        3, "answer", (400, 56.9, 450, 64.5), label=DocItemLabel.CHECKBOX_SELECTED
+    )
+
+    assert _form_children([question, answer]) == ["question", "answer"]
+
+
+def test_form_keeps_print_order_within_a_row() -> None:
+    # Print order is the only signal docling has that a document reads
+    # right-to-left, so geometry must not resequence a row. Here the element
+    # printed first is the one on the right.
+    right = _text(2, "printed-first", (400, 10, 450, 30))
+    left = _text(3, "printed-second", (10, 10, 200, 30))
+
+    assert _form_children([right, left]) == ["printed-first", "printed-second"]
+
+
+def test_row_ordering_is_scoped_to_containers() -> None:
+    # The same geometry outside a form still goes through the column-first
+    # predictor, which reads the whole left column before the right one.
+    columns = [
+        _text(2, "left-1", (10, 10, 200, 30)),
+        _text(3, "left-2", (10, 50, 200, 70)),
+        _text(4, "right-1", (400, 10, 450, 30)),
+        _text(5, "right-2", (400, 50, 450, 70)),
+    ]
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(_conversion_result(columns))
+
+    assert [text.text for text in doc.texts] == [
+        "left-1",
+        "left-2",
+        "right-1",
+        "right-2",
+    ]
+    assert _form_children(columns) == ["left-1", "right-1", "left-2", "right-2"]
