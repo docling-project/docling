@@ -3,10 +3,11 @@
 
 """Regression tests for the deprecated `force_full_page_ocr` compatibility flag.
 
-`OcrOptions.force_full_page_ocr` is superseded by `mode=OcrMode.FULL_PAGE` and is
-bridged to it for backwards compatibility. The bridge has to hold for attribute
-assignment on an already-built options object, not only for constructor keywords,
-because that is how pre-deprecation code commonly toggled the flag.
+`OcrOptions.force_full_page_ocr` is superseded by `mode=OcrMode.FULL_PAGE`; it is
+kept as a deprecated view over `mode`, so the two cannot drift apart. The bridge
+has to hold for attribute assignment on an already-built options object, not only
+for constructor keywords, because that is how pre-deprecation code commonly
+toggled the flag.
 """
 
 import warnings
@@ -72,6 +73,26 @@ def test_explicit_mode_still_wins_after_the_flag(options_cls):
     options.mode = OcrMode.LAYOUT_REGIONS
 
     assert options.mode == OcrMode.LAYOUT_REGIONS
+
+
+@pytest.mark.parametrize("options_cls", OCR_OPTION_CLASSES)
+def test_flag_reads_back_from_the_mode(options_cls):
+    """The flag is a view over `mode`, so setting `mode` is enough."""
+    options = options_cls()
+    assert options.force_full_page_ocr is False
+
+    options.mode = OcrMode.FULL_PAGE
+
+    assert options.force_full_page_ocr is True
+
+
+@pytest.mark.parametrize("options_cls", OCR_OPTION_CLASSES)
+def test_flag_survives_a_serialization_roundtrip(options_cls):
+    """A dump of a forced instance still validates back into full-page mode."""
+    dumped = options_cls(force_full_page_ocr=True).model_dump()
+    assert dumped["force_full_page_ocr"] is True
+
+    assert options_cls.model_validate(dumped).mode == OcrMode.FULL_PAGE
 
 
 @pytest.mark.parametrize("options_cls", OCR_OPTION_CLASSES)

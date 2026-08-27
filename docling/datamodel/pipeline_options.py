@@ -1,5 +1,4 @@
 import logging
-import warnings
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -11,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    computed_field,
     field_validator,
     model_validator,
 )
@@ -230,47 +230,34 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
-    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
-    # When set to True it forces `mode` to FULL_PAGE
-    force_full_page_ocr: Annotated[
-        bool,
-        Field(
-            description="If enabled, a full-page OCR is always applied.",
-            examples=[False],
-            deprecated=(
-                "`force_full_page_ocr` is deprecated; set "
-                "`mode=OcrMode.FULL_PAGE` instead."
-            ),
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_force_full_page_ocr(cls, data: Any) -> Any:
+        r"""
+        Accept the deprecated `force_full_page_ocr` constructor keyword and
+        translate it into the `mode` it is an old name for.
+        """
+        if isinstance(data, dict) and data.pop("force_full_page_ocr", False):
+            data["mode"] = OcrMode.FULL_PAGE
+        return data
+
+    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards
+    # compatibility as a view over `mode`, so the two can never drift apart.
+    @computed_field(  # type: ignore[prop-decorator]
+        deprecated=(
+            "`force_full_page_ocr` is deprecated; set `mode=OcrMode.FULL_PAGE` instead."
         ),
-    ] = False
+        description="If enabled, a full-page OCR is always applied.",
+        examples=[False],
+    )
+    @property
+    def force_full_page_ocr(self) -> bool:
+        return self.mode is OcrMode.FULL_PAGE
 
-    @model_validator(mode="after")
-    def _apply_force_full_page_ocr(self) -> "OcrOptions":
-        r"""
-        Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
-        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE`.
-        """
-        with warnings.catch_warnings():  # deprecated force_full_page_ocr
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            forced = self.force_full_page_ocr
-        if forced:
+    @force_full_page_ocr.setter
+    def force_full_page_ocr(self, value: bool) -> None:
+        if value:
             self.mode = OcrMode.FULL_PAGE
-        return self
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        r"""
-        Keep the deprecated `force_full_page_ocr` bridge working for attribute
-        assignment, not just construction.
-
-        `_apply_force_full_page_ocr` is a model validator, so it only runs while
-        the model is being validated (`__init__`, `model_validate`, ...). These
-        option models deliberately do not enable `validate_assignment`, so
-        `options.force_full_page_ocr = True` on an already-built instance would
-        otherwise leave `mode` untouched and silently skip full-page OCR.
-        """
-        super().__setattr__(name, value)
-        if name == "force_full_page_ocr" and value:
-            super().__setattr__("mode", OcrMode.FULL_PAGE)
 
 
 class OcrAutoOptions(OcrOptions):
