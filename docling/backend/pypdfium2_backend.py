@@ -270,6 +270,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             )
             self.valid = False
         self.text_page: Optional[PdfTextPage] = None
+        self._seg_page: Optional[SegmentedPdfPage] = None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -544,21 +545,25 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         if not self.valid:
             return None
 
-        text_cells = self._compute_text_cells()
+        # Cached like the docling-parse backends do: rebuilding meant re-running
+        # the whole text extraction, and callers reach for this once per table.
+        if self._seg_page is None:
+            text_cells = self._compute_text_cells()
 
-        # Get the PDF page geometry from pypdfium2
-        dimension = get_pdf_page_geometry(self._require_page())
+            # Get the PDF page geometry from pypdfium2
+            dimension = get_pdf_page_geometry(self._require_page())
 
-        # Create SegmentedPdfPage
-        return SegmentedPdfPage(
-            dimension=dimension,
-            textline_cells=text_cells,
-            char_cells=[],
-            word_cells=[],
-            has_textlines=len(text_cells) > 0,
-            has_words=False,
-            has_chars=False,
-        )
+            # Create SegmentedPdfPage
+            self._seg_page = SegmentedPdfPage(
+                dimension=dimension,
+                textline_cells=text_cells,
+                char_cells=[],
+                word_cells=[],
+                has_textlines=len(text_cells) > 0,
+                has_words=False,
+                has_chars=False,
+            )
+        return self._seg_page
 
     def get_text_cells(self) -> Iterable[TextCell]:
         return self._compute_text_cells()
@@ -613,6 +618,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         self.text_page = None
         self._ppage = None
+        self._seg_page = None
 
 
 class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
