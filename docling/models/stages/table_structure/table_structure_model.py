@@ -32,6 +32,149 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
+def _reorder_cells_by_geometry(
+    table_cells: list[TableCell], num_rows: int, num_cols: int
+) -> list[TableCell]:
+    """Realign cell row and column offsets with the cell geometry.
+
+    The table structure prediction can assign grid offsets that disagree with
+    the bounding boxes, e.g. a row header on the geometric left landing in the
+    rightmost column, so the exported table order diverges from the visual
+    order (#3194). For each axis whose offsets are not monotonically aligned
+    with the geometry, cells are reassigned to slots by clustering their box
+    centers with one cluster per slot. The reassignment is kept only when it
+    introduces no slot collisions within a line and strictly reduces the
+    number of misordered lines, so already consistent tables are returned
+    unchanged. The cells are updated in place and returned.
+    """
+
+    def line_violations(
+        spans: list[tuple[int, int]],
+        lines: list[tuple[int, int]],
+        edges: list[Optional[float]],
+        num_lines: int,
+    ) -> int:
+        violations = 0
+        for line in range(num_lines):
+            in_line = sorted(
+                (
+                    (span, edge)
+                    for span, edge, cell_lines in zip(spans, edges, lines)
+                    if cell_lines[0] <= line < cell_lines[1]
+                    and span[1] - span[0] == 1
+                    and edge is not None
+                ),
+                key=lambda span_edge: span_edge[0][0],
+            )
+            values = [edge for _, edge in in_line]
+            if len(values) > 1 and not all(
+                values[i] <= values[i + 1] for i in range(len(values) - 1)
+            ):
+                violations += 1
+        return violations
+
+    def slot_rematch(
+        spans: list[tuple[int, int]],
+        centers: list[Optional[float]],
+        num_slots: int,
+    ) -> Optional[list[tuple[int, int]]]:
+        if num_slots < 2:
+            return None
+        values = sorted(center for center in centers if center is not None)
+        if len(values) < num_slots:
+            return None
+        cluster_centers = [
+            values[round(i * (len(values) - 1) / (num_slots - 1))]
+            for i in range(num_slots)
+        ]
+        for _ in range(20):
+            groups: dict[int, list[float]] = {slot: [] for slot in range(num_slots)}
+            for value in values:
+                slot = min(
+                    range(num_slots), key=lambda s: abs(value - cluster_centers[s])
+                )
+                groups[slot].append(value)
+            if any(len(group) == 0 for group in groups.values()):
+                return None
+            new_centers = [sum(g) / len(g) for g in groups.values()]
+            if new_centers == cluster_centers:
+                break
+            cluster_centers = new_centers
+        rank = {
+            slot: position
+            for position, slot in enumerate(
+                sorted(range(num_slots), key=lambda s: cluster_centers[s])
+            )
+        }
+        remapped = []
+        for (start, end), center in zip(spans, centers):
+            span = end - start
+            if center is None or not 0 <= start < end <= num_slots:
+                remapped.append((start, end))
+                continue
+            if span > num_slots:
+                remapped.append((start, end))
+                continue
+            slot = min(range(num_slots), key=lambda s: abs(center - cluster_centers[s]))
+            new_start = min(rank[slot], num_slots - span)
+            remapped.append((new_start, new_start + span))
+        return remapped
+
+    def remap_axis(
+        spans: list[tuple[int, int]],
+        lines: list[tuple[int, int]],
+        edges: list[Optional[float]],
+        centers: list[Optional[float]],
+        num_slots: int,
+        num_lines: int,
+    ) -> Optional[list[tuple[int, int]]]:
+        before = line_violations(spans, lines, edges, num_lines)
+        if before == 0:
+            return None
+        remapped = slot_rematch(spans, centers, num_slots)
+        if remapped is None:
+            return None
+        occupied: dict[tuple[int, int], int] = {}
+        for (start, end), line_span in zip(remapped, lines):
+            if end - start == 1:
+                occupied[(line_span[0], start)] = (
+                    occupied.get((line_span[0], start), 0) + 1
+                )
+        if any(count > 1 for count in occupied.values()):
+            return None
+        if line_violations(remapped, lines, edges, num_lines) >= before:
+            return None
+        return remapped
+
+    col_spans = [(tc.start_col_offset_idx, tc.end_col_offset_idx) for tc in table_cells]
+    row_spans = [(tc.start_row_offset_idx, tc.end_row_offset_idx) for tc in table_cells]
+    lefts = [tc.bbox.l if tc.bbox is not None else None for tc in table_cells]
+    tops = [tc.bbox.t if tc.bbox is not None else None for tc in table_cells]
+    x_centers = [
+        (tc.bbox.l + tc.bbox.r) / 2 if tc.bbox is not None else None
+        for tc in table_cells
+    ]
+    y_centers = [
+        (tc.bbox.t + tc.bbox.b) / 2 if tc.bbox is not None else None
+        for tc in table_cells
+    ]
+
+    col_remap = remap_axis(col_spans, row_spans, lefts, x_centers, num_cols, num_rows)
+    row_remap = remap_axis(row_spans, col_spans, tops, y_centers, num_rows, num_cols)
+
+    if col_remap is None and row_remap is None:
+        return table_cells
+
+    for tc, (col_start, col_end), (row_start, row_end) in zip(
+        table_cells,
+        col_remap or col_spans,
+        row_remap or row_spans,
+    ):
+        tc.start_col_offset_idx, tc.end_col_offset_idx = col_start, col_end
+        tc.start_row_offset_idx, tc.end_row_offset_idx = row_start, row_end
+    return table_cells
+
+
 class TableStructureModel(BaseTableStructureModel):
     _model_repo_folder = "docling-project--docling-models"
     _model_path = "model_artifacts/tableformer"
@@ -281,6 +424,13 @@ class TableStructureModel(BaseTableStructureModel):
                     # Retrieving cols/rows, after post processing:
                     num_rows = table_out["predict_details"].get("num_rows", 0)
                     num_cols = table_out["predict_details"].get("num_cols", 0)
+
+                    # Align the grid offsets with the cell geometry before
+                    # building the table (#3194).
+                    table_cells = _reorder_cells_by_geometry(
+                        table_cells, num_rows, num_cols
+                    )
+
                     otsl_seq = (
                         table_out["predict_details"]
                         .get("prediction", {})
@@ -399,6 +549,11 @@ class TableStructureModel(BaseTableStructureModel):
 
         num_rows = table_out["predict_details"].get("num_rows", 0)
         num_cols = table_out["predict_details"].get("num_cols", 0)
+
+        # Align the grid offsets with the cell geometry before building the
+        # table (#3194).
+        table_cells = _reorder_cells_by_geometry(table_cells, num_rows, num_cols)
+
         otsl_seq = table_out["predict_details"].get("prediction", {}).get("rs_seq", [])
 
         return Table(
