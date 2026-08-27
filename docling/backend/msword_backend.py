@@ -165,6 +165,62 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
 )
 """OOXML numFmt values that produce visible list/heading markers."""
 
+_NON_DECIMAL_NUMBERING_FORMATS: Final[frozenset[str]] = _VISIBLE_NUMBERING_FORMATS - {
+    "decimal"
+}
+"""numFmt values that cannot be rendered as a raw decimal counter."""
+
+_ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
+    (1000, "M"),
+    (900, "CM"),
+    (500, "D"),
+    (400, "CD"),
+    (100, "C"),
+    (90, "XC"),
+    (50, "L"),
+    (40, "XL"),
+    (10, "X"),
+    (9, "IX"),
+    (5, "V"),
+    (4, "IV"),
+    (1, "I"),
+)
+
+
+def _int_to_letter_marker(value: int) -> str:
+    """Map a 1-based counter to OOXML lowerLetter (a, b, ..., z, aa, bb, ...)."""
+    if value <= 0:
+        return str(value)
+    return chr(ord("a") + (value - 1) % 26) * ((value - 1) // 26 + 1)
+
+
+def _int_to_roman_marker(value: int) -> str:
+    """Map a 1-based counter to an upper-roman numeral string."""
+    if value <= 0:
+        return str(value)
+    remaining = value
+    parts: list[str] = []
+    for amount, numeral in _ROMAN_NUMERALS:
+        count, remaining = divmod(remaining, amount)
+        if count:
+            parts.append(numeral * count)
+    return "".join(parts)
+
+
+def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
+    """Render a list counter using an OOXML ``w:numFmt`` value."""
+    if num_fmt == "lowerLetter":
+        return _int_to_letter_marker(counter)
+    if num_fmt == "upperLetter":
+        return _int_to_letter_marker(counter).upper()
+    if num_fmt == "lowerRoman":
+        return _int_to_roman_marker(counter).lower()
+    if num_fmt == "upperRoman":
+        return _int_to_roman_marker(counter)
+    if num_fmt == "decimalZero":
+        return f"{counter:02d}"
+    return str(counter)
+
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
@@ -1006,6 +1062,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Error finding level element: {e}")
             return None
 
+    def _get_level_num_fmt(self, numid: int, ilvl: int) -> str | None:
+        """Return the OOXML ``w:numFmt`` value for a numbering level, if present."""
+        lvl_element = self._get_level_element(numid, ilvl)
+        if lvl_element is None:
+            return None
+        namespaces = {"w": self._W_NS}
+        num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+        if num_fmt_element is None:
+            return None
+        return num_fmt_element.get(self.XML_KEY)
+
     def _get_start_value(self, numid: int, ilvl: int) -> int:
         """Read the start value from the abstractNum definition."""
         lvl_element = self._get_level_element(numid, ilvl)
@@ -1041,31 +1108,39 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """Build enumeration marker from the lvlText template (e.g. 'Proposal %1:').
 
         Uses lvlText when it contains a text prefix/suffix beyond simple
-        placeholders and separators.  Falls back to the default '1.2.3.'
-        pattern for plain numeric markers.
+        placeholders and separators, or when the level's ``w:numFmt`` is
+        letter/roman/decimalZero. Falls back to the default '1.2.3.'
+        pattern for plain decimal markers.
         """
         lvl_element = self._get_level_element(numid, ilvl)
         namespaces = {"w": self._W_NS}
         lvl_text = None
+        num_fmt = None
         if lvl_element is not None:
             lt = lvl_element.find(".//w:lvlText", namespaces=namespaces)
             if lt is not None:
                 lvl_text = lt.get(self.XML_KEY)
+            nf = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+            if nf is not None:
+                num_fmt = nf.get(self.XML_KEY)
 
-        # Use lvlText as template only when it contains %N placeholders
-        # alongside non-trivial text (e.g. "Proposal %1:", "Table %1").
+        # Use lvlText as template when it contains %N placeholders alongside
+        # non-trivial text (e.g. "Proposal %1:", "Table %1"), or when numFmt
+        # is not plain decimal so the suffix in "%1)" / "(%1)" must be kept.
         # Skip when lvlText is a bare bullet symbol like "o" or "•".
         if lvl_text and re.search(r"%\d+", lvl_text):
             stripped = re.sub(r"%\d+", "", lvl_text)
             stripped = stripped.strip(" .)(:[]")
-            if stripped:
+            if stripped or num_fmt in _NON_DECIMAL_NUMBERING_FORMATS:
 
                 def _replace(match):
                     lvl_idx = int(match.group(1)) - 1
                     counter = self.list_counters.get((numid, lvl_idx))
                     if counter is None:
                         counter = self._get_start_value(numid, lvl_idx)
-                    return str(counter)
+                    return _format_enum_counter(
+                        counter, self._get_level_num_fmt(numid, lvl_idx)
+                    )
 
                 return re.sub(r"%(\d+)", _replace, lvl_text)
 
@@ -1075,7 +1150,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             counter = self.list_counters.get((numid, lvl))
             if counter is None:
                 counter = self._get_start_value(numid, lvl)
-            parts.append(str(counter))
+            parts.append(
+                _format_enum_counter(counter, self._get_level_num_fmt(numid, lvl))
+            )
         return ".".join(parts) + "."
 
     def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
