@@ -34,6 +34,7 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumPageBackend,
 )
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.utils.word_spacing import repair_drop_caps
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.backend_options import (
     PdfBackendOptions,
@@ -167,6 +168,8 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         ]
         [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.char_cells]
         [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.word_cells]
+
+        repair_drop_caps(seg_page.textline_cells, seg_page.word_cells)
 
         self._dpage = seg_page
 
@@ -454,6 +457,9 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 tc.to_top_left_origin(page_height)
             for tc in seg_page.word_cells:
                 tc.to_top_left_origin(page_height)
+
+            repair_drop_caps(seg_page.textline_cells, seg_page.word_cells)
+
             self._seg_page = seg_page
         return self._seg_page
 

@@ -599,6 +599,9 @@ def test_non_threaded_page_backend_disables_bitmap_byte_materialization() -> Non
     captured_content_config: Any | None = None
 
     class _FakeCell:
+        index = 0
+        text = ""
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
@@ -693,6 +696,9 @@ def test_threaded_page_backend_delegates_image_access() -> None:
 
 def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     class _FakeCell:
+        index = 0
+        text = ""
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
