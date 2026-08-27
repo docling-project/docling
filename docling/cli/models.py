@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import warnings
@@ -300,7 +303,8 @@ def download_hf_repo(
     failed_models: list[tuple[str, str]] = []
 
     for item in models:
-        typer.secho(f"\nDownloading {item} model from HuggingFace...")
+        if not quiet:
+            typer.secho(f"\nDownloading {item} model from HuggingFace...")
         try:
             download_hf_model(
                 repo_id=item,

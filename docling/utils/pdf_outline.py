@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Extract a PDF's outline (bookmarks / table-of-contents).
 
 The outline, when present, is the most authoritative heading-hierarchy signal in a PDF. Two

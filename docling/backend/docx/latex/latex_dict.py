@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """LaTeX dictionary for OMML to LaTeX conversion.
 
 This module contains constants and dictionaries used for converting Office Math

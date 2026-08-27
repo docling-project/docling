@@ -1,7 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Transformers implementation for object-detection models."""
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import sys
 from pathlib import Path
@@ -145,10 +149,23 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Load model
         _log.debug(f"Loading model from {model_folder} to device {self._device}")
+        # transformers>=5 renamed the `torch_dtype` kwarg to `dtype`. Passing
+        # `torch_dtype=None` is not a no-op there: the None survives into the
+        # config kwargs and hits the deprecated `PretrainedConfig.torch_dtype`
+        # setter, which warns. Only pass the kwarg when a dtype was resolved.
+        dtype_kwargs = {}
+        if torch_dtype is not None:
+            dtype_arg_name = (
+                "dtype"
+                if version.parse(importlib.metadata.version("transformers")).major >= 5
+                else "torch_dtype"
+            )
+            dtype_kwargs[dtype_arg_name] = torch_dtype
+
         try:
             self._model = AutoModelForObjectDetection.from_pretrained(
                 str(model_folder),
-                torch_dtype=torch_dtype,
+                **dtype_kwargs,
             )
             self._model.to(self._device)  # type: ignore[union-attr]
             self._model.eval()  # type: ignore[union-attr]
@@ -156,6 +173,12 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             # Optionally compile model for better performance (model must be in eval mode first)
             # Works for Python < 3.14 with any torch 2.x
             # Works for Python >= 3.14 with torch >= 2.10
+            #
+            # Note: RT-DETRv2 in transformers 5.x validates its encoder spatial
+            # shapes with a tensor condition, which makes dynamo break the graph
+            # once per compiled region ("Graph break from Tensor.item()"). This is
+            # noisy but harmless; setting TRANSFORMERS_DISABLE_TORCH_CHECK=1 in the
+            # environment skips the check (safe for our fixed-resolution exports).
             if self.options.compile_model:
                 if sys.version_info < (3, 14):
                     self._model = torch.compile(self._model)  # type: ignore[arg-type,assignment]

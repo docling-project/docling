@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from collections.abc import Iterable, Iterator
 from io import BytesIO
@@ -6,7 +9,12 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import SegmentedPdfPage, TextCell
+from docling_core.types.doc.page import (
+    PdfCellRenderingMode,
+    PdfTextCell,
+    SegmentedPdfPage,
+    TextCell,
+)
 from docling_parse.pdf_parser import (
     ContentConfig,
     ContentLevel,
@@ -43,6 +51,23 @@ if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+# PDF 32000 text rendering modes that paint no ink. docling-parse applies the same filter
+# natively when answering `intersects_with()`, so the cell-level view has to match it.
+_INVISIBLE_RENDERING_MODES = frozenset(
+    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
+)
+
+
+def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
+    """Keep only the cells that paint ink on the page"""
+    return [
+        cell
+        for cell in cells
+        if not isinstance(cell, PdfTextCell)
+        or cell.rendering_mode not in _INVISIBLE_RENDERING_MODES
+    ]
 
 
 def _make_docling_parse_decode_config(
@@ -185,6 +210,12 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         assert self._dpage is not None
 
         return self._dpage.textline_cells
+
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
+        return _visible_text_cells(self._dpage.textline_cells)
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         self._ensure_parsed()
@@ -432,6 +463,12 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             return []
         return segmented_page.textline_cells
 
+    def get_visible_text_cells(self) -> Optional[list[TextCell]]:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return []
+        return _visible_text_cells(segmented_page.textline_cells)
+
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
@@ -446,6 +483,52 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             if cropbox.area() > 0:
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
+
+    def has_content_in(
+        self,
+        *,
+        bbox: BoundingBox,
+        chars: bool = False,
+        shapes: bool = True,
+        bitmaps: bool = True,
+    ) -> Optional[bool]:
+        if not self.is_valid():
+            return False
+        return self._result.intersects_with(
+            bbox=bbox, chars=chars, shapes=shapes, bitmaps=bitmaps
+        )
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_shape_lines(
+                horizontal=horizontal, vertical=vertical, tolerance=tolerance
+            )
+        ]
+
+    def get_connected_shape_bounding_boxes(
+        self, *, tolerance: float = 0.0
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        return [
+            bbox.to_top_left_origin(page_height)
+            for bbox in self._result.get_connected_shape_bounding_boxes(
+                tolerance=tolerance
+            )
+        ]
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
@@ -477,12 +560,6 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        requested_page_numbers = _resolve_threaded_page_numbers(
-            self.path_or_stream,
-            password,
-            in_doc.limits.page_range,
-        )
-
         parser_threads = (
             self.options.parser_threads
             if isinstance(self.options, ThreadedDoclingParseBackendOptions)
@@ -514,15 +591,34 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             ),
             decode_config=decode_config,
         )
-        # The threaded parser derives its document key by hashing from the current stream
-        # offset, so the stream has to be rewound for that key to cover the whole document.
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.seek(0)
-        self.doc_key = self.parser.load(
-            self.path_or_stream,
-            password=password,
-            page_numbers=requested_page_numbers,
-        )
+        try:
+            requested_page_numbers = _resolve_threaded_page_numbers(
+                self.path_or_stream,
+                password,
+                in_doc.limits.page_range,
+            )
+            # The threaded parser derives its document key by hashing from the current
+            # stream offset, so the stream has to be rewound for that key to cover the
+            # whole document.
+            if isinstance(self.path_or_stream, BytesIO):
+                self.path_or_stream.seek(0)
+            self.doc_key = self.parser.load(
+                self.path_or_stream,
+                password=password,
+                page_numbers=requested_page_numbers,
+            )
+        except (RuntimeError, ValueError) as e:
+            # pypdfium2 (PdfiumError) raises RuntimeError; the threaded parser
+            # surfaces native parse failures on unreadable bytes as ValueError
+            # (e.g. "vector::reserve"). Tag both as load failures.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
     def is_valid(self) -> bool:
         return not self._closed and self.page_count() > 0
@@ -564,5 +660,22 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         if self._closed:
             return
         self._closed = True
+        # WORKAROUND for a missing docling-parse API: the native threaded
+        # parser has no way to cancel/abort an in-progress iteration. It forbids
+        # unload_document() while an iteration is still active (has_tasks() is
+        # True), and dropping the parser to let its C++ destructor stop the
+        # workers segfaults when iteration is active. The only safe way to clear
+        # the active state is to drain every remaining scheduled task via
+        # get_task().
+        #
+        # A full conversion drains iter_pages() naturally, but any early exit
+        # (document_timeout, a stage error, a page-range subset that returns
+        # early) abandons the generator with pages still pending, so we drain
+        # the rest here. get_task() returns the raw result without the expensive
+        # get_page() conversion, so we pay only for the C++ decode of pages we
+        # bailed on, not the full docling processing. Replace this loop with an
+        # explicit cancel once docling-parse exposes one for an active iteration.
+        while self.parser.has_tasks():
+            self.parser.get_task()
         self.parser.unload(self.doc_key)
         super().unload()

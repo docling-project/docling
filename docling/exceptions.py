@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
 from typing import List, Tuple
 
 

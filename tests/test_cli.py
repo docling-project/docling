@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import base64
 import json
 import re
@@ -6,8 +9,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-import click
 import pytest
+import typer
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.testing import CliRunner
@@ -712,6 +715,92 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options.release_native_memory_every_n_pages == 64
 
 
+# Pipeline and backend selection are independent in the CLI routing, so pair
+# them (zip) rather than take the cartesian product: every pipeline and every
+# backend is still exercised at least once.
+@pytest.mark.parametrize(
+    ("pipeline_name", "expected_pipeline", "pdf_backend", "expected_backend"),
+    [
+        (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.DOCLING_PARSE,
+            "DoclingParseDocumentBackend",
+        ),
+        (
+            "vlm",
+            "VlmPipeline",
+            PdfBackend.THREADED_DOCLING_PARSE,
+            "ThreadedDoclingParseDocumentBackend",
+        ),
+        (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.PYPDFIUM2,
+            "PyPdfiumDocumentBackend",
+        ),
+    ],
+)
+def test_cli_routes_pdf_backend_for_legacy_and_vlm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pipeline_name: str,
+    expected_pipeline: str,
+    pdf_backend: PdfBackend,
+    expected_backend: str,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            pdf_option = format_options[InputFormat.PDF]
+            image_option = format_options[InputFormat.IMAGE]
+            captured["pipeline"] = pdf_option.pipeline_cls.__name__
+            captured["pdf_backend"] = pdf_option.backend.__name__
+            captured["image_backend"] = image_option.backend.__name__
+            if pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+                assert isinstance(
+                    pdf_option.backend_options, ThreadedDoclingParseBackendOptions
+                )
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            pipeline_name,
+            "--pdf-backend",
+            pdf_backend.value,
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured == {
+        "pipeline": expected_pipeline,
+        "pdf_backend": expected_backend,
+        "image_backend": "ImageDocumentBackend",
+    }
+
+
 def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
     """Invoke `docling convert` with a fake converter and return the built OcrOptions."""
     captured: dict[str, Any] = {}
@@ -877,7 +966,7 @@ def test_parse_page_range_is_shared_with_convert_remote():
     assert _parse_page_range(None) is None
     assert _parse_page_range("1-4") == (1, 4)
     assert _parse_page_range(" 7 ") == (7, 7)
-    with pytest.raises(click.exceptions.UsageError):
+    with pytest.raises(typer.BadParameter):
         _parse_page_range("4-2")
 
 
@@ -895,7 +984,9 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
         ) -> None:
             nonlocal captured_pipeline_options
             pdf_option = format_options[InputFormat.PDF]
-            assert format_options[InputFormat.IMAGE] is pdf_option
+            assert format_options[InputFormat.IMAGE].pipeline_options is (
+                pdf_option.pipeline_options
+            )
             assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
             captured_pipeline_options = pdf_option.pipeline_options
 
@@ -935,3 +1026,114 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
     assert captured_pipeline_options is not None
     assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
     assert captured_pipeline_options.accelerator_options.num_threads == 7
+    assert captured_pipeline_options.generate_page_images is True
+    assert captured_pipeline_options.generate_picture_images is True
+
+
+def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):
+    """Helper to capture layout/table/ocr engine options from CLI."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["option"] = getattr(pdf_option.pipeline_options, option_name)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("option")
+
+
+def test_cli_layout_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --layout-engine sets layout options correctly."""
+    result, layout_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--layout-engine", "docling_layout_default"],
+        tmp_path,
+        "layout_options",
+    )
+    assert result.exit_code == 0
+    assert layout_options is not None
+    assert layout_options.kind == "docling_layout_default"
+
+
+def test_cli_table_structure_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --table-structure-engine sets table structure options correctly."""
+    result, table_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--table-structure-engine", "docling_tableformer_v2"],
+        tmp_path,
+        "table_structure_options",
+    )
+    assert result.exit_code == 0
+    assert table_options is not None
+    assert table_options.kind == "docling_tableformer_v2"
+
+
+def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --ocr-engine sets OCR options correctly."""
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch, ["--ocr-engine", "easyocr"], tmp_path, "ocr_options"
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.kind == "easyocr"
+
+
+def test_cli_invalid_layout_engine_is_rejected(tmp_path):
+    """Test that invalid --layout-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--layout-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_invalid_table_structure_engine_is_rejected(tmp_path):
+    """Test that invalid --table-structure-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--table-structure-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_invalid_ocr_engine_is_rejected(tmp_path):
+    """Test that invalid --ocr-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0

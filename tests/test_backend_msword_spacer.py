@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for Word list handling around blank spacer paragraphs.
 
 Kept separate from ``test_backend_msword.py`` so that file stays under the

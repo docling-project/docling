@@ -126,7 +126,7 @@
         "$ref": "#/texts/35"
       },
       {
-        "$ref": "#/texts/36"
+        "$ref": "#/groups/0"
       },
       {
         "$ref": "#/texts/37"
@@ -258,26 +258,51 @@
         "$ref": "#/texts/79"
       },
       {
-        "$ref": "#/texts/80"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/pictures/2"
+      },
+      {
+        "$ref": "#/texts/80"
       },
       {
         "$ref": "#/texts/81"
       },
       {
         "$ref": "#/texts/82"
-      },
-      {
-        "$ref": "#/texts/83"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/36"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "name": "group",
+      "label": "key_value_area"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
@@ -1260,11 +1285,11 @@
     {
       "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "list_item",
       "prov": [
         {
           "page_no": 2,
@@ -1282,8 +1307,9 @@
         }
       ],
       "orig": "(3) \u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d\uc0c1 \uc57d\uad00\ud574\uc11d\uc758 \uc6d0\uce59 \ud604\uc7ac \u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d 7) \uc744 \ubcf4\uba74 \uc57d\uad00\uc740",
-      "text": "(3) \u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d\uc0c1 \uc57d\uad00\ud574\uc11d\uc758 \uc6d0\uce59 \ud604\uc7ac \u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d 7) \uc744 \ubcf4\uba74 \uc57d\uad00\uc740",
-      "level": 1
+      "text": "\u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d\uc0c1 \uc57d\uad00\ud574\uc11d\uc758 \uc6d0\uce59 \ud604\uc7ac \u300c\uc57d\uad00\uc758 \uaddc\uc81c\uc5d0 \uad00\ud55c \ubc95\ub960\u300d 7) \uc744 \ubcf4\uba74 \uc57d\uad00\uc740",
+      "enumerated": true,
+      "marker": "(3)"
     },
     {
       "self_ref": "#/texts/37",
@@ -1824,12 +1850,12 @@
           },
           "charspan": [
             0,
-            199
+            252
           ]
         }
       ],
-      "orig": "\uae30\ud6c4\ubcc0\ud654, SARS, MERS, \ucf54\ub85c\ub098-19 \ub4f1 \uc608\uc0c1\ud558\uc9c0 \ubabb\ud55c \uc2e0\uc885\uc704\ud5d8 \ub4f1\uc7a5, \uc800\ucd9c\uc0b0\u00b7\uace0\ub839\ud654\uc5d0 \ub530\ub978 \uc0dd\uc0b0\uc131 \ub454\ud654\ub85c \uc778\ud55c \uacbd\uc81c\uc131\uc7a5\ub960 \ud558\ub77d, \uc800\uae08\ub9ac \uae30\uc870\uc758 \uc7a5\uae30\uc801 \uc778 \ucd94\uc138\ub85c \uc778\ud55c \uae08\ub9ac\uc5ed\ub9c8\uc9c4 \ub4f1 \uacfc\uac70 \ubcf4\ud5d8\uc0ac\uac00 \uc608\uce21\ud558 \uc9c0 \ubabb\ud588\ub358 \ub2e4\uc591\ud55c \uc704\ud5d8\uc774 \uc9c0\uc18d\uc801\uc73c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc788\ub2e4. \ubcf4\ud5d8\ud658\uacbd\uc758 \ub300\ub0b4\uc678\uc801\uc778 \ud658\uacbd\ubcc0\ud654\ub97c \ub300\ube44\ud55c \ubcf4\ud5d8\uc0c1 \ubcf4\ud5d8\uc0ac\ub4e4\uc758 \ub300\ucc98\ub2a5\ub825\uc774 \uac08\uc218\ub85d \uc774\ub97c \ub530\ub77c\uac00\uc9c0 \ubabb\ud558",
-      "text": "\uae30\ud6c4\ubcc0\ud654, SARS, MERS, \ucf54\ub85c\ub098-19 \ub4f1 \uc608\uc0c1\ud558\uc9c0 \ubabb\ud55c \uc2e0\uc885\uc704\ud5d8 \ub4f1\uc7a5, \uc800\ucd9c\uc0b0\u00b7\uace0\ub839\ud654\uc5d0 \ub530\ub978 \uc0dd\uc0b0\uc131 \ub454\ud654\ub85c \uc778\ud55c \uacbd\uc81c\uc131\uc7a5\ub960 \ud558\ub77d, \uc800\uae08\ub9ac \uae30\uc870\uc758 \uc7a5\uae30\uc801 \uc778 \ucd94\uc138\ub85c \uc778\ud55c \uae08\ub9ac\uc5ed\ub9c8\uc9c4 \ub4f1 \uacfc\uac70 \ubcf4\ud5d8\uc0ac\uac00 \uc608\uce21\ud558 \uc9c0 \ubabb\ud588\ub358 \ub2e4\uc591\ud55c \uc704\ud5d8\uc774 \uc9c0\uc18d\uc801\uc73c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc788\ub2e4. \ubcf4\ud5d8\ud658\uacbd\uc758 \ub300\ub0b4\uc678\uc801\uc778 \ud658\uacbd\ubcc0\ud654\ub97c \ub300\ube44\ud55c \ubcf4\ud5d8\uc0c1 \ubcf4\ud5d8\uc0ac\ub4e4\uc758 \ub300\ucc98\ub2a5\ub825\uc774 \uac08\uc218\ub85d \uc774\ub97c \ub530\ub77c\uac00\uc9c0 \ubabb\ud558"
+      "orig": "\uae30\ud6c4\ubcc0\ud654, SARS, MERS, \ucf54\ub85c\ub098-19 \ub4f1 \uc608\uc0c1\ud558\uc9c0 \ubabb\ud55c \uc2e0\uc885\uc704\ud5d8 \ub4f1\uc7a5, \uc800\ucd9c\uc0b0\u00b7\uace0\ub839\ud654\uc5d0 \ub530\ub978 \uc0dd\uc0b0\uc131 \ub454\ud654\ub85c \uc778\ud55c \uacbd\uc81c\uc131\uc7a5\ub960 \ud558\ub77d, \uc800\uae08\ub9ac \uae30\uc870\uc758 \uc7a5\uae30\uc801 \uc778 \ucd94\uc138\ub85c \uc778\ud55c \uae08\ub9ac\uc5ed\ub9c8\uc9c4 \ub4f1 \uacfc\uac70 \ubcf4\ud5d8\uc0ac\uac00 \uc608\uce21\ud558 \uc9c0 \ubabb\ud588\ub358 \ub2e4\uc591\ud55c \uc704\ud5d8\uc774 \uc9c0\uc18d\uc801\uc73c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc788\ub2e4. \uc774\ub7ec\ud55c \uae30\ud6c4\ubcc0\ud654\ub098 \uc804\uc5fc\ubcd1\uacfc \uac19\uc740 \uc2e0\uc885\uc704\ud5d8 \ub4f1 \ubcf4\ud5d8\ud658\uacbd\uc758 \ub300\ub0b4\uc678\uc801\uc778 \ud658\uacbd\ubcc0\ud654\ub97c \ub300\ube44\ud55c \ubcf4\ud5d8\uc0c1 \ud488\uc758 \uac1c\ubc1c \ubc0f \ub300\ucc98\ub2a5\ub825 \ud5a5\uc0c1\uc774 \ud544\uc694\ud558\ub098 \uc774\uc5d0 \ub300\ud55c \ubcf4\ud5d8\uc0ac\ub4e4\uc758 \ub300\ucc98\ub2a5\ub825\uc774 \uac08\uc218\ub85d \uc774\ub97c \ub530\ub77c\uac00\uc9c0 \ubabb\ud558",
+      "text": "\uae30\ud6c4\ubcc0\ud654, SARS, MERS, \ucf54\ub85c\ub098-19 \ub4f1 \uc608\uc0c1\ud558\uc9c0 \ubabb\ud55c \uc2e0\uc885\uc704\ud5d8 \ub4f1\uc7a5, \uc800\ucd9c\uc0b0\u00b7\uace0\ub839\ud654\uc5d0 \ub530\ub978 \uc0dd\uc0b0\uc131 \ub454\ud654\ub85c \uc778\ud55c \uacbd\uc81c\uc131\uc7a5\ub960 \ud558\ub77d, \uc800\uae08\ub9ac \uae30\uc870\uc758 \uc7a5\uae30\uc801 \uc778 \ucd94\uc138\ub85c \uc778\ud55c \uae08\ub9ac\uc5ed\ub9c8\uc9c4 \ub4f1 \uacfc\uac70 \ubcf4\ud5d8\uc0ac\uac00 \uc608\uce21\ud558 \uc9c0 \ubabb\ud588\ub358 \ub2e4\uc591\ud55c \uc704\ud5d8\uc774 \uc9c0\uc18d\uc801\uc73c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc788\ub2e4. \uc774\ub7ec\ud55c \uae30\ud6c4\ubcc0\ud654\ub098 \uc804\uc5fc\ubcd1\uacfc \uac19\uc740 \uc2e0\uc885\uc704\ud5d8 \ub4f1 \ubcf4\ud5d8\ud658\uacbd\uc758 \ub300\ub0b4\uc678\uc801\uc778 \ud658\uacbd\ubcc0\ud654\ub97c \ub300\ube44\ud55c \ubcf4\ud5d8\uc0c1 \ud488\uc758 \uac1c\ubc1c \ubc0f \ub300\ucc98\ub2a5\ub825 \ud5a5\uc0c1\uc774 \ud544\uc694\ud558\ub098 \uc774\uc5d0 \ub300\ud55c \ubcf4\ud5d8\uc0ac\ub4e4\uc758 \ub300\ucc98\ub2a5\ub825\uc774 \uac08\uc218\ub85d \uc774\ub97c \ub530\ub77c\uac00\uc9c0 \ubabb\ud558"
     },
     {
       "self_ref": "#/texts/57",
@@ -1844,19 +1870,19 @@
           "page_no": 3,
           "bbox": {
             "l": 317.52,
-            "t": 267.67,
-            "r": 550.67,
+            "t": 198.61,
+            "r": 399.59,
             "b": 185.94,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            63
+            10
           ]
         }
       ],
-      "orig": "\uc774\ub7ec\ud55c \uae30\ud6c4\ubcc0\ud654\ub098 \uc804\uc5fc\ubcd1\uacfc \uac19\uc740 \uc2e0\uc885\uc704\ud5d8 \ub4f1 \ud488\uc758 \uac1c\ubc1c \ubc0f \ub300\ucc98\ub2a5\ub825 \ud5a5\uc0c1\uc774 \ud544\uc694\ud558\ub098 \uc774\uc5d0 \ub300\ud55c \uace0 \uc788\ub294 \uc2e4\uc815\uc774\ub2e4.",
-      "text": "\uc774\ub7ec\ud55c \uae30\ud6c4\ubcc0\ud654\ub098 \uc804\uc5fc\ubcd1\uacfc \uac19\uc740 \uc2e0\uc885\uc704\ud5d8 \ub4f1 \ud488\uc758 \uac1c\ubc1c \ubc0f \ub300\ucc98\ub2a5\ub825 \ud5a5\uc0c1\uc774 \ud544\uc694\ud558\ub098 \uc774\uc5d0 \ub300\ud55c \uace0 \uc788\ub294 \uc2e4\uc815\uc774\ub2e4."
+      "orig": "\uace0 \uc788\ub294 \uc2e4\uc815\uc774\ub2e4.",
+      "text": "\uace0 \uc788\ub294 \uc2e4\uc815\uc774\ub2e4."
     },
     {
       "self_ref": "#/texts/58",
@@ -2281,50 +2307,22 @@
           "bbox": {
             "l": 325.74,
             "t": 543.01,
-            "r": 333.34,
-            "b": 528.16,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "5",
-      "text": "5",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/74",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 350.88,
-            "t": 542.47,
             "r": 385.45,
             "b": 527.62,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            3
+            5
           ]
         }
       ],
-      "orig": "\ub9fa\uc73c\uba70",
-      "text": "\ub9fa\uc73c\uba70",
+      "orig": "\ub9fa\uc73c\uba70 5",
+      "text": "\ub9fa\uc73c\uba70 5",
       "level": 1
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/body"
       },
@@ -2351,7 +2349,7 @@
       "text": "\uc9c0\uae08\uae4c\uc9c0 \uc774 \uae00\uc5d0\uc11c \ucf54\ub85c\ub098-19\uc640 \uad00\ub828\ud558\uc5ec \uc0dd\uba85 \ubcf4\ud5d8 \ud45c\uc900\uc57d\uad00\uc0c1 \uc7ac\ud574\ubcf4\ud5d8\uae08 \uc9c0\uae09\uc758 \ubb38\uc81c\uc810 \ubc0f \uac1c \uc120\uacfc\uc81c\uc5d0 \ub300\ud558\uc5ec \uc0b4\ud3b4\ubcf4\uc558\ub2e4."
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/body"
       },
@@ -2378,7 +2376,7 @@
       "text": "\uadf8\ub7f0\ub370 \ud604\uc7ac \ucf54\ub85c\ub098-19\uc640 \uad00\ub828\ud55c \uae08\uc735\uac10\ub3c5\ub2f9\uad6d \uc758 \uc7ac\ud574\ubcf4\ud5d8\uae08 \ud45c\uc900\uc57d\uad00 \uac1c\uc815\uc791\uc5c5 \uc18c\ud640\ub85c \uc778\ud55c \uc9c0 \uae09\uae30\uc900 \ubbf8\uac1c\uc815\uc740 \ucf54\ub85c\ub098-19\ub85c \uace0\uc0dd\ud558\uace0 \uc788\ub294 \ubcf4\ud5d8 \uac00\uc785\uc790\uc758 \uacbd\uc81c\uc801 \uc5b4\ub824\uc6c0\uc744 \ud574\uc18c\ud558\uc9c0 \ubabb\ud558\uc5ec \uc544\uc26c\uc6c0 \uc744 \ub9ce\uc774 \ub0a8\uae30\uace0 \uc788\ub294 \uac83\uc774 \ud604\uc2e4\uc774\ub2e4."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/body"
       },
@@ -2405,7 +2403,7 @@
       "text": "\ucf54\ub85c\ub098-19\ub294 \u300c\uac10\uc5fc\ubcd1\uc608\ubc29\ubc95\u300d \uad00\ub828 \uaddc\uc815\uc5d0 \ub530\ub77c \ubcf4\ud5d8\uc57d\uad00 \ud45c\uc900\uc57d\uad00 \uc7ac\ud574\ubd84\ub958\ud45c\uc5d0\uc11c \uc778\uc815\ud558\ub294 \uc7ac\ud574 \uc774\uba70 \ud398\uc2a4\ud2b8\uc640 \uac19\uc774 \uc6b0\uc5f0\ud55c \uc678\ub798\uc758 \uc0ac\uace0\uc774\uba70 \uae09\uaca9 \uc131\uc744 \uc9c0\ub2c8\uace0 \uc788\ub294 \uc7ac\ud574\uc758 \uc815\uc758\uc5d0 \ubd80\ud569\ud558\ub294 \ub9cc\ud07c \uad00 \ub828 \ubcf4\ud5d8\uae08\uc744 \uc9c0\uae09\ud558\ub294 \uac83\uc774 \ud0c0\ub2f9\ud558\ub2e4."
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/body"
       },
@@ -2432,7 +2430,7 @@
       "text": "\ucf54\ub85c\ub098-19\ub85c \uc778\ud55c \uad6d\ubbfc\uc758 \uacbd\uc81c\uc190\uc2e4\uc744 \ubcf4\ucda9\ud558\uace0 \ubcf4\ud5d8\uc758 \uae30\ubcf8\uc6d0\ub9ac\uc5d0 \ucda9\uc2e4\ud55c \uacbd\uc81c\uc81c\ub3c4\ub85c\uc11c\uc758 \uc5ed\ud560\uc744 \uc218\ud589\ud558\ub3c4\ub85d \uae08\uc735\uac10\ub3c5\ub2f9\uad6d\uacfc \ubcf4\ud5d8\uc5c5\uacc4\uc758 \ud604\uba85\ud558\uace0 \ube60\ub978 \ubcf4\ud5d8\uc57d\uad00\uc758 \uc81c\ub3c4\uc801 \ubcf4\uc644\uc774 \ud544\uc694\ud55c \uc2dc\uc810\uc774\ub2e4."
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/body"
       },
@@ -2459,7 +2457,7 @@
       "text": "\udb82\udc54 \uc774\uc288\uc640 \ub17c\uc810 \udb82\udc55 \uc740 \uad6d\ud68c\uc758\uc6d0\uc758 \uc785\ubc95\ud65c\ub3d9\uc744 \uc9c0\uc6d0\ud558\uae30 \uc704\ud574 \ucd5c\uc2e0 \uad6d\ub0b4\uc678 \ub3d9\ud5a5 \ubc0f \ud604\uc548\uc5d0 \ub300\ud574 \uc218\uc2dc\ub85c \ubc1c\uac04\ud558\ub294 \uc815\ubcf4 \uc18c\uc2dd\uc9c0\uc785\ub2c8\ub2e4."
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/body"
       },
@@ -2486,7 +2484,7 @@
       "text": "10) \uc778\ub371\uc2a4 \ubcf4\ud5d8\uc774\ub77c\uace0\ub3c4 \ubd88\ub9ac\uba70, \uc190\uc2e4\uaddc\ubaa8\ub97c \uce21\uc815\ud558\uae30 \uc5b4\ub824\uc6b4 \ud64d\uc218\ub098 \uc790 \uc5f0\uc7ac\ud574 \ub9ac\uc2a4\ud06c\ub97c \ubcf4\uc0c1\ud558\ub294 \ubcf4\ud5d8\uc73c\ub85c \uc2e4\uc81c\ub85c \ubc1c\uc0dd\ud55c \uc190\uc2e4\uae08\uc561\uc744 \ubcf4\uc0c1 \ud558\ub294 \uc2e4\uc190\ubcf4\uc0c1\uc758 \uc6d0\uce59\uc774 \uc801\uc6a9\ub418\uc9c0 \uc54a\uace0 \uac15\uc218\ub7c9, \ud48d\uc18d, \uc628\ub3c4 \ub4f1\uacfc \uac19\uc740 \uac1c\uad00\uc801\uc778 \uc9c0\ud45c\uc5d0 \uc758\ud574\uc11c \ubcf4\uc0c1\uc774 \uacb0\uc815\ub418\ub294 \ubcf4\ud5d8\uc744 \ub9d0\ud568"
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/body"
       },
@@ -2513,7 +2511,7 @@
       "text": "07233 \uc11c\uc6b8\uc2dc \uc601\ub4f1\ud3ec\uad6c \uc758\uc0ac\ub2f9\ub300\ub85c 1 \uad6d\ud68c\uc785\ubc95\uc870\uc0ac\ucc98"
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
@@ -2540,7 +2538,7 @@
       "text": "Tel. 02-788-4510"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/body"
       },
@@ -2580,10 +2578,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 40.96,
-            "t": 858.76,
-            "r": 135.79,
-            "b": 768.84,
+            "l": 41.19,
+            "t": 858.81,
+            "r": 135.84,
+            "b": 768.67,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2609,10 +2607,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 434.72,
-            "t": 49.32,
-            "r": 548.71,
-            "b": 26.67,
+            "l": 434.96,
+            "t": 49.18,
+            "r": 548.62,
+            "b": 26.82,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2638,10 +2636,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 512.16,
-            "t": 74.7,
-            "r": 547.9,
-            "b": 32.79,
+            "l": 512.4,
+            "t": 74.07,
+            "r": 547.34,
+            "b": 33.36,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2679,10 +2677,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 64.58,
-            "t": 516.46,
-            "r": 295.71,
-            "b": 342.55,
+            "l": 64.66,
+            "t": 516.07,
+            "r": 295.26,
+            "b": 342.79,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2801,7 +2799,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "1\uad70\uac10\uc5fc\ubcd1",
+            "text": "1\uad70 \uac10\uc5fc\ubcd1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2821,7 +2819,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "1\uae09\uac10\uc5fc\ubcd1",
+            "text": "1\uae09 \uac10\uc5fc\ubcd1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2861,7 +2859,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "\u25e6 \ub9c8\uc2dc\ub294\ubb3c\ub610\ub294\uc2dd\ud488\uc744\ub9e4\uac1c\ub85c \ubc1c\uc0dd\ud558\uace0\uc9d1\ub2e8\ubc1c\uc0dd\uc758\uc6b0\ub824\uac00 \ud070\uac10\uc5fc\ubcd1",
+            "text": "\u25e6 \ub9c8\uc2dc\ub294 \ubb3c \ub610\ub294 \uc2dd\ud488\uc744 \ub9e4\uac1c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc9d1\ub2e8 \ubc1c\uc0dd\uc758 \uc6b0\ub824\uac00 \ud070 \uac10\uc5fc\ubcd1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2881,7 +2879,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "\u25e6 \uc0dd\ubb3c\ud14c\ub7ec\uac10\uc5fc\ubcd1\ub610\ub294\uce58\uba85\ub960\uc774 \ub192\uac70\ub098\uc9d1\ub2e8\ubc1c\uc0dd\uc758\uc6b0\ub824\uac00\ucee4\ub192 \uc740\uc218\uc900\uc758\uaca9\ub9ac\uac00\ud544\uc694\ud55c\uac10\uc5fc\ubcd1",
+            "text": "\u25e6 \uc0dd\ubb3c\ud14c\ub7ec\uac10\uc5fc\ubcd1 \ub610\ub294 \uce58\uba85\ub960\uc774 \ub192\uac70\ub098 \uc9d1\ub2e8 \ubc1c\uc0dd\uc758 \uc6b0\ub824\uac00 \ucee4 \ub192 \uc740 \uc218\uc900\uc758 \uaca9\ub9ac\uac00 \ud544\uc694\ud55c \uac10\uc5fc\ubcd1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2921,7 +2919,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "\u25e6 (6\uc885)\ucf5c\ub808\ub77c,\uc7a5\ud2f0\ud478\uc2a4,\ud30c\ub77c \ud2f0\ud478\uc2a4, \uc138\uade0\uc131\uc774\uc9c8, \uc7a5\ucd9c\ud608 \uc131\ub300\uc7a5\uade0\uac10\uc5fc\uc99d,A\ud615\uac04\uc5fc",
+            "text": "\u25e6 (6\uc885) \ucf5c\ub808\ub77c, \uc7a5\ud2f0\ud478\uc2a4, \ud30c\ub77c \ud2f0\ud478\uc2a4, \uc138\uade0\uc131\uc774\uc9c8, \uc7a5\ucd9c\ud608 \uc131\ub300\uc7a5\uade0\uac10\uc5fc\uc99d, A\ud615\uac04\uc5fc",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2941,7 +2939,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "\u25e6 (17\uc885)\uc5d0\ubcfc\ub77c,\ud398\uc2a4\ud2b8\ub4f1 *\uc88c\uce216\uc885(2\uae09\uac10\uc5fc\ubcd1\ubd84\ub958)\uc740 \ubbf8\ud3ec\ud568",
+            "text": "\u25e6 (17\uc885) \uc5d0\ubcfc\ub77c, \ud398\uc2a4\ud2b8 \ub4f1 * \uc88c\uce21 6\uc885(2\uae09 \uac10\uc5fc\ubcd1 \ubd84\ub958)\uc740 \ubbf8\ud3ec\ud568",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2981,7 +2979,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0U\ucf54\ub4dc\uc5c6\uc74c",
+            "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0 U\ucf54\ub4dc \uc5c6\uc74c",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -3001,7 +2999,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0U\ucf54\ub4dc\uc77c\ubd80(3\uc885) \ud3ec\ud568 \u2460\uc2e0\uc885\uac10\uc5fc\ubcd1\uc99d\ud6c4\uad70\u2192\ucf54\ub85c\ub09819(U) \u2461\uc911\uc99d\uae09\uc131\ud638\ud761\uae30\uc99d\ud6c4\uad70(SARS)(U) \u2462\uc911\ub3d9\ud638\ud761\uae30\uc99d\ud6c4\uad70(MERS)(U)",
+            "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0 U\ucf54\ub4dc \uc77c\ubd80(3\uc885) \ud3ec\ud568 \u2460 \uc2e0\uc885\uac10\uc5fc\ubcd1\uc99d\ud6c4\uad70 \u2192 \ucf54\ub85c\ub09819(U) \u2461 \uc911\uc99d\uae09\uc131\ud638\ud761\uae30\uc99d\ud6c4\uad70(SARS) (U) \u2462 \uc911\ub3d9\ud638\ud761\uae30\uc99d\ud6c4\uad70(MERS)(U)",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -3109,7 +3107,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "1\uad70\uac10\uc5fc\ubcd1",
+              "text": "1\uad70 \uac10\uc5fc\ubcd1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3129,7 +3127,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "1\uae09\uac10\uc5fc\ubcd1",
+              "text": "1\uae09 \uac10\uc5fc\ubcd1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3171,7 +3169,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "\u25e6 \ub9c8\uc2dc\ub294\ubb3c\ub610\ub294\uc2dd\ud488\uc744\ub9e4\uac1c\ub85c \ubc1c\uc0dd\ud558\uace0\uc9d1\ub2e8\ubc1c\uc0dd\uc758\uc6b0\ub824\uac00 \ud070\uac10\uc5fc\ubcd1",
+              "text": "\u25e6 \ub9c8\uc2dc\ub294 \ubb3c \ub610\ub294 \uc2dd\ud488\uc744 \ub9e4\uac1c\ub85c \ubc1c\uc0dd\ud558\uace0 \uc9d1\ub2e8 \ubc1c\uc0dd\uc758 \uc6b0\ub824\uac00 \ud070 \uac10\uc5fc\ubcd1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3191,7 +3189,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "\u25e6 \uc0dd\ubb3c\ud14c\ub7ec\uac10\uc5fc\ubcd1\ub610\ub294\uce58\uba85\ub960\uc774 \ub192\uac70\ub098\uc9d1\ub2e8\ubc1c\uc0dd\uc758\uc6b0\ub824\uac00\ucee4\ub192 \uc740\uc218\uc900\uc758\uaca9\ub9ac\uac00\ud544\uc694\ud55c\uac10\uc5fc\ubcd1",
+              "text": "\u25e6 \uc0dd\ubb3c\ud14c\ub7ec\uac10\uc5fc\ubcd1 \ub610\ub294 \uce58\uba85\ub960\uc774 \ub192\uac70\ub098 \uc9d1\ub2e8 \ubc1c\uc0dd\uc758 \uc6b0\ub824\uac00 \ucee4 \ub192 \uc740 \uc218\uc900\uc758 \uaca9\ub9ac\uac00 \ud544\uc694\ud55c \uac10\uc5fc\ubcd1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3233,7 +3231,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "\u25e6 (6\uc885)\ucf5c\ub808\ub77c,\uc7a5\ud2f0\ud478\uc2a4,\ud30c\ub77c \ud2f0\ud478\uc2a4, \uc138\uade0\uc131\uc774\uc9c8, \uc7a5\ucd9c\ud608 \uc131\ub300\uc7a5\uade0\uac10\uc5fc\uc99d,A\ud615\uac04\uc5fc",
+              "text": "\u25e6 (6\uc885) \ucf5c\ub808\ub77c, \uc7a5\ud2f0\ud478\uc2a4, \ud30c\ub77c \ud2f0\ud478\uc2a4, \uc138\uade0\uc131\uc774\uc9c8, \uc7a5\ucd9c\ud608 \uc131\ub300\uc7a5\uade0\uac10\uc5fc\uc99d, A\ud615\uac04\uc5fc",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3253,7 +3251,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "\u25e6 (17\uc885)\uc5d0\ubcfc\ub77c,\ud398\uc2a4\ud2b8\ub4f1 *\uc88c\uce216\uc885(2\uae09\uac10\uc5fc\ubcd1\ubd84\ub958)\uc740 \ubbf8\ud3ec\ud568",
+              "text": "\u25e6 (17\uc885) \uc5d0\ubcfc\ub77c, \ud398\uc2a4\ud2b8 \ub4f1 * \uc88c\uce21 6\uc885(2\uae09 \uac10\uc5fc\ubcd1 \ubd84\ub958)\uc740 \ubbf8\ud3ec\ud568",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3295,7 +3293,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0U\ucf54\ub4dc\uc5c6\uc74c",
+              "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0 U\ucf54\ub4dc \uc5c6\uc74c",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -3315,7 +3313,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0U\ucf54\ub4dc\uc77c\ubd80(3\uc885) \ud3ec\ud568 \u2460\uc2e0\uc885\uac10\uc5fc\ubcd1\uc99d\ud6c4\uad70\u2192\ucf54\ub85c\ub09819(U) \u2461\uc911\uc99d\uae09\uc131\ud638\ud761\uae30\uc99d\ud6c4\uad70(SARS)(U) \u2462\uc911\ub3d9\ud638\ud761\uae30\uc99d\ud6c4\uad70(MERS)(U)",
+              "text": "\u25e6 \ub300\uc0c1\uc9c8\ubcd1\uc5d0 U\ucf54\ub4dc \uc77c\ubd80(3\uc885) \ud3ec\ud568 \u2460 \uc2e0\uc885\uac10\uc5fc\ubcd1\uc99d\ud6c4\uad70 \u2192 \ucf54\ub85c\ub09819(U) \u2461 \uc911\uc99d\uae09\uc131\ud638\ud761\uae30\uc99d\ud6c4\uad70(SARS) (U) \u2462 \uc911\ub3d9\ud638\ud761\uae30\uc99d\ud6c4\uad70(MERS)(U)",
               "column_header": false,
               "row_header": false,
               "row_section": false,

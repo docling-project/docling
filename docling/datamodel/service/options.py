@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 # Define the input options for the API
 import json
 import warnings
@@ -423,11 +426,11 @@ class ConvertDocumentsOptions(BaseModel):
             description=(
                 "The PDF backend to use. String. "
                 f"Allowed values: {', '.join([v.value for v in PdfBackend])}. "
-                f"Optional, defaults to {PdfBackend.DOCLING_PARSE.value}."
+                f"Optional, defaults to {PdfBackend.THREADED_DOCLING_PARSE.value}."
             ),
-            examples=[PdfBackend.DOCLING_PARSE],
+            examples=[PdfBackend.THREADED_DOCLING_PARSE],
         ),
-    ] = PdfBackend.DOCLING_PARSE
+    ] = PdfBackend.THREADED_DOCLING_PARSE
 
     table_mode: Annotated[
         TableFormerMode,
@@ -558,6 +561,19 @@ class ConvertDocumentsOptions(BaseModel):
             examples=["<!-- page-break -->", ""],
         ),
     ] = ""
+
+    md_compact_tables: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to use compact table format without column padding in the "
+                "markdown output. When False (default), tables use padded columns "
+                "for better visual formatting. When True, tables use minimal "
+                "whitespace, which is better for large tables and downstream processing."
+            ),
+            examples=[False],
+        ),
+    ] = False
 
     chunking_options: Annotated[
         Optional[ChunkingOptionType],

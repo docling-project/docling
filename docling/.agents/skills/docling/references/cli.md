@@ -80,6 +80,8 @@ OCR engines are optional dependencies — see
 ```bash
 docling report.pdf --no-tables --output /tmp/            # skip table structure (faster)
 docling report.pdf --table-mode accurate --output /tmp/  # vs. fast
+docling report.pdf --layout-engine docling_layout_default --output /tmp/  # choose layout engine
+docling report.pdf --table-structure-engine docling_tableformer_v2 --output /tmp/  # choose table engine
 docling report.pdf --enrich-code --output /tmp/          # code understanding
 docling report.pdf --enrich-formula --output /tmp/       # formula understanding
 docling report.pdf --enrich-picture-classes --output /tmp/

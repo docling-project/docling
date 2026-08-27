@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the package-level ``docling.__version__`` attribute."""
 
 import importlib.metadata

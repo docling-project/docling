@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Office Math Markup Language (OMML) to LaTeX converter.
 
 This module provides functionality to convert Office Math Markup Language (OMML)

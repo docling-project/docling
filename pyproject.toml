@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.119.0"  # DO NOT EDIT, updated automatically
+version = "2.123.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -96,8 +96,8 @@ format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 format-pdf-docling = [
+  'docling-parse>=7.16.0,<8.0.0',
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=7.0.0,<8.0.0',
 ]
 
 format-pdf = [
@@ -150,6 +150,13 @@ format-email = [
   'python-oxmsg>=0.0.2,<0.1.0',
 ]
 
+# Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
+# Index/*.iwa; the Snappy decompressor is implemented in pure Python, so no
+# compiled dependency is needed. iWork '09 documents are plain XML.
+format-iwork = [
+  'defusedxml>=0.7.1,<0.8.0',
+]
+
 format-xml-jats = [
   'docling-slim[format-html]',
   'lxml>=4.0.0,<7.0.0',
@@ -193,7 +200,9 @@ feat-ocr-rapidocr = [
 
 feat-ocr-rapidocr-onnx = [
   'rapidocr>=3.9.1,<4.0.0',
-  'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
+  'onnxruntime>=1.7.0,<1.24 ; python_version < "3.11"',
+  'onnxruntime>=1.7.0,<2.0.0 ; python_version >= "3.11" and python_version < "3.14"',
+  'onnxruntime>=1.24.1,<2.0.0 ; python_version >= "3.14"',
 ]
 
 feat-ocr-easyocr = [
@@ -234,8 +243,12 @@ models-remote = [
 ]
 
 models-onnxruntime = [
-  'onnxruntime<1.24 ; python_version < "3.14" and sys_platform == "darwin"',
-  'onnxruntime-gpu<1.24 ; python_version < "3.14" and (sys_platform == "linux" or sys_platform == "win32")',
+  'onnxruntime<1.24 ; python_version < "3.11" and sys_platform == "darwin"',
+  'onnxruntime<2.0.0 ; python_version >= "3.11" and python_version < "3.14" and sys_platform == "darwin"',
+  'onnxruntime>=1.24.1,<2.0.0 ; python_version >= "3.14" and sys_platform == "darwin"',
+  'onnxruntime-gpu<1.24 ; python_version < "3.11" and (sys_platform == "linux" or sys_platform == "win32")',
+  'onnxruntime-gpu<2.0.0 ; python_version >= "3.11" and python_version < "3.14" and (sys_platform == "linux" or sys_platform == "win32")',
+  'onnxruntime-gpu>=1.24.1,<2.0.0 ; python_version >= "3.14" and (sys_platform == "linux" or sys_platform == "win32")',
 ]
 
 # Vision Language Models for inline processing
@@ -280,7 +293,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [
@@ -314,6 +327,10 @@ pr-fast-checks = [
 dev = [
   { include-group = "typecheck" },
   "dprint-py==0.53.1.0",
+  # Test fakes serve a real socket so both httpx and requests code paths are
+  # covered by one harness; see tests/fakes/.
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",
@@ -368,7 +385,6 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 
 [tool.uv]

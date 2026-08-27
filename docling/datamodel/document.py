@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import csv
 import json
 import logging
@@ -790,6 +793,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif suffix == ".pptx":
                     mime = mime_root + ".presentationml.presentation"
+                elif suffix == ".pages":
+                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -821,6 +826,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif objname.endswith(".pptx"):
                     mime = mime_root + ".presentationml.presentation"
+                elif objname.endswith(".pages"):
+                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -907,7 +914,12 @@ class _DocumentConversionInput(BaseModel):
         input_format: Optional[InputFormat] = None
 
         if mime in {"application/xml", "application/xhtml+xml"}:
-            content_str = content.decode("utf-8")
+            # ``content`` is a truncated head of the document (see _guess_format),
+            # so it can end mid-codepoint even for well-formed UTF-8, and an XML
+            # document may legitimately declare a non-UTF-8 encoding. Every marker
+            # matched below is ASCII, so replacing undecodable bytes cannot change
+            # the outcome -- while a strict decode would abort the whole batch.
+            content_str = content.decode("utf-8", errors="replace")
 
             if (
                 InputFormat.XML_XBRL in formats

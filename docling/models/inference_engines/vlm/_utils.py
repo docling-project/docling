@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal utilities for VLM runtimes.
 
 This module contains shared utility functions used across different VLM runtime

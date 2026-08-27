@@ -45,7 +45,7 @@ jobs:
           name: dist
           path: dist/
       - name: Publish docling-slim to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           attestations: true
           packages-dir: dist/docling-slim/
@@ -72,7 +72,7 @@ jobs:
           echo "Waiting 60 seconds for docling-slim to propagate on PyPI..."
           sleep 60
       - name: Publish docling to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           attestations: true
           packages-dir: dist/docling/
@@ -99,7 +99,7 @@ jobs:
           echo "Waiting 60 seconds for docling-slim to propagate on PyPI..."
           sleep 60
       - name: Publish docling-client to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           attestations: true
           packages-dir: dist/docling-client/
