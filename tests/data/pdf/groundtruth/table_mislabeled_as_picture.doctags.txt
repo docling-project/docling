@@ -36,7 +36,7 @@
 <text><loc_316><loc_342><loc_355><loc_347>(Please select all that apply)</text>
 <otsl><loc_315><loc_354><loc_472><loc_450><ecel><ecel><ched>State funded legal aid<ched>CSOs<nl><fcel>y y<fcel>Persons with disabilities<fcel>*<fcel>*<nl><fcel>y y<fcel>Children<fcel>*<fcel>*<nl><fcel>y y<fcel>Women<fcel>*<fcel>*<nl><fcel>y y<fcel>The elderly<fcel>*<fcel>*<nl><fcel>y y<fcel>Migrants<fcel>*<fcel>*<nl><fcel>y y<fcel>Refugees, asylum seekers, or stateless persons<fcel>*<fcel>*<nl><fcel>y y<fcel>Internally displaced persons<fcel>*<fcel>*<nl></otsl>
 <page_footer><loc_17><loc_478><loc_23><loc_483>208</page_footer>
+<page_footer><loc_477><loc_478><loc_483><loc_483>209</page_footer>
 <page_footer><loc_128><loc_478><loc_199><loc_483>Global Study on Legal Aid - Global Report</page_footer>
 <page_footer><loc_301><loc_478><loc_312><loc_483>Annex</page_footer>
-<page_footer><loc_477><loc_478><loc_483><loc_483>209</page_footer>
 </doctag>
