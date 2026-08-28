@@ -58,7 +58,7 @@ What each engine does with an empty `lang` and with `mul`:
 | ----------------- | ---------------------------------- | --------------------------- |
 | Tesseract (both)  | Per-page orientation and script    | Error                       |
 |                   | detection; needs the `osd` file    |                             |
-| EasyOCR           | EasyOCR's own default              | Error -- list the languages |
+| EasyOCR           | English (`en`)                     | Error -- list the languages |
 | RapidOCR / KServe | The Simplified Chinese default     | Error -- list the languages |
 | Nemotron-OCR      | The English model                  | The multilingual model      |
 | ocrmac            | Vision's own automatic behaviour   | Error                       |
@@ -85,7 +85,9 @@ RapidOcrOptions(lang=["ch"]).lang  # -> ["zh-Hans"]
 | Engine            | Codes accepted in addition to BCP-47                               |
 | ----------------- | ------------------------------------------------------------------ |
 | RapidOCR / KServe | PP-OCR tokens: `ch`, `chinese_cht`, `japan`, `korean`, `ka`,       |
-|                   | `eslav`, `latin`, `cyrillic`, `arabic`, `devanagari`, `rs_latin`   |
+|                   | `eslav`, `latin`, `cyrillic`, `arabic`, `devanagari`, `rs_latin`,  |
+|                   | `french`, `german` -- the last two always canonicalize to `fr`     |
+|                   | and `de`                                                           |
 | Tesseract (both)  | tessdata names: `chi_sim`, `chi_tra`, `srp_latn`, `aze_cyrl`,      |
 |                   | `uzb_cyrl`, `deu_latf`, `frk`, and any `script/<Name>` file        |
 | EasyOCR           | EasyOCR codes: `ch_sim`, `ch_tra`, `rs_latin`, `rs_cyrillic`,      |
@@ -159,6 +161,9 @@ KServe client) take the **first** tag and warn about the rest.
 
 This section describes RapidOCR for versions `v3.9.1`, `v3.9.2`.
 
+The engine's own vocabulary, in its own codes, is listed in
+[Native OCR engines](OCR_native.md#rapidocr).
+
 ### RapidOCR backends
 
 RapidOCR supports multiple backends.
@@ -226,7 +231,8 @@ primary subtag if PP-OCR has it under that name, then the script family, then an
 | You write                                  | PP-OCR token            | Backbone           |
 | ------------------------------------------ | ----------------------- | ------------------ |
 | `zh-Hans` / `zh-Hant`                      | `ch` / `chinese_cht`    | v6                 |
-| `ja` / `ko`                                | `japan` / `korean`      | v6 / v5 / v4       |
+| `ja`                                       | `japan`                 | v6                 |
+| `ko`                                       | `korean`                | v5 / v4            |
 | `en`, `de`, `fr`, and the other v6 codes   | the primary subtag      | v6                 |
 | `sr-Latn`                                  | `rs_latin`              | v6                 |
 | `ru`, `uk`, `be`                           | `eslav`                 | v5 -- narrower     |
@@ -234,7 +240,7 @@ primary subtag if PP-OCR has it under that name, then the script family, then an
 | Arabic- and Devanagari-script languages    | `arabic` / `devanagari` | v5 / v4            |
 | `el`, `ta`, `te`, `th`                     | `el`, `ta`, `te`, `th`  | v5                 |
 | `kn`                                       | `ka` (PP-OCR's Kannada) | v4                 |
-| `ka` (Georgian)                            | --                      | **error**          |
+| `ka-Geor` (Georgian)                       | --                      | **error**          |
 | `latin`, `cyrillic`, `arabic`,             | the token itself        | v5 / v4            |
 | `devanagari` (PP-OCR's own tokens)         |                         |                    |
 | an empty list                              | `ch`                    | the default        |
@@ -254,6 +260,9 @@ docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:th-Th
 
 This section describes EasyOCR for versions `v1.7.2`, `v1.7.1`.
 The model checkpoints are those of `gen2`.
+
+The engine's own vocabulary, in its own codes, is listed in
+[Native OCR engines](OCR_native.md#easyocr).
 
 ### EasyOCR language support
 
@@ -296,6 +305,9 @@ Check the semantic of easyocr language inputs here: https://www.jaided.ai/easyoc
 
 This section describes Nemotron-OCR for versions `v2.0.0`, `v2.0.2`.
 
+The engine's own vocabulary, in its own codes, is listed in
+[Native OCR engines](OCR_native.md#nemotron-ocr).
+
 Nemotron works only on Linux and requires CUDA (Docling enforces 13.x).
 
 The following table shows the supported Python versions and languages
@@ -318,6 +330,9 @@ Tesseract must be installed as a system package (see
 [installation](../getting_started/installation.md)).
 TesserOCR is a python library that wraps the Tesseract engine.
 
+The engine's own vocabulary, in its own codes, is listed in
+[Native OCR engines](OCR_native.md#tesseract-tesserocr).
+
 Tesseract's own vocabulary *is* ISO 639-2/T, so most tags map straight through: `de` becomes `deu`,
 `el` becomes `ell`, `cs` becomes `ces`. Docling handles the deviations for you -- `zh-Hant` becomes
 `chi_tra`, `sr-Latn` becomes `srp_latn`, `az-Cyrl` becomes `aze_cyrl`, `ku` becomes `kmr`. A
@@ -336,6 +351,9 @@ the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 ## OcrMac
 
 This section describes ocrmac for versions `v1.0.0`, `v1.0.1`.
+
+The engine's own vocabulary, in its own codes, is listed in
+[Native OCR engines](OCR_native.md#ocrmac).
 
 ocrmac is a thin wrapper around Apple's Vision framework. It is macOS-only and ships no model
 artifacts of its own — the recognizers are part of the operating system. The supported language set
