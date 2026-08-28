@@ -346,6 +346,11 @@ layer = "models"
 depends_on = ["docling.datamodel"]
 
 [[modules]]
+path = "docling.models.stages.native_formula"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.utils"]
+
+[[modules]]
 path = "docling.models.stages.reading_order"
 layer = "models"
 depends_on = ["docling.datamodel", "docling.utils"]

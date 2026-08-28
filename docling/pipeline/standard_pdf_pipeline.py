@@ -68,6 +68,9 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
+from docling.models.stages.native_formula.native_formula_model import (
+    NativeFormulaModel,
+)
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -647,6 +650,9 @@ class StandardPdfPipeline(ConvertPipeline):
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )
+        self.native_formula_model = NativeFormulaModel(
+            enabled=self.pipeline_options.do_native_formula_extraction
+        )
 
         # --- optional enrichment ------------------------------------------------
         # Create a copy to avoid mutating pipeline_options in-place,
@@ -817,6 +823,13 @@ class StandardPdfPipeline(ConvertPipeline):
         if not expected_page_nos:
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
+
+        # Surface the tagged PDF's Formula structure elements for the native-formula stage,
+        # while the backend is still open. Only read when the feature is enabled.
+        if self.pipeline_options.do_native_formula_extraction:
+            conv_res._pdf_formula_structs = backend.get_formula_structures(
+                expected_page_nos
+            )
 
         page_by_no: dict[int, Page] = {}
         for page_no in expected_page_nos:
@@ -1045,6 +1058,7 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
+            conv_res.document = self.native_formula_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:

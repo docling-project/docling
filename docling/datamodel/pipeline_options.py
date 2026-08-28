@@ -1976,6 +1976,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    do_native_formula_extraction: Annotated[
+        bool,
+        Field(
+            description=(
+                "Read the MathML a tagged (accessible / PDF-UA) PDF already carries on its Formula structure "
+                "elements, instead of reconstructing the equation from the rendered glyphs. When a formula is "
+                "matched, its MathML is stored on the item and the formula enrichment model is skipped for it; "
+                "formulas with no embedded MathML are unaffected. Untagged PDFs are unchanged."
+            )
+        ),
+    ] = False
     force_backend_text: Annotated[
         bool,
         Field(
