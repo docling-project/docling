@@ -1,8 +1,8 @@
 <doctag><page_header><loc_15><loc_138><loc_30><loc_350>arXiv:2206.01062v1  [cs.CV]  2 Jun 2022</page_header>
 <section_header_level_1><loc_88><loc_53><loc_413><loc_75>DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis</section_header_level_1>
-<text><loc_74><loc_85><loc_158><loc_114><loc_208><loc_85><loc_292><loc_114>Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com</text>
+<text><loc_74><loc_85><loc_158><loc_114><loc_208><loc_85><loc_292><loc_114><loc_343><loc_85><loc_426><loc_114>Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com</text>
 <text><loc_141><loc_122><loc_225><loc_143>Ahmed S. Nassar IBM Research Rueschlikon, Switzerland</text>
-<text><loc_147><loc_145><loc_218><loc_151><loc_343><loc_85><loc_426><loc_114><loc_275><loc_122><loc_359><loc_151>ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com</text>
+<text><loc_147><loc_145><loc_218><loc_151><loc_275><loc_122><loc_359><loc_151>ahn@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com</text>
 <picture><loc_263><loc_156><loc_454><loc_333><caption><loc_260><loc_341><loc_457><loc_353>Figure 1: Four examples of complex page layouts across different document categories</caption></picture>
 <section_header_level_1><loc_260><loc_375><loc_310><loc_380>KEYWORDS</section_header_level_1>
 <text><loc_260><loc_384><loc_457><loc_396>PDF document conversion, layout segmentation, object-detection, data set, Machine Learning</text>

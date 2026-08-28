@@ -1061,6 +1061,33 @@
         {
           "page_no": 1,
           "bbox": {
+            "l": 1167.31,
+            "t": 34.75,
+            "r": 1182.3,
+            "b": 26.9,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
+      "orig": "209",
+      "text": "209"
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_footer",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
             "l": 314.55,
             "t": 34.75,
             "r": 486.06,
@@ -1077,7 +1104,7 @@
       "text": "Global Study on Legal Aid - Global Report"
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/body"
       },
@@ -1102,33 +1129,6 @@
       ],
       "orig": "Annex",
       "text": "Annex"
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "page_footer",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 1167.31,
-            "t": 34.75,
-            "r": 1182.3,
-            "b": 26.9,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "209",
-      "text": "209"
     }
   ],
   "pictures": [],

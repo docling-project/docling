@@ -585,10 +585,24 @@
             74,
             145
           ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 419.26,
+            "t": 657.75,
+            "r": 522.03,
+            "b": 611.92,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            146,
+            216
+          ]
         }
       ],
-      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com",
-      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com"
+      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com",
+      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com"
     },
     {
       "self_ref": "#/texts/3",
@@ -643,20 +657,6 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 419.26,
-            "t": 657.75,
-            "r": 522.03,
-            "b": 611.92,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            19,
-            89
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
             "l": 336.69,
             "t": 599.37,
             "r": 439.46,
@@ -664,13 +664,13 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            90,
-            158
+            19,
+            87
           ]
         }
       ],
-      "orig": "ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
-      "text": "ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
+      "orig": "ahn@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
+      "text": "ahn@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
     },
     {
       "self_ref": "#/texts/5",

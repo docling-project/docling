@@ -429,9 +429,6 @@
         "$ref": "#/pictures/7"
       },
       {
-        "$ref": "#/texts/550"
-      },
-      {
         "$ref": "#/pictures/8"
       },
       {
@@ -442,9 +439,6 @@
       },
       {
         "$ref": "#/pictures/10"
-      },
-      {
-        "$ref": "#/texts/554"
       },
       {
         "$ref": "#/pictures/11"
@@ -16018,7 +16012,7 @@
     {
       "self_ref": "#/texts/550",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/7"
       },
       "children": [],
       "content_layer": "body",
@@ -16126,7 +16120,7 @@
     {
       "self_ref": "#/texts/554",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/10"
       },
       "children": [],
       "content_layer": "body",
@@ -17747,7 +17741,11 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/550"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [
@@ -17766,7 +17764,11 @@
           ]
         }
       ],
-      "captions": [],
+      "captions": [
+        {
+          "$ref": "#/texts/550"
+        }
+      ],
       "references": [],
       "footnotes": [],
       "annotations": []
@@ -17850,7 +17852,11 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/554"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [
@@ -17869,7 +17875,11 @@
           ]
         }
       ],
-      "captions": [],
+      "captions": [
+        {
+          "$ref": "#/texts/554"
+        }
+      ],
       "references": [],
       "footnotes": [],
       "annotations": []
