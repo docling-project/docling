@@ -518,7 +518,7 @@ class EasyOcrOptions(OcrOptions):
             ),
             examples=[["fr", "de", "es", "en"], ["ru", "uk"]],
         ),
-    ] = ["fr-Latn", "de-Latn", "es-Latn", "en-Latn"]
+    ] = ["en-Latn", "es-Latn", "fr-Latn", "de-Latn"]
     use_gpu: Annotated[
         bool | None,
         Field(

@@ -81,32 +81,13 @@ def map_tesseract_language(language: OcrLanguage, script_prefix: str) -> str | N
     return langcodes.Language.get(language.language).to_alpha3(variant="T")
 
 
-def tesseract_language_to_tag(name: str, script_prefix: str, kind: str) -> str | None:
-    """Render one installed tessdata name back as a canonical tag.
-
-    `kind` is the calling engine's `OcrOptions.kind`: the two Tesseract bindings
-    read the same tessdata names, and either one selects that vocabulary.
-    """
-    if name in _TESSERACT_TO_CANONICAL:
-        return _TESSERACT_TO_CANONICAL[name]
-    if script_prefix and name.startswith(script_prefix):
-        # A script traineddata file is named back as itself: that is what the
-        # user has to type to select it -- except the vertical-text ones, which
-        # `canonicalize_ocr_language` refuses, so naming them back would advertise a
-        # value that cannot be asked for.
-        if name.lower().endswith("_vert"):
-            return None
-        return name
-    try:
-        return OcrLanguageResolver.canonicalize_ocr_language(name, kind).tag
-    except ValueError:
-        return None
-
-
 def installed_language_tags(
     names: Sequence[str], script_prefix: str, kind: str
 ) -> list[str]:
     """The canonical tags this install can actually serve.
+
+    `kind` is the calling engine's `OcrOptions.kind`: the two Tesseract bindings
+    read the same tessdata names, and either one selects that vocabulary.
 
     A name is reported only if the tag it renders as maps back to a file that is
     installed. Without that round trip the list can offer a tag this install
@@ -116,9 +97,21 @@ def installed_language_tags(
     """
     tags = set()
     for name in names:
-        tag = tesseract_language_to_tag(name, script_prefix, kind)
-        if tag is None:
-            continue
+        if name in _TESSERACT_TO_CANONICAL:
+            tag = _TESSERACT_TO_CANONICAL[name]
+        elif script_prefix and name.startswith(script_prefix):
+            # A script traineddata file is named back as itself: that is what the
+            # user has to type to select it -- except the vertical-text ones, which
+            # `canonicalize_ocr_language` refuses, so naming them back would
+            # advertise a value that cannot be asked for.
+            if name.lower().endswith("_vert"):
+                continue
+            tag = name
+        else:
+            try:
+                tag = OcrLanguageResolver.canonicalize_ocr_language(name, kind).tag
+            except ValueError:
+                continue
         language = OcrLanguageResolver.canonicalize_ocr_language(tag, kind)
         if map_tesseract_language(language, script_prefix) in names:
             tags.add(tag)
