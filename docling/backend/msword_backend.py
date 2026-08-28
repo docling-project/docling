@@ -1107,10 +1107,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _build_enum_marker(self, numid: int, ilvl: int) -> str:
         """Build enumeration marker from the lvlText template (e.g. 'Proposal %1:').
 
-        Uses lvlText when it contains a text prefix/suffix beyond simple
-        placeholders and separators, or when the level's ``w:numFmt`` is
-        letter/roman/decimalZero. Falls back to the default '1.2.3.'
-        pattern for plain decimal markers.
+        Uses ``lvlText`` when it contains a text prefix/suffix beyond simple
+        placeholders and separators. The same path is also taken when the
+        level's ``w:numFmt`` is letter/roman/decimalZero even if ``lvlText``
+        only has placeholders plus punctuation (e.g. ``%2)`` → ``a)``): without
+        that guard those non-decimal levels used to fall through to the
+        hierarchical decimal form (``1.a.``). Plain decimal markers still use
+        the default ``1.2.3.`` fallback.
         """
         lvl_element = self._get_level_element(numid, ilvl)
         namespaces = {"w": self._W_NS}
@@ -1132,15 +1135,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             stripped = re.sub(r"%\d+", "", lvl_text)
             stripped = stripped.strip(" .)(:[]")
             if stripped or num_fmt in _NON_DECIMAL_NUMBERING_FORMATS:
+                # Resolve each placeholder level's numFmt once. The current
+                # level already has ``num_fmt``; other %N levels would otherwise
+                # re-traverse numbering.xml inside re.sub via _get_level_num_fmt.
+                fmt_by_lvl: dict[int, str | None] = {}
+                for match in re.finditer(r"%(\d+)", lvl_text):
+                    lvl_idx = int(match.group(1)) - 1
+                    if lvl_idx in fmt_by_lvl:
+                        continue
+                    if lvl_idx == ilvl:
+                        fmt_by_lvl[lvl_idx] = num_fmt
+                    else:
+                        fmt_by_lvl[lvl_idx] = self._get_level_num_fmt(numid, lvl_idx)
 
-                def _replace(match):
+                def _replace(match, _fmts=fmt_by_lvl):
                     lvl_idx = int(match.group(1)) - 1
                     counter = self.list_counters.get((numid, lvl_idx))
                     if counter is None:
                         counter = self._get_start_value(numid, lvl_idx)
-                    return _format_enum_counter(
-                        counter, self._get_level_num_fmt(numid, lvl_idx)
-                    )
+                    return _format_enum_counter(counter, _fmts.get(lvl_idx))
 
                 return re.sub(r"%(\d+)", _replace, lvl_text)
 
