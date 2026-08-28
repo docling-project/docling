@@ -1124,6 +1124,34 @@ def test_cli_invalid_table_structure_engine_is_rejected(tmp_path):
     assert result.exit_code != 0
 
 
+def test_cli_main_importable_without_local_model_stack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Importing docling.cli.main must not require pypdfium2 or scipy.
+
+    Ensure that CLI does not crash in `docling convert-remote`
+    on lightweight `docling-client` / `docling-slim[service-client]` installs.
+    """
+    import importlib
+    import sys
+
+    monkeypatch.setitem(sys.modules, "pypdfium2", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "scipy", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "scipy.ndimage", None)  # type: ignore[arg-type]
+
+    for mod in list(sys.modules):
+        if mod.startswith(
+            (
+                "docling.cli.main",
+                "docling.document_converter",
+                "docling.models.factories",
+            )
+        ):
+            monkeypatch.delitem(sys.modules, mod)
+
+    importlib.import_module("docling.cli.main")
+
+
 def test_cli_invalid_ocr_engine_is_rejected(tmp_path):
     """Test that invalid --ocr-engine is rejected."""
     result = runner.invoke(
