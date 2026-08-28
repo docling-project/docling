@@ -40,6 +40,7 @@ from docling_core.transforms.serializer.html import (
     HTMLOutputStyle,
     HTMLParams,
 )
+from docling_core.transforms.serializer.latex import LaTeXDocSerializer
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
@@ -462,6 +463,7 @@ def export_documents(
     image_export_mode: ImageRefMode,
     export_dclx: bool = False,
     export_chunks: bool = False,
+    export_latex: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
@@ -608,6 +610,14 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.dclx"
                 _log.info(f"writing DCLX output to {fname}")
                 conv_res.document.save_as_doclang_archive(filename=fname)
+
+            # Export LaTeX format:
+            if export_latex:
+                fname = output_dir / f"{doc_filename}.tex"
+                _log.info(f"writing LaTeX output to {fname}")
+                ser_res = LaTeXDocSerializer(doc=conv_res.document).serialize()
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(ser_res.text)
 
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:

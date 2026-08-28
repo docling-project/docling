@@ -51,3 +51,4 @@ Schema-specific support:
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | DocLang archive | Zipped DocLang bundle including page images; CLI output format: `dclx` |
 | Chunks (JSONL) | Chunked document output for RAG pipelines; configurable via `--chunks-type`, `--chunks-max-tokens`, `--chunks-tokenizer` |
+| LaTeX | Standalone `.tex` document; images are emitted as placeholders |

@@ -142,6 +142,7 @@ class OutputFormat(str, Enum):
     DOCLANG = "doclang"
     DCLX = "dclx"
     CHUNKS = "chunks"
+    LATEX = "latex"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {

@@ -156,6 +156,39 @@ def test_cli_exports_dclx(tmp_path):
     assert b"DCLX CLI" in payload
 
 
+def test_cli_exports_latex(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text(
+        "# LaTeX CLI\n\nHello from Markdown with 100% special chars.",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "latex",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.tex"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    assert content.startswith("\\documentclass")
+    assert "\\begin{document}" in content
+    assert "\\end{document}" in content
+    assert "LaTeX CLI" in content
+    # LaTeX special characters must be escaped
+    assert "100\\% special chars" in content
+
+
 def test_cli_from_odf_expands_to_open_document_formats(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
