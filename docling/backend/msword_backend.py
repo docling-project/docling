@@ -166,6 +166,62 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
 """OOXML numFmt values that produce visible list/heading markers."""
 
 
+_ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
+    (1000, "m"),
+    (900, "cm"),
+    (500, "d"),
+    (400, "cd"),
+    (100, "c"),
+    (90, "xc"),
+    (50, "l"),
+    (40, "xl"),
+    (10, "x"),
+    (9, "ix"),
+    (5, "v"),
+    (4, "iv"),
+    (1, "i"),
+)
+
+
+def _counter_to_letter(counter: int) -> str:
+    """Render a 1-based counter as Word does for letter formats: a, b, ... z, aa."""
+    letters = []
+    while counter > 0:
+        counter, remainder = divmod(counter - 1, 26)
+        letters.append(chr(ord("a") + remainder))
+    return "".join(reversed(letters))
+
+
+def _counter_to_roman(counter: int) -> str:
+    """Render a 1-based counter as a lowercase roman numeral."""
+    remaining = counter
+    numeral = []
+    for value, symbol in _ROMAN_NUMERALS:
+        whole, remaining = divmod(remaining, value)
+        numeral.append(symbol * whole)
+    return "".join(numeral)
+
+
+def _format_list_counter(counter: int, num_fmt: str) -> str:
+    """Render a list counter using the level's OOXML ``w:numFmt``.
+
+    Word stores the counter as an integer and the presentation separately, so a
+    level declared ``lowerLetter`` must be shown as ``a``, not ``1``. Formats
+    outside this set, and counters the format cannot express, stay decimal.
+    """
+    if counter < 1:
+        return str(counter)
+    if num_fmt in {"lowerLetter", "upperLetter"}:
+        letter = _counter_to_letter(counter)
+        return letter.upper() if num_fmt == "upperLetter" else letter
+    if num_fmt in {"lowerRoman", "upperRoman"} and counter < 4000:
+        numeral = _counter_to_roman(counter)
+        return numeral.upper() if num_fmt == "upperRoman" else numeral
+    if num_fmt == "decimalZero":
+        return f"{counter:02d}"
+    return str(counter)
+
+
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
     if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
@@ -1065,7 +1121,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     counter = self.list_counters.get((numid, lvl_idx))
                     if counter is None:
                         counter = self._get_start_value(numid, lvl_idx)
-                    return str(counter)
+                    return _format_list_counter(
+                        counter, self._get_numbering_format(numid, lvl_idx)
+                    )
 
                 return re.sub(r"%(\d+)", _replace, lvl_text)
 
@@ -1075,8 +1133,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             counter = self.list_counters.get((numid, lvl))
             if counter is None:
                 counter = self._get_start_value(numid, lvl)
-            parts.append(str(counter))
+            parts.append(
+                _format_list_counter(counter, self._get_numbering_format(numid, lvl))
+            )
         return ".".join(parts) + "."
+
+    def _get_numbering_format(self, numid: int, ilvl: int) -> str:
+        """Return the level's OOXML ``w:numFmt``, defaulting to decimal."""
+        try:
+            lvl_element = self._get_level_element(numid, ilvl)
+            if lvl_element is None:
+                return "decimal"
+            num_fmt_element = lvl_element.find(
+                ".//w:numFmt", namespaces={"w": self._W_NS}
+            )
+            if num_fmt_element is None:
+                return "decimal"
+            return num_fmt_element.get(self.XML_KEY) or "decimal"
+        except Exception as e:
+            _log.debug(f"Error reading numbering format: {e}")
+            return "decimal"
 
     def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
         """Return True when numbering.xml defines a visible marker for numId/ilvl."""

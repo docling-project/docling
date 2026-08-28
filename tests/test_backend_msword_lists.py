@@ -210,6 +210,93 @@ def test_manage_list_structure_no_keyerror_open_indented_list_exceeds_parents(tm
     assert isinstance(backend.parents.get(use_level), ListGroup)
 
 
+def test_list_markers_follow_the_level_numbering_format(tmp_path):
+    """Lettered and roman levels must not be renumbered as decimals.
+
+    Word keeps the counter as an integer and the presentation in the level's
+    ``w:numFmt``, so a level declared ``lowerLetter`` displays ``a``, ``b``, ``c``.
+    Docling built every marker from the raw counter, so those levels silently came
+    out as a fresh decimal sequence and the lettering was lost.
+    """
+
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(abstract_id: str, num_id: str, levels: list[tuple[str, str]]):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        for ilvl, (num_fmt, lvl_text) in enumerate(levels):
+            lvl = OxmlElement("w:lvl")
+            lvl.set(qn("w:ilvl"), str(ilvl))
+            start = OxmlElement("w:start")
+            start.set(qn("w:val"), "1")
+            lvl.append(start)
+            fmt = OxmlElement("w:numFmt")
+            fmt.set(qn("w:val"), num_fmt)
+            lvl.append(fmt)
+            text = OxmlElement("w:lvlText")
+            text.set(qn("w:val"), lvl_text)
+            lvl.append(text)
+            abstract_num.append(lvl)
+        numbering.append(abstract_num)
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    add_numbering(
+        "500",
+        "501",
+        [("decimal", "%1."), ("lowerLetter", "%2)"), ("upperRoman", "%3.")],
+    )
+
+    def add_item(text: str, ilvl_val: int):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), "501")
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("top one", 0)
+    add_item("lettered first", 1)
+    add_item("lettered second", 1)
+    add_item("roman first", 2)
+    add_item("roman second", 2)
+    add_item("top two", 0)
+
+    docx_path = tmp_path / "lettered_list.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    markers = [
+        (item.text, item.marker)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert markers == [
+        ("top one", "1."),
+        ("lettered first", "1.a."),
+        ("lettered second", "1.b."),
+        ("roman first", "1.b.I."),
+        ("roman second", "1.b.II."),
+        ("top two", "2."),
+    ]
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
