@@ -11,7 +11,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, cast
+from typing import TYPE_CHECKING, Annotated, Literal, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -137,29 +137,25 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
-from docling.document_converter import (
-    AudioFormatOption,
-    DocumentConverter,
-    EpubFormatOption,
-    ExcelFormatOption,
-    FormatOption,
-    HTMLFormatOption,
-    LatexFormatOption,
-    MarkdownFormatOption,
-    OdpFormatOption,
-    OdsFormatOption,
-    OdtFormatOption,
-    PdfFormatOption,
-    PowerpointFormatOption,
-    WordFormatOption,
-)
-from docling.models.factories import (
-    get_layout_factory,
-    get_ocr_factory,
-    get_table_structure_factory,
-)
-from docling.models.factories.base_factory import BaseFactory
 from docling.utils.profiling import ProfilingItem
+
+# The local model stack (scipy, torch, …) is absent on lightweight installs
+# (docling-slim[service-client] / docling-client).  Guard these imports so the
+# CLI module — and `convert-remote` — remain importable without them.
+_local_model_stack_available: bool
+try:
+    from docling.models.factories import (
+        get_layout_factory,
+        get_ocr_factory,
+        get_table_structure_factory,
+    )
+
+    _local_model_stack_available = True
+except ImportError:
+    _local_model_stack_available = False
+
+if TYPE_CHECKING:
+    from docling.models.factories.base_factory import BaseFactory
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -247,16 +243,21 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     return list(dict.fromkeys(expanded_formats))
 
 
-ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+if _local_model_stack_available:
+    ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
+    ocr_engines_enum_internal = ocr_factory_internal.get_enum()
 
-layout_factory_internal = get_layout_factory(allow_external_plugins=False)
-layout_engines_enum_internal = layout_factory_internal.get_enum()
+    layout_factory_internal = get_layout_factory(allow_external_plugins=False)
+    layout_engines_enum_internal = layout_factory_internal.get_enum()
 
-table_structure_factory_internal = get_table_structure_factory(
-    allow_external_plugins=False
-)
-table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
+    table_structure_factory_internal = get_table_structure_factory(
+        allow_external_plugins=False
+    )
+    table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
+else:
+    ocr_engines_enum_internal = []
+    layout_engines_enum_internal = []
+    table_structure_engines_enum_internal = []
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -1098,6 +1099,9 @@ def convert(  # noqa: C901
         IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
+        OdpFormatOption,
+        OdsFormatOption,
+        OdtFormatOption,
         PdfFormatOption,
         PowerpointFormatOption,
         WordFormatOption,
