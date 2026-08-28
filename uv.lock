@@ -2184,7 +2184,7 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", specifier = ">=2.91.0,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
-    { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
+    { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<5" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.16.0,<8.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-video'" },
