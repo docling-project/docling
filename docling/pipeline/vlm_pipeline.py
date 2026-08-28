@@ -66,7 +66,7 @@ from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
-_DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>") 
+_DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
 
 
 def _raise_if_unsupported_threaded_backend(
