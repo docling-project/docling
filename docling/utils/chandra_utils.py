@@ -72,6 +72,8 @@ _TAG_RE = re.compile(r"<[^>]+>")
 
 def _strip_tags(html: str) -> str:
     """Remove HTML tags and collapse whitespace."""
+    # Preserve spacing represented by HTML line breaks.
+    html = re.sub(r"<br\s*/?>", " ", html)
     text = _TAG_RE.sub("", html)
     text = re.sub(r"\s+", " ", text).strip()
     return text
