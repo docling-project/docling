@@ -4,6 +4,7 @@
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Type
 
@@ -130,11 +131,12 @@ def _backend_to_engine_type(backend: str) -> "EngineType":
     return engine_types[backend]
 
 
+@lru_cache(maxsize=1)
 def _installed_ppocrv6_langs() -> frozenset[str]:
     """The PP-OCRv6 recognition languages, from the installed rapidocr if present.
 
     Falls back to docling's static copy so the mapping stays usable for the
-    prefetcher and the KServe client, which do not require rapidocr.
+    KServe client, which does not require rapidocr.
     """
     try:
         from rapidocr.utils.model_resolver import PP_OCRV6_LANGS
@@ -143,23 +145,27 @@ def _installed_ppocrv6_langs() -> frozenset[str]:
     return frozenset(PP_OCRV6_LANGS)
 
 
+@lru_cache(maxsize=len(_RAPIDOCR_BACKENDS))
 def _rapidocr_vocabulary(backend: str) -> frozenset[str]:
-    """PP-OCR tokens a backend can serve: v6 plus its own v4/v5 fallback set."""
-    fallback = PPOCRV4_LANGS if backend == "torch" else PPOCRV5_LANGS
+    """PP-OCR tokens a backend can serve: v6 plus its own v4/v5 fallback sets."""
+    fallback = PPOCRV4_LANGS if backend == "torch" else PPOCRV5_LANGS | PPOCRV4_LANGS
     return _installed_ppocrv6_langs() | fallback
 
 
 def _ppocr_version_for_token(token: str, backend: str) -> "OCRVersion":
     """Which PP-OCR backbone serves a token on this backend.
 
-    Prefers PP-OCRv6 (whose recognizer covers ~52 codes) and falls back to
-    PP-OCRv4 for the torch backend or PP-OCRv5 for the others.
+    Prefers PP-OCRv6 (whose recognizer covers ~52 codes). Torch then falls back
+    to PP-OCRv4; the other backends try PP-OCRv5 first and PP-OCRv4 for the
+    tokens v5 lacks -- `ka`, PP-OCR's Kannada, is the only one.
     """
     from rapidocr.utils.typings import OCRVersion
 
     if token in _installed_ppocrv6_langs():
         return OCRVersion.PPOCRV6
-    return OCRVersion.PPOCRV4 if backend == "torch" else OCRVersion.PPOCRV5
+    if backend == "torch":
+        return OCRVersion.PPOCRV4
+    return OCRVersion.PPOCRV5 if token in PPOCRV5_LANGS else OCRVersion.PPOCRV4
 
 
 def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:

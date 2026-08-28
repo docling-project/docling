@@ -11,9 +11,11 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.datamodel.settings import settings
 from docling.exceptions import OcrLanguageNotSupportedError
+from docling.models.stages.ocr.ppocr_languages import ppocr_supported_tags
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
     _parse_rapidocr_model_spec,
+    _rapidocr_vocabulary,
     _resolve_rapidocr,
 )
 from docling.utils.model_downloader import download_models
@@ -141,7 +143,20 @@ def test_resolve_raises_on_unsupported_language() -> None:
         _resolve_rapidocr("th", "torch")
     # PP-OCR has no Georgian recognizer; its `ka` is Kannada.
     with pytest.raises(OcrLanguageNotSupportedError):
-        _resolve_rapidocr("ka", "onnxruntime")
+        _resolve_rapidocr("ka-Geor", "onnxruntime")
+
+
+@pytest.mark.parametrize("backend", ["onnxruntime", "openvino", "paddle", "torch"])
+def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) -> None:
+    from rapidocr.utils.typings import OCRVersion
+
+    # PP-OCR serves Kannada only on the v4 backbone, so every backend has to
+    # reach past its own v5/v6 set for it -- `ka` is the one token v5 lacks.
+    assert _resolved("kn", backend) == (OCRVersion.PPOCRV4, "ka")
+    # ...and it is advertised, so the coverage error never names it.
+    assert "kn-Knda" in ppocr_supported_tags(
+        _rapidocr_vocabulary(backend), RapidOcrOptions.kind
+    )
 
 
 # --- model selection / pinned paths -----------------------------------------
@@ -490,7 +505,8 @@ def test_parse_rapidocr_model_spec_accepts_valid_pairs(spec: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "spec", ["torch:th", "torch:el", "onnxruntime:ka", "bogus:en", "no-colon", "a:b:c"]
+    "spec",
+    ["torch:th", "torch:el", "onnxruntime:ka-Geor", "bogus:en", "no-colon", "a:b:c"],
 )
 def test_parse_rapidocr_model_spec_rejects_invalid_pairs(spec: str) -> None:
     with pytest.raises(ValueError):

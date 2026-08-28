@@ -110,17 +110,14 @@ class OcrMacModel(BaseOcrModel):
     def supported_ocr_languages(self) -> list[str]:
         # Map the Vision language tags to the canonical tags
         tags = set()
-        for language in self._vision_languages:
-            for candidate in (language, language.split("-")[0]):
-                try:
-                    tags.add(
-                        OcrLanguageResolver.canonicalize_ocr_language(
-                            candidate, OcrMacOptions.kind
-                        ).tag
-                    )
-                except ValueError:
-                    continue
-                break
+        for vision_tag in self._vision_languages:
+            for candidate in (vision_tag, vision_tag.split("-")[0]):
+                language = OcrLanguageResolver.canonicalize_ocr_language(
+                    candidate, OcrMacOptions.kind, raise_exception=False
+                )
+                if language is not None:
+                    tags.add(language.tag)
+                    break
         return sorted(tags)
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:

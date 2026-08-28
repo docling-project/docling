@@ -153,7 +153,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self.enabled = enabled
         self.options = options
 
-        # `options.lang` is already canonical
+        # Translate options.lang into a list of OcrLanguage
         self.languages: list[OcrLanguage] = (
             OcrLanguageResolver.canonicalize_ocr_languages(
                 options.lang, kind=type(options).kind
@@ -218,11 +218,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         native: list[str] = []
         for language in languages:
             mapped = self.map_ocr_language(language)
-            codes = [mapped] if isinstance(mapped, str) else list(mapped)
-            for code in codes:
-                if code not in native:
-                    native.append(code)
-        return native
+            native.extend([mapped] if isinstance(mapped, str) else mapped)
+        return list(dict.fromkeys(native))
 
     def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""

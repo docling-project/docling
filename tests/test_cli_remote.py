@@ -200,6 +200,34 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert (output / "report.json").exists()
 
 
+def test_remote_empty_ocr_lang_asks_the_engine_to_choose(tmp_path, _patch_client):
+    """`--ocr-lang ""` is not the same request as omitting the option.
+
+    Omitting it leaves the service on its default languages; the empty value is
+    how `convert-remote` asks the engine to choose, the way local `convert` does.
+    """
+    source = tmp_path / "report.pdf"
+    source.write_bytes(b"%PDF-1.4")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            "convert-remote",
+            str(source),
+            "--service-url",
+            "https://docling.example.com",
+            "--ocr-lang",
+            "",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert _FakeClient.instances[-1].captured_options.ocr_lang == []
+
+
 def test_remote_credentials_from_env(tmp_path, monkeypatch, _patch_client):
     source = tmp_path / "report.pdf"
     source.write_bytes(b"%PDF-1.4")

@@ -146,10 +146,11 @@ def ppocr_supported_tags(vocabulary: frozenset[str], kind: str) -> list[str]:
         if token in _TOKEN_TO_CANONICAL:
             tags.update(_TOKEN_TO_CANONICAL[token])
             continue
-        try:
-            tags.add(OcrLanguageResolver.canonicalize_ocr_language(token, kind).tag)
-        except ValueError:
-            # A token that is not a language code and has no reverse entry;
-            # it is unreachable from a canonical tag anyway.
-            continue
+        language = OcrLanguageResolver.canonicalize_ocr_language(
+            token, kind, raise_exception=False
+        )
+        # `None` is a token that is not a language code and has no reverse
+        # entry; it is unreachable from a canonical tag anyway.
+        if language is not None:
+            tags.add(language.tag)
     return sorted(tags)

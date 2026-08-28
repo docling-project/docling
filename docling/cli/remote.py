@@ -49,8 +49,10 @@ def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
     engine agrees on are accepted, and the handful that clash with a BCP-47 tag
     of a different language are not.
     """
+    # `_split_list` returns None only when the option was not given, so an
+    # explicitly empty value survives as `[]`: "let the engine choose".
     tags = _split_list(raw)
-    if not tags:
+    if tags is None:
         return None
     try:
         return [
@@ -220,7 +222,9 @@ def convert_remote(
                 "'en,de' or 'zh-Hant'. Widely-understood engine names such as "
                 "'chinese' or 'japan' are accepted too, but engine-specific ones "
                 "such as 'ch' are not, because this command does not choose the "
-                "engine. Canonicalized locally before the request is sent, so the "
+                "engine. Omit the option for the service's default languages, or "
+                "pass an empty value (--ocr-lang '') to let the engine choose. "
+                "Canonicalized locally before the request is sent, so the "
                 "remote service must be recent enough to speak BCP-47 OCR "
                 "languages."
             ),

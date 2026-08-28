@@ -16,6 +16,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import TesseractCliOcrOptions
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
+from docling.models.stages.ocr.tesseract_utils import installed_language_tags
 
 pytestmark = pytest.mark.ml_ocr
 
@@ -94,3 +95,18 @@ def test_language_order_is_preserved_for_the_plus_join() -> None:
 
     # Duplicates collapse; a single language remains.
     assert model._native_langs == ["eng"]
+
+
+def test_unprefixed_script_traineddata_is_advertised_as_a_script_name() -> None:
+    """Older tessdata installs list their script packs without the prefix.
+
+    `script/<Name>` is still the only spelling that selects one, so that is how
+    the install has to name them back: left bare, `Latin` is dropped as
+    unparseable and `Lao` reads as the Lao language, whose `lao` traineddata is
+    not what is installed.
+    """
+    names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
+
+    tags = installed_language_tags(names, "", TesseractCliOcrOptions.kind)
+
+    assert tags == ["en-Latn", "script/Cyrillic", "script/Lao", "script/Latin"]

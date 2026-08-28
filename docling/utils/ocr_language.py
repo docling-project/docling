@@ -36,7 +36,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from functools import lru_cache
 from types import MappingProxyType
-from typing import ClassVar, NamedTuple
+from typing import ClassVar, Literal, NamedTuple, overload
 
 import langcodes
 from pydantic import BaseModel, ConfigDict
@@ -236,7 +236,7 @@ class OcrLanguageResolver:
     #: Only the file names are load-bearing: a script file is handed to the
     #: engine as the token the user wrote, so the code is what documents which
     #: script each file covers.
-    _TESSERACT_SCRIPT_FILES: Mapping[str, str] = MappingProxyType(
+    TESSERACT_SCRIPT_FILES: Mapping[str, str] = MappingProxyType(
         {
             "Arabic": "Arab",
             "Armenian": "Armn",
@@ -336,7 +336,7 @@ class OcrLanguageResolver:
                 "frk": "de-Latf",
             }
         ),
-        script_files=_TESSERACT_SCRIPT_FILES,
+        script_files=TESSERACT_SCRIPT_FILES,
         unrepresentable=_TESSERACT_UNREPRESENTABLE,
     )
 
@@ -437,8 +437,31 @@ class OcrLanguageResolver:
             )
         return languages
 
+    @overload
     @staticmethod
-    def canonicalize_ocr_language(value: str, kind: str | None = None) -> OcrLanguage:
+    def canonicalize_ocr_language(
+        value: str,
+        kind: str | None = None,
+        *,
+        raise_exception: Literal[True] = True,
+    ) -> OcrLanguage: ...
+
+    @overload
+    @staticmethod
+    def canonicalize_ocr_language(
+        value: str,
+        kind: str | None = None,
+        *,
+        raise_exception: Literal[False],
+    ) -> "OcrLanguage | None": ...
+
+    @staticmethod
+    def canonicalize_ocr_language(
+        value: str,
+        kind: str | None = None,
+        *,
+        raise_exception: bool = True,
+    ) -> "OcrLanguage | None":
         """Canonicalize one user-supplied OCR language.
 
         `kind` is the `OcrOptions.kind` of the selected engine, whose own
@@ -447,43 +470,57 @@ class OcrLanguageResolver:
         Chamorro. `None`, or a kind with no native vocabulary, accepts BCP-47
         only.
 
+        Args:
+            raise_exception: When `False`, a value that cannot be resolved
+                returns `None` instead of raising. For building the advertised
+                vocabularies, where no reason ever reaches a user; user-facing
+                paths keep the default, whose `ValueError` carries one.
+
         Raises:
             ValueError: The value is empty, belongs to a different engine, names
                 a model no language tag can express, or is not a valid BCP-47
                 tag.
         """
-        token = value.strip()
-        if not token:
-            raise OcrLanguageResolver._invalid(value, "the value is empty.")
+        # One guard around the whole canonicalization is the only way to catch
+        # every failure: `_resolve_native_ocr_language` and `_parse_bcp47` raise
+        # from inside it as well as the explicit `raise` statements here.
+        try:
+            token = value.strip()
+            if not token:
+                raise OcrLanguageResolver._invalid(value, "the value is empty.")
 
-        lowered = token.lower()
-        if lowered in OcrLanguageResolver._RESERVED:
-            return OcrLanguage(language=lowered)
+            lowered = token.lower()
+            if lowered in OcrLanguageResolver._RESERVED:
+                return OcrLanguage(language=lowered)
 
-        # Before anything else: the selected engine's own vocabulary wins.
-        # Several native tokens are structurally valid BCP-47 for a different
-        # language (`ch` is Chamorro, `ka` is Georgian) and one, `chi_tra`,
-        # parses to the right language with the *wrong* script -- Simplified for
-        # a Traditional request. Consulting the table afterwards would resolve
-        # all of those wrongly.
-        if kind is not None:
-            native = OcrLanguageResolver._resolve_native_ocr_language(token, kind)
-            if native is not None:
-                return native
+            # Before anything else: the selected engine's own vocabulary wins.
+            # Several native tokens are structurally valid BCP-47 for a different
+            # language (`ch` is Chamorro, `ka` is Georgian) and one, `chi_tra`,
+            # parses to the right language with the *wrong* script -- Simplified
+            # for a Traditional request. Consulting the table afterwards would
+            # resolve all of those wrongly.
+            if kind is not None:
+                native = OcrLanguageResolver._resolve_native_ocr_language(token, kind)
+                if native is not None:
+                    return native
 
-        # Runs before parsing for the same reason: a legacy token can be valid
-        # BCP-47 for something else entirely.
-        if (
-            lowered in OcrLanguageResolver._AUTO_TOKENS
-            or lowered in OcrLanguageResolver._SCRIPT_NAME_TOKENS
-        ):
-            raise OcrLanguageResolver._no_undetermined(value)
+            # Runs before parsing for the same reason: a legacy token can be
+            # valid BCP-47 for something else entirely.
+            if (
+                lowered in OcrLanguageResolver._AUTO_TOKENS
+                or lowered in OcrLanguageResolver._SCRIPT_NAME_TOKENS
+            ):
+                raise OcrLanguageResolver._no_undetermined(value)
 
-        hint = OcrLanguageResolver._LEGACY_HINTS.get(lowered)
-        if hint is not None:
-            raise OcrLanguageResolver._invalid(value, f"use {hint!r} instead.")
+            hint = OcrLanguageResolver._LEGACY_HINTS.get(lowered)
+            if hint is not None:
+                raise OcrLanguageResolver._invalid(value, f"use {hint!r} instead.")
 
-        return OcrLanguageResolver._parse_bcp47(value)
+            return OcrLanguageResolver._parse_bcp47(value)
+        except ValueError:
+            if raise_exception:
+                raise
+            return None
 
     @staticmethod
     def match_ocr_language(

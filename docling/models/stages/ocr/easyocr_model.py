@@ -6,6 +6,7 @@ import os
 import warnings
 import zipfile
 from collections.abc import Iterable
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional, Type
 
@@ -60,7 +61,12 @@ _EASYOCR_CODE_TO_TAG: dict[str, str] = {
     code: tag for tag, code in _EASYOCR_LANGUAGE_CODES.items()
 }
 
+# EasyOCR has no "engine default": `lang_list` is a required positional argument, and
+# an empty one leaves the reader with a symbols-only character set. Name one language.
+_EASYOCR_DEFAULT_LANGUAGE = "en"
 
+
+@lru_cache(maxsize=1)
 def _easyocr_language_models() -> dict[str, str]:
     """EasyOCR language code -> the recognition checkpoint that serves it.
 
@@ -181,7 +187,15 @@ class EasyOcrModel(BaseOcrModel):
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
 
-            self._native_langs = self.resolve_ocr_languages()
+            # An empty `lang` list means "the engine's own default", and
+            # EasyOCR has none: an empty `lang_list` leaves its reader
+            # recognizing digits and punctuation only, silently. Name a
+            # language instead.
+            self._native_langs = (
+                self.resolve_ocr_languages()
+                if self.languages
+                else [_EASYOCR_DEFAULT_LANGUAGE]
+            )
 
             if self.options.use_gpu is None:
                 device = decide_device(accelerator_options.device)
@@ -372,9 +386,7 @@ def _easyocr_code_to_tag(code: str) -> Optional[str]:
     """Render one EasyOCR language code back as a canonical tag."""
     if code in _EASYOCR_CODE_TO_TAG:
         return _EASYOCR_CODE_TO_TAG[code]
-    try:
-        return OcrLanguageResolver.canonicalize_ocr_language(
-            code, EasyOcrOptions.kind
-        ).tag
-    except ValueError:
-        return None
+    language = OcrLanguageResolver.canonicalize_ocr_language(
+        code, EasyOcrOptions.kind, raise_exception=False
+    )
+    return None if language is None else language.tag

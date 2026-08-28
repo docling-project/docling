@@ -37,7 +37,7 @@ from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 from docling.models.stages.ocr.tesseract_utils import map_tesseract_language
 from docling.utils.ocr_language import OcrLanguageResolver
 
-_ONNX_VOCABULARY = PPOCRV6_LANGS | PPOCRV5_LANGS
+_ONNX_VOCABULARY = PPOCRV6_LANGS | PPOCRV5_LANGS | PPOCRV4_LANGS
 _TORCH_VOCABULARY = PPOCRV6_LANGS | PPOCRV4_LANGS
 
 

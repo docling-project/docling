@@ -98,7 +98,7 @@ def installed_language_tags(
     tags = set()
     for name in names:
         if name in _TESSERACT_TO_CANONICAL:
-            tag = _TESSERACT_TO_CANONICAL[name]
+            token = _TESSERACT_TO_CANONICAL[name]
         elif script_prefix and name.startswith(script_prefix):
             # A script traineddata file is named back as itself: that is what the
             # user has to type to select it -- except the vertical-text ones, which
@@ -106,15 +106,21 @@ def installed_language_tags(
             # advertise a value that cannot be asked for.
             if name.lower().endswith("_vert"):
                 continue
-            tag = name
+            token = name
+        elif not script_prefix and name in OcrLanguageResolver.TESSERACT_SCRIPT_FILES:
+            # This install lists its script packs unprefixed, but `script/<Name>`
+            # is still the spelling that selects one. Left bare, the name is either
+            # dropped as unparseable (`Latin`) or read as a language (`Lao`).
+            token = f"{OcrLanguageResolver.TESSERACT_SCRIPT_FILE_PREFIX}{name}"
         else:
-            try:
-                tag = OcrLanguageResolver.canonicalize_ocr_language(name, kind).tag
-            except ValueError:
-                continue
-        language = OcrLanguageResolver.canonicalize_ocr_language(tag, kind)
+            token = name
+        language = OcrLanguageResolver.canonicalize_ocr_language(
+            token, kind, raise_exception=False
+        )
+        if language is None:
+            continue
         if map_tesseract_language(language, script_prefix) in names:
-            tags.add(tag)
+            tags.add(language.tag)
     return sorted(tags)
 
 

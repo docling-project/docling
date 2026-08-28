@@ -9,6 +9,8 @@ import pytest
 from typer.testing import CliRunner
 
 from docling.cli.tools import app
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.pipeline_options import EasyOcrOptions
 from docling.models.stages.ocr import easyocr_model
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.utils.model_downloader import download_models
@@ -92,6 +94,35 @@ def test_resolve_easyocr_languages_rejects_uncovered_language() -> None:
 def test_resolve_easyocr_recognition_models_rejects_unsupported_code() -> None:
     with pytest.raises(ValueError, match="Unsupported EasyOCR language code: xx"):
         easyocr_model._resolve_easyocr_recognition_models(["xx"])
+
+
+@pytest.mark.parametrize(("lang", "expected"), [([], ["en"]), (["de"], ["de"])])
+def test_empty_lang_reaches_the_reader_as_english(
+    monkeypatch, lang: list[str], expected: list[str]
+) -> None:
+    """EasyOCR has no engine default, and an empty `lang_list` is not one.
+
+    `easyocr.Reader([])` falls back to the `latin_g2` checkpoint with only that
+    model's symbols as its character set, so every letter is dropped from the
+    recognized text -- silently. Docling names a language instead.
+    """
+    import easyocr
+
+    captured: list[list[str]] = []
+    monkeypatch.setattr(
+        easyocr,
+        "Reader",
+        lambda lang_list, **kwargs: captured.append(lang_list),
+    )
+
+    EasyOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=EasyOcrOptions(lang=lang),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert captured == [expected]
 
 
 def test_easyocr_downloader_supports_gen1_and_gen2_models(

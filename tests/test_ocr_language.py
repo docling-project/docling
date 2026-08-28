@@ -432,6 +432,33 @@ def test_tokens_no_language_tag_can_express_are_refused(token: str) -> None:
         OcrLanguageResolver.canonicalize_ocr_language(token, TesseractOcrOptions.kind)
 
 
+@pytest.mark.parametrize(
+    ("value", "kind"),
+    [
+        ("klingon", None),  # not a valid BCP-47 tag
+        ("chi_sim", None),  # a legacy hint
+        ("osd", None),  # an auto token
+        ("script/HanS_vert", TesseractOcrOptions.kind),  # vertical text
+    ],
+)
+def test_canonicalize_can_answer_none_instead_of_raising(
+    value: str, kind: str | None
+) -> None:
+    """The four routes into the failure guard, for the vocabulary builders.
+
+    They advertise what an engine serves, where a rejection reason never reaches
+    a user; the default keeps the `ValueError` that carries one.
+    """
+    assert (
+        OcrLanguageResolver.canonicalize_ocr_language(
+            value, kind, raise_exception=False
+        )
+        is None
+    )
+    with pytest.raises(ValueError):
+        OcrLanguageResolver.canonicalize_ocr_language(value, kind)
+
+
 def test_unrepresentable_tokens_are_scoped_to_the_engine_that_owns_them() -> None:
     """`equ` asked of RapidOCR is better served by "not a valid tag"."""
     with pytest.raises(ValueError, match="BCP-47"):
