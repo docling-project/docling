@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import enum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import AnyUrl, BaseModel, Field, model_serializer, model_validator
+from pydantic import AnyUrl, BaseModel, Field
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.service.responses import PublicFailureInfo
@@ -82,21 +82,6 @@ class ProgressTaskCompleted(BaseProgress):
     kind: Literal[ProgressKind.TASK_COMPLETED] = ProgressKind.TASK_COMPLETED
     task_status: Literal["success", "failure"]
     failure: PublicFailureInfo | None = None
-
-    @model_validator(mode="after")
-    def validate_failure(self) -> "ProgressTaskCompleted":
-        if (self.task_status == "failure") != (self.failure is not None):
-            raise ValueError(
-                "failure must be present exactly when task_status is failure"
-            )
-        return self
-
-    @model_serializer(mode="wrap")
-    def serialize_without_empty_failure(self, handler: Any) -> dict[str, Any]:
-        data = handler(self)
-        if self.failure is None:
-            data.pop("failure", None)
-        return data
 
 
 class ProgressCallbackRequest(BaseModel):
