@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 import enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field, model_serializer, model_validator
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.service.responses import PublicFailureInfo
 
 
 class CallbackSpec(BaseModel):
@@ -19,6 +20,7 @@ class ProgressKind(str, enum.Enum):
     SET_NUM_DOCS = "set_num_docs"
     UPDATE_PROCESSED = "update_processed"
     DOCUMENT_COMPLETED = "document_completed"
+    TASK_COMPLETED = "task_completed"
 
 
 class BaseProgress(BaseModel):
@@ -74,10 +76,36 @@ class ProgressDocumentCompleted(BaseProgress):
     total_docs: int | None = None  # Total docs in task (if known)
 
 
+class ProgressTaskCompleted(BaseProgress):
+    """Terminal task outcome, independent of document outcomes."""
+
+    kind: Literal[ProgressKind.TASK_COMPLETED] = ProgressKind.TASK_COMPLETED
+    task_status: Literal["success", "failure"]
+    failure: PublicFailureInfo | None = None
+
+    @model_validator(mode="after")
+    def validate_failure(self) -> "ProgressTaskCompleted":
+        if (self.task_status == "failure") != (self.failure is not None):
+            raise ValueError(
+                "failure must be present exactly when task_status is failure"
+            )
+        return self
+
+    @model_serializer(mode="wrap")
+    def serialize_without_empty_failure(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.failure is None:
+            data.pop("failure", None)
+        return data
+
+
 class ProgressCallbackRequest(BaseModel):
     task_id: str
     progress: Annotated[
-        ProgressSetNumDocs | ProgressUpdateProcessed | ProgressDocumentCompleted,
+        ProgressSetNumDocs
+        | ProgressUpdateProcessed
+        | ProgressDocumentCompleted
+        | ProgressTaskCompleted,
         Field(discriminator="kind"),
     ]
 
