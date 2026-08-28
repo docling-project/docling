@@ -37,7 +37,7 @@ from docling.datamodel.document import ConversionResult
 from docling.models.postprocessing.list_marker_processor import (
     ListItemMarkerProcessor,
 )
-from docling.models.stages.reading_order.reading_order_rb import (
+from docling.models.postprocessing.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
     ReadingOrderPredictor,
 )

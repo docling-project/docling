@@ -18,7 +18,7 @@ from docling_core.types.doc.document import (
 )
 from docling_core.types.doc.labels import DocItemLabel
 
-from docling.models.stages.reading_order.reading_order_rb import (
+from docling.models.postprocessing.reading_order_rb import (
     PageElement,
     ReadingOrderPredictor,
 )
@@ -589,7 +589,7 @@ def test_reading_order_near_boundary_clusters(monkeypatch):
     from docling_core.types.doc.document import DocItemLabel
     from rtree import index as rtree_index
 
-    from docling.models.stages.reading_order.reading_order_rb import (
+    from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
     )
 
