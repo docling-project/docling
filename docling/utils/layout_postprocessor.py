@@ -189,12 +189,6 @@ class LayoutPostprocessor:
         DocItemLabel.DOCUMENT_INDEX: 0.45,
     }
 
-    CONTENT_CONTAINER_MIN_PAGE_WIDTH_RATIO = 0.8
-    CONTENT_CONTAINER_MIN_NATIVE_TEXT_CHARS = 200
-    CONTENT_CONTAINER_MIN_NATIVE_TEXT_RATIO = 0.8
-    CONTENT_CONTAINER_PICTURE_CONTAINMENT_THRESHOLD = 0.8
-    CONTENT_CONTAINER_MAX_NESTED_PICTURE_AREA_RATIO = 0.8
-
     LABEL_REMAPPING = {
         # DocItemLabel.DOCUMENT_INDEX: DocItemLabel.TABLE,
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
@@ -327,21 +321,7 @@ class LayoutPostprocessor:
         ]
 
         special_clusters = self._handle_cross_type_overlaps(special_clusters)
-        special_clusters = self._remove_content_container_pictures(special_clusters)
-
-        # Calculate page area from known page size
-        assert self.page_size is not None
-        page_area = self.page_size.width * self.page_size.height
-        if page_area > 0:
-            # Filter out full-page pictures
-            special_clusters = [
-                cluster
-                for cluster in special_clusters
-                if not (
-                    cluster.label == DocItemLabel.PICTURE
-                    and cluster.bbox.area() / page_area > 0.90
-                )
-            ]
+        special_clusters = self._remove_wrapper_pictures(special_clusters)
 
         for special in special_clusters:
             contained = []
@@ -390,73 +370,49 @@ class LayoutPostprocessor:
 
         return picture_clusters + wrapper_clusters
 
-    def _remove_content_container_pictures(
+    def _remove_wrapper_pictures(
         self, special_clusters: list[Cluster]
     ) -> list[Cluster]:
-        """Remove broad picture proposals that represent embedded page content.
+        """Remove pictures that wrap the complete detected content region.
 
-        Layout models can label a landscape slide embedded in a portrait PDF as one
-        large picture, even when the PDF contains native text and smaller picture
-        proposals inside it. Keeping that outer proposal makes the native text its
-        children and collapses the nested pictures during picture de-overlap.
+        A wrapper must enclose geometrically distinct content, so a lone picture or
+        coincident duplicate picture proposals are preserved.
         """
-        if self.page_size is None or self.page_size.width <= 0:
-            return special_clusters
-
-        if self.page_size.height <= self.page_size.width:
-            return special_clusters
-
-        native_cells = [
-            cell
-            for cell in self.cells
-            if not cell.from_ocr and len(cell.text.strip()) > 0
-        ]
-        total_native_text_chars = sum(len(cell.text.strip()) for cell in native_cells)
-        if total_native_text_chars < self.CONTENT_CONTAINER_MIN_NATIVE_TEXT_CHARS:
-            return special_clusters
-
-        pictures = [
+        content_clusters = [
             cluster
-            for cluster in special_clusters
-            if cluster.label == DocItemLabel.PICTURE and cluster.bbox.area() > 0
+            for cluster in self.regular_clusters + special_clusters
+            if cluster.bbox.area() > 0
         ]
-        picture_ids_to_remove: set[int] = set()
+        if len(content_clusters) <= 1:
+            return special_clusters
 
-        for picture in pictures:
-            if picture.bbox.width <= picture.bbox.height:
+        content_bbox = BoundingBox(
+            l=min(cluster.bbox.l for cluster in content_clusters),
+            t=min(cluster.bbox.t for cluster in content_clusters),
+            r=max(cluster.bbox.r for cluster in content_clusters),
+            b=max(cluster.bbox.b for cluster in content_clusters),
+        )
+        content_bbox_tuple = content_bbox.as_tuple()
+        wrapper_picture_ids: set[int] = set()
+
+        for picture in special_clusters:
+            if picture.label != DocItemLabel.PICTURE:
                 continue
-            if (
-                picture.bbox.width / self.page_size.width
-                < self.CONTENT_CONTAINER_MIN_PAGE_WIDTH_RATIO
-            ):
+            if picture.bbox.as_tuple() != content_bbox_tuple:
                 continue
 
-            contains_nested_picture = any(
-                nested.id != picture.id
-                and nested.bbox.area() / picture.bbox.area()
-                < self.CONTENT_CONTAINER_MAX_NESTED_PICTURE_AREA_RATIO
-                and nested.bbox.intersection_over_self(picture.bbox)
-                > self.CONTENT_CONTAINER_PICTURE_CONTAINMENT_THRESHOLD
-                for nested in pictures
+            has_distinct_content = any(
+                cluster.id != picture.id
+                and cluster.bbox.as_tuple() != picture.bbox.as_tuple()
+                for cluster in content_clusters
             )
-            if not contains_nested_picture:
-                continue
-
-            contained_native_text_chars = sum(
-                len(cell.text.strip())
-                for cell in native_cells
-                if cell.to_bounding_box().intersection_over_self(picture.bbox) > 0.8
-            )
-            if (
-                contained_native_text_chars / total_native_text_chars
-                >= self.CONTENT_CONTAINER_MIN_NATIVE_TEXT_RATIO
-            ):
-                picture_ids_to_remove.add(picture.id)
+            if has_distinct_content:
+                wrapper_picture_ids.add(picture.id)
 
         return [
             cluster
             for cluster in special_clusters
-            if cluster.id not in picture_ids_to_remove
+            if cluster.id not in wrapper_picture_ids
         ]
 
     def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:

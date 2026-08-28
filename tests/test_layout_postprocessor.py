@@ -1,4 +1,4 @@
-from docling_core.types.doc import CoordOrigin, DocItemLabel, Size
+from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster
@@ -18,42 +18,33 @@ def _cluster(
     )
 
 
-def _text_cell(
-    index: int,
-    bbox: tuple[float, float, float, float] = (0, 0, 1, 1),
-    text: str | None = None,
-    *,
-    from_ocr: bool = False,
-) -> TextCell:
-    left, top, right, bottom = bbox
-    cell_text = str(index) if text is None else text
+def _text_cell(index: int) -> TextCell:
     return TextCell(
         index=index,
         rect=BoundingRectangle(
-            r_x0=left,
-            r_y0=top,
-            r_x1=right,
-            r_y1=top,
-            r_x2=right,
-            r_y2=bottom,
-            r_x3=left,
-            r_y3=bottom,
-            coord_origin=CoordOrigin.TOPLEFT,
+            r_x0=0,
+            r_y0=0,
+            r_x1=1,
+            r_y1=0,
+            r_x2=1,
+            r_y2=1,
+            r_x3=0,
+            r_y3=1,
         ),
-        text=cell_text,
-        orig=cell_text,
-        from_ocr=from_ocr,
+        text=str(index),
+        orig=str(index),
+        from_ocr=False,
     )
 
 
 def _special_cluster_processor(
-    pictures: list[Cluster], cells: list[TextCell]
+    pictures: list[Cluster], regular_clusters: list[Cluster]
 ) -> LayoutPostprocessor:
     processor = object.__new__(LayoutPostprocessor)
     processor.page_size = Size(width=600, height=800)
-    processor.cells = cells
+    processor.cells = []
     processor.special_clusters = pictures
-    processor.regular_clusters = []
+    processor.regular_clusters = regular_clusters
     processor.options = LayoutPostprocessorOptions(skip_cell_assignment=True)
     processor.picture_index = SpatialClusterIndex(pictures)
     processor.wrapper_index = SpatialClusterIndex([])
@@ -115,38 +106,42 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
     assert ids == {1, 2}
 
 
-def test_embedded_slide_container_is_removed_before_picture_deoverlap() -> None:
+def test_content_union_removes_wrapper_picture_before_deoverlap() -> None:
     outer_slide = _cluster(1, DocItemLabel.PICTURE, (10, 200, 590, 525))
     nested_chart = _cluster(2, DocItemLabel.PICTURE, (300, 250, 570, 500))
-    native_cells = [
-        _text_cell(
-            index,
-            (30, 230 + index * 30, 280, 250 + index * 30),
-            "machine-readable slide text " * 4,
-        )
-        for index in range(3)
-    ]
-    processor = _special_cluster_processor([outer_slide, nested_chart], native_cells)
+    slide_text = _cluster(3, DocItemLabel.TEXT, (30, 230, 280, 320))
+    processor = _special_cluster_processor([outer_slide, nested_chart], [slide_text])
 
     result = processor._process_special_clusters()
 
     assert [cluster.id for cluster in result] == [nested_chart.id]
 
 
-def test_embedded_slide_container_is_kept_for_ocr_only_content() -> None:
-    outer_slide = _cluster(1, DocItemLabel.PICTURE, (10, 200, 590, 525))
-    nested_chart = _cluster(2, DocItemLabel.PICTURE, (300, 250, 570, 500))
-    ocr_cells = [
-        _text_cell(
-            index,
-            (30, 230 + index * 30, 280, 250 + index * 30),
-            "text recognized from a raster image " * 4,
-            from_ocr=True,
-        )
-        for index in range(3)
-    ]
-    processor = _special_cluster_processor([outer_slide, nested_chart], ocr_cells)
+def test_content_union_keeps_lone_picture() -> None:
+    lone_picture = _cluster(1, DocItemLabel.PICTURE, (0, 0, 600, 800))
+    processor = _special_cluster_processor([lone_picture], [])
 
     result = processor._process_special_clusters()
 
-    assert [cluster.id for cluster in result] == [outer_slide.id]
+    assert [cluster.id for cluster in result] == [lone_picture.id]
+
+
+def test_content_union_keeps_picture_with_external_caption() -> None:
+    picture = _cluster(1, DocItemLabel.PICTURE, (10, 10, 400, 400))
+    caption = _cluster(2, DocItemLabel.CAPTION, (10, 420, 400, 450))
+    processor = _special_cluster_processor([picture], [caption])
+
+    result = processor._process_special_clusters()
+
+    assert [cluster.id for cluster in result] == [picture.id]
+
+
+def test_content_union_keeps_duplicate_lone_picture_proposals() -> None:
+    first_picture = _cluster(1, DocItemLabel.PICTURE, (10, 10, 400, 400))
+    duplicate_picture = _cluster(2, DocItemLabel.PICTURE, (10, 10, 400, 400))
+    processor = _special_cluster_processor([first_picture, duplicate_picture], [])
+
+    result = processor._process_special_clusters()
+
+    assert len(result) == 1
+    assert result[0].label == DocItemLabel.PICTURE
