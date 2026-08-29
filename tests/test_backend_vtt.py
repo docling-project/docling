@@ -293,3 +293,25 @@ Hello <b>world</b>.
     # TODO: temporary ground truth (issue docling-project/docling-core/#371)
     expected = "Hello  world ."
     assert _process_vtt_doc(doc) == expected
+
+
+def test_utf8_bom_does_not_invalidate_the_signature(converter, tmp_path):
+    """The WebVTT file body grammar allows an optional U+FEFF before "WEBVTT".
+
+    Decoding with plain utf-8 kept it, so verify_signature() no longer saw the
+    signature at position 0 and the whole file was rejected as invalid. Both the
+    stream and the file path are covered, since each decodes separately.
+    """
+    vtt_bytes = (
+        "\ufeffWEBVTT\n\n00:00:01.000 --> 00:00:05.000\nHello there\n"
+    ).encode()
+
+    stream = DocumentStream(name="bom.vtt", stream=BytesIO(vtt_bytes))
+    stream_doc = converter.convert(stream, raises_on_error=True).document
+
+    vtt_file = tmp_path / "bom.vtt"
+    vtt_file.write_bytes(vtt_bytes)
+    file_doc = converter.convert(vtt_file, raises_on_error=True).document
+
+    for doc in (stream_doc, file_doc):
+        assert _process_vtt_doc(doc) == "Hello there"

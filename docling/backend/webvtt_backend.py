@@ -68,11 +68,14 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.content: str = ""
+        # utf-8-sig drops a leading BOM. The WebVTT file body grammar allows an
+        # optional U+FEFF before the "WEBVTT" signature, and keeping it makes
+        # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                self.content = self.path_or_stream.getvalue().decode("utf-8")
+                self.content = self.path_or_stream.getvalue().decode("utf-8-sig")
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     self.content = f.read()
         except Exception as e:
             raise DocumentLoadError(

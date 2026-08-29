@@ -40,12 +40,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         self.path_or_stream = path_or_stream
 
+        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # document title ("= Title") is no longer recognized as one and the BOM
+        # reaches the output. Equivalent to utf-8 when no BOM is present.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
+                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
                 self.lines = text_stream.split("\n")
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     self.lines = f.readlines()
             self.valid = True
 

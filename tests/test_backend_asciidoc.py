@@ -150,3 +150,30 @@ def test_asciidocs_examples():
 
         # Verify markdown export
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GEN_TEST_DATA)
+
+
+def test_utf8_bom_does_not_hide_the_document_title(tmp_path):
+    """A leading UTF-8 BOM must not survive into the first line.
+
+    Decoding with plain utf-8 kept it, so "= Title" started with U+FEFF, was no
+    longer recognized as the document title, and the BOM reached the exported
+    text. Both the stream and the file path are covered, since each decodes
+    separately.
+    """
+    adoc_bytes = "\ufeff= Document Title\n\nSome body text.\n".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(adoc_bytes),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="bom.adoc",
+    )
+    stream_doc = in_doc._backend.convert()
+
+    adoc_file = tmp_path / "bom.adoc"
+    adoc_file.write_bytes(adoc_bytes)
+    file_doc = _get_backend(adoc_file).convert()
+
+    for doc in (stream_doc, file_doc):
+        assert doc.texts[0].label == "title"
+        assert doc.texts[0].text == "Document Title"

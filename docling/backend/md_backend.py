@@ -248,9 +248,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
+        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # leading "# Title" is parsed as paragraph text and the BOM reaches the
+        # output. Equivalent to utf-8 when no BOM is present.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
+                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
                 # remove invalid sequences
                 # very long sequences of underscores will lead to unnecessary long processing times.
                 # In any proper Markdown files, underscores have to be escaped,
@@ -258,7 +261,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self.markdown = self._shorten_underscore_sequences(text_stream)
                 self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     md_content = f.read()
                     # remove invalid sequences
                     # very long sequences of underscores will lead to unnecessary long processing times.

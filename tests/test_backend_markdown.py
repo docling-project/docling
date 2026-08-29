@@ -11,7 +11,7 @@ from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.datamodel.backend_options import MarkdownBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -482,3 +482,29 @@ def test_convert_table_rows_match_header_cell_count():
         table_data = conv_result.document.tables[0].data
         assert [cell.text for cell in table_data.table_cells] == expected
         assert len(table_data.table_cells) == table_data.num_rows * table_data.num_cols
+
+
+def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
+    """A leading UTF-8 BOM must not survive into the first line.
+
+    Decoding with plain utf-8 kept it, so "# Title" started with U+FEFF, marko
+    parsed the line as a paragraph instead of a heading, and the BOM reached the
+    exported text. Both the stream and the file path are covered, since each
+    decodes separately.
+    """
+    md_bytes = "\ufeff# Title\n\nSome body text.\n".encode()
+    converter = get_converter()
+
+    stream_doc = converter.convert(
+        DocumentStream(name="bom.md", stream=BytesIO(md_bytes)),
+        raises_on_error=True,
+    ).document
+
+    md_file = tmp_path / "bom.md"
+    md_file.write_bytes(md_bytes)
+    file_doc = converter.convert(md_file, raises_on_error=True).document
+
+    for doc in (stream_doc, file_doc):
+        assert doc.texts[0].label == "title"
+        assert doc.texts[0].text == "Title"
+        assert doc.texts[1].text == "Some body text."
