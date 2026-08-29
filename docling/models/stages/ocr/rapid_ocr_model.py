@@ -410,6 +410,8 @@ class RapidOcrModel(BaseOcrModel):
                 "Global.font_path": font_path,
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
+                "EngineConfig.onnxruntime.use_cuda": use_cuda,
+                "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
                 # "Global.verbose": self.options.print_verbose,
