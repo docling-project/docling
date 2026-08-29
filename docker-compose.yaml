@@ -1,0 +1,46 @@
+# Docker Compose for the repo's own Dockerfile (CPU, OCR RU+CH -> Markdown).
+#
+# Default entrypoint is the web UI (FastAPI on :8080): upload a PDF in the
+# browser, it is converted with EasyOCR (ru + ch_sim), and you download the
+# Markdown file.
+#
+# Usage:
+#   docker compose up -d             # start web UI
+#   open http://localhost:8080        # upload a PDF, get .md back
+#
+# Batch mode (convert all PDFs in ./data -> ./out, no web UI):
+#   docker compose run --rm docling python /root/convert.py
+#   ls out/
+
+services:
+  docling:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: docling-ocr-ru-ch:cpu
+    container_name: docling
+    ports:
+      - "8080:8080"
+    environment:
+      OMP_NUM_THREADS: "4"
+      HF_HOME: /tmp/huggingface
+      TORCH_HOME: /tmp/torch
+      DOCLING_ARTIFACTS_PATH: /root/.cache/docling/models
+    volumes:
+      # Input PDFs (read-only) for batch mode. Drop your .pdf files in ./data/.
+      - ./data:/data:ro
+      # Converted Markdown output for batch mode.
+      - ./out:/out
+      # Persist any additionally downloaded model weights across runs.
+      - docling-models:/tmp
+    mem_limit: 8g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  docling-models:
