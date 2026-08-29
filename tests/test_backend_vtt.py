@@ -261,6 +261,23 @@ outro
     assert _process_vtt_doc(doc) == expected
 
 
+def test_text_after_multiline_span_stays_in_reading_order(converter):
+    # The voice span wraps a line terminator, so "and afterwards" belongs to the
+    # second line, together with "there".
+    vtt = """
+WEBVTT
+
+00:00:01.000 --> 00:00:05.000
+<v Bob>Hello
+there</v> and afterwards
+"""
+    stream = _create_vtt_stream(vtt)
+    doc = converter.convert(stream).document
+
+    assert [item.text for item in doc.texts] == ["Hello", "there", " and afterwards"]
+    assert _process_vtt_doc(doc) == "Hello there  and afterwards"
+
+
 def test_style_blocks_and_note_between_styles_are_ignored(converter):
     vtt = """
 WEBVTT
