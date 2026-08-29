@@ -5,6 +5,7 @@
 
 import logging
 import os
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -13,8 +14,9 @@ from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import InputDocument
+from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
@@ -22,6 +24,38 @@ from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 GENERATE: bool = GEN_TEST_DATA
 DATA_PATH: Path = Path("./tests/data/uspto/sources/")
 GT_PATH: Path = Path("./tests/data/uspto/groundtruth/")
+
+
+@pytest.mark.parametrize("line_ending", [b"\n", b"\r\n"])
+def test_patent_uspto_grant_aps_accepts_common_line_endings(
+    tmp_path: Path,
+    line_ending: bytes,
+) -> None:
+    source = DATA_PATH / "pftaps057006474.txt"
+    content = line_ending.join(source.read_bytes().splitlines()) + line_ending
+    path = tmp_path / "pftaps057006474.txt"
+    path.write_bytes(content)
+
+    result = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO]).convert(path)
+
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XML_USPTO,
+        backend=PatentUsptoDocumentBackend,
+    )
+    stream_backend = PatentUsptoDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(content),
+    )
+    stream_document = stream_backend.convert()
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.input.format == InputFormat.XML_USPTO
+    assert len(result.document.texts) == 75
+    assert result.document.texts[0].text == "Carbocation containing cyanine-type dye"
+    assert stream_backend.is_valid()
+    assert len(stream_document.texts) == 75
+    assert stream_document.texts[0].text == "Carbocation containing cyanine-type dye"
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
