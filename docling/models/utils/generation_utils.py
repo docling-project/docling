@@ -6,7 +6,11 @@ import logging
 import re
 import sys
 from abc import abstractmethod
-from typing import List
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any, List
+
+if TYPE_CHECKING:
+    from transformers import GenerationConfig
 
 _log = logging.getLogger(__name__)
 
@@ -24,6 +28,41 @@ class GenerationStopper:
 
     def lookback_tokens(self) -> int:
         return sys.maxsize
+
+
+def build_generation_config(
+    base_config: "GenerationConfig | None",
+    *,
+    overrides: dict[str, Any] | None = None,
+    max_new_tokens: int | None = None,
+    use_cache: bool | None = None,
+    do_sample: bool | None = None,
+    temperature: float | None = None,
+    pad_token_id: int | list[int] | None = None,
+    eos_token_id: int | list[int] | None = None,
+) -> "GenerationConfig":
+    from transformers import GenerationConfig
+
+    config = deepcopy(base_config) if base_config is not None else GenerationConfig()
+
+    if overrides is not None:
+        for key, value in overrides.items():
+            setattr(config, key, value)
+
+    if max_new_tokens is not None:
+        config.max_new_tokens = max_new_tokens
+    if use_cache is not None:
+        config.use_cache = use_cache
+    if do_sample is not None:
+        config.do_sample = do_sample
+    if temperature is not None:
+        config.temperature = temperature
+    if pad_token_id is not None:
+        config.pad_token_id = pad_token_id
+    elif config.pad_token_id is None and eos_token_id is not None:
+        config.pad_token_id = eos_token_id
+
+    return config
 
 
 class DocTagsRepetitionStopper(GenerationStopper):

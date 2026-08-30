@@ -206,6 +206,111 @@ def test_cli_from_odf_expands_to_open_document_formats(
     ]
 
 
+def test_cli_picture_description_max_new_tokens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--enrich-picture-description",
+            "--picture-description-max-new-tokens",
+            "321",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.picture_description_options.generation_config[
+            "max_new_tokens"
+        ]
+        == 321
+    )
+
+
+def test_cli_vlm_max_new_tokens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--pipeline",
+            "vlm",
+            "--output",
+            str(output),
+            "--vlm-max-new-tokens",
+            "321",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.vlm_options.model_spec.max_new_tokens
+        == 321
+    )
+
+
 def test_cli_html_fetches_local_images_per_input(tmp_path):
     first_png = _png_bytes((255, 0, 0))
     second_png = _png_bytes((0, 0, 255))

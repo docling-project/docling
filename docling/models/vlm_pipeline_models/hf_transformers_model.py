@@ -26,7 +26,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    build_generation_config,
+)
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -370,18 +373,20 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         }
 
         # -- Generate (Image-Text-to-Text class expects these inputs from processor)
+        generation_config = build_generation_config(
+            self.generation_config,
+            overrides=generation_config,
+            max_new_tokens=self.max_new_tokens,
+            use_cache=self.use_cache,
+            do_sample=self.temperature > 0,
+            temperature=self.temperature if self.temperature > 0 else None,
+            pad_token_id=getattr(self.processor.tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(self.processor.tokenizer, "eos_token_id", None),
+        )
         gen_kwargs = {
             **inputs,
-            "max_new_tokens": self.max_new_tokens,
-            "use_cache": self.use_cache,
-            "generation_config": self.generation_config,
-            **generation_config,
+            "generation_config": generation_config,
         }
-        if self.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = self.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         if stopping_criteria is not None:
             gen_kwargs["stopping_criteria"] = stopping_criteria

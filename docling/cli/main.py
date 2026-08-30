@@ -795,6 +795,13 @@ def convert(  # noqa: C901
             help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
         ),
     ] = "granite_docling",
+    vlm_max_new_tokens: Annotated[
+        int | None,
+        typer.Option(
+            "--vlm-max-new-tokens",
+            help="Override max_new_tokens for VLM conversion generation.",
+        ),
+    ] = None,
     asr_model: Annotated[
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
@@ -941,6 +948,13 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
+    picture_description_max_new_tokens: Annotated[
+        int | None,
+        typer.Option(
+            "--picture-description-max-new-tokens",
+            help="Override max_new_tokens for picture description generation.",
+        ),
+    ] = None,
     enrich_chart_extraction: Annotated[
         bool,
         typer.Option(
@@ -1318,6 +1332,10 @@ def convert(  # noqa: C901
             ):
                 pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
+            if picture_description_max_new_tokens is not None:
+                pipeline_options.picture_description_options.generation_config[
+                    "max_new_tokens"
+                ] = picture_description_max_new_tokens
 
             if _should_generate_export_images(
                 image_export_mode,
@@ -1347,6 +1365,10 @@ def convert(  # noqa: C901
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
+            if picture_description_max_new_tokens is not None:
+                simple_format_option.picture_description_options.generation_config[
+                    "max_new_tokens"
+                ] = picture_description_max_new_tokens
 
             html_backend_options: HTMLBackendOptions | None = None
             if (
@@ -1429,6 +1451,10 @@ def convert(  # noqa: C901
             # Use the new preset system
             try:
                 pipeline_options.vlm_options = VlmConvertOptions.from_preset(vlm_model)
+                if vlm_max_new_tokens is not None:
+                    pipeline_options.vlm_options.model_spec.max_new_tokens = (
+                        vlm_max_new_tokens
+                    )
                 _log.info(f"Using VLM preset: {vlm_model}")
             except KeyError:
                 err_console.print(
