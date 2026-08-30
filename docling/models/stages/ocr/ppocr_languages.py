@@ -119,14 +119,14 @@ def ppocr_token(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None
 
     # The primary subtag identifies the recognizer only when the language is
     # written in its usual script: PP-OCR's `az` and `uz` are the Latin ones.
-    if language.has_default_script and language.language in vocabulary:
-        return language.language
+    if language.has_default_script and language.bcp47_language in vocabulary:
+        return language.bcp47_language
 
     # PP-OCR serves many languages only through a script-wide recognizer: there
     # is no `ar` or `hi` model, and on the PP-OCRv4 backbone most of the
     # vocabulary is script models. This routing is internal -- users name a
     # language and docling finds the recognizer that covers it.
-    family = _SCRIPT_TO_TOKEN.get(language.script or "")
+    family = _SCRIPT_TO_TOKEN.get(language.bcp47_script or "")
     if family is not None and family in vocabulary:
         return family
     return None

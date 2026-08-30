@@ -3,33 +3,16 @@
 
 """Canonicalization of OCR language requests to BCP-47 (RFC 5646).
 
-Docling exposes exactly one language vocabulary to users -- BCP-47 tags -- and
-reduces every request to a `(language, script)` pair. Per-engine adapters
-translate that pair into the engine's own notation (see
-`docling.models.base_ocr_model.BaseOcrModel.map_ocr_language`).
+The user can provide as input language either a supported BCP-47 code or a language native to the
+OCR engine.
+
+Docling reduces every request to a `(language, script)` pair.
+Per-engine adapters translate that pair into the engine's own notation
+(see `docling.models.base_ocr_model.BaseOcrModel.map_ocr_language`).
 
 Region is discarded once it has inferred the script: `zh-CN` and `zh-Hans` are
 the same recognizer, and `de-DE` vs `de-AT` is a distinction no OCR engine
 docling supports can act on.
-
-`OcrLanguage` is the result type; `OcrLanguageResolver` owns the parsing itself
-and the tables it consults.
-
-Users, however, arrive with the vocabulary of the engine they were already using
--- `ch` for RapidOCR, `chi_sim` for Tesseract, `ch_sim` for EasyOCR -- so each
-options class also accepts its *own* engine's tokens, keyed by `OcrOptions.kind`
-in `OcrLanguageResolver._NATIVE_VOCABULARIES`. Only tokens that plain BCP-47
-parsing gets wrong are listed there: the great majority of every engine's
-vocabulary is ISO 639 already (`deu`, `fra`, `ru`, `ta`) and needs no entry.
-
-Nine of those tokens read as a *different language* under BCP-47 than their
-engine means. For all nine the BCP-47 reading names a language that engine has
-no model for -- no OCR engine docling supports ships a Chamorro, Georgian,
-Frankish, Marshallese or Old English recognizer -- so letting the native reading
-win takes nothing away, and `test_native_alias_never_shadows_a_reachable_language`
-enforces exactly that. A user who genuinely wants the BCP-47 reading writes the
-fully-qualified tag: the tables are keyed on the bare token, so `ch-Latn`
-(Chamorro), `ka-Geor` (Georgian) and `ang-Latn` (Old English) bypass them.
 """
 
 import logging
@@ -43,33 +26,10 @@ from pydantic import BaseModel, ConfigDict
 
 _log = logging.getLogger(__name__)
 
-#: Multiple languages: the engine's broadest multilingual model.
+# Multiple languages: the engine's broadest multilingual model.
 MULTIPLE = "mul"
 
 _NO_TOKENS: Mapping[str, str] = MappingProxyType({})
-
-
-class _NativeVocabulary(NamedTuple):
-    """One engine family's own language codes, accepted alongside BCP-47.
-
-    Attributes:
-        languages: Native token -> canonical tag, for the tokens plain BCP-47
-            parsing would get wrong.
-        passthrough: Tokens naming a real model but no language -- PP-OCR's
-            script recognizers. They have no `(language, script)` form, so they
-            reach the engine verbatim rather than canonicalized.
-        script_files: tessdata `script/<Name>` file name -> ISO 15924 code, for
-            the engines that have such files. `None` for the engines that do not.
-        unrepresentable: Tokens docling refuses rather than mis-resolving,
-            mapped to the reason. Each names a model the canonical
-            `(language, script)` form cannot distinguish, so canonicalizing
-            would silently select a *different* recognizer.
-    """
-
-    languages: Mapping[str, str]
-    passthrough: frozenset[str] = frozenset()
-    script_files: Mapping[str, str] | None = None
-    unrepresentable: Mapping[str, str] = _NO_TOKENS
 
 
 class OcrLanguageSupport(BaseModel):
@@ -86,24 +46,50 @@ class OcrLanguageSupport(BaseModel):
     multiple_languages: bool = False
 
 
+class _NativeVocabulary(NamedTuple):
+    """One engine family's own language codes, accepted alongside BCP-47.
+
+    Attributes:
+        languages: Native token -> canonical tag, for the tokens plain BCP-47
+            parsing would get wrong.
+        passthrough: Tokens naming a real model but no language -- PP-OCR's
+            script recognizers. They have no `(language, script)` form, so they
+            reach the engine verbatim rather than canonicalized.
+        tesseract_script_files: tessdata `script/<Name>` file name -> ISO 15924 code, for tesseract
+            `None` for the other engines
+        tesseract_unrepresentable: Tokens docling refuses rather than mis-resolving,
+            mapped to the reason. Each names a model the canonical
+            `(language, script)` form cannot distinguish, so canonicalizing
+            would silently select a *different* recognizer.
+    """
+
+    languages: Mapping[str, str]
+    passthrough: frozenset[str] = frozenset()
+
+    tesseract_script_files: Mapping[str, str] | None = None
+    tesseract_unrepresentable: Mapping[str, str] = _NO_TOKENS
+
+
 class OcrLanguage(BaseModel):
     """One canonicalized OCR language request: a BCP-47 (language, script) pair.
 
     Attributes:
-        language: Primary subtag, lowercase. May be the reserved subtag `mul`.
-        script: ISO 15924 script code in title case. `None` only for the bare
-            reserved tags.
+        bcp47_language: Primary subtag, lowercase. May be the reserved subtag
+            `mul`.
+        bcp47_script: ISO 15924 script code in title case. `None` only for the
+            bare reserved tags.
         native: An engine's own token, kept verbatim, for the models no
-            `(language, script)` pair can name -- PP-OCR's script recognizers
-            (`arabic`, `cyrillic`) and Tesseract's `script/<Name>` files. Set
-            only for a passthrough, where it excludes `language` and `script`
-            and is what `tag` returns; `None` for every ordinary BCP-47 request.
+            `(bcp47_language, bcp47_script)` pair can name -- PP-OCR's script
+            recognizers (`arabic`, `cyrillic`) and Tesseract's `script/<Name>`
+            files. Set only for a passthrough, where it excludes
+            `bcp47_language` and `bcp47_script` and is what `tag` returns;
+            `None` for every ordinary BCP-47 request.
     """
 
     model_config = ConfigDict(frozen=True)
 
-    language: str | None = None
-    script: str | None = None
+    bcp47_language: str | None = None
+    bcp47_script: str | None = None
     native: str | None = None
 
     @property
@@ -116,7 +102,11 @@ class OcrLanguage(BaseModel):
         """
         if self.native is not None:
             return self.native
-        return f"{self.language}-{self.script}" if self.script else self.language or ""
+        return (
+            f"{self.bcp47_language}-{self.bcp47_script}"
+            if self.bcp47_script
+            else self.bcp47_language or ""
+        )
 
     @property
     def is_passthrough(self) -> bool:
@@ -129,13 +119,8 @@ class OcrLanguage(BaseModel):
         return self.native is not None
 
     @property
-    def is_reserved(self) -> bool:
-        """One of the bare reserved tags, which must be requested alone."""
-        return self.language in OcrLanguageResolver._RESERVED and self.script is None
-
-    @property
     def is_multilingual(self) -> bool:
-        return self.language == MULTIPLE
+        return self.bcp47_language == MULTIPLE
 
     @property
     def has_default_script(self) -> bool:
@@ -145,10 +130,13 @@ class OcrLanguage(BaseModel):
         this to decide whether the primary subtag alone still identifies the
         right recognizer.
         """
-        if self.language is None or self.language in OcrLanguageResolver._RESERVED:
+        if (
+            self.bcp47_language is None
+            or self.bcp47_language in OcrLanguageResolver._RESERVED
+        ):
             return False
-        return self.script == OcrLanguageResolver._default_script_for_language(
-            self.language
+        return self.bcp47_script == OcrLanguageResolver._default_script_for_language(
+            self.bcp47_language
         )
 
     def __str__(self) -> str:
@@ -163,13 +151,22 @@ class OcrLanguageResolver:
     steps memoize on their arguments alone.
     """
 
+    _OCR_DOCS_URL = "https://docling-project.github.io/docling/concepts/OCR/"
+
     # BCP-47's "undetermined". Docling does *not* accept it as an OCR language
-    # an empty `lang` list already says "let the engine decide"
     _UNDETERMINED = "und"
 
     _RESERVED = frozenset({MULTIPLE})
 
-    _DOCS_URL = "https://docling-project.github.io/docling/concepts/OCR/"
+    # Subtags docling's `(language, script)` form cannot carry. A region is
+    # dropped by design (`de-DE` and `de-AT` are one recognizer); the rest
+    # appearing in a parse means the tag was only accepted by attaching part of
+    # the token to a subtag that is then thrown away.
+    _LOSSY_SUBTAGS = frozenset({"extlangs", "variants", "private", "extensions"})
+
+    ###########################################################################################
+    # TODO: Evaluate if to collapse _AUTO_TOKENS, _SCRIPT_NAME_TOKENS, _LEGACY_HINTS into
+    # _INVALID_TOKENS and simplify the code
 
     # Retired ways of asking an engine to decide for itself. An empty `lang`
     # list says the same thing, so these point there rather than at a
@@ -220,22 +217,17 @@ class OcrLanguageResolver:
             "srp_latn": "sr-Latn",
         }
     )
+    ###########################################################################################
 
-    #: Subtags docling's `(language, script)` form cannot carry. A region is
-    #: dropped by design (`de-DE` and `de-AT` are one recognizer); the rest
-    #: appearing in a parse means the tag was only accepted by attaching part of
-    #: the token to a subtag that is then thrown away.
-    _LOSSY_SUBTAGS = frozenset({"extlangs", "variants", "private", "extensions"})
-
-    #: Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The
-    #: bare script name is deliberately *not* accepted: `Lao` is a tessdata
-    #: script file and also a valid BCP-47 primary subtag.
+    # Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The
+    # bare script name is deliberately *not* accepted: `Lao` is a tessdata
+    # script file and also a valid BCP-47 primary subtag.
     TESSERACT_SCRIPT_FILE_PREFIX = "script/"
 
-    #: tessdata `script/` file name -> ISO 15924 code, for `script/<Name>` input.
-    #: Only the file names are load-bearing: a script file is handed to the
-    #: engine as the token the user wrote, so the code is what documents which
-    #: script each file covers.
+    # tessdata `script/` file name -> ISO 15924 code, for `script/<Name>` input.
+    # Only the file names are load-bearing: a script file is handed to the
+    # engine as the token the user wrote, so the code is what documents which
+    # script each file covers.
     TESSERACT_SCRIPT_FILES: Mapping[str, str] = MappingProxyType(
         {
             "Arabic": "Arab",
@@ -274,29 +266,51 @@ class OcrLanguageResolver:
         }
     )
 
-    #: Tesseract tokens naming a model no language tag can express.
-    _TESSERACT_UNREPRESENTABLE: Mapping[str, str] = MappingProxyType(
-        {
-            "chi_sim_vert": "vertical text",
-            "chi_tra_vert": "vertical text",
-            "jpn_vert": "vertical text",
-            "kor_vert": "vertical text",
-            "hans_vert": "vertical text",
-            "hant_vert": "vertical text",
-            "hangul_vert": "vertical text",
-            "japanese_vert": "vertical text",
-            "ita_old": "a historical orthography",
-            "spa_old": "a historical orthography",
-            "kat_old": "a historical orthography",
-            "equ": "mathematical notation rather than a language",
-        }
+    # The tessdata language files, shared by both Tesseract bindings. The
+    # `*_cyrl` and `*_latn` names are listed even though `langcodes` happens to
+    # read the underscore as a subtag separator -- that is luck, not contract.
+    _TESSERACT = _NativeVocabulary(
+        languages=MappingProxyType(
+            {
+                "chi_sim": "zh-Hans",
+                # Parses as the bogus `zh-tra`, which maximizes to zh-Hans -- Simplified
+                # output for a Traditional request. The whole reason the native table
+                # must run before langcodes rather than after it.
+                "chi_tra": "zh-Hant",
+                "srp_latn": "sr-Latn",
+                "aze_cyrl": "az-Cyrl",
+                "uzb_cyrl": "uz-Cyrl",
+                "deu_latf": "de-Latf",
+                # tessdata's legacy name for German Fraktur; ISO 639-3 `frk` is Frankish.
+                "frk": "de-Latf",
+            }
+        ),
+        tesseract_script_files=TESSERACT_SCRIPT_FILES,
+        # Tesseract tokens naming a model no language tag can express.
+        tesseract_unrepresentable=MappingProxyType(
+            {
+                "chi_sim_vert": "vertical text",
+                "chi_tra_vert": "vertical text",
+                "jpn_vert": "vertical text",
+                "kor_vert": "vertical text",
+                "hans_vert": "vertical text",
+                "hant_vert": "vertical text",
+                "hangul_vert": "vertical text",
+                "japanese_vert": "vertical text",
+                "ita_old": "a historical orthography",
+                "spa_old": "a historical orthography",
+                "kat_old": "a historical orthography",
+                "equ": "mathematical notation rather than a language",
+            }
+        ),
     )
+    ##############################################################################################
 
-    #: The PP-OCR recognizers, shared by RapidOCR and the KServe v2 client.
-    #: `eslav` resolves to `ru-Cyrl` because that is what round trips: the
-    #: forward table sends `ru-Cyrl` back to `eslav`. The script recognizers
-    #: (`latin`, `cyrillic`, ...) are passthroughs, having no language to
-    #: canonicalize to.
+    # The PP-OCR recognizers, shared by RapidOCR and the KServe v2 client.
+    # `eslav` resolves to `ru-Cyrl` because that is what round trips: the
+    # forward table sends `ru-Cyrl` back to `eslav`. The script recognizers
+    # (`latin`, `cyrillic`, ...) are passthroughs, having no language to
+    # canonicalize to.
     _PPOCR = _NativeVocabulary(
         languages=MappingProxyType(
             {
@@ -316,31 +330,9 @@ class OcrLanguageResolver:
         ),
         passthrough=frozenset({"latin", "cyrillic", "arabic", "devanagari"}),
     )
+    ###########################################################################################
 
-    #: The tessdata language files, shared by both Tesseract bindings. The
-    #: `*_cyrl` and `*_latn` names are listed even though `langcodes` happens to
-    #: read the underscore as a subtag separator -- that is luck, not contract.
-    _TESSERACT = _NativeVocabulary(
-        languages=MappingProxyType(
-            {
-                "chi_sim": "zh-Hans",
-                # Parses as the bogus `zh-tra`, which maximizes to zh-Hans -- Simplified
-                # output for a Traditional request. The whole reason the native table
-                # must run before langcodes rather than after it.
-                "chi_tra": "zh-Hant",
-                "srp_latn": "sr-Latn",
-                "aze_cyrl": "az-Cyrl",
-                "uzb_cyrl": "uz-Cyrl",
-                "deu_latf": "de-Latf",
-                # tessdata's legacy name for German Fraktur; ISO 639-3 `frk` is Frankish.
-                "frk": "de-Latf",
-            }
-        ),
-        script_files=TESSERACT_SCRIPT_FILES,
-        unrepresentable=_TESSERACT_UNREPRESENTABLE,
-    )
-
-    #: The EasyOCR recognition codes.
+    # The EasyOCR recognition codes.
     _EASYOCR = _NativeVocabulary(
         languages=MappingProxyType(
             {
@@ -361,8 +353,9 @@ class OcrLanguageResolver:
             }
         ),
     )
+    ###########################################################################################
 
-    #: The nemotron-OCR recognizers.
+    # The nemotron-OCR recognizers.
     _NEMOTRON = _NativeVocabulary(
         languages=MappingProxyType(
             {
@@ -371,13 +364,9 @@ class OcrLanguageResolver:
             }
         ),
     )
+    ###########################################################################################
 
-    #: `OcrOptions.kind` -> the engine vocabulary whose own codes are accepted
-    #: alongside BCP-47. Several kinds share one: the two Tesseract bindings read
-    #: the same tessdata names, and the KServe client addresses the same PP-OCR
-    #: recognizers as local RapidOCR. A kind that is absent -- `ocrmac`, whose
-    #: engine speaks BCP-47 already, or any out-of-tree engine -- accepts BCP-47
-    #: and nothing else. `auto` is handled by `_vocabulary_for`.
+    # `OcrOptions.kind` -> the engine vocabulary
     _NATIVE_VOCABULARIES: Mapping[str, _NativeVocabulary] = MappingProxyType(
         {
             "rapidocr": _PPOCR,
@@ -389,18 +378,18 @@ class OcrLanguageResolver:
         }
     )
 
-    #: The kind that has not chosen an engine yet.
+    # The kind that has not chosen an engine yet.
     _AUTO_KIND = "auto"
 
-    #: Native tokens accepted when no engine has been chosen yet, as
-    #: `OcrAutoOptions` does until its selection loop runs. Assigned right below
-    #: the class body: deriving it needs the staticmethods defined further down.
-    #: See `_derive_unambiguous_native_languages`.
+    # Native tokens accepted when no engine has been chosen yet, as
+    # `OcrAutoOptions` does until its selection loop runs. Assigned right below
+    # the class body: deriving it needs the staticmethods defined further down.
+    # See `_derive_unambiguous_native_languages`.
     UNAMBIGUOUS_NATIVE_LANGUAGES: ClassVar[Mapping[str, str]]
 
-    #: The `auto` kind's vocabulary: the tokens above, and no passthroughs --
-    #: a passthrough is only meaningful to the engine that defines it. Assigned
-    #: below the class body for the same reason.
+    # The `auto` kind's vocabulary: the tokens above, and no passthroughs --
+    # a passthrough is only meaningful to the engine that defines it. Assigned
+    # below the class body for the same reason.
     _AUTO_VOCABULARY: ClassVar[_NativeVocabulary]
 
     @staticmethod
@@ -428,7 +417,12 @@ class OcrLanguageResolver:
             if language not in languages:
                 languages.append(language)
 
-        reserved = [lang.tag for lang in languages if lang.is_reserved]
+        reserved = [
+            lang.tag
+            for lang in languages
+            if lang.bcp47_language in OcrLanguageResolver._RESERVED
+            and lang.bcp47_script is None
+        ]
         if reserved and len(languages) > 1:
             raise ValueError(
                 f"The reserved OCR language tag {reserved[0]!r} must be used on its "
@@ -481,9 +475,6 @@ class OcrLanguageResolver:
                 a model no language tag can express, or is not a valid BCP-47
                 tag.
         """
-        # One guard around the whole canonicalization is the only way to catch
-        # every failure: `_resolve_native_ocr_language` and `_parse_bcp47` raise
-        # from inside it as well as the explicit `raise` statements here.
         try:
             token = value.strip()
             if not token:
@@ -491,7 +482,7 @@ class OcrLanguageResolver:
 
             lowered = token.lower()
             if lowered in OcrLanguageResolver._RESERVED:
-                return OcrLanguage(language=lowered)
+                return OcrLanguage(bcp47_language=lowered)
 
             # Before anything else: the selected engine's own vocabulary wins.
             # Several native tokens are structurally valid BCP-47 for a different
@@ -504,6 +495,11 @@ class OcrLanguageResolver:
                 if native is not None:
                     return native
 
+            #######################################################################################
+            # TODO: Simplify the code:
+            # _AUTO_TOKENS, _SCRIPT_NAME_TOKENS, _LEGACY_HINTS are essentially not allowed input
+            # tokens. Call OcrLanguageResolver._invalid() for all of them
+
             # Runs before parsing for the same reason: a legacy token can be
             # valid BCP-47 for something else entirely.
             if (
@@ -515,6 +511,7 @@ class OcrLanguageResolver:
             hint = OcrLanguageResolver._LEGACY_HINTS.get(lowered)
             if hint is not None:
                 raise OcrLanguageResolver._invalid(value, f"use {hint!r} instead.")
+            #######################################################################################
 
             return OcrLanguageResolver._parse_bcp47(value)
         except ValueError:
@@ -541,44 +538,11 @@ class OcrLanguageResolver:
 
     @staticmethod
     @lru_cache(maxsize=256)
-    def _default_script_for_language(language: str) -> str | None:
+    def _default_script_for_language(bcp47_language: str) -> str | None:
         """The script CLDR likely-subtags associate with a primary subtag."""
         try:
-            return langcodes.Language.get(language).maximize().script
+            return langcodes.Language.get(bcp47_language).maximize().script
         except langcodes.LanguageTagError:
-            return None
-
-    @staticmethod
-    def _invalid(value: str, reason: str) -> ValueError:
-        return ValueError(
-            f"Invalid OCR language {value!r}. Docling uses BCP-47 language tags; "
-            f"{reason} See {OcrLanguageResolver._DOCS_URL}"
-        )
-
-    @staticmethod
-    def _plain_bcp47_tag(value: str) -> str | None:
-        """The canonical tag `value` has as a plain BCP-47 tag, or `None`.
-
-        `None` means "not a legitimate tag for anything", which covers both
-        outright invalid tokens and the ones `langcodes` accepts only by parking
-        part of the token in a subtag docling then discards: `chi_tra` parses as
-        `zh` plus an extlang `tra`, which canonicalizes to `zh-Hans` -- the wrong
-        script, and not a spelling any user of Chinese would actually write.
-
-        Used to reason *about* the native vocabularies: an alias only shadows a
-        real BCP-47 reading when this returns one, so this is what separates a
-        genuine ambiguity like `ch` (Chamorro) from a parse accident like
-        `chi_tra`.
-        """
-        try:
-            parsed = langcodes.Language.get(value.strip(), normalize=True)
-        except langcodes.LanguageTagError:
-            return None
-        if OcrLanguageResolver._LOSSY_SUBTAGS.intersection(parsed.to_dict()):
-            return None
-        try:
-            return OcrLanguageResolver._parse_bcp47(value).tag
-        except ValueError:
             return None
 
     @staticmethod
@@ -596,30 +560,37 @@ class OcrLanguageResolver:
                 `(language, script)` pair cannot express, such as Tesseract's
                 vertical-text or historical-orthography files.
         """
-        vocabulary = OcrLanguageResolver._vocabulary_for(kind)
+        if kind == OcrLanguageResolver._AUTO_KIND:
+            vocabulary = OcrLanguageResolver._AUTO_VOCABULARY
+        else:
+            vocabulary = OcrLanguageResolver._NATIVE_VOCABULARIES.get(kind)
         if vocabulary is None:
             return None
 
         token = value.strip()
         lowered = token.lower()
 
+        ###########################################################################################
+        # TODO: Special treatment for tesseract scripts
+        # Evaluate if to move this code in models/stages/ocr/tesseract_utils.py
         prefix = OcrLanguageResolver.TESSERACT_SCRIPT_FILE_PREFIX
-        if vocabulary.script_files is not None and lowered.startswith(prefix):
-            name = token[len(prefix) :]
-            if name.lower().endswith("_vert"):
+        if vocabulary.tesseract_script_files is not None and lowered.startswith(prefix):
+            name = token[len(prefix) :].lower()
+            if name.endswith("_vert"):
                 raise OcrLanguageResolver._unrepresentable(value, "vertical text")
-            for file_name in vocabulary.script_files:
-                if file_name.lower() == name.lower():
+            for file_name in vocabulary.tesseract_script_files:
+                if file_name.lower() == name:
                     # A real traineddata file named after a script, not a language.
                     return OcrLanguage(native=f"{prefix}{file_name}")
             return None
+        ###########################################################################################
 
         if lowered in vocabulary.passthrough:
             return OcrLanguage(native=lowered)
 
         # Scoped to the engine that owns them: `equ` asked of RapidOCR is better
         # served by the ordinary "not a valid tag" message.
-        reason = vocabulary.unrepresentable.get(lowered)
+        reason = vocabulary.tesseract_unrepresentable.get(lowered)
         if reason is not None:
             raise OcrLanguageResolver._unrepresentable(value, reason)
 
@@ -628,12 +599,14 @@ class OcrLanguageResolver:
             None if canonical is None else OcrLanguageResolver._parse_bcp47(canonical)
         )
 
+    ###########################################################################################
+    # TODO: Reduce the ValueError raising helpers. Too much fragmentation
     @staticmethod
-    def _vocabulary_for(kind: str) -> "_NativeVocabulary | None":
-        """The native vocabulary an engine kind selects, or `None` for BCP-47 only."""
-        if kind == OcrLanguageResolver._AUTO_KIND:
-            return OcrLanguageResolver._AUTO_VOCABULARY
-        return OcrLanguageResolver._NATIVE_VOCABULARIES.get(kind)
+    def _invalid(value: str, reason: str) -> ValueError:
+        return ValueError(
+            f"Invalid OCR language {value!r}. Docling uses BCP-47 language tags; "
+            f"{reason} See {OcrLanguageResolver._OCR_DOCS_URL}"
+        )
 
     @staticmethod
     def _no_undetermined(value: str) -> ValueError:
@@ -642,7 +615,7 @@ class OcrLanguageResolver:
             f"'undetermined' language and no script families: leave the OCR language "
             f"list empty to let the engine choose (which is how Tesseract's per-page "
             f"script detection is enabled), or name a language written in the script "
-            f"you want. See {OcrLanguageResolver._DOCS_URL}"
+            f"you want. See {OcrLanguageResolver._OCR_DOCS_URL}"
         )
 
     @staticmethod
@@ -651,7 +624,7 @@ class OcrLanguageResolver:
             f"The OCR language {value!r} (no linguistic content) is not supported. "
             f"To skip OCR, turn it off instead: `--no-ocr` on the CLI, or "
             f"`do_ocr=False` in the pipeline options. See "
-            f"{OcrLanguageResolver._DOCS_URL}"
+            f"{OcrLanguageResolver._OCR_DOCS_URL}"
         )
 
     @staticmethod
@@ -660,8 +633,10 @@ class OcrLanguageResolver:
             f"The OCR language {value!r} names a model docling cannot address by "
             f"language tag, because it selects {reason}. Docling stores OCR languages "
             f"as BCP-47 tags, which cannot express that distinction. Name the "
-            f"language itself instead. See {OcrLanguageResolver._DOCS_URL}"
+            f"language itself instead. See {OcrLanguageResolver._OCR_DOCS_URL}"
         )
+
+    ###########################################################################################
 
     @staticmethod
     @lru_cache(maxsize=256)
@@ -673,7 +648,7 @@ class OcrLanguageResolver:
 
         lowered = token.lower()
         if lowered in OcrLanguageResolver._RESERVED:
-            return OcrLanguage(language=lowered)
+            return OcrLanguage(bcp47_language=lowered)
 
         try:
             parsed = langcodes.Language.get(token, normalize=True)
@@ -701,8 +676,10 @@ class OcrLanguageResolver:
             # decides", and a script is named by naming a language written in it.
             raise OcrLanguageResolver._no_undetermined(value)
 
+        # An explicit script wins, so `de-Latf` keeps Fraktur; only a tag written
+        # without one falls back to CLDR's likely script, sending `de` to `de-Latn`.
         script = parsed.script or parsed.maximize().script
-        return OcrLanguage(language=parsed.language, script=script)
+        return OcrLanguage(bcp47_language=parsed.language, bcp47_script=script)
 
     @staticmethod
     def _derive_unambiguous_native_languages() -> Mapping[str, str]:
@@ -714,8 +691,7 @@ class OcrLanguageResolver:
         `frk` and `tab`: with no engine selected there is nothing to prefer the
         native reading over the standard one, so docling asks the user to
         disambiguate rather than guessing. `chi_tra` and friends survive it,
-        because `_plain_bcp47_tag` refuses to call their lossy parse a reading at
-        all.
+        because their lossy parse does not count as a reading at all.
 
         Derived rather than written out, so that adding an alias to a per-engine
         table cannot silently widen the engine-less vocabulary.
@@ -728,14 +704,30 @@ class OcrLanguageResolver:
                     conflicting.add(token)
                 seen[token] = canonical
 
-        return MappingProxyType(
-            {
-                token: canonical
-                for token, canonical in seen.items()
-                if token not in conflicting
-                and OcrLanguageResolver._plain_bcp47_tag(token) in (None, canonical)
-            }
-        )
+        unambiguous: dict[str, str] = {}
+        for token, canonical in seen.items():
+            if token in conflicting:
+                continue
+
+            # There are a few native OCR tags that can be misclassified by langcodes as wrong BCP-47
+            # languages. This misclassification is possible only via "special" cases in the BPC-47
+            # standard. The LOSSY_SUBTAGS is a harness against these cases.
+            # E.g. tesseract accepts `chi_tra` for traditional english but langcodes will map it as
+            # `zh-Hans` which is the simplified english, which is a different writing.
+            reading: str | None = None
+            try:
+                parsed = langcodes.Language.get(token, normalize=True)
+                if not OcrLanguageResolver._LOSSY_SUBTAGS.intersection(
+                    parsed.to_dict()
+                ):
+                    reading = OcrLanguageResolver._parse_bcp47(token).tag
+            except (langcodes.LanguageTagError, ValueError):
+                reading = None
+
+            if reading in (None, canonical):
+                unambiguous[token] = canonical
+
+        return MappingProxyType(unambiguous)
 
 
 OcrLanguageResolver.UNAMBIGUOUS_NATIVE_LANGUAGES = (

@@ -205,8 +205,8 @@ def test_model_downloader_resolves_requested_easyocr_languages(
 
     assert len(captured_calls) == 1
     assert captured_calls[0]["recognition_models"] == [
-        "zh_sim_g2",
         "japanese_g2",
+        "zh_sim_g2",
     ]
 
 

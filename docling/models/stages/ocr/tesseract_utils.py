@@ -77,8 +77,8 @@ def map_tesseract_language(language: OcrLanguage, script_prefix: str) -> str | N
     if language.tag in _TESSERACT_LANGUAGE_NAMES:
         return _TESSERACT_LANGUAGE_NAMES[language.tag]
     # Tesseract's vocabulary *is* ISO 639-2/T: deu, fra, ell, ces, kat.
-    assert language.language is not None
-    return langcodes.Language.get(language.language).to_alpha3(variant="T")
+    assert language.bcp47_language is not None
+    return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
 
 
 def installed_language_tags(

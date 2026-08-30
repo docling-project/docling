@@ -82,6 +82,8 @@ def _easyocr_language_models() -> dict[str, str]:
     )
 
     language_models: dict[str, str] = {}
+
+    # First add the languages that come from big language groups
     for language_group, model_name in (
         (latin_lang_list, "latin_g2"),
         (arabic_lang_list, "arabic_g1"),
@@ -90,6 +92,8 @@ def _easyocr_language_models() -> dict[str, str]:
         (devanagari_lang_list, "devanagari_g1"),
     ):
         language_models.update(dict.fromkeys(language_group, model_name))
+
+    # Add other supported languages, which are outside of the lang_lists. Overwrite "en".
     language_models.update(
         {
             "en": "english_g2",
@@ -115,7 +119,7 @@ def _easyocr_code(language: OcrLanguage) -> Optional[str]:
         # is Latin Azerbaijani, not `az-Cyrl`.
         if not language.has_default_script:
             return None
-        code = language.language
+        code = language.bcp47_language
     return code if code in _easyocr_language_models() else None
 
 
@@ -143,15 +147,13 @@ def _resolve_easyocr_recognition_models(languages: Iterable[str]) -> List[str]:
     """Map EasyOCR language codes onto the checkpoints the prefetcher must fetch."""
     language_models = _easyocr_language_models()
 
-    model_names: List[str] = []
+    model_names: set[str] = set()
     for language in languages:
         try:
-            model_name = language_models[language]
+            model_names.add(language_models[language])
         except KeyError:
             raise ValueError(f"Unsupported EasyOCR language code: {language}") from None
-        if model_name not in model_names:
-            model_names.append(model_name)
-    return model_names
+    return sorted(model_names)
 
 
 class EasyOcrModel(BaseOcrModel):
@@ -187,10 +189,6 @@ class EasyOcrModel(BaseOcrModel):
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
 
-            # An empty `lang` list means "the engine's own default", and
-            # EasyOCR has none: an empty `lang_list` leaves its reader
-            # recognizing digits and punctuation only, silently. Name a
-            # language instead.
             self._native_langs = (
                 self.resolve_ocr_languages()
                 if self.languages

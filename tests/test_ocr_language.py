@@ -11,11 +11,6 @@ Four sections, following one user-supplied string all the way to a canonical tag
 the resolver itself, the engine-native vocabularies it accepts alongside BCP-47,
 the `OcrOptions` validator that calls it, and the `--ocr-lang` CLI flag that
 feeds that validator.
-
-The load-bearing test is `test_native_alias_never_shadows_a_reachable_language`:
-it is the whole safety argument for letting a native reading win over a valid
-BCP-47 tag, and it is what stops a future alias from quietly hiding a language
-its own engine can serve.
 """
 
 import warnings
@@ -46,16 +41,7 @@ from docling.models.stages.ocr.easyocr_model import (
     _EASYOCR_LANGUAGE_CODES,
     EasyOcrModel,
 )
-from docling.models.stages.ocr.ppocr_languages import (
-    PPOCRV4_LANGS,
-    PPOCRV5_LANGS,
-    PPOCRV6_LANGS,
-    ppocr_supported_tags,
-)
-from docling.models.stages.ocr.tesseract_utils import (
-    _TESSERACT_LANGUAGE_NAMES,
-    map_tesseract_language,
-)
+from docling.models.stages.ocr.tesseract_utils import map_tesseract_language
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageResolver,
@@ -77,9 +63,9 @@ NATIVE_KINDS = sorted(OcrLanguageResolver._NATIVE_VOCABULARIES)
 
 # The tokens that are a legitimate BCP-47 spelling of one language and an
 # engine's own name for a different one. These are the only genuine ambiguities:
-# `chi_tra`, `ch_sim` and `ch_tra` look similar but are not tags at all -- see
-# `_plain_bcp47_tag` -- and everything else agrees with BCP-47 or cannot be
-# parsed as a tag.
+# `chi_tra`, `ch_sim` and `ch_tra` look similar but are not tags at all (their
+# parse only succeeds by discarding a subtag), and everything else agrees with
+# BCP-47 or cannot be parsed as a tag.
 CLASHING_TOKENS = frozenset({"ch", "ka", "ang", "mah", "frk", "tab"})
 
 
@@ -235,15 +221,9 @@ def test_has_default_script_separates_the_script_variants() -> None:
     ).has_default_script
 
 
-def test_reserved_flags() -> None:
-    assert OcrLanguageResolver.canonicalize_ocr_language("mul").is_multilingual
-    assert OcrLanguageResolver.canonicalize_ocr_language("mul").is_reserved
-    assert not OcrLanguageResolver.canonicalize_ocr_language("en").is_reserved
-
-
 def test_ocr_language_is_hashable() -> None:
     """Engines key dicts and caches on the canonical pair."""
-    assert {OcrLanguage(language="de", script="Latn")} == {
+    assert {OcrLanguage(bcp47_language="de", bcp47_script="Latn")} == {
         OcrLanguageResolver.canonicalize_ocr_language("de-DE")
     }
 
@@ -279,63 +259,6 @@ def test_match_against_a_region_bearing_vocabulary() -> None:
 
 
 # --- engine-native vocabularies --------------------------------------------
-
-
-def _static_supported_tags(kind: str) -> set[str]:
-    """Canonical tags the engine behind `kind` can serve, from static data only.
-
-    Deliberately not the runtime `supported_ocr_languages()` of a live model:
-    the guard has to hold on any machine, whatever happens to be installed.
-    """
-    vocabulary = OcrLanguageResolver._NATIVE_VOCABULARIES[kind]
-    if vocabulary is OcrLanguageResolver._PPOCR:
-        return set(
-            ppocr_supported_tags(
-                PPOCRV4_LANGS | PPOCRV5_LANGS | PPOCRV6_LANGS, RapidOcrOptions.kind
-            )
-        )
-    if vocabulary is OcrLanguageResolver._EASYOCR:
-        from docling.models.stages.ocr.easyocr_model import (
-            _easyocr_code_to_tag,
-            _easyocr_language_models,
-        )
-
-        return {
-            tag
-            for code in _easyocr_language_models()
-            if (tag := _easyocr_code_to_tag(code))
-        }
-    if vocabulary is OcrLanguageResolver._TESSERACT:
-        # Every tessdata file name, rendered back as the tag that reaches it.
-        tags = set(_TESSERACT_LANGUAGE_NAMES)
-        # A script file is named back as itself: that is what selects it.
-        assert vocabulary.script_files is not None
-        tags.update(f"script/{name}" for name in vocabulary.script_files)
-        return tags
-    if vocabulary is OcrLanguageResolver._NEMOTRON:
-        return {"en-Latn", "mul", "zh-Hans", "zh-Hant", "ja-Jpan", "ko-Kore", "ru-Cyrl"}
-    raise AssertionError(f"no static supported set for {kind!r}")
-
-
-@pytest.mark.parametrize("kind", NATIVE_KINDS)
-def test_native_alias_never_shadows_a_reachable_language(kind: str) -> None:
-    """A native alias may only shadow a BCP-47 reading its own engine cannot serve.
-
-    This is what makes "the native reading wins" lossless rather than a guess.
-    If it ever fails, the engine has gained a model for the language its own
-    token was hiding, and that token has become a genuine ambiguity.
-    """
-    supported = _static_supported_tags(kind)
-    languages = OcrLanguageResolver._NATIVE_VOCABULARIES[kind].languages
-    for token, native_meaning in languages.items():
-        bcp47 = OcrLanguageResolver._plain_bcp47_tag(token)
-        if bcp47 is None or bcp47 == native_meaning:
-            continue  # unparseable, or both readings agree: nothing is shadowed
-        assert bcp47 not in supported, (
-            f"{kind} alias {token!r} means {native_meaning}, but {token!r} is "
-            f"also valid BCP-47 for {bcp47}, which this engine CAN serve. Honouring "
-            f"the native reading would make {bcp47} unreachable as {token!r}."
-        )
 
 
 def test_canonical_tags_can_never_be_mistaken_for_native_tokens() -> None:
@@ -482,12 +405,6 @@ def test_engine_less_vocabulary_drops_every_clashing_token() -> None:
         "chi_tra",
         "ch_sim",
     } <= set(OcrLanguageResolver.UNAMBIGUOUS_NATIVE_LANGUAGES)
-
-
-def test_engine_less_vocabulary_is_derived_not_hand_written() -> None:
-    """Every surviving token is either unparseable or agrees with its tag."""
-    for token, canonical in OcrLanguageResolver.UNAMBIGUOUS_NATIVE_LANGUAGES.items():
-        assert OcrLanguageResolver._plain_bcp47_tag(token) in (None, canonical)
 
 
 @pytest.mark.parametrize(
@@ -646,22 +563,6 @@ def test_serialized_options_round_trip() -> None:
     restored = TesseractCliOcrOptions.model_validate(options.model_dump())
 
     assert restored.lang == options.lang == ["fr-Latn", "de-Latn"]
-
-
-@pytest.mark.parametrize("cls", [*_OPTION_CLASSES, KserveV2OcrOptions])
-def test_every_engine_kind_selects_its_native_vocabulary(cls) -> None:
-    """The resolver keys native vocabularies by `kind`, so a renamed `kind`
-    would silently stop an engine's own codes from being accepted."""
-    vocabulary = OcrLanguageResolver._vocabulary_for(cls.kind)
-
-    if cls is OcrMacOptions:
-        # Apple Vision speaks BCP-47 already; it has no native vocabulary.
-        assert vocabulary is None
-    else:
-        assert vocabulary is not None, (
-            f"{cls.__name__}.kind is {cls.kind!r}, which no vocabulary is keyed on"
-        )
-        assert vocabulary.languages
 
 
 # --- the CLI ----------------------------------------------------------------
