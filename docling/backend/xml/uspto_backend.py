@@ -129,10 +129,7 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
             elif isinstance(self.path_or_stream, Path):
                 with open(self.path_or_stream, encoding="utf-8") as file_obj:
                     while line := file_obj.readline():
-                        if (
-                            line.startswith("<!DOCTYPE")
-                            or line.rstrip("\r\n") == "PATN"
-                        ):
+                        if line.startswith("<!DOCTYPE") or line == "PATN\n":
                             self._set_parser(line)
                         self.patent_content += line
         except Exception as exc:
