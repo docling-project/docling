@@ -4,6 +4,7 @@
 import json
 import math
 import os
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
@@ -33,6 +34,7 @@ FUZZY_BBOX_TOL_RATIO = (
     0.08  # OCR/image output varies more, but gross shifts should fail
 )
 IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
+_EMBEDDED_IMAGE_DATA = re.compile(r"(data:image/[^;,]+;base64,)[A-Za-z0-9+/]+={0,2}")
 
 
 def _normalize_newlines(text: str) -> str:
@@ -43,6 +45,10 @@ def _normalize_newlines(text: str) -> str:
     on both the generate and the verify path.
     """
     return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _strip_embedded_image_data(text: str) -> str:
+    return _EMBEDDED_IMAGE_DATA.sub(r"\1", text)
 
 
 class _TestPagesMeta(BaseModel):
@@ -623,6 +629,9 @@ def verify_export(
 
     with file.open(encoding="utf-8", newline="") as fr:
         true_text = fr.read()
+
+    pred_text = _strip_embedded_image_data(pred_text)
+    true_text = _strip_embedded_image_data(true_text)
 
     if fuzzy:
         return verify_text(true_text, pred_text, fuzzy=True)
