@@ -27,18 +27,18 @@ from docling.datamodel.pipeline_options import (
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
 from docling.models.stages.ocr.ppocr_languages import (
-    PPOCRV4_LANGS,
-    PPOCRV5_LANGS,
-    PPOCRV6_LANGS,
+    PPOCRV4_CODES,
+    PPOCRV5_CODES,
+    PPOCRV6_CODES,
+    ppocr_code,
     ppocr_supported_tags,
-    ppocr_token,
 )
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
-from docling.models.stages.ocr.tesseract_utils import map_tesseract_language
+from docling.models.stages.ocr.tesseract_utils import tesseract_code
 from docling.utils.ocr_language import OcrLanguageResolver
 
-_ONNX_VOCABULARY = PPOCRV6_LANGS | PPOCRV5_LANGS | PPOCRV4_LANGS
-_TORCH_VOCABULARY = PPOCRV6_LANGS | PPOCRV4_LANGS
+_ONNX_VOCABULARY = PPOCRV6_CODES | PPOCRV5_CODES | PPOCRV4_CODES
+_TORCH_VOCABULARY = PPOCRV6_CODES | PPOCRV4_CODES
 
 
 # --- PP-OCR (RapidOCR and the KServe client share one table) ----------------
@@ -67,9 +67,7 @@ _TORCH_VOCABULARY = PPOCRV6_LANGS | PPOCRV4_LANGS
 )
 def test_ppocr_tokens(tag: str, expected: str) -> None:
     assert (
-        ppocr_token(
-            OcrLanguageResolver.canonicalize_ocr_language(tag), _ONNX_VOCABULARY
-        )
+        ppocr_code(OcrLanguageResolver.canonicalize_ocr_language(tag), _ONNX_VOCABULARY)
         == expected
     )
 
@@ -82,7 +80,7 @@ def test_ppocr_script_recognizers_are_named_by_their_own_token(token: str) -> No
     language = OcrLanguageResolver.canonicalize_ocr_language(f"native:{token}")
 
     assert language.is_passthrough
-    assert ppocr_token(language, _ONNX_VOCABULARY) == token
+    assert ppocr_code(language, _ONNX_VOCABULARY) == token
 
 
 def test_ppocr_kannada_georgian_collision() -> None:
@@ -93,19 +91,19 @@ def test_ppocr_kannada_georgian_collision() -> None:
     guards.
     """
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("kn"), _TORCH_VOCABULARY
         )
         == "ka"
     )
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("ka"), _TORCH_VOCABULARY
         )
         is None
     )
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("ka"), _ONNX_VOCABULARY
         )
         is None
@@ -114,7 +112,7 @@ def test_ppocr_kannada_georgian_collision() -> None:
 
 def test_ppocr_has_no_multilingual_model() -> None:
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("mul"), _ONNX_VOCABULARY
         )
         is None
@@ -125,19 +123,19 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
     """PP-OCR's `az` and `uz` are the Latin ones, so a Cyrillic request for the
     same language must not silently pick the Latin recognizer."""
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("az"), _ONNX_VOCABULARY
         )
         == "az"
     )
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("az-Cyrl"), _ONNX_VOCABULARY
         )
         == "cyrillic"
     )
     assert (
-        ppocr_token(
+        ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("uz-Cyrl"), _ONNX_VOCABULARY
         )
         == "cyrillic"
@@ -270,9 +268,7 @@ def test_kserve_empty_lang_uses_the_ppocr_default() -> None:
 )
 def test_tesseract_language_names(tag: str, expected: str) -> None:
     assert (
-        map_tesseract_language(
-            OcrLanguageResolver.canonicalize_ocr_language(tag), "script/"
-        )
+        tesseract_code(OcrLanguageResolver.canonicalize_ocr_language(tag), "script/")
         == expected
     )
 
@@ -282,17 +278,16 @@ def test_tesseract_script_files_follow_the_installed_prefix() -> None:
     installs list those files unprefixed, so the prefix is re-applied."""
     latin = OcrLanguageResolver.canonicalize_ocr_language("script/Latin")
 
-    assert map_tesseract_language(latin, "script/") == "script/Latin"
-    assert map_tesseract_language(latin, "") == "Latin"
+    assert tesseract_code(latin, "script/") == "script/Latin"
+    assert tesseract_code(latin, "") == "Latin"
     cyrl = OcrLanguageResolver.canonicalize_ocr_language("script/Cyrillic")
-    assert map_tesseract_language(cyrl, "") == "Cyrillic"
+    assert tesseract_code(cyrl, "") == "Cyrillic"
 
 
 def test_tesseract_has_no_file_for_mul() -> None:
     """`mul` has no tessdata equivalent; an empty list drives per-page OSD."""
     assert (
-        map_tesseract_language(OcrLanguageResolver.canonicalize_ocr_language("mul"), "")
-        is None
+        tesseract_code(OcrLanguageResolver.canonicalize_ocr_language("mul"), "") is None
     )
 
 

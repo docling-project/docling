@@ -45,7 +45,7 @@ _NEMOTRON_OCR_MULTILINGUAL_TAGS = frozenset(
 )
 
 # Mappings of nemotron language to the artifacts subdir
-_NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS = {
+_NEMOTRON_CODE_TO_ARTIFACT = {
     _NEMOTRON_OCR_ENGLISH: "v2_english",
     _NEMOTRON_OCR_MULTILINGUAL: "v2_multilingual",
 }
@@ -132,25 +132,33 @@ class NemotronOcrModel(BaseOcrModel):
 
             # Resolve the request language. An empty `lang` list means "the
             # engine's own default", which for nemotron-OCR is English.
-            native = self.resolve_ocr_languages()
-            language = native[0] if native else _NEMOTRON_OCR_ENGLISH
+            codes = self.resolve_ocr_languages()
+            code = codes[0] if codes else _NEMOTRON_OCR_ENGLISH
 
             # Initialize the model
-            model_dir = self._resolve_model_dir(language, artifacts_path=artifacts_path)
+            model_dir = self._resolve_model_dir(code, artifacts_path=artifacts_path)
 
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
-                lang=language,
+                lang=code,
             )
 
     def supported_ocr_languages(self) -> list[str]:
         return ["en-Latn", "mul", *sorted(_NEMOTRON_OCR_MULTILINGUAL_TAGS)]
 
     def map_ocr_language(self, language: OcrLanguage) -> str:
-        if language.tag == "en-Latn":
-            return _NEMOTRON_OCR_ENGLISH
-        if language.is_multilingual or language.tag in _NEMOTRON_OCR_MULTILINGUAL_TAGS:
+        if language.is_passthrough:
+            # `english`, `multilingual`: nemotron's own recognizer names.
+            if language.native in _NEMOTRON_CODE_TO_ARTIFACT:
+                assert language.native is not None
+                return language.native
+        elif language.is_multilingual:
             return _NEMOTRON_OCR_MULTILINGUAL
+        else:
+            if language.bcp47 == "en-Latn":
+                return _NEMOTRON_OCR_ENGLISH
+            if language.bcp47 in _NEMOTRON_OCR_MULTILINGUAL_TAGS:
+                return _NEMOTRON_OCR_MULTILINGUAL
         raise OcrLanguageNotSupportedError(
             self._engine_name,
             language.tag,
@@ -201,15 +209,13 @@ class NemotronOcrModel(BaseOcrModel):
             )
 
     def _resolve_model_dir(
-        self, language: str, artifacts_path: Optional[Path]
+        self, code: str, artifacts_path: Optional[Path]
     ) -> Optional[Path]:
         if artifacts_path is None:
             return None
 
         nemotron_lang_dir = (
-            artifacts_path
-            / nemotron_ocr_model_dir()
-            / _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS[language]
+            artifacts_path / nemotron_ocr_model_dir() / _NEMOTRON_CODE_TO_ARTIFACT[code]
         )
         if nemotron_lang_dir.is_dir() and all(
             (nemotron_lang_dir / f).is_file() for f in self._nemotron_checkpoint_files

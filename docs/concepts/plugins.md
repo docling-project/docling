@@ -97,7 +97,7 @@ class YourOcrModel(BaseOcrModel):
         # Map one canonical tag onto your engine's native code(s).
         if language.tag not in self.supported_ocr_languages():
             raise OcrLanguageNotSupportedError(type(self).__name__, language.tag)
-        return language.language
+        return language.bcp47_language
 ```
 
 `BaseOcrModel.resolve_ocr_languages()` then drops every language after the first on a

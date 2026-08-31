@@ -50,7 +50,7 @@ _OCRMAC_FALLBACK_LANGUAGES: tuple[str, ...] = (
 )
 
 
-def _vision_recognition_languages() -> list[str]:
+def _vision_vocabulary() -> list[str]:
     """The recognition languages the running macOS reports, or the fallback."""
     try:
         import Vision
@@ -85,8 +85,8 @@ class OcrMacModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
-        self._native_langs: list[str] = []
-        self._vision_languages: list[str] = []
+        self._native_codes: list[str] = []
+        self._vision_vocabulary: list[str] = []
 
         if self.enabled:
             if "darwin" != sys.platform:
@@ -104,13 +104,13 @@ class OcrMacModel(BaseOcrModel):
 
             self.reader_RIL = ocrmac.OCR
 
-            self._vision_languages = _vision_recognition_languages()
-            self._native_langs = self.resolve_ocr_languages()
+            self._vision_vocabulary = _vision_vocabulary()
+            self._native_codes = self.resolve_ocr_languages()
 
     def supported_ocr_languages(self) -> list[str]:
         # Map the Vision language tags to the canonical tags
         tags = set()
-        for vision_tag in self._vision_languages:
+        for vision_tag in self._vision_vocabulary:
             for candidate in (vision_tag, vision_tag.split("-")[0]):
                 language = OcrLanguageResolver.canonicalize_ocr_language(
                     candidate, raise_exception=False
@@ -121,9 +121,20 @@ class OcrMacModel(BaseOcrModel):
         return sorted(tags)
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
-        if language.is_passthrough or language.is_multilingual:
-            # Vision has no script recognizers and no multilingual model; an
-            # empty `lang` list is how its own automatic behaviour is selected.
+        if language.is_passthrough:
+            # One of Vision's own recognition languages (`en-US`), handed over as
+            # written rather than matched.
+            if language.native in self._vision_vocabulary:
+                assert language.native is not None
+                return language.native
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag,
+                supported=self.supported_ocr_languages(),
+            )
+        if language.is_multilingual:
+            # Vision has no multilingual model; an empty `lang` list is how its
+            # own automatic behaviour is selected.
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
                 language.tag,
@@ -131,14 +142,14 @@ class OcrMacModel(BaseOcrModel):
                 detail="Apple Vision needs explicit languages.",
             )
         # Vision's own vocabulary is BCP-47 with regions, so match rather than map.
-        match = OcrLanguageResolver.match_ocr_language(language, self._vision_languages)
-        if match is None:
+        code = OcrLanguageResolver.match_ocr_language(language, self._vision_vocabulary)
+        if code is None:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
                 language.tag,
                 supported=self.supported_ocr_languages(),
             )
-        return match
+        return code
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -174,7 +185,7 @@ class OcrMacModel(BaseOcrModel):
                                 fname,
                                 recognition_level=self.options.recognition,
                                 framework=self.options.framework,
-                                language_preference=self._native_langs or None,
+                                language_preference=self._native_codes or None,
                             ).recognize()
 
                         im_width, im_height = high_res_image.size

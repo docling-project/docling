@@ -72,6 +72,16 @@ class OcrLanguage(BaseModel):
         """
         if self.native is not None:
             return f"{OcrLanguageResolver._NATIVE_PREFIX}{self.native}"
+        return self.bcp47
+
+    @property
+    def bcp47(self) -> str:
+        """The `(language, script)` pair written as a BCP-47 tag.
+
+        What an engine's own table is keyed on. Unlike `tag` it never carries
+        the `native:` prefix, so it is empty for a passthrough, which names no
+        language at all.
+        """
         return (
             f"{self.bcp47_language}-{self.bcp47_script}"
             if self.bcp47_script
@@ -228,13 +238,10 @@ class OcrLanguageResolver:
         """
         if not supported:
             return None
-        bcp47 = (
-            f"{language.bcp47_language}-{language.bcp47_script}"
-            if language.bcp47_script
-            else language.bcp47_language or ""
-        )
+        # The BCP-47 pair, never `tag`: a passthrough's engine code is not a tag
+        # and has nothing to match against.
         match, distance = langcodes.closest_match(
-            bcp47, list(supported), max_distance=max_distance
+            language.bcp47, list(supported), max_distance=max_distance
         )
         return None if match == OcrLanguageResolver._UNDETERMINED else match
 
@@ -273,8 +280,7 @@ class OcrLanguageResolver:
             )
 
         if bcp47_tobe == "zxx":
-            # A valid BCP-47 tag that langcodes maximizes to `zxx-Latn-US`; docling
-            # has no recognizer for "no linguistic content" and will not pretend to.
+            # Docling has no recognizer for "no linguistic content"
             raise OcrLanguageResolver._invalid(
                 bcp47_tobe,
                 "it names 'no linguistic content'. To skip OCR, turn it off "
@@ -286,9 +292,7 @@ class OcrLanguageResolver:
             parsed.language is None
             or parsed.language == OcrLanguageResolver._UNDETERMINED
         ):
-            # `und` and `und-<Script>`. Docling has no undetermined language and
-            # no script families: leaving `lang` empty already means "engine
-            # decides", and a script is named by naming a language written in it.
+            # Docling has no undetermined language and no script families
             raise OcrLanguageResolver._invalid(
                 bcp47_tobe,
                 "docling has no 'undetermined' language and no script families: "

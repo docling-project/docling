@@ -87,9 +87,9 @@ def _build(
 
 
 def _resolved(lang: str, backend: str):
-    """The (version, registry token) pair the assertions below care about."""
+    """The (version, registry code) pair the assertions below care about."""
     spec = _resolve_rapidocr(lang, backend)
-    return spec.ppocr_version, spec.rapidocr_lang_token
+    return spec.ppocr_version, spec.rapidocr_code
 
 
 def test_resolve_populates_the_whole_spec() -> None:
@@ -97,9 +97,9 @@ def test_resolve_populates_the_whole_spec() -> None:
 
     spec = _resolve_rapidocr("zh", "onnxruntime")
     assert spec.backend == "onnxruntime"
-    # The user's token is preserved verbatim, the registry token is normalized.
+    # The user's spelling is preserved verbatim, the registry code is normalized.
     assert spec.user_lang == "zh"
-    assert spec.rapidocr_lang_token == "ch"
+    assert spec.rapidocr_code == "ch"
     assert spec.ppocr_version == OCRVersion.PPOCRV6
 
 
@@ -154,7 +154,7 @@ def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) ->
     from rapidocr.utils.typings import OCRVersion
 
     # PP-OCR serves Kannada only on the v4 backbone, so every backend has to
-    # reach past its own v5/v6 set for it -- `ka` is the one token v5 lacks.
+    # reach past its own v5/v6 set for it -- `ka` is the one code v5 lacks.
     assert _resolved("kn", backend) == (OCRVersion.PPOCRV4, "ka")
     # ...and it is advertised, so the coverage error never names it.
     assert "kn-Knda" in ppocr_supported_tags(_rapidocr_vocabulary(backend))
@@ -239,7 +239,7 @@ def test_rapidocr_unsupported_language_raises(monkeypatch, tmp_path: Path) -> No
     captured_params: list[dict[str, object]] = []
     _install_fakes(monkeypatch, captured_params)
     # Georgian must be spelled out: a bare `ka` given to RapidOCR is PP-OCR's own
-    # token for Kannada.
+    # code for Kannada.
     with pytest.raises(OcrLanguageNotSupportedError, match="ka-Geor"):
         RapidOcrModel(
             enabled=True,
@@ -502,7 +502,7 @@ def test_parse_rapidocr_model_spec_accepts_valid_pairs(spec: str) -> None:
     assert f"{parsed.backend}:{parsed.user_lang}" == spec
     # Parsing yields the requested form only; resolution is left to the consumer.
     assert parsed.ppocr_version is None
-    assert parsed.rapidocr_lang_token is None
+    assert parsed.rapidocr_code is None
 
 
 @pytest.mark.parametrize(

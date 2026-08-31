@@ -22,6 +22,24 @@ from docling.utils.ocr_language import (
 )
 from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
 
+# Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The bare
+# script name is deliberately *not* accepted as a language: `Lao` is a tessdata
+# script file and also a valid BCP-47 primary subtag.
+TESSERACT_SCRIPT_FILE_PREFIX = "script/"
+
+# The tessdata `script/` file names. Some installs list them unprefixed, which is
+# what this set recognizes; the prefixed spelling is what selects one.
+TESSERACT_SCRIPT_FILES = frozenset(
+    {
+        "Arabic", "Armenian", "Bengali", "Canadian_Aboriginal", "Cherokee",
+        "Cyrillic", "Devanagari", "Ethiopic", "Fraktur", "Georgian", "Greek",
+        "Gujarati", "Gurmukhi", "Hangul", "HanS", "HanT", "Hebrew", "Japanese",
+        "Kannada", "Khmer", "Lao", "Latin", "Malayalam", "Myanmar", "Oriya",
+        "Sinhala", "Syriac", "Tamil", "Telugu", "Thaana", "Thai", "Tibetan",
+        "Vietnamese",
+    }
+)  # fmt: skip
+
 
 def map_tesseract_script(script: str) -> str:
     r"""Map an OSD-reported script name onto its tessdata `script/` file name."""
@@ -34,9 +52,9 @@ def map_tesseract_script(script: str) -> str:
     return script
 
 
-# Canonical tag -> tessdata language file, where Tesseract deviates from
+# Canonical tag -> tessdata file, where Tesseract deviates from
 # ISO 639-2/T. Everything else is handled by `.to_alpha3(variant="T")`.
-_TESSERACT_LANGUAGE_NAMES: dict[str, str] = {
+_TESSERACT_CODES: dict[str, str] = {
     "zh-Hans": "chi_sim",
     "zh-Hant": "chi_tra",
     "sr-Cyrl": "srp",
@@ -53,13 +71,13 @@ _TESSERACT_LANGUAGE_NAMES: dict[str, str] = {
     "de-Latf": "deu_latf",
 }
 
-_TESSERACT_TO_CANONICAL: dict[str, str] = {
-    name: tag for tag, name in _TESSERACT_LANGUAGE_NAMES.items()
+_CODE_TO_CANONICAL: dict[str, str] = {
+    name: tag for tag, name in _TESSERACT_CODES.items()
 }
 
 
-def map_tesseract_language(language: OcrLanguage, script_prefix: str) -> str | None:
-    """Map a canonical tag onto a tessdata language file name.
+def tesseract_code(language: OcrLanguage, script_prefix: str) -> str | None:
+    """Map a canonical tag onto a tessdata file name.
 
     A passthrough names a traineddata file directly: `script/Cyrillic`. It is
     always written with the `script/` prefix, but older tessdata installs list
@@ -68,53 +86,51 @@ def map_tesseract_language(language: OcrLanguage, script_prefix: str) -> str | N
     """
     if language.is_passthrough:
         assert language.native is not None
-        name = language.native.removeprefix(
-            OcrLanguageResolver.TESSERACT_SCRIPT_FILE_PREFIX
-        )
-        return f"{script_prefix}{name}"
+        code = language.native.removeprefix(TESSERACT_SCRIPT_FILE_PREFIX)
+        return f"{script_prefix}{code}"
     if language.is_multilingual:
         return None
-    if language.tag in _TESSERACT_LANGUAGE_NAMES:
-        return _TESSERACT_LANGUAGE_NAMES[language.tag]
+    if language.bcp47 in _TESSERACT_CODES:
+        return _TESSERACT_CODES[language.bcp47]
     # Tesseract's vocabulary *is* ISO 639-2/T: deu, fra, ell, ces, kat.
     assert language.bcp47_language is not None
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
 
 
-def installed_language_tags(names: Sequence[str], script_prefix: str) -> list[str]:
+def installed_tesseract_tags(codes: Sequence[str], script_prefix: str) -> list[str]:
     """The canonical tags this install can actually serve.
 
-    A name is reported only if the tag it renders as maps back to a file that is
+    A code is reported only if the tag it renders as maps back to a file that is
     installed. Without that round trip the list can offer a tag this install
     cannot load: `frk` and `deu_latf` are both `de-Latf`, but only `deu_latf` is
     what the tag maps to, so an install carrying just `frk` would advertise a
     language it then refuses.
     """
     tags = set()
-    for name in names:
-        if name in _TESSERACT_TO_CANONICAL:
-            token = _TESSERACT_TO_CANONICAL[name]
-        elif script_prefix and name.startswith(script_prefix):
+    for code in codes:
+        if code in _CODE_TO_CANONICAL:
+            tag = _CODE_TO_CANONICAL[code]
+        elif script_prefix and code.startswith(script_prefix):
             # A script traineddata file is named back as itself: that is what the
             # user has to type to select it -- except the vertical-text ones, which
             # `canonicalize_ocr_language` refuses, so naming them back would
             # advertise a value that cannot be asked for.
-            if name.lower().endswith("_vert"):
+            if code.lower().endswith("_vert"):
                 continue
-            token = name
-        elif not script_prefix and name in OcrLanguageResolver.TESSERACT_SCRIPT_FILES:
+            tag = code
+        elif not script_prefix and code in TESSERACT_SCRIPT_FILES:
             # This install lists its script packs unprefixed, but `script/<Name>`
-            # is still the spelling that selects one. Left bare, the name is either
+            # is still the spelling that selects one. Left bare, the code is either
             # dropped as unparseable (`Latin`) or read as a language (`Lao`).
-            token = f"{OcrLanguageResolver.TESSERACT_SCRIPT_FILE_PREFIX}{name}"
+            tag = f"{TESSERACT_SCRIPT_FILE_PREFIX}{code}"
         else:
-            token = name
+            tag = code
         language = OcrLanguageResolver.canonicalize_ocr_language(
-            token, raise_exception=False
+            tag, raise_exception=False
         )
         if language is None:
             continue
-        if map_tesseract_language(language, script_prefix) in names:
+        if tesseract_code(language, script_prefix) in codes:
             tags.add(language.tag)
     return sorted(tags)
 

@@ -30,7 +30,7 @@ except ImportError as e:
 
 from docling.datamodel.settings import settings
 from docling.models.stages.ocr.easyocr_model import (
-    resolve_easyocr_languages,
+    resolve_easyocr_codes,
 )
 from docling.models.stages.ocr.rapid_ocr_model import _parse_rapidocr_model_spec
 from docling.models.utils.hf_model_download import download_hf_model
@@ -165,7 +165,7 @@ def download(
                 param_hint="--easyocr-lang",
             )
         try:
-            resolve_easyocr_languages(easyocr_lang)
+            resolve_easyocr_codes(easyocr_lang)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     if rapidocr_backend_lang is not None:

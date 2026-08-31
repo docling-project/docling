@@ -173,8 +173,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         """Map one canonical tag onto this engine's native code(s).
 
-        A list covers an engine that answers one request with several native
-        codes; most engines return a single code.
+        A list covers an engine that answers one request with several codes;
+        most engines return a single code.
 
         Raises:
             OcrLanguageNotSupportedError: The engine has no model for it.
@@ -212,11 +212,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             )
             languages = languages[:1]
 
-        native: list[str] = []
+        codes: list[str] = []
         for language in languages:
             mapped = self.map_ocr_language(language)
-            native.extend([mapped] if isinstance(mapped, str) else mapped)
-        return list(dict.fromkeys(native))
+            codes.extend([mapped] if isinstance(mapped, str) else mapped)
+        return list(dict.fromkeys(codes))
 
     def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""

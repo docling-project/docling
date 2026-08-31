@@ -28,12 +28,12 @@ from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.models.stages.ocr.ppocr_languages import (
-    PPOCR_DEFAULT_TOKEN,
-    PPOCRV4_LANGS,
-    PPOCRV5_LANGS,
-    PPOCRV6_LANGS,
+    PPOCR_DEFAULT_CODE,
+    PPOCRV4_CODES,
+    PPOCRV5_CODES,
+    PPOCRV6_CODES,
+    ppocr_code,
     ppocr_supported_tags,
-    ppocr_token,
 )
 from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
@@ -41,8 +41,8 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 # The client cannot know what the deployed model serves, so coverage is checked
-# against the whole PP-OCR token universe: a best-effort guard against typos.
-_KSERVE_PPOCR_VOCABULARY = PPOCRV4_LANGS | PPOCRV5_LANGS | PPOCRV6_LANGS
+# against the whole PP-OCR code universe: a best-effort guard against typos.
+_KSERVE_PPOCR_VOCABULARY = PPOCRV4_CODES | PPOCRV5_CODES | PPOCRV6_CODES
 
 
 class KserveV2OcrModel(BaseOcrModel):
@@ -100,12 +100,12 @@ class KserveV2OcrModel(BaseOcrModel):
         # An empty `lang` list means "the engine's own default", which for PP-OCR
         # is the Simplified Chinese recognizer.
         if not self.languages:
-            return [PPOCR_DEFAULT_TOKEN]
+            return [PPOCR_DEFAULT_CODE]
         return super().resolve_ocr_languages()
 
     def map_ocr_language(self, language: OcrLanguage) -> str:
-        token = ppocr_token(language, _KSERVE_PPOCR_VOCABULARY)
-        if token is None:
+        code = ppocr_code(language, _KSERVE_PPOCR_VOCABULARY)
+        if code is None:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
                 language.tag,
@@ -116,7 +116,7 @@ class KserveV2OcrModel(BaseOcrModel):
                 if language.is_multilingual
                 else None,
             )
-        return token
+        return code
 
     def _initialize_client(self) -> None:
         """Initialize the KServe v2 client for remote inference."""

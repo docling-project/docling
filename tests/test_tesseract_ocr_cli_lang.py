@@ -35,7 +35,7 @@ def test_script_packs_are_listed_with_either_separator(sep: str):
         f"List of available languages (3):\neng\nscript{sep}Arabic\nscript{sep}Latin\n"
     )
     assert model._script_prefix == "script/"
-    assert "script/Arabic" in model._tesseract_languages
+    assert "script/Arabic" in model._tesseract_vocabulary
 
 
 def test_detected_script_resolves_against_a_windows_listing():

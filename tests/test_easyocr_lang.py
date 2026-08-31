@@ -48,14 +48,14 @@ def _single_line_cli_output(output: str) -> str:
     ],
 )
 def test_prefetch_resolves_bcp47_to_a_checkpoint(tag: str, model_name: str) -> None:
-    codes = easyocr_model.resolve_easyocr_languages([tag])
+    codes = easyocr_model.resolve_easyocr_codes([tag])
 
     assert easyocr_model._resolve_easyocr_recognition_models(codes) == [model_name]
 
 
 def test_resolve_easyocr_languages_maps_to_native_codes() -> None:
     """EasyOCR keeps its own vocabulary internally; only the input changed."""
-    assert easyocr_model.resolve_easyocr_languages(["zh-Hant", "sr-Latn", "tg"]) == [
+    assert easyocr_model.resolve_easyocr_codes(["zh-Hant", "sr-Latn", "tg"]) == [
         "ch_tra",
         "rs_latin",
         "tjk",
@@ -65,14 +65,14 @@ def test_resolve_easyocr_languages_maps_to_native_codes() -> None:
 def test_resolve_easyocr_languages_routes_to_the_script_model() -> None:
     """Each language reaches the recognition network of its own script, so the
     caller names languages and never a script."""
-    codes = easyocr_model.resolve_easyocr_languages(["ru", "sr-Cyrl"])
+    codes = easyocr_model.resolve_easyocr_codes(["ru", "sr-Cyrl"])
 
     assert codes == ["ru", "rs_cyrillic"]
     assert easyocr_model._resolve_easyocr_recognition_models(codes) == ["cyrillic_g2"]
 
 
 def test_resolve_easyocr_languages_deduplicates_models() -> None:
-    codes = easyocr_model.resolve_easyocr_languages(["de", "fr", "zh-Hans", "de-AT"])
+    codes = easyocr_model.resolve_easyocr_codes(["de", "fr", "zh-Hans", "de-AT"])
 
     assert easyocr_model._resolve_easyocr_recognition_models(codes) == [
         "latin_g2",
@@ -82,13 +82,13 @@ def test_resolve_easyocr_languages_deduplicates_models() -> None:
 
 def test_resolve_easyocr_languages_rejects_malformed_tag() -> None:
     with pytest.raises(ValueError, match="BCP-47"):
-        easyocr_model.resolve_easyocr_languages(["xx"])
+        easyocr_model.resolve_easyocr_codes(["xx"])
 
 
 def test_resolve_easyocr_languages_rejects_uncovered_language() -> None:
     """`haw` is a valid tag EasyOCR simply has no recognizer for."""
     with pytest.raises(ValueError, match="Unsupported EasyOCR language: haw"):
-        easyocr_model.resolve_easyocr_languages(["haw"])
+        easyocr_model.resolve_easyocr_codes(["haw"])
 
 
 def test_resolve_easyocr_recognition_models_rejects_unsupported_code() -> None:

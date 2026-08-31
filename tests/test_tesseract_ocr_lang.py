@@ -16,7 +16,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import TesseractCliOcrOptions
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
-from docling.models.stages.ocr.tesseract_utils import installed_language_tags
+from docling.models.stages.ocr.tesseract_utils import installed_tesseract_tags
 
 pytestmark = pytest.mark.ml_ocr
 
@@ -46,7 +46,7 @@ def test_installed_language_maps_to_its_traineddata_name() -> None:
 
     model = _build(["en"])
 
-    assert model._native_langs == ["eng"]
+    assert model._native_codes == ["eng"]
 
 
 def test_uninstalled_language_fails_at_construction() -> None:
@@ -79,7 +79,7 @@ def test_empty_lang_requires_the_osd_traineddata() -> None:
     if "osd" in installed:
         model = _build([])
         assert model._auto_script is True
-        assert model._native_langs == []
+        assert model._native_codes == []
     else:
         with pytest.raises(ImportError, match="osd"):
             _build([])
@@ -94,7 +94,7 @@ def test_language_order_is_preserved_for_the_plus_join() -> None:
     model = _build(["en", "en-US", "eng"])
 
     # Duplicates collapse; a single language remains.
-    assert model._native_langs == ["eng"]
+    assert model._native_codes == ["eng"]
 
 
 def test_unprefixed_script_traineddata_is_advertised_as_a_script_name() -> None:
@@ -107,6 +107,6 @@ def test_unprefixed_script_traineddata_is_advertised_as_a_script_name() -> None:
     """
     names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
 
-    tags = installed_language_tags(names, "")
+    tags = installed_tesseract_tags(names, "")
 
     assert tags == ["en-Latn", "script/Cyrillic", "script/Lao", "script/Latin"]
