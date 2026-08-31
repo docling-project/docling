@@ -112,9 +112,6 @@ def _reorder_cells_by_geometry(
             if center is None or not 0 <= start < end <= num_slots:
                 remapped.append((start, end))
                 continue
-            if span > num_slots:
-                remapped.append((start, end))
-                continue
             slot = min(range(num_slots), key=lambda s: abs(center - cluster_centers[s]))
             new_start = min(rank[slot], num_slots - span)
             remapped.append((new_start, new_start + span))

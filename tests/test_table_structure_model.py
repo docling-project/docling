@@ -105,10 +105,71 @@ def test_reorder_cells_collision_keeps_original():
     cells = [
         _cell("h0", 0, 0, 90, 20, 150, 40),
         _cell("h1", 0, 1, 237, 20, 300, 40),
-        _cell("x", 1, 0, 90, 40, 300, 60),
-        _cell("y", 1, 1, 95, 40, 310, 60),
+        _cell("h2", 0, 2, 385, 20, 450, 40),
+        _cell("a", 1, 0, 385, 40, 450, 60),
+        _cell("b", 1, 1, 90, 40, 102, 60),
+        _cell("c", 1, 2, 90, 40, 100, 60),
     ]
     before = [(tc.start_col_offset_idx, tc.end_col_offset_idx) for tc in cells]
+    reordered = _reorder_cells_by_geometry(cells, num_rows=2, num_cols=3)
+    after = [(tc.start_col_offset_idx, tc.end_col_offset_idx) for tc in reordered]
+    assert before == after
+
+
+def test_reorder_rows_by_geometry():
+    # rows are renumbered when their vertical order disagrees with the boxes
+    cells = [
+        _cell("top", 1, 0, 90, 20, 150, 40),
+        _cell("top2", 1, 1, 237, 20, 300, 40),
+        _cell("bottom", 0, 0, 90, 100, 150, 120),
+        _cell("bottom2", 0, 1, 237, 100, 300, 120),
+    ]
     reordered = _reorder_cells_by_geometry(cells, num_rows=2, num_cols=2)
+    by_text = {tc.text: tc for tc in reordered}
+    assert by_text["top"].start_row_offset_idx == 0
+    assert by_text["top2"].start_row_offset_idx == 0
+    assert by_text["bottom"].start_row_offset_idx == 1
+    assert by_text["bottom2"].start_row_offset_idx == 1
+
+
+def test_reorder_cells_invalid_span_kept_as_is():
+    # spans that run past the grid (corrupt input) are passed through
+    cells = [
+        _cell("h0", 0, 0, 90, 20, 150, 40),
+        _cell("h1", 0, 1, 237, 20, 300, 40),
+        _cell("h2", 0, 2, 385, 20, 450, 40),
+        _cell("e", 1, 0, 385, 40, 450, 60),
+        _cell("f", 1, 1, 237, 40, 300, 60),
+        _cell("wide", 1, 1, 90, 40, 450, 60, col_span=3),
+    ]
+    reordered = _reorder_cells_by_geometry(cells, num_rows=2, num_cols=3)
+    by_text = {tc.text: tc for tc in reordered}
+    # the out-of-range span is untouched even while the row is renumbered
+    assert by_text["wide"].start_col_offset_idx == 1
+    assert by_text["wide"].end_col_offset_idx == 4
+    assert by_text["e"].start_col_offset_idx == 2
+    assert by_text["f"].start_col_offset_idx == 1
+    assert by_text["h0"].start_col_offset_idx == 0
+    assert by_text["h2"].start_col_offset_idx == 2
+
+
+def test_reorder_cells_too_few_measured_cells_keeps_original():
+    # when fewer cells carry a box than there are slots, the axis is kept
+    # (the violated row below still triggers the remap attempt)
+    cells = [
+        _cell("a", 0, 0, 385, 20, 450, 40),
+        _cell("b", 0, 1, 90, 20, 150, 40),
+        TableCell(
+            text="c",
+            row_span=1,
+            col_span=1,
+            start_row_offset_idx=1,
+            end_row_offset_idx=2,
+            start_col_offset_idx=2,
+            end_col_offset_idx=3,
+        ),
+    ]
+    before = [(tc.start_col_offset_idx, tc.end_col_offset_idx) for tc in cells]
+    reordered = _reorder_cells_by_geometry(cells, num_rows=2, num_cols=3)
     after = [(tc.start_col_offset_idx, tc.end_col_offset_idx) for tc in reordered]
     assert before == after
