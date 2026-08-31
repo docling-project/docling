@@ -135,6 +135,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     text_data=text_data,
                     parent=self._get_current_parent(parents),
                 )
+                caption_data = self._flush_caption_data(
+                    doc=doc,
+                    caption_data=caption_data,
+                    parent=self._get_current_parent(parents),
+                )
                 doc.add_code(
                     text=block.text,
                     parent=(

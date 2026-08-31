@@ -5,7 +5,7 @@ import glob
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import CodeItem, ListItem
+from docling_core.types.doc import CodeItem, DocItemLabel, ListItem
 
 from docling.backend.asciidoc_backend import (
     DEFAULT_IMAGE_HEIGHT,
@@ -105,6 +105,28 @@ After the block.
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
     assert [item.text for item in code_items] == ["raw literal\nsecond line"]
     assert "After the block." in doc.export_to_markdown()
+
+
+def test_literal_block_flushes_pending_caption():
+    source = b""".Literal example
+....
+raw literal
+....
+
+image::next.png[]
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="captioned-literal-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [(item.label, item.text) for item in doc.texts[:2]] == [
+        (DocItemLabel.CAPTION, "Literal example"),
+        (DocItemLabel.CODE, "raw literal"),
+    ]
 
 
 def test_parse_picture():
