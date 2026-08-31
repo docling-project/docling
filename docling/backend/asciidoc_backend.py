@@ -3,6 +3,8 @@
 
 import logging
 import re
+from collections.abc import Iterator
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Union
@@ -14,6 +16,7 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ImageRef,
+    ListItem,
     Size,
     TableCell,
     TableData,
@@ -32,6 +35,12 @@ DEFAULT_IMAGE_HEIGHT: Final = 128
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+), alignment (<, ^, >, .^), style (a/d/e/h/l/m/s).
 _CELL_SPEC: Final = r"(?:\d+(?:\.\d+)?[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
+
+
+@dataclass(frozen=True)
+class _LiteralBlock:
+    text: str
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -98,6 +107,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         text_data: list[str] = []
         table_data: list[str] = []
         caption_data: list[str] = []
+        last_list_item: ListItem | None = None
+        list_continuation = False
 
         # parents: dict[int, Union[DocItem, GroupItem, None]] = {}
         parents: dict[int, Union[GroupItem, None]] = {}
@@ -108,8 +119,41 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parents[i] = None
             indents[i] = None
 
-        for line in self.lines:
+        for block in self._iter_blocks(self.lines):
             # line = line.strip()
+            if isinstance(block, _LiteralBlock):
+                in_list, last_list_item, list_continuation = self._close_list_if_needed(
+                    line="<literal-block>",
+                    in_list=in_list,
+                    parents=parents,
+                    last_list_item=last_list_item,
+                    list_continuation=list_continuation,
+                    is_continuation_block=True,
+                )
+                text_data = self._flush_text_data(
+                    doc=doc,
+                    text_data=text_data,
+                    parent=self._get_current_parent(parents),
+                )
+                doc.add_code(
+                    text=block.text,
+                    parent=(
+                        last_list_item if in_list else self._get_current_parent(parents)
+                    ),
+                )
+                list_continuation = False
+                continue
+
+            line = block
+            stripped_line = line.strip()
+            in_list, last_list_item, list_continuation = self._close_list_if_needed(
+                line=line,
+                in_list=in_list,
+                parents=parents,
+                last_list_item=last_list_item,
+                list_continuation=list_continuation,
+                is_continuation_block=False,
+            )
 
             # Title
             if self._is_title(line):
@@ -142,6 +186,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 if not in_list:
                     in_list = True
+                    caption_data = self._flush_caption_data(
+                        doc=doc,
+                        caption_data=caption_data,
+                        parent=parents[level],
+                    )
 
                     parents[level + 1] = doc.add_group(
                         parent=parents[level], name="list", label=GroupLabel.LIST
@@ -162,15 +211,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         indents[level] = None
                         level -= 1
 
-                doc.add_list_item(
-                    item["text"], parent=self._get_current_parent(parents)
+                last_list_item = doc.add_list_item(
+                    item["text"],
+                    enumerated=item["numbered"],
+                    marker=(item["marker"] if item["marker"][:-1].isdigit() else None),
+                    parent=self._get_current_parent(parents),
                 )
+                list_continuation = False
 
-            elif in_list and not self._is_list_item(line):
-                in_list = False
-
-                level = self._get_current_level(parents)
-                parents[level] = None
+            elif in_list and stripped_line == "+":
+                list_continuation = True
+                continue
 
             # Tables
             elif line.strip() == "|===" and not in_table:  # start of table
@@ -235,7 +286,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     uri = "file://" + item["uri"]
 
                 image = ImageRef(mimetype="image/png", size=size, dpi=70, uri=uri)
-                doc.add_picture(image=image, caption=caption)
+                doc.add_picture(
+                    image=image,
+                    caption=caption,
+                    parent=last_list_item if in_list else None,
+                )
+                list_continuation = False
 
             # Caption
             elif self._is_caption(line) and len(caption_data) == 0:
@@ -294,6 +350,80 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return None
 
+    @staticmethod
+    def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
+        literal_data: list[str] | None = None
+
+        for line in lines:
+            if line.strip() == "....":
+                if literal_data is None:
+                    literal_data = []
+                else:
+                    yield _LiteralBlock(text="\n".join(literal_data))
+                    literal_data = None
+                continue
+
+            if literal_data is None:
+                yield line
+            else:
+                literal_data.append(line.rstrip("\r\n"))
+
+        if literal_data is not None:
+            yield _LiteralBlock(text="\n".join(literal_data))
+
+    @classmethod
+    def _close_list_if_needed(
+        cls,
+        *,
+        line: str,
+        in_list: bool,
+        parents: dict[int, GroupItem | None],
+        last_list_item: ListItem | None,
+        list_continuation: bool,
+        is_continuation_block: bool,
+    ) -> tuple[bool, ListItem | None, bool]:
+        if (
+            not in_list
+            or cls._is_list_item(line)
+            or line.strip() in {"", "+"}
+            or (list_continuation and (is_continuation_block or cls._is_picture(line)))
+        ):
+            return in_list, last_list_item, list_continuation
+
+        level = cls._get_current_level(parents)
+        parents[level] = None
+        return False, None, False
+
+    @staticmethod
+    def _flush_text_data(
+        *,
+        doc: DoclingDocument,
+        text_data: list[str],
+        parent: GroupItem | None,
+    ) -> list[str]:
+        if len(text_data) > 0:
+            doc.add_text(
+                text=" ".join(text_data),
+                label=DocItemLabel.PARAGRAPH,
+                parent=parent,
+            )
+        return []
+
+    @staticmethod
+    def _flush_caption_data(
+        *,
+        doc: DoclingDocument,
+        caption_data: list[str],
+        parent: GroupItem | None,
+    ) -> list[str]:
+        if len(caption_data) > 0:
+            doc.add_text(
+                text=" ".join(caption_data),
+                label=DocItemLabel.CAPTION,
+                parent=parent,
+            )
+        return []
+
     #   =========   Title
     @staticmethod
     def _is_title(line):
@@ -325,17 +455,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Lists
     @staticmethod
     def _is_list_item(line):
-        return re.match(r"^(\s)*(\*|-|\d+\.|\w+\.) ", line)
+        return re.match(_LIST_ITEM_PATTERN, line)
 
     @staticmethod
     def _parse_list_item(line):
         """Extract the item marker (number or bullet symbol) and the text of the item."""
 
-        match = re.match(r"^(\s*)(\*|-|\d+\.)\s+(.*)", line)
+        match = re.match(_LIST_ITEM_PATTERN, line)
         if match:
             indent = match.group(1)
             marker = match.group(2)  # The list marker (e.g., "*", "-", "1.")
             text = match.group(3)  # The actual text of the list item
+            indent_width = len(indent)
+            if marker.startswith("."):
+                indent_width += len(marker) - 1
 
             if marker == "*" or marker == "-":
                 return {
@@ -343,7 +476,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     "marker": marker,
                     "text": text.strip(),
                     "numbered": False,
-                    "indent": 0 if indent is None else len(indent),
+                    "indent": indent_width,
                 }
             else:
                 return {
@@ -351,7 +484,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     "marker": marker,
                     "text": text.strip(),
                     "numbered": True,
-                    "indent": 0 if indent is None else len(indent),
+                    "indent": indent_width,
                 }
         else:
             # Fallback if no match
@@ -444,7 +577,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Captions
     @staticmethod
     def _is_caption(line):
-        return re.match(r"^\.(.+)", line)
+        return re.match(r"^\.(\S.*)", line)
 
     @staticmethod
     def _parse_caption(line):

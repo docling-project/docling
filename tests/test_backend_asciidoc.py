@@ -5,6 +5,8 @@ import glob
 from io import BytesIO
 from pathlib import Path
 
+from docling_core.types.doc import CodeItem, ListItem
+
 from docling.backend.asciidoc_backend import (
     DEFAULT_IMAGE_HEIGHT,
     DEFAULT_IMAGE_WIDTH,
@@ -43,6 +45,66 @@ def test_list_dedent_to_base_does_not_crash():
     doc = in_doc._backend.convert()
 
     assert [item.text for item in doc.texts] == ["a", "b"]
+
+
+def test_auto_numbered_list_keeps_items_and_following_text():
+    source = b"""= Installation Guide
+
+== Steps
+
+. Download the archive
+. Unpack it
+. Run the installer
+
+== Troubleshooting
+
+If the installer fails, check the log file.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="ordered-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "Download the archive",
+        "Unpack it",
+        "Run the installer",
+    ]
+    assert all(item.enumerated for item in list_items)
+    assert "If the installer fails, check the log file." in doc.export_to_markdown()
+
+
+def test_literal_block_keeps_its_content_and_following_text():
+    source = b"""= Guide
+
+== One
+
+Before the block.
+
+....
+raw literal
+second line
+....
+
+== Two
+
+After the block.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="literal-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["raw literal\nsecond line"]
+    assert "After the block." in doc.export_to_markdown()
 
 
 def test_parse_picture():
