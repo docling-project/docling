@@ -7932,8 +7932,8 @@
           },
           {
             "bbox": {
-              "l": 534.46,
-              "t": 132.82,
+              "l": 500.14,
+              "t": 132.65,
               "r": 547.03,
               "b": 143.74,
               "coord_origin": "TOPLEFT"
@@ -7944,7 +7944,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". vii",
+            "text": ". . . . . . . vii",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -7972,7 +7972,7 @@
           },
           {
             "bbox": {
-              "l": 534.39,
+              "l": 500.1,
               "t": 144.33,
               "r": 547.32,
               "b": 155.17,
@@ -7984,7 +7984,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "viii",
+            "text": ". . . . . . viii",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8012,7 +8012,7 @@
           },
           {
             "bbox": {
-              "l": 535.81,
+              "l": 500.17,
               "t": 166.12,
               "r": 546.67,
               "b": 177.51,
@@ -8024,7 +8024,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". ix",
+            "text": ". . . . . . . ix",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8052,6 +8052,26 @@
           },
           {
             "bbox": {
+              "l": 500.14,
+              "t": 189.25,
+              "r": 546.53,
+              "b": 199.81,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 4,
+            "end_row_offset_idx": 5,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": ". . . . . . xi",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
               "l": 531.38,
               "t": 186.45,
               "r": 547.51,
@@ -8068,26 +8088,6 @@
             "column_header": false,
             "row_header": false,
             "row_section": true,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 537.57,
-              "t": 189.25,
-              "r": 546.53,
-              "b": 199.81,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "xi",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
             "fillable": false
           },
           {
@@ -8112,10 +8112,10 @@
           },
           {
             "bbox": {
-              "l": 535.74,
+              "l": 500.12,
               "t": 200.28,
               "r": 546.97,
-              "b": 210.86,
+              "b": 211.82,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8124,7 +8124,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". xi",
+            "text": ". . . . . . . xi",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8152,7 +8152,7 @@
           },
           {
             "bbox": {
-              "l": 533.53,
+              "l": 500.15,
               "t": 213.86,
               "r": 546.96,
               "b": 224.38,
@@ -8164,7 +8164,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "xiii",
+            "text": ". . . . . . xiii",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8192,10 +8192,10 @@
           },
           {
             "bbox": {
-              "l": 535.48,
+              "l": 500.12,
               "t": 226.0,
               "r": 546.79,
-              "b": 236.54,
+              "b": 236.84,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8204,7 +8204,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "xiii",
+            "text": ". . . . . . xiii",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8232,7 +8232,7 @@
           },
           {
             "bbox": {
-              "l": 534.21,
+              "l": 500.11,
               "t": 238.9,
               "r": 546.73,
               "b": 249.52,
@@ -8244,7 +8244,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "xiv",
+            "text": ". . . . . . xiv",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8272,10 +8272,10 @@
           },
           {
             "bbox": {
-              "l": 532.96,
+              "l": 500.15,
               "t": 260.04,
               "r": 547.51,
-              "b": 270.65,
+              "b": 271.82,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8284,7 +8284,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 1",
+            "text": ". . . . . . . 1",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -8332,7 +8332,7 @@
           },
           {
             "bbox": {
-              "l": 533.45,
+              "l": 500.14,
               "t": 273.11,
               "r": 547.18,
               "b": 283.82,
@@ -8344,7 +8344,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 2",
+            "text": ". . . . . . . 2",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8372,7 +8372,7 @@
           },
           {
             "bbox": {
-              "l": 533.44,
+              "l": 500.14,
               "t": 285.63,
               "r": 547.24,
               "b": 296.36,
@@ -8384,7 +8384,7 @@
             "end_row_offset_idx": 13,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 2",
+            "text": ". . . . . . . 2",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8412,7 +8412,7 @@
           },
           {
             "bbox": {
-              "l": 533.41,
+              "l": 500.11,
               "t": 298.13,
               "r": 547.5,
               "b": 308.84,
@@ -8424,7 +8424,7 @@
             "end_row_offset_idx": 14,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 3",
+            "text": ". . . . . . . 3",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8452,7 +8452,7 @@
           },
           {
             "bbox": {
-              "l": 533.4,
+              "l": 500.09,
               "t": 309.99,
               "r": 547.54,
               "b": 321.32,
@@ -8464,7 +8464,7 @@
             "end_row_offset_idx": 15,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 4",
+            "text": ". . . . . . . 4",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8492,7 +8492,7 @@
           },
           {
             "bbox": {
-              "l": 533.44,
+              "l": 500.13,
               "t": 324.21,
               "r": 547.72,
               "b": 334.94,
@@ -8504,7 +8504,7 @@
             "end_row_offset_idx": 16,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 5",
+            "text": ". . . . . . . 5",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8532,10 +8532,10 @@
           },
           {
             "bbox": {
-              "l": 532.54,
+              "l": 500.15,
               "t": 344.25,
               "r": 547.51,
-              "b": 354.75,
+              "b": 356.36,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8544,7 +8544,7 @@
             "end_row_offset_idx": 17,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 7",
+            "text": ". . . . . . . 7",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -8572,7 +8572,7 @@
           },
           {
             "bbox": {
-              "l": 533.46,
+              "l": 500.12,
               "t": 355.84,
               "r": 547.67,
               "b": 368.36,
@@ -8584,7 +8584,7 @@
             "end_row_offset_idx": 18,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 8",
+            "text": ". . . . . . . 8",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8612,7 +8612,7 @@
           },
           {
             "bbox": {
-              "l": 533.41,
+              "l": 500.09,
               "t": 369.54,
               "r": 547.67,
               "b": 380.84,
@@ -8624,7 +8624,7 @@
             "end_row_offset_idx": 19,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 8",
+            "text": ". . . . . . . 8",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8652,7 +8652,7 @@
           },
           {
             "bbox": {
-              "l": 533.4,
+              "l": 500.08,
               "t": 382.9,
               "r": 547.67,
               "b": 393.64,
@@ -8664,7 +8664,7 @@
             "end_row_offset_idx": 20,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 8",
+            "text": ". . . . . . . 8",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8692,7 +8692,7 @@
           },
           {
             "bbox": {
-              "l": 533.44,
+              "l": 500.13,
               "t": 395.01,
               "r": 547.59,
               "b": 405.86,
@@ -8704,7 +8704,7 @@
             "end_row_offset_idx": 21,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 9",
+            "text": ". . . . . . . 9",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8732,7 +8732,7 @@
           },
           {
             "bbox": {
-              "l": 536.0,
+              "l": 500.12,
               "t": 408.15,
               "r": 547.8,
               "b": 418.89,
@@ -8744,7 +8744,7 @@
             "end_row_offset_idx": 22,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 9",
+            "text": ". . . . . . . 9",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8772,7 +8772,7 @@
           },
           {
             "bbox": {
-              "l": 535.55,
+              "l": 500.09,
               "t": 420.57,
               "r": 547.89,
               "b": 431.25,
@@ -8784,7 +8784,7 @@
             "end_row_offset_idx": 23,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". 9",
+            "text": ". . . . . . . 9",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8812,7 +8812,7 @@
           },
           {
             "bbox": {
-              "l": 534.48,
+              "l": 500.12,
               "t": 432.97,
               "r": 547.97,
               "b": 443.67,
@@ -8824,7 +8824,7 @@
             "end_row_offset_idx": 24,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "10",
+            "text": ". . . . . . 10",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8852,7 +8852,7 @@
           },
           {
             "bbox": {
-              "l": 534.63,
+              "l": 505.59,
               "t": 445.95,
               "r": 548.01,
               "b": 456.74,
@@ -8864,7 +8864,7 @@
             "end_row_offset_idx": 25,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "10",
+            "text": ". . . . . 10",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8892,10 +8892,10 @@
           },
           {
             "bbox": {
-              "l": 536.0,
+              "l": 500.14,
               "t": 457.36,
               "r": 547.99,
-              "b": 468.09,
+              "b": 468.32,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8904,7 +8904,7 @@
             "end_row_offset_idx": 26,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "10",
+            "text": ". . . . . . 10",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8932,10 +8932,10 @@
           },
           {
             "bbox": {
-              "l": 531.8,
+              "l": 500.15,
               "t": 479.21,
               "r": 547.51,
-              "b": 489.51,
+              "b": 490.82,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8944,7 +8944,7 @@
             "end_row_offset_idx": 27,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "13",
+            "text": ". . . . . . 13",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -8972,7 +8972,7 @@
           },
           {
             "bbox": {
-              "l": 535.84,
+              "l": 500.11,
               "t": 492.43,
               "r": 548.02,
               "b": 503.18,
@@ -8984,7 +8984,7 @@
             "end_row_offset_idx": 28,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "14",
+            "text": ". . . . . . 14",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9012,7 +9012,7 @@
           },
           {
             "bbox": {
-              "l": 535.2,
+              "l": 500.1,
               "t": 504.9,
               "r": 548.01,
               "b": 515.66,
@@ -9024,7 +9024,7 @@
             "end_row_offset_idx": 29,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "14",
+            "text": ". . . . . . 14",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9052,10 +9052,10 @@
           },
           {
             "bbox": {
-              "l": 536.25,
+              "l": 500.07,
               "t": 517.09,
               "r": 548.01,
-              "b": 527.81,
+              "b": 527.84,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9064,7 +9064,7 @@
             "end_row_offset_idx": 30,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "16",
+            "text": ". . . . . . 16",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9092,7 +9092,7 @@
           },
           {
             "bbox": {
-              "l": 535.26,
+              "l": 500.1,
               "t": 529.52,
               "r": 548.0,
               "b": 540.48,
@@ -9104,7 +9104,7 @@
             "end_row_offset_idx": 31,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "18",
+            "text": ". . . . . . 18",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9132,10 +9132,10 @@
           },
           {
             "bbox": {
-              "l": 535.74,
+              "l": 500.11,
               "t": 541.94,
               "r": 547.89,
-              "b": 552.75,
+              "b": 552.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9144,7 +9144,7 @@
             "end_row_offset_idx": 32,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "18",
+            "text": ". . . . . . 18",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9172,10 +9172,10 @@
           },
           {
             "bbox": {
-              "l": 535.55,
+              "l": 500.12,
               "t": 554.53,
               "r": 547.81,
-              "b": 565.32,
+              "b": 565.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9184,7 +9184,7 @@
             "end_row_offset_idx": 33,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "19",
+            "text": ". . . . . . 19",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9212,10 +9212,10 @@
           },
           {
             "bbox": {
-              "l": 534.65,
+              "l": 500.05,
               "t": 566.85,
               "r": 547.77,
-              "b": 577.72,
+              "b": 577.87,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9224,7 +9224,7 @@
             "end_row_offset_idx": 34,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "20",
+            "text": ". . . . . . 20",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9252,10 +9252,10 @@
           },
           {
             "bbox": {
-              "l": 535.03,
+              "l": 500.15,
               "t": 578.95,
               "r": 547.66,
-              "b": 589.83,
+              "b": 590.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9264,7 +9264,7 @@
             "end_row_offset_idx": 35,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "21",
+            "text": ". . . . . . 21",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9292,10 +9292,10 @@
           },
           {
             "bbox": {
-              "l": 534.94,
+              "l": 500.02,
               "t": 591.71,
               "r": 547.43,
-              "b": 602.65,
+              "b": 602.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9304,7 +9304,7 @@
             "end_row_offset_idx": 36,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "22",
+            "text": ". . . . . . 22",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9332,10 +9332,10 @@
           },
           {
             "bbox": {
-              "l": 531.01,
+              "l": 500.16,
               "t": 604.06,
               "r": 547.51,
-              "b": 614.66,
+              "b": 615.37,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9344,7 +9344,7 @@
             "end_row_offset_idx": 37,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "22",
+            "text": ". . . . . . 22",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -9372,10 +9372,10 @@
           },
           {
             "bbox": {
-              "l": 534.47,
+              "l": 500.09,
               "t": 616.12,
               "r": 547.4,
-              "b": 626.84,
+              "b": 627.85,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9384,7 +9384,7 @@
             "end_row_offset_idx": 38,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "23",
+            "text": ". . . . . . 23",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9412,10 +9412,10 @@
           },
           {
             "bbox": {
-              "l": 533.82,
+              "l": 500.11,
               "t": 629.61,
               "r": 547.52,
-              "b": 640.11,
+              "b": 640.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9424,7 +9424,7 @@
             "end_row_offset_idx": 39,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "23",
+            "text": ". . . . . . 23",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9452,10 +9452,10 @@
           },
           {
             "bbox": {
-              "l": 534.0,
+              "l": 500.09,
               "t": 642.07,
               "r": 547.39,
-              "b": 652.55,
+              "b": 652.87,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9464,7 +9464,7 @@
             "end_row_offset_idx": 40,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "24",
+            "text": ". . . . . . 24",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9492,10 +9492,10 @@
           },
           {
             "bbox": {
-              "l": 534.03,
+              "l": 500.1,
               "t": 654.32,
               "r": 547.27,
-              "b": 664.89,
+              "b": 665.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9504,7 +9504,7 @@
             "end_row_offset_idx": 41,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "25",
+            "text": ". . . . . . 25",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9532,10 +9532,10 @@
           },
           {
             "bbox": {
-              "l": 534.28,
+              "l": 500.11,
               "t": 665.35,
               "r": 547.05,
-              "b": 676.16,
+              "b": 677.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9544,7 +9544,7 @@
             "end_row_offset_idx": 42,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "26",
+            "text": ". . . . . . 26",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9572,10 +9572,10 @@
           },
           {
             "bbox": {
-              "l": 534.21,
+              "l": 500.13,
               "t": 679.26,
               "r": 546.8,
-              "b": 689.96,
+              "b": 690.37,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9584,7 +9584,7 @@
             "end_row_offset_idx": 43,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "28",
+            "text": ". . . . . . 28",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9612,7 +9612,7 @@
           },
           {
             "bbox": {
-              "l": 533.34,
+              "l": 500.11,
               "t": 692.49,
               "r": 547.0,
               "b": 703.44,
@@ -9624,7 +9624,7 @@
             "end_row_offset_idx": 44,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "29",
+            "text": ". . . . . . 29",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9652,10 +9652,10 @@
           },
           {
             "bbox": {
-              "l": 531.54,
+              "l": 500.06,
               "t": 703.93,
               "r": 547.58,
-              "b": 714.96,
+              "b": 715.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9664,7 +9664,7 @@
             "end_row_offset_idx": 45,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "32",
+            "text": ". . . . . . 32",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -9698,8 +9698,8 @@
             },
             {
               "bbox": {
-                "l": 534.46,
-                "t": 132.82,
+                "l": 500.14,
+                "t": 132.65,
                 "r": 547.03,
                 "b": 143.74,
                 "coord_origin": "TOPLEFT"
@@ -9710,7 +9710,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". vii",
+              "text": ". . . . . . . vii",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9740,7 +9740,7 @@
             },
             {
               "bbox": {
-                "l": 534.39,
+                "l": 500.1,
                 "t": 144.33,
                 "r": 547.32,
                 "b": 155.17,
@@ -9752,7 +9752,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "viii",
+              "text": ". . . . . . viii",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9782,7 +9782,7 @@
             },
             {
               "bbox": {
-                "l": 535.81,
+                "l": 500.17,
                 "t": 166.12,
                 "r": 546.67,
                 "b": 177.51,
@@ -9794,7 +9794,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". ix",
+              "text": ". . . . . . . ix",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9859,7 +9859,7 @@
             },
             {
               "bbox": {
-                "l": 537.57,
+                "l": 500.14,
                 "t": 189.25,
                 "r": 546.53,
                 "b": 199.81,
@@ -9871,7 +9871,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "xi",
+              "text": ". . . . . . xi",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9901,10 +9901,10 @@
             },
             {
               "bbox": {
-                "l": 535.74,
+                "l": 500.12,
                 "t": 200.28,
                 "r": 546.97,
-                "b": 210.86,
+                "b": 211.82,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9913,7 +9913,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". xi",
+              "text": ". . . . . . . xi",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9943,7 +9943,7 @@
             },
             {
               "bbox": {
-                "l": 533.53,
+                "l": 500.15,
                 "t": 213.86,
                 "r": 546.96,
                 "b": 224.38,
@@ -9955,7 +9955,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "xiii",
+              "text": ". . . . . . xiii",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9985,10 +9985,10 @@
             },
             {
               "bbox": {
-                "l": 535.48,
+                "l": 500.12,
                 "t": 226.0,
                 "r": 546.79,
-                "b": 236.54,
+                "b": 236.84,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9997,7 +9997,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "xiii",
+              "text": ". . . . . . xiii",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10027,7 +10027,7 @@
             },
             {
               "bbox": {
-                "l": 534.21,
+                "l": 500.11,
                 "t": 238.9,
                 "r": 546.73,
                 "b": 249.52,
@@ -10039,7 +10039,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "xiv",
+              "text": ". . . . . . xiv",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10069,10 +10069,10 @@
             },
             {
               "bbox": {
-                "l": 532.96,
+                "l": 500.15,
                 "t": 260.04,
                 "r": 547.51,
-                "b": 270.65,
+                "b": 271.82,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10081,7 +10081,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 1",
+              "text": ". . . . . . . 1",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -10146,7 +10146,7 @@
             },
             {
               "bbox": {
-                "l": 533.45,
+                "l": 500.14,
                 "t": 273.11,
                 "r": 547.18,
                 "b": 283.82,
@@ -10158,7 +10158,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 2",
+              "text": ". . . . . . . 2",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10188,7 +10188,7 @@
             },
             {
               "bbox": {
-                "l": 533.44,
+                "l": 500.14,
                 "t": 285.63,
                 "r": 547.24,
                 "b": 296.36,
@@ -10200,7 +10200,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 2",
+              "text": ". . . . . . . 2",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10230,7 +10230,7 @@
             },
             {
               "bbox": {
-                "l": 533.41,
+                "l": 500.11,
                 "t": 298.13,
                 "r": 547.5,
                 "b": 308.84,
@@ -10242,7 +10242,7 @@
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 3",
+              "text": ". . . . . . . 3",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10272,7 +10272,7 @@
             },
             {
               "bbox": {
-                "l": 533.4,
+                "l": 500.09,
                 "t": 309.99,
                 "r": 547.54,
                 "b": 321.32,
@@ -10284,7 +10284,7 @@
               "end_row_offset_idx": 15,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 4",
+              "text": ". . . . . . . 4",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10314,7 +10314,7 @@
             },
             {
               "bbox": {
-                "l": 533.44,
+                "l": 500.13,
                 "t": 324.21,
                 "r": 547.72,
                 "b": 334.94,
@@ -10326,7 +10326,7 @@
               "end_row_offset_idx": 16,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 5",
+              "text": ". . . . . . . 5",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10356,10 +10356,10 @@
             },
             {
               "bbox": {
-                "l": 532.54,
+                "l": 500.15,
                 "t": 344.25,
                 "r": 547.51,
-                "b": 354.75,
+                "b": 356.36,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10368,7 +10368,7 @@
               "end_row_offset_idx": 17,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 7",
+              "text": ". . . . . . . 7",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -10398,7 +10398,7 @@
             },
             {
               "bbox": {
-                "l": 533.46,
+                "l": 500.12,
                 "t": 355.84,
                 "r": 547.67,
                 "b": 368.36,
@@ -10410,7 +10410,7 @@
               "end_row_offset_idx": 18,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 8",
+              "text": ". . . . . . . 8",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10440,7 +10440,7 @@
             },
             {
               "bbox": {
-                "l": 533.41,
+                "l": 500.09,
                 "t": 369.54,
                 "r": 547.67,
                 "b": 380.84,
@@ -10452,7 +10452,7 @@
               "end_row_offset_idx": 19,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 8",
+              "text": ". . . . . . . 8",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10482,7 +10482,7 @@
             },
             {
               "bbox": {
-                "l": 533.4,
+                "l": 500.08,
                 "t": 382.9,
                 "r": 547.67,
                 "b": 393.64,
@@ -10494,7 +10494,7 @@
               "end_row_offset_idx": 20,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 8",
+              "text": ". . . . . . . 8",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10524,7 +10524,7 @@
             },
             {
               "bbox": {
-                "l": 533.44,
+                "l": 500.13,
                 "t": 395.01,
                 "r": 547.59,
                 "b": 405.86,
@@ -10536,7 +10536,7 @@
               "end_row_offset_idx": 21,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 9",
+              "text": ". . . . . . . 9",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10566,7 +10566,7 @@
             },
             {
               "bbox": {
-                "l": 536.0,
+                "l": 500.12,
                 "t": 408.15,
                 "r": 547.8,
                 "b": 418.89,
@@ -10578,7 +10578,7 @@
               "end_row_offset_idx": 22,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 9",
+              "text": ". . . . . . . 9",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10608,7 +10608,7 @@
             },
             {
               "bbox": {
-                "l": 535.55,
+                "l": 500.09,
                 "t": 420.57,
                 "r": 547.89,
                 "b": 431.25,
@@ -10620,7 +10620,7 @@
               "end_row_offset_idx": 23,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". 9",
+              "text": ". . . . . . . 9",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10650,7 +10650,7 @@
             },
             {
               "bbox": {
-                "l": 534.48,
+                "l": 500.12,
                 "t": 432.97,
                 "r": 547.97,
                 "b": 443.67,
@@ -10662,7 +10662,7 @@
               "end_row_offset_idx": 24,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "10",
+              "text": ". . . . . . 10",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10692,7 +10692,7 @@
             },
             {
               "bbox": {
-                "l": 534.63,
+                "l": 505.59,
                 "t": 445.95,
                 "r": 548.01,
                 "b": 456.74,
@@ -10704,7 +10704,7 @@
               "end_row_offset_idx": 25,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "10",
+              "text": ". . . . . 10",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10734,10 +10734,10 @@
             },
             {
               "bbox": {
-                "l": 536.0,
+                "l": 500.14,
                 "t": 457.36,
                 "r": 547.99,
-                "b": 468.09,
+                "b": 468.32,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10746,7 +10746,7 @@
               "end_row_offset_idx": 26,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "10",
+              "text": ". . . . . . 10",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10776,10 +10776,10 @@
             },
             {
               "bbox": {
-                "l": 531.8,
+                "l": 500.15,
                 "t": 479.21,
                 "r": 547.51,
-                "b": 489.51,
+                "b": 490.82,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10788,7 +10788,7 @@
               "end_row_offset_idx": 27,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "13",
+              "text": ". . . . . . 13",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -10818,7 +10818,7 @@
             },
             {
               "bbox": {
-                "l": 535.84,
+                "l": 500.11,
                 "t": 492.43,
                 "r": 548.02,
                 "b": 503.18,
@@ -10830,7 +10830,7 @@
               "end_row_offset_idx": 28,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "14",
+              "text": ". . . . . . 14",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10860,7 +10860,7 @@
             },
             {
               "bbox": {
-                "l": 535.2,
+                "l": 500.1,
                 "t": 504.9,
                 "r": 548.01,
                 "b": 515.66,
@@ -10872,7 +10872,7 @@
               "end_row_offset_idx": 29,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "14",
+              "text": ". . . . . . 14",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10902,10 +10902,10 @@
             },
             {
               "bbox": {
-                "l": 536.25,
+                "l": 500.07,
                 "t": 517.09,
                 "r": 548.01,
-                "b": 527.81,
+                "b": 527.84,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10914,7 +10914,7 @@
               "end_row_offset_idx": 30,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "16",
+              "text": ". . . . . . 16",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10944,7 +10944,7 @@
             },
             {
               "bbox": {
-                "l": 535.26,
+                "l": 500.1,
                 "t": 529.52,
                 "r": 548.0,
                 "b": 540.48,
@@ -10956,7 +10956,7 @@
               "end_row_offset_idx": 31,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "18",
+              "text": ". . . . . . 18",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10986,10 +10986,10 @@
             },
             {
               "bbox": {
-                "l": 535.74,
+                "l": 500.11,
                 "t": 541.94,
                 "r": 547.89,
-                "b": 552.75,
+                "b": 552.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10998,7 +10998,7 @@
               "end_row_offset_idx": 32,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "18",
+              "text": ". . . . . . 18",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11028,10 +11028,10 @@
             },
             {
               "bbox": {
-                "l": 535.55,
+                "l": 500.12,
                 "t": 554.53,
                 "r": 547.81,
-                "b": 565.32,
+                "b": 565.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11040,7 +11040,7 @@
               "end_row_offset_idx": 33,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "19",
+              "text": ". . . . . . 19",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11070,10 +11070,10 @@
             },
             {
               "bbox": {
-                "l": 534.65,
+                "l": 500.05,
                 "t": 566.85,
                 "r": 547.77,
-                "b": 577.72,
+                "b": 577.87,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11082,7 +11082,7 @@
               "end_row_offset_idx": 34,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "20",
+              "text": ". . . . . . 20",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11112,10 +11112,10 @@
             },
             {
               "bbox": {
-                "l": 535.03,
+                "l": 500.15,
                 "t": 578.95,
                 "r": 547.66,
-                "b": 589.83,
+                "b": 590.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11124,7 +11124,7 @@
               "end_row_offset_idx": 35,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "21",
+              "text": ". . . . . . 21",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11154,10 +11154,10 @@
             },
             {
               "bbox": {
-                "l": 534.94,
+                "l": 500.02,
                 "t": 591.71,
                 "r": 547.43,
-                "b": 602.65,
+                "b": 602.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11166,7 +11166,7 @@
               "end_row_offset_idx": 36,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "22",
+              "text": ". . . . . . 22",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11196,10 +11196,10 @@
             },
             {
               "bbox": {
-                "l": 531.01,
+                "l": 500.16,
                 "t": 604.06,
                 "r": 547.51,
-                "b": 614.66,
+                "b": 615.37,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11208,7 +11208,7 @@
               "end_row_offset_idx": 37,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "22",
+              "text": ". . . . . . 22",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -11238,10 +11238,10 @@
             },
             {
               "bbox": {
-                "l": 534.47,
+                "l": 500.09,
                 "t": 616.12,
                 "r": 547.4,
-                "b": 626.84,
+                "b": 627.85,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11250,7 +11250,7 @@
               "end_row_offset_idx": 38,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "23",
+              "text": ". . . . . . 23",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11280,10 +11280,10 @@
             },
             {
               "bbox": {
-                "l": 533.82,
+                "l": 500.11,
                 "t": 629.61,
                 "r": 547.52,
-                "b": 640.11,
+                "b": 640.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11292,7 +11292,7 @@
               "end_row_offset_idx": 39,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "23",
+              "text": ". . . . . . 23",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11322,10 +11322,10 @@
             },
             {
               "bbox": {
-                "l": 534.0,
+                "l": 500.09,
                 "t": 642.07,
                 "r": 547.39,
-                "b": 652.55,
+                "b": 652.87,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11334,7 +11334,7 @@
               "end_row_offset_idx": 40,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "24",
+              "text": ". . . . . . 24",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11364,10 +11364,10 @@
             },
             {
               "bbox": {
-                "l": 534.03,
+                "l": 500.1,
                 "t": 654.32,
                 "r": 547.27,
-                "b": 664.89,
+                "b": 665.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11376,7 +11376,7 @@
               "end_row_offset_idx": 41,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "25",
+              "text": ". . . . . . 25",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11406,10 +11406,10 @@
             },
             {
               "bbox": {
-                "l": 534.28,
+                "l": 500.11,
                 "t": 665.35,
                 "r": 547.05,
-                "b": 676.16,
+                "b": 677.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11418,7 +11418,7 @@
               "end_row_offset_idx": 42,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "26",
+              "text": ". . . . . . 26",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11448,10 +11448,10 @@
             },
             {
               "bbox": {
-                "l": 534.21,
+                "l": 500.13,
                 "t": 679.26,
                 "r": 546.8,
-                "b": 689.96,
+                "b": 690.37,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11460,7 +11460,7 @@
               "end_row_offset_idx": 43,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "28",
+              "text": ". . . . . . 28",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11490,7 +11490,7 @@
             },
             {
               "bbox": {
-                "l": 533.34,
+                "l": 500.11,
                 "t": 692.49,
                 "r": 547.0,
                 "b": 703.44,
@@ -11502,7 +11502,7 @@
               "end_row_offset_idx": 44,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "29",
+              "text": ". . . . . . 29",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -11532,10 +11532,10 @@
             },
             {
               "bbox": {
-                "l": 531.54,
+                "l": 500.06,
                 "t": 703.93,
                 "r": 547.58,
-                "b": 714.96,
+                "b": 715.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11544,7 +11544,7 @@
               "end_row_offset_idx": 45,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "32",
+              "text": ". . . . . . 32",
               "column_header": false,
               "row_header": false,
               "row_section": false,

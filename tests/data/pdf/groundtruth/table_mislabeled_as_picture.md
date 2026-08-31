@@ -1,11 +1,11 @@
-| They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid |
+|   They work in parallel to State funded private practitioners who take assignments to represent people eligible for legal aid |
 | - |
-| They coordinate appointments of private practitioners (ex officio, or panel appoint- ments) to legal aid cases |
-| They supervise, coach or mentor private practitioners who take legal aid cases |
-| They conduct or organize training sessions for staff lawyers/paralegals |
-| They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals |
-| Other (Please specify) ______________________________________________________ |
-| Not applicable, there is no institutional legal aid provider |
+|   They coordinate appointments of private practitioners (ex officio, or panel appoint- ments) to legal aid cases |
+|   They supervise, coach or mentor private practitioners who take legal aid cases |
+|   They conduct or organize training sessions for staff lawyers/paralegals |
+|   They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals |
+|   Other (Please specify) ______________________________________________________ |
+|   Not applicable, there is no institutional legal aid provider |
 
 23. If your country has an institutional legal aid provider (e.g. public defender), what is the maximum caseload per lawyer at one time?
 
