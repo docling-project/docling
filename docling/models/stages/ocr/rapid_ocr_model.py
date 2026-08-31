@@ -180,15 +180,13 @@ def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
 
     Callers pass a single language; reducing a multi-language request is up to them.
     """
-    language = OcrLanguageResolver.canonicalize_ocr_language(lang, RapidOcrOptions.kind)
+    language = OcrLanguageResolver.canonicalize_ocr_language(lang)
     token = ppocr_token(language, _rapidocr_vocabulary(backend))
     if token is None:
         raise OcrLanguageNotSupportedError(
             f"RapidOCR (backend={backend})",
             language.tag,
-            supported=ppocr_supported_tags(
-                _rapidocr_vocabulary(backend), RapidOcrOptions.kind
-            ),
+            supported=ppocr_supported_tags(_rapidocr_vocabulary(backend)),
         )
     version = _ppocr_version_for_token(token, backend)
 
@@ -467,9 +465,7 @@ class RapidOcrModel(BaseOcrModel):
             )
 
     def supported_ocr_languages(self) -> list[str]:
-        return ppocr_supported_tags(
-            _rapidocr_vocabulary(self.options.backend), RapidOcrOptions.kind
-        )
+        return ppocr_supported_tags(_rapidocr_vocabulary(self.options.backend))
 
     def resolve_ocr_languages(self) -> list[str]:
         # An empty `lang` list means "the engine's own default", which for PP-OCR

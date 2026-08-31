@@ -132,13 +132,8 @@ def ppocr_token(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None
     return None
 
 
-def ppocr_supported_tags(vocabulary: frozenset[str], kind: str) -> list[str]:
-    """Render a PP-OCR token vocabulary back as the canonical tags it serves.
-
-    `kind` is the calling engine's `OcrOptions.kind`: local RapidOCR and the
-    KServe v2 client address the same recognizers, and either one selects the
-    PP-OCR vocabulary.
-    """
+def ppocr_supported_tags(vocabulary: frozenset[str]) -> list[str]:
+    """Render a PP-OCR token vocabulary back as the canonical tags it serves."""
     tags: set[str] = set()
     for token in vocabulary:
         if token in _REDUNDANT_TOKENS:
@@ -147,7 +142,7 @@ def ppocr_supported_tags(vocabulary: frozenset[str], kind: str) -> list[str]:
             tags.update(_TOKEN_TO_CANONICAL[token])
             continue
         language = OcrLanguageResolver.canonicalize_ocr_language(
-            token, kind, raise_exception=False
+            token, raise_exception=False
         )
         # `None` is a token that is not a language code and has no reverse
         # entry; it is unreachable from a canonical tag anyway.

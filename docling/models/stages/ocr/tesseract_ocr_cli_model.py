@@ -110,9 +110,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
     def supported_ocr_languages(self) -> List[str]:
         return installed_language_tags(
-            self._tesseract_languages or [],
-            self._script_prefix or "",
-            TesseractCliOcrOptions.kind,
+            self._tesseract_languages or [], self._script_prefix or ""
         )
 
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:

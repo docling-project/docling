@@ -132,9 +132,7 @@ def resolve_easyocr_languages(tags: Iterable[str]) -> List[str]:
     """
     codes: List[str] = []
     for tag in tags:
-        language = OcrLanguageResolver.canonicalize_ocr_language(
-            tag, EasyOcrOptions.kind
-        )
+        language = OcrLanguageResolver.canonicalize_ocr_language(tag)
         code = _easyocr_code(language)
         if code is None:
             raise ValueError(f"Unsupported EasyOCR language: {tag}")
@@ -385,6 +383,6 @@ def _easyocr_code_to_tag(code: str) -> Optional[str]:
     if code in _EASYOCR_CODE_TO_TAG:
         return _EASYOCR_CODE_TO_TAG[code]
     language = OcrLanguageResolver.canonicalize_ocr_language(
-        code, EasyOcrOptions.kind, raise_exception=False
+        code, raise_exception=False
     )
     return None if language is None else language.tag

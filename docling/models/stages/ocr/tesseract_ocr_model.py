@@ -140,9 +140,7 @@ class TesseractOcrModel(BaseOcrModel):
             self.reader_RIL = tesserocr.RIL
 
     def supported_ocr_languages(self) -> list[str]:
-        return installed_language_tags(
-            self._tesserocr_languages, self.script_prefix, TesseractOcrOptions.kind
-        )
+        return installed_language_tags(self._tesserocr_languages, self.script_prefix)
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         name = map_tesseract_language(language, self.script_prefix)

@@ -274,15 +274,11 @@ class OcrOptions(BaseOptions):
 
         Declared once on the base: pydantic collects field validators by field
         name across the MRO, so it still fires for the subclasses that redefine
-        `lang` with their own default. `cls` is the concrete options class, so
-        `cls.kind` names the engine -- this is the only point that knows both the
-        engine and the string the user wrote.
+        `lang` with their own default.
         """
         return [
             language.tag
-            for language in OcrLanguageResolver.canonicalize_ocr_languages(
-                value, kind=cls.kind
-            )
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(value)
         ]
 
     @model_validator(mode="after")

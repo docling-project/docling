@@ -31,7 +31,6 @@ from docling.datamodel.spatial import BoundingBoxSpatialIndex
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 from docling.utils.ocr_language import (
-    MULTIPLE,
     OcrLanguage,
     OcrLanguageResolver,
     OcrLanguageSupport,
@@ -155,9 +154,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Translate options.lang into a list of OcrLanguage
         self.languages: list[OcrLanguage] = (
-            OcrLanguageResolver.canonicalize_ocr_languages(
-                options.lang, kind=type(options).kind
-            )
+            OcrLanguageResolver.canonicalize_ocr_languages(options.lang)
         )
 
     @property
@@ -182,7 +179,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Raises:
             OcrLanguageNotSupportedError: The engine has no model for it.
         """
-        if language.is_passthrough or language.bcp47_language == MULTIPLE:
+        if language.is_passthrough or language.is_multilingual:
             # A passthrough names a script recognizer of *some* engine; an engine
             # that has not overridden this method does not have one.
             raise OcrLanguageNotSupportedError(

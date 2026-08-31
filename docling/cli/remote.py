@@ -27,7 +27,7 @@ from docling.cli.export_utils import (
 )
 from docling.cli.main import ChunkerType
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import OcrAutoOptions, ProcessingPipeline
+from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -57,9 +57,7 @@ def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
     try:
         return [
             language.tag
-            for language in OcrLanguageResolver.canonicalize_ocr_languages(
-                tags, kind=OcrAutoOptions.kind
-            )
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(tags)
         ]
     except ValueError as err:
         raise typer.BadParameter(str(err), param_hint="--ocr-lang") from err

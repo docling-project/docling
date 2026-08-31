@@ -81,13 +81,8 @@ def map_tesseract_language(language: OcrLanguage, script_prefix: str) -> str | N
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
 
 
-def installed_language_tags(
-    names: Sequence[str], script_prefix: str, kind: str
-) -> list[str]:
+def installed_language_tags(names: Sequence[str], script_prefix: str) -> list[str]:
     """The canonical tags this install can actually serve.
-
-    `kind` is the calling engine's `OcrOptions.kind`: the two Tesseract bindings
-    read the same tessdata names, and either one selects that vocabulary.
 
     A name is reported only if the tag it renders as maps back to a file that is
     installed. Without that round trip the list can offer a tag this install
@@ -115,7 +110,7 @@ def installed_language_tags(
         else:
             token = name
         language = OcrLanguageResolver.canonicalize_ocr_language(
-            token, kind, raise_exception=False
+            token, raise_exception=False
         )
         if language is None:
             continue

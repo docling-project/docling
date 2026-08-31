@@ -77,10 +77,9 @@ def test_ppocr_tokens(tag: str, expected: str) -> None:
 @pytest.mark.parametrize("token", ["latin", "cyrillic", "arabic", "devanagari"])
 def test_ppocr_script_recognizers_are_named_by_their_own_token(token: str) -> None:
     """These are real PP-OCR models with no language to canonicalize to, so they
-    are carried through to the engine exactly as the user wrote them."""
-    language = OcrLanguageResolver.canonicalize_ocr_language(
-        token, RapidOcrOptions.kind
-    )
+    are carried through to the engine exactly as the user wrote them, once the
+    `native:` prefix marks them as an engine token rather than a tag."""
+    language = OcrLanguageResolver.canonicalize_ocr_language(f"native:{token}")
 
     assert language.is_passthrough
     assert ppocr_token(language, _ONNX_VOCABULARY) == token
@@ -146,7 +145,7 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
 
 
 def test_ppocr_supported_tags_are_canonical() -> None:
-    tags = ppocr_supported_tags(_ONNX_VOCABULARY, RapidOcrOptions.kind)
+    tags = ppocr_supported_tags(_ONNX_VOCABULARY)
 
     assert "zh-Hans" in tags
     # Languages are rendered back as tags, never as PP-OCR tokens...
@@ -186,10 +185,11 @@ def test_rapidocr_georgian_is_a_coverage_error_on_every_backend(backend: str) ->
     assert "Supported:" in message
 
 
-def test_rapidocr_bare_ka_is_ppocr_kannada() -> None:
-    """The native reading wins for the engine that owns the token."""
-    assert RapidOcrOptions(backend="torch", lang=["ka"]).lang == ["kn-Knda"]
-    assert _rapid_model("torch", ["ka"]).resolve_ocr_languages() == ["ka"]
+def test_rapidocr_native_ka_is_ppocr_kannada() -> None:
+    """`native:ka` names PP-OCR's Kannada recognizer; bare `ka` is BCP-47 Georgian."""
+    options = RapidOcrOptions(backend="torch", lang=["native:ka"])
+    assert options.lang == ["native:ka"]
+    assert _rapid_model("torch", ["native:ka"]).resolve_ocr_languages() == ["ka"]
 
 
 def test_rapidocr_warns_and_truncates_extra_languages(
@@ -280,15 +280,11 @@ def test_tesseract_language_names(tag: str, expected: str) -> None:
 def test_tesseract_script_files_follow_the_installed_prefix() -> None:
     """A script file is always written `script/<Name>`, but older tessdata
     installs list those files unprefixed, so the prefix is re-applied."""
-    latin = OcrLanguageResolver.canonicalize_ocr_language(
-        "script/Latin", TesseractOcrOptions.kind
-    )
+    latin = OcrLanguageResolver.canonicalize_ocr_language("script/Latin")
 
     assert map_tesseract_language(latin, "script/") == "script/Latin"
     assert map_tesseract_language(latin, "") == "Latin"
-    cyrl = OcrLanguageResolver.canonicalize_ocr_language(
-        "script/Cyrillic", TesseractOcrOptions.kind
-    )
+    cyrl = OcrLanguageResolver.canonicalize_ocr_language("script/Cyrillic")
     assert map_tesseract_language(cyrl, "") == "Cyrillic"
 
 
@@ -310,15 +306,13 @@ def test_tesseract_has_no_file_for_mul() -> None:
 # refuses, and ocrmac offered Vision's own `vi-VT`, which is not a tag at all.
 
 
-def _assert_every_advertised_tag_is_requestable(model, kind: str) -> None:
+def _assert_every_advertised_tag_is_requestable(model) -> None:
     advertised = model.supported_ocr_languages()
     assert advertised, "the engine reported no languages at all"
     unusable = []
     for tag in advertised:
         try:
-            model.map_ocr_language(
-                OcrLanguageResolver.canonicalize_ocr_language(tag, kind)
-            )
+            model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
         except (ValueError, OcrLanguageNotSupportedError) as exc:
             unusable.append((tag, str(exc)))
     assert not unusable
@@ -335,7 +329,7 @@ def test_easyocr_advertises_only_languages_it_serves() -> None:
         accelerator_options=AcceleratorOptions(),
     )
 
-    _assert_every_advertised_tag_is_requestable(model, EasyOcrOptions.kind)
+    _assert_every_advertised_tag_is_requestable(model)
 
 
 def test_tesseract_advertises_only_languages_it_serves() -> None:
@@ -350,7 +344,7 @@ def test_tesseract_advertises_only_languages_it_serves() -> None:
         accelerator_options=AcceleratorOptions(),
     )
 
-    _assert_every_advertised_tag_is_requestable(model, TesseractCliOcrOptions.kind)
+    _assert_every_advertised_tag_is_requestable(model)
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
@@ -365,4 +359,4 @@ def test_ocrmac_advertises_only_languages_it_serves() -> None:
         accelerator_options=AcceleratorOptions(),
     )
 
-    _assert_every_advertised_tag_is_requestable(model, OcrMacOptions.kind)
+    _assert_every_advertised_tag_is_requestable(model)

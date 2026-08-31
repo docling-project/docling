@@ -107,6 +107,6 @@ def test_unprefixed_script_traineddata_is_advertised_as_a_script_name() -> None:
     """
     names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
 
-    tags = installed_language_tags(names, "", TesseractCliOcrOptions.kind)
+    tags = installed_language_tags(names, "")
 
     assert tags == ["en-Latn", "script/Cyrillic", "script/Lao", "script/Latin"]

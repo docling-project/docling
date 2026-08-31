@@ -94,7 +94,7 @@ class KserveV2OcrModel(BaseOcrModel):
             self._lang_input = np.array([[self._lang]], dtype=object)
 
     def supported_ocr_languages(self) -> List[str]:
-        return ppocr_supported_tags(_KSERVE_PPOCR_VOCABULARY, KserveV2OcrOptions.kind)
+        return ppocr_supported_tags(_KSERVE_PPOCR_VOCABULARY)
 
     def resolve_ocr_languages(self) -> List[str]:
         # An empty `lang` list means "the engine's own default", which for PP-OCR

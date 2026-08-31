@@ -124,9 +124,12 @@ def test_resolve_script_families_route_by_backend() -> None:
 
     # onnxruntime/openvino/paddle -> PP-OCRv5
     assert _resolved("th", "onnxruntime") == (OCRVersion.PPOCRV5, "th")
-    assert _resolved("cyrillic", "onnxruntime") == (OCRVersion.PPOCRV5, "cyrillic")
+    assert _resolved("native:cyrillic", "onnxruntime") == (
+        OCRVersion.PPOCRV5,
+        "cyrillic",
+    )
     # torch -> PP-OCRv4
-    assert _resolved("arabic", "torch") == (OCRVersion.PPOCRV4, "arabic")
+    assert _resolved("native:arabic", "torch") == (OCRVersion.PPOCRV4, "arabic")
     # Devanagari picks the backbone its backend can reach.
     assert _resolved("hi", "onnxruntime") == (OCRVersion.PPOCRV5, "devanagari")
     assert _resolved("hi", "torch") == (OCRVersion.PPOCRV4, "devanagari")
@@ -154,9 +157,7 @@ def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) ->
     # reach past its own v5/v6 set for it -- `ka` is the one token v5 lacks.
     assert _resolved("kn", backend) == (OCRVersion.PPOCRV4, "ka")
     # ...and it is advertised, so the coverage error never names it.
-    assert "kn-Knda" in ppocr_supported_tags(
-        _rapidocr_vocabulary(backend), RapidOcrOptions.kind
-    )
+    assert "kn-Knda" in ppocr_supported_tags(_rapidocr_vocabulary(backend))
 
 
 # --- model selection / pinned paths -----------------------------------------
@@ -219,9 +220,9 @@ def test_rapidocr_thai_uses_ppocrv5(monkeypatch, tmp_path: Path) -> None:
 def test_rapidocr_arabic_torch_uses_ppocrv4(monkeypatch, tmp_path: Path) -> None:
     params, _ = _build(
         monkeypatch,
-        RapidOcrOptions(lang=["arabic"], backend="torch"),
+        RapidOcrOptions(lang=["native:arabic"], backend="torch"),
         tmp_path,
-        seed=("torch", "arabic"),
+        seed=("torch", "native:arabic"),
     )
     assert Path(params["Rec.model_path"]).name == "arabic_PP-OCRv4_rec_mobile.pth"
     # v4 rec ships a character dictionary.

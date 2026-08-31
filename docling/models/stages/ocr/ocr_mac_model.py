@@ -113,7 +113,7 @@ class OcrMacModel(BaseOcrModel):
         for vision_tag in self._vision_languages:
             for candidate in (vision_tag, vision_tag.split("-")[0]):
                 language = OcrLanguageResolver.canonicalize_ocr_language(
-                    candidate, OcrMacOptions.kind, raise_exception=False
+                    candidate, raise_exception=False
                 )
                 if language is not None:
                     tags.add(language.tag)
