@@ -386,6 +386,8 @@ members = ["packages/docling", "packages/docling-client"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
+# Local branch pin for TableFormer post-processing source fixes (Session B eval).
+docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "fix/tableformer-postprocessing-source-fixes" }
 
 [tool.uv]
 package = true
