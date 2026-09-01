@@ -206,36 +206,50 @@ def test_rapidocr_warns_and_truncates_extra_languages(
 
 # --- KServe v2 --------------------------------------------------------------
 
-
-def _kserve_model(lang: list[str]) -> KserveV2OcrModel:
-    model = KserveV2OcrModel.__new__(KserveV2OcrModel)
-    model.options = KserveV2OcrOptions(url="http://localhost:8000", lang=lang)
-    model.languages = tuple(
-        OcrLanguageResolver.canonicalize_ocr_language(tag) for tag in model.options.lang
-    )
-    return model
+# KServe canonicalizes nothing: the deployed model is the only authority on the
+# languages it serves, so `lang` is neither validated nor mapped, only truncated
+# to the one value the request carries.
 
 
-def test_kserve_warns_instead_of_silently_dropping_languages(
+def test_kserve_sends_the_engines_own_code_untouched() -> None:
+    """`chi_sim` is another engine's code and `auto` is retired, yet both survive:
+    only the deployment knows what it serves."""
+    options = KserveV2OcrOptions(url="http://localhost:8000", lang=["chi_sim", "auto"])
+
+    assert options.lang == ["chi_sim", "auto"]
+
+
+def test_kserve_default_lang_is_not_canonicalized() -> None:
+    options = KserveV2OcrOptions(url="http://localhost:8000")
+
+    assert options.lang == ["english", "chinese"]
+
+
+def test_kserve_warns_and_sends_the_first_language(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """The extra languages used to be discarded with no message at all."""
-    model = _kserve_model(["en", "zh-Hans", "ar"])
+    """One language fits the request; the rest are dropped, but never silently."""
+    options = KserveV2OcrOptions(
+        url="http://localhost:8000", transport="http", lang=["japan", "korean"]
+    )
+    model = KserveV2OcrModel.__new__(KserveV2OcrModel)
 
     with caplog.at_level(logging.WARNING):
-        assert model.resolve_ocr_languages() == ["en"]
+        KserveV2OcrModel.__init__(
+            model,
+            enabled=True,
+            artifacts_path=None,
+            options=options,
+            accelerator_options=AcceleratorOptions(),
+        )
 
-    assert "en-Latn" in caplog.text
-    assert "zh-Hans" in caplog.text and "ar-Arab" in caplog.text
+    assert model._lang == "japan"
+    assert "japan" in caplog.text and "korean" in caplog.text
 
 
-def test_kserve_maps_to_ppocr_tokens() -> None:
-    assert _kserve_model(["zh-Hant"]).resolve_ocr_languages() == ["chinese_cht"]
-
-
-def test_kserve_empty_lang_uses_the_ppocr_default() -> None:
-    """No tag means "let the engine decide"; PP-OCR's own default is `ch`."""
-    assert _kserve_model([]).resolve_ocr_languages() == ["ch"]
+def test_the_opt_out_does_not_leak_to_other_engines() -> None:
+    """Only KServe skips canonicalization; a sibling still rewrites its tags."""
+    assert RapidOcrOptions(lang=["deu"]).lang == ["de-Latn"]
 
 
 # --- Tesseract --------------------------------------------------------------

@@ -203,6 +203,9 @@ class OcrOptions(BaseOptions):
     # The empty default keeps the abstract base instantiable
     kind: ClassVar[str] = ""
 
+    # Whether `lang` is canonicalized, or handed to the engine verbatim
+    canonicalize_lang: ClassVar[bool] = True
+
     mode: Annotated[
         OcrMode,
         Field(
@@ -273,9 +276,12 @@ class OcrOptions(BaseOptions):
         """Rewrite every entry into its canonical BCP-47 form.
 
         Declared once on the base: pydantic collects field validators by field
-        name across the MRO, so it still fires for the subclasses that redefine
-        `lang` with their own default.
+        name across the MRO, so it fires for the subclasses that redefine `lang`
+        with their own default -- unless they turn `canonicalize_lang` off, which
+        leaves `lang` exactly as the user wrote it.
         """
+        if not cls.canonicalize_lang:
+            return value
         return [
             language.tag
             for language in OcrLanguageResolver.canonicalize_ocr_languages(value)
@@ -727,6 +733,10 @@ class KserveV2OcrOptions(OcrOptions, KserveV2OptionsMixin):
 
     kind: ClassVar[Literal["kserve_v2_ocr"]] = "kserve_v2_ocr"
 
+    # The deployed model is the only authority on the languages it serves, and
+    # docling cannot inspect it, so `lang` is neither validated nor mapped here.
+    canonicalize_lang: ClassVar[bool] = False
+
     model_name: str = Field(
         default="ocr",
         description="Remote model name registered in the KServe v2 endpoint.",
@@ -736,17 +746,11 @@ class KserveV2OcrOptions(OcrOptions, KserveV2OptionsMixin):
         list[str],
         Field(
             description=(
-                "Recognition language as a BCP-47 tag, mapped to the PP-OCR token "
-                "the server is expected to understand. A single language is sent; "
-                "if more than one tag is given the first is used and the rest are "
-                "ignored with a warning. An empty list sends the Simplified "
-                "Chinese default. Coverage is checked against the PP-OCR token universe, "
-                "which is only a best-effort proxy for what the deployed model "
-                "actually serves."
+                "List of OCR languages. Note: Language selection depends on the deployed model. "
             ),
-            examples=[["en"], ["zh-Hans"]],
+            examples=[["english"], ["chinese"]],
         ),
-    ] = ["en-Latn"]
+    ] = ["english", "chinese"]
 
     scale: Annotated[
         float,

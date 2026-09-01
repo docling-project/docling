@@ -155,6 +155,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Translate options.lang into a list of OcrLanguage
         self.languages: list[OcrLanguage] = (
             OcrLanguageResolver.canonicalize_ocr_languages(options.lang)
+            if options.canonicalize_lang
+            else []
         )
 
     @property

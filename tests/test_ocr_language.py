@@ -26,7 +26,6 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
-    KserveV2OcrOptions,
     NemotronOcrOptions,
     OcrAutoOptions,
     OcrMacOptions,
@@ -360,20 +359,17 @@ _OPTION_CLASSES = [
 
 
 def _build(cls, **kwargs):
-    # KServe is the one engine with a required connection field.
-    if cls is KserveV2OcrOptions:
-        kwargs.setdefault("url", "http://localhost:8000")
     return cls(**kwargs)
 
 
-@pytest.mark.parametrize("cls", [*_OPTION_CLASSES, KserveV2OcrOptions])
+@pytest.mark.parametrize("cls", _OPTION_CLASSES)
 def test_base_validator_fires_on_every_subclass(cls) -> None:
     options = _build(cls, lang=["deu", "en-US", "zh-TW"])
 
     assert options.lang == ["de-Latn", "en-Latn", "zh-Hant"]
 
 
-@pytest.mark.parametrize("cls", [*_OPTION_CLASSES, KserveV2OcrOptions])
+@pytest.mark.parametrize("cls", _OPTION_CLASSES)
 def test_defaults_are_already_canonical(cls) -> None:
     """`validate_default=True` makes this an assertion, not a rewrite."""
     default = _build(cls).lang
@@ -381,13 +377,13 @@ def test_defaults_are_already_canonical(cls) -> None:
     assert _canonical_tags(default) == default
 
 
-@pytest.mark.parametrize("cls", [*_OPTION_CLASSES, KserveV2OcrOptions])
+@pytest.mark.parametrize("cls", _OPTION_CLASSES)
 def test_retired_tokens_are_rejected(cls) -> None:
     with pytest.raises(ValidationError, match="no script families"):
         _build(cls, lang=["auto"])
 
 
-@pytest.mark.parametrize("cls", [*_OPTION_CLASSES, KserveV2OcrOptions])
+@pytest.mark.parametrize("cls", _OPTION_CLASSES)
 def test_empty_lang_is_accepted(cls) -> None:
     """An empty list is how "let the engine decide" is spelled."""
     assert _build(cls, lang=[]).lang == []
