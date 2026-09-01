@@ -463,6 +463,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._pending_code_blank_lines: int = 0
         # The document default style's font is not evidence of code.
         self._default_paragraph_style: BaseStyle | None = None
+        # Style ids seen on consecutive paragraphs; computed on first use.
+        self._body_text_style_ids: set[str] | None = None
 
         self.docx_obj = self.load_msword_file(
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
@@ -1131,6 +1133,53 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     pass
         return None
 
+    def _get_paragraph_style_id(self, paragraph_elem: etree._Element) -> str | None:
+        """Read the style id a ``w:p`` references straight off its XML."""
+        p_pr = paragraph_elem.find(f"{self._W_NS_CLARK}pPr")
+        if p_pr is None:
+            return None
+        p_style = p_pr.find(f"{self._W_NS_CLARK}pStyle")
+        if p_style is None:
+            return None
+        return p_style.get(self.XML_KEY)
+
+    def _paragraph_elem_has_text(self, paragraph_elem: etree._Element) -> bool:
+        return any(
+            (node.text or "").strip()
+            for node in paragraph_elem.iter(f"{self._W_NS_CLARK}t")
+        )
+
+    def _styles_used_as_body_text(self) -> set[str]:
+        """Style ids the document applies to two adjacent, non-empty paragraphs.
+
+        ``w:outlineLvl`` marks participation in Word's outline, which is not
+        the same predicate as "is a heading": legal templates routinely put the
+        level on the style that carries the clause text itself. Adjacency tells
+        the two apart, because a heading is rarely followed immediately by
+        another heading in the same style, while body text is. Anything between
+        the two paragraphs — a table, a bookmark, an empty spacer paragraph —
+        breaks the chain, so headings stay headings.
+        """
+        if self._body_text_style_ids is None:
+            style_ids: set[str] = set()
+            if self.docx_obj is not None:
+                p_tag = f"{self._W_NS_CLARK}p"
+                for paragraph_elem in self.docx_obj.element.body.iter(p_tag):
+                    style_id = self._get_paragraph_style_id(paragraph_elem)
+                    if style_id is None or style_id in style_ids:
+                        continue
+                    previous = paragraph_elem.getprevious()
+                    if (
+                        previous is not None
+                        and previous.tag == p_tag
+                        and self._get_paragraph_style_id(previous) == style_id
+                        and self._paragraph_elem_has_text(paragraph_elem)
+                        and self._paragraph_elem_has_text(previous)
+                    ):
+                        style_ids.add(style_id)
+            self._body_text_style_ids = style_ids
+        return self._body_text_style_ids
+
     def _get_heading_and_level(self, style_label: str) -> tuple[str, int | None]:
         parts = self._split_text_and_number(style_label)
 
@@ -1337,7 +1386,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         heading, and it is also honoured on its own for styles that are not
         recognizable by name. ``Title`` styles are left out of the latter so
         they keep reaching their own branch; in practice they never carry
-        ``w:outlineLvl`` anyway.
+        ``w:outlineLvl`` anyway, and so are styles the document uses as body
+        text (see ``_styles_used_as_body_text``), which outline participation
+        alone cannot distinguish from headings.
         """
         # Resolve the style once: python-docx's ``paragraph.style`` scans all
         # styles on every access, so re-reading it per predicate is costly.
@@ -1392,8 +1443,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
             return "Code", None
 
-        if outline_level is not None and not self._is_title_style(
-            label, name, base_style_label, base_style_name
+        if (
+            outline_level is not None
+            and not self._is_title_style(label, name, base_style_label, base_style_name)
+            and label not in self._styles_used_as_body_text()
         ):
             return "Heading", outline_level
 
