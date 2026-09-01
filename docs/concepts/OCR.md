@@ -59,7 +59,8 @@ What each engine does with an empty `lang` and with `mul`:
 | Tesseract (both)  | Per-page orientation and script    | Error                       |
 |                   | detection; needs the `osd` file    |                             |
 | EasyOCR           | English (`en`)                     | Error -- list the languages |
-| RapidOCR / KServe | The Simplified Chinese default     | Error -- list the languages |
+| RapidOCR          | The Simplified Chinese default     | Error -- list the languages |
+| KServe            | Sends `en`                         | Sent to the server verbatim |
 | Nemotron-OCR      | The English model                  | The multilingual model      |
 | ocrmac            | Vision's own automatic behaviour   | Error                       |
 
@@ -67,9 +68,15 @@ On the CLI, omitting `--ocr-lang` applies the engine's default languages; an emp
 `--ocr-lang ""`, is how you ask for the `lang=[]` column above.
 
 Engines that ship a recognizer named after a script rather than a language expose it under
-that engine's own token: `latin`, `cyrillic`, `arabic` and `devanagari` for RapidOCR and
-KServe, and `script/<Name>` files such as `script/Cyrillic` for Tesseract. They are engine
+that engine's own token: `latin`, `cyrillic`, `arabic` and `devanagari` for RapidOCR, and
+`script/<Name>` files such as `script/Cyrillic` for Tesseract. They are engine
 vocabulary, not portable tags, so they are only accepted by the engine that defines them.
+
+The KServe client is the exception to everything in this page: it canonicalizes nothing. Only the
+deployed model knows which languages it serves, so `lang` is neither validated nor mapped -- the
+first entry is sent to the server exactly as written, and the rest are dropped with a warning. Use
+the codes your deployment expects (`english`, `chinese`, `ch`, ...); a BCP-47 tag is only right if
+the server itself speaks BCP-47, and the `native:` prefix has no meaning there.
 
 ### Engine-native language codes
 
@@ -84,7 +91,7 @@ RapidOcrOptions(lang=["ch"]).lang  # -> ["zh-Hans"]
 
 | Engine            | Codes accepted in addition to BCP-47                               |
 | ----------------- | ------------------------------------------------------------------ |
-| RapidOCR / KServe | PP-OCR tokens: `ch`, `chinese_cht`, `japan`, `korean`, `ka`,       |
+| RapidOCR          | PP-OCR tokens: `ch`, `chinese_cht`, `japan`, `korean`, `ka`,       |
 |                   | `eslav`, `latin`, `cyrillic`, `arabic`, `devanagari`, `rs_latin`,  |
 |                   | `french`, `german` -- the last two always canonicalize to `fr`     |
 |                   | and `de`                                                           |
@@ -154,8 +161,9 @@ through `lang`.
 
 A language the selected engine cannot serve is an **error**, uniformly, for every engine. Docling
 never quietly substitutes a different recognizer; the message names the languages that engine does
-support, as canonical tags. Engines that run one language at a time (RapidOCR, Nemotron-OCR, the
-KServe client) take the **first** tag and warn about the rest.
+support, as canonical tags. Engines that run one language at a time (RapidOCR, Nemotron-OCR) take
+the **first** tag and warn about the rest. The KServe client also sends only the first entry, but
+it never raises for coverage: the deployment is the only thing that can.
 
 ## RapidOCR
 
