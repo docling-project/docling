@@ -37,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 
 # Canonical tag -> EasyOCR code, where EasyOCR deviates from ISO 639-1.
-_EASYOCR_CODES: dict[str, str] = {
+_EASYOCR_CANONICAL_TO_CODE_DEVIATIONS: dict[str, str] = {
     "zh-Hans": "ch_sim",
     "zh-Hant": "ch_tra",
     "sr-Cyrl": "rs_cyrillic",
@@ -57,8 +57,8 @@ _EASYOCR_CODES: dict[str, str] = {
     "tab-Cyrl": "tab",
 }
 
-_EASYOCR_CODE_TO_TAG: dict[str, str] = {
-    code: tag for tag, code in _EASYOCR_CODES.items()
+_EASYOCR_CODE_TO_CANONICAL_DEVIATIONS: dict[str, str] = {
+    code: canonical for canonical, code in _EASYOCR_CANONICAL_TO_CODE_DEVIATIONS.items()
 }
 
 # EasyOCR has no "engine default": `lang_list` is a required positional argument, and
@@ -113,17 +113,15 @@ def _easyocr_code_to_model() -> dict[str, str]:
 def _easyocr_code(language: OcrLanguage) -> Optional[str]:
     """The EasyOCR code for a canonical language, or `None` when there is no model."""
     if language.is_passthrough:
-        # `ch_sim`, `ang`: one of EasyOCR's own codes, handed over as written.
         code = language.native
     elif language.is_multilingual:
         # EasyOCR's codes are all language codes: it has no multilingual model.
         return None
     else:
-        code = _EASYOCR_CODES.get(language.bcp47)
+        code = _EASYOCR_CANONICAL_TO_CODE_DEVIATIONS.get(language.bcp47)
         if code is None:
-            # EasyOCR's codes are language-based, so the primary subtag only
-            # identifies the right model when the script is the usual one: its `az`
-            # is Latin Azerbaijani, not `az-Cyrl`.
+            # EasyOCR's codes are language-based, so the primary subtag identifies the right model
+            # only when the script is the default one
             if not language.has_default_script:
                 return None
             code = language.bcp47_language
@@ -134,8 +132,7 @@ def resolve_easyocr_codes(tags: Iterable[str]) -> List[str]:
     """Canonicalize language tags into the EasyOCR codes they name.
 
     Accepts EasyOCR's own codes as well as BCP-47, matching what
-    `EasyOcrOptions.lang` accepts. Used by the prefetcher, which has no model
-    instance to ask.
+    `EasyOcrOptions.lang` accepts
     """
     codes: List[str] = []
     for tag in tags:
@@ -380,8 +377,8 @@ class EasyOcrModel(BaseOcrModel):
 
 def _easyocr_code_to_tag(code: str) -> Optional[str]:
     """Render one EasyOCR language code back as a canonical tag."""
-    if code in _EASYOCR_CODE_TO_TAG:
-        return _EASYOCR_CODE_TO_TAG[code]
+    if code in _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS:
+        return _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS[code]
     language = OcrLanguageResolver.canonicalize_ocr_language(
         code, raise_exception=False
     )
