@@ -366,4 +366,5 @@ class VllmVlmEngine(BaseVlmEngine):
             del self.processor
             self.processor = None
 
-        _log.info("vLLM runtime cleaned up")
+        if _log is not None:
+            _log.info("vLLM runtime cleaned up")

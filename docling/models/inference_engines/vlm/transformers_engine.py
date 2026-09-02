@@ -533,4 +533,5 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.device and self.device.startswith("cuda"):
             torch.cuda.empty_cache()
 
-        _log.info("Transformers runtime cleaned up")
+        if _log is not None:
+            _log.info("Transformers runtime cleaned up")
