@@ -11,6 +11,8 @@ This test suite validates:
 5. All three stage types (VlmConvert, PictureDescription, CodeFormula)
 """
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -196,6 +198,7 @@ class TestRuntimeOptions:
         import docling.models.inference_engines.vlm.transformers_engine as tf_engine
 
         captured_kwargs = {}
+        processor_sources = []
 
         class FakeProcessor:
             tokenizer = None
@@ -221,10 +224,16 @@ class TestRuntimeOptions:
             "resolve_model_artifacts_path",
             lambda **kwargs: "artifacts",
         )
+        def fake_processor_from_pretrained(source, *args, **kwargs):
+            processor_sources.append(source)
+            if isinstance(source, Path):
+                raise AttributeError("'dict' object has no attribute 'model_type'")
+            return FakeProcessor()
+
         monkeypatch.setattr(
             tf_engine.AutoProcessor,
             "from_pretrained",
-            lambda *args, **kwargs: FakeProcessor(),
+            fake_processor_from_pretrained,
         )
         monkeypatch.setattr(tf_engine, "AutoModelForCausalLM", FakeModel)
         monkeypatch.setattr(
@@ -255,6 +264,11 @@ class TestRuntimeOptions:
         assert ("torch_dtype" in captured_kwargs) is (
             expected_dtype_arg == "torch_dtype"
         )
+        assert processor_sources == [
+            "rednote-hilab/dots.ocr"
+            if transformers_version.startswith("4.")
+            else "test/model"
+        ]
 
     def test_dots_mocr_requires_flash_attn(self, monkeypatch):
         """dots.mocr remote code imports flash_attn even when SDPA is selected."""
