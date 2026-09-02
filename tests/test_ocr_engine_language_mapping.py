@@ -1,13 +1,18 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Per-engine translation from canonical tags to native codes.
+"""Per-engine translation from canonical tags to native codes, and the engine
+choice a tag can drive.
 
 Most of these run without any engine installed: each engine's table and mapping
 are module-level or reachable on an uninitialized instance, which is what makes
 the mapping reviewable at all. The exceptions are RapidOCR, whose PP-OCRv6
-vocabulary is read from the installed `rapidocr`, and the last section, where what
-an engine advertises depends on what is installed.
+vocabulary is read from the installed `rapidocr`, and the two sections at the
+end, where what an engine advertises -- and which engine `auto` settles on --
+depends on what is installed. Those carry `pytest.mark.ml_ocr` per test.
+
+The parsing rules that settle before any engine is consulted are in
+`test_ocr_language.py`.
 """
 
 import logging
@@ -20,6 +25,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     KserveV2OcrOptions,
+    OcrAutoOptions,
     OcrMacOptions,
     RapidOcrOptions,
     TesseractCliOcrOptions,
@@ -27,6 +33,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
 from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
@@ -472,3 +479,59 @@ def test_ocrmac_advertises_only_languages_it_serves() -> None:
     )
 
     _assert_every_advertised_tag_is_requestable(model)
+
+
+# --- auto-engine selection, driven by the language --------------------------
+#
+# `OcrAutoOptions` is the one place where a language tag changes *which engine
+# runs*, not merely which recognizer it loads, and deciding that means probing
+# the installed engines for real.
+
+# Amharic: a valid tag written in a script none of docling's engines recognize.
+_UNSERVABLE_TAG = "am"
+
+
+def _auto_model(lang: list[str]) -> OcrAutoModel:
+    return OcrAutoModel(
+        enabled=True,
+        artifacts_path=None,
+        options=OcrAutoOptions(lang=lang),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+
+@pytest.mark.ml_ocr
+def test_auto_gives_the_delegate_the_users_language() -> None:
+    model = _auto_model(["zh-Hant"])
+
+    assert model._engine is not None
+    assert model._engine.options.lang == ["zh-Hant"]
+
+
+@pytest.mark.ml_ocr
+@pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
+def test_auto_falls_through_an_engine_that_cannot_serve_the_language(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Apple Vision ships no Devanagari recognizer, so auto must move on rather
+    than fail -- picking an *available* engine is the whole contract of `auto`."""
+    pytest.importorskip("ocrmac")
+
+    with caplog.at_level(logging.INFO):
+        model = _auto_model(["hi"])
+
+    assert "skipping ocrmac" in caplog.text
+    assert model._engine is not None
+    assert not isinstance(model._engine, type(model))
+
+
+@pytest.mark.ml_ocr
+def test_auto_reports_every_candidate_when_none_can_serve_the_language() -> None:
+    """The aggregated error replaces a bare "No OCR engine found." warning."""
+    with pytest.raises(OcrLanguageNotSupportedError) as excinfo:
+        _auto_model([_UNSERVABLE_TAG])
+
+    message = str(excinfo.value)
+    assert "am-Ethi" in message
+    # Every candidate is named with the reason it was passed over.
+    assert "No installed engine can serve it" in message
