@@ -1948,6 +1948,18 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    tagged_structure: Annotated[
+        Literal["off", "prefer", "require"],
+        Field(
+            description=(
+                "Use the tagged-PDF structure tree (ISO 32000-2, 14.7) as the source of "
+                "layout, heading levels and alternate text. 'prefer' uses the tags where a "
+                "page has them and keeps layout-model clusters the tags do not cover; "
+                "'require' uses tags only; 'off' ignores them. Requires the docling-parse "
+                "backend."
+            )
+        ),
+    ] = "off"
     do_ocr: Annotated[
         bool,
         Field(

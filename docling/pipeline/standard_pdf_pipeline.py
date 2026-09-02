@@ -81,6 +81,9 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
     ReadingOrderOptions,
 )
+from docling.models.stages.tagged_structure.tagged_structure_model import (
+    TaggedStructureModel,
+)
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
@@ -632,6 +635,10 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         )
 
+        self.tagged_structure_model = TaggedStructureModel(
+            mode=self.pipeline_options.tagged_structure
+        )
+
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
@@ -746,6 +753,15 @@ class StandardPdfPipeline(ConvertPipeline):
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
+        tagged_structure = ThreadedPipelineStage(
+            name="tagged_structure",
+            model=self.tagged_structure_model,
+            batch_size=1,
+            batch_timeout=opts.batch_polling_interval_seconds,
+            queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
+            timed_out_run_ids=timed_out_run_ids,
+        )
         table = ThreadedPipelineStage(
             name="table",
             model=self.table_model,
@@ -770,12 +786,21 @@ class StandardPdfPipeline(ConvertPipeline):
         output_q = ThreadedQueue(opts.queue_max_size)
         preprocess.add_output_queue(layout.input_queue)  # PDF parsing
         layout.add_output_queue(ocr.input_queue)  # Layout prediction
-        ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
+        ocr.add_output_queue(tagged_structure.input_queue)  # OCR
+        tagged_structure.add_output_queue(layout_postprocess.input_queue)  # Tagged PDF
         layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
         table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
 
-        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
+        stages = [
+            preprocess,
+            ocr,
+            layout,
+            tagged_structure,
+            layout_postprocess,
+            table,
+            assemble,
+        ]
         return RunContext(
             stages=stages,
             first_stage=preprocess,
@@ -1044,7 +1069,14 @@ class StandardPdfPipeline(ConvertPipeline):
                 elements=elements, headers=headers, body=body
             )
             conv_res.document = self.reading_order_model(conv_res)
-            conv_res.document = self.heading_hierarchy_model(conv_res)
+            if not any(
+                page.predictions.tagged_structure is not None
+                and page.predictions.tagged_structure.used
+                for page in conv_res.pages
+            ):
+                # Tagged pages carry explicit H1..Hn levels; inference would
+                # only second-guess the author.
+                conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:

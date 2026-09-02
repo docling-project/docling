@@ -304,6 +304,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.tagged_structure"
+layer = "models"
+depends_on = ["docling.backend", "docling.datamodel", "docling.models", "docling.utils"]
+
+[[modules]]
 path = "docling.models.stages.page_assemble"
 layer = "models"
 depends_on = [
@@ -408,6 +413,7 @@ depends_on = [
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.picture_classifier",
   "docling.models.stages.reading_order",
+  "docling.models.stages.tagged_structure",
   "docling.models.stages.vlm_convert",
   "docling.models.vlm_pipeline_models",
   "docling.utils",
