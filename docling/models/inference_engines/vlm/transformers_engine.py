@@ -227,7 +227,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
         self.processor = AutoProcessor.from_pretrained(
-            artifacts_path,
+            repo_id,
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
         )
