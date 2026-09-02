@@ -399,10 +399,26 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
 
 
+class FieldValuePrediction(BaseModel):
+    text: str
+    orig: str
+    bbox: BoundingBox
+
+
+class FieldRegionPrediction(BaseModel):
+    source_container_id: int | None = None
+    bbox: BoundingBox
+    values: list[FieldValuePrediction] = []
+
+
 class ContainerElement(
     BasePageElement
 ):  # Used for Form and Key-Value-Regions, only for typing.
     pass
+
+
+class FieldRegionElement(ContainerElement):
+    values: list[FieldValuePrediction] = []
 
 
 class Table(BasePageElement):
@@ -451,13 +467,16 @@ class EquationPrediction(BaseModel):
 
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
+    field_regions: list[FieldRegionPrediction] = []
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None
     vlm_response: VlmPrediction | None = None
 
 
-PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
+PageElement = Union[
+    TextElement, Table, FigureElement, ContainerElement, FieldRegionElement
+]
 
 
 class AssembledUnit(BaseModel):

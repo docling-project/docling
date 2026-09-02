@@ -1948,6 +1948,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    extract_form_fields: Annotated[
+        bool,
+        Field(
+            description=(
+                "Extract native interactive PDF widgets as keyless, format-neutral fillable field values. "
+                "The docling-parse backend currently supplies page widgets; labels are not inferred. Raw widget "
+                "metadata remains available only on retained parsed pages. Scanned or flattened forms and backends "
+                "without page widgets are unaffected."
+            )
+        ),
+    ] = False
     do_ocr: Annotated[
         bool,
         Field(

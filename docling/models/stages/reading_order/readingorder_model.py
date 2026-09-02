@@ -28,6 +28,7 @@ from docling.datamodel.base_models import (
     BasePageElement,
     Cluster,
     ContainerElement,
+    FieldRegionElement,
     FigureElement,
     PageElement,
     Table,
@@ -483,7 +484,7 @@ class ReadingOrderModel:
         ) -> None:
             split_lists_on_non_list = (
                 isinstance(parent, GroupItem) and parent.label == GroupLabel.FORM_AREA
-            )
+            ) or (parent is not None and parent.label == DocItemLabel.FIELD_REGION)
             current_list: GroupItem | None = None
             for rel in ordered_siblings[parent_ref]:
                 if rel.cid in skippable_cids:
@@ -554,6 +555,32 @@ class ReadingOrderModel:
                         el_to_footnotes_mapping=el_to_footnotes_mapping,
                     )
                     self._add_child_elements(element, picture_item, out_doc)
+
+                elif isinstance(element, FieldRegionElement):
+                    field_region = out_doc.add_field_region(
+                        prov=ProvenanceItem(
+                            page_no=element.page_no,
+                            charspan=(0, 0),
+                            bbox=element.cluster.bbox.to_bottom_left_origin(
+                                page_height
+                            ),
+                        ),
+                        parent=parent,
+                    )
+                    materialize_siblings(rel.ref.cref, field_region)
+                    for value in element.values:
+                        field_item = out_doc.add_field_item(parent=field_region)
+                        out_doc.add_field_value(
+                            text=value.text,
+                            orig=value.orig,
+                            prov=ProvenanceItem(
+                                page_no=element.page_no,
+                                charspan=(0, len(value.text)),
+                                bbox=value.bbox.to_bottom_left_origin(page_height),
+                            ),
+                            parent=field_item,
+                            kind="fillable",
+                        )
 
                 elif isinstance(element, ContainerElement):
                     group_label = (

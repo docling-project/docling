@@ -304,6 +304,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.form_field"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.models", "docling.utils"]
+
+[[modules]]
 path = "docling.models.stages.page_assemble"
 layer = "models"
 depends_on = [
@@ -508,6 +513,7 @@ depends_on = [
   "docling.datamodel",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.form_field",
   "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
