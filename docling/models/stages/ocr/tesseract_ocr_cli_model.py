@@ -29,10 +29,11 @@ from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.tesseract_utils import (
     installed_tesseract_tags,
-    map_tesseract_script,
+    language_to_tesseract_code,
+    osd_script_to_tesseract_code,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
-    tesseract_code,
+    tesseract_vocabulary,
 )
 from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
@@ -67,7 +68,6 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._name: Optional[str] = None
         self._version: Optional[str] = None
         self._tesseract_vocabulary: Optional[List[str]] = None
-        self._script_prefix: Optional[str] = None
         # No languages requested: Tesseract runs orientation and script
         # detection per page and picks a `script/` reader from the result.
         self._auto_script: bool = not self.languages
@@ -85,7 +85,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         if self.enabled:
             try:
                 self._get_name_and_version()
-                self._set_languages_and_prefix()
+                self._set_languages()
 
             except Exception as exc:
                 raise RuntimeError(
@@ -109,13 +109,11 @@ class TesseractOcrCliModel(BaseOcrModel):
             ]
 
     def supported_ocr_languages(self) -> List[str]:
-        return installed_tesseract_tags(
-            self._tesseract_vocabulary or [], self._script_prefix or ""
-        )
+        return installed_tesseract_tags(self._tesseract_vocabulary or [])
 
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
         assert self._tesseract_vocabulary is not None
-        name = tesseract_code(language, self._script_prefix or "")
+        name = language_to_tesseract_code(language)
         if name is None or name not in self._tesseract_vocabulary:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
@@ -287,8 +285,8 @@ class TesseractOcrCliModel(BaseOcrModel):
             _log.warning("Tesseract cannot detect the script of the page")
             return None
 
-        script = map_tesseract_script(scripts[0].strip())
-        lang = f"{self._script_prefix}{script}"
+        script = scripts[0].strip()
+        lang = osd_script_to_tesseract_code(script)
 
         # Check if the detected language has been installed
         if lang not in self._tesseract_vocabulary:
@@ -302,9 +300,9 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         return lang
 
-    def _set_languages_and_prefix(self):
+    def _set_languages(self):
         r"""
-        Read and set the languages installed in tesseract and decide the script prefix
+        Read and set the languages installed in tesseract
         """
         # Get all languages
         cmd = [self._safe_tesseract_cmd, "--list-langs"]
@@ -314,21 +312,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
-        # Tesseract prints script packs with the OS path separator, so on Windows
-        # `--list-langs` reports `script\Latin` rather than `script/Latin`. The
-        # forward-slash form is the one `_sanitize_lang` accepts and the one
-        # `tesseract -l` expects on every platform, so normalize on the way in.
-        self._tesseract_vocabulary = [
-            str(lang).replace("\\", "/") for lang in df_list[0].tolist()[1:]
-        ]
-
-        # Decide the script prefix
-        if any(lang.startswith("script/") for lang in self._tesseract_vocabulary):
-            script_prefix = "script/"
-        else:
-            script_prefix = ""
-
-        self._script_prefix = script_prefix
+        self._tesseract_vocabulary = tesseract_vocabulary(df_list[0].tolist()[1:])
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]

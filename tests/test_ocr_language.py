@@ -37,7 +37,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
-from docling.models.stages.ocr.tesseract_utils import tesseract_code
+from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageResolver,
@@ -325,16 +325,13 @@ def test_options_reject_a_clashing_token_when_no_engine_is_chosen() -> None:
 def test_tesseract_fraktur_keeps_its_own_traineddata() -> None:
     """`de-Latf` used to flatten to `deu` through to_alpha3(), losing Fraktur."""
     assert (
-        tesseract_code(
-            OcrLanguageResolver.canonicalize_ocr_language("de-Latf"), "script/"
+        language_to_tesseract_code(
+            OcrLanguageResolver.canonicalize_ocr_language("de-Latf")
         )
         == "deu_latf"
     )
     assert (
-        tesseract_code(
-            OcrLanguageResolver.canonicalize_ocr_language("frk"),
-            "script/",
-        )
+        language_to_tesseract_code(OcrLanguageResolver.canonicalize_ocr_language("frk"))
         == "deu_latf"
     )
 

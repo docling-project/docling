@@ -22,10 +22,11 @@ from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.tesseract_utils import (
     installed_tesseract_tags,
-    map_tesseract_script,
+    language_to_tesseract_code,
+    osd_script_to_tesseract_code,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
-    tesseract_code,
+    tesseract_vocabulary,
 )
 from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 from docling.utils.profiling import TimeRecorder
@@ -59,7 +60,6 @@ class TesseractOcrModel(BaseOcrModel):
         self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
         self._tesseract_vocabulary: list[str] = []
         self._native_codes: list[str] = []
-        self.script_prefix = ""
 
         if self.enabled:
             install_errmsg = (
@@ -87,17 +87,13 @@ class TesseractOcrModel(BaseOcrModel):
             except Exception:
                 raise ImportError(install_errmsg)
 
-            _, self._tesseract_vocabulary = tesserocr.get_languages()
+            _, codes = tesserocr.get_languages()
+            self._tesseract_vocabulary = tesseract_vocabulary(codes)
             if not self._tesseract_vocabulary:
                 raise ImportError(missing_langs_errmsg)
 
             # Initialize the tesseractAPI
             _log.debug("Initializing TesserOCR: %s", tesseract_version)
-
-            if any(name.startswith("script/") for name in self._tesseract_vocabulary):
-                self.script_prefix = "script/"
-            else:
-                self.script_prefix = ""
 
             if self._auto_script and "osd" not in self._tesseract_vocabulary:
                 raise ImportError(
@@ -140,10 +136,10 @@ class TesseractOcrModel(BaseOcrModel):
             self.reader_RIL = tesserocr.RIL
 
     def supported_ocr_languages(self) -> list[str]:
-        return installed_tesseract_tags(self._tesseract_vocabulary, self.script_prefix)
+        return installed_tesseract_tags(self._tesseract_vocabulary)
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
-        name = tesseract_code(language, self.script_prefix)
+        name = language_to_tesseract_code(language)
         if name is None or name not in self._tesseract_vocabulary:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
@@ -161,8 +157,8 @@ class TesseractOcrModel(BaseOcrModel):
         if self.reader is not None:
             # Finalize the tesseractAPI
             self.reader.End()
-        for script in self.script_readers:
-            self.script_readers[script].End()
+        for reader in self.script_readers.values():
+            reader.End()
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -221,8 +217,7 @@ class TesseractOcrModel(BaseOcrModel):
                                 )
                         if self._auto_script:
                             script = osd["script_name"]
-                            script = map_tesseract_script(script)
-                            lang = f"{self.script_prefix}{script}"
+                            lang = osd_script_to_tesseract_code(script)
 
                             # Check if the detected language is present in the system
                             if lang not in self._tesseract_vocabulary:
@@ -230,21 +225,19 @@ class TesseractOcrModel(BaseOcrModel):
                                 msg += " However this language is not installed in your system and will be ignored."
                                 _log.warning(msg)
                             else:
-                                if script not in self.script_readers:
+                                if lang not in self.script_readers:
                                     import tesserocr
 
-                                    self.script_readers[script] = (
-                                        tesserocr.PyTessBaseAPI(
-                                            path=self.reader.GetDatapath(),
-                                            lang=lang,
-                                            psm=self.options.psm
-                                            if self.options.psm is not None
-                                            else tesserocr.PSM.AUTO,
-                                            init=True,
-                                            oem=tesserocr.OEM.DEFAULT,
-                                        )
+                                    self.script_readers[lang] = tesserocr.PyTessBaseAPI(
+                                        path=self.reader.GetDatapath(),
+                                        lang=lang,
+                                        psm=self.options.psm
+                                        if self.options.psm is not None
+                                        else tesserocr.PSM.AUTO,
+                                        init=True,
+                                        oem=tesserocr.OEM.DEFAULT,
                                     )
-                                local_reader = self.script_readers[script]
+                                local_reader = self.script_readers[lang]
 
                         local_reader.SetImage(high_res_image)
                         boxes = local_reader.GetComponentImages(

@@ -48,11 +48,11 @@ class OcrLanguage(BaseModel):
             `mul`.
         bcp47_script: ISO 15924 script code in title case. `None` only for the
             bare reserved tags.
-        native: An engine's own token, kept verbatim, for the models no
-            `(bcp47_language, bcp47_script)` pair can name -- PP-OCR's script
-            recognizers (`arabic`, `cyrillic`) and Tesseract's `script/<Name>`
-            files. Set only for a passthrough, where it excludes
-            `bcp47_language` and `bcp47_script` and is what `tag` returns;
+        native: An engine's own token, stripped of the `native:` prefix, for
+            the models no `(bcp47_language, bcp47_script)` pair can name --
+            PP-OCR's script recognizers (`arabic`, `cyrillic`) and Tesseract's
+            `script/<Name>` files. Set only for a passthrough, where it excludes
+            `bcp47_language` and `bcp47_script` and is what `tag` re-prefixes;
             `None` for every ordinary BCP-47 request.
     """
 
@@ -67,8 +67,9 @@ class OcrLanguage(BaseModel):
         """How this request is written back into `OcrOptions.lang`.
 
         A canonical BCP-47 tag (`de-Latn`, `mul`), or, for a passthrough, the
-        engine's own token verbatim. Returning the token unchanged is what keeps
-        `lang` idempotent: revalidating `["arabic"]` must not move it.
+        engine's own token behind the `native:` prefix. Re-attaching the prefix
+        is what keeps `lang` idempotent: revalidating `["native:arabic"]` must
+        not move it.
         """
         if self.native is not None:
             return f"{OcrLanguageResolver._NATIVE_PREFIX}{self.native}"

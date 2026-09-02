@@ -24,17 +24,16 @@ def _model_for_listing(listing: str) -> TesseractOcrCliModel:
         f"{_MODULE}.subprocess.run",
         return_value=_FakeCompletedProcess(listing.encode("utf-8")),
     ):
-        model._set_languages_and_prefix()
+        model._set_languages()
     return model
 
 
 @pytest.mark.parametrize("sep", ["/", "\\"], ids=["posix", "windows"])
 def test_script_packs_are_listed_with_either_separator(sep: str):
-    """Windows tesseract prints `script\\Arabic`; the prefix must still be detected."""
+    """Windows tesseract prints `script\\Arabic`; the listing is normalized either way."""
     model = _model_for_listing(
         f"List of available languages (3):\neng\nscript{sep}Arabic\nscript{sep}Latin\n"
     )
-    assert model._script_prefix == "script/"
     assert "script/Arabic" in model._tesseract_vocabulary
 
 

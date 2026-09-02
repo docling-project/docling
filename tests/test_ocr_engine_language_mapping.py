@@ -34,8 +34,8 @@ from docling.models.stages.ocr.ppocr_languages import (
     ppocr_supported_tags,
 )
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
-from docling.models.stages.ocr.tesseract_utils import tesseract_code
-from docling.utils.ocr_language import OcrLanguageResolver
+from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
+from docling.utils.ocr_language import OcrLanguage, OcrLanguageResolver
 
 _ONNX_VOCABULARY = PPOCRV6_CODES | PPOCRV5_CODES | PPOCRV4_CODES
 _TORCH_VOCABULARY = PPOCRV6_CODES | PPOCRV4_CODES
@@ -282,26 +282,24 @@ def test_the_opt_out_does_not_leak_to_other_engines() -> None:
 )
 def test_tesseract_language_names(tag: str, expected: str) -> None:
     assert (
-        tesseract_code(OcrLanguageResolver.canonicalize_ocr_language(tag), "script/")
+        language_to_tesseract_code(OcrLanguageResolver.canonicalize_ocr_language(tag))
         == expected
     )
 
 
-def test_tesseract_script_files_follow_the_installed_prefix() -> None:
-    """A script file is always written `script/<Name>`, but older tessdata
-    installs list those files unprefixed, so the prefix is re-applied."""
-    latin = OcrLanguageResolver.canonicalize_ocr_language("script/Latin")
-
-    assert tesseract_code(latin, "script/") == "script/Latin"
-    assert tesseract_code(latin, "") == "Latin"
-    cyrl = OcrLanguageResolver.canonicalize_ocr_language("script/Cyrillic")
-    assert tesseract_code(cyrl, "") == "Cyrillic"
+def test_tesseract_script_files_pass_through_verbatim() -> None:
+    """A script file names its traineddata directly, in the install's spelling."""
+    assert (
+        language_to_tesseract_code(OcrLanguage(native="script/Latin")) == "script/Latin"
+    )
+    assert language_to_tesseract_code(OcrLanguage(native="Cyrillic")) == "Cyrillic"
 
 
 def test_tesseract_has_no_file_for_mul() -> None:
     """`mul` has no tessdata equivalent; an empty list drives per-page OSD."""
     assert (
-        tesseract_code(OcrLanguageResolver.canonicalize_ocr_language("mul"), "") is None
+        language_to_tesseract_code(OcrLanguageResolver.canonicalize_ocr_language("mul"))
+        is None
     )
 
 

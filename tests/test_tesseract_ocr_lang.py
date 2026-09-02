@@ -97,16 +97,22 @@ def test_language_order_is_preserved_for_the_plus_join() -> None:
     assert model._native_codes == ["eng"]
 
 
-def test_unprefixed_script_traineddata_is_advertised_as_a_script_name() -> None:
-    """Older tessdata installs list their script packs without the prefix.
+def test_unprefixed_script_traineddata_is_advertised_natively() -> None:
+    """Some tessdata installs list a hand-placed script pack without the prefix.
 
-    `script/<Name>` is still the only spelling that selects one, so that is how
-    the install has to name them back: left bare, `Latin` is dropped as
-    unparseable and `Lao` reads as the Lao language, whose `lao` traineddata is
-    not what is installed.
+    Only `script/<Name>` selects a pack through the OSD path, so a bare file is
+    named back verbatim behind `native:`: that is the only spelling that reaches
+    Tesseract unchanged. Left as a plain tag, `Latin` is unparseable and `Lao`
+    would read as the Lao language, whose `lao` traineddata is not installed.
     """
     names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
 
-    tags = installed_tesseract_tags(names, "")
+    tags = installed_tesseract_tags(names)
 
-    assert tags == ["en-Latn", "script/Cyrillic", "script/Lao", "script/Latin"]
+    assert tags == [
+        "en-Latn",
+        "native:Cyrillic",
+        "native:Japanese_vert",
+        "native:Lao",
+        "native:Latin",
+    ]

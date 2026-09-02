@@ -22,39 +22,14 @@ from docling.utils.ocr_language import (
 )
 from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
 
-# Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The bare
-# script name is deliberately *not* accepted as a language: `Lao` is a tessdata
-# script file and also a valid BCP-47 primary subtag.
-TESSERACT_SCRIPT_FILE_PREFIX = "script/"
-
-# The tessdata `script/` file names. Some installs list them unprefixed, which is
-# what this set recognizes; the prefixed spelling is what selects one.
-TESSERACT_SCRIPT_FILES = frozenset(
-    {
-        "Arabic", "Armenian", "Bengali", "Canadian_Aboriginal", "Cherokee",
-        "Cyrillic", "Devanagari", "Ethiopic", "Fraktur", "Georgian", "Greek",
-        "Gujarati", "Gurmukhi", "Hangul", "HanS", "HanT", "Hebrew", "Japanese",
-        "Kannada", "Khmer", "Lao", "Latin", "Malayalam", "Myanmar", "Oriya",
-        "Sinhala", "Syriac", "Tamil", "Telugu", "Thaana", "Thai", "Tibetan",
-        "Vietnamese",
-    }
-)  # fmt: skip
+# Tessdata files that are not recognizers: `osd` is the orientation-and-script
+# detector, `equ` the equation model. Neither is a language anyone can ask for.
+_NON_LANGUAGE_TRAINEDDATA = frozenset({"osd", "equ"})
 
 
-def map_tesseract_script(script: str) -> str:
-    r"""Map an OSD-reported script name onto its tessdata `script/` file name."""
-    if script == "Katakana" or script == "Hiragana":
-        script = "Japanese"
-    elif script == "Han":
-        script = "HanS"
-    elif script == "Korean":
-        script = "Hangul"
-    return script
-
-
-# Canonical tag -> tessdata file, where Tesseract deviates from
-# ISO 639-2/T. Everything else is handled by `.to_alpha3(variant="T")`.
-_TESSERACT_CODES: dict[str, str] = {
+# Canonical tag -> tessdata file, where Tesseract deviates from ISO 639-2/T
+# Everything else is handled by `.to_alpha3(variant="T")`.
+_TESSERACT_DEVIATIONAL_CODES: dict[str, str] = {
     "zh-Hans": "chi_sim",
     "zh-Hant": "chi_tra",
     "sr-Cyrl": "srp",
@@ -71,67 +46,82 @@ _TESSERACT_CODES: dict[str, str] = {
     "de-Latf": "deu_latf",
 }
 
-_CODE_TO_CANONICAL: dict[str, str] = {
-    name: tag for tag, name in _TESSERACT_CODES.items()
+_DEVIATIONAL_CODE_TO_CANONICAL: dict[str, str] = {
+    name: tag for tag, name in _TESSERACT_DEVIATIONAL_CODES.items()
 }
 
 
-def tesseract_code(language: OcrLanguage, script_prefix: str) -> str | None:
-    """Map a canonical tag onto a tessdata file name.
+###########################################################################################
 
-    A passthrough names a traineddata file directly: `script/Cyrillic`. It is
-    always written with the `script/` prefix, but older tessdata installs list
-    the script files unprefixed, so the prefix is re-applied from what this
-    install actually reports. `mul` has no file of its own.
+# Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The bare
+# script name is deliberately *not* accepted as a language: `Lao` is a tessdata
+# script file and also a valid BCP-47 primary subtag.
+_TESSERACT_SCRIPT_FILE_PREFIX = "script/"
+
+
+###########################################################################################
+
+
+def tesseract_vocabulary(codes: Sequence[str]) -> list[str]:
+    r"""The traineddata names an install reports, normalized.
+
+    Tesseract spells script packs with the OS path separator, so on Windows it
+    reports `script\Latin`. Both front-ends see it: `tesseract --list-langs`
+    prints `GetAvailableLanguagesAsVector()` and `tesserocr.get_languages()`
+    calls the same API. The forward-slash form is what `tesseract -l` expects on
+    every platform, and the only one `_sanitize_lang` accepts.
     """
-    if language.is_passthrough:
-        assert language.native is not None
-        code = language.native.removeprefix(TESSERACT_SCRIPT_FILE_PREFIX)
-        return f"{script_prefix}{code}"
+    return [str(code).replace("\\", "/") for code in codes]
+
+
+def osd_script_to_tesseract_code(script: str) -> str:
+    """The tessdata file an OSD-detected script selects: `Katakana` -> `script/Japanese`.
+
+    OSD reports a script, never a language, out of the fixed set its traineddata
+    was built on, and every one of those names has a `script/` file once the few
+    that are not spelled like their file are folded onto it.
+    """
+    if script == "Katakana" or script == "Hiragana":
+        script = "Japanese"
+    elif script == "Han":
+        script = "HanS"
+    elif script == "Korean":
+        script = "Hangul"
+    return f"{_TESSERACT_SCRIPT_FILE_PREFIX}{script}"
+
+
+def language_to_tesseract_code(language: OcrLanguage) -> str | None:
+    """Map an OcrLanguage object to a tesseract code"""
+    if language.native is not None:
+        return language.native
     if language.is_multilingual:
         return None
-    if language.bcp47 in _TESSERACT_CODES:
-        return _TESSERACT_CODES[language.bcp47]
+    if language.bcp47 in _TESSERACT_DEVIATIONAL_CODES:
+        return _TESSERACT_DEVIATIONAL_CODES[language.bcp47]
     # Tesseract's vocabulary *is* ISO 639-2/T: deu, fra, ell, ces, kat.
     assert language.bcp47_language is not None
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
 
 
-def installed_tesseract_tags(codes: Sequence[str], script_prefix: str) -> list[str]:
-    """The canonical tags this install can actually serve.
-
-    A code is reported only if the tag it renders as maps back to a file that is
-    installed. Without that round trip the list can offer a tag this install
-    cannot load: `frk` and `deu_latf` are both `de-Latf`, but only `deu_latf` is
-    what the tag maps to, so an install carrying just `frk` would advertise a
-    language it then refuses.
+def installed_tesseract_tags(codes: Sequence[str]) -> list[str]:
+    """
+    The tags this install can serve. This can be either a canonical BCP47 tag or a native tesseract
     """
     tags = set()
     for code in codes:
-        if code in _CODE_TO_CANONICAL:
-            tag = _CODE_TO_CANONICAL[code]
-        elif script_prefix and code.startswith(script_prefix):
-            # A script traineddata file is named back as itself: that is what the
-            # user has to type to select it -- except the vertical-text ones, which
-            # `canonicalize_ocr_language` refuses, so naming them back would
-            # advertise a value that cannot be asked for.
-            if code.lower().endswith("_vert"):
-                continue
-            tag = code
-        elif not script_prefix and code in TESSERACT_SCRIPT_FILES:
-            # This install lists its script packs unprefixed, but `script/<Name>`
-            # is still the spelling that selects one. Left bare, the code is either
-            # dropped as unparseable (`Latin`) or read as a language (`Lao`).
-            tag = f"{TESSERACT_SCRIPT_FILE_PREFIX}{code}"
-        else:
-            tag = code
+        if code in _NON_LANGUAGE_TRAINEDDATA:
+            continue
+        # First resolve against the deviational codes
+        tag = _DEVIATIONAL_CODE_TO_CANONICAL.get(code, code)
+
+        # Try to canonicalize or receive a None language
         language = OcrLanguageResolver.canonicalize_ocr_language(
             tag, raise_exception=False
         )
-        if language is None:
-            continue
-        if tesseract_code(language, script_prefix) in codes:
-            tags.add(language.tag)
+        # Check if it is a native code
+        if language is None or language_to_tesseract_code(language) != code:
+            language = OcrLanguage(native=code)
+        tags.add(language.tag)
     return sorted(tags)
 
 
