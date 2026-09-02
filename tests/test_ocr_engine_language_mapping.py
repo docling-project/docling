@@ -26,6 +26,7 @@ from docling.datamodel.pipeline_options import (
     TesseractOcrOptions,
 )
 from docling.exceptions import OcrLanguageNotSupportedError
+from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
@@ -33,8 +34,13 @@ from docling.models.stages.ocr.rapid_ocr_model import (
     _ppocr_supported_tags,
     _rapidocr_vocabulary,
 )
+from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
 from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
-from docling.utils.ocr_language import OcrLanguage, OcrLanguageResolver
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 
 _ONNX_VOCABULARY = _rapidocr_vocabulary("onnxruntime")
 _TORCH_VOCABULARY = _rapidocr_vocabulary("torch")
@@ -148,13 +154,18 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
 
 
 def test_ppocr_supported_tags_are_canonical() -> None:
+    """Every entry of the advertised list is a tag the user can ask for again.
+
+    It fills the "Supported:" line of `OcrLanguageNotSupportedError`, so it is a
+    list people copy from.
+    """
     tags = _ppocr_supported_tags(_ONNX_VOCABULARY)
 
     assert "zh-Hans" in tags
-    # Languages are rendered back as tags, never as PP-OCR tokens...
+    # Languages are rendered back as tags, never as PP-OCR's own tokens.
     assert "ch" not in tags
-    # ...but a script recognizer is named back as itself: that is what selects it.
-    assert "cyrillic" in tags
+    for tag in tags:
+        assert OcrLanguageResolver.canonicalize_ocr_language(tag).tag == tag
 
 
 # --- RapidOCR backend routing ----------------------------------------------
@@ -193,6 +204,25 @@ def test_rapidocr_native_ka_is_ppocr_kannada() -> None:
     options = RapidOcrOptions(backend="torch", lang=["native:ka"])
     assert options.lang == ["native:ka"]
     assert _rapid_model("torch", ["native:ka"]).resolve_ocr_languages() == ["ka"]
+
+
+def test_another_engines_native_code_fails_at_the_engine() -> None:
+    """`chi_sim` is tesseract's token, and the resolver no longer knows which
+    engine was selected, so `native:chi_sim` is accepted as written.
+
+    PP-OCR is the one that has to reject it, and its error has to name both the
+    token as the user spelled it and the codes that would have worked.
+    """
+    assert RapidOcrOptions(lang=["native:chi_sim"]).lang == ["native:chi_sim"]
+
+    model = _rapid_model("onnxruntime", ["native:chi_sim"])
+
+    with pytest.raises(OcrLanguageNotSupportedError) as excinfo:
+        model.resolve_ocr_languages()
+
+    message = str(excinfo.value)
+    assert "native:chi_sim" in message
+    assert "Supported:" in message
 
 
 def test_rapidocr_warns_and_truncates_extra_languages(
@@ -255,6 +285,77 @@ def test_kserve_warns_and_sends_the_first_language(
 def test_the_opt_out_does_not_leak_to_other_engines() -> None:
     """Only KServe skips canonicalization; a sibling still rewrites its tags."""
     assert RapidOcrOptions(lang=["deu"]).lang == ["de-Latn"]
+
+
+# --- the base-class policy --------------------------------------------------
+#
+# `BaseOcrModel` decides two things on every engine's behalf: what an engine that
+# has not overridden `map_ocr_language` does with a request, and what
+# `resolve_ocr_languages` does with the codes it collects. Every engine in the
+# tree overrides the first, so the fallback is only reachable through the base.
+
+
+class _BareOcrModel(BaseOcrModel):
+    """An engine that adds nothing: no table, no overrides, no installation.
+
+    `language_support` is left at the base default, which is the conservative
+    single-model, single-language engine.
+    """
+
+    def __init__(self, tags: list[str]) -> None:
+        self.languages = OcrLanguageResolver.canonicalize_ocr_languages(tags)
+
+    def __call__(self, conv_res, page_batch):  # pragma: no cover - never run
+        raise NotImplementedError
+
+    @classmethod
+    def get_options_type(cls):  # pragma: no cover - never run
+        raise NotImplementedError
+
+
+class _BareMultilingualOcrModel(_BareOcrModel):
+    language_support = OcrLanguageSupport(multiple_languages=True)
+
+
+def test_the_default_mapping_is_the_primary_subtag() -> None:
+    """Most ISO-639 engines want `de`, not `de-Latn`."""
+    model = _BareMultilingualOcrModel(["de-DE", "zh-TW"])
+
+    assert model.resolve_ocr_languages() == ["de", "zh"]
+
+
+@pytest.mark.parametrize("tag", ["native:cyrillic", "mul"])
+def test_the_default_mapping_refuses_what_it_cannot_name(tag: str) -> None:
+    """A passthrough names *some* engine's script recognizer and `mul` names a
+    multilingual model; an engine that declared neither has neither."""
+    model = _BareOcrModel([tag])
+
+    with pytest.raises(OcrLanguageNotSupportedError, match="explicit language"):
+        model.resolve_ocr_languages()
+
+
+def test_two_languages_sharing_a_native_code_are_joined_once() -> None:
+    """Both written Norwegians are the one `nor` traineddata, and tesseract is
+    handed the result as `-l nor`, not `-l nor+nor`."""
+    model = TesseractOcrCliModel.__new__(TesseractOcrCliModel)
+    # Stand in for the `--list-langs` probe: the join is what is under test, not
+    # which files happen to be installed on the machine running this.
+    model._tesseract_vocabulary = ["nor", "deu"]
+    model.languages = OcrLanguageResolver.canonicalize_ocr_languages(["nb", "nn", "de"])
+
+    assert model.resolve_ocr_languages() == ["nor", "deu"]
+
+
+def test_a_single_language_engine_keeps_the_first_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """List order is preference order, and the drop is never silent."""
+    model = _BareOcrModel(["de", "fr"])
+
+    with caplog.at_level(logging.WARNING):
+        assert model.resolve_ocr_languages() == ["de"]
+
+    assert "de-Latn" in caplog.text and "fr-Latn" in caplog.text
 
 
 # --- Tesseract --------------------------------------------------------------
@@ -347,7 +448,6 @@ def test_easyocr_advertises_only_languages_it_serves() -> None:
 def test_tesseract_advertises_only_languages_it_serves() -> None:
     if shutil.which("tesseract") is None:
         pytest.skip("tesseract binary not installed")
-    from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
 
     model = TesseractOcrCliModel(
         enabled=True,
