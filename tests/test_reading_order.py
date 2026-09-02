@@ -53,6 +53,7 @@ def _text_element(
         page_no=1,
         page_size=Size(width=600, height=800),
         label=DocItemLabel.TEXT,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
         l=left,
         r=right,
         b=bottom,
@@ -63,8 +64,18 @@ def _text_element(
 def test_predict_merges_vertically_adjacent_text_fragments() -> None:
     predictor = ReadingOrderPredictor()
     elements = [
-        _text_element(0, "The first part of an unfinished sentence"),
-        _text_element(1, "Continuation of the paragraph."),
+        _text_element(
+            0,
+            "The first part of an unfinished sentence",
+            bottom=100,
+            top=200,
+        ),
+        _text_element(
+            1,
+            "Continuation of the paragraph.",
+            bottom=-5,
+            top=95,
+        ),
     ]
 
     assert predictor.predict_merges(elements) == {0: [1]}
@@ -73,8 +84,8 @@ def test_predict_merges_vertically_adjacent_text_fragments() -> None:
 def test_predict_merges_preserves_sentence_boundaries() -> None:
     predictor = ReadingOrderPredictor()
     elements = [
-        _text_element(0, "The first sentence."),
-        _text_element(1, "The next sentence."),
+        _text_element(0, "The first sentence.", bottom=100, top=200),
+        _text_element(1, "The next sentence.", bottom=-5, top=95),
     ]
 
     assert predictor.predict_merges(elements) == {}
@@ -83,7 +94,7 @@ def test_predict_merges_preserves_sentence_boundaries() -> None:
 def test_predict_merges_does_not_cross_a_large_vertical_gap() -> None:
     predictor = ReadingOrderPredictor()
     elements = [
-        _text_element(0, "The first paragraph ends unfinished", bottom=300, top=400),
+        _text_element(0, "The first paragraph ends unfinished", bottom=400, top=500),
         _text_element(1, "A separate paragraph starts here.", bottom=100, top=200),
     ]
 
