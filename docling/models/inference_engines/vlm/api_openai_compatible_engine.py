@@ -238,4 +238,5 @@ class ApiVlmEngine(BaseVlmEngine):
 
         For API runtimes, there's nothing to clean up.
         """
-        _log.info("API runtime cleaned up")
+        if _log is not None:
+            _log.info("API runtime cleaned up")
