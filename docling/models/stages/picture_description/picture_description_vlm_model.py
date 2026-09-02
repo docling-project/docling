@@ -14,6 +14,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmOptions,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
@@ -51,7 +52,10 @@ class PictureDescriptionVlmModel(
 
         if self.enabled:
             if artifacts_path is None:
-                artifacts_path = self.download_models(repo_id=self.options.repo_id)
+                try:
+                    artifacts_path = self.download_models(repo_id=self.options.repo_id)
+                except DoclingModelDownloadError as e:
+                    raise e
             else:
                 artifacts_path = Path(artifacts_path) / self.options.repo_cache_folder
 

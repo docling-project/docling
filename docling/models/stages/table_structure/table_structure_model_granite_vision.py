@@ -7,7 +7,7 @@ import warnings
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, Optional, cast
 
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
@@ -17,6 +17,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -166,7 +167,12 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             )
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
+                try:
+                    artifacts_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download GraniteVisionTableStructureModel")
+                    raise e
+
             elif (artifacts_path / self._model_repo_folder).exists():
                 artifacts_path = artifacts_path / self._model_repo_folder
             else:
@@ -187,6 +193,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=cls._model_repo_id,
@@ -194,6 +201,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def _load_model(self, artifacts_path: Path) -> None:

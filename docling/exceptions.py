@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
+from typing import List, Tuple
 
 
 class BaseError(RuntimeError):
@@ -29,3 +30,22 @@ class SecurityError(BaseError):
 
 class AcceleratorDeviceNotAvailableError(BaseError):
     """Raised when an explicitly requested accelerator device is not available."""
+
+
+class DoclingModelDownloadError(BaseError):
+    """Raised when download a model fails (e.g. connection issues, invalid token)."""
+
+    def __init__(self, message: str, original_exception: Exception | None = None):
+        super().__init__(message)
+        self.original_exception = original_exception
+
+
+class DoclingMultiModelDownloadError(BaseError):
+    """Raised when one or more models fail during batch download"""
+
+    def __init__(self, failures: List[Tuple[str, Exception]]):
+        self.failures = failures
+        msgs = [f"{model_name}: {exc}" for model_name, exc in failures]
+        super().__init__(
+            f"Failed to download {len(failures)} model(s):\n" + "\n".join(msgs)
+        )

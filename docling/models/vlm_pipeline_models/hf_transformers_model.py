@@ -25,6 +25,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.generation_utils import (
     GenerationStopper,
@@ -112,9 +113,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(
-                    self.vlm_options.repo_id, revision=self.vlm_options.revision
-                )
+                try:
+                    artifacts_path = self.download_models(
+                        self.vlm_options.repo_id,
+                        revision=self.vlm_options.revision,
+                    )
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download HuggingFaceTransformersVlmModel")
+                    raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
             else:

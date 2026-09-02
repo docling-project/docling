@@ -17,6 +17,7 @@ from docling.datamodel.accelerator_options import (
 )
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmModel
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
@@ -135,10 +136,14 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(
-                    repo_id=self.vlm_options.repo_id,
-                    revision=self.vlm_options.revision,
-                )
+                try:
+                    artifacts_path = self.download_models(
+                        repo_id=self.vlm_options.repo_id,
+                        revision=self.vlm_options.revision,
+                    )
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download NuExtractTransformersModel")
+                    raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 

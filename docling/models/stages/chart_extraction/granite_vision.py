@@ -33,6 +33,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -66,7 +67,12 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             )
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
+                try:
+                    artifacts_path = self.download_models()
+                except DoclingModelDownloadError as e:
+                    _log.error(f"Failed to download {self._model_repo_id}")
+                    raise e
+
             elif (artifacts_path / self._model_repo_folder).exists():
                 artifacts_path = artifacts_path / self._model_repo_folder
             else:
@@ -86,6 +92,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        hf_token: Optional[str | bool] = None,
     ) -> Path:
         return download_hf_model(
             repo_id=cls._model_repo_id,
@@ -94,6 +101,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             local_dir=local_dir,
             force=force,
             progress=progress,
+            token=hf_token,
         )
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:

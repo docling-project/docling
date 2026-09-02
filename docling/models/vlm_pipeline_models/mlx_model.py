@@ -7,7 +7,7 @@ import threading
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from PIL.Image import Image
@@ -24,6 +24,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.exceptions import DoclingModelDownloadError
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import (
@@ -69,10 +70,14 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
             # PARAMETERS:
             if artifacts_path is None:
-                artifacts_path = self.download_models(
-                    self.vlm_options.repo_id,
-                    revision=self.vlm_options.revision,
-                )
+                try:
+                    artifacts_path = self.download_models(
+                        self.vlm_options.repo_id,
+                        revision=self.vlm_options.revision,
+                    )
+                except DoclingModelDownloadError as e:
+                    _log.error("Failed to download HuggingFaceMlxModel")
+                    raise e
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
             else:
