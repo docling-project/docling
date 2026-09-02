@@ -51,15 +51,10 @@ _DEVIATIONAL_CODE_TO_CANONICAL: dict[str, str] = {
 }
 
 
-###########################################################################################
-
 # Prefix of the tessdata script-family files, e.g. `script/Cyrillic`. The bare
 # script name is deliberately *not* accepted as a language: `Lao` is a tessdata
 # script file and also a valid BCP-47 primary subtag.
 _TESSERACT_SCRIPT_FILE_PREFIX = "script/"
-
-
-###########################################################################################
 
 
 def tesseract_vocabulary(codes: Sequence[str]) -> list[str]:
