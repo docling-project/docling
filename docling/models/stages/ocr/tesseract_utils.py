@@ -5,8 +5,7 @@
 
 `tesseract_ocr_model.py` (the tesserocr bindings) and `tesseract_ocr_cli_model.py`
 drive the same engine through different front-ends, so everything that is about
-Tesseract itself rather than about either front-end lives here -- the same reason
-`ppocr_languages.py` sits beside the two engines that speak PP-OCR.
+Tesseract itself rather than about either front-end lives here.
 """
 
 from collections.abc import Sequence

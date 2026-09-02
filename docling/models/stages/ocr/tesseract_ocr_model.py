@@ -56,8 +56,8 @@ class TesseractOcrModel(BaseOcrModel):
         self._auto_script: bool = not self.languages
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
-        self.reader = None
-        self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
+        self._reader = None
+        self._script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
         self._tesseract_vocabulary: list[str] = []
         self._native_codes: list[str] = []
 
@@ -111,7 +111,7 @@ class TesseractOcrModel(BaseOcrModel):
                 "oem": tesserocr.OEM.DEFAULT,
             }
 
-            self.osd_reader = None
+            self._osd_reader = None
 
             if self.options.path is not None:
                 tesserocr_kwargs["path"] = self.options.path
@@ -122,18 +122,18 @@ class TesseractOcrModel(BaseOcrModel):
             )
             if self._auto_script:
                 # No `lang`: the per-page OSD pass picks a script reader instead.
-                self.reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
+                self._reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
             else:
-                self.reader = tesserocr.PyTessBaseAPI(
+                self._reader = tesserocr.PyTessBaseAPI(
                     lang="+".join(self._native_codes),
                     psm=main_psm,
                     **tesserocr_kwargs,
                 )
             # OSD reader must use PSM.OSD_ONLY for orientation detection
-            self.osd_reader = tesserocr.PyTessBaseAPI(
+            self._osd_reader = tesserocr.PyTessBaseAPI(
                 lang="osd", psm=tesserocr.PSM.OSD_ONLY, **tesserocr_kwargs
             )
-            self.reader_RIL = tesserocr.RIL
+            self._reader_RIL = tesserocr.RIL
 
     def supported_ocr_languages(self) -> list[str]:
         return installed_tesseract_tags(self._tesseract_vocabulary)
@@ -154,10 +154,10 @@ class TesseractOcrModel(BaseOcrModel):
         return name
 
     def __del__(self):
-        if self.reader is not None:
+        if self._reader is not None:
             # Finalize the tesseractAPI
-            self.reader.End()
-        for reader in self.script_readers.values():
+            self._reader.End()
+        for reader in self._script_readers.values():
             reader.End()
 
     def __call__(
@@ -173,8 +173,8 @@ class TesseractOcrModel(BaseOcrModel):
                 yield page
             else:
                 with TimeRecorder(conv_res, "ocr"):
-                    assert self.reader is not None
-                    assert self.osd_reader is not None
+                    assert self._reader is not None
+                    assert self._osd_reader is not None
                     assert self._tesseract_vocabulary is not None
 
                     ocr_rects = self.get_ocr_rects(page)
@@ -188,11 +188,11 @@ class TesseractOcrModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
 
-                        local_reader = self.reader
-                        self.osd_reader.SetImage(high_res_image)
+                        local_reader = self._reader
+                        self._osd_reader.SetImage(high_res_image)
 
                         doc_orientation = 0
-                        osd = self.osd_reader.DetectOrientationScript()
+                        osd = self._osd_reader.DetectOrientationScript()
 
                         # No text, or Orientation and Script detection failure
                         if osd is None:
@@ -225,23 +225,25 @@ class TesseractOcrModel(BaseOcrModel):
                                 msg += " However this language is not installed in your system and will be ignored."
                                 _log.warning(msg)
                             else:
-                                if lang not in self.script_readers:
+                                if lang not in self._script_readers:
                                     import tesserocr
 
-                                    self.script_readers[lang] = tesserocr.PyTessBaseAPI(
-                                        path=self.reader.GetDatapath(),
-                                        lang=lang,
-                                        psm=self.options.psm
-                                        if self.options.psm is not None
-                                        else tesserocr.PSM.AUTO,
-                                        init=True,
-                                        oem=tesserocr.OEM.DEFAULT,
+                                    self._script_readers[lang] = (
+                                        tesserocr.PyTessBaseAPI(
+                                            path=self._reader.GetDatapath(),
+                                            lang=lang,
+                                            psm=self.options.psm
+                                            if self.options.psm is not None
+                                            else tesserocr.PSM.AUTO,
+                                            init=True,
+                                            oem=tesserocr.OEM.DEFAULT,
+                                        )
                                     )
-                                local_reader = self.script_readers[lang]
+                                local_reader = self._script_readers[lang]
 
                         local_reader.SetImage(high_res_image)
                         boxes = local_reader.GetComponentImages(
-                            self.reader_RIL.TEXTLINE, True
+                            self._reader_RIL.TEXTLINE, True
                         )
 
                         cells = []
