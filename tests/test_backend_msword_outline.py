@@ -26,6 +26,14 @@ def _set_outline_level(style, outline_lvl: int):
     return style
 
 
+def _set_paragraph_outline_level(paragraph, outline_lvl: int):
+    """Pin an explicit ``w:outlineLvl`` directly onto an existing paragraph."""
+    lvl = OxmlElement("w:outlineLvl")
+    lvl.set(qn("w:val"), str(outline_lvl))
+    paragraph._p.get_or_add_pPr().append(lvl)
+    return paragraph
+
+
 def _add_style_with_outline_level(doc, style_id: str, name: str, outline_lvl: int):
     """Register a paragraph style carrying an explicit ``w:outlineLvl``."""
     style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
@@ -246,3 +254,15 @@ def test_use_outline_level_for_headings_disabled_keeps_body_prose_as_text(
     assert '### "Work" means' not in md
     assert '"Work" means' in md
     assert "Plain body paragraph." in md
+
+    
+def test_outline_level_on_the_paragraph_is_detected_without_a_heading_style(tmp_path):
+    doc = Document()
+    para = doc.add_paragraph("Larger channel bandwidth")
+    _set_paragraph_outline_level(para, 1)
+    doc.add_paragraph("Body text.")
+
+    markdown = _markdown(doc, tmp_path, "paragraph_level")
+
+    lines = [line for line in markdown.splitlines() if line.strip()]
+    assert lines == ["### Larger channel bandwidth", "Body text."]
