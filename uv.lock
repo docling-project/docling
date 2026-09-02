@@ -1776,7 +1776,7 @@ wheels = [
 [[package]]
 name = "docling-parse"
 version = "7.17.0"
-source = { git = "https://github.com/wittjeff/docling-parse.git?branch=feat%2Fstructure-tree-reader#083a78974a8b6da5487479dc1d34997128d6fc22" }
+source = { git = "https://github.com/wittjeff/docling-parse.git?rev=083a78974a8b6da5487479dc1d34997128d6fc22#083a78974a8b6da5487479dc1d34997128d6fc22" }
 dependencies = [
     { name = "docling-core" },
     { name = "pillow" },
@@ -2155,7 +2155,7 @@ requires-dist = [
     { name = "docling-core", specifier = ">=2.91.0,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<5" },
-    { name = "docling-parse", marker = "extra == 'format-pdf-docling'", git = "https://github.com/wittjeff/docling-parse.git?branch=feat%2Fstructure-tree-reader" },
+    { name = "docling-parse", marker = "extra == 'format-pdf-docling'", git = "https://github.com/wittjeff/docling-parse.git?rev=083a78974a8b6da5487479dc1d34997128d6fc22" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-video'" },
     { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
