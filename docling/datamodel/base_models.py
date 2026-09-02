@@ -399,6 +399,35 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
 
 
+class TaggedTextCell(BaseModel):
+    """One text cell with its tagged-PDF linkage (ISO 32000-2, 14.7.5).
+
+    ``bbox`` is in top-left page coordinates like every other page geometry in
+    docling. ``mcid`` is the marked-content id the glyphs were drawn under
+    (-1 when none); ``artifact_type`` and ``artifact_subtype`` are set when
+    the glyphs sit inside an /Artifact sequence.
+    """
+
+    text: str
+    bbox: BoundingBox
+    mcid: int = -1
+    artifact_type: str | None = None
+    artifact_subtype: str | None = None
+
+
+class TaggedStructurePrediction(BaseModel):
+    """What the tagged-structure stage derived for a page.
+
+    ``heading_levels`` and ``alt_texts`` are keyed by layout cluster id so the
+    reading-order stage can materialize explicit heading levels (H1..Hn) and
+    authored alternate text without re-deriving them.
+    """
+
+    used: bool = False
+    heading_levels: dict[int, int] = {}
+    alt_texts: dict[int, str] = {}
+
+
 class ContainerElement(
     BasePageElement
 ):  # Used for Form and Key-Value-Regions, only for typing.
@@ -451,6 +480,7 @@ class EquationPrediction(BaseModel):
 
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
+    tagged_structure: TaggedStructurePrediction | None = None
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
-from typing import ClassVar, Optional, Set, Union
+from typing import TYPE_CHECKING, ClassVar, Optional, Set, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
@@ -16,6 +16,11 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.utils.pdf_outline import _PdfOutlineItem
+
+if TYPE_CHECKING:
+    from docling_parse.pdf_parser import PdfStructure
+
+    from docling.datamodel.base_models import TaggedTextCell
 
 
 class PdfPageBackend(ABC):
@@ -35,6 +40,15 @@ class PdfPageBackend(ABC):
     @abstractmethod
     def get_text_cells(self) -> Iterable[TextCell]:
         pass
+
+    def get_marked_content(self) -> list["TaggedTextCell"]:
+        """Text cells with their tagged-PDF marked-content linkage.
+
+        Empty by default: only backends that read the content stream's
+        BDC/EMC structure (docling-parse) can say which /MCID or /Artifact
+        sequence a glyph was drawn in.
+        """
+        return []
 
     def get_visible_text_cells(self) -> Optional[list[TextCell]]:
         """Return the subset of `get_text_cells()` that actually paints ink on the page.
@@ -146,6 +160,15 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
         """
         return []
+
+    def get_structure(self) -> Optional["PdfStructure"]:
+        """The tagged-PDF logical structure tree (ISO 32000-2, 14.7), or None.
+
+        The default returns None; the docling-parse backend overrides it. The
+        structure is the authored counterpart of the layout model's
+        prediction and is consumed by the tagged-structure stage.
+        """
+        return None
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:

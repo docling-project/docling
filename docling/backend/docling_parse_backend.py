@@ -23,6 +23,7 @@ from docling_parse.pdf_parser import (
     DoclingThreadedPdfParser,
     PageParseResult,
     PdfDocument,
+    PdfStructure,
     RenderConfig,
     ThreadedPdfParserConfig,
 )
@@ -39,6 +40,7 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
+from docling.datamodel.base_models import TaggedTextCell
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
@@ -200,6 +202,26 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
                 text_piece += cell.text
 
         return text_piece
+
+    def get_marked_content(self) -> list[TaggedTextCell]:
+        """Per-cell /MCID and /Artifact tags from docling-parse, in top-left coordinates."""
+        if self._dp_doc is None or self._ppage is None:
+            return []
+        height = self.get_size().height
+        cells: list[TaggedTextCell] = []
+        for tag in self._dp_doc.get_page_marked_content(self._page_no + 1):
+            if tag.rect is None:
+                continue
+            cells.append(
+                TaggedTextCell(
+                    text=tag.text,
+                    bbox=tag.rect.to_bounding_box().to_top_left_origin(height),
+                    mcid=tag.mcid,
+                    artifact_type=tag.artifact_type,
+                    artifact_subtype=tag.artifact_subtype,
+                )
+            )
+        return cells
 
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
         self._ensure_parsed()
@@ -376,6 +398,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             return []
         return extract_outline_from_docling_parse(self.dp_doc)
 
+    def get_structure(self) -> Optional[PdfStructure]:
+        """The logical structure tree read by docling-parse, or None when untagged."""
+        if self.dp_doc is None:
+            return None
+        return self.dp_doc.get_structure()
+
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
             self.dp_doc.unload()
@@ -418,6 +446,26 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def __init__(self, result: PageParseResult):
         self._result = result
         self._seg_page: Optional[SegmentedPdfPage] = None
+
+    def get_marked_content(self) -> list[TaggedTextCell]:
+        """Per-cell /MCID and /Artifact tags from the threaded decode result."""
+        if not self._result.success:
+            return []
+        height = self.get_size().height
+        cells: list[TaggedTextCell] = []
+        for tag in self._result.get_marked_content():
+            if tag.rect is None:
+                continue
+            cells.append(
+                TaggedTextCell(
+                    text=tag.text,
+                    bbox=tag.rect.to_bounding_box().to_top_left_origin(height),
+                    mcid=tag.mcid,
+                    artifact_type=tag.artifact_type,
+                    artifact_subtype=tag.artifact_subtype,
+                )
+            )
+        return cells
 
     @property
     def page_no(self) -> int:
@@ -582,6 +630,8 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             create_textlines=True,
         )
 
+        self._structure: Optional[PdfStructure] = None
+        self._structure_loaded = False
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(
                 loglevel="fatal",
@@ -646,6 +696,32 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             return extract_outline_from_docling_parse(dp_doc)
         finally:
             dp_doc.unload()
+
+    def get_structure(self) -> Optional[PdfStructure]:
+        """The logical structure tree, read once through a lazy docling-parse document.
+
+        The threaded parser exposes no document-level structure accessor, so
+        the tree is read the same way the outline is: a structure-only load
+        that decodes no page content.
+        """
+        if self._structure_loaded:
+            return self._structure
+        self._structure_loaded = True
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        dp_doc = DoclingPdfParser(loglevel="fatal").load(
+            path_or_stream=self.path_or_stream, lazy=True, password=password
+        )
+        if dp_doc is None:
+            return None
+        try:
+            self._structure = dp_doc.get_structure()
+        finally:
+            dp_doc.unload()
+        return self._structure
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
