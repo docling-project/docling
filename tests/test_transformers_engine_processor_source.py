@@ -46,10 +46,10 @@ def test_transformers_engine_loads_processor_from_repo_id(monkeypatch, tmp_path)
     monkeypatch.setattr(
         tf_engine.AutoProcessor,
         "from_pretrained",
-        lambda *args, **kwargs: captured.update(
-            processor_source=args[0], processor_kwargs=kwargs
-        )
-        or FakeProcessor(),
+        lambda *args, **kwargs: (
+            captured.update(processor_source=args[0], processor_kwargs=kwargs)
+            or FakeProcessor()
+        ),
     )
     monkeypatch.setattr(tf_engine, "AutoModelForImageTextToText", FakeModel)
     monkeypatch.setattr(
