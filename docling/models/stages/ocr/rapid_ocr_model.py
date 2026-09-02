@@ -93,11 +93,11 @@ class _RapidOcrModelSpec:
 def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
     """Parse a `<backend>:<lang>` prefetch spec into its requested form.
 
-    The pair is routed through _resolve_rapidocr so the prefetcher can never accept a
-    combination the runtime would reject, but only the user's own values are kept.
+    The split is on the first colon alone: a passthrough language carries one of its
+    own, `onnxruntime:native:arabic`, which is the spelling the model hands the user.
     """
     backend, separator, lang = value.partition(":")
-    if not separator or not backend or not lang or ":" in lang:
+    if not separator or not backend or not lang:
         raise ValueError(
             f"Invalid RapidOCR model spec {value!r}. "
             "Expected '<backend>:<lang>', e.g. 'onnxruntime:th-Thai'."
