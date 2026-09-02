@@ -2,10 +2,10 @@ Clickable Example
 
 <!-- image -->
 
-Image with Caption
+This is an example caption for the image.
 
 <!-- image -->
 
-Image with Caption
+This is an example caption for the image.
 
 <!-- image -->

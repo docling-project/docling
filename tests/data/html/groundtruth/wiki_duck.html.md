@@ -257,6 +257,8 @@ Ducks are sometimes confused with several types of unrelated water birds with si
 
 The word *duck* comes from [Old English](/wiki/Old_English) *dūce* 'diver', a derivative of the verb * *dūcan* 'to duck, bend down low as if to get under something, or dive', because of the way many species in the [dabbling duck](/wiki/Dabbling_duck) group feed by upending; compare with [Dutch](/wiki/Dutch_language) *duiken* and [German](/wiki/German_language) *tauchen* 'to dive'.
 
+Pacific black duck displaying the characteristic upending "duck"
+
 <!-- image -->
 
 This word replaced Old English *ened* / *ænid* 'duck', possibly to avoid confusion with other words, such as *ende* 'end' with similar forms. Other Germanic languages still have similar words for *duck* , for example, Dutch *eend* , German *Ente* and [Norwegian](/wiki/Norwegian_language) *and* . The word *ened* / *ænid* was inherited from [Proto-Indo-European](/wiki/Proto-Indo-European_language) ; [cf.](/wiki/Cf.) [Latin](/wiki/Latin) *anas* "duck", [Lithuanian](/wiki/Lithuanian_language) *ántis* 'duck', [Ancient Greek](/wiki/Ancient_Greek_language) νῆσσα / νῆττα ( *nēssa* / *nētta* ) 'duck', and [Sanskrit](/wiki/Sanskrit) *ātí* 'water bird', among others.
@@ -265,13 +267,19 @@ A duckling is a young duck in downy plumage [[ 1 ]](#cite_note-1) or baby duck, 
 
 A male is called a [drake](https://en.wiktionary.org/wiki/drake) and the female is called a duck, or in [ornithology](/wiki/Ornithology) a hen. [[ 3 ]](#cite_note-3) [[ 4 ]](#cite_note-4)
 
+Male mallard .
+
 <!-- image -->
+
+Wood ducks .
 
 <!-- image -->
 
 ## Taxonomy
 
 All ducks belong to the [biological order](/wiki/Order_(biology)) [Anseriformes](/wiki/Anseriformes) , a group that contains the ducks, geese and swans, as well as the [screamers](/wiki/Screamer) , and the [magpie goose](/wiki/Magpie_goose) . [[ 5 ]](#cite_note-FOOTNOTECarboneras1992536-5) All except the screamers belong to the [biological family](/wiki/Family_(biology)) [Anatidae](/wiki/Anatidae) . [[ 5 ]](#cite_note-FOOTNOTECarboneras1992536-5) Within the family, ducks are split into a variety of subfamilies and 'tribes'. The number and composition of these subfamilies and tribes is the cause of considerable disagreement among taxonomists. [[ 5 ]](#cite_note-FOOTNOTECarboneras1992536-5) Some base their decisions on [morphological characteristics](/wiki/Morphology_(biology)) , others on shared behaviours or genetic studies. [[ 6 ]](#cite_note-FOOTNOTELivezey1986737–738-6) [[ 7 ]](#cite_note-FOOTNOTEMadsenMcHughde_Kloet1988452-7) The number of suggested subfamilies containing ducks ranges from two to five. [[ 8 ]](#cite_note-FOOTNOTEDonne-GousséLaudetHänni2002353–354-8) [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9) The significant level of [hybridisation](/wiki/Hybrid_(biology)) that occurs among wild ducks complicates efforts to tease apart the relationships between various species. [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9)
+
+Mallard landing in approach
 
 <!-- image -->
 
@@ -280,6 +288,8 @@ In most modern classifications, the so-called 'true ducks' belong to the subfami
 A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The [whistling ducks](/wiki/Whistling_duck) are assigned either to a tribe (Dendrocygnini) in the subfamily Anatinae or the subfamily Anserinae, [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) or to their own subfamily (Dendrocygninae) or family (Dendrocyganidae). [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9) [[ 16 ]](#cite_note-FOOTNOTEAmerican_Ornithologists'_Union1998xix-16) The [freckled duck](/wiki/Freckled_duck) of Australia is either the sole member of the tribe Stictonettini in the subfamily Anserinae, [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) or in its own family, the Stictonettinae. [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9) The [shelducks](/wiki/Shelduck) make up the tribe Tadornini in the family Anserinae in some classifications, [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) and their own subfamily, Tadorninae, in others, [[ 17 ]](#cite_note-FOOTNOTEAmerican_Ornithologists'_Union1998-17) while the [steamer ducks](/wiki/Steamer_duck) are either placed in the family Anserinae in the tribe Tachyerini [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) or lumped with the shelducks in the tribe Tadorini. [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9) The [perching ducks](/wiki/Perching_duck) make up in the tribe Cairinini in the subfamily Anserinae in some classifications, while that tribe is eliminated in other classifications and its members assigned to the tribe Anatini. [[ 9 ]](#cite_note-FOOTNOTECarboneras1992540-9) The [torrent duck](/wiki/Torrent_duck) is generally included in the subfamily Anserinae in the monotypic tribe Merganettini, [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) but is sometimes included in the tribe Tadornini. [[ 18 ]](#cite_note-FOOTNOTECarboneras1992538-18) The [pink-eared duck](/wiki/Pink-eared_duck) is sometimes included as a true duck either in the tribe Anatini [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15) or the tribe Malacorhynchini, [[ 19 ]](#cite_note-FOOTNOTEChristidisBoles200862-19) and other times is included with the shelducks in the tribe Tadornini. [[ 15 ]](#cite_note-FOOTNOTECarboneras1992537-15)
 
 ## Morphology
+
+Male Mandarin duck
 
 <!-- image -->
 
@@ -291,11 +301,13 @@ The drakes of northern species often have extravagant [plumage](/wiki/Plumage) ,
 
 See also: [List of Anseriformes by population](/wiki/List_of_Anseriformes_by_population)
 
+Flying steamer ducks in Ushuaia , Argentina
+
 <!-- image -->
 
 Ducks have a [cosmopolitan distribution](/wiki/Cosmopolitan_distribution) , and are found on every continent except Antarctica. [[ 5 ]](#cite_note-FOOTNOTECarboneras1992536-5) Several species manage to live on subantarctic islands, including [South Georgia](/wiki/South_Georgia_and_the_South_Sandwich_Islands) and the [Auckland Islands](/wiki/Auckland_Islands) . [[ 20 ]](#cite_note-FOOTNOTEShirihai2008239,_245-20) Ducks have reached a number of isolated oceanic islands, including the [Hawaiian Islands](/wiki/Hawaiian_Islands) , [Micronesia](/wiki/Micronesia) and the [Galápagos Islands](/wiki/Gal%C3%A1pagos_Islands) , where they are often [vagrants](/wiki/Glossary_of_bird_terms#vagrants) and less often [residents](/wiki/Glossary_of_bird_terms#residents) . [[ 21 ]](#cite_note-FOOTNOTEPrattBrunerBerrett198798–107-21) [[ 22 ]](#cite_note-FOOTNOTEFitterFitterHosking200052–3-22) A handful are [endemic](/wiki/Endemic) to such far-flung islands. [[ 21 ]](#cite_note-FOOTNOTEPrattBrunerBerrett198798–107-21)
 
-A brown duck in a fast-flowing stream
+Female mallard in Cornwall , England
 
 <!-- image -->
 
@@ -304,6 +316,8 @@ Some duck species, mainly those breeding in the temperate and Arctic Northern He
 ## Behaviour
 
 ### Feeding
+
+Pecten along the bill
 
 <!-- image -->
 
@@ -323,6 +337,8 @@ The others have the characteristic wide flat bill adapted to [dredging](/wiki/Dr
 
 ### Breeding
 
+A Muscovy duckling
+
 <!-- image -->
 
 Ducks generally [only have one partner at a time](/wiki/Monogamy_in_animals) , although the partnership usually only lasts one year. [[ 26 ]](#cite_note-26) Larger species and the more sedentary species (like fast-river specialists) tend to have pair-bonds that last numerous years. [[ 27 ]](#cite_note-27) Most duck species breed once a year, choosing to do so in favourable conditions ( [spring](/wiki/Spring_(season)) /summer or wet seasons). Ducks also tend to make a [nest](/wiki/Bird_nest) before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed [courtyard](/wiki/Courtyard) ) or are not prospering due to genetic defects or sickness brought about by hypothermia, starvation, or disease. Ducklings can also be orphaned by inconsistent late hatching where a few eggs hatch after the mother has abandoned the nest and led her ducklings to water. [[ 28 ]](#cite_note-28)
@@ -334,6 +350,8 @@ Female [mallard](/wiki/Mallard) ducks (as well as several other species in the g
 A common [urban legend](/wiki/Urban_legend) claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the [University of Salford](/wiki/University_of_Salford) in 2003 as part of the [British Association](/wiki/British_Association) 's Festival of Science. [[ 31 ]](#cite_note-31) It was also debunked in [one of the earlier episodes](/wiki/MythBusters_(2003_season)#Does_a_Duck's_Quack_Echo?) of the popular Discovery Channel television show [*MythBusters*](/wiki/MythBusters) . [[ 32 ]](#cite_note-32)
 
 ### Predators
+
+Ringed teal
 
 <!-- image -->
 
@@ -355,11 +373,15 @@ In many areas, wild ducks (including ducks farmed and released into the wild) ar
 
 Main article: [Domestic duck](/wiki/Domestic_duck)
 
+Indian Runner ducks , a common breed of domestic ducks
+
 <!-- image -->
 
 Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their [down](/wiki/Down_feather) ). Approximately 3 billion ducks are slaughtered each year for meat worldwide. [[ 45 ]](#cite_note-45) They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the [mallard](/wiki/Mallard) ( *Anas platyrhynchos* ), apart from the [Muscovy duck](/wiki/Muscovy_duck) ( *Cairina moschata* ). [[ 46 ]](#cite_note-46) [[ 47 ]](#cite_note-47) The [Call duck](/wiki/Call_duck) is another example of a domestic duck breed. Its name comes from its original use established by hunters, as a decoy to attract wild mallards from the sky, into traps set for them on the ground. The call duck is the world's smallest domestic duck breed, as it weighs less than 1 kg (2.2 lb). [[ 48 ]](#cite_note-48)
 
 ### Heraldry
+
+Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
 
 <!-- image -->
 
