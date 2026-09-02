@@ -28,7 +28,7 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, DescriptionAnnotation
 from pydantic import BaseModel, ConfigDict
 
 from docling.datamodel.base_models import (
@@ -42,9 +42,11 @@ from docling.datamodel.base_models import (
     FieldRegionElement,
     FieldValuePrediction,
     FigureElement,
+    Page,
     PageElement,
     Table,
     TableFieldPrediction,
+    TaggedStructurePrediction,
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
@@ -79,6 +81,7 @@ class ReadingOrderModel:
     _TOKEN_BEFORE_HYPHEN_RE = re.compile(r"(\w+)-$")
 
     def __init__(self, options: ReadingOrderOptions):
+        self._pages_by_no: dict[int, Page] = {}
         self.options = options
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
@@ -510,6 +513,7 @@ class ReadingOrderModel:
                     ),
                     parent=group,
                 )
+                self._attach_tagged_alt(picture, picture_item)
                 self._add_child_elements(picture, picture_item, doc)
 
             table_item.data.table_cells[cell_index] = RichTableCell(
@@ -1021,6 +1025,7 @@ class ReadingOrderModel:
 
             new_item = out_doc.add_heading(
                 text=cap_text,
+                level=self._tagged_heading_level(element),
                 prov=prov,
                 parent=parent,
                 hyperlink=element.hyperlink,
@@ -1051,6 +1056,30 @@ class ReadingOrderModel:
                 hyperlink=element.hyperlink,
             )
         return new_item, current_list
+
+    def _tagged_prediction(
+        self, element: BasePageElement
+    ) -> TaggedStructurePrediction | None:
+        page = self._pages_by_no.get(element.page_no)
+        return page.predictions.tagged_structure if page is not None else None
+
+    def _tagged_heading_level(self, element: BasePageElement) -> int:
+        """Explicit H1..Hn level from the structure tree, else the default 1."""
+        prediction = self._tagged_prediction(element)
+        if prediction is None:
+            return 1
+        return prediction.heading_levels.get(element.cluster.id, 1)
+
+    def _attach_tagged_alt(self, element: BasePageElement, item: PictureItem) -> None:
+        """Authored /Alt text becomes the picture's description (WTPDF 8.2.5.28)."""
+        prediction = self._tagged_prediction(element)
+        if prediction is None:
+            return
+        alt = prediction.alt_texts.get(element.cluster.id)
+        if alt:
+            item.annotations.append(
+                DescriptionAnnotation(text=alt, provenance="pdf-structure-tree")
+            )
 
     def _merge_elements(self, element, merged_elem, new_item, page_height):
         assert isinstance(merged_elem, type(element)), (
@@ -1114,6 +1143,7 @@ class ReadingOrderModel:
         pages fall back to the pre-separator reading order and a TIMEOUT
         error is recorded on the conversion result.
         """
+        self._pages_by_no = {page.page_no: page for page in conv_res.pages}
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
             page_elements = self._assembled_to_readingorder_elements(conv_res)
             page_separators: list[SeparatorElement] = []
