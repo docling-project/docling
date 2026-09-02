@@ -580,6 +580,11 @@ class EbcdicLayout(BaseModel):
             raise ValueError(
                 "record_type_field is required for a layout with several records"
             )
+        names = [item.name for item in self.records]
+        if len(set(names)) != len(names):
+            # The parser buckets decoded rows by name and the name becomes the
+            # table heading, so duplicates silently merge two schemas' rows.
+            raise ValueError("record names must be unique")
         if self.record_type_field is not None:
             selectors = [item.selector for item in self.records]
             if None in selectors:
