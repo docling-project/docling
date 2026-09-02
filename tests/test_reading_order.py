@@ -14,6 +14,7 @@ from docling_core.types.doc.document import (
     ContentLayer,
     DocItem,
     DoclingDocument,
+    RefItem,
     TextItem,
 )
 from docling_core.types.doc.labels import DocItemLabel
@@ -29,6 +30,64 @@ IS_CI = bool(os.getenv("CI"))
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+
+def _text_element(
+    cid: int,
+    text: str,
+    *,
+    left: float = 100,
+    right: float = 500,
+    bottom: float | None = None,
+    top: float | None = None,
+) -> PageElement:
+    if bottom is None:
+        bottom = 100 - cid * 25
+    if top is None:
+        top = 200 - cid * 25
+
+    return PageElement(
+        cid=cid,
+        ref=RefItem(cref=f"#/{cid}"),
+        text=text,
+        page_no=1,
+        page_size=Size(width=600, height=800),
+        label=DocItemLabel.TEXT,
+        l=left,
+        r=right,
+        b=bottom,
+        t=top,
+    )
+
+
+def test_predict_merges_vertically_adjacent_text_fragments() -> None:
+    predictor = ReadingOrderPredictor()
+    elements = [
+        _text_element(0, "The first part of an unfinished sentence"),
+        _text_element(1, "Continuation of the paragraph."),
+    ]
+
+    assert predictor.predict_merges(elements) == {0: [1]}
+
+
+def test_predict_merges_preserves_sentence_boundaries() -> None:
+    predictor = ReadingOrderPredictor()
+    elements = [
+        _text_element(0, "The first sentence."),
+        _text_element(1, "The next sentence."),
+    ]
+
+    assert predictor.predict_merges(elements) == {}
+
+
+def test_predict_merges_does_not_cross_a_large_vertical_gap() -> None:
+    predictor = ReadingOrderPredictor()
+    elements = [
+        _text_element(0, "The first paragraph ends unfinished", bottom=300, top=400),
+        _text_element(1, "A separate paragraph starts here.", bottom=100, top=200),
+    ]
+
+    assert predictor.predict_merges(elements) == {}
 
 
 def rank_array(arr):

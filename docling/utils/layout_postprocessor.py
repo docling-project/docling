@@ -271,7 +271,6 @@ class LayoutPostprocessor:
                 break
             prev_count = len(clusters)
             clusters = self._adjust_cluster_bboxes(clusters)
-            clusters = self._merge_wrapped_text_clusters(clusters)
             clusters = self._remove_overlapping_clusters(clusters, "regular")
 
         return clusters
@@ -723,70 +722,6 @@ class LayoutPostprocessor:
                 cluster.bbox = cells_bbox
 
         return clusters
-
-    def _merge_wrapped_text_clusters(self, clusters: list[Cluster]) -> list[Cluster]:
-        """Merge adjacent text regions that contain one wrapped sentence."""
-        merged: list[Cluster] = []
-
-        for cluster in sorted(clusters, key=lambda item: (item.bbox.t, item.bbox.l)):
-            if not merged:
-                merged.append(cluster)
-                continue
-
-            previous = merged[-1]
-            if (
-                previous.label != DocItemLabel.TEXT
-                or cluster.label != DocItemLabel.TEXT
-                or not previous.cells
-                or not cluster.cells
-            ):
-                merged.append(cluster)
-                continue
-
-            previous_bbox = ordered_bounding_box(previous.bbox)
-            cluster_bbox = ordered_bounding_box(cluster.bbox)
-            overlap_width = min(previous_bbox.r, cluster_bbox.r) - max(
-                previous_bbox.l, cluster_bbox.l
-            )
-            horizontal_overlap = overlap_width / min(
-                previous_bbox.width, cluster_bbox.width
-            )
-            vertical_gap = cluster_bbox.t - previous_bbox.b
-            line_height = max(
-                max(
-                    (cell.rect.to_bounding_box().height for cell in previous.cells),
-                    default=0.0,
-                ),
-                max(
-                    (cell.rect.to_bounding_box().height for cell in cluster.cells),
-                    default=0.0,
-                ),
-            )
-            previous_text = " ".join(cell.text.strip() for cell in previous.cells).strip()
-            cluster_text = " ".join(cell.text.strip() for cell in cluster.cells).strip()
-
-            if (
-                cluster_bbox.t >= previous_bbox.b
-                and vertical_gap <= line_height * 0.75
-                and horizontal_overlap > 0.8
-                and previous_text
-                and cluster_text
-                and previous_text[-1] not in ".!?;:"
-                and cluster_text[0].islower()
-            ):
-                previous.cells.extend(cluster.cells)
-                previous.cells = self._deduplicate_cells(previous.cells)
-                previous.cells = self._sort_cells(previous.cells)
-                previous.bbox = BoundingBox(
-                    l=min(previous_bbox.l, cluster_bbox.l),
-                    t=min(previous_bbox.t, cluster_bbox.t),
-                    r=max(previous_bbox.r, cluster_bbox.r),
-                    b=max(previous_bbox.b, cluster_bbox.b),
-                )
-            else:
-                merged.append(cluster)
-
-        return merged
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Sort cells by their source/parser index."""

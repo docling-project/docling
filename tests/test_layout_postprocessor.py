@@ -133,47 +133,6 @@ def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
     assert [cell.index for cell in assigned[0].cells] == [0]
 
 
-def test_merge_wrapped_text_clusters() -> None:
-    cells = [
-        _text_cell(0, _bbox(10, 10, 190, 20), "The first part of a sentence"),
-        _text_cell(1, _bbox(10, 21, 190, 31), "continues on the next line."),
-    ]
-    clusters = [
-        _cluster(0, _bbox(10, 10, 190, 20)),
-        _cluster(1, _bbox(10, 21, 190, 31)),
-    ]
-    processor = LayoutPostprocessor(
-        _PageStub(cells), clusters, LayoutPostprocessorOptions()
-    )
-    processor._assign_cells_to_clusters(clusters)
-    processor._adjust_cluster_bboxes(clusters)
-
-    merged = processor._merge_wrapped_text_clusters(clusters)
-
-    assert len(merged) == 1
-    assert [cell.index for cell in merged[0].cells] == [0, 1]
-
-
-def test_merge_wrapped_text_clusters_preserves_sentence_boundary() -> None:
-    cells = [
-        _text_cell(0, _bbox(10, 10, 190, 20), "The first sentence."),
-        _text_cell(1, _bbox(10, 21, 190, 31), "The next sentence."),
-    ]
-    clusters = [
-        _cluster(0, _bbox(10, 10, 190, 20)),
-        _cluster(1, _bbox(10, 21, 190, 31)),
-    ]
-    processor = LayoutPostprocessor(
-        _PageStub(cells), clusters, LayoutPostprocessorOptions()
-    )
-    processor._assign_cells_to_clusters(clusters)
-    processor._adjust_cluster_bboxes(clusters)
-
-    merged = processor._merge_wrapped_text_clusters(clusters)
-
-    assert len(merged) == 2
-
-
 def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
     # The layout model proposes the same region as both a PICTURE and a TABLE.
     # The PICTURE (near-identical bbox, high IoU) must be removed; the TABLE kept.
