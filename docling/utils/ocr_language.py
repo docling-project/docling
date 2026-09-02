@@ -143,6 +143,9 @@ class OcrLanguageResolver:
     # BCP-47's "undetermined". Docling does *not* accept it as an OCR language
     _UNDETERMINED = "und"
 
+    # BCP-47's "no linguistic content". Docling does *not* accept it as an OCR language
+    _NO_LINGUISTIC_CONTENT = "zxx"
+
     @staticmethod
     def canonicalize_ocr_languages(values: Sequence[str]) -> list[OcrLanguage]:
         """Canonicalize a list of language requests, enforcing the reserved-tag rule.
@@ -280,7 +283,7 @@ class OcrLanguageResolver:
                 bcp47_tobe, "the tag is not registered with IANA."
             )
 
-        if bcp47_tobe == "zxx":
+        if bcp47_tobe == OcrLanguageResolver._NO_LINGUISTIC_CONTENT:
             # Docling has no recognizer for "no linguistic content"
             raise OcrLanguageResolver._invalid(
                 bcp47_tobe,

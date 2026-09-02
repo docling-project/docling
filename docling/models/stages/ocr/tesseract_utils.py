@@ -23,12 +23,12 @@ from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
 
 # Tessdata files that are not recognizers: `osd` is the orientation-and-script
 # detector, `equ` the equation model. Neither is a language anyone can ask for.
-_NON_LANGUAGE_TRAINEDDATA = frozenset({"osd", "equ"})
+_TESSERACT_NON_LANGUAGE_TRAINEDDATA = frozenset({"osd", "equ"})
 
 
 # Canonical tag -> tessdata file, where Tesseract deviates from ISO 639-2/T
 # Everything else is handled by `.to_alpha3(variant="T")`.
-_TESSERACT_DEVIATIONAL_CODES: dict[str, str] = {
+_TESSERACT_CANONICAL_TO_CODE_DEVIATIONS: dict[str, str] = {
     "zh-Hans": "chi_sim",
     "zh-Hant": "chi_tra",
     "sr-Cyrl": "srp",
@@ -45,8 +45,8 @@ _TESSERACT_DEVIATIONAL_CODES: dict[str, str] = {
     "de-Latf": "deu_latf",
 }
 
-_DEVIATIONAL_CODE_TO_CANONICAL: dict[str, str] = {
-    name: tag for tag, name in _TESSERACT_DEVIATIONAL_CODES.items()
+_TESSERACT_CODE_TO_CANONICAL_DEVIATIONS: dict[str, str] = {
+    name: tag for tag, name in _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS.items()
 }
 
 
@@ -90,8 +90,8 @@ def language_to_tesseract_code(language: OcrLanguage) -> str | None:
         return language.native
     if language.is_multilingual:
         return None
-    if language.bcp47 in _TESSERACT_DEVIATIONAL_CODES:
-        return _TESSERACT_DEVIATIONAL_CODES[language.bcp47]
+    if language.bcp47 in _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS:
+        return _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47]
     # Tesseract's vocabulary *is* ISO 639-2/T: deu, fra, ell, ces, kat.
     assert language.bcp47_language is not None
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
@@ -103,10 +103,10 @@ def installed_tesseract_tags(codes: Sequence[str]) -> list[str]:
     """
     tags = set()
     for code in codes:
-        if code in _NON_LANGUAGE_TRAINEDDATA:
+        if code in _TESSERACT_NON_LANGUAGE_TRAINEDDATA:
             continue
         # First resolve against the deviational codes
-        tag = _DEVIATIONAL_CODE_TO_CANONICAL.get(code, code)
+        tag = _TESSERACT_CODE_TO_CANONICAL_DEVIATIONS.get(code, code)
 
         # Try to canonicalize or receive a None language
         language = OcrLanguageResolver.canonicalize_ocr_language(

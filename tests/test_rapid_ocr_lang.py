@@ -11,10 +11,10 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.datamodel.settings import settings
 from docling.exceptions import OcrLanguageNotSupportedError
-from docling.models.stages.ocr.ppocr_languages import ppocr_supported_tags
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
     _parse_rapidocr_model_spec,
+    _ppocr_supported_tags,
     _rapidocr_vocabulary,
     _resolve_rapidocr,
 )
@@ -157,7 +157,7 @@ def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) ->
     # reach past its own v5/v6 set for it -- `ka` is the one code v5 lacks.
     assert _resolved("kn", backend) == (OCRVersion.PPOCRV4, "ka")
     # ...and it is advertised, so the coverage error never names it.
-    assert "kn-Knda" in ppocr_supported_tags(_rapidocr_vocabulary(backend))
+    assert "kn-Knda" in _ppocr_supported_tags(_rapidocr_vocabulary(backend))
 
 
 # --- model selection / pinned paths -----------------------------------------

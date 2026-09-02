@@ -335,6 +335,10 @@ class OcrAutoOptions(OcrOptions):
     ] = []
 
 
+# Inference backends RapidOCR supports
+RapidOcrBackend = Literal["onnxruntime", "openvino", "paddle", "torch"]
+
+
 class RapidOcrOptions(OcrOptions):
     """Configuration for RapidOCR engine with multiple backend support.
 
@@ -364,7 +368,7 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = ["zh-Hans"]
     backend: Annotated[
-        Literal["onnxruntime", "openvino", "paddle", "torch"],
+        RapidOcrBackend,
         Field(
             description=(
                 "Inference backend for RapidOCR. Options: `onnxruntime` (default, cross-platform), `openvino` (Intel), "

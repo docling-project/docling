@@ -5,8 +5,9 @@
 
 Most of these run without any engine installed: each engine's table and mapping
 are module-level or reachable on an uninitialized instance, which is what makes
-the mapping reviewable at all. The last section is the exception -- what an
-engine advertises depends on what is installed, so those tests need the engine.
+the mapping reviewable at all. The exceptions are RapidOCR, whose PP-OCRv6
+vocabulary is read from the installed `rapidocr`, and the last section, where what
+an engine advertises depends on what is installed.
 """
 
 import logging
@@ -26,22 +27,20 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
-from docling.models.stages.ocr.ppocr_languages import (
-    PPOCRV4_CODES,
-    PPOCRV5_CODES,
-    PPOCRV6_CODES,
-    ppocr_code,
-    ppocr_supported_tags,
+from docling.models.stages.ocr.rapid_ocr_model import (
+    RapidOcrModel,
+    _ppocr_code,
+    _ppocr_supported_tags,
+    _rapidocr_vocabulary,
 )
-from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
 from docling.utils.ocr_language import OcrLanguage, OcrLanguageResolver
 
-_ONNX_VOCABULARY = PPOCRV6_CODES | PPOCRV5_CODES | PPOCRV4_CODES
-_TORCH_VOCABULARY = PPOCRV6_CODES | PPOCRV4_CODES
+_ONNX_VOCABULARY = _rapidocr_vocabulary("onnxruntime")
+_TORCH_VOCABULARY = _rapidocr_vocabulary("torch")
 
 
-# --- PP-OCR (RapidOCR and the KServe client share one table) ----------------
+# --- PP-OCR (RapidOCR) ------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -63,11 +62,17 @@ _TORCH_VOCABULARY = PPOCRV6_CODES | PPOCRV4_CODES
         ("el", "el"),
         ("th", "th"),
         ("hi", "devanagari"),
+        # The other two script families. PP-OCR has no `zu` or `ar` recognizer,
+        # so both reach a model only through the script they are written in.
+        ("zu", "latin"),
+        ("ar", "arabic"),
     ],
 )
 def test_ppocr_tokens(tag: str, expected: str) -> None:
     assert (
-        ppocr_code(OcrLanguageResolver.canonicalize_ocr_language(tag), _ONNX_VOCABULARY)
+        _ppocr_code(
+            OcrLanguageResolver.canonicalize_ocr_language(tag), _ONNX_VOCABULARY
+        )
         == expected
     )
 
@@ -80,7 +85,7 @@ def test_ppocr_script_recognizers_are_named_by_their_own_token(token: str) -> No
     language = OcrLanguageResolver.canonicalize_ocr_language(f"native:{token}")
 
     assert language.is_passthrough
-    assert ppocr_code(language, _ONNX_VOCABULARY) == token
+    assert _ppocr_code(language, _ONNX_VOCABULARY) == token
 
 
 def test_ppocr_kannada_georgian_collision() -> None:
@@ -91,19 +96,19 @@ def test_ppocr_kannada_georgian_collision() -> None:
     guards.
     """
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("kn"), _TORCH_VOCABULARY
         )
         == "ka"
     )
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("ka"), _TORCH_VOCABULARY
         )
         is None
     )
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("ka"), _ONNX_VOCABULARY
         )
         is None
@@ -112,7 +117,7 @@ def test_ppocr_kannada_georgian_collision() -> None:
 
 def test_ppocr_has_no_multilingual_model() -> None:
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("mul"), _ONNX_VOCABULARY
         )
         is None
@@ -123,19 +128,19 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
     """PP-OCR's `az` and `uz` are the Latin ones, so a Cyrillic request for the
     same language must not silently pick the Latin recognizer."""
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("az"), _ONNX_VOCABULARY
         )
         == "az"
     )
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("az-Cyrl"), _ONNX_VOCABULARY
         )
         == "cyrillic"
     )
     assert (
-        ppocr_code(
+        _ppocr_code(
             OcrLanguageResolver.canonicalize_ocr_language("uz-Cyrl"), _ONNX_VOCABULARY
         )
         == "cyrillic"
@@ -143,7 +148,7 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
 
 
 def test_ppocr_supported_tags_are_canonical() -> None:
-    tags = ppocr_supported_tags(_ONNX_VOCABULARY)
+    tags = _ppocr_supported_tags(_ONNX_VOCABULARY)
 
     assert "zh-Hans" in tags
     # Languages are rendered back as tags, never as PP-OCR tokens...
