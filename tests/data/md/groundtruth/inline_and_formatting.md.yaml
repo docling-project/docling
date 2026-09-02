@@ -399,7 +399,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '1.'
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -445,7 +445,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '2.'
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -488,7 +488,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '3.'
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -531,7 +531,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '4.'
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -573,7 +573,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '5.'
   orig: Open a Pull Request
   parent:
     $ref: '#/groups/2'
@@ -590,7 +590,7 @@ texts:
     strikethrough: false
     underline: false
   label: list_item
-  marker: ''
+  marker: '6.'
   orig: Whole list item has same formatting
   parent:
     $ref: '#/groups/2'
@@ -602,7 +602,7 @@ texts:
   content_layer: body
   enumerated: true
   label: list_item
-  marker: ''
+  marker: '7.'
   orig: ''
   parent:
     $ref: '#/groups/2'
