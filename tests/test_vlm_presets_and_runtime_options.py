@@ -224,6 +224,7 @@ class TestRuntimeOptions:
             "resolve_model_artifacts_path",
             lambda **kwargs: "artifacts",
         )
+
         def fake_processor_from_pretrained(source, *args, **kwargs):
             processor_sources.append(source)
             if isinstance(source, Path):
