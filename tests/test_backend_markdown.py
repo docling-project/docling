@@ -520,14 +520,13 @@ def test_convert_hard_line_break():
 
 
 def test_convert_soft_line_break():
+    """A soft line break (bare newline) joins the two runs with a space (GFM §6.7)."""
     markdown = "Author 1\nAffiliation 1"
 
     doc = _convert_markdown(markdown, MarkdownBackendOptions())
 
-    assert [item.text for item in doc.texts] == [
-        "Author 1",
-        "Affiliation 1",
-    ]
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1 Affiliation 1"
 
 
 def test_convert_hard_line_break_preserves_formatting():
@@ -580,3 +579,25 @@ def test_list_items_hard_break_does_not_bleed_into_sibling():
     assert len(list_items) == 2
     assert list_items[0].text == "Item 1\ncontinued"
     assert list_items[1].text == "Item 2"
+
+
+def test_convert_soft_line_break_list_item():
+    """A soft line break inside a list item joins the runs with a space."""
+    markdown = "- First\n  Second\n- Item 2"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "First Second"
+    assert list_items[1].text == "Item 2"
+
+
+def test_convert_mixed_line_breaks():
+    """A hard break produces '\\n' and a following soft break produces ' ' in the same paragraph."""
+    markdown = "Line1  \nLine2\nLine3"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Line1\nLine2 Line3"

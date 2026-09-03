@@ -98,31 +98,29 @@ _CreationPayload = Annotated[
 ]
 
 
-def _only_plain_hard_breaks(children: list) -> bool:
+def _only_plain_line_breaks(children: list) -> bool:
     """Return True when children consist solely of RawText/Literal runs separated
-    by hard (non-soft) LineBreak nodes, with at least one such break present.
+    by LineBreak nodes (soft or hard), with at least one break present.
 
-    Such content is fully handled by the `_pending_hard_line_break` merge path
-    and does not need an inline_group wrapper.  Multiple plain runs without any
-    LineBreak (e.g. `RawText + Literal + RawText` from an escaped character)
-    return False so they still use the regular inline_group path.
+    Such content is fully handled by the pending-line-break merge paths and does
+    not need an inline_group wrapper.  Multiple plain runs without any LineBreak
+    (e.g. `RawText + Literal + RawText` from an escaped character) return False
+    so they still use the regular inline_group path.
 
     Args:
         children: Inline child nodes of a marko Paragraph, Heading, or ListItem
             paragraph to inspect.
 
     Returns:
-        True if all children are plain-text runs joined only by hard line breaks,
+        True if all children are plain-text runs joined only by line breaks,
         False otherwise.
     """
     if not _MARKO_AVAILABLE:
         return False
-    has_hard_break = any(
-        isinstance(c, marko.inline.LineBreak) and not c.soft for c in children
-    )
-    return has_hard_break and all(
+    has_break = any(isinstance(c, marko.inline.LineBreak) for c in children)
+    return has_break and all(
         isinstance(c, (marko.inline.RawText, marko.inline.Literal))
-        or (isinstance(c, marko.inline.LineBreak) and not c.soft)
+        or isinstance(c, marko.inline.LineBreak)
         for c in children
     )
 
@@ -275,6 +273,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_pipeless_table = False
         self.md_table_buffer: list[str] = []
         self._pending_hard_line_break = False
+        self._pending_soft_line_break = False
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
@@ -548,9 +547,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if not isinstance(item, marko.block.ListItem)
             ]
             # Skip the inline_group path for items whose children are plain text
-            # runs separated solely by hard line breaks; _pending_hard_line_break
-            # will merge them into a single list_item with embedded '\n'.
-            if len(non_list_children) > 1 and not _only_plain_hard_breaks(
+            # runs separated by line breaks; the pending-line-break merge paths
+            # will produce a single list_item with the correct joined text.
+            if len(non_list_children) > 1 and not _only_plain_line_breaks(
                 non_list_children
             ):  # inline group will be created further down
                 parent_ref: Optional[str] = (
@@ -643,6 +642,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         hyperlink=hyperlink,
                     )
                     self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
                 else:
                     if (
                         self._pending_hard_line_break
@@ -652,6 +652,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     ):
                         doc.texts[-1].text += "\n" + snippet_text
                         doc.texts[-1].orig += "\n" + snippet_text
+                    elif (
+                        self._pending_soft_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += " " + snippet_text
+                        doc.texts[-1].orig += " " + snippet_text
                     else:
                         doc.add_text(
                             label=DocItemLabel.TEXT,
@@ -661,6 +669,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             hyperlink=hyperlink,
                         )
                     self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
@@ -708,7 +717,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if self.in_table:
                 _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
-            elif not element.soft:
+            elif element.soft:
+                _log.debug("Soft line break")
+                self._pending_soft_line_break = True
+            else:
                 _log.debug("Hard line break")
                 self._pending_hard_line_break = True
 
@@ -745,7 +757,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
             and len(element_children) > 1
-            and not _only_plain_hard_breaks(element_children)
+            and not _only_plain_line_breaks(element_children)
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 
