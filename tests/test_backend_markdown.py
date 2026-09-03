@@ -508,6 +508,8 @@ def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Title"
         assert doc.texts[1].text == "Some body text."
+
+
 def test_convert_hard_line_break():
     markdown = "Author 1  \nAffiliation 1"
 
