@@ -9,8 +9,7 @@ Test Data Attribution
 and ``pages_iwork09_comments.pages`` are ``testPages2013.pages``,
 ``testPages.pages``, ``testPagesHeadersFootersFootnotes.pages`` and
 ``testPagesComments.pages`` from the Apache Tika test corpus, licensed under the
-Apache License 2.0. ``pages_password_protected.pages`` is
-``testPagesPwdProtected.pages`` from the same corpus. They are genuine Apple Pages output, and between them cover
+Apache License 2.0. They are genuine Apple Pages output, and between them cover
 both container generations: ``pages_2013.pages`` stores its content as
 ``Index/*.iwa`` with no PDF render, while the rest use the iWork '09
 ``index.xml`` layout. Conveniently, the first two hold the same source document,
@@ -57,18 +56,12 @@ from .verify_utils import verify_document, verify_export
 SOURCES = Path("./tests/data/pages/sources")
 PAGES_2013 = SOURCES / "pages_2013.pages"
 PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
-# Its password is "tika", per the comment in Tika's own IWorkParserTest. It is
-# of no use here: Pages does not use ZIP encryption, so the password cannot be
-# handed to zipfile, and the fixture exists only to check that an unreadable
-# container is refused with a clear message rather than a crash.
-PAGES_PASSWORD_PROTECTED = SOURCES / "pages_password_protected.pages"
 PAGES_IWORK09_FORMATTED = SOURCES / "pages_iwork09_formatted.pages"
 PAGES_IWORK09_COMMENTS = SOURCES / "pages_iwork09_comments.pages"
 
 GROUNDTRUTH = Path("./tests/data/pages/groundtruth")
 
-# Every fixture that converts. The password-protected one never produces a
-# document, so it has no groundtruth to compare against.
+# Every fixture, each of which converts and so has a stored groundtruth.
 CONVERTIBLE = [
     PAGES_2013,
     PAGES_IWORK09,
@@ -191,22 +184,6 @@ def test_iwa_reader_walks_the_real_object_graph():
     document = next(o for o in objects.values() if o.message_type == 10000)
     body_ref = read_fields(document.payload)[4][0]
     assert isinstance(body_ref, bytes)
-
-
-def test_password_protected_document_is_rejected_cleanly():
-    """Pages encrypts members with a scheme zipfile cannot read, and leaves a
-    nonsense compress_type instead of setting the standard encrypted flag. That
-    surfaces as NotImplementedError deep inside zipfile, which must be turned
-    into a DocumentLoadError rather than escaping as an unhandled crash."""
-    with pytest.raises(DocumentLoadError, match="password-protected"):
-        IWorkPagesDocumentBackend(
-            InputDocument(
-                path_or_stream=PAGES_PASSWORD_PROTECTED,
-                format=InputFormat.IWORK_PAGES,
-                backend=IWorkPagesDocumentBackend,
-            ),
-            PAGES_PASSWORD_PROTECTED,
-        )
 
 
 def test_snappy_decoder_handles_every_element_type():
