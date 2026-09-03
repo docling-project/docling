@@ -87,6 +87,7 @@ def _make_docling_parse_page_content_config(
     *,
     create_words: bool,
     create_textlines: bool,
+    materialize_char_cells: bool = False,
     compute_shapes: bool = True,
     include_bitmap_bytes: bool = False,
 ) -> ContentConfig:
@@ -95,9 +96,13 @@ def _make_docling_parse_page_content_config(
     skip = ContentLevel.SKIP
 
     return ContentConfig(
-        char_cells_content_level=compute
-        if (create_words or create_textlines)
-        else skip,
+        char_cells_content_level=(
+            materialize
+            if materialize_char_cells
+            else compute
+            if (create_words or create_textlines)
+            else skip
+        ),
         word_cells_content_level=materialize if create_words else skip,
         line_cells_content_level=materialize if create_textlines else skip,
         # The threaded parser renders the page image from this same decode, so
@@ -119,6 +124,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         page_no: int,
         create_words: bool = True,
         create_textlines: bool = True,
+        materialize_char_cells: bool = False,
         include_bitmap_images: bool = False,
         keep_chars: bool = False,
         keep_lines: bool = False,
@@ -131,6 +137,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
 
         self._create_words = create_words
         self._create_textlines = create_textlines
+        self._materialize_char_cells = materialize_char_cells
         self._include_bitmap_images = include_bitmap_images
 
         self._keep_chars = keep_chars
@@ -156,6 +163,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            materialize_char_cells=self._materialize_char_cells,
             compute_shapes=True,
             include_bitmap_bytes=self._include_bitmap_images,
         )
@@ -371,6 +379,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             page_no=page_no,
             create_words=create_words,
             create_textlines=create_textlines,
+            materialize_char_cells=self.options._materialize_char_cells,
             include_bitmap_images=self.options.include_bitmap_images,
         )
 
@@ -601,6 +610,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         content_config = _make_docling_parse_page_content_config(
             create_words=True,
             create_textlines=True,
+            materialize_char_cells=self.options._materialize_char_cells,
             # Shapes only matter for the render; skip them when nothing is rendered.
             compute_shapes=self._render_pages,
             include_bitmap_bytes=self.options.include_bitmap_images,

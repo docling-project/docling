@@ -12,6 +12,7 @@ from pydantic import (
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
+    PrivateAttr,
     SecretStr,
     conint,
     model_validator,
@@ -180,6 +181,8 @@ class EpubBackendOptions(BaseBackendOptions):
 
 class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
+
+    _materialize_char_cells: bool = PrivateAttr(default=False)
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None

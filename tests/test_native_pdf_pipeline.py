@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import os
 from pathlib import Path
 
@@ -6,6 +9,7 @@ from docling_core.types.doc.page import TextCellUnit
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import NativePdfPipelineOptions
@@ -70,6 +74,30 @@ def test_native_pipeline_word_unit_is_finer_than_line_unit():
 
     assert len(words.texts) > len(lines.texts)
     assert all(" " not in text.text for text in words.texts)
+
+
+def test_native_pipeline_materializes_char_cells_only_when_requested():
+    conv_res = _convert(TEXT_PDF, text_cell_unit=TextCellUnit.CHAR)
+
+    char_cells = [
+        cell for cell in conv_res.pages[0].parsed_page.char_cells if cell.text
+    ]
+    assert char_cells
+    assert len(conv_res.document.texts) == len(char_cells)
+
+    default_format_option = NativePdfFormatOption()
+    assert default_format_option.backend_options._materialize_char_cells is False
+
+    explicit_backend_options = ThreadedDoclingParseBackendOptions()
+    char_format_option = NativePdfFormatOption(
+        pipeline_options=NativePdfPipelineOptions(text_cell_unit=TextCellUnit.CHAR),
+        backend_options=explicit_backend_options,
+    )
+    assert char_format_option.backend_options._materialize_char_cells is True
+    assert explicit_backend_options._materialize_char_cells is False
+    assert (
+        "_materialize_char_cells" not in char_format_option.backend_options.model_dump()
+    )
 
 
 def test_native_pipeline_extracts_native_bitmaps_as_pictures():
