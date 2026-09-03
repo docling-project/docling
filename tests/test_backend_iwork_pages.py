@@ -9,7 +9,8 @@ Test Data Attribution
 and ``pages_iwork09_comments.pages`` are ``testPages2013.pages``,
 ``testPages.pages``, ``testPagesHeadersFootersFootnotes.pages`` and
 ``testPagesComments.pages`` from the Apache Tika test corpus, licensed under the
-Apache License 2.0. They are genuine Apple Pages output, and between them cover
+Apache License 2.0. ``pages_password_protected.pages`` is
+``testPagesPwdProtected.pages`` from the same corpus. They are genuine Apple Pages output, and between them cover
 both container generations: ``pages_2013.pages`` stores its content as
 ``Index/*.iwa`` with no PDF render, while the rest use the iWork '09
 ``index.xml`` layout. Conveniently, the first two hold the same source document,
@@ -50,12 +51,30 @@ from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.document_converter import DocumentConverter
 from docling.exceptions import DocumentLoadError
 
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
+
 SOURCES = Path("./tests/data/pages/sources")
 PAGES_2013 = SOURCES / "pages_2013.pages"
 PAGES_IWORK09 = SOURCES / "pages_iwork09.pages"
+# Its password is "tika", per the comment in Tika's own IWorkParserTest. It is
+# of no use here: Pages does not use ZIP encryption, so the password cannot be
+# handed to zipfile, and the fixture exists only to check that an unreadable
+# container is refused with a clear message rather than a crash.
 PAGES_PASSWORD_PROTECTED = SOURCES / "pages_password_protected.pages"
 PAGES_IWORK09_FORMATTED = SOURCES / "pages_iwork09_formatted.pages"
 PAGES_IWORK09_COMMENTS = SOURCES / "pages_iwork09_comments.pages"
+
+GROUNDTRUTH = Path("./tests/data/pages/groundtruth")
+
+# Every fixture that converts. The password-protected one never produces a
+# document, so it has no groundtruth to compare against.
+CONVERTIBLE = [
+    PAGES_2013,
+    PAGES_IWORK09,
+    PAGES_IWORK09_COMMENTS,
+    PAGES_IWORK09_FORMATTED,
+]
 
 # Present in the body of both fixtures.
 _BODY_SENTENCE = "Some plain text to parse."
@@ -1195,3 +1214,29 @@ def test_table_saved_by_a_recent_pages_release_is_read(tmp_path: Path, wide: boo
     assert by_position[(0, 0)] == "Column one"
     assert by_position[(0, 2)] == "Column three"
     assert by_position[(1, 1)] == "Cell two"
+
+
+@pytest.mark.parametrize("source", CONVERTIBLE, ids=lambda path: path.name)
+def test_conversion_matches_the_groundtruth(source: Path):
+    """Pin the whole conversion of every fixture, so a change in any part of the
+    backend shows up as a reviewable diff rather than passing unnoticed.
+
+    The Markdown is the reading order a caller gets by default; the serialized
+    ``DoclingDocument`` is what carries the rest — labels, formatting,
+    hyperlinks, list grouping, and the page furniture and comments that live
+    outside the body layer.
+    """
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.IWORK_PAGES])
+        .convert(source)
+        .document
+    )
+    groundtruth = GROUNDTRUTH / source.name
+
+    assert verify_export(
+        doc.export_to_markdown(), str(groundtruth) + ".md", generate=GEN_TEST_DATA
+    ), f"export to markdown failed on {source}"
+
+    assert verify_document(doc, str(groundtruth) + ".json", generate=GEN_TEST_DATA), (
+        f"DoclingDocument verification failed on {source}"
+    )
