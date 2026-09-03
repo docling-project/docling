@@ -741,7 +741,7 @@ def iwa_cell_values(
             store,
             STORE_RICH_TEXT_FIELD,
             objects,
-            lambda entry, known: iwa_entry_rich_text(entry, known),
+            iwa_entry_rich_text,
         ),
     )
 
