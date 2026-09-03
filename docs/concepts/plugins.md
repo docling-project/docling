@@ -66,9 +66,17 @@ where `YourOcrModel` must implement the [`BaseOcrModel`](https://github.com/docl
 
 #### OCR languages in an external engine
 
-`OcrOptions.lang` is validated and canonicalized by the base class: your engine receives BCP-47
-tags such as `en-Latn` and `zh-Hans`, never `en` or `chinese`. See
-[OCR engines](OCR.md#language-selection) for the user-facing contract.
+`OcrOptions.lang` is validated and canonicalized by the base class, so your engine receives
+`OcrLanguage` objects rather than raw strings. Each is one of three things:
+
+- an ordinary language: a `(bcp47_language, bcp47_script)` pair such as `en-Latn` or `zh-Hans`,
+  never `en` or `chinese`
+- the reserved `mul`, flagged by `is_multilingual`: "your broadest multilingual model"
+- a **passthrough**, flagged by `is_passthrough`: a code the user wrote behind the `native:`
+  prefix, carried in `.native` and never parsed, for the models a `(language, script)` pair cannot
+  name
+
+See [OCR engines](OCR.md#language-selection) for the user-facing contract.
 
 With no further work, `BaseOcrModel.map_ocr_language` hands your engine the **primary subtag**
 (`en`, `zh`), which is what most ISO-639-based engines want. Two things still need attention:
@@ -84,27 +92,57 @@ from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
 
 
 class YourOcrModel(BaseOcrModel):
-    # What the engine can do with a language request.
-    language_support = OcrLanguageSupport(
-        multiple_languages=False,  # True if several languages can run at once
-    )
+    # True if the engine can run several languages at once; when it is
+    # False, every language after the first is dropped with a warning.
+    multiple_languages = False
 
-    def supported_ocr_languages(self) -> list[str]:
-        # Canonical tags this instance can serve, for error messages.
-        return ["en-Latn", "de-Latn"]
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        # What this instance can serve, for error messages. `bcp47` holds the
+        # shortest spelling: `de`, not `de-Latn`, because canonicalization puts
+        # the script back; `zh-Hant` and `sr-Latn` do have to carry theirs.
+        # `native` holds your own codes for models no tag can name, bare.
+        return OcrLanguageSupport(bcp47=["en", "de"], native=["my_script_model"])
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
-        # Map one canonical tag onto your engine's native code(s).
-        if language.tag not in self.supported_ocr_languages():
-            raise OcrLanguageNotSupportedError(type(self).__name__, language.tag)
-        return language.bcp47_language
+        # Map one request onto your engine's native code(s). Handle the two
+        # non-language cases first: `language.bcp47` is empty for a passthrough,
+        # and `mul` names no script.
+        if language.is_passthrough:
+            # `.native` is unvalidated, so check it against your own vocabulary.
+            if language.native in MY_ENGINE_CODES:
+                return language.native
+        elif language.is_multilingual:
+            if MY_MULTILINGUAL_MODEL is not None:
+                return MY_MULTILINGUAL_MODEL
+        elif language.short_tag in self.supported_ocr_languages().bcp47:
+            return language.bcp47_language
+        raise OcrLanguageNotSupportedError(
+            type(self).__name__,
+            language.tag,  # the spelling the user wrote, `native:` prefix and all
+            supported=self.supported_ocr_languages(),
+        )
 ```
 
 `BaseOcrModel.resolve_ocr_languages()` then drops every language after the first on a
 single-language engine, with a warning naming what it kept. It does not touch the error path: an
 `OcrLanguageNotSupportedError` your `map_ocr_language` raises propagates unchanged, which is why
-the sample above attaches `supported=` itself. Call it once from `__init__`, inside your
-`if self.enabled:` block, and use the result in place of `options.lang`.
+the sample above attaches `supported=` itself. Call `resolve_ocr_languages()` once from
+`__init__`, inside your `if self.enabled:` block, and use the result in place of `options.lang`.
+
+Build `supported_ocr_languages()` by walking your engine's own vocabulary and sorting each code:
+
+1. Skip it if it is not a recognizer at all, or if it is redundant with a tag you already offer.
+2. Canonicalize it, through your reverse deviation table first if you have one.
+3. If that succeeds **and the result maps back to this same code**, put the canonical tag in
+   `bcp47`, in its `short_tag` spelling.
+4. Otherwise put the code itself in `native`, bare -- the `native:` prefix is added when the error
+   message renders it.
+
+Step 4 is the one worth getting right. Dropping a code your engine really serves hides it: a user
+who hits a coverage error is never told the model exists. `short_tag` in step 3 drops the script
+whenever canonicalization would infer it anyway, so the list reads `en, de, zh` rather than
+`en-Latn, de-Latn, zh-Hans`, and keeps it only where the bare language would name a different
+recognizer -- `zh-Hant`, `sr-Latn`, `de-Latf`.
 
 ### Layout engine factory
 
