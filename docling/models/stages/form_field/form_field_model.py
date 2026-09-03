@@ -39,6 +39,19 @@ class PdfFormFieldModel(BasePageModel):
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
 
+    @classmethod
+    def _is_skipped(cls, widget: PdfWidget, bbox: BoundingBox) -> bool:
+        """Widgets that carry no field value for the document.
+
+        A widget of zero height or width is an artifact (Well-Tagged PDF 1.0,
+        8.9.2.4.13). Push buttons trigger actions and hold no value.
+        """
+        if bbox.width <= 0 or bbox.height <= 0:
+            return True
+        return widget.widget_field_type == "/Btn" and bool(
+            widget.widget_field_flags & cls._PUSHBUTTON_FLAG
+        )
+
     @staticmethod
     def _normalize_text(text: str) -> str:
         return "".join(text.split())
@@ -186,6 +199,8 @@ class PdfFormFieldModel(BasePageModel):
                     bbox = widget.rect.to_bounding_box().to_top_left_origin(
                         page.size.height
                     )
+                    if self._is_skipped(widget, bbox):
+                        continue
                     value = self._normalize_widget(widget, bbox)
                     if value.checkbox is not None:
                         # Lift the visual checkbox's option label onto the value

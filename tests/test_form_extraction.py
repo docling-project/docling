@@ -70,6 +70,7 @@ def _widget(
     *,
     field_type: str = "/Tx",
     appearance_state: str | None = None,
+    field_flags: int = 0,
 ) -> PdfWidget:
     return PdfWidget(
         index=index,
@@ -79,6 +80,7 @@ def _widget(
         widget_text=text,
         widget_field_type=field_type,
         widget_appearance_state=appearance_state,
+        widget_field_flags=field_flags,
     )
 
 
@@ -147,6 +149,16 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
             field_type="/Btn",
             appearance_state="/Off",
         ),
+        # Zero-size widgets are artifacts (Well-Tagged PDF 1.0, 8.9.2.4.13).
+        _widget(6, BoundingBox(l=30, t=30, r=30, b=30), "ghost"),
+        # Push buttons carry no value.
+        _widget(
+            7,
+            BoundingBox(l=60, t=80, r=90, b=90),
+            "Submit",
+            field_type="/Btn",
+            field_flags=PdfFormFieldModel._PUSHBUTTON_FLAG,
+        ),
     ]
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=widgets)
@@ -182,6 +194,13 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
     )
     assert page.predictions.field_regions[2].items[0].values[0].orig == "/On"
     assert page.predictions.field_regions[3].items[0].values[0].orig == "/Off"
+    # The zero-size and push-button widgets are dropped: no extra region and
+    # neither their text nor orig reaches any value.
+    assert not any(
+        value.orig in {"ghost", "Submit"}
+        for region in page.predictions.field_regions
+        for value in _region_values(region)
+    )
 
     visible_child = Cluster(
         id=4,
