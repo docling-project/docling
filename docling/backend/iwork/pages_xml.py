@@ -11,10 +11,12 @@ and attributes instead. Page furniture and comments each carry their own
 
 import logging
 import zipfile
+import zlib
 from collections.abc import Callable
 from typing import TypeVar
 from xml.etree.ElementTree import Element
 
+import defusedxml.ElementTree as ET
 from docling_core.types.doc import (
     Formatting,
     Script,
@@ -41,6 +43,7 @@ from docling.backend.iwork.content import (
     trim,
     unique_paragraphs,
 )
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -185,16 +188,72 @@ field wraps the stretch of body text being commented on.
 """
 
 
-def read_content(root: Element, archive: zipfile.ZipFile) -> Content:
-    """Read the content of an iWork '09 document out of its parsed ``index.xml``.
+def _parse_index(
+    archive: zipfile.ZipFile, member: str, max_total_bytes: int, document_hash: str
+) -> Element:
+    """Decompress and parse the ``index.xml`` of an iWork '09 document.
 
     Args:
-        root: The parsed ``index.xml`` root element.
-        archive: The open ``.pages`` container, which holds any image data.
+        archive: The open ``.pages`` container.
+        member: The name of its index member.
+        max_total_bytes: The largest index this is willing to decompress to.
+        document_hash: The document's hash, for error messages.
+
+    Returns:
+        The parsed root element.
+
+    Raises:
+        DocumentLoadError: If the member cannot be decompressed or parsed.
+    """
+    raw = archive.read(member)
+    if member.endswith(".gz"):
+        # max_total_bytes only counts the stored size of a gzipped member, so a
+        # small index.xml.gz could otherwise expand without bound. Cap the
+        # output instead of using gzip.decompress, which has no limit.
+        limit = min(MAX_LEGACY_XML_BYTES, max_total_bytes)
+        try:
+            decompressor = zlib.decompressobj(wbits=31)
+            raw = decompressor.decompress(raw, limit)
+            if decompressor.unconsumed_tail:
+                raise DocumentLoadError(
+                    f"'{member}' in Pages document with hash {document_hash} "
+                    f"expands beyond the {limit} byte limit."
+                )
+        except zlib.error as exc:
+            raise DocumentLoadError(
+                f"Could not decompress '{member}' in Pages document with hash "
+                f"{document_hash}."
+            ) from exc
+
+    try:
+        return ET.fromstring(raw)
+    except Exception as exc:
+        raise DocumentLoadError(
+            f"Could not parse '{member}' in Pages document with hash {document_hash}."
+        ) from exc
+
+
+def read_content(
+    archive: zipfile.ZipFile,
+    member: str,
+    max_total_bytes: int,
+    document_hash: str,
+) -> Content:
+    """Read the content of an iWork '09 document out of its ``index.xml``.
+
+    Args:
+        archive: The open ``.pages`` container, which also holds any image data.
+        member: The name of its index member.
+        max_total_bytes: The largest index this is willing to decompress to.
+        document_hash: The document's hash, for error messages.
 
     Returns:
         Everything the document holds.
+
+    Raises:
+        DocumentLoadError: If the index cannot be decompressed or parsed.
     """
+    root = _parse_index(archive, member, max_total_bytes, document_hash)
     style_names = legacy_styles(
         root, SF_PARAGRAPH_STYLE, lambda element: element.get(SF_ATTR_NAME)
     )

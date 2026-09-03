@@ -21,14 +21,10 @@ pages and running layout analysis over them.
 import logging
 import mimetypes
 import zipfile
-import zlib
 from io import BytesIO
 from pathlib import Path
-from typing import TypeVar
 from urllib.parse import urlparse
-from xml.etree.ElementTree import Element
 
-import defusedxml.ElementTree as ET
 from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
@@ -52,15 +48,8 @@ from docling.backend.iwork.content import (
     Paragraph,
     Picture,
     Run,
-    label_for_style,
 )
-from docling.backend.iwork.iwa import (
-    IWAObject,
-    is_encrypted,
-    iter_objects,
-    read_fields,
-    read_reference,
-)
+from docling.backend.iwork.iwa import is_encrypted
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -183,58 +172,15 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
 
         legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
         if legacy is not None:
-            root = self._parse_legacy_index(archive, legacy)
-            return pages_xml.read_content(root, archive)
+            return pages_xml.read_content(
+                archive, legacy, self.options.max_total_bytes, self.document_hash
+            )
 
         raise DocumentLoadError(
             f"Document with hash {self.document_hash} is a ZIP archive but does "
             "not look like a Pages document: it has neither an Index/ directory "
             "nor an index.xml."
         )
-
-    def _parse_legacy_index(self, archive: zipfile.ZipFile, member: str) -> Element:
-        """Decompress and parse the ``index.xml`` of an iWork '09 document.
-
-        Args:
-            archive: The open ``.pages`` container.
-            member: The name of its index member.
-
-        Returns:
-            The parsed root element.
-
-        Raises:
-            DocumentLoadError: If the member cannot be decompressed or parsed.
-        """
-        raw = archive.read(member)
-        if member.endswith(".gz"):
-            # max_total_bytes only counts the stored size of a gzipped member, so
-            # a small index.xml.gz could otherwise expand without bound. Cap the
-            # output instead of using gzip.decompress, which has no limit.
-            limit = min(pages_xml.MAX_LEGACY_XML_BYTES, self.options.max_total_bytes)
-            try:
-                decompressor = zlib.decompressobj(wbits=31)
-                raw = decompressor.decompress(raw, limit)
-                if decompressor.unconsumed_tail:
-                    raise DocumentLoadError(
-                        f"'{member}' in Pages document with hash "
-                        f"{self.document_hash} expands beyond the {limit} byte "
-                        "limit."
-                    )
-            except zlib.error as exc:
-                raise DocumentLoadError(
-                    f"Could not decompress '{member}' in Pages document with hash "
-                    f"{self.document_hash}."
-                ) from exc
-
-        try:
-            root = ET.fromstring(raw)
-        except Exception as exc:
-            raise DocumentLoadError(
-                f"Could not parse '{member}' in Pages document with hash "
-                f"{self.document_hash}."
-            ) from exc
-
-        return root
 
     @override
     def is_valid(self) -> bool:
