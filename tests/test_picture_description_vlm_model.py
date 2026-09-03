@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from pathlib import Path
 
 import pytest
@@ -24,6 +27,7 @@ class _DummyProcessor:
         self.template_calls = 0
         self.process_calls = []
         self.decode_calls = 0
+        self.tokenizer = _DummyTokenizer()
 
     def apply_chat_template(self, messages, add_generation_prompt=True):
         self.template_calls += 1
@@ -71,6 +75,8 @@ class _DummyModel:
 class _DummyTokenizer:
     def __init__(self) -> None:
         self.padding_side = "left"
+        self.pad_token_id = None
+        self.eos_token_id = 123
 
 
 class _InitDummyProcessor:
@@ -114,7 +120,12 @@ def test_legacy_picture_description_vlm_batches_generation() -> None:
     assert model.processor.decode_calls == 1
     assert model.processor.skip_special_tokens is True
     assert len(model.model.generate_calls) == 1
-    assert model.model.generate_calls[0]["generation_config"].max_new_tokens == 17
+    generation_config = model.model.generate_calls[0]["generation_config"]
+    assert generation_config.max_new_tokens == 17
+    assert generation_config.do_sample is False
+    assert generation_config.pad_token_id == 123
+    assert "max_new_tokens" not in model.model.generate_calls[0]
+    assert "do_sample" not in model.model.generate_calls[0]
 
 
 def test_legacy_picture_description_vlm_skips_empty_batch() -> None:

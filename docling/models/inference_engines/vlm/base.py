@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Base classes for VLM inference engines."""
 
 import logging
@@ -17,7 +20,7 @@ from typing import (
 )
 
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny, field_validator
 from pydantic_core import PydanticUndefined
 
 if TYPE_CHECKING:
@@ -108,7 +111,7 @@ class BaseVlmEngineOptions(BaseModel):
 
 
 class VlmEngineOptionsMixin(BaseModel):
-    engine_options: BaseVlmEngineOptions = Field(
+    engine_options: SerializeAsAny[BaseVlmEngineOptions] = Field(
         description="Runtime configuration (transformers, mlx, api, etc.)"
     )
 

@@ -1,5 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import glob
+from io import BytesIO
 from pathlib import Path
+
+from docling_core.types.doc import CodeItem, DocItemLabel, ListItem
 
 from docling.backend.asciidoc_backend import (
     DEFAULT_IMAGE_HEIGHT,
@@ -22,6 +28,105 @@ def _get_backend(fname):
 
     doc_backend = in_doc._backend
     return doc_backend
+
+
+def test_list_dedent_to_base_does_not_crash():
+    # A list that starts indented and then dedents back to the base level used
+    # to raise "TypeError: '<' not supported between instances of 'int' and
+    # 'NoneType'": the dedent loop walked past level 0, where the base indent is
+    # never set. It should keep both items instead.
+    src = b"  * a\n* b\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="dedent.asciidoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [item.text for item in doc.texts] == ["a", "b"]
+
+
+def test_auto_numbered_list_keeps_items_and_following_text():
+    source = b"""= Installation Guide
+
+== Steps
+
+. Download the archive
+. Unpack it
+. Run the installer
+
+== Troubleshooting
+
+If the installer fails, check the log file.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="ordered-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "Download the archive",
+        "Unpack it",
+        "Run the installer",
+    ]
+    assert all(item.enumerated for item in list_items)
+    assert "If the installer fails, check the log file." in doc.export_to_markdown()
+
+
+def test_literal_block_keeps_its_content_and_following_text():
+    source = b"""= Guide
+
+== One
+
+Before the block.
+
+....
+raw literal
+second line
+....
+
+== Two
+
+After the block.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="literal-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["raw literal\nsecond line"]
+    assert "After the block." in doc.export_to_markdown()
+
+
+def test_literal_block_flushes_pending_caption():
+    source = b""".Literal example
+....
+raw literal
+....
+
+image::next.png[]
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="captioned-literal-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [(item.label, item.text) for item in doc.texts[:2]] == [
+        (DocItemLabel.CAPTION, "Literal example"),
+        (DocItemLabel.CODE, "raw literal"),
+    ]
 
 
 def test_parse_picture():
@@ -129,3 +234,30 @@ def test_asciidocs_examples():
 
         # Verify markdown export
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GEN_TEST_DATA)
+
+
+def test_utf8_bom_does_not_hide_the_document_title(tmp_path):
+    """A leading UTF-8 BOM must not survive into the first line.
+
+    Decoding with plain utf-8 kept it, so "= Title" started with U+FEFF, was no
+    longer recognized as the document title, and the BOM reached the exported
+    text. Both the stream and the file path are covered, since each decodes
+    separately.
+    """
+    adoc_bytes = "\ufeff= Document Title\n\nSome body text.\n".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(adoc_bytes),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="bom.adoc",
+    )
+    stream_doc = in_doc._backend.convert()
+
+    adoc_file = tmp_path / "bom.adoc"
+    adoc_file.write_bytes(adoc_bytes)
+    file_doc = _get_backend(adoc_file).convert()
+
+    for doc in (stream_doc, file_doc):
+        assert doc.texts[0].label == "title"
+        assert doc.texts[0].text == "Document Title"

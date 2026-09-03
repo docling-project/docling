@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for parsing chandra-ocr-2 HTML-with-bbox format.
 
 chandra-ocr-2 produces HTML where each layout element is a top-level
@@ -69,6 +72,8 @@ _TAG_RE = re.compile(r"<[^>]+>")
 
 def _strip_tags(html: str) -> str:
     """Remove HTML tags and collapse whitespace."""
+    # Preserve spacing represented by HTML line breaks.
+    html = re.sub(r"<br\s*/?>", " ", html)
     text = _TAG_RE.sub("", html)
     text = re.sub(r"\s+", " ", text).strip()
     return text

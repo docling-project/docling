@@ -535,18 +535,8 @@ depends_on = ["docling.pipeline.standard_pdf_pipeline"]
 path = "docling.pipeline.legacy_standard_pdf_pipeline"
 layer = "pipeline"
 depends_on = [
-  "docling.backend",
   "docling.datamodel",
-  "docling.datamodel.layout_model_specs",
-  "docling.models",
-  "docling.models.factories",
-  "docling.models.stages.code_formula",
-  "docling.models.stages.heading_hierarchy",
-  "docling.models.stages.page_assemble",
-  "docling.models.stages.page_preprocessing",
-  "docling.models.stages.reading_order",
-  "docling.pipeline.base_pipeline",
-  "docling.utils",
+  "docling.pipeline.standard_pdf_pipeline",
 ]
 
 [[modules]]

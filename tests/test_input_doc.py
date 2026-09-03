@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import importlib.util
 from io import BytesIO
 from pathlib import Path
@@ -456,6 +459,47 @@ def test_guess_format(tmp_path):
     doc_path = temp_dir / "test.json"
     doc_path.write_text(test_str, encoding="utf-8")
     assert dci._guess_format(doc_path) == InputFormat.JSON_DOCLING
+
+
+def test_guess_format_xml_with_undecodable_head(tmp_path):
+    """XML whose sniffed head is not valid UTF-8 must still be detected (#1762).
+
+    ``_guess_format`` sniffs only the first 1024 bytes of a path (8192 of a
+    stream), so the head can end mid-codepoint even for well-formed UTF-8, and
+    an XML document may declare a non-UTF-8 encoding outright. Neither may raise
+    out of format detection -- that aborts the whole conversion batch.
+    """
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+    temp_dir = tmp_path / "test_guess_format_undecodable"
+    temp_dir.mkdir()
+
+    # A JATS article declared in ISO-8859-1; the surname carries byte 0xF8.
+    latin1_jats = (
+        '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
+        '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS-journalpublishing1.dtd" "x.dtd">\n'
+        "<article><front><article-meta>"
+        "<contrib><name><surname>Bj\xf8rnstad</surname></name></contrib>"
+        "</article-meta></front></article>\n"
+    ).encode("iso-8859-1")
+
+    doc_path = temp_dir / "article_latin1.xml"
+    doc_path.write_bytes(latin1_jats)
+    assert dci._guess_format(doc_path) == InputFormat.XML_JATS
+
+    stream = DocumentStream(name="article_latin1.xml", stream=BytesIO(latin1_jats))
+    assert dci._guess_format(stream) == InputFormat.XML_JATS
+
+    # Well-formed UTF-8, but a two-byte codepoint straddles the 1024-byte cut.
+    head = '<?xml version="1.0" encoding="UTF-8"?>\n<doclang><text>'
+    padding = "a" * (1024 - len(head.encode()) - 1)
+    split_utf8 = f"{head}{padding}é</text></doclang>\n".encode()
+    assert len(split_utf8) > 1024
+    with pytest.raises(UnicodeDecodeError):  # the head alone is undecodable
+        split_utf8[:1024].decode("utf-8")
+
+    doc_path = temp_dir / "doclang_split.xml"
+    doc_path.write_bytes(split_utf8)
+    assert dci._guess_format(doc_path) == InputFormat.XML_DOCLANG
 
 
 def _make_input_doc(path):

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Synchronous client SDK for docling-serve."""
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from urllib.parse import urlencode, urlparse
 
 import httpx
 from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
+from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
 from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
@@ -653,7 +657,13 @@ class _BaseDoclingServiceClient:
         except (TypeError, ValueError, IndexError, OverflowError):
             return None
 
-        now = datetime.now(tz=retry_at.tzinfo or timezone.utc)
+        # parsedate_to_datetime returns a naive datetime for HTTP-dates carrying
+        # an unknown timezone (e.g. "-0000"); assume UTC so the subtraction below
+        # does not mix naive and aware datetimes.
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(tz=timezone.utc)
         return max(0.0, (retry_at - now).total_seconds())
 
     def _raise_for_result_404(
@@ -841,7 +851,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             write=http_read_timeout,
             pool=http_read_timeout,
         )
-        headers: dict[str, str] = {}
+        headers: dict[str, str] = {
+            # Tell the server the newest DoclingDocument version this client's
+            # installed docling-core can read; the server down-projects if needed.
+            "Accept-Docling-Document-Version": CURRENT_VERSION,
+        }
         if api_key:
             headers["X-Api-Key"] = api_key
         self._http_client = httpx.Client(timeout=timeout, headers=headers)

@@ -13,6 +13,7 @@ Below you can find a listing of all supported input and output formats.
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
+| Pages | Apple Pages documents (`.pages`), both container generations: Pages 5+ (2013 onwards) via its `Index/*.iwa` archives and iWork '09 via `index.xml`. Body text with titles, headings and tables (requires the `format-iwork` extra) |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
@@ -50,3 +51,4 @@ Schema-specific support:
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | DocLang archive | Zipped DocLang bundle including page images; CLI output format: `dclx` |
 | Chunks (JSONL) | Chunked document output for RAG pipelines; configurable via `--chunks-type`, `--chunks-max-tokens`, `--chunks-tokenizer` |
+| LaTeX | Standalone `.tex` document; images are emitted as placeholders |

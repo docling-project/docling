@@ -83,6 +83,8 @@ OCR engines are optional dependencies — see
 ```bash
 docling report.pdf --no-tables --output /tmp/            # skip table structure (faster)
 docling report.pdf --table-mode accurate --output /tmp/  # vs. fast
+docling report.pdf --layout-engine docling_layout_default --output /tmp/  # choose layout engine
+docling report.pdf --table-structure-engine docling_tableformer_v2 --output /tmp/  # choose table engine
 docling report.pdf --enrich-code --output /tmp/          # code understanding
 docling report.pdf --enrich-formula --output /tmp/       # formula understanding
 docling report.pdf --enrich-picture-classes --output /tmp/
@@ -96,6 +98,7 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | Scanned / image-only PDF | Standard with OCR, or `--pipeline vlm` |
 | Password-protected PDF | `--pdf-password PASSWORD` (raises `ConversionError` if wrong) |
 | Very large document (500+ pages) | Standard, add `--no-tables` for speed; set `--device` / `--num-threads` |
+| Only part of a document is needed | `--page-range 1-4` (or a single page, `--page-range 4`); page numbers start at 1 |
 | Complex / multi-column layout | `--pipeline vlm` (standard may misorder reading flow) |
 | Handwriting or formulas | `--pipeline vlm` only |
 | Output near-empty | Enable OCR, or switch to `--pipeline vlm` |

@@ -14,6 +14,16 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=5120]
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: insert-license
+        name: "Insert license header"
+        args:
+          - --license-filepath=.github/license-header.txt
+          - --comment-style=#
+          - --detect-license-in-X-top-lines=5
+        files: '^(docling|tests|scripts|\.github/scripts|perfs)/.*\.py$'
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
     hooks:

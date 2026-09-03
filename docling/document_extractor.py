@@ -1,4 +1,6 @@
-import hashlib
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import threading
@@ -13,8 +15,8 @@ from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
@@ -40,6 +42,7 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+from docling.utils.pipeline_cache import create_pipeline_options_hash
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -75,7 +78,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     """
     format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: ImageDocumentBackend,
-        InputFormat.PDF: PyPdfiumDocumentBackend,
+        InputFormat.PDF: ThreadedDoclingParseDocumentBackend,
     }
 
     backend = format_to_default_backend.get(fmt)
@@ -297,7 +300,7 @@ class DocumentExtractor:
 
         pipeline_class = fopt.pipeline_cls
         pipeline_options = fopt.pipeline_options
-        options_hash = self._get_pipeline_options_hash(pipeline_options)
+        options_hash = create_pipeline_options_hash(pipeline_options)
 
         cache_key = (pipeline_class, options_hash)
         with _PIPELINE_CACHE_LOCK:
@@ -314,11 +317,3 @@ class DocumentExtractor:
                 )
 
             return self._initialized_pipelines[cache_key]
-
-    @staticmethod
-    def _get_pipeline_options_hash(pipeline_options: PipelineOptions) -> str:
-        """Generate a stable hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(
-            options_str.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()

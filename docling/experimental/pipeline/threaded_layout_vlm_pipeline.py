@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Threaded Layout+VLM Pipeline
 ================================
 A specialized two-stage threaded pipeline that combines layout model preprocessing
@@ -9,20 +12,25 @@ from __future__ import annotations
 
 import itertools
 import logging
+import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.document import DocTagsDocument
-from PIL import Image as PILImage
 
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, Page
+from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    Page,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     LayoutPostprocessorOptions,
@@ -33,6 +41,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
@@ -57,17 +66,6 @@ from docling.pipeline.standard_pdf_pipeline import (
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
-
-
-def _raise_if_unsupported_threaded_backend(
-    backend: AbstractDocumentBackend, pipeline_name: str
-) -> None:
-    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
-        raise RuntimeError(
-            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
-            "It still requires ordered/random page access via load_page() and cannot "
-            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
-        )
 
 
 class ThreadedLayoutVlmPipeline(BasePipeline):
@@ -125,6 +123,10 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
 
+                # Only augment convert to docling base prompts
+                if base_prompt != DOCLING_BASE_PAGE_PROMPT:
+                    return base_prompt
+
                 # In this layout-aware pipeline, _internal_page is always provided
                 if _internal_page is None:
                     return base_prompt
@@ -145,6 +147,14 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             label=cluster.label
                         )
 
+                        # Replace TABLE by otsl for consistency with doctags
+                        if tag_name == DocumentToken.TABLE:
+                            tag_name = "otsl"
+
+                        # Remove section level details
+                        if tag_name == "section_header_level_1":
+                            tag_name = "section_header"
+
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
                         location_tokens = DocumentToken.get_location(
@@ -160,11 +170,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                     if layout_elements:
                         # Join elements with newlines and wrap in layout tags
                         layout_xml = (
-                            "<layout>" + "\n".join(layout_elements) + "</layout>"
+                            "<layout>\n" + "\n".join(layout_elements) + "</layout>"
                         )
-                        layout_injection = f"{layout_xml}"
-
-                        augmented_prompt = base_prompt + layout_injection
+                        augmented_prompt += f"\n{layout_xml}"
 
                     _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
@@ -271,85 +279,181 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Build document using threaded layout+VLM pipeline."""
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
-        _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
         run_id = next(self._run_seq)
 
-        # Initialize pages
         start_page, end_page = conv_res.input.limits.page_range
-        pages: List[Page] = []
-        images_scale = self.pipeline_options.images_scale
-        for i in range(conv_res.input.page_count):
-            if start_page - 1 <= i <= end_page - 1:
-                page = Page(page_no=i + 1)
-                if images_scale is not None:
-                    page._default_image_scale = images_scale
-                page._backend = backend.load_page(i)
-                if page._backend and page._backend.is_valid():
-                    page.size = page._backend.get_size()
-                    conv_res.pages.append(page)
-                    pages.append(page)
-
-        if not pages:
+        expected_page_nos = list(
+            range(max(1, start_page), min(conv_res.input.page_count, end_page) + 1)
+        )
+        if not expected_page_nos:
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
-        total_pages = len(pages)
+        page_by_no = {page_no: Page(page_no=page_no) for page_no in expected_page_nos}
+        conv_res.pages = list(page_by_no.values())
+        for page in conv_res.pages:
+            page._default_image_scale = self.pipeline_options.images_scale
+
+        total_pages = len(expected_page_nos)
         ctx = self._create_run_ctx()
         for st in ctx.stages:
             st.start()
 
         proc = ProcessingResult(total_expected=total_pages)
-        fed_idx = 0
         batch_size = 32
+        producer_error: list[Exception] = []
+        page_documents: dict[int, DoclingDocument] = {}
+
+        def _completed_page_nos() -> set[int]:
+            return {page.page_no for page in proc.pages} | {
+                page_no for page_no, _, _ in proc.failed_pages if page_no > 0
+            }
+
+        def _produce_pages() -> None:
+            try:
+                for page_backend in iter_pdf_page_backends(backend, expected_page_nos):
+                    page = page_by_no.get(page_backend.page_no)
+                    if page is None:
+                        page_backend.unload()
+                        continue
+                    page._backend = page_backend
+                    try:
+                        page.size = page_backend.get_size()
+                    except Exception:
+                        if page_backend.is_valid():
+                            page_backend.unload()
+                            page._backend = None
+                            raise
+                    if not ctx.first_stage.input_queue.put(
+                        ThreadedItem(
+                            payload=page,
+                            run_id=run_id,
+                            page_no=page.page_no,
+                            conv_res=conv_res,
+                        )
+                    ):
+                        self._release_page_resources(page)
+                        break
+            except Exception as exc:
+                producer_error.append(exc)
+                _log.error("Producer failed for run %d: %s", run_id, exc, exc_info=True)
+            finally:
+                ctx.first_stage.input_queue.close()
+
+        producer_thread = threading.Thread(
+            target=_produce_pages, name=f"LayoutVlmPageProducer-{run_id}", daemon=False
+        )
+        producer_thread.start()
 
         try:
             while proc.success_count + proc.failure_count < total_pages:
-                # Feed pages to first stage
-                while fed_idx < total_pages:
-                    ok = ctx.first_stage.input_queue.put(
-                        ThreadedItem(
-                            payload=pages[fed_idx],
-                            run_id=run_id,
-                            page_no=pages[fed_idx].page_no,
-                            conv_res=conv_res,
-                        ),
-                        timeout=0.0,
-                    )
-                    if ok:
-                        fed_idx += 1
-                        if fed_idx == total_pages:
-                            ctx.first_stage.input_queue.close()
-                    else:
-                        break
-
-                # Drain results from output
                 out_batch = ctx.output_queue.get_batch(batch_size, timeout=0.05)
                 for itm in out_batch:
                     if itm.run_id != run_id:
                         continue
                     if itm.is_failed or itm.error:
                         proc.failed_pages.append(
-                            (itm.page_no, itm.error or RuntimeError("unknown error"))
+                            (
+                                itm.page_no,
+                                itm.error or RuntimeError("unknown error"),
+                                itm.failure,
+                            )
                         )
+                        if itm.payload is not None:
+                            self._release_page_resources(itm.payload)
                     else:
                         assert itm.payload is not None
-                        proc.pages.append(itm.payload)
+                        page = itm.payload
+                        try:
+                            page_document = self._finalize_page_document(page)
+                            if page_document is not None:
+                                page_documents[page.page_no] = page_document
+                            proc.pages.append(page)
+                        except Exception as exc:
+                            proc.failed_pages.append(
+                                (
+                                    page.page_no,
+                                    exc,
+                                    ErrorItem(
+                                        component_type=DoclingComponentType.PIPELINE,
+                                        module_name=self.__class__.__name__,
+                                        error_message=str(exc)
+                                        or exc.__class__.__name__,
+                                        category=FailureCategory.UNKNOWN,
+                                        page_no=page.page_no,
+                                    ),
+                                )
+                            )
+                        finally:
+                            self._release_page_resources(page)
 
-                # Handle early termination
                 if not out_batch and ctx.output_queue.closed:
-                    missing = total_pages - (proc.success_count + proc.failure_count)
-                    if missing > 0:
+                    missing_page_nos = sorted(
+                        set(expected_page_nos) - _completed_page_nos()
+                    )
+                    if missing_page_nos:
+                        error = (
+                            producer_error[0]
+                            if producer_error
+                            else RuntimeError("pipeline terminated early")
+                        )
                         proc.failed_pages.extend(
-                            [(-1, RuntimeError("pipeline terminated early"))] * missing
+                            (page_no, error, None) for page_no in missing_page_nos
                         )
                     break
         finally:
             for st in ctx.stages:
                 st.stop()
             ctx.output_queue.close()
+            producer_thread.join(timeout=15.0)
+            if producer_thread.is_alive():
+                _log.warning(
+                    "Producer thread for run %d did not terminate within 15.0s and will be abandoned.",
+                    run_id,
+                )
+            for page in conv_res.pages:
+                self._release_page_resources(page)
 
         self._integrate_results(conv_res, proc)
+        with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
+            ordered_page_documents = [
+                (page.page_no, page_documents[page.page_no])
+                for page in conv_res.pages
+                if page.page_no in page_documents
+            ]
+            conv_res.document = self._concatenate_page_documents(ordered_page_documents)
         return conv_res
+
+    def _finalize_page_document(self, page: Page) -> DoclingDocument | None:
+        image = page.image
+        response = page.predictions.vlm_response
+        if image is None or response is None:
+            return None
+
+        doctags_document = DocTagsDocument.from_doctags_and_image_pairs(
+            [response.text], [image]
+        )
+        document = DoclingDocument.load_from_doctags(doctag_document=doctags_document)
+
+        if self.pipeline_options.generate_picture_images:
+            assert page.size is not None
+            scale = self.pipeline_options.images_scale
+            for element, _level in document.iterate_items():
+                if not isinstance(element, PictureItem) or not element.prov:
+                    continue
+                crop_bbox = (
+                    element.prov[0]
+                    .bbox.scaled(scale=scale)
+                    .to_top_left_origin(page_height=page.size.height * scale)
+                )
+                element.image = ImageRef.from_pil(
+                    image.crop(crop_bbox.as_tuple()), dpi=int(72 * scale)
+                )
+
+        if not self.pipeline_options.generate_page_images:
+            for page_item in document.pages.values():
+                page_item.image = None
+        return document
 
     def _integrate_results(
         self, conv_res: ConversionResult, proc: ProcessingResult
@@ -357,18 +461,21 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Integrate processing results into conversion result."""
         page_map = {p.page_no: p for p in proc.pages}
 
-        # Track failed pages for cleanup
-        failed_page_nos = {fp for fp, _ in proc.failed_pages}
-
-        # Collect pages that will be removed (failed pages) for resource cleanup
-        pages_to_remove = [p for p in conv_res.pages if p.page_no in failed_page_nos]
-
         conv_res.pages = [
-            page_map.get(p.page_no, p)
-            for p in conv_res.pages
-            if p.page_no in page_map
-            or not any(fp == p.page_no for fp, _ in proc.failed_pages)
+            page_map[p.page_no] for p in conv_res.pages if p.page_no in page_map
         ]
+
+        for page_no, error, failure in proc.failed_pages:
+            conv_res.errors.append(
+                failure
+                or ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name=self.__class__.__name__,
+                    error_message=str(error) or error.__class__.__name__,
+                    category=FailureCategory.UNKNOWN,
+                    page_no=page_no if page_no > 0 else None,
+                )
+            )
 
         if proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
@@ -377,93 +484,8 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         else:
             conv_res.status = ConversionStatus.SUCCESS
 
-        # Clean up resources for failed pages that were removed
-        for p in pages_to_remove:
-            if p._backend is not None:
-                p._backend.unload()
-            p._image_cache = {}
-            # Clean up parsed_page if it exists (it's Optional[SegmentedPdfPage])
-            if p.parsed_page is not None:
-                del p.parsed_page
-                p.parsed_page = None
-
-        # Clean up images if not needed for remaining pages
-        if not self.pipeline_options.generate_page_images:
-            for p in conv_res.pages:
-                p._image_cache = {}
-
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
-        """Assemble final document from VLM predictions."""
-        from docling_core.types.doc import DocItem, ImageRef, PictureItem
-
-        from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
-
-        with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
-            # Response format validation is done in ThreadedLayoutVlmPipelineOptions
-            # This check is kept as a safety net, but should never trigger if validation works
-            if (
-                self.pipeline_options.vlm_options.response_format
-                != ResponseFormat.DOCTAGS
-            ):
-                raise RuntimeError(
-                    f"Unsupported VLM response format {self.pipeline_options.vlm_options.response_format}. Only DOCTAGS format is supported."
-                )
-            conv_res.document = self._turn_dt_into_doc(conv_res)
-
-            # Generate images of the requested element types
-            if self.pipeline_options.generate_picture_images:
-                # Create mapping from page_no to Page object since pages may be non-continuous
-                page_map = {p.page_no: p for p in conv_res.pages}
-                scale = self.pipeline_options.images_scale
-                for element, _level in conv_res.document.iterate_items():
-                    if not isinstance(element, DocItem) or len(element.prov) == 0:
-                        continue
-                    if (
-                        isinstance(element, PictureItem)
-                        and self.pipeline_options.generate_picture_images
-                    ):
-                        page_no = element.prov[0].page_no
-                        page = page_map.get(page_no)
-                        if page is None:
-                            _log.warning(
-                                f"Page {page_no} not found in conversion result for picture element. Skipping image generation."
-                            )
-                            continue
-                        assert page.size is not None
-                        assert page.image is not None
-
-                        crop_bbox = (
-                            element.prov[0]
-                            .bbox.scaled(scale=scale)
-                            .to_top_left_origin(page_height=page.size.height * scale)
-                        )
-
-                        cropped_im = page.image.crop(crop_bbox.as_tuple())
-                        element.image = ImageRef.from_pil(
-                            cropped_im, dpi=int(72 * scale)
-                        )
-
         return conv_res
-
-    def _turn_dt_into_doc(self, conv_res: ConversionResult) -> DoclingDocument:
-        """Convert DOCTAGS response format to DoclingDocument."""
-        doctags_list = []
-        image_list = []
-        for page in conv_res.pages:
-            # Only include pages that have both an image and VLM predictions
-            if page.image and page.predictions.vlm_response:
-                predicted_doctags = page.predictions.vlm_response.text
-                image_list.append(page.image)
-                doctags_list.append(predicted_doctags)
-
-        doctags_list_c = cast(List[Union[Path, str]], doctags_list)
-        image_list_c = cast(List[Union[Path, PILImage.Image]], image_list)
-        doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
-            doctags_list_c, image_list_c
-        )
-        document = DoclingDocument.load_from_doctags(doctag_document=doctags_doc)
-
-        return document
 
     @classmethod
     def get_default_options(cls) -> ThreadedLayoutVlmPipelineOptions:

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.json.docling_json_backend.py."""
 
 from io import BytesIO
@@ -57,3 +60,29 @@ def test_invalid_docling_json():
 
     with pytest.raises(ValidationError):
         backend.convert()
+
+
+def test_utf8_bom_does_not_fail_the_load(tmp_path):
+    """A leading UTF-8 BOM must not reach model_validate_json.
+
+    It is rejected as an unexpected character, so the document failed to load
+    outright. The path branch decodes and the stream branch hands raw bytes
+    over, so both are covered.
+    """
+    json_bytes = b"\xef\xbb\xbf" + GT_PATH.read_bytes()
+    exp_data = DoclingDocument.load_from_json(GT_PATH).export_to_dict()
+
+    json_file = tmp_path / "bom.json"
+    json_file.write_bytes(json_bytes)
+
+    for path_or_stream in (json_file, BytesIO(json_bytes)):
+        in_doc = InputDocument(
+            path_or_stream=path_or_stream,
+            format=InputFormat.JSON_DOCLING,
+            backend=DoclingJSONBackend,
+            filename="bom.json",
+        )
+        backend = DoclingJSONBackend(in_doc=in_doc, path_or_stream=path_or_stream)
+
+        assert backend.is_valid()
+        assert backend.convert().export_to_dict() == exp_data

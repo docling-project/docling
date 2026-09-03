@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Client SDK for interacting with docling-serve."""
 
 from docling.datamodel.service.requests import (

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Transformers-based VLM inference engine."""
 
 import importlib
@@ -39,7 +42,10 @@ from docling.models.inference_engines.vlm.base import (
     VlmEngineInput,
     VlmEngineOutput,
 )
-from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    build_generation_config,
+)
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
@@ -441,19 +447,22 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate
+        merged_generation_config = build_generation_config(
+            self.generation_config,
+            overrides=generation_config,
+            max_new_tokens=first_input.max_new_tokens,
+            use_cache=self.options.use_kv_cache,
+            do_sample=first_input.temperature > 0,
+            temperature=(
+                first_input.temperature if first_input.temperature > 0 else None
+            ),
+            pad_token_id=getattr(tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        )
         gen_kwargs = {
             **inputs,
-            "max_new_tokens": first_input.max_new_tokens,
-            "use_cache": self.options.use_kv_cache,
-            "generation_config": self.generation_config,
-            **generation_config,
+            "generation_config": merged_generation_config,
         }
-
-        if first_input.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = first_input.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         if stopping_criteria_list:
             gen_kwargs["stopping_criteria"] = stopping_criteria_list

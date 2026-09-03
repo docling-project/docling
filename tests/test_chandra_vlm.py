@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test chandra-ocr-2 HTML parsing in VLM pipeline."""
 
 from pathlib import Path
@@ -44,6 +47,21 @@ def test_chandra_simple_parsing():
         bbox = item.prov[0].bbox
         assert bbox is not None, "Should have bbox"
         assert bbox.l >= 0 and bbox.t >= 0, "Bbox coords should be non-negative"
+
+
+def test_chandra_br_spacing():
+    """Test that br tags preserve spacing between text."""
+    content = '<div data-bbox="0 0 1000 1000" data-label="Text">Hello<br/>World</div>'
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=1000, height=1000),
+        page_no=1,
+        filename="br.html",
+    )
+
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Hello World"
 
 
 def test_chandra_multiblock_parsing():

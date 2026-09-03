@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for VlmPipeline._determine_status with VLM stop reasons.
 
 Verifies that VlmPipeline correctly reports PARTIAL_SUCCESS when

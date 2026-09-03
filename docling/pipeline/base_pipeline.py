@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import functools
 import logging
 import time
@@ -7,7 +10,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
-from docling_core.types.doc import NodeItem
+from docling_core.types.doc import DocItem, DoclingDocument, NodeItem
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -129,6 +132,42 @@ class BasePipeline(ABC):
             self._unload(conv_res)
 
         return conv_res
+
+    @staticmethod
+    def _concatenate_page_documents(
+        page_documents: list[tuple[int, DoclingDocument]],
+    ) -> DoclingDocument:
+        if not page_documents:
+            return DoclingDocument(name="")
+
+        document = DoclingDocument.concatenate(
+            docs=[page_document for _, page_document in page_documents]
+        )
+        page_no_map = {
+            current_page_no: requested_page_no
+            for current_page_no, (requested_page_no, _) in zip(
+                sorted(document.pages), page_documents
+            )
+        }
+        document.pages = {
+            page_no_map[page_no]: page_item
+            for page_no, page_item in document.pages.items()
+        }
+        for page_no, page_item in document.pages.items():
+            page_item.page_no = page_no
+        for item, _level in document.iterate_items():
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page_no_map[provenance.page_no]
+        return document
+
+    @staticmethod
+    def _release_page_resources(page: Page) -> None:
+        if page._backend is not None:
+            page._backend.unload()
+            page._backend = None
+        page._image_cache = {}
+        page.parsed_page = None
 
     @abstractmethod
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:

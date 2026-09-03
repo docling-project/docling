@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test that PictureDescriptionBaseModel converts non-RGB images to RGB."""
 
 from collections.abc import Iterable

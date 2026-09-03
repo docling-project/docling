@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 from pathlib import Path
 
@@ -81,10 +84,6 @@ def test_e2e_conversions():
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
-        if sys.version_info >= (3, 14) and rapidocr_backend == "onnxruntime":
-            # skip onnxruntime backend on Python 3.14
-            continue
-
         configs.append((RapidOcrOptions(backend=rapidocr_backend), False))
         configs.append(
             (

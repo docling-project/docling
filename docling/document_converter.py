@@ -1,4 +1,6 @@
-import hashlib
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import threading
@@ -30,6 +32,7 @@ from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.iwork.pages_backend import IWorkPagesDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -55,6 +58,7 @@ from docling.datamodel.backend_options import (
     EmailBackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
+    IWorkBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
@@ -98,6 +102,7 @@ from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
+from docling.utils.pipeline_cache import create_pipeline_options_hash
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -227,8 +232,16 @@ class ImageFormatOption(FormatOption):
 
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
+    backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+
+class IWorkPagesFormatOption(FormatOption):
+    """Format option for Apple Pages input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
 
 
 class NativePdfFormatOption(PdfFormatOption):
@@ -338,6 +351,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.LATEX: LatexFormatOption(),
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
@@ -446,13 +460,6 @@ class DocumentConverter:
         self,
     ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
         return self.initialized_pipelines
-
-    def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
-        """Generate a hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(
-            options_str.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()
 
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format.
@@ -748,7 +755,7 @@ class DocumentConverter:
 
         pipeline_class = fopt.pipeline_cls
         pipeline_options = fopt.pipeline_options
-        options_hash = self._get_pipeline_options_hash(pipeline_options)
+        options_hash = create_pipeline_options_hash(pipeline_options)
 
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)

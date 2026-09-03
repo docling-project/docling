@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import datetime
 import logging
 import re
@@ -8,7 +11,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, Type, cast
+from typing import TYPE_CHECKING, Annotated, Literal, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
@@ -37,15 +40,17 @@ from docling_core.transforms.serializer.html import (
     HTMLOutputStyle,
     HTMLParams,
 )
+from docling_core.transforms.serializer.latex import LaTeXDocSerializer
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import TypeAdapter
+from pydantic import SecretStr, TypeAdapter
 from rich.console import Console
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
+    _parse_page_range,
     _should_generate_export_images,
     _split_list,
 )
@@ -111,7 +116,11 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
+    BaseLayoutOptions,
+    BaseTableStructureOptions,
     ConvertPipelineOptions,
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
     NativePdfPipelineOptions,
     OcrAutoOptions,
     OcrMode,
@@ -129,30 +138,26 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
-from docling.datamodel.settings import settings
-from docling.document_converter import (
-    AudioFormatOption,
-    DocumentConverter,
-    EpubFormatOption,
-    ExcelFormatOption,
-    FormatOption,
-    HTMLFormatOption,
-    LatexFormatOption,
-    MarkdownFormatOption,
-    OdpFormatOption,
-    OdsFormatOption,
-    OdtFormatOption,
-    PdfFormatOption,
-    PowerpointFormatOption,
-    WordFormatOption,
-)
-from docling.models.factories import (
-    get_layout_factory,
-    get_ocr_factory,
-    get_table_structure_factory,
-)
-from docling.models.factories.base_factory import BaseFactory
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.utils.profiling import ProfilingItem
+
+# The local model stack (scipy, torch, …) is absent on lightweight installs
+# (docling-slim[service-client] / docling-client).  Guard these imports so the
+# CLI module — and `convert-remote` — remain importable without them.
+_local_model_stack_available: bool
+try:
+    from docling.models.factories import (
+        get_layout_factory,
+        get_ocr_factory,
+        get_table_structure_factory,
+    )
+
+    _local_model_stack_available = True
+except ImportError:
+    _local_model_stack_available = False
+
+if TYPE_CHECKING:
+    from docling.models.factories.base_factory import BaseFactory
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -240,8 +245,21 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     return list(dict.fromkeys(expanded_formats))
 
 
-ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+if _local_model_stack_available:
+    ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
+    ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+
+    layout_factory_internal = get_layout_factory(allow_external_plugins=False)
+    layout_engines_enum_internal = layout_factory_internal.get_enum()
+
+    table_structure_factory_internal = get_table_structure_factory(
+        allow_external_plugins=False
+    )
+    table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
+else:
+    ocr_engines_enum_internal = []
+    layout_engines_enum_internal = []
+    table_structure_engines_enum_internal = []
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -447,6 +465,7 @@ def export_documents(
     image_export_mode: ImageRefMode,
     export_dclx: bool = False,
     export_chunks: bool = False,
+    export_latex: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
@@ -527,7 +546,7 @@ def export_documents(
                     ser_res = ser.serialize(
                         visualizer=visualizer,
                     )
-                    with open(fname, "w") as fw:
+                    with open(fname, "w", encoding="utf-8") as fw:
                         fw.write(ser_res.text)
                 else:
                     conv_res.document.save_as_html(
@@ -593,6 +612,14 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.dclx"
                 _log.info(f"writing DCLX output to {fname}")
                 conv_res.document.save_as_doclang_archive(filename=fname)
+
+            # Export LaTeX format:
+            if export_latex:
+                fname = output_dir / f"{doc_filename}.tex"
+                _log.info(f"writing LaTeX output to {fname}")
+                ser_res = LaTeXDocSerializer(doc=conv_res.document).serialize()
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(ser_res.text)
 
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:
@@ -780,6 +807,13 @@ def convert(  # noqa: C901
             help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
         ),
     ] = "granite_docling",
+    vlm_max_new_tokens: Annotated[
+        int | None,
+        typer.Option(
+            "--vlm-max-new-tokens",
+            help="Override max_new_tokens for VLM conversion generation.",
+        ),
+    ] = None,
     asr_model: Annotated[
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
@@ -842,6 +876,28 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    layout_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = LayoutObjectDetectionOptions.kind,
+    table_structure_engine: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help=(
+                f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
+                f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
+                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+            ),
+        ),
+    ] = TableStructureOptions.kind,
     ocr_engine: Annotated[
         str,
         typer.Option(
@@ -869,9 +925,17 @@ def convert(  # noqa: C901
     ] = None,
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
-    ] = PdfBackend.DOCLING_PARSE,
+    ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
+    ] = None,
+    page_range: Annotated[
+        str | None,
+        typer.Option(
+            "--page-range",
+            help="Only convert a range of pages, e.g. 1-4 (page numbers start at 1). "
+            "Honored by the PDF, XLSX and PPTX backends.",
+        ),
     ] = None,
     table_mode: Annotated[
         TableFormerMode,
@@ -896,6 +960,13 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
+    picture_description_max_new_tokens: Annotated[
+        int | None,
+        typer.Option(
+            "--picture-description-max-new-tokens",
+            help="Override max_new_tokens for picture description generation.",
+        ),
+    ] = None,
     enrich_chart_extraction: Annotated[
         bool,
         typer.Option(
@@ -1063,15 +1134,41 @@ def convert(  # noqa: C901
         ExcelFormatOption,
         FormatOption,
         HTMLFormatOption,
+        IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
         NativePdfFormatOption,
+        OdpFormatOption,
+        OdsFormatOption,
+        OdtFormatOption,
         PdfFormatOption,
         PowerpointFormatOption,
         WordFormatOption,
     )
     from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
+    from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
     from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    def _resolve_pdf_backend() -> tuple[type[PdfDocumentBackend], PdfBackendOptions]:
+        selected_backend = normalize_pdf_backend(pdf_backend)
+        password = SecretStr(pdf_password) if pdf_password is not None else None
+        if selected_backend == PdfBackend.DOCLING_PARSE:
+            return DoclingParseDocumentBackend, PdfBackendOptions(password=password)
+        if selected_backend == PdfBackend.THREADED_DOCLING_PARSE:
+            return (
+                ThreadedDoclingParseDocumentBackend,
+                ThreadedDoclingParseBackendOptions(
+                    password=password,
+                    parser_threads=num_threads,
+                    release_native_memory_every_n_pages=(
+                        release_native_memory_every_n_pages
+                    ),
+                ),
+            )
+        if selected_backend == PdfBackend.PYPDFIUM2:
+            return PyPdfiumDocumentBackend, PdfBackendOptions(password=password)
+        raise RuntimeError(f"Unexpected PDF backend type {selected_backend}")
 
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -1113,6 +1210,8 @@ def convert(  # noqa: C901
     if headers is not None:
         headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
+
+    parsed_page_range = _parse_page_range(page_range) or DEFAULT_PAGE_RANGE
 
     parsed_html_image_headers: dict[str, str] | None = None
     if html_image_headers is not None:
@@ -1227,11 +1326,28 @@ def convert(  # noqa: C901
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         pipeline_options: PipelineOptions
         format_options: dict[InputFormat, FormatOption] = {}
-        pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
-            password=pdf_password
+        backend, pdf_backend_options = _resolve_pdf_backend()
+
+        layout_factory = get_layout_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        layout_options: BaseLayoutOptions = layout_factory.create_options(  # type: ignore
+            kind=layout_engine
         )
 
-        if pipeline == ProcessingPipeline.STANDARD:
+        table_structure_factory = get_table_structure_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+        table_structure_options: BaseTableStructureOptions = (  # type: ignore
+            table_structure_factory.create_options(kind=table_structure_engine)
+        )
+
+        if pipeline in {ProcessingPipeline.STANDARD, ProcessingPipeline.LEGACY}:
+            pipeline_cls = (
+                LegacyStandardPdfPipeline
+                if pipeline == ProcessingPipeline.LEGACY
+                else StandardPdfPipeline
+            )
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -1239,6 +1355,8 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                layout_options=layout_options,
+                table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
@@ -1251,6 +1369,10 @@ def convert(  # noqa: C901
             ):
                 pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
+            if picture_description_max_new_tokens is not None:
+                pipeline_options.picture_description_options.generation_config[
+                    "max_new_tokens"
+                ] = picture_description_max_new_tokens
 
             if _should_generate_export_images(
                 image_export_mode,
@@ -1261,27 +1383,10 @@ def convert(  # noqa: C901
                     True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
-            pdf_backend = normalize_pdf_backend(pdf_backend)
-            backend: Type[PdfDocumentBackend]
-            if pdf_backend == PdfBackend.DOCLING_PARSE:
-                backend = DoclingParseDocumentBackend  # type: ignore
-            elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
-                backend = ThreadedDoclingParseDocumentBackend  # type: ignore
-                pdf_backend_options = ThreadedDoclingParseBackendOptions(
-                    password=pdf_password,
-                    parser_threads=num_threads,
-                    release_native_memory_every_n_pages=(
-                        release_native_memory_every_n_pages
-                    ),
-                )
-            elif pdf_backend == PdfBackend.PYPDFIUM2:
-                backend = PyPdfiumDocumentBackend  # type: ignore
-            else:
-                raise RuntimeError(f"Unexpected PDF backend type {pdf_backend}")
-
             pdf_format_option = PdfFormatOption(
+                pipeline_cls=pipeline_cls,
                 pipeline_options=pipeline_options,
-                backend=backend,  # pdf_backend
+                backend=backend,
                 backend_options=pdf_backend_options,
             )
             mets_gbs_options = pipeline_options.model_copy()
@@ -1297,6 +1402,10 @@ def convert(  # noqa: C901
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
+            if picture_description_max_new_tokens is not None:
+                simple_format_option.picture_description_options.generation_config[
+                    "max_new_tokens"
+                ] = picture_description_max_new_tokens
 
             html_backend_options: HTMLBackendOptions | None = None
             if (
@@ -1314,6 +1423,7 @@ def convert(  # noqa: C901
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
+                pipeline_cls=pipeline_cls,
                 pipeline_options=pipeline_options,
                 backend=ImageDocumentBackend,
                 backend_options=pdf_backend_options,
@@ -1323,6 +1433,9 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
+                    pipeline_options=simple_format_option
+                ),
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option
                 ),
@@ -1416,10 +1529,18 @@ def convert(  # noqa: C901
                 accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
+            if _should_generate_export_images(image_export_mode, to_formats):
+                pipeline_options.generate_page_images = True
+                pipeline_options.generate_picture_images = True
+                pipeline_options.images_scale = 2
 
             # Use the new preset system
             try:
                 pipeline_options.vlm_options = VlmConvertOptions.from_preset(vlm_model)
+                if vlm_max_new_tokens is not None:
+                    pipeline_options.vlm_options.model_spec.max_new_tokens = (
+                        vlm_max_new_tokens
+                    )
                 _log.info(f"Using VLM preset: {vlm_model}")
             except KeyError:
                 err_console.print(
@@ -1431,12 +1552,20 @@ def convert(  # noqa: C901
                 raise typer.Abort()
 
             pdf_format_option = PdfFormatOption(
-                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+                pipeline_cls=VlmPipeline,
+                pipeline_options=pipeline_options,
+                backend=backend,
+                backend_options=pdf_backend_options,
+            )
+            image_format_option = PdfFormatOption(
+                pipeline_cls=VlmPipeline,
+                pipeline_options=pipeline_options,
+                backend=ImageDocumentBackend,
             )
 
             format_options = {
                 InputFormat.PDF: pdf_format_option,
-                InputFormat.IMAGE: pdf_format_option,
+                InputFormat.IMAGE: image_format_option,
             }
 
         # Set ASR options
@@ -1445,7 +1574,8 @@ def convert(  # noqa: C901
                 device=device,
                 num_threads=num_threads,
             ),
-            # enable_remote_services=enable_remote_services,
+            allow_external_plugins=allow_external_plugins,
+            enable_remote_services=enable_remote_services,
             # artifacts_path = artifacts_path
         )
 
@@ -1516,7 +1646,10 @@ def convert(  # noqa: C901
 
         _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
-            input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
+            input_doc_paths,
+            headers=parsed_headers,
+            raises_on_error=abort_on_error,
+            page_range=parsed_page_range,
         )
 
         output.mkdir(parents=True, exist_ok=True)

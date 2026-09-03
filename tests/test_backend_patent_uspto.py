@@ -1,7 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.patent_uspto_backend.py."""
 
 import logging
 import os
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -19,6 +23,29 @@ from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 GENERATE: bool = GEN_TEST_DATA
 DATA_PATH: Path = Path("./tests/data/uspto/sources/")
 GT_PATH: Path = Path("./tests/data/uspto/groundtruth/")
+
+
+def test_patent_uspto_grant_aps_accepts_crlf_bytesio(tmp_path: Path) -> None:
+    source = DATA_PATH / "pftaps057006474.txt"
+    content = b"\r\n".join(source.read_bytes().splitlines()) + b"\r\n"
+    path = tmp_path / "pftaps057006474.txt"
+    path.write_bytes(content)
+
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XML_USPTO,
+        backend=PatentUsptoDocumentBackend,
+    )
+    stream_backend = PatentUsptoDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(content),
+    )
+
+    assert stream_backend.is_valid()
+
+    stream_document = stream_backend.convert()
+    assert len(stream_document.texts) == 75
+    assert stream_document.texts[0].text == "Carbocation containing cyanine-type dye"
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
