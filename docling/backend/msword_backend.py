@@ -919,10 +919,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
-        # If not found directly in paragraph, check if the style defines numbering
+        # If not found directly in paragraph, check if the style defines numbering.
+        # A resolved ilvl without a numId is not usable: every consumer of this
+        # pair keys off numId, so fall through to (None, None) in that case. A
+        # numId without an ilvl is kept -- _is_numbered_heading treats a missing
+        # level as 0, matching Word.
         if paragraph.style is not None:
             numId, ilvl = self._style_numbering(paragraph.style)
-            if numId is not None or ilvl is not None:
+            if numId is not None:
                 return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
         return None, None  # If the paragraph is not part of a list

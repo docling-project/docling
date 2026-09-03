@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import os
 from pathlib import Path
@@ -18,6 +21,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Inches
 from lxml import etree
 from PIL import Image
 
@@ -93,7 +97,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument]]):
+def test_e2e_docx_conversions(documents):
     has_libreoffice = False
     try:
         cmd = get_libreoffice_cmd(raise_if_unavailable=True)
@@ -102,8 +106,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
     except Exception:
         pass
 
-    for docx_path, doc in docx_paths:
-        if not IS_CI and not has_libreoffice and docx_path.name == "drawingml.docx":
+    for docx_path, doc in documents:
+        if (
+            not IS_CI
+            and not has_libreoffice
+            and docx_path.name
+            in {"drawingml.docx", "textbox.docx", "test_emf_docx.docx"}
+        ):
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
 
@@ -132,28 +141,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             ), f"export to html failed on {docx_path}"
 
 
-flaky_file = "textbox.docx"
-
-
-def test_e2e_docx_conversions(documents):
-    target = [item for item in documents if item[0].name != flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
-def test_textbox_conversion(documents):
-    target = [item for item in documents if item[0].name == flaky_file]
-    _test_e2e_docx_conversions_impl(target)
-
-
-@pytest.mark.xfail(strict=False)
 def test_textbox_extraction(documents):
     name = "textbox.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
 
     # Verify if a particular textbox content is extracted
     textbox_found = False
-    for item, _ in doc.iterate_items():
+    for item in doc.texts:
         if item.text[:30] == """Suggested Reportable Symptoms:""":
             textbox_found = True
     assert textbox_found
@@ -391,6 +385,86 @@ def test_add_header_footer(documents):
     )
 
 
+def _header_footer_texts(doc: DoclingDocument) -> tuple[list[str], list[str]]:
+    header_texts = [
+        child_ref.resolve(doc).text
+        for group in doc.groups
+        if group.name == "page header"
+        for child_ref in group.children
+    ]
+    footer_texts = [
+        child_ref.resolve(doc).text
+        for group in doc.groups
+        if group.name == "page footer"
+        for child_ref in group.children
+    ]
+    return header_texts, footer_texts
+
+
+def test_add_header_footer_distinct_per_section(tmp_path):
+    """A section's own (non-inherited) header/footer must not be dropped.
+
+    Regression test: sections after the first used to be skipped entirely unless
+    they enabled different_first_page_header_footer, silently discarding that
+    section's own distinct header/footer content.
+    """
+    from docx import Document
+    from docx.enum.section import WD_SECTION
+
+    docx_path = tmp_path / "distinct_section_headers.docx"
+    d = Document()
+    d.sections[0].header.paragraphs[0].text = "SECTION-0 HEADER"
+    d.sections[0].footer.paragraphs[0].text = "SECTION-0 FOOTER"
+
+    d.add_paragraph("body text")
+    d.add_section(WD_SECTION.NEW_PAGE)
+    s1 = d.sections[1]
+    s1.header.is_linked_to_previous = False
+    s1.footer.is_linked_to_previous = False
+    s1.header.paragraphs[0].text = "SECTION-1 HEADER"
+    s1.footer.paragraphs[0].text = "SECTION-1 FOOTER"
+
+    d.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    header_texts, footer_texts = _header_footer_texts(conv_result.document)
+
+    assert "SECTION-0 HEADER" in header_texts
+    assert "SECTION-1 HEADER" in header_texts, (
+        "section 1's own distinct header was dropped"
+    )
+    assert "SECTION-0 FOOTER" in footer_texts
+    assert "SECTION-1 FOOTER" in footer_texts, (
+        "section 1's own distinct footer was dropped"
+    )
+
+
+def test_add_header_footer_first_page_and_regular(documents):
+    """The regular header/footer (pages after the first) must survive alongside
+    the first-page one.
+
+    Regression test: whenever different_first_page_header_footer was set, only the
+    first-page header/footer used to be parsed and the regular header/footer used
+    on every other page was dropped entirely. Fixture: docx_page_header_footer_first_page.docx
+    (named with "page_header_footer", not bare "header", since unit_test_headers.docx
+    is actually about paragraph Heading styles rather than page headers).
+    """
+    name = "docx_page_header_footer_first_page.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+    header_texts, footer_texts = _header_footer_texts(doc)
+
+    assert "FIRST PAGE HEADER (page 1 only)" in header_texts
+    assert "REGULAR HEADER (page 2 onward)" in header_texts, (
+        "regular header (pages after the first) was dropped when "
+        "different_first_page_header_footer is set"
+    )
+    assert "FIRST PAGE FOOTER (page 1 only)" in footer_texts
+    assert "REGULAR FOOTER (page 2 onward)" in footer_texts, (
+        "regular footer (pages after the first) was dropped when "
+        "different_first_page_header_footer is set"
+    )
+
+
 def test_handle_pictures(documents):
     """Test the function _handle_pictures."""
 
@@ -493,17 +567,19 @@ def test_get_outline_level_from_style():
     h1 = paragraphs[5]
     assert h1.style.name == "Heading 1"
     assert h1.text == "Let\u2019s swim!"
-    assert backend._get_outline_level_from_style(h1) == 1  # outlineLvl=0 → level 1
+    # outlineLvl=0 → level 1
+    assert backend._get_outline_level_from_style(h1.style) == 1
 
     h2 = paragraphs[15]
     assert h2.style.name == "Heading 2"
     assert h2.text == "Let\u2019s eat"
-    assert backend._get_outline_level_from_style(h2) == 2  # outlineLvl=1 → level 2
+    # outlineLvl=1 → level 2
+    assert backend._get_outline_level_from_style(h2.style) == 2
 
     non_heading = paragraphs[0]
     assert non_heading.style.name == "Subtitle"
     assert non_heading.text == "Summer activities"
-    assert backend._get_outline_level_from_style(non_heading) is None
+    assert backend._get_outline_level_from_style(non_heading.style) is None
 
 
 def test_external_image_references():
@@ -1494,3 +1570,148 @@ def test_docx_code_detection(tmp_path):
     assert not _code_items(doc), "A code-styled checkbox must not become a CodeItem"
     design = next(it for it in doc.texts if it.text == "Design")
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
+
+
+# ------ Content control (w:sdt) holding a picture ------
+
+
+def _move_into_content_control(document, paragraphs) -> None:
+    """Wrap the given body paragraphs in a ``w:sdt``, as Word cover pages are."""
+    body = document.element.body
+    sdt = etree.SubElement(body, qn("w:sdt"))
+    etree.SubElement(sdt, qn("w:sdtPr"))
+    sdt_content = etree.SubElement(sdt, qn("w:sdtContent"))
+    for paragraph in paragraphs:
+        body.remove(paragraph._p)
+        sdt_content.append(paragraph._p)
+    body.remove(sdt)
+    body.insert(0, sdt)
+
+
+# A durable, human-openable copy of the ``build(with_picture=True)`` document
+# below, checked in so the exact cover-page shape can be inspected in Word and so
+# the end-to-end conversion path is exercised against a real file. Its groundtruth
+# lives under tests/data/docx/groundtruth/content_control_with_picture.docx.*.
+_CONTENT_CONTROL_PICTURE_FIXTURE = Path(
+    "./tests/data/docx/sources/content_control_with_picture.docx"
+)
+
+
+def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
+    """A picture inside a content control must not swallow the control's text.
+
+    The image branches of the element walk are keyed on descendant XPaths, so a
+    ``w:sdt`` holding a picture anywhere inside used to match there and the
+    content-control branch was never reached -- the picture was emitted and
+    every paragraph in the control was dropped. Word's built-in cover pages are
+    exactly this shape, so the document title went missing.
+    """
+    logo_path = tmp_path / "logo.png"
+    Image.new("RGB", (120, 120), (200, 30, 30)).save(str(logo_path))
+
+    def build(with_picture: bool) -> str:
+        doc = Document()
+        paragraphs = []
+        if with_picture:
+            picture_paragraph = doc.add_paragraph()
+            picture_paragraph.add_run().add_picture(str(logo_path), width=Inches(1.5))
+            paragraphs.append(picture_paragraph)
+        paragraphs.append(doc.add_paragraph("COVER TITLE INSIDE SDT"))
+        _move_into_content_control(doc, paragraphs)
+        doc.add_paragraph("BODY TEXT OUTSIDE SDT")
+        return _convert_built(doc, tmp_path).export_to_markdown()
+
+    without_picture = build(with_picture=False)
+    assert "COVER TITLE INSIDE SDT" in without_picture
+    assert "BODY TEXT OUTSIDE SDT" in without_picture
+
+    with_picture = build(with_picture=True)
+    assert "COVER TITLE INSIDE SDT" in with_picture
+    assert "BODY TEXT OUTSIDE SDT" in with_picture
+    # The picture is still emitted, and exactly once.
+    assert with_picture.count("<!-- image -->") == 1
+
+    # The same shape, loaded from the checked-in fixture, behaves identically.
+    from_file = (
+        get_converter()
+        .convert(_CONTENT_CONTROL_PICTURE_FIXTURE)
+        .document.export_to_markdown()
+    )
+    assert "COVER TITLE INSIDE SDT" in from_file
+    assert "BODY TEXT OUTSIDE SDT" in from_file
+    assert from_file.count("<!-- image -->") == 1
+
+
+def _set_style_numpr(style, num_id=None, ilvl=None):
+    """Attach a ``w:numPr`` (numId and/or ilvl) to a paragraph style."""
+    num_pr = OxmlElement("w:numPr")
+    if ilvl is not None:
+        ilvl_elem = OxmlElement("w:ilvl")
+        ilvl_elem.set(qn("w:val"), str(ilvl))
+        num_pr.append(ilvl_elem)
+    if num_id is not None:
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), str(num_id))
+        num_pr.append(num_id_elem)
+    style.element.get_or_add_pPr().append(num_pr)
+
+
+def test_get_numId_and_ilvl_inherits_numid_via_based_on(tmp_path):
+    """A heading style carrying only ``ilvl`` inherits ``numId`` from its base.
+
+    Word's stock ``heading 2`` overrides the list level (``ilvl``) but takes the
+    ``numId`` from ``heading 1`` through the ``basedOn`` chain. Resolving
+    numbering from the paragraph's own style element alone drops that inherited
+    numId, so the heading is not recognized as numbered and loses its section
+    number, while ``heading 1``/``heading 3`` (which name the numId directly)
+    keep theirs.
+    """
+    doc = Document()
+
+    # A numbering definition whose levels all render a visible decimal marker.
+    numbering = doc.part.numbering_part.element
+    abstract_num = OxmlElement("w:abstractNum")
+    abstract_num.set(qn("w:abstractNumId"), "77")
+    for ilvl in range(3):
+        lvl = OxmlElement("w:lvl")
+        lvl.set(qn("w:ilvl"), str(ilvl))
+        numfmt = OxmlElement("w:numFmt")
+        numfmt.set(qn("w:val"), "decimal")
+        lvl.append(numfmt)
+        lvltext = OxmlElement("w:lvlText")
+        lvltext.set(qn("w:val"), ".".join(f"%{i + 1}" for i in range(ilvl + 1)))
+        lvl.append(lvltext)
+        abstract_num.append(lvl)
+    numbering.append(abstract_num)
+    num_elem = OxmlElement("w:num")
+    num_elem.set(qn("w:numId"), "42")
+    abstract_ref = OxmlElement("w:abstractNumId")
+    abstract_ref.set(qn("w:val"), "77")
+    num_elem.append(abstract_ref)
+    numbering.append(num_elem)
+
+    base = doc.styles.add_style("Heading A", WD_STYLE_TYPE.PARAGRAPH)
+    _set_style_numpr(base, num_id=42, ilvl=0)
+    derived = doc.styles.add_style("Heading B", WD_STYLE_TYPE.PARAGRAPH)
+    derived.base_style = base
+    _set_style_numpr(derived, ilvl=1)  # only ilvl; numId inherited from base
+
+    doc.add_paragraph("Parent section").style = base
+    doc.add_paragraph("Child section").style = derived
+
+    docx_path = tmp_path / "based_on_numbering.docx"
+    doc.save(str(docx_path))
+    backend = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )._backend
+
+    paragraphs = {p.text: p for p in backend.docx_obj.paragraphs}
+    parent = paragraphs["Parent section"]
+    child = paragraphs["Child section"]
+
+    assert backend._get_numId_and_ilvl(parent) == (42, 0)
+    # numId inherited from Heading A; before the fix this resolved to (None, 1).
+    assert backend._get_numId_and_ilvl(child) == (42, 1)
+    assert backend._is_numbered_heading(child)
