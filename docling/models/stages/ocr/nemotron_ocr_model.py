@@ -113,7 +113,7 @@ class NemotronOcrModel(BaseOcrModel):
         )
         self.options: NemotronOcrOptions
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
-        self.scale = self.options.scale
+        self._scale = self.options.scale
 
         if self.enabled:
             self.validate_runtime(accelerator_options=accelerator_options)
@@ -138,7 +138,7 @@ class NemotronOcrModel(BaseOcrModel):
             # Initialize the model
             model_dir = self._resolve_model_dir(code, artifacts_path=artifacts_path)
 
-            self.reader = NemotronOCRV2(
+            self._reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=code,
             )
@@ -267,9 +267,8 @@ class NemotronOcrModel(BaseOcrModel):
         image_height: int,
         scale: float,
     ) -> TextCell:
-        # `nemotron_ocr` returns normalized `left/right` and an inverted
-        # pair `lower/upper`, where `lower` is the top Y and `upper` is the
-        # bottom Y in image coordinates.
+        # `nemotron_ocr` returns normalized `left/right` and an inverted pair `lower/upper`
+        # where `lower` is the top Y and `upper` is the bottom Y in image coordinates.
         left = (prediction["left"] * image_width) / scale + ocr_rect.l
         top = (prediction["lower"] * image_height) / scale + ocr_rect.t
         right = (prediction["right"] * image_width) / scale + ocr_rect.l
@@ -308,7 +307,7 @@ class NemotronOcrModel(BaseOcrModel):
         infer_start = time.monotonic() if profile_inference else 0.0
         batch_predictions = cast(
             Sequence[Sequence[NemotronOcrPrediction]],
-            self.reader(
+            self._reader(
                 image_arrays,
                 merge_level=self.options.merge_level,
             ),
@@ -329,7 +328,7 @@ class NemotronOcrModel(BaseOcrModel):
                     ocr_rect=entry.ocr_rect,
                     image_width=image_width,
                     image_height=image_height,
-                    scale=self.scale,
+                    scale=self._scale,
                 )
                 for index, prediction in enumerate(raw_predictions)
             ]
@@ -401,7 +400,7 @@ class NemotronOcrModel(BaseOcrModel):
             for ocr_rect in valid_rects:
                 recorder.resume()
                 high_res_image = page._backend.get_page_image(
-                    scale=self.scale, cropbox=ocr_rect
+                    scale=self._scale, cropbox=ocr_rect
                 )
                 buffered_rect = _BufferedRect(
                     state=state,
