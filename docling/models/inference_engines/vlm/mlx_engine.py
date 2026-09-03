@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import logging
 import threading
 import time
@@ -13,11 +12,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Union
 
-from packaging import version
 from PIL.Image import Image
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     extract_generation_stoppers,
     preprocess_image_batch,
 )
@@ -25,6 +24,7 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
@@ -122,7 +122,10 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 "to use MLX VLM models on Apple Silicon."
             )
 
-        self._check_mlx_vlm_version()
+        check_min_engine_version(
+            VlmEngineType.MLX,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
 
         self.apply_chat_template = apply_chat_template  # type: ignore[assignment]
         self.stream_generate = stream_generate  # type: ignore[assignment]
@@ -137,27 +140,6 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         self._initialized = True
         _log.info("MLX runtime initialized")
-
-    def _check_mlx_vlm_version(self) -> None:
-        """Fail early when the model needs a newer mlx-vlm than is installed.
-
-        Why: an older mlx-vlm raises deep inside its model implementations (e.g.
-        a TypeError in the Qwen3-VL vision tower), which is hard to act on.
-        """
-        required = (
-            self.model_config.min_engine_version
-            if self.model_config is not None
-            else None
-        )
-        if required is None:
-            return
-
-        installed = importlib.metadata.version("mlx-vlm")
-        if version.parse(installed) < version.parse(required):
-            raise RuntimeError(
-                f"This model requires mlx-vlm>={required}, but {installed} is "
-                f"installed. Upgrade mlx-vlm, or select a different engine."
-            )
 
     def _load_model_for_repo(self, repo_id: str, revision: str = "main") -> None:
         """Load model and processor for a specific repository.

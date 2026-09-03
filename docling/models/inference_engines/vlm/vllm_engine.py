@@ -13,6 +13,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     format_prompt_for_vlm,
     preprocess_image_batch,
     resolve_model_artifacts_path,
@@ -21,6 +22,7 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
 from docling.utils.accelerator_utils import decide_device
 
@@ -125,6 +127,11 @@ class VllmVlmEngine(BaseVlmEngine):
             return
 
         _log.info("Initializing vLLM VLM inference engine...")
+
+        check_min_engine_version(
+            VlmEngineType.VLLM,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
 
         try:
             from transformers import AutoProcessor

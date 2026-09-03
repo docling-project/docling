@@ -33,6 +33,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     extract_generation_stoppers,
     preprocess_image_batch,
     resolve_model_artifacts_path,
@@ -41,6 +42,7 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
 from docling.models.utils.generation_utils import (
     GenerationStopper,
@@ -126,6 +128,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return
 
         _log.info("Initializing Transformers VLM inference engine...")
+
+        check_min_engine_version(
+            VlmEngineType.TRANSFORMERS,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
 
         # Determine device
         supported_devices = [
