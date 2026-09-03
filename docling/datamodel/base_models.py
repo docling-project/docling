@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -403,6 +403,10 @@ class FieldValuePrediction(BaseModel):
     text: str
     orig: str
     bbox: BoundingBox
+    # Selection state for a checkbox/radio widget; None for text-like fields.
+    # When set, the value is materialized as an empty field value that nests a
+    # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
+    checkbox: Literal["selected", "unselected"] | None = None
 
 
 class FieldRegionPrediction(BaseModel):

@@ -48,12 +48,20 @@ class PdfFormFieldModel(BasePageModel):
             widget.widget_field_type == "/Btn"
             and not widget.widget_field_flags & cls._PUSHBUTTON_FLAG
         ):
+            # A checkbox/radio widget carries state, not text. Encode the state
+            # as a nested checkbox child (see FieldValuePrediction.checkbox) and
+            # keep the value text empty -- the serializer only inlines the
+            # <checkbox> token when the hosting value has no text of its own.
             source_value = widget.widget_appearance_state or source_value
-            text = "unchecked" if source_value in {"", "/Off", "Off"} else "checked"
-        else:
-            text = source_value
+            off = source_value in {"", "/Off", "Off"}
+            return FieldValuePrediction(
+                text="",
+                orig=source_value,
+                bbox=bbox,
+                checkbox="unselected" if off else "selected",
+            )
 
-        return FieldValuePrediction(text=text, orig=source_value, bbox=bbox)
+        return FieldValuePrediction(text=source_value, orig=source_value, bbox=bbox)
 
     @classmethod
     def _match_form(

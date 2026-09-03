@@ -165,7 +165,11 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
     assert [
         [value.text for value in region.values]
         for region in page.predictions.field_regions
-    ] == [["first", "third", "tie"], ["second"], ["checked"], ["unchecked"]]
+    ] == [["first", "third", "tie"], ["second"], [""], [""]]
+    assert [
+        [value.checkbox for value in region.values]
+        for region in page.predictions.field_regions
+    ] == [[None, None, None], [None], ["selected"], ["unselected"]]
     assert page.predictions.field_regions[2].values[0].orig == "/On"
     assert page.predictions.field_regions[3].values[0].orig == "/Off"
 
@@ -215,6 +219,21 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
     assert len(doc.field_regions) == 4
     assert len(doc.field_items) == 6
     assert not any(item.label == DocItemLabel.FIELD_KEY for item in doc.texts)
+
+    def _value_repr(value: FieldValueItem) -> str:
+        # Text fields carry their text; a checkbox value is empty and nests a
+        # CHECKBOX_* child that carries the selection state.
+        checkbox_children = [
+            child.resolve(doc)
+            for child in value.children
+            if child.resolve(doc).label
+            in {DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED}
+        ]
+        if checkbox_children:
+            assert value.text == ""
+            return checkbox_children[0].label.value
+        return value.text
+
     values_by_region = []
     for region in doc.field_regions:
         field_items = [
@@ -223,11 +242,11 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
             if isinstance(child.resolve(doc), FieldItem)
         ]
         values_by_region.append(
-            [field.children[0].resolve(doc).text for field in field_items]
+            [_value_repr(field.children[0].resolve(doc)) for field in field_items]
         )
     assert ["first", "third", "tie"] in values_by_region
-    assert ["checked"] in values_by_region
-    assert ["unchecked"] in values_by_region
+    assert [DocItemLabel.CHECKBOX_SELECTED.value] in values_by_region
+    assert [DocItemLabel.CHECKBOX_UNSELECTED.value] in values_by_region
     doc.validate_document()
 
 
@@ -284,11 +303,22 @@ def test_pipeline_materializes_keyless_format_neutral_fields() -> None:
     values = [
         item for item in result.document.texts if isinstance(item, FieldValueItem)
     ]
-    assert [value.text for value in values] == [
-        "Ada Lovelace",
-        "checked",
-        "unchecked",
-        "checked",
+    # Checkbox values carry no text; their state rides on a nested CHECKBOX_* child.
+    assert [value.text for value in values] == ["Ada Lovelace", "", "", ""]
+    checkbox_labels = [
+        [
+            child.resolve(result.document).label
+            for child in value.children
+            if child.resolve(result.document).label
+            in {DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED}
+        ]
+        for value in values
+    ]
+    assert checkbox_labels == [
+        [],
+        [DocItemLabel.CHECKBOX_SELECTED],
+        [DocItemLabel.CHECKBOX_UNSELECTED],
+        [DocItemLabel.CHECKBOX_SELECTED],
     ]
     assert [value.orig for value in values] == [
         "Ada Lovelace",
