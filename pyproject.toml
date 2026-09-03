@@ -253,11 +253,14 @@ models-onnxruntime = [
 
 # Vision Language Models for inline processing
 models-vlm-inline = [
-  # temporary solution until huggingface/transformers#46159 is resolved
-  'transformers>=4.42.0,<5.9.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform == "darwin"',
+  # transformers 5.9.0-5.15.x crash on MPS: build_2d_sinusoidal_position_embedding
+  # builds float64 tensors on-device, which MPS cannot represent (RT-DETR, D-FINE,
+  # ViT-MAE and friends). Fixed in 5.16.0, so exclude that window on macOS instead
+  # of capping below it -- mlx-vlm needs transformers>=5.14.
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.* ; sys_platform == "darwin"',
   'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform != "darwin"',
   'accelerate>=1.2.1,<2.0.0',
-  'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm>=0.6.17,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
   'peft>=0.18.1',
 ]
@@ -393,7 +396,15 @@ package = true
 default-groups = "all"
 
 override-dependencies = [
-  "grpcio>=1.75.1"
+  "grpcio>=1.75.1",
+  # docling-core[chunking] still caps transformers<5.9.0 on macOS for the MPS
+  # float64 bug that 5.16.0 fixed, which blocks mlx-vlm (transformers>=5.14).
+  # An override replaces every requirement on the package, so state the floor
+  # directly rather than an exclusion list -- otherwise mlx-vlm's own floor is
+  # erased too and the lock lands back on 5.8.x. Drop this once docling-core
+  # relaxes its pin.
+  'transformers>=5.16.0,<6.0.0 ; sys_platform == "darwin"',
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform != "darwin"',
 ]
 
 [tool.hatch.build.targets.wheel]

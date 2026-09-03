@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import platform
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Union
+
+from packaging import version
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_engine_options import (
@@ -107,10 +110,11 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 try:
                     import mlx_vlm
 
-                    _log.info(
-                        "Selected MLX engine (Apple Silicon with explicit MLX export)"
-                    )
-                    return VlmEngineType.MLX
+                    if self._mlx_version_is_sufficient():
+                        _log.info(
+                            "Selected MLX engine (Apple Silicon with explicit MLX export)"
+                        )
+                        return VlmEngineType.MLX
                 except ImportError:
                     _log.warning(
                         "MLX not available on Apple Silicon, falling back to Transformers"
@@ -152,6 +156,38 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         # Default to Transformers (should always be supported)
         _log.info("Selected Transformers engine (default)")
         return VlmEngineType.TRANSFORMERS
+
+    def _mlx_version_is_sufficient(self) -> bool:
+        """Check the installed mlx-vlm against the model's declared minimum.
+
+        Why: some models need a newer mlx-vlm than Docling can depend on, and an
+        older release fails deep inside mlx-vlm rather than at load time. Falling
+        back keeps auto-inline working instead of crashing, but the Transformers
+        engine has no MPS support, so the fallback runs on CPU -- warn loudly.
+        """
+        if self.model_spec is None:
+            return True
+
+        mlx_config = self.model_spec.engine_overrides.get(VlmEngineType.MLX)
+        required = mlx_config.min_engine_version if mlx_config is not None else None
+        if required is None:
+            return True
+
+        installed = importlib.metadata.version("mlx-vlm")
+        if version.parse(installed) >= version.parse(required):
+            return True
+
+        _log.warning(
+            "MLX not selected for %s: mlx-vlm %s is installed but this model "
+            "requires >=%s. Falling back to the Transformers engine, which runs "
+            "on CPU on macOS and will be very slow. Install mlx-vlm>=%s to use "
+            "the MLX engine.",
+            self.model_spec.name,
+            installed,
+            required,
+            required,
+        )
+        return False
 
     def initialize(self) -> None:
         """Initialize by selecting and creating the actual engine."""
