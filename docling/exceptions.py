@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from docling.utils.ocr_language import OcrLanguageSupport
+from docling.utils.ocr_language import OcrLanguageResolver, OcrLanguageSupport
 
 
 class BaseError(RuntimeError):
@@ -59,6 +59,9 @@ class OcrLanguageNotSupportedError(BaseError):
             message = f"{message} Supported: {', '.join(self.supported.bcp47)}."
         if self.supported.native:
             # Rendered the way they have to be written back, prefix and all.
-            codes = ", ".join(f"native:{code}" for code in self.supported.native)
+            codes = ", ".join(
+                f"{OcrLanguageResolver._NATIVE_PREFIX}{code}"
+                for code in self.supported.native
+            )
             message = f"{message} Engine codes: {codes}."
         super().__init__(message)
