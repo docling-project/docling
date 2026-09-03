@@ -7,6 +7,7 @@ from pathlib import Path
 
 from docling_core.types.doc import CodeItem, DocItemLabel, ImageRefMode, ListItem
 
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -16,7 +17,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 
-def _get_backend(fname):
+def _get_backend(fname: Path) -> DeclarativeDocumentBackend:
     in_doc = InputDocument(
         path_or_stream=fname,
         format=InputFormat.ASCIIDOC,
@@ -24,10 +25,11 @@ def _get_backend(fname):
     )
 
     doc_backend = in_doc._backend
+    assert isinstance(doc_backend, DeclarativeDocumentBackend)
     return doc_backend
 
 
-def test_list_dedent_to_base_does_not_crash():
+def test_list_dedent_to_base_does_not_crash() -> None:
     # A list that starts indented and then dedents back to the base level used
     # to raise "TypeError: '<' not supported between instances of 'int' and
     # 'NoneType'": the dedent loop walked past level 0, where the base indent is
@@ -44,7 +46,7 @@ def test_list_dedent_to_base_does_not_crash():
     assert [item.text for item in doc.texts] == ["a", "b"]
 
 
-def test_auto_numbered_list_keeps_items_and_following_text():
+def test_auto_numbered_list_keeps_items_and_following_text() -> None:
     source = b"""= Installation Guide
 
 == Steps
@@ -75,7 +77,7 @@ If the installer fails, check the log file.
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
 
 
-def test_literal_block_keeps_its_content_and_following_text():
+def test_literal_block_keeps_its_content_and_following_text() -> None:
     source = b"""= Guide
 
 == One
@@ -104,7 +106,7 @@ After the block.
     assert "After the block." in doc.export_to_markdown()
 
 
-def test_literal_block_flushes_pending_caption():
+def test_literal_block_flushes_pending_caption() -> None:
     source = b""".Literal example
 ....
 raw literal
@@ -126,7 +128,7 @@ image::next.png[]
     ]
 
 
-def test_parse_picture():
+def test_parse_picture() -> None:
     line = (
         "image::images/example1.png[Example Image, width=200, height=150, align=center]"
     )
@@ -155,7 +157,7 @@ def test_parse_picture():
     )
 
 
-def test_table_cell_format_specifiers():
+def test_table_cell_format_specifiers() -> None:
     # A header row whose cells carry alignment + style specifiers ("^.^h|")
     # must still be detected as a table line and parsed into clean cells.
     line = "^.^h|Field               ^.^h| Description"
@@ -169,7 +171,7 @@ def test_table_cell_format_specifiers():
     ]
 
 
-def test_table_cell_content_preserved():
+def test_table_cell_content_preserved() -> None:
     # Single-letter cells that coincide with style operators (s, h, m, ...) and
     # words ending in one (Eth) must not be mistaken for cell specifiers.
     assert AsciiDocBackend._parse_table_line("| s | Strong") == ["s", "Strong"]
@@ -180,14 +182,14 @@ def test_table_cell_content_preserved():
     ]
 
 
-def test_empty_table_does_not_crash():
+def test_empty_table_does_not_crash() -> None:
     # An empty table must yield an empty grid rather than raising.
     data = AsciiDocBackend._populate_table_as_grid([])
     assert data.num_rows == 0
     assert data.num_cols == 0
 
 
-def test_non_numeric_image_dimensions_do_not_crash():
+def test_non_numeric_image_dimensions_do_not_crash() -> None:
     # image width/height can be non-numeric in real AsciiDoc (e.g. "50%", "auto").
     # convert() used int(item["width"]) directly, so such an image raised
     # ValueError and failed the whole document; it must fall back to the default
@@ -215,7 +217,9 @@ def test_non_numeric_image_dimensions_do_not_crash():
     assert doc.pictures[0].image is None
 
 
-def test_local_images_are_embedded_and_missing_images_do_not_break_export(tmp_path):
+def test_local_images_are_embedded_and_missing_images_do_not_break_export(
+    tmp_path: Path,
+) -> None:
     in_path = Path("tests/data/asciidoc/sources/asciidoc_03.asciidoc")
     options = AsciiDocBackendOptions(
         fetch_images=True,
@@ -252,7 +256,7 @@ def test_images_not_fetched_when_fetch_images_is_false() -> None:
     assert all(pic.image is None for pic in doc.pictures)
 
 
-def test_asciidocs_examples():
+def test_asciidocs_examples() -> None:
     fnames = sorted(glob.glob("./tests/data/asciidoc/sources/*.asciidoc"))
 
     for fname in fnames:
@@ -268,7 +272,7 @@ def test_asciidocs_examples():
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GEN_TEST_DATA)
 
 
-def test_utf8_bom_does_not_hide_the_document_title(tmp_path):
+def test_utf8_bom_does_not_hide_the_document_title(tmp_path: Path) -> None:
     """A leading UTF-8 BOM must not survive into the first line.
 
     Decoding with plain utf-8 kept it, so "= Title" started with U+FEFF, was no
