@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.items.form import FieldItem, FieldValueItem
-from docling_core.types.doc.page import BoundingRectangle, PdfWidget
+from docling_core.types.doc.page import BoundingRectangle, PdfWidget, TextCell
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.base_models import (
@@ -229,6 +229,43 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
     assert ["checked"] in values_by_region
     assert ["unchecked"] in values_by_region
     doc.validate_document()
+
+
+def _text_cluster(cluster_id: int, bbox: BoundingBox, text: str) -> Cluster:
+    cell = TextCell(
+        index=0,
+        rect=BoundingRectangle.from_bounding_box(bbox),
+        text=text,
+        orig=text,
+        from_ocr=False,
+    )
+    return Cluster(id=cluster_id, label=DocItemLabel.TEXT, bbox=bbox, cells=[cell])
+
+
+def test_suppresses_rendered_duplicate_of_filled_widget() -> None:
+    # A filled widget paints its /V into the raster; the layout model re-detects
+    # it as a plain text cluster inside the widget rect -> suppress it.
+    widget_bbox = BoundingBox(l=10, t=10, r=90, b=20)
+    form = Cluster(
+        id=1, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=60)
+    )
+    inside = _text_cluster(2, BoundingBox(l=12, t=11, r=30, b=19), "111.00")
+    # same string but well outside any widget rect -> ordinary printed text, keep
+    outside = _text_cluster(3, BoundingBox(l=10, t=80, r=30, b=90), "111.00")
+    form.children = [inside]
+
+    widgets = [_widget(0, widget_bbox, "111.00")]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[form, inside, outside])
+    conv_res = _conversion_result(page)
+
+    list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
+
+    remaining = page.predictions.layout.clusters
+    assert inside not in remaining  # contained duplicate dropped
+    assert outside in remaining  # coincidental match kept
+    assert form.children == []  # child ref pruned so assembly stays consistent
 
 
 def test_pipeline_materializes_keyless_format_neutral_fields() -> None:

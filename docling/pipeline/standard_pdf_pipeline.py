@@ -783,9 +783,9 @@ class StandardPdfPipeline(ConvertPipeline):
         output_q = ThreadedQueue(opts.queue_max_size)
         preprocess.add_output_queue(layout.input_queue)  # PDF parsing
         layout.add_output_queue(ocr.input_queue)  # Layout prediction
-        ocr.add_output_queue(form_field.input_queue)  # OCR
-        form_field.add_output_queue(layout_postprocess.input_queue)  # Form fields
-        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
+        ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
+        layout_postprocess.add_output_queue(form_field.input_queue)  # Layout post-proc
+        form_field.add_output_queue(table.input_queue)  # Form fields
         table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
 
@@ -793,8 +793,8 @@ class StandardPdfPipeline(ConvertPipeline):
             preprocess,
             ocr,
             layout,
-            form_field,
             layout_postprocess,
+            form_field,
             table,
             assemble,
         ]
