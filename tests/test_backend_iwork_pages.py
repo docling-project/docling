@@ -676,7 +676,7 @@ def _iwa_objects(path: Path) -> dict[int, IWAObject]:
     }
 
 
-def testiwa_list_styles_decode_to_their_real_labels():
+def test_iwa_list_styles_decode_to_their_real_labels():
     """Whether a paragraph is a list item is decided by the list style in force,
     not by its nesting depth: Pages leaves a style in force over plain paragraphs
     too and marks them with the "None" style. Check that against the styles the
