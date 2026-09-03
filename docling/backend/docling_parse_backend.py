@@ -34,6 +34,7 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumPageBackend,
 )
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.utils.word_boundary import recover_word_boundaries
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.backend_options import (
     PdfBackendOptions,
@@ -94,9 +95,13 @@ def _make_docling_parse_page_content_config(
     skip = ContentLevel.SKIP
 
     return ContentConfig(
-        char_cells_content_level=compute
-        if (create_words or create_textlines)
-        else skip,
+        # Character cells are the only reliable word-boundary signal for producers
+        # that separate words by advancing the text position instead of painting a
+        # space glyph, so they must be materialized wherever text lines are built.
+        # See docling.backend.utils.word_boundary.
+        char_cells_content_level=materialize
+        if create_textlines
+        else (compute if create_words else skip),
         word_cells_content_level=materialize if create_words else skip,
         line_cells_content_level=materialize if create_textlines else skip,
         # The threaded parser renders the page image from this same decode, so
@@ -167,6 +172,10 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         ]
         [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.char_cells]
         [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.word_cells]
+
+        recover_word_boundaries(seg_page.textline_cells, seg_page.char_cells)
+        if not self._keep_chars:
+            seg_page.char_cells = []
 
         self._dpage = seg_page
 
@@ -454,6 +463,8 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 tc.to_top_left_origin(page_height)
             for tc in seg_page.word_cells:
                 tc.to_top_left_origin(page_height)
+            recover_word_boundaries(seg_page.textline_cells, seg_page.char_cells)
+            seg_page.char_cells = []
             self._seg_page = seg_page
         return self._seg_page
 
