@@ -316,13 +316,12 @@ def _checkbox_cluster(
 
 def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -> None:
     # The widget rect sits inside a CHECKBOX_SELECTED cluster that also absorbed
-    # the option label "4797" and the mark glyph. The cluster's option label is
-    # lifted onto the value and the cluster is promoted out of the plain-text
+    # the option label "4797" and the mark glyph. The cluster's text is lifted
+    # verbatim onto the value and the cluster is promoted out of the plain-text
     # stream; but /AS ("/Off") -- not the classifier's "selected" -- decides state.
     widget_bbox = BoundingBox(l=10, t=10, r=18, b=18)
-    cb_cluster = _checkbox_cluster(
-        2, BoundingBox(l=8, t=8, r=40, b=20), label="4797", mark="✔"
-    )
+    cluster_bbox = BoundingBox(l=8, t=8, r=40, b=20)
+    cb_cluster = _checkbox_cluster(2, cluster_bbox, label="4797", mark="✔")
     widget = _widget(0, widget_bbox, "/Off", field_type="/Btn", appearance_state="/Off")
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=[widget])
@@ -334,7 +333,8 @@ def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -
     value = page.predictions.field_regions[0].values[0]
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
-    assert value.checkbox_label == "4797"  # mark glyph stripped
+    assert value.checkbox_label == "4797 ✔"  # cluster text lifted as-is
+    assert value.bbox == cluster_bbox  # prov wraps the whole cluster, not the widget
     assert cb_cluster not in page.predictions.layout.clusters  # promoted, not left
 
 

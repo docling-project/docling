@@ -34,11 +34,6 @@ class PdfFormFieldModel(BasePageModel):
     # before tightening. Unselected boxes usually have no overlapping cluster and
     # fall through to the widget-only path (see docs handoff prereq B.5).
     _CHECKBOX_OVERLAP_THRESHOLD = 0.5
-    # Cells whose whole text is one of these are the checkbox mark, not the option
-    # label; dropped when lifting the label onto the nested checkbox child.
-    _CHECKBOX_MARK_GLYPHS = frozenset(
-        {"x", "X", "✓", "✔", "✗", "✘", "☑", "☒", "☐", "□", "■", "●", "○", "•"}
-    )
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
@@ -79,11 +74,9 @@ class PdfFormFieldModel(BasePageModel):
 
     @classmethod
     def _cluster_label_text(cls, cluster: Cluster) -> str:
-        """Option label of a checkbox cluster, minus the mark glyph."""
+        """Option label of a checkbox cluster (mark glyph included, if detected)."""
         return " ".join(
-            cell.text.strip()
-            for cell in cluster.cells
-            if cell.text.strip() and cell.text.strip() not in cls._CHECKBOX_MARK_GLYPHS
+            cell.text.strip() for cell in cluster.cells if cell.text.strip()
         )
 
     @classmethod
@@ -174,6 +167,11 @@ class PdfFormFieldModel(BasePageModel):
                         cluster = self._match_checkbox_cluster(bbox, checkbox_clusters)
                         if cluster is not None:
                             value.checkbox_label = self._cluster_label_text(cluster)
+                            # The layout cluster encloses both the widget square
+                            # and its option label; take its bbox as the field
+                            # item's prov so the box wraps the whole checkbox, not
+                            # just the tiny widget rect.
+                            value.bbox = cluster.bbox
                             promoted_cluster_ids.add(cluster.id)
                     form = self._match_form(bbox, forms)
                     if form is None:
