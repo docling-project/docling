@@ -34,6 +34,36 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
+class AsciiDocBackendOptions(BaseBackendOptions):
+    """Options specific to the AsciiDoc backend."""
+
+    kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
+    fetch_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether the backend should access remote or local resources to parse "
+                "images in the AsciiDoc document."
+            )
+        ),
+    ] = False
+    source_uri: Annotated[
+        AnyUrl | PurePath | None,
+        Field(
+            description=(
+                "The URI that originates the AsciiDoc document. If provided, the backend "
+                "will use it to resolve relative image paths."
+            ),
+        ),
+    ] = None
+    max_image_data_base64_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="The maximum number of base64 data bytes that the backend will accept.",
+        ),
+    ] = 20 * 1024 * 1024  # 20 MB
+
+
 class HTMLBackendOptions(BaseBackendOptions):
     """Options specific to the HTML backend.
 
@@ -637,6 +667,7 @@ class EbcdicBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        AsciiDocBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,

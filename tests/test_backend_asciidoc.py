@@ -5,13 +5,10 @@ import glob
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import CodeItem, DocItemLabel, ListItem
+from docling_core.types.doc import CodeItem, DocItemLabel, ImageRefMode, ListItem
 
-from docling.backend.asciidoc_backend import (
-    DEFAULT_IMAGE_HEIGHT,
-    DEFAULT_IMAGE_WIDTH,
-    AsciiDocBackend,
-)
+from docling.backend.asciidoc_backend import AsciiDocBackend
+from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -215,9 +212,44 @@ def test_non_numeric_image_dimensions_do_not_crash():
     assert "Intro text." in md
     assert "Text after the image." in md
 
-    picture = doc.pictures[0]
-    assert picture.image.size.width == DEFAULT_IMAGE_WIDTH
-    assert picture.image.size.height == DEFAULT_IMAGE_HEIGHT
+    assert doc.pictures[0].image is None
+
+
+def test_local_images_are_embedded_and_missing_images_do_not_break_export(tmp_path):
+    in_path = Path("tests/data/asciidoc/sources/asciidoc_03.asciidoc")
+    options = AsciiDocBackendOptions(
+        fetch_images=True,
+        enable_local_fetch=True,
+        source_uri=in_path,
+    )
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        backend_options=options,
+    )
+    doc = in_doc._backend.convert()
+
+    assert doc.pictures[0].image is not None
+    assert doc.pictures[0].image.uri.scheme == "data"
+    assert doc.pictures[1].image is None
+    assert doc.pictures[2].image is None
+
+    output_path = tmp_path / "asciidoc_03.md"
+    doc.save_as_markdown(output_path, image_mode=ImageRefMode.EMBEDDED)
+    assert "data:image/png;base64," in output_path.read_text(encoding="utf-8")
+
+
+def test_images_not_fetched_when_fetch_images_is_false() -> None:
+    """Images are not loaded when fetch_images is False (the default).
+
+    No image data should be loaded even when the source file is on disk and
+    enable_local_fetch would otherwise allow it.
+    """
+    in_path = Path("tests/data/asciidoc/sources/asciidoc_03.asciidoc")
+    doc = _get_backend(in_path).convert()
+
+    assert all(pic.image is None for pic in doc.pictures)
 
 
 def test_asciidocs_examples():
