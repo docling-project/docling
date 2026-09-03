@@ -27,17 +27,26 @@ _log = logging.getLogger(__name__)
 
 
 class OcrLanguageSupport(BaseModel):
-    """Static, engine-declared language capabilities.
+    """What one engine instance can serve, split by how the user must write it.
+
+    Every engine answers the same question about each code in its own
+    vocabulary -- can a canonical tag name this model? -- and the two answers go
+    to different halves. Keeping them apart is what stops a code that cannot be
+    canonicalized from being dropped on the floor, which is how RapidOCR's
+    script recognizers went unadvertised.
 
     Attributes:
-        multiple_languages: Whether the engine can run several languages at
-            once. `False` marks a single-language engine, whose extra tags are
-            dropped with a warning.
+        bcp47: Canonical tags, in the shortest spelling that reaches each
+            recognizer (`OcrLanguage.short_tag`).
+        native: The engine's own codes for the models no `(language, script)`
+            pair can name, bare: the `native:` prefix is added when the list is
+            rendered, not stored here.
     """
 
     model_config = ConfigDict(frozen=True)
 
-    multiple_languages: bool = False
+    bcp47: list[str] = []
+    native: list[str] = []
 
 
 class OcrLanguage(BaseModel):
@@ -88,6 +97,21 @@ class OcrLanguage(BaseModel):
             if self.bcp47_script
             else self.bcp47_language or ""
         )
+
+    @property
+    def short_tag(self) -> str:
+        """The shortest spelling that canonicalizes back to this language.
+
+        What an engine advertises. The script is dropped when it is the one CLDR
+        infers anyway, so `de-Latn` is offered as `de` and `zh-Hans` as `zh`,
+        while `zh-Hant`, `sr-Latn` and `de-Latf` keep theirs: written bare they
+        would name a different recognizer. A passthrough and the reserved `mul`
+        are already as short as they get.
+        """
+        if self.native is not None or not self.has_default_script:
+            return self.tag
+        assert self.bcp47_language is not None
+        return self.bcp47_language
 
     @property
     def is_passthrough(self) -> bool:

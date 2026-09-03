@@ -161,7 +161,7 @@ def _resolve_easyocr_recognition_models(codes: Iterable[str]) -> List[str]:
 class EasyOcrModel(BaseOcrModel):
     _model_repo_folder = "EasyOcr"
 
-    language_support = OcrLanguageSupport(multiple_languages=True)
+    multiple_languages = True
 
     def __init__(
         self,
@@ -233,13 +233,19 @@ class EasyOcrModel(BaseOcrModel):
                     verbose=False,
                 )
 
-    def supported_ocr_languages(self) -> List[str]:
-        tags = set()
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        r"""Report the BCP74 and native languages without script whenever it is not needed"""
+        tags: set[str] = set()
+        native: set[str] = set()
         for code in _easyocr_code_to_model():
             tag = _easyocr_code_to_tag(code)
             if tag is not None:
                 tags.add(tag)
-        return sorted(tags)
+            else:
+                # A recognizer no tag can name is offered as the code itself,
+                # which is the only spelling that reaches it.
+                native.add(code)
+        return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
         code = _easyocr_code(language)
@@ -376,10 +382,10 @@ class EasyOcrModel(BaseOcrModel):
 
 
 def _easyocr_code_to_tag(code: str) -> Optional[str]:
-    """Render one EasyOCR language code back as a canonical tag."""
-    if code in _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS:
-        return _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS[code]
-    language = OcrLanguageResolver.canonicalize_ocr_language(
-        code, raise_exception=False
-    )
-    return None if language is None else language.tag
+    """The shortest tag naming one EasyOCR code, or `None` when no tag does."""
+    # First resolve against the deviational codes
+    tag = _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, code)
+    language = OcrLanguageResolver.canonicalize_ocr_language(tag, raise_exception=False)
+    if language is None or _easyocr_code(language) != code:
+        return None
+    return language.short_tag

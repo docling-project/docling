@@ -27,7 +27,11 @@ from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
-from docling.utils.ocr_language import OcrLanguage, OcrLanguageSupport
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 from docling.utils.profiling import TimeIntervalRecorder
 
 _log = logging.getLogger(__name__)
@@ -38,6 +42,9 @@ _NEMOTRON_OCR_COMMIT = "0e83e83f17943524b90afa6c0fd82ac2bc1a40ca"
 
 _NEMOTRON_OCR_ENGLISH = "english"
 _NEMOTRON_OCR_MULTILINGUAL = "multilingual"
+
+# The recognizer used when the request does not name a language
+_NEMOTRON_OCR_DEFAULT_LANGUAGE = _NEMOTRON_OCR_ENGLISH
 
 # Canonical tags the multilingual recognizer is trained on.
 _NEMOTRON_OCR_MULTILINGUAL_TAGS = frozenset(
@@ -96,7 +103,7 @@ class _BufferedRect:
 class NemotronOcrModel(BaseOcrModel):
     r"""Wrapper for Nvidia's nemotron-ocr-v2 model"""
 
-    language_support = OcrLanguageSupport(multiple_languages=False)
+    multiple_languages = False
 
     def __init__(
         self,
@@ -133,7 +140,7 @@ class NemotronOcrModel(BaseOcrModel):
             # Resolve the request language. An empty `lang` list means "the
             # engine's own default", which for nemotron-OCR is English.
             codes = self.resolve_ocr_languages()
-            code = codes[0] if codes else _NEMOTRON_OCR_ENGLISH
+            code = codes[0] if codes else _NEMOTRON_OCR_DEFAULT_LANGUAGE
 
             # Initialize the model
             model_dir = self._resolve_model_dir(code, artifacts_path=artifacts_path)
@@ -143,8 +150,14 @@ class NemotronOcrModel(BaseOcrModel):
                 lang=code,
             )
 
-    def supported_ocr_languages(self) -> list[str]:
-        return ["en-Latn", "mul", *sorted(_NEMOTRON_OCR_MULTILINGUAL_TAGS)]
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        r"""Report the BCP74 and native languages without script whenever it is not needed"""
+        return OcrLanguageSupport(
+            bcp47=[
+                OcrLanguageResolver.canonicalize_ocr_language(tag).short_tag
+                for tag in ("en-Latn", "mul", *sorted(_NEMOTRON_OCR_MULTILINGUAL_TAGS))
+            ]
+        )
 
     def map_ocr_language(self, language: OcrLanguage) -> str:
         if language.is_passthrough:

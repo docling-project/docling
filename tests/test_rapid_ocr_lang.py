@@ -14,7 +14,7 @@ from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
     _parse_rapidocr_model_spec,
-    _ppocr_supported_tags,
+    _ppocr_supported_languages,
     _rapidocr_vocabulary,
     _resolve_rapidocr,
 )
@@ -156,8 +156,9 @@ def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) ->
     # PP-OCR serves Kannada only on the v4 backbone, so every backend has to
     # reach past its own v5/v6 set for it -- `ka` is the one code v5 lacks.
     assert _resolved("kn", backend) == (OCRVersion.PPOCRV4, "ka")
-    # ...and it is advertised, so the coverage error never names it.
-    assert "kn-Knda" in _ppocr_supported_tags(_rapidocr_vocabulary(backend))
+    # ...and it is advertised, so the coverage error never names it. `Knda` is
+    # the script CLDR infers for `kn`, so the advertised spelling drops it.
+    assert "kn" in _ppocr_supported_languages(_rapidocr_vocabulary(backend)).bcp47
 
 
 # --- model selection / pinned paths -----------------------------------------

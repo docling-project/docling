@@ -137,9 +137,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
-    #: What this engine can do with a language request. Engines override it;
-    #: the conservative default suits a single-model, single-language engine.
-    language_support: ClassVar[OcrLanguageSupport] = OcrLanguageSupport()
+    # Whether the engine can run several languages at once
+    multiple_languages: ClassVar[bool] = False
 
     def __init__(
         self,
@@ -164,13 +163,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         """Human-readable engine name for coverage errors."""
         return type(self).__name__.removesuffix("Model")
 
-    def supported_ocr_languages(self) -> list[str]:
-        """Canonical tags this *instance* can serve, for error messages.
-
-        May be runtime-derived: the installed tessdata files, the selected
-        RapidOCR backend, the macOS version. An empty list means "unknown".
-        """
-        return []
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        """The languages this OCR engine supports, segregated in BCP47 and native"""
+        return OcrLanguageSupport()
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         """Map one canonical tag onto this engine's native code(s).
@@ -204,7 +199,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         with no model is an error, never a silent substitution.
         """
         languages = list(self.languages)
-        if not self.language_support.multiple_languages and len(languages) > 1:
+        if not self.multiple_languages and len(languages) > 1:
             _log.warning(
                 "%s handles one OCR language at a time. Using %s and ignoring %s; "
                 "the order of `lang` is the order of preference.",

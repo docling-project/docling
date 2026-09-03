@@ -32,7 +32,7 @@ _log = logging.getLogger(__name__)
 
 
 class OcrMacModel(BaseOcrModel):
-    language_support = OcrLanguageSupport(multiple_languages=True)
+    multiple_languages = True
 
     def __init__(
         self,
@@ -97,18 +97,31 @@ class OcrMacModel(BaseOcrModel):
             raise RuntimeError(f"{errmsg} Vision reported: {error}")
         return [str(language) for language in languages]
 
-    def supported_ocr_languages(self) -> list[str]:
-        # Map the Vision language tags to the canonical tags
-        tags = set()
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        # Map the Vision language tags to the canonical tags. Vision spells its
+        # own vocabulary with regions, and not always well -- it reports
+        # `vi-VT`, whose region is not one -- so the primary subtag is tried
+        # after the whole tag before the code is treated as native.
+        tags: set[str] = set()
+        native: set[str] = set()
         for vision_tag in self._vision_languages:
             for candidate in (vision_tag, vision_tag.split("-")[0]):
                 language = OcrLanguageResolver.canonicalize_ocr_language(
                     candidate, raise_exception=False
                 )
-                if language is not None:
-                    tags.add(language.tag)
+                if language is not None and (
+                    OcrLanguageResolver.match_ocr_language(
+                        language, self._vision_languages
+                    )
+                    == vision_tag
+                ):
+                    tags.add(language.short_tag)
                     break
-        return sorted(tags)
+            else:
+                # A recognition language no tag can reach is offered as the
+                # Vision code itself, the only spelling that names it.
+                native.add(vision_tag)
+        return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         if language.is_passthrough:

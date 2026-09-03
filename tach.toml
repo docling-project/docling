@@ -25,7 +25,7 @@ layers = [
 [[modules]]
 path = "docling.exceptions"
 layer = "foundation"
-depends_on = []
+depends_on = ["docling.utils.ocr_language"]
 
 [[modules]]
 path = "docling.chunking"

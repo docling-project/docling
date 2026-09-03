@@ -38,7 +38,7 @@ from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
     _ppocr_code,
-    _ppocr_supported_tags,
+    _ppocr_supported_languages,
     _rapidocr_vocabulary,
 )
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
@@ -46,7 +46,6 @@ from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageResolver,
-    OcrLanguageSupport,
 )
 
 _ONNX_VOCABULARY = _rapidocr_vocabulary("onnxruntime")
@@ -160,19 +159,39 @@ def test_ppocr_non_default_script_uses_the_family() -> None:
     )
 
 
-def test_ppocr_supported_tags_are_canonical() -> None:
+def test_ppocr_supported_languages_are_canonical() -> None:
     """Every entry of the advertised list is a tag the user can ask for again.
 
     It fills the "Supported:" line of `OcrLanguageNotSupportedError`, so it is a
-    list people copy from.
+    list people copy from -- and it offers the shortest spelling that reaches
+    each recognizer, so the inferred script is not something users have to type.
     """
-    tags = _ppocr_supported_tags(_ONNX_VOCABULARY)
+    tags = _ppocr_supported_languages(_ONNX_VOCABULARY).bcp47
 
-    assert "zh-Hans" in tags
+    assert "zh" in tags
+    assert "zh-Hans" not in tags
+    # The two PP-OCR recognizers a bare primary subtag cannot name keep theirs.
+    assert "zh-Hant" in tags
+    assert "sr-Latn" in tags
     # Languages are rendered back as tags, never as PP-OCR's own tokens.
     assert "ch" not in tags
     for tag in tags:
-        assert OcrLanguageResolver.canonicalize_ocr_language(tag).tag == tag
+        assert OcrLanguageResolver.canonicalize_ocr_language(tag).short_tag == tag
+
+
+def test_ppocr_script_recognizers_are_advertised_natively() -> None:
+    """PP-OCR's script models are the reason the native half exists.
+
+    No `(language, script)` pair names them, so they used to be dropped from the
+    advertised list entirely and a coverage error never mentioned them -- even
+    though `native:cyrillic` has always worked.
+    """
+    vocabulary = _ppocr_supported_languages(_ONNX_VOCABULARY)
+
+    assert vocabulary.native == ["arabic", "cyrillic", "devanagari", "latin"]
+    # `ka` is not among them: `kn-Knda` deviates onto it and maps back, so PP-OCR's
+    # Kannada recognizer is reachable as a tag.
+    assert "kn" in vocabulary.bcp47
 
 
 # --- RapidOCR backend routing ----------------------------------------------
@@ -305,8 +324,8 @@ def test_the_opt_out_does_not_leak_to_other_engines() -> None:
 class _BareOcrModel(BaseOcrModel):
     """An engine that adds nothing: no table, no overrides, no installation.
 
-    `language_support` is left at the base default, which is the conservative
-    single-model, single-language engine.
+    `multiple_languages` is left at the base default, which is the
+    conservative single-model, single-language engine.
     """
 
     def __init__(self, tags: list[str]) -> None:
@@ -321,7 +340,7 @@ class _BareOcrModel(BaseOcrModel):
 
 
 class _BareMultilingualOcrModel(_BareOcrModel):
-    language_support = OcrLanguageSupport(multiple_languages=True)
+    multiple_languages = True
 
 
 def test_the_default_mapping_is_the_primary_subtag() -> None:
@@ -428,9 +447,13 @@ def test_tesseract_has_no_file_for_mul() -> None:
 
 def _assert_every_advertised_tag_is_requestable(model) -> None:
     advertised = model.supported_ocr_languages()
-    assert advertised, "the engine reported no languages at all"
+    assert advertised.bcp47 or advertised.native, (
+        "the engine reported no languages at all"
+    )
     unusable = []
-    for tag in advertised:
+    # A native code is requestable only behind the prefix, which is the spelling
+    # the error message renders and the user pastes back.
+    for tag in (*advertised.bcp47, *(f"native:{c}" for c in advertised.native)):
         try:
             model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
         except (ValueError, OcrLanguageNotSupportedError) as exc:

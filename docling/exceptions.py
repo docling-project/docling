@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Sequence
+from docling.utils.ocr_language import OcrLanguageSupport
 
 
 class BaseError(RuntimeError):
@@ -45,16 +45,20 @@ class OcrLanguageNotSupportedError(BaseError):
         self,
         engine: str,
         language: str,
-        supported: "Sequence[str] | None" = None,
+        supported: "OcrLanguageSupport | None" = None,
         detail: str | None = None,
     ):
         self.engine = engine
         self.language = language
         self.detail = detail
-        self.supported = list(supported) if supported is not None else []
+        self.supported = supported if supported is not None else OcrLanguageSupport()
         message = f"{engine} has no model for the OCR language {language!r}."
         if detail:
             message = f"{message} {detail}"
-        if self.supported:
-            message = f"{message} Supported: {', '.join(self.supported)}."
+        if self.supported.bcp47:
+            message = f"{message} Supported: {', '.join(self.supported.bcp47)}."
+        if self.supported.native:
+            # Rendered the way they have to be written back, prefix and all.
+            codes = ", ".join(f"native:{code}" for code in self.supported.native)
+            message = f"{message} Engine codes: {codes}."
         super().__init__(message)

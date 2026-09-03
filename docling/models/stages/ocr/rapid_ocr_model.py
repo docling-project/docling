@@ -77,9 +77,6 @@ _PPOCRV5_CODES = frozenset(
     }
 )
 
-# PP-OCR code used when `lang` is left empty
-_PPOCR_DEFAULT_CODE = "ch"
-
 # Canonical tag -> PP-OCR code, for the languages whose code is not simply the primary subtag.
 # `None` marks a tag that must *not* fall through to the generic rules below,
 # because the code that looks right means something else.
@@ -145,23 +142,28 @@ def _ppocr_code(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None
     return None
 
 
-def _ppocr_supported_tags(vocabulary: frozenset[str]) -> list[str]:
-    """Render a PP-OCR code vocabulary back as the canonical tags it serves."""
+def _ppocr_supported_languages(vocabulary: frozenset[str]) -> OcrLanguageSupport:
+    """What a PP-OCR code vocabulary can serve, as tags and as native codes."""
     tags: set[str] = set()
+    native: set[str] = set()
     for code in vocabulary:
         if code in _PPOCR_REDUNDANT_CODES:
             continue
-        if code in _PPOCR_CODE_TO_CANONICAL_DEVIATIONS:
-            tags.update(_PPOCR_CODE_TO_CANONICAL_DEVIATIONS[code])
-            continue
-        language = OcrLanguageResolver.canonicalize_ocr_language(
-            code, raise_exception=False
-        )
-        # `None` is a code that is not a language code and has no reverse
-        # entry; it is unreachable from a canonical tag anyway.
-        if language is not None:
-            tags.add(language.tag)
-    return sorted(tags)
+        # A code several tags deviate onto -- `eslav` is `ru`, `uk` and `be` --
+        # is advertised as every one of them.
+        deviations = _PPOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, [code])
+        for deviation in deviations:
+            language = OcrLanguageResolver.canonicalize_ocr_language(
+                deviation, raise_exception=False
+            )
+            if language is not None and _ppocr_code(language, vocabulary) == code:
+                tags.add(language.short_tag)
+            else:
+                # A recognizer no tag can name -- the `latin`, `cyrillic`,
+                # `arabic` and `devanagari` script models -- is offered as the
+                # code itself, which is the only spelling that reaches it.
+                native.add(code)
+    return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
 
 @dataclass(frozen=True)
@@ -294,7 +296,7 @@ def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
         raise OcrLanguageNotSupportedError(
             f"RapidOCR (backend={backend})",
             language.tag,
-            supported=_ppocr_supported_tags(_rapidocr_vocabulary(backend)),
+            supported=_ppocr_supported_languages(_rapidocr_vocabulary(backend)),
         )
     version = _ppocr_version_for_code(code, backend)
 
@@ -384,7 +386,7 @@ def _rapidocr_artifacts(
 class RapidOcrModel(BaseOcrModel):
     _model_repo_folder = "RapidOcr"
 
-    language_support = OcrLanguageSupport(multiple_languages=False)
+    multiple_languages = False
 
     def __init__(
         self,
@@ -572,14 +574,24 @@ class RapidOcrModel(BaseOcrModel):
                 params=params,
             )
 
-    def supported_ocr_languages(self) -> list[str]:
-        return _ppocr_supported_tags(_rapidocr_vocabulary(self.options.backend))
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        return _ppocr_supported_languages(_rapidocr_vocabulary(self.options.backend))
 
     def resolve_ocr_languages(self) -> list[str]:
         # An empty `lang` list means "the engine's own default", which for PP-OCR
-        # is the Simplified Chinese recognizer.
+        # is the Simplified Chinese recognizer. Derived from the tag rather than
+        # written out as a code, so the recognizer this loads and the one the
+        # prefetch hint names cannot drift apart.
         if not self.languages:
-            return [_PPOCR_DEFAULT_CODE]
+            default = OcrLanguageResolver.canonicalize_ocr_language(
+                _RAPIDOCR_DEFAULT_LANGUAGE
+            )
+            code = _ppocr_code(default, _rapidocr_vocabulary(self.options.backend))
+            assert code is not None, (
+                f"the RapidOCR default {_RAPIDOCR_DEFAULT_LANGUAGE!r} has no "
+                f"recognizer on backend {self.options.backend!r}"
+            )
+            return [code]
         return super().resolve_ocr_languages()
 
     def map_ocr_language(self, language: OcrLanguage) -> str:

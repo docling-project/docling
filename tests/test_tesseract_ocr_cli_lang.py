@@ -21,7 +21,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import TesseractCliOcrOptions
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
-from docling.models.stages.ocr.tesseract_utils import installed_tesseract_tags
+from docling.models.stages.ocr.tesseract_utils import installed_tesseract_languages
 
 _MODULE = "docling.models.stages.ocr.tesseract_ocr_cli_model"
 
@@ -80,15 +80,10 @@ def test_unprefixed_script_traineddata_is_advertised_natively() -> None:
     """
     names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
 
-    tags = installed_tesseract_tags(names)
+    vocabulary = installed_tesseract_languages(names)
 
-    assert tags == [
-        "en-Latn",
-        "native:Cyrillic",
-        "native:Japanese_vert",
-        "native:Lao",
-        "native:Latin",
-    ]
+    assert vocabulary.bcp47 == ["en"]
+    assert vocabulary.native == ["Cyrillic", "Japanese_vert", "Lao", "Latin"]
 
 
 # --- the real installation --------------------------------------------------
@@ -144,9 +139,10 @@ def test_uninstalled_language_fails_at_construction() -> None:
 
     message = str(excinfo.value)
     assert "Supported:" in message
-    # The message names the installed set, as canonical tags.
+    # The message names the installed set, in the shortest spelling that reaches
+    # each traineddata -- `en`, not `en-Latn`.
     if "eng" in installed:
-        assert "en-Latn" in message
+        assert "en" in excinfo.value.supported.bcp47
 
 
 @pytest.mark.ml_ocr

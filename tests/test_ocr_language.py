@@ -153,6 +153,39 @@ def test_has_default_script_separates_the_script_variants() -> None:
     ).has_default_script
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # The script CLDR infers is not something a user has to type.
+        ("de", "de"),
+        ("de-Latn", "de"),
+        ("de-DE", "de"),
+        ("zh-CN", "zh"),
+        ("sr", "sr"),
+        # A non-default script names a different recognizer, so it survives.
+        ("de-Latf", "de-Latf"),
+        ("zh-Hant", "zh-Hant"),
+        ("sr-Latn", "sr-Latn"),
+        ("az-Cyrl", "az-Cyrl"),
+        ("anp-Deva", "anp-Deva"),
+        # Neither of these names a `(language, script)` pair to begin with.
+        ("mul", "mul"),
+        ("native:script/Cyrillic", "native:script/Cyrillic"),
+    ],
+)
+def test_short_tag_drops_only_the_inferred_script(value: str, expected: str) -> None:
+    """What an engine advertises: the shortest spelling that still round-trips.
+
+    `supported_ocr_languages()` fills the "Supported:" line of
+    `OcrLanguageNotSupportedError`, so every entry is something a user pastes
+    back -- and asking for it again has to land on the same recognizer.
+    """
+    language = OcrLanguageResolver.canonicalize_ocr_language(value)
+
+    assert language.short_tag == expected
+    assert OcrLanguageResolver.canonicalize_ocr_language(language.short_tag) == language
+
+
 def test_ocr_language_is_hashable() -> None:
     """Engines key dicts and caches on the canonical pair."""
     assert {OcrLanguage(bcp47_language="de", bcp47_script="Latn")} == {
@@ -205,8 +238,8 @@ def test_canonicalize_can_answer_none_instead_of_raising(value: str) -> None:
     """The failure guard, for the callers that build a vocabulary rather than
     serve a user.
 
-    `installed_tesseract_tags` and `_ppocr_supported_tags` walk an engine's own
-    code list and ask which entries are tags; a rejection reason never reaches
+    `installed_tesseract_languages` and `_ppocr_supported_languages` walk an engine's
+    own code list and ask which entries are tags; a rejection never reaches
     anyone there, so they opt out of it. Every user-facing path keeps the default
     `ValueError`, which carries one.
     """

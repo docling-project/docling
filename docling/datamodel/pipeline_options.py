@@ -366,7 +366,7 @@ class RapidOcrOptions(OcrOptions):
             ),
             examples=[["zh-Hans"], ["en"], ["cyrillic"]],
         ),
-    ] = ["zh-Hans"]
+    ] = ["zh"]
     backend: Annotated[
         RapidOcrBackend,
         Field(
@@ -483,7 +483,7 @@ class NemotronOcrOptions(OcrOptions):
             ),
             examples=[["en"], ["mul"]],
         ),
-    ] = []
+    ] = ["en"]
     merge_level: Annotated[
         Literal["word", "sentence", "paragraph"],
         Field(
@@ -524,7 +524,7 @@ class EasyOcrOptions(OcrOptions):
             ),
             examples=[["fr", "de", "es", "en"], ["ru", "uk"]],
         ),
-    ] = ["en-Latn", "es-Latn", "fr-Latn", "de-Latn"]
+    ] = ["en", "es", "fr", "de"]
     use_gpu: Annotated[
         bool | None,
         Field(
@@ -604,7 +604,7 @@ class TesseractCliOcrOptions(OcrOptions):
             ),
             examples=[["fr", "de", "es", "en"], []],
         ),
-    ] = ["fr-Latn", "de-Latn", "es-Latn", "en-Latn"]
+    ] = ["en", "es", "fr", "de"]
     tesseract_cmd: Annotated[
         str,
         Field(
@@ -656,7 +656,7 @@ class TesseractOcrOptions(OcrOptions):
             ),
             examples=[["fr", "de", "es", "en"], []],
         ),
-    ] = ["fr-Latn", "de-Latn", "es-Latn", "en-Latn"]
+    ] = ["en", "es", "fr", "de"]
     path: Annotated[
         str | None,
         Field(
@@ -695,7 +695,7 @@ class OcrMacOptions(OcrOptions):
             ),
             examples=[["fr", "de", "es", "en"], []],
         ),
-    ] = ["fr-Latn", "de-Latn", "es-Latn", "en-Latn"]
+    ] = ["en", "es", "fr", "de"]
     recognition: Annotated[
         str,
         Field(

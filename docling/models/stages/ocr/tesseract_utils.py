@@ -18,6 +18,7 @@ from docling_core.types.doc.page import BoundingRectangle
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageResolver,
+    OcrLanguageSupport,
 )
 from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
 
@@ -97,11 +98,10 @@ def language_to_tesseract_code(language: OcrLanguage) -> str | None:
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
 
 
-def installed_tesseract_tags(codes: Sequence[str]) -> list[str]:
-    """
-    The tags this install can serve. This can be either a canonical BCP47 tag or a native tesseract
-    """
-    tags = set()
+def installed_tesseract_languages(codes: Sequence[str]) -> OcrLanguageSupport:
+    """What this install can serve, split into canonical tags and native codes."""
+    tags: set[str] = set()
+    native: set[str] = set()
     for code in codes:
         if code in _TESSERACT_NON_LANGUAGE_TRAINEDDATA:
             continue
@@ -112,11 +112,12 @@ def installed_tesseract_tags(codes: Sequence[str]) -> list[str]:
         language = OcrLanguageResolver.canonicalize_ocr_language(
             tag, raise_exception=False
         )
-        # Check if it is a native code
+        # A customly produced traineddata
         if language is None or language_to_tesseract_code(language) != code:
-            language = OcrLanguage(native=code)
-        tags.add(language.tag)
-    return sorted(tags)
+            native.add(code)
+        else:
+            tags.add(language.short_tag)
+    return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
 
 def parse_tesseract_orientation(orientation: str) -> int:
