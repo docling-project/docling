@@ -62,6 +62,7 @@ from docling.models.factories import (
 from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
 )
+from docling.models.stages.form_field.form_field_model import PdfFormFieldModel
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
@@ -631,6 +632,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 run_postprocessor=self.layout_model.requires_layout_postprocessing,
             )
         )
+        self.form_field_model = PdfFormFieldModel(
+            enabled=self.pipeline_options.extract_form_fields
+        )
 
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
@@ -746,6 +750,15 @@ class StandardPdfPipeline(ConvertPipeline):
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
         )
+        form_field = ThreadedPipelineStage(
+            name="form_field",
+            model=self.form_field_model,
+            batch_size=1,
+            batch_timeout=opts.batch_polling_interval_seconds,
+            queue_max_size=opts.queue_max_size,
+            shutdown_timeout=opts.stage_shutdown_timeout_seconds,
+            timed_out_run_ids=timed_out_run_ids,
+        )
         table = ThreadedPipelineStage(
             name="table",
             model=self.table_model,
@@ -771,11 +784,20 @@ class StandardPdfPipeline(ConvertPipeline):
         preprocess.add_output_queue(layout.input_queue)  # PDF parsing
         layout.add_output_queue(ocr.input_queue)  # Layout prediction
         ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
-        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
+        layout_postprocess.add_output_queue(form_field.input_queue)  # Layout post-proc
+        form_field.add_output_queue(table.input_queue)  # Form fields
         table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
 
-        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
+        stages = [
+            preprocess,
+            ocr,
+            layout,
+            layout_postprocess,
+            form_field,
+            table,
+            assemble,
+        ]
         return RunContext(
             stages=stages,
             first_stage=preprocess,

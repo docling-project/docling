@@ -385,8 +385,8 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
-# docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
+docling-parse = { git = "https://github.com/docling-project/docling-parse.git", branch = "feat/acroform-widget-extraction" }
+docling-core = { git = "https://github.com/docling-project/docling-core.git", branch = "feat/acroform-widget-extraction" }
 
 [tool.uv]
 package = true

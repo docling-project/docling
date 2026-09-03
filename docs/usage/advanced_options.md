@@ -103,6 +103,17 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Extract native PDF form fields
+
+Set `PdfPipelineOptions(extract_form_fields=True)` to convert native PDF widgets
+into keyless, format-neutral `FieldItem` and fillable `FieldValueItem` objects.
+The docling-parse backend currently supplies this data. Scanned or flattened
+forms and backends without page widgets produce no field items.
+
+This option does not infer labels from layout geometry or PDF field names. Raw
+widget metadata is not stored in the `DoclingDocument`; keep parsed pages with
+`generate_parsed_pages=True` when that PDF-specific data is needed.
+
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
