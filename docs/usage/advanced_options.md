@@ -106,13 +106,20 @@ one can adjust the conversion pipeline and features.
 ### Extract native PDF form fields
 
 Set `PdfPipelineOptions(extract_form_fields=True)` to convert native PDF widgets
-into keyless, format-neutral `FieldItem` and fillable `FieldValueItem` objects.
-The docling-parse backend currently supplies this data. Scanned or flattened
-forms and backends without page widgets produce no field items.
+into format-neutral `FieldItem` objects holding fillable `FieldValueItem`
+objects. A widget inlined in a text paragraph (for example "check here [ ] and
+enter the amount: ____") is grouped with its siblings under a `FieldKeyItem`
+carrying the paragraph text. Any other field gets a `FieldKeyItem` from its
+accessible description (`/TU`) when the PDF carries one, and no key otherwise.
+Checkbox and radio state is a nested `CHECKBOX_SELECTED` / `CHECKBOX_UNSELECTED`
+child of the value. The docling-parse backend currently supplies this data.
+Scanned or flattened forms and backends without page widgets produce no field
+items. Zero-size widgets and push buttons are skipped.
 
-This option does not infer labels from layout geometry or PDF field names. Raw
-widget metadata is not stored in the `DoclingDocument`; keep parsed pages with
-`generate_parsed_pages=True` when that PDF-specific data is needed.
+Keys are never taken from PDF field names (`/T`), which Well-Tagged PDF 1.0
+explicitly excludes as a source of context. Raw widget metadata is not stored in
+the `DoclingDocument`; keep parsed pages with `generate_parsed_pages=True` when
+that PDF-specific data is needed.
 
 ### Image resolution and scale
 

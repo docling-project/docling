@@ -71,6 +71,7 @@ def _widget(
     field_type: str = "/Tx",
     appearance_state: str | None = None,
     field_flags: int = 0,
+    description: str | None = None,
 ) -> PdfWidget:
     return PdfWidget(
         index=index,
@@ -80,6 +81,7 @@ def _widget(
         widget_text=text,
         widget_field_type=field_type,
         widget_appearance_state=appearance_state,
+        widget_description=description,
         widget_field_flags=field_flags,
     )
 
@@ -131,7 +133,9 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
         bbox=BoundingBox(l=45, t=30, r=55, b=45),
     )
     widgets = [
-        _widget(0, BoundingBox(l=10, t=10, r=20, b=20), "first"),
+        _widget(
+            0, BoundingBox(l=10, t=10, r=20, b=20), "first", description="First name"
+        ),
         _widget(1, BoundingBox(l=80, t=10, r=90, b=20), "second"),
         _widget(2, BoundingBox(l=20, t=30, r=30, b=40), "third"),
         _widget(3, BoundingBox(l=45, t=10, r=55, b=20), "tie"),
@@ -187,11 +191,17 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
         [value.checkbox for value in _region_values(region)]
         for region in page.predictions.field_regions
     ] == [[None, None, None], [None], ["selected"], ["unselected"]]
-    assert all(
-        item.key_text == ""
+    # Only the widget carrying a /TU gets a key, sourced from the tooltip and
+    # without a bbox (dictionary metadata, not page text).
+    assert [
+        [(item.key_text, item.key_source, item.key_bbox) for item in region.items]
         for region in page.predictions.field_regions
-        for item in region.items
-    )
+    ] == [
+        [("First name", "tooltip", None), ("", None, None), ("", None, None)],
+        [("", None, None)],
+        [("", None, None)],
+        [("", None, None)],
+    ]
     assert page.predictions.field_regions[2].items[0].values[0].orig == "/On"
     assert page.predictions.field_regions[3].items[0].values[0].orig == "/Off"
     # The zero-size and push-button widgets are dropped: no extra region and
@@ -247,7 +257,8 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
     doc = ReadingOrderModel(ReadingOrderOptions())(conv_res)
     assert len(doc.field_regions) == 4
     assert len(doc.field_items) == 6
-    assert not any(item.label == DocItemLabel.FIELD_KEY for item in doc.texts)
+    keys = [item for item in doc.texts if item.label == DocItemLabel.FIELD_KEY]
+    assert [(key.text, key.prov) for key in keys] == [("First name", [])]
 
     def _value_repr(value: FieldValueItem) -> str:
         # Text fields carry their text; a checkbox value is empty and nests a
@@ -271,7 +282,14 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
             if isinstance(child.resolve(doc), FieldItem)
         ]
         values_by_region.append(
-            [_value_repr(field.children[0].resolve(doc)) for field in field_items]
+            [
+                next(
+                    _value_repr(child.resolve(doc))
+                    for child in field.children
+                    if isinstance(child.resolve(doc), FieldValueItem)
+                )
+                for field in field_items
+            ]
         )
     assert ["first", "third", "tie"] in values_by_region
     assert [DocItemLabel.CHECKBOX_SELECTED.value] in values_by_region
@@ -359,7 +377,16 @@ def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -
 
     list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
 
-    value = page.predictions.field_regions[0].items[0].values[0]
+    # The widget sits entirely inside the checkbox cluster, which would also
+    # qualify it as a "paragraph" key container. It must not: the label rides on
+    # the checkbox child only, and the region is a fallback region rather than
+    # one sourced from the (promoted, dropped) cluster.
+    assert [
+        region.source_container_id for region in page.predictions.field_regions
+    ] == [None]
+    item = page.predictions.field_regions[0].items[0]
+    assert item.key_text == ""
+    value = item.values[0]
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
     assert value.checkbox_label == "4797 ✔"  # cluster text lifted as-is
@@ -383,18 +410,30 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     # paragraph item lives inline in the body, not wrapped in a region of its own.
     assert len(result.document.field_regions) == 1
     # One keyed inline item (paragraph key + three checkbox values) and one
-    # keyless single-value item for the text field.
+    # single-value item for the text field, keyed by its /TU description.
     assert len(result.document.field_items) == 2
     keys = [
         item for item in result.document.texts if item.label == DocItemLabel.FIELD_KEY
     ]
-    assert len(keys) == 1
-    assert "I agree to the terms" in keys[0].text
+    keys_by_text = {key.text: key for key in keys}
+    assert len(keys) == 2
+    paragraph_key = next(key for key in keys if "I agree to the terms" in key.text)
+    # The paragraph key is page text and carries provenance; the /TU key is
+    # dictionary metadata and carries none. The first checkbox also has a /TU
+    # ("I agree to the terms") but is inlined in the paragraph, so the paragraph
+    # wins and its /TU never becomes a second key.
+    assert paragraph_key.prov != []
+    assert keys_by_text["Full legal name"].prov == []
     # The keyed field_item materializes in the paragraph's own place, NOT wrapped
     # in a field_region of its own (it would be, if pulled out into a region).
-    keyed_item = keys[0].parent.resolve(result.document)
+    keyed_item = paragraph_key.parent.resolve(result.document)
     assert keyed_item.label == DocItemLabel.FIELD_ITEM
     assert keyed_item.parent.resolve(result.document).label != DocItemLabel.FIELD_REGION
+    # The /TU-keyed item sits in the page-wide field_region.
+    tooltip_item = keys_by_text["Full legal name"].parent.resolve(result.document)
+    assert (
+        tooltip_item.parent.resolve(result.document).label == DocItemLabel.FIELD_REGION
+    )
 
     values = [
         item for item in result.document.texts if isinstance(item, FieldValueItem)

@@ -18,6 +18,8 @@ from docling.models.base_layout_model import TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
+_CHECKBOX_LABELS = {DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED}
+
 
 class PdfFormFieldModel(BasePageModel):
     _FORM_COVERAGE_THRESHOLD = 0.8
@@ -112,6 +114,22 @@ class PdfFormFieldModel(BasePageModel):
                 best = (ios, cluster)
         return best[1] if best else None
 
+    @staticmethod
+    def _tooltip_keyed_item(
+        widget: PdfWidget, value: FieldValuePrediction
+    ) -> FieldItemPrediction:
+        """Single-value item keyed by the field's ``/TU`` description, if any.
+
+        ``/TU`` is the field's accessible description and one of the context
+        sources listed in Well-Tagged PDF 1.0, 8.10.2.1; the field name ``/T``
+        is explicitly not one and never becomes document text. The key is
+        dictionary metadata, not page text, so it carries no bbox.
+        """
+        key = (widget.widget_description or "").strip()
+        return FieldItemPrediction(
+            key_text=key, key_source="tooltip" if key else None, values=[value]
+        )
+
     @classmethod
     def _match_form(
         cls, widget_bbox: BoundingBox, forms: list[Cluster]
@@ -177,22 +195,24 @@ class PdfFormFieldModel(BasePageModel):
                 checkbox_clusters = [
                     cluster
                     for cluster in page.predictions.layout.clusters
-                    if cluster.label
-                    in {
-                        DocItemLabel.CHECKBOX_SELECTED,
-                        DocItemLabel.CHECKBOX_UNSELECTED,
-                    }
+                    if cluster.label in _CHECKBOX_LABELS
                 ]
+                # A CHECKBOX_* cluster is a control's own option label, not a
+                # paragraph that hosts controls: it is lifted onto the checkbox
+                # child above, never used as a key container. Admitting it would
+                # key the widget by its own label (duplicating it) and point the
+                # region at a cluster that promotion drops before assembly.
                 text_clusters = [
                     cluster
                     for cluster in page.predictions.layout.clusters
                     if cluster.label in TEXT_ELEM_LABELS
+                    and cluster.label not in _CHECKBOX_LABELS
                 ]
-                matched_values: dict[int, list[FieldValuePrediction]] = {}
+                matched_items: dict[int, list[FieldItemPrediction]] = {}
                 matched_forms: dict[int, Cluster] = {}
                 text_values: dict[int, list[FieldValuePrediction]] = {}
                 text_containers: dict[int, Cluster] = {}
-                unmatched_values: list[FieldValuePrediction] = []
+                unmatched_items: list[FieldItemPrediction] = []
                 promoted_cluster_ids: set[int] = set()
 
                 for widget in page.parsed_page.widgets:
@@ -237,19 +257,22 @@ class PdfFormFieldModel(BasePageModel):
                         # widgets), keeping its position in its list/container.
                         # page_assemble attaches the item onto the text element.
                         continue
+                    # Not inlined in a paragraph: the item stands alone, keyed by
+                    # the field's /TU description when the PDF carries one.
+                    item = self._tooltip_keyed_item(widget, value)
                     if form is not None:
                         matched_forms[form.id] = form
-                        matched_values.setdefault(form.id, []).append(value)
+                        matched_items.setdefault(form.id, []).append(item)
                         continue
-                    unmatched_values.append(value)
+                    unmatched_items.append(item)
 
                 regions = [
                     FieldRegionPrediction(
                         source_container_id=form_id,
                         bbox=matched_forms[form_id].bbox,
-                        items=[FieldItemPrediction(values=[value]) for value in values],
+                        items=items,
                     )
-                    for form_id, values in matched_values.items()
+                    for form_id, items in matched_items.items()
                 ]
                 # Widgets sharing one enclosing paragraph accumulate into a single
                 # keyed item; the key text/bbox is the paragraph cluster.
@@ -263,31 +286,34 @@ class PdfFormFieldModel(BasePageModel):
                                     text_containers[cluster_id]
                                 ),
                                 key_bbox=text_containers[cluster_id].bbox,
+                                key_source="layout",
                                 values=values,
                             )
                         ],
                     )
                     for cluster_id, values in text_values.items()
                 )
-                if unmatched_values:
+                if unmatched_items:
                     regions.append(
                         FieldRegionPrediction(
                             bbox=BoundingBox.enclosing_bbox(
-                                [value.bbox for value in unmatched_values]
+                                [
+                                    value.bbox
+                                    for item in unmatched_items
+                                    for value in item.values
+                                ]
                             ),
-                            items=[
-                                FieldItemPrediction(values=[value])
-                                for value in unmatched_values
-                            ],
+                            items=unmatched_items,
                         )
                     )
                 page.predictions.field_regions = regions
 
-                all_values = (
-                    [value for values in matched_values.values() for value in values]
-                    + [value for values in text_values.values() for value in values]
-                    + unmatched_values
-                )
+                all_values = [
+                    value
+                    for region in regions
+                    for item in region.items
+                    for value in item.values
+                ]
                 # Promote matched checkbox clusters (now hosted inside a field
                 # item) out of the body before suppressing raster duplicates.
                 self._drop_clusters(page, promoted_cluster_ids)

@@ -572,17 +572,21 @@ class ReadingOrderModel:
                     materialize_siblings(rel.ref.cref, field_region)
                     for item in element.items:
                         field_item = out_doc.add_field_item(parent=field_region)
-                        if item.key_text and item.key_bbox is not None:
-                            out_doc.add_field_key(
-                                text=item.key_text,
-                                prov=ProvenanceItem(
+                        if item.key_text:
+                            # A key with a bbox is page text (the enclosing
+                            # paragraph); one without is dictionary metadata
+                            # (/TU) and gets no provenance.
+                            key_prov = None
+                            if item.key_bbox is not None:
+                                key_prov = ProvenanceItem(
                                     page_no=element.page_no,
                                     charspan=(0, len(item.key_text)),
                                     bbox=item.key_bbox.to_bottom_left_origin(
                                         page_height
                                     ),
-                                ),
-                                parent=field_item,
+                                )
+                            out_doc.add_field_key(
+                                text=item.key_text, prov=key_prov, parent=field_item
                             )
                         for value in item.values:
                             self._add_field_value(
