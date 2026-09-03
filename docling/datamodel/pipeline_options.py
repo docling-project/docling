@@ -1952,10 +1952,11 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         bool,
         Field(
             description=(
-                "Extract native interactive PDF widgets as keyless, format-neutral fillable field values. "
-                "The docling-parse backend currently supplies page widgets; labels are not inferred. Raw widget "
-                "metadata remains available only on retained parsed pages. Scanned or flattened forms and backends "
-                "without page widgets are unaffected."
+                "Extract native interactive PDF widgets as format-neutral fillable field values. A widget inlined "
+                "in a text paragraph is keyed by that paragraph; otherwise the field's accessible description (/TU) "
+                "is the key when present. Keys are never inferred from field names. The docling-parse backend "
+                "currently supplies page widgets. Raw widget metadata remains available only on retained parsed "
+                "pages. Scanned or flattened forms and backends without page widgets are unaffected."
             )
         ),
     ] = False

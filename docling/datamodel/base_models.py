@@ -412,13 +412,25 @@ class FieldValuePrediction(BaseModel):
     checkbox_label: str = ""
 
 
+FieldKeySource = Literal["layout", "tooltip"]
+"""Where a field item's key came from.
+
+``layout`` is the text of the paragraph cluster that inlines the widget(s);
+``tooltip`` is the field's ``/TU`` entry, one of the context sources listed in
+Well-Tagged PDF 1.0, 8.10.2.1 (the field name ``/T`` is explicitly not one).
+Structure-tree labels and ``/Contents`` are reserved for follow-up work.
+"""
+
+
 class FieldItemPrediction(BaseModel):
     # A keyed item groups several values under one key (e.g. an inline checkbox
     # and a fillable amount that share a sentence). key_bbox is the prov of the
-    # key -- the enclosing text cluster. Keyless items (key_text == "") carry a
-    # single value and reproduce the flat field_item shape.
+    # key -- the enclosing text cluster -- and is None for a key that is
+    # dictionary metadata rather than page text. Keyless items (key_text == "")
+    # carry a single value and reproduce the flat field_item shape.
     key_text: str = ""
     key_bbox: BoundingBox | None = None
+    key_source: FieldKeySource | None = None
     values: list[FieldValuePrediction] = []
 
 

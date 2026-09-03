@@ -61,7 +61,7 @@ Useful `PdfPipelineOptions` / base fields:
 |---|---|
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
-| `extract_form_fields` | Convert docling-parse PDF widgets into keyless, format-neutral fillable fields |
+| `extract_form_fields` | Convert docling-parse PDF widgets into format-neutral fillable fields, keyed by the inlining paragraph or the field's `/TU` description |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
@@ -71,10 +71,12 @@ Useful `PdfPipelineOptions` / base fields:
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
-`extract_form_fields=True` does not infer visible labels or store PDF-specific
-widget metadata in the `DoclingDocument`. Use `generate_parsed_pages=True` to
-retain raw widgets on parsed pages when needed. Backends without page-local
-widgets produce no fields.
+`extract_form_fields=True` keys a field by the paragraph that inlines it, else
+by its `/TU` description when present; it never uses field names (`/T`).
+Zero-size widgets and push buttons are skipped. No PDF-specific widget metadata
+is stored in the `DoclingDocument`; use `generate_parsed_pages=True` to retain
+raw widgets on parsed pages when needed. Backends without page-local widgets
+produce no fields.
 
 ### Choosing an OCR engine
 
