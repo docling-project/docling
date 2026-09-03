@@ -379,7 +379,6 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
-    context_settings={"help_option_names": ["-h", "--help"]},
     help=(
         "Convert documents with Docling. At default verbosity a per-file "
         "progress line is logged; pass -q/--quiet for fully silent output "

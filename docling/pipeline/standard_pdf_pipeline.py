@@ -84,7 +84,6 @@ from docling.models.stages.reading_order.readingorder_model import (
 from docling.pipeline.base_pipeline import (
     ConvertPipeline,
     get_expected_page_nos,
-    iter_requested_page_backends,
 )
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify

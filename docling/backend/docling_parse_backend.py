@@ -577,12 +577,6 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        requested_page_numbers = _resolve_threaded_page_numbers(
-            self.path_or_stream,
-            password,
-            in_doc.limits.page_range,
-        )
-
         threaded_options = (
             self.options
             if isinstance(self.options, ThreadedDoclingParseBackendOptions)

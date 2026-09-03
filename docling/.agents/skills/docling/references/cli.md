@@ -7,7 +7,7 @@ file the agent cannot open directly — PDFs above all, but also DOCX, PPTX, XLS
 HTML, Markdown, AsciiDoc, CSV, images, audio, and XML.
 
 Authoritative flag list: <https://docling-project.github.io/docling/reference/cli/>
-(or `docling --help`, `-h` for short). This file is a task-oriented summary.
+(or `docling --help`). This file is a task-oriented summary.
 
 ## Basics
 

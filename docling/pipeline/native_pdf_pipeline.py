@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import math
 import time
@@ -18,7 +21,11 @@ from docling_core.types.doc import (
 from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.pdf_backend import (
+    PdfDocumentBackend,
+    PdfPageBackend,
+    iter_pdf_page_backends,
+)
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -32,7 +39,6 @@ from docling.datamodel.pipeline_options import NativePdfPipelineOptions
 from docling.pipeline.base_pipeline import (
     ConvertPipeline,
     get_expected_page_nos,
-    iter_requested_page_backends,
 )
 from docling.utils.profiling import (
     ProfilingScope,
@@ -122,7 +128,7 @@ class NativePdfPipeline(ConvertPipeline):
         start_time = time.monotonic()
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             for page_backend in self._timed_page_backends(
-                iter_requested_page_backends(backend, expected_page_nos)
+                iter_pdf_page_backends(backend, expected_page_nos)
             ):
                 page = self._parse_page(conv_res, page_backend)
                 if page is not None:

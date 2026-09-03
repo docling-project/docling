@@ -25,7 +25,6 @@ from docling.cli.models import app as models_app
 
 app = typer.Typer(
     name="Docling helpers",
-    context_settings={"help_option_names": ["-h", "--help"]},
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,

@@ -2226,7 +2226,6 @@ class NativePdfPipelineOptions(PaginatedPipelineOptions):
     parser_threads: Annotated[
         PositiveInt,
         Field(
-            default_factory=default_parser_threads,
             description=(
                 "Number of PDF parser worker threads. This is the only parallelism this "
                 "pipeline has, since it runs no model: `accelerator_options` governs model "
@@ -2234,7 +2233,7 @@ class NativePdfPipelineOptions(PaginatedPipelineOptions):
                 "CPU threads."
             ),
         ),
-    ]
+    ] = Field(default_factory=default_parser_threads)
     generate_picture_images: Annotated[
         bool,
         Field(
