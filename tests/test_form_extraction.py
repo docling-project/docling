@@ -287,6 +287,57 @@ def test_suppresses_rendered_duplicate_of_filled_widget() -> None:
     assert form.children == []  # child ref pruned so assembly stays consistent
 
 
+def _checkbox_cluster(
+    cluster_id: int, bbox: BoundingBox, *, label: str, mark: str
+) -> Cluster:
+    cells = [
+        TextCell(
+            index=0,
+            rect=BoundingRectangle.from_bounding_box(bbox),
+            text=label,
+            orig=label,
+            from_ocr=False,
+        ),
+        TextCell(
+            index=1,
+            rect=BoundingRectangle.from_bounding_box(bbox),
+            text=mark,
+            orig=mark,
+            from_ocr=False,
+        ),
+    ]
+    return Cluster(
+        id=cluster_id,
+        label=DocItemLabel.CHECKBOX_SELECTED,
+        bbox=bbox,
+        cells=cells,
+    )
+
+
+def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -> None:
+    # The widget rect sits inside a CHECKBOX_SELECTED cluster that also absorbed
+    # the option label "4797" and the mark glyph. The cluster's option label is
+    # lifted onto the value and the cluster is promoted out of the plain-text
+    # stream; but /AS ("/Off") -- not the classifier's "selected" -- decides state.
+    widget_bbox = BoundingBox(l=10, t=10, r=18, b=18)
+    cb_cluster = _checkbox_cluster(
+        2, BoundingBox(l=8, t=8, r=40, b=20), label="4797", mark="✔"
+    )
+    widget = _widget(0, widget_bbox, "/Off", field_type="/Btn", appearance_state="/Off")
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=[widget])
+    page.predictions.layout = LayoutPrediction(clusters=[cb_cluster])
+    conv_res = _conversion_result(page)
+
+    list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
+
+    value = page.predictions.field_regions[0].values[0]
+    assert value.text == ""
+    assert value.checkbox == "unselected"  # from /AS, overriding the classifier
+    assert value.checkbox_label == "4797"  # mark glyph stripped
+    assert cb_cluster not in page.predictions.layout.clusters  # promoted, not left
+
+
 def test_pipeline_materializes_keyless_format_neutral_fields() -> None:
     result = _convert(extract_form_fields=True)
 

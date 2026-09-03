@@ -595,7 +595,7 @@ class ReadingOrderModel:
                                     if value.checkbox == "selected"
                                     else DocItemLabel.CHECKBOX_UNSELECTED
                                 ),
-                                text="",
+                                text=value.checkbox_label,
                                 parent=field_value,
                             )
 

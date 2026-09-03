@@ -25,6 +25,20 @@ class PdfFormFieldModel(BasePageModel):
     # of it sits inside the widget rect. Guards against deleting ordinary printed
     # text that merely equals a field value by coincidence.
     _DUPLICATE_CONTAINMENT_THRESHOLD = 0.6
+    # A layout CHECKBOX_* cluster is the visual twin of a /Btn widget when this
+    # much of the (small) widget rect sits inside the cluster. The mark glyph the
+    # layout model detects overlaps the widget square only partially and the
+    # cluster also absorbs the neighbouring option label, so the gate is well
+    # below full containment; on f1040s1_filled the real match measures ~0.70.
+    # ponytail: overlap-only heuristic, single filled fixture -- widen the corpus
+    # before tightening. Unselected boxes usually have no overlapping cluster and
+    # fall through to the widget-only path (see docs handoff prereq B.5).
+    _CHECKBOX_OVERLAP_THRESHOLD = 0.5
+    # Cells whose whole text is one of these are the checkbox mark, not the option
+    # label; dropped when lifting the label onto the nested checkbox child.
+    _CHECKBOX_MARK_GLYPHS = frozenset(
+        {"x", "X", "✓", "✔", "✗", "✘", "☑", "☒", "☐", "□", "■", "●", "○", "•"}
+    )
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
@@ -62,6 +76,34 @@ class PdfFormFieldModel(BasePageModel):
             )
 
         return FieldValuePrediction(text=source_value, orig=source_value, bbox=bbox)
+
+    @classmethod
+    def _cluster_label_text(cls, cluster: Cluster) -> str:
+        """Option label of a checkbox cluster, minus the mark glyph."""
+        return " ".join(
+            cell.text.strip()
+            for cell in cluster.cells
+            if cell.text.strip() and cell.text.strip() not in cls._CHECKBOX_MARK_GLYPHS
+        )
+
+    @classmethod
+    def _match_checkbox_cluster(
+        cls, widget_bbox: BoundingBox, clusters: list[Cluster]
+    ) -> Cluster | None:
+        """Find the CHECKBOX_* cluster whose detected mark hosts this widget.
+
+        Match on the widget rect sitting inside the cluster (``IoS(widget,
+        cluster)``), not the reverse: the cluster is larger because it absorbs the
+        neighbouring option label, so the widget is the subset.
+        """
+        best: tuple[float, Cluster] | None = None
+        for cluster in clusters:
+            ios = widget_bbox.intersection_over_self(cluster.bbox)
+            if ios > cls._CHECKBOX_OVERLAP_THRESHOLD and (
+                best is None or ios > best[0]
+            ):
+                best = (ios, cluster)
+        return best[1] if best else None
 
     @classmethod
     def _match_form(
@@ -104,15 +146,35 @@ class PdfFormFieldModel(BasePageModel):
                     for cluster in page.predictions.layout.clusters
                     if cluster.label == DocItemLabel.FORM
                 ]
+                checkbox_clusters = [
+                    cluster
+                    for cluster in page.predictions.layout.clusters
+                    if cluster.label
+                    in {
+                        DocItemLabel.CHECKBOX_SELECTED,
+                        DocItemLabel.CHECKBOX_UNSELECTED,
+                    }
+                ]
                 matched_values: dict[int, list[FieldValuePrediction]] = {}
                 matched_forms: dict[int, Cluster] = {}
                 unmatched_values: list[FieldValuePrediction] = []
+                promoted_cluster_ids: set[int] = set()
 
                 for widget in page.parsed_page.widgets:
                     bbox = widget.rect.to_bounding_box().to_top_left_origin(
                         page.size.height
                     )
                     value = self._normalize_widget(widget, bbox)
+                    if value.checkbox is not None:
+                        # Lift the visual checkbox's option label onto the value
+                        # and take it out of the plain-text stream: state stays
+                        # from /AS (already on value.checkbox), the label rides
+                        # on the nested child. The classifier's own state guess
+                        # is discarded -- /AS is authoritative.
+                        cluster = self._match_checkbox_cluster(bbox, checkbox_clusters)
+                        if cluster is not None:
+                            value.checkbox_label = self._cluster_label_text(cluster)
+                            promoted_cluster_ids.add(cluster.id)
                     form = self._match_form(bbox, forms)
                     if form is None:
                         unmatched_values.append(value)
@@ -142,6 +204,9 @@ class PdfFormFieldModel(BasePageModel):
                 all_values = [
                     value for values in matched_values.values() for value in values
                 ] + unmatched_values
+                # Promote matched checkbox clusters (now hosted inside a field
+                # item) out of the body before suppressing raster duplicates.
+                self._drop_clusters(page, promoted_cluster_ids)
                 self._suppress_duplicate_text(page, all_values)
 
             yield page
@@ -185,11 +250,18 @@ class PdfFormFieldModel(BasePageModel):
             for cluster in page.predictions.layout.clusters
             if is_duplicate(cluster)
         }
+        cls._drop_clusters(page, dropped_ids)
+
+    @staticmethod
+    def _drop_clusters(page: Page, dropped_ids: set[int]) -> None:
+        """Remove clusters (and any container child refs to them) from the page.
+
+        Shared by raster-duplicate suppression and checkbox promotion so
+        reading-order assembly never references a removed cluster.
+        """
         if not dropped_ids:
             return
-
-        # Prune both the top-level clusters and any container's child list, so
-        # reading-order assembly does not reference a removed cluster.
+        assert page.predictions.layout is not None
         for cluster in page.predictions.layout.clusters:
             if cluster.children:
                 cluster.children = [

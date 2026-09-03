@@ -407,6 +407,9 @@ class FieldValuePrediction(BaseModel):
     # When set, the value is materialized as an empty field value that nests a
     # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
     checkbox: Literal["selected", "unselected"] | None = None
+    # Option label of the matched layout checkbox cluster (e.g. "4797"), placed
+    # on the nested checkbox child. Empty when no cluster matched the widget.
+    checkbox_label: str = ""
 
 
 class FieldRegionPrediction(BaseModel):
