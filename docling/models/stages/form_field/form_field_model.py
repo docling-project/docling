@@ -18,6 +18,8 @@ from docling.models.base_layout_model import TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
+_CHECKBOX_LABELS = {DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED}
+
 
 class PdfFormFieldModel(BasePageModel):
     _FORM_COVERAGE_THRESHOLD = 0.8
@@ -177,16 +179,18 @@ class PdfFormFieldModel(BasePageModel):
                 checkbox_clusters = [
                     cluster
                     for cluster in page.predictions.layout.clusters
-                    if cluster.label
-                    in {
-                        DocItemLabel.CHECKBOX_SELECTED,
-                        DocItemLabel.CHECKBOX_UNSELECTED,
-                    }
+                    if cluster.label in _CHECKBOX_LABELS
                 ]
+                # A CHECKBOX_* cluster is a control's own option label, not a
+                # paragraph that hosts controls: it is lifted onto the checkbox
+                # child above, never used as a key container. Admitting it would
+                # key the widget by its own label (duplicating it) and point the
+                # region at a cluster that promotion drops before assembly.
                 text_clusters = [
                     cluster
                     for cluster in page.predictions.layout.clusters
                     if cluster.label in TEXT_ELEM_LABELS
+                    and cluster.label not in _CHECKBOX_LABELS
                 ]
                 matched_values: dict[int, list[FieldValuePrediction]] = {}
                 matched_forms: dict[int, Cluster] = {}

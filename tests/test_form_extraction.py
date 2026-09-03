@@ -359,7 +359,16 @@ def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -
 
     list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
 
-    value = page.predictions.field_regions[0].items[0].values[0]
+    # The widget sits entirely inside the checkbox cluster, which would also
+    # qualify it as a "paragraph" key container. It must not: the label rides on
+    # the checkbox child only, and the region is a fallback region rather than
+    # one sourced from the (promoted, dropped) cluster.
+    assert [
+        region.source_container_id for region in page.predictions.field_regions
+    ] == [None]
+    item = page.predictions.field_regions[0].items[0]
+    assert item.key_text == ""
+    value = item.values[0]
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
     assert value.checkbox_label == "4797 ✔"  # cluster text lifted as-is
