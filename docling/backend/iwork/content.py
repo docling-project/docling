@@ -154,16 +154,18 @@ Zero means neither, and is the value Pages writes for ordinary text.
 """
 
 LABEL_TYPE_NONE = 0
+"""``kNone``: the depth is unlabelled, which is what plain body text carries."""
 
 LABEL_TYPE_STRING = 2
+"""``kString``: the depth draws a fixed marker.
+
+It is the entry at that depth of the style's ``strings`` — a bullet character,
+usually. ``kImage`` (1) draws a picture instead and is treated the same way,
+since there is no text in it to show.
+"""
 
 LABEL_TYPE_NUMBER = 3
-"""Label types of ``TSWP.ListStyleArchive``.
-
-``kNone`` leaves the depth unlabelled and ``kNumber`` numbers it; ``kImage``
-and ``kString`` both draw a fixed marker, which for a string label is the entry
-at that depth of the style's ``strings``.
-"""
+"""``kNumber``: the depth is numbered, so the list is an ordered one."""
 
 HEADING_PATTERN = re.compile(r"^heading\s*(\d+)?$", re.IGNORECASE)
 """Matches Pages' built-in heading styles, e.g. "Heading 1" or bare "Heading"."""

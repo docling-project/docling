@@ -175,60 +175,22 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
-### Convert Apple Pages documents
-
-Apple Pages (`.pages`) documents convert like any other format, and both
-container generations are read (requires the `format-iwork` extra):
-
-```python
-from docling.document_converter import DocumentConverter
-
-doc = DocumentConverter().convert("report.pages").document
-print(doc.export_to_markdown())
-```
-
-Pages changed its container completely in 2013, so Docling reads whichever one
-the document uses:
-
-- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
-  Snappy-framed protobuf archives. Docling walks that object graph directly.
-- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
-  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
-  template yields no spurious content.
-
-Both generations are read for the same content:
-
-| Content | Notes |
-| ------- | ----- |
-| Titles and headings | From the paragraph styles Pages applies ("Title", "Heading 1", "Subheading"), which are named identically in both generations |
-| Bulleted and numbered lists | From the list style in force, including nesting |
-| Tables | Both cell storage layouts Pages has used, so a document from any release is read |
-| Inline images | Placed where the document anchors them, with their bytes when the container holds them |
-| Text boxes | Anchored ones in the flow, floating ones after the body |
-| Character formatting | Bold, italic, underline, strikethrough, superscript and subscript |
-| Hyperlinks | On the run they cover |
+### Apple Pages options
 
 Headers, footers and footnotes go into the `furniture` content layer, and
-comments into `notes`, so they stay out of the reading order by default. Each
-comment is attached to the text it annotates. To include the furniture in an
-export, ask for the layer:
+comments into `notes`, so they stay out of the reading order by default. To
+include them in an export, pass the extra layers explicitly (this applies to
+any `DoclingDocument`, not just Pages):
 
 ```python
 from docling_core.types.doc import ContentLayer
+from docling.document_converter import DocumentConverter
 
 doc = DocumentConverter().convert("report.pages").document
 print(doc.export_to_markdown(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}))
 ```
 
-!!! note "Not extracted"
-
-    Equations, charts and form controls have no published format, so they are
-    not read. A table cell holding anything other than text is left empty, a
-    picture's caption and cropping are not read, and password-protected
-    documents cannot be opened at all.
-
-The container is untrusted input, so member count, total size, per-member size
-and decompressed output are all bounded. Those limits can be tuned with
+The container is untrusted input, so size limits apply. They can be tuned with
 `IWorkBackendOptions`:
 
 ```python
