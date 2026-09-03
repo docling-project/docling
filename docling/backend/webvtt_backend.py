@@ -73,7 +73,14 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                self.content = self.path_or_stream.getvalue().decode("utf-8-sig")
+                # bytes.decode() keeps CR and CRLF while the text-mode read below
+                # translates them, and WebVTT allows all three line terminators.
+                self.content = (
+                    self.path_or_stream.getvalue()
+                    .decode("utf-8-sig")
+                    .replace("\r\n", "\n")
+                    .replace("\r", "\n")
+                )
             if isinstance(self.path_or_stream, Path):
                 with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     self.content = f.read()
