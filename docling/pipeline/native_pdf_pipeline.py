@@ -50,22 +50,14 @@ _log = logging.getLogger(__name__)
 
 
 @dataclass
-class _NativeTimings:
-    """Where a single document spent its time, in seconds.
-
-    Recorded unconditionally (the clock reads cost nothing next to the work they
-    measure) so a slow conversion can be explained from the logs alone, without
-    re-running it under `--profiling`.
-
-    The parser decodes and rasterizes a page in one shot on its worker threads,
-    so ``parser_wait`` - blocking until the next page comes out - is the only
-    phase that shrinks when more parser threads are given. Every other phase runs
-    on the calling thread and is unaffected by the thread count.
-    """
-
+class _NativeBuildTimings:
     parser_wait: float = 0.0
     materialize: float = 0.0
     page_image_fetch: float = 0.0
+
+
+@dataclass
+class _NativeAssemblyTimings:
     page_image_encode: float = 0.0
     text_items: float = 0.0
     picture_items: float = 0.0
@@ -74,21 +66,15 @@ class _NativeTimings:
     n_pictures: int = 0
     n_picture_images: int = 0
 
-    def record(self, conv_res: ConversionResult) -> None:
-        """Publish the phases as timings, so `--profiling` reports them too."""
-        for key, seconds in (
-            ("native_parser_wait", self.parser_wait),
-            ("native_materialize", self.materialize),
-            ("native_page_image_fetch", self.page_image_fetch),
-            ("native_page_image_encode", self.page_image_encode),
-            ("native_text_items", self.text_items),
-            ("native_picture_items", self.picture_items),
-        ):
-            recorder = TimeIntervalRecorder(
-                conv_res, key, scope=ProfilingScope.DOCUMENT
-            )
-            recorder.add(seconds)
-            recorder.close()
+
+def _record_timings(
+    conv_res: ConversionResult, timings: tuple[tuple[str, float], ...]
+) -> None:
+    """Publish native phases so `--profiling` reports them too."""
+    for key, seconds in timings:
+        recorder = TimeIntervalRecorder(conv_res, key, scope=ProfilingScope.DOCUMENT)
+        recorder.add(seconds)
+        recorder.close()
 
 
 class NativePdfPipeline(ConvertPipeline):
@@ -106,7 +92,6 @@ class NativePdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: NativePdfPipelineOptions = pipeline_options
         self.keep_images = pipeline_options.generate_page_images
-        self._timings = _NativeTimings()
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         backend = conv_res.input._backend
@@ -122,15 +107,15 @@ class NativePdfPipeline(ConvertPipeline):
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
-        self._timings = _NativeTimings()
+        timings = _NativeBuildTimings()
         self._warn_on_rerender(backend)
 
         start_time = time.monotonic()
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             for page_backend in self._timed_page_backends(
-                iter_pdf_page_backends(backend, expected_page_nos)
+                timings, iter_pdf_page_backends(backend, expected_page_nos)
             ):
-                page = self._parse_page(conv_res, page_backend)
+                page = self._parse_page(timings, conv_res, page_backend)
                 if page is not None:
                     conv_res.pages.append(page)
                 page_backend.unload()
@@ -169,18 +154,28 @@ class NativePdfPipeline(ConvertPipeline):
             len(conv_res.pages),
             time.monotonic() - start_time,
             self.pipeline_options.parser_threads,
-            self._timings.parser_wait,
-            self._timings.materialize,
-            self._timings.page_image_fetch,
+            timings.parser_wait,
+            timings.materialize,
+            timings.page_image_fetch,
         )
 
         if not conv_res.pages:
             conv_res.status = ConversionStatus.FAILURE
 
+        _record_timings(
+            conv_res,
+            (
+                ("native_parser_wait", timings.parser_wait),
+                ("native_materialize", timings.materialize),
+                ("native_page_image_fetch", timings.page_image_fetch),
+            ),
+        )
         return conv_res
 
     def _timed_page_backends(
-        self, page_backends: Iterator[PdfPageBackend]
+        self,
+        timings: _NativeBuildTimings,
+        page_backends: Iterator[PdfPageBackend],
     ) -> Iterator[PdfPageBackend]:
         """Yield the page backends, timing how long each one is waited for.
 
@@ -195,7 +190,7 @@ class NativePdfPipeline(ConvertPipeline):
             except StopIteration:
                 return
             finally:
-                self._timings.parser_wait += time.monotonic() - started
+                timings.parser_wait += time.monotonic() - started
             yield page_backend
 
     def _warn_on_rerender(self, backend: PdfDocumentBackend) -> None:
@@ -226,7 +221,10 @@ class NativePdfPipeline(ConvertPipeline):
         )
 
     def _parse_page(
-        self, conv_res: ConversionResult, page_backend: PdfPageBackend
+        self,
+        timings: _NativeBuildTimings,
+        conv_res: ConversionResult,
+        page_backend: PdfPageBackend,
     ) -> Page | None:
         """Collect the native content of one page, or None if it failed to parse."""
         if not page_backend.is_valid():
@@ -245,7 +243,7 @@ class NativePdfPipeline(ConvertPipeline):
             page = Page(page_no=page_backend.page_no)
             page.size = page_backend.get_size()
             page.parsed_page = page_backend.get_segmented_page()
-            self._timings.materialize += time.monotonic() - started
+            timings.materialize += time.monotonic() - started
 
             if self.pipeline_options.generate_page_images:
                 # Cache the page image now: the page backend is released as soon as
@@ -255,7 +253,7 @@ class NativePdfPipeline(ConvertPipeline):
                 page._default_image_scale = self.pipeline_options.images_scale
                 page.get_image(scale=self.pipeline_options.images_scale)
                 page._backend = None
-                self._timings.page_image_fetch += time.monotonic() - started
+                timings.page_image_fetch += time.monotonic() - started
         except Exception as exc:
             # One unreadable page should not cost the whole document.
             self._record_page_failure(
@@ -283,6 +281,7 @@ class NativePdfPipeline(ConvertPipeline):
         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
+        timings = _NativeAssemblyTimings()
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
             origin = DocumentOrigin(
                 mimetype="application/pdf",
@@ -304,22 +303,25 @@ class NativePdfPipeline(ConvertPipeline):
                     if image is not None
                     else None,
                 )
-                self._timings.page_image_encode += time.monotonic() - started
+                timings.page_image_encode += time.monotonic() - started
 
                 if page.parsed_page is None:
                     continue
 
                 started = time.monotonic()
-                self._add_text_items(doc, page.page_no, page.parsed_page, page.size)
-                self._timings.text_items += time.monotonic() - started
+                self._add_text_items(
+                    timings, doc, page.page_no, page.parsed_page, page.size
+                )
+                timings.text_items += time.monotonic() - started
 
                 started = time.monotonic()
-                self._add_picture_items(doc, page.page_no, page.parsed_page, page.size)
-                self._timings.picture_items += time.monotonic() - started
+                self._add_picture_items(
+                    timings, doc, page.page_no, page.parsed_page, page.size
+                )
+                timings.picture_items += time.monotonic() - started
 
             conv_res.document = doc
 
-        timings = self._timings
         _log.info(
             "Native assembly of %s: %d text item(s), %d picture(s) (%d with an image) "
             "[page images %.2fs, text %.2fs, pictures %.2fs]",
@@ -331,7 +333,14 @@ class NativePdfPipeline(ConvertPipeline):
             timings.text_items,
             timings.picture_items,
         )
-        timings.record(conv_res)
+        _record_timings(
+            conv_res,
+            (
+                ("native_page_image_encode", timings.page_image_encode),
+                ("native_text_items", timings.text_items),
+                ("native_picture_items", timings.picture_items),
+            ),
+        )
 
         if not self.keep_images:
             for page in conv_res.pages:
@@ -341,6 +350,7 @@ class NativePdfPipeline(ConvertPipeline):
 
     def _add_text_items(
         self,
+        timings: _NativeAssemblyTimings,
         doc: DoclingDocument,
         page_no: int,
         parsed_page: SegmentedPdfPage,
@@ -364,7 +374,7 @@ class NativePdfPipeline(ConvertPipeline):
             )
             n_cells += 1
 
-        self._timings.n_text_items += n_cells
+        timings.n_text_items += n_cells
         if n_cells == 0 and parsed_page.textline_cells:
             _log.warning(
                 "Page %d has text, but no %s cells: the PDF backend does not materialize "
@@ -375,6 +385,7 @@ class NativePdfPipeline(ConvertPipeline):
 
     def _add_picture_items(
         self,
+        timings: _NativeAssemblyTimings,
         doc: DoclingDocument,
         page_no: int,
         parsed_page: SegmentedPdfPage,
@@ -392,8 +403,8 @@ class NativePdfPipeline(ConvertPipeline):
                     charspan=(0, 0),
                 ),
             )
-            self._timings.n_pictures += 1
-            self._timings.n_picture_images += image is not None
+            timings.n_pictures += 1
+            timings.n_picture_images += image is not None
 
     @staticmethod
     def _to_prov_bbox(bbox: BoundingBox, size: Size) -> BoundingBox:

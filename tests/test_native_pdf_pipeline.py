@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import logging
 import os
 from pathlib import Path
+from threading import Barrier
 
 from docling_core.types.doc import CoordOrigin, DocItemLabel
 from docling_core.types.doc.page import TextCellUnit
@@ -13,8 +15,9 @@ from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import NativePdfPipelineOptions
-from docling.datamodel.settings import PageRange
+from docling.datamodel.settings import PageRange, settings
 from docling.document_converter import DocumentConverter, NativePdfFormatOption
+from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
 
 TEXT_PDF = Path("tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 PICTURE_PDF = Path("tests/data/pdf/sources/picture_classification.pdf")
@@ -167,6 +170,42 @@ def test_native_pipeline_restores_document_order(monkeypatch):
     assert list(doc.pages) == [1, 2, 3, 4]
     page_nos = [text.prov[0].page_no for text in doc.texts]
     assert page_nos == sorted(page_nos)
+
+
+def test_native_pipeline_keeps_concurrent_conversion_metrics_separate(
+    monkeypatch, caplog
+):
+    barrier = Barrier(2)
+    original_assemble_document = NativePdfPipeline._assemble_document
+
+    def synchronized_assemble_document(self, conv_res):
+        barrier.wait()
+        return original_assemble_document(self, conv_res)
+
+    monkeypatch.setattr(
+        NativePdfPipeline, "_assemble_document", synchronized_assemble_document
+    )
+    monkeypatch.setattr(settings.perf, "doc_batch_size", 2)
+    monkeypatch.setattr(settings.perf, "doc_batch_concurrency", 2)
+    caplog.set_level(logging.INFO, logger="docling.pipeline.native_pdf_pipeline")
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: NativePdfFormatOption(
+                pipeline_options=NativePdfPipelineOptions(generate_page_images=False)
+            )
+        }
+    )
+    results = list(converter.convert_all([TEXT_PDF, MULTIPAGE_PDF]))
+
+    logged_text_counts = {
+        record.args[0]: record.args[1]
+        for record in caplog.records
+        if record.msg.startswith("Native assembly of")
+    }
+    assert logged_text_counts == {
+        result.input.file.name: len(result.document.texts) for result in results
+    }
 
 
 def test_native_pipeline_honors_the_page_range():
