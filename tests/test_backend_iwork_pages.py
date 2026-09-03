@@ -37,13 +37,13 @@ from docling.backend.iwork.iwa import (
     iter_objects,
     read_fields,
 )
-from docling.backend.iwork.pages_backend import IWorkPagesDocumentBackend
 from docling.backend.iwork.pages_iwa import (
     iwa_formatting,
     iwa_list_style,
     iwa_style_name,
 )
 from docling.backend.iwork.pages_xml import legacy_formatting
+from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
