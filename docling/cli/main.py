@@ -15,6 +15,7 @@ from typing import Annotated, Any, Literal, Type, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
+from docling.utils.ocr_language import OcrLanguageResolver
 
 # Check for CLI dependencies
 try:
@@ -905,15 +906,20 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                "Comma-separated list of OCR languages as BCP-47 tags, e.g. "
-                "'en,de' or 'zh-Hant'. The selected engine's own language codes "
-                "are accepted too and mean what that engine means by them, so "
-                "'--ocr-engine rapidocr --ocr-lang ch' is Simplified Chinese. "
-                "Omit the option for the engine's default languages, or pass an "
-                "empty value (--ocr-lang '') to let the engine choose, which for "
-                "Tesseract is per-page script detection. 'mul' selects a "
-                "multilingual model on the engines that ship one; to skip OCR "
-                "entirely use --no-ocr."
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant') or as a 'native' tag,"
+                " which is specific to the selected OCR engine/backend."
+                " By default the language is handled as a BCP-47 tag."
+                f" A native tag must be prefixed with '{OcrLanguageResolver._NATIVE_PREFIX}'"
+                " Everything after the native prefix is passed through verbatim to the OCR engine."
+                " For example '--ocr-engine rapidocr --ocr-lang native:ch' is PP-OCR's Simplified Chinese."
+                " When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " The 'mul' input enables a multilingual model on the engines that ship one (e.g. Nemotron)."
+                " In case of the Kserve engine, there is zero language validation. The entire input"
+                " is pass through verbatim to the remote OCR engine."
+                " To skip OCR entirely use --no-ocr."
             ),
         ),
     ] = None,

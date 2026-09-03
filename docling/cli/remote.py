@@ -216,15 +216,13 @@ def convert_remote(
         Optional[str],
         typer.Option(
             help=(
-                "Comma-separated list of OCR languages as BCP-47 tags, e.g. "
-                "'en,de' or 'zh-Hant'. Widely-understood engine names such as "
-                "'chinese' or 'japan' are accepted too, but engine-specific ones "
-                "such as 'ch' are not, because this command does not choose the "
-                "engine. Omit the option for the service's default languages, or "
-                "pass an empty value (--ocr-lang '') to let the engine choose. "
-                "Canonicalized locally before the request is sent, so the "
-                "remote service must be recent enough to speak BCP-47 OCR "
-                "languages."
+                "Comma-separated list of OCR languages, given as canonicalized BCP-47 tags"
+                " (e.g. 'en,de' or 'zh-Hant'). The service picks the OCR engine, so the tags"
+                " are canonicalized locally and resolved to the engine's own languages remotely."
+                " When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " To skip OCR entirely use --no-ocr."
             ),
         ),
     ] = None,
