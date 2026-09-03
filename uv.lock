@@ -2260,8 +2260,8 @@ requires-dist = [
     { name = "transformers", marker = "sys_platform == 'darwin' and extra == 'models-vlm-inline'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<5.9.0" },
     { name = "transformers", marker = "sys_platform != 'darwin' and extra == 'models-vlm-inline'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<6.0.0" },
     { name = "tritonclient", extras = ["grpc"], marker = "extra == 'models-remote'", specifier = ">=2.65.0,<3.0.0" },
-    { name = "typer", marker = "extra == 'cli'", specifier = ">=0.12.5,<0.27.0" },
-    { name = "typer", marker = "extra == 'service-client'", specifier = ">=0.12.5,<0.27.0" },
+    { name = "typer", marker = "extra == 'cli'", specifier = ">=0.19.0,<0.27.0" },
+    { name = "typer", marker = "extra == 'service-client'", specifier = ">=0.19.0,<0.27.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
     { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.7.1,<2.0.0" },
 ]

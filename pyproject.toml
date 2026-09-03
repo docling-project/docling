@@ -268,7 +268,7 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
-  'typer>=0.12.5,<0.27.0',
+  'typer>=0.19.0,<0.27.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -276,7 +276,7 @@ service-client = [
 ]
 
 cli = [
-  'typer>=0.12.5,<0.27.0',
+  'typer>=0.19.0,<0.27.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
