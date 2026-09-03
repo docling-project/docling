@@ -26,7 +26,8 @@ Affiliation
 
 ## Hard break between formatted runs (different formatting)
 
-Author **John** University XYZ
+Author **John**   
+University XYZ
 
 ## Multiple hard breaks in one paragraph
 

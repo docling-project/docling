@@ -540,7 +540,8 @@ def test_convert_line_breaks():
     assert doc.texts[0].text == "Author 1"
     assert doc.texts[1].text == "Affiliation 1"
 
-    # Hard break across a formatting boundary: separate items per formatted run
+    # Hard break across a formatting boundary: the break is preserved as a
+    # leading '\n' on the run that follows, since the runs cannot be merged.
     doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
     assert len(doc.texts) == 3
     assert doc.texts[0].text == "Author"
@@ -548,7 +549,7 @@ def test_convert_line_breaks():
     assert doc.texts[1].text == "John"
     assert doc.texts[1].formatting is not None
     assert doc.texts[1].formatting.bold is True
-    assert doc.texts[2].text == "University XYZ"
+    assert doc.texts[2].text == "\nUniversity XYZ"
     assert doc.texts[2].formatting is None
 
     # Multiple hard breaks in one paragraph

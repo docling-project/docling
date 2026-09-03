@@ -391,8 +391,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "University XYZ",
-      "text": "University XYZ"
+      "orig": "\nUniversity XYZ",
+      "text": "\nUniversity XYZ"
     },
     {
       "self_ref": "#/texts/16",

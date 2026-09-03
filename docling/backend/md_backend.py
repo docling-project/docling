@@ -661,10 +661,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         doc.texts[-1].text += " " + snippet_text
                         doc.texts[-1].orig += " " + snippet_text
                     else:
+                        prefix = "\n" if self._pending_hard_line_break else ""
                         doc.add_text(
                             label=DocItemLabel.TEXT,
                             parent=parent_item,
-                            text=snippet_text,
+                            text=prefix + snippet_text,
                             formatting=formatting,
                             hyperlink=hyperlink,
                         )
