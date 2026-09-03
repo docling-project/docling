@@ -162,16 +162,26 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
         3,
         None,
     ]
+
+    # Keyless items: one value each, one item per widget -- flat shape preserved.
+    def _region_values(region):
+        return [value for item in region.items for value in item.values]
+
     assert [
-        [value.text for value in region.values]
+        [value.text for value in _region_values(region)]
         for region in page.predictions.field_regions
     ] == [["first", "third", "tie"], ["second"], [""], [""]]
     assert [
-        [value.checkbox for value in region.values]
+        [value.checkbox for value in _region_values(region)]
         for region in page.predictions.field_regions
     ] == [[None, None, None], [None], ["selected"], ["unselected"]]
-    assert page.predictions.field_regions[2].values[0].orig == "/On"
-    assert page.predictions.field_regions[3].values[0].orig == "/Off"
+    assert all(
+        item.key_text == ""
+        for region in page.predictions.field_regions
+        for item in region.items
+    )
+    assert page.predictions.field_regions[2].items[0].values[0].orig == "/On"
+    assert page.predictions.field_regions[3].items[0].values[0].orig == "/Off"
 
     visible_child = Cluster(
         id=4,
@@ -330,7 +340,7 @@ def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -
 
     list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
 
-    value = page.predictions.field_regions[0].values[0]
+    value = page.predictions.field_regions[0].items[0].values[0]
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
     assert value.checkbox_label == "4797 ✔"  # cluster text lifted as-is
@@ -338,18 +348,27 @@ def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -
     assert cb_cluster not in page.predictions.layout.clusters  # promoted, not left
 
 
-def test_pipeline_materializes_keyless_format_neutral_fields() -> None:
+def test_pipeline_materializes_format_neutral_fields() -> None:
     result = _convert(extract_form_fields=True)
 
     assert result.pages[0].assembled is not None
-    assert len(result.pages[0].predictions.field_regions) == 1
-    assert result.pages[0].predictions.field_regions[0].source_container_id is None
-    assert len(result.document.field_regions) == 1
-    assert len(result.document.field_items) == 4
-    assert all(len(item.children) == 1 for item in result.document.field_items)
-    assert not any(
-        item.label == DocItemLabel.FIELD_KEY for item in result.document.texts
-    )
+    # The layout detector merges the three checkbox lines into one text cluster,
+    # so their widgets share an enclosing paragraph and group under one keyed
+    # item; the text field sits in its own keyless region. Two regions, keyed on
+    # the paragraph cluster (id 0) and the page-wide unmatched fallback.
+    assert [
+        region.source_container_id
+        for region in result.pages[0].predictions.field_regions
+    ] == [0, None]
+    assert len(result.document.field_regions) == 2
+    # One keyed item (paragraph key + three checkbox values) and one keyless
+    # single-value item for the text field.
+    assert len(result.document.field_items) == 2
+    keys = [
+        item for item in result.document.texts if item.label == DocItemLabel.FIELD_KEY
+    ]
+    assert len(keys) == 1
+    assert "I agree to the terms" in keys[0].text
 
     values = [
         item for item in result.document.texts if isinstance(item, FieldValueItem)
@@ -389,4 +408,66 @@ def test_pipeline_materializes_keyless_format_neutral_fields() -> None:
     assert disabled.pages[0].predictions.field_regions == []
     assert disabled.document.field_regions == []
     assert disabled.document.field_items == []
-    assert result.pages[0].predictions.layout == disabled.pages[0].predictions.layout
+    # Extraction promotes the paragraph that hosts the checkbox widgets out of the
+    # plain-text body (it becomes the field key), so the enabled layout is the
+    # disabled one minus that one cluster; every other cluster is untouched.
+    enabled_ids = {c.id for c in result.pages[0].predictions.layout.clusters}
+    disabled_ids = {c.id for c in disabled.pages[0].predictions.layout.clusters}
+    promoted = disabled_ids - enabled_ids
+    assert len(promoted) == 1
+    promoted_cluster = next(
+        c for c in disabled.pages[0].predictions.layout.clusters if c.id in promoted
+    )
+    assert "I agree to the terms" in " ".join(
+        cell.text for cell in promoted_cluster.cells
+    )
+
+
+def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
+    # IRS Sch.1 line 7 shape: a sentence inlines a checkbox and a fillable amount.
+    # The layout detects the whole line as one text cluster enclosing both
+    # widgets; a FORM cluster also wraps the page. The smaller text cluster is the
+    # more specific host, so both widgets group under one keyed item -- key = the
+    # paragraph, two values (checkbox + amount) -- not two keyless FORM fields.
+    paragraph = _text_cluster(
+        1,
+        BoundingBox(l=10, t=10, r=90, b=20),
+        "check here and enter amount repaid:",
+    )
+    page_form = Cluster(
+        id=2, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=100)
+    )
+    widgets = [
+        _widget(
+            0,
+            BoundingBox(l=40, t=12, r=44, b=18),
+            "",
+            field_type="/Btn",
+            appearance_state="/Off",
+        ),
+        _widget(1, BoundingBox(l=70, t=12, r=85, b=18), "1221.00"),
+    ]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[page_form, paragraph])
+    conv_res = _conversion_result(page)
+
+    list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
+
+    keyed = [
+        (region, item)
+        for region in page.predictions.field_regions
+        for item in region.items
+        if item.key_text
+    ]
+    assert len(keyed) == 1
+    region, item = keyed[0]
+    assert region.source_container_id == paragraph.id
+    assert item.key_text == "check here and enter amount repaid:"
+    assert item.key_bbox == paragraph.bbox
+    assert [(v.text, v.checkbox) for v in item.values] == [
+        ("", "unselected"),
+        ("1221.00", None),
+    ]
+    # The paragraph is promoted out of the plain-text body (becomes the key).
+    assert paragraph not in page.predictions.layout.clusters

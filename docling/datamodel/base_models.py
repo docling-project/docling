@@ -412,10 +412,20 @@ class FieldValuePrediction(BaseModel):
     checkbox_label: str = ""
 
 
+class FieldItemPrediction(BaseModel):
+    # A keyed item groups several values under one key (e.g. an inline checkbox
+    # and a fillable amount that share a sentence). key_bbox is the prov of the
+    # key -- the enclosing text cluster. Keyless items (key_text == "") carry a
+    # single value and reproduce the flat field_item shape.
+    key_text: str = ""
+    key_bbox: BoundingBox | None = None
+    values: list[FieldValuePrediction] = []
+
+
 class FieldRegionPrediction(BaseModel):
     source_container_id: int | None = None
     bbox: BoundingBox
-    values: list[FieldValuePrediction] = []
+    items: list[FieldItemPrediction] = []
 
 
 class ContainerElement(
@@ -425,7 +435,7 @@ class ContainerElement(
 
 
 class FieldRegionElement(ContainerElement):
-    values: list[FieldValuePrediction] = []
+    items: list[FieldItemPrediction] = []
 
 
 class Table(BasePageElement):

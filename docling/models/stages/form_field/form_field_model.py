@@ -8,6 +8,7 @@ from docling_core.types.doc.page import PdfWidget
 
 from docling.datamodel.base_models import (
     Cluster,
+    FieldItemPrediction,
     FieldRegionPrediction,
     FieldValuePrediction,
     Page,
@@ -119,6 +120,27 @@ class PdfFormFieldModel(BasePageModel):
             ),
         )[1]
 
+    @classmethod
+    def _match_text_container(
+        cls, widget_bbox: BoundingBox, text_clusters: list[Cluster]
+    ) -> Cluster | None:
+        """Smallest text cluster that inlines this widget (the paragraph key).
+
+        Precedence after FORM: a widget with no FORM host may sit inside a text
+        paragraph (e.g. "check here [] and enter amount: 1221.00"). The smallest
+        enclosing cluster is the guard against attaching to a big wrapping block
+        -- it is the whole "is this widget really inlined in this paragraph"
+        decision.
+        """
+        best: tuple[float, Cluster] | None = None
+        for cluster in text_clusters:
+            ios = widget_bbox.intersection_over_self(cluster.bbox)
+            if ios >= cls._FORM_COVERAGE_THRESHOLD and (
+                best is None or cluster.bbox.area() < best[1].bbox.area()
+            ):
+                best = (ios, cluster)
+        return best[1] if best else None
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -148,8 +170,15 @@ class PdfFormFieldModel(BasePageModel):
                         DocItemLabel.CHECKBOX_UNSELECTED,
                     }
                 ]
+                text_clusters = [
+                    cluster
+                    for cluster in page.predictions.layout.clusters
+                    if cluster.label in TEXT_ELEM_LABELS
+                ]
                 matched_values: dict[int, list[FieldValuePrediction]] = {}
                 matched_forms: dict[int, Cluster] = {}
+                text_values: dict[int, list[FieldValuePrediction]] = {}
+                text_containers: dict[int, Cluster] = {}
                 unmatched_values: list[FieldValuePrediction] = []
                 promoted_cluster_ids: set[int] = set()
 
@@ -173,35 +202,77 @@ class PdfFormFieldModel(BasePageModel):
                             # just the tiny widget rect.
                             value.bbox = cluster.bbox
                             promoted_cluster_ids.add(cluster.id)
+                    # Precedence: smallest enclosing container wins. A FORM cluster
+                    # usually wraps the whole page, so a widget inlined in a
+                    # paragraph (IRS Sch.1 line 7: "check here [] and enter amount:
+                    # 1221.00") sits inside both the FORM and a much smaller
+                    # list_item -- the paragraph is the more specific host and
+                    # becomes the item's key. Only a strictly-smaller text cluster
+                    # beats the FORM; otherwise the widget stays a keyless FORM
+                    # field, reproducing today's output.
                     form = self._match_form(bbox, forms)
-                    if form is None:
-                        unmatched_values.append(value)
+                    text_cluster = self._match_text_container(bbox, text_clusters)
+                    if text_cluster is not None and (
+                        form is None or text_cluster.bbox.area() < form.bbox.area()
+                    ):
+                        text_containers[text_cluster.id] = text_cluster
+                        text_values.setdefault(text_cluster.id, []).append(value)
+                        # Promote the paragraph out of the plain-text stream; it
+                        # becomes the field item's key instead (same mechanism as
+                        # a matched checkbox cluster).
+                        promoted_cluster_ids.add(text_cluster.id)
                         continue
-                    matched_forms[form.id] = form
-                    matched_values.setdefault(form.id, []).append(value)
+                    if form is not None:
+                        matched_forms[form.id] = form
+                        matched_values.setdefault(form.id, []).append(value)
+                        continue
+                    unmatched_values.append(value)
 
                 regions = [
                     FieldRegionPrediction(
                         source_container_id=form_id,
                         bbox=matched_forms[form_id].bbox,
-                        values=values,
+                        items=[FieldItemPrediction(values=[value]) for value in values],
                     )
                     for form_id, values in matched_values.items()
                 ]
+                # Widgets sharing one enclosing paragraph accumulate into a single
+                # keyed item; the key text/bbox is the paragraph cluster.
+                regions.extend(
+                    FieldRegionPrediction(
+                        source_container_id=cluster_id,
+                        bbox=text_containers[cluster_id].bbox,
+                        items=[
+                            FieldItemPrediction(
+                                key_text=self._cluster_label_text(
+                                    text_containers[cluster_id]
+                                ),
+                                key_bbox=text_containers[cluster_id].bbox,
+                                values=values,
+                            )
+                        ],
+                    )
+                    for cluster_id, values in text_values.items()
+                )
                 if unmatched_values:
                     regions.append(
                         FieldRegionPrediction(
                             bbox=BoundingBox.enclosing_bbox(
                                 [value.bbox for value in unmatched_values]
                             ),
-                            values=unmatched_values,
+                            items=[
+                                FieldItemPrediction(values=[value])
+                                for value in unmatched_values
+                            ],
                         )
                     )
                 page.predictions.field_regions = regions
 
-                all_values = [
-                    value for values in matched_values.values() for value in values
-                ] + unmatched_values
+                all_values = (
+                    [value for values in matched_values.values() for value in values]
+                    + [value for values in text_values.values() for value in values]
+                    + unmatched_values
+                )
                 # Promote matched checkbox clusters (now hosted inside a field
                 # item) out of the body before suppressing raster duplicates.
                 self._drop_clusters(page, promoted_cluster_ids)

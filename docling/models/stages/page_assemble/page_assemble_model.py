@@ -279,7 +279,7 @@ class PageAssembleModel(BasePageModel):
                                     cluster=cluster.model_copy(
                                         update={"bbox": field_region.bbox}
                                     ),
-                                    values=field_region.values,
+                                    items=field_region.items,
                                 )
                                 assembled_field_sources.add(cluster.id)
                             elements.append(container_el)
@@ -308,7 +308,7 @@ class PageAssembleModel(BasePageModel):
                             id=next_id,
                             page_no=page.page_no,
                             cluster=cluster,
-                            values=field_region.values,
+                            items=field_region.items,
                         )
                         elements.append(field_element)
                         body.append(field_element)

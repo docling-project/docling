@@ -568,36 +568,49 @@ class ReadingOrderModel:
                         parent=parent,
                     )
                     materialize_siblings(rel.ref.cref, field_region)
-                    for value in element.values:
+                    for item in element.items:
                         field_item = out_doc.add_field_item(parent=field_region)
-                        prov = ProvenanceItem(
-                            page_no=element.page_no,
-                            charspan=(0, len(value.text)),
-                            bbox=value.bbox.to_bottom_left_origin(page_height),
-                        )
-                        field_value = out_doc.add_field_value(
-                            text=value.text,
-                            orig=value.orig,
-                            prov=prov,
-                            parent=field_item,
-                            kind="fillable",
-                        )
-                        if value.checkbox is not None:
-                            # State rides on a nested checkbox child; the value
-                            # text is empty so the token inlines into <value>.
-                            # No prov on the child: it shares the value's rect,
-                            # and the serializer flattens child locations into
-                            # <value>, so a duplicate prov would emit the same
-                            # location twice inside the element.
-                            out_doc.add_text(
-                                label=(
-                                    DocItemLabel.CHECKBOX_SELECTED
-                                    if value.checkbox == "selected"
-                                    else DocItemLabel.CHECKBOX_UNSELECTED
+                        if item.key_text and item.key_bbox is not None:
+                            out_doc.add_field_key(
+                                text=item.key_text,
+                                prov=ProvenanceItem(
+                                    page_no=element.page_no,
+                                    charspan=(0, len(item.key_text)),
+                                    bbox=item.key_bbox.to_bottom_left_origin(
+                                        page_height
+                                    ),
                                 ),
-                                text=value.checkbox_label,
-                                parent=field_value,
+                                parent=field_item,
                             )
+                        for value in item.values:
+                            prov = ProvenanceItem(
+                                page_no=element.page_no,
+                                charspan=(0, len(value.text)),
+                                bbox=value.bbox.to_bottom_left_origin(page_height),
+                            )
+                            field_value = out_doc.add_field_value(
+                                text=value.text,
+                                orig=value.orig,
+                                prov=prov,
+                                parent=field_item,
+                                kind="fillable",
+                            )
+                            if value.checkbox is not None:
+                                # State rides on a nested checkbox child; the
+                                # value text is empty so the token inlines into
+                                # <value>. No prov on the child: it shares the
+                                # value's rect, and the serializer flattens child
+                                # locations into <value>, so a duplicate prov
+                                # would emit the same location twice.
+                                out_doc.add_text(
+                                    label=(
+                                        DocItemLabel.CHECKBOX_SELECTED
+                                        if value.checkbox == "selected"
+                                        else DocItemLabel.CHECKBOX_UNSELECTED
+                                    ),
+                                    text=value.checkbox_label,
+                                    parent=field_value,
+                                )
 
                 elif isinstance(element, ContainerElement):
                     group_label = (
