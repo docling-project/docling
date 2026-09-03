@@ -321,13 +321,25 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Generate
+        _log.info(
+            "Running vLLM inference on %s image(s) (max_new_tokens=%s)...",
+            len(input_batch),
+            first_input.max_new_tokens,
+        )
         start_time = time.time()
         outputs = self.llm.generate(llm_inputs, sampling_params=sampling_params)
         generation_time = time.time() - start_time
 
-        _log.debug(
-            f"vLLM generated {len(outputs)} outputs in {generation_time:.2f}s "
-            f"({len(outputs) / generation_time:.1f} outputs/sec)"
+        total_generated_tokens = sum(
+            len(output.outputs[0].token_ids) if output.outputs else 0
+            for output in outputs
+        )
+        _log.info(
+            "vLLM generated %s tokens for %s image(s) in %.2f sec. (%.2f tok/s)",
+            total_generated_tokens,
+            len(outputs),
+            generation_time,
+            total_generated_tokens / generation_time if generation_time > 0 else 0.0,
         )
 
         # Create output objects
