@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image
 
 from docling.datamodel.base_models import Cluster, Page
 from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
@@ -448,34 +448,33 @@ class LayoutPostprocessor:
         top = min(max(top, 0), page_image.height)
         bottom = min(max(bottom, 0), page_image.height)
 
-        masked_bbox = (left - 1, top - 1, right + 1, bottom + 1)
-        corners = (
-            (0, 0),
-            (page_image.width - 1, 0),
-            (0, page_image.height - 1),
-            (page_image.width - 1, page_image.height - 1),
-        )
-        sample = next(
-            (
-                (x, y)
-                for x, y in corners
-                if not (
-                    masked_bbox[0] <= x <= masked_bbox[2]
-                    and masked_bbox[1] <= y <= masked_bbox[3]
-                )
-            ),
-            None,
-        )
-        if sample is None:
-            return False
+        # Exclude the picture and its one-pixel rasterization seam.
+        left = max(left - 1, 0)
+        top = max(top - 1, 0)
+        right = min(right + 2, page_image.width)
+        bottom = min(bottom + 2, page_image.height)
 
-        image = page_image.convert("RGB")
-        difference = ImageChops.difference(
-            image, Image.new("RGB", image.size, image.getpixel(sample))
+        image = page_image if page_image.mode == "RGB" else page_image.convert("RGB")
+        regions = (
+            (0, 0, image.width, top),
+            (0, bottom, image.width, image.height),
+            (0, top, left, bottom),
+            (right, top, image.width, bottom),
         )
-        # Mask the picture and its one-pixel rasterization seam.
-        ImageDraw.Draw(difference).rectangle(masked_bbox, fill=0)
-        return difference.getbbox() is None
+        surrounding_color = None
+        for region in regions:
+            if region[0] >= region[2] or region[1] >= region[3]:
+                continue
+            colors = image.crop(region).getcolors(maxcolors=1)
+            if colors is None:
+                return False
+            color = colors[0][1]
+            if surrounding_color is None:
+                surrounding_color = color
+            elif color != surrounding_color:
+                return False
+
+        return surrounding_color is not None
 
     def _set_cluster_children(self, cluster: Cluster, children: list[Cluster]) -> None:
         if not children:
