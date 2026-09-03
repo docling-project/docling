@@ -264,6 +264,8 @@ class LayoutPostprocessor:
                     )
                 clusters.extend(orphan_clusters)
 
+        clusters = self._merge_overlapping_section_headers(clusters)
+
         # Iterative refinement
         prev_count = len(clusters) + 1
         for _ in range(3):  # Maximum 3 iterations
@@ -548,6 +550,73 @@ class LayoutPostprocessor:
 
         return current_best if current_best else group_clusters[0]
 
+    def _merge_overlapping_section_headers(
+        self, clusters: list[Cluster], overlap_threshold: float = 0.2
+    ) -> list[Cluster]:
+        headers = [
+            cluster
+            for cluster in clusters
+            if cluster.label == DocItemLabel.SECTION_HEADER
+        ]
+        if len(headers) < 2:
+            return clusters
+
+        spatial_index = SpatialClusterIndex(headers)
+        union_find = UnionFind([cluster.id for cluster in headers])
+        header_by_id = {cluster.id: cluster for cluster in headers}
+        for header in headers:
+            for other_id in spatial_index.find_candidates(header.bbox):
+                if other_id <= header.id:
+                    continue
+                other = header_by_id[other_id]
+                vertical_overlap = min(header.bbox.b, other.bbox.b) - max(
+                    header.bbox.t, other.bbox.t
+                )
+                min_height = min(header.bbox.height, other.bbox.height)
+                if min_height <= 0 or vertical_overlap / min_height <= 0.5:
+                    continue
+
+                if header.bbox.intersection_over_union(other.bbox) > overlap_threshold:
+                    union_find.union(header.id, other.id)
+
+        merged_by_root: dict[int, Cluster] = {}
+        for group in union_find.get_groups().values():
+            if len(group) == 1:
+                root = union_find.find(group[0])
+                merged_by_root[root] = header_by_id[group[0]]
+                continue
+
+            group_clusters = [header_by_id[cluster_id] for cluster_id in group]
+            merged = group_clusters[0]
+            merged.bbox = merged.bbox.model_copy(
+                update={
+                    "l": min(cluster.bbox.l for cluster in group_clusters),
+                    "t": min(cluster.bbox.t for cluster in group_clusters),
+                    "r": max(cluster.bbox.r for cluster in group_clusters),
+                    "b": max(cluster.bbox.b for cluster in group_clusters),
+                }
+            )
+            merged.cells = self._sort_cells(
+                self._deduplicate_cells(
+                    [cell for cluster in group_clusters for cell in cluster.cells]
+                )
+            )
+            merged_by_root[union_find.find(group[0])] = merged
+
+        merged_ids = {cluster.id for cluster in headers}
+        result: list[Cluster] = []
+        emitted_roots: set[int] = set()
+        for cluster in clusters:
+            if cluster.id not in merged_ids:
+                result.append(cluster)
+                continue
+            root = union_find.find(cluster.id)
+            if root not in emitted_roots:
+                result.append(merged_by_root[root])
+                emitted_roots.add(root)
+
+        return result
+
     def _remove_overlapping_clusters(
         self,
         clusters: list[Cluster],
@@ -559,7 +628,7 @@ class LayoutPostprocessor:
             return []
 
         spatial_index = (
-            self.regular_index
+            SpatialClusterIndex(clusters)
             if cluster_type == "regular"
             else self.picture_index
             if cluster_type == "picture"
