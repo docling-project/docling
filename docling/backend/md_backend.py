@@ -98,6 +98,35 @@ _CreationPayload = Annotated[
 ]
 
 
+def _only_plain_hard_breaks(children: list) -> bool:
+    """Return True when children consist solely of RawText/Literal runs separated
+    by hard (non-soft) LineBreak nodes, with at least one such break present.
+
+    Such content is fully handled by the `_pending_hard_line_break` merge path
+    and does not need an inline_group wrapper.  Multiple plain runs without any
+    LineBreak (e.g. `RawText + Literal + RawText` from an escaped character)
+    return False so they still use the regular inline_group path.
+
+    Args:
+        children: Inline child nodes of a marko Paragraph, Heading, or ListItem
+            paragraph to inspect.
+
+    Returns:
+        True if all children are plain-text runs joined only by hard line breaks,
+        False otherwise.
+    """
+    if not _MARKO_AVAILABLE:
+        return False
+    has_hard_break = any(
+        isinstance(c, marko.inline.LineBreak) and not c.soft for c in children
+    )
+    return has_hard_break and all(
+        isinstance(c, (marko.inline.RawText, marko.inline.Literal))
+        or (isinstance(c, marko.inline.LineBreak) and not c.soft)
+        for c in children
+    )
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
     _DELIMITER_CELL_RE = re.compile(r":?-+:?")
@@ -518,7 +547,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 for item in child.children
                 if not isinstance(item, marko.block.ListItem)
             ]
-            if len(non_list_children) > 1:  # inline group will be created further down
+            # Skip the inline_group path for items whose children are plain text
+            # runs separated solely by hard line breaks; _pending_hard_line_break
+            # will merge them into a single list_item with embedded '\n'.
+            if len(non_list_children) > 1 and not _only_plain_hard_breaks(
+                non_list_children
+            ):  # inline group will be created further down
                 parent_ref: Optional[str] = (
                     parent_item.self_ref if parent_item else None
                 )
@@ -608,27 +642,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         formatting=formatting,
                         hyperlink=hyperlink,
                     )
+                    self._pending_hard_line_break = False
                 else:
-                    if self._pending_hard_line_break and doc.texts:
-                        previous = doc.texts[-1]
-
-                        if (
-                            previous.parent
-                            and parent_item
-                            and previous.parent.cref == parent_item.self_ref
-                            and previous.formatting == formatting
-                            and previous.hyperlink == hyperlink
-                        ):
-                            previous.text += "\n" + snippet_text
-                            previous.orig += "\n" + snippet_text
-                        else:
-                            doc.add_text(
-                                label=DocItemLabel.TEXT,
-                                parent=parent_item,
-                                text=snippet_text,
-                                formatting=formatting,
-                                hyperlink=hyperlink,
-                            )
+                    if (
+                        self._pending_hard_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += "\n" + snippet_text
+                        doc.texts[-1].orig += "\n" + snippet_text
                     else:
                         doc.add_text(
                             label=DocItemLabel.TEXT,
@@ -637,7 +660,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             formatting=formatting,
                             hyperlink=hyperlink,
                         )
-
                     self._pending_hard_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
@@ -719,9 +741,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element
             )
 
+        element_children = getattr(element, "children", [])
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
-            and len(element.children) > 1
+            and len(element_children) > 1
+            and not _only_plain_hard_breaks(element_children)
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 

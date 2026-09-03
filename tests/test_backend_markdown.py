@@ -519,15 +519,6 @@ def test_convert_hard_line_break():
     assert doc.texts[0].text == "Author 1\nAffiliation 1"
 
 
-def test_convert_hard_line_break():
-    markdown = "Author 1  \nAffiliation 1"
-
-    doc = _convert_markdown(markdown, MarkdownBackendOptions())
-
-    assert len(doc.texts) == 1
-    assert doc.texts[0].text == "Author 1\nAffiliation 1"
-
-
 def test_convert_soft_line_break():
     markdown = "Author 1\nAffiliation 1"
 
@@ -555,3 +546,37 @@ def test_convert_hard_line_break_preserves_formatting():
 
     assert doc.texts[2].text == "University XYZ"
     assert doc.texts[2].formatting is None
+
+
+def test_list_item_hard_line_break():
+    """A hard line break inside a list item is preserved in list_item.text."""
+    markdown = "- Item 1  \n  continued"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "Item 1\ncontinued"
+
+
+def test_list_item_multiple_hard_line_breaks():
+    """Multiple consecutive hard breaks inside one list item are all preserved."""
+    markdown = "- first  \nsecond  \nthird"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "first\nsecond\nthird"
+
+
+def test_list_items_hard_break_does_not_bleed_into_sibling():
+    """A hard break in one list item must not affect the text of the next item."""
+    markdown = "- Item 1  \n  continued\n- Item 2"
+
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "Item 1\ncontinued"
+    assert list_items[1].text == "Item 2"
