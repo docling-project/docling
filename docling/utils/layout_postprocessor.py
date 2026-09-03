@@ -388,22 +388,13 @@ class LayoutPostprocessor:
         self, special_clusters: list[Cluster]
     ) -> list[Cluster]:
         """Remove picture proposals that wrap all detected page content."""
-        page_image = self.page.get_image(scale=1.0)
-        if (
-            page_image is None
-            or self.page_size is None
-            or self.page_size.width <= 0
-            or self.page_size.height <= 0
-        ):
-            return special_clusters
-
         model_cluster_ids = {cluster.id for cluster in self.all_clusters}
         detected_clusters = [
             cluster
             for cluster in self.regular_clusters + special_clusters
             if cluster.id in model_cluster_ids and has_positive_area(cluster.bbox)
         ]
-        wrapper_ids = set()
+        candidates = []
 
         for picture in special_clusters:
             if picture.label != DocItemLabel.PICTURE:
@@ -422,8 +413,25 @@ class LayoutPostprocessor:
                 for cluster in others
             ):
                 continue
-            if self._has_uniform_surrounding(page_image, picture.bbox):
-                wrapper_ids.add(picture.id)
+            candidates.append(picture)
+
+        if not candidates:
+            return special_clusters
+
+        page_image = self.page.get_image(scale=1.0)
+        if (
+            page_image is None
+            or self.page_size is None
+            or self.page_size.width <= 0
+            or self.page_size.height <= 0
+        ):
+            return special_clusters
+
+        wrapper_ids = {
+            picture.id
+            for picture in candidates
+            if self._has_uniform_surrounding(page_image, picture.bbox)
+        }
 
         return [
             cluster for cluster in special_clusters if cluster.id not in wrapper_ids

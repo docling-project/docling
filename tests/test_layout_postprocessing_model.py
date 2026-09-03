@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 from docling_core.types.doc import DocItemLabel
+from PIL import Image
 
 from docling.datamodel.base_models import (
     BoundingBox,
@@ -24,13 +25,20 @@ from docling.models.stages.layout.layout_postprocessing_model import (
 
 
 class _StubBackend:
-    """Minimal stand-in for a PdfPageBackend (only validity is queried here)."""
+    """Minimal stand-in for the PdfPageBackend methods used by this stage."""
 
     def __init__(self, valid: bool = True) -> None:
         self._valid = valid
+        self.image_requests = 0
 
     def is_valid(self) -> bool:
         return self._valid
+
+    def get_page_image(
+        self, scale: float = 1.0, cropbox: BoundingBox | None = None
+    ) -> Image.Image:
+        self.image_requests += 1
+        return Image.new("RGB", (round(600 * scale), round(800 * scale)), "white")
 
 
 def _conv_res() -> SimpleNamespace:
@@ -107,6 +115,8 @@ def test_runs_postprocessor_and_scores_processed_clusters() -> None:
     expected = float(np.mean([c.confidence for c in produced]))
     assert conv_res.confidence.pages[1].layout_score == pytest.approx(expected)
     assert conv_res.confidence.pages[1].layout_score == pytest.approx(0.7)
+    assert isinstance(page._backend, _StubBackend)
+    assert page._backend.image_requests == 0
 
 
 def test_invalid_page_passes_through_without_scoring() -> None:
