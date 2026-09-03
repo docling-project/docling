@@ -29,6 +29,7 @@ from docling.datamodel.base_models import (
     Cluster,
     ContainerElement,
     FieldRegionElement,
+    FieldValuePrediction,
     FigureElement,
     PageElement,
     Table,
@@ -519,11 +520,12 @@ class ReadingOrderModel:
                         page_height=page_height,
                     )
 
-                    for merged_cid in el_merges_mapping.get(rel.cid, []):
-                        merged_elem = id_to_elem[cid_to_rels[merged_cid].ref.cref]
-                        self._merge_elements(
-                            element, merged_elem, new_item, page_height
-                        )
+                    if element.field_item is None:
+                        for merged_cid in el_merges_mapping.get(rel.cid, []):
+                            merged_elem = id_to_elem[cid_to_rels[merged_cid].ref.cref]
+                            self._merge_elements(
+                                element, merged_elem, new_item, page_height
+                            )
 
                 elif isinstance(element, Table):
                     table_item = self._add_table_element(element, out_doc, parent)
@@ -583,34 +585,13 @@ class ReadingOrderModel:
                                 parent=field_item,
                             )
                         for value in item.values:
-                            prov = ProvenanceItem(
-                                page_no=element.page_no,
-                                charspan=(0, len(value.text)),
-                                bbox=value.bbox.to_bottom_left_origin(page_height),
-                            )
-                            field_value = out_doc.add_field_value(
-                                text=value.text,
-                                orig=value.orig,
-                                prov=prov,
+                            self._add_field_value(
+                                value,
+                                out_doc=out_doc,
                                 parent=field_item,
-                                kind="fillable",
+                                page_no=element.page_no,
+                                page_height=page_height,
                             )
-                            if value.checkbox is not None:
-                                # State rides on a nested checkbox child; the
-                                # value text is empty so the token inlines into
-                                # <value>. No prov on the child: it shares the
-                                # value's rect, and the serializer flattens child
-                                # locations into <value>, so a duplicate prov
-                                # would emit the same location twice.
-                                out_doc.add_text(
-                                    label=(
-                                        DocItemLabel.CHECKBOX_SELECTED
-                                        if value.checkbox == "selected"
-                                        else DocItemLabel.CHECKBOX_UNSELECTED
-                                    ),
-                                    text=value.checkbox_label,
-                                    parent=field_value,
-                                )
 
                 elif isinstance(element, ContainerElement):
                     group_label = (
@@ -642,6 +623,43 @@ class ReadingOrderModel:
         )
         return new_item
 
+    def _add_field_value(
+        self,
+        value: FieldValuePrediction,
+        *,
+        out_doc: DoclingDocument,
+        parent: NodeItem,
+        page_no: int,
+        page_height: float,
+    ) -> NodeItem:
+        prov = ProvenanceItem(
+            page_no=page_no,
+            charspan=(0, len(value.text)),
+            bbox=value.bbox.to_bottom_left_origin(page_height),
+        )
+        field_value = out_doc.add_field_value(
+            text=value.text,
+            orig=value.orig,
+            prov=prov,
+            parent=parent,
+            kind="fillable",
+        )
+        if value.checkbox is not None:
+            # State rides on a nested checkbox child; the value text is empty so
+            # the token inlines into <value>. No prov on the child: it shares the
+            # value's rect, and the serializer flattens child locations into
+            # <value>, so a duplicate prov would emit the same location twice.
+            out_doc.add_text(
+                label=(
+                    DocItemLabel.CHECKBOX_SELECTED
+                    if value.checkbox == "selected"
+                    else DocItemLabel.CHECKBOX_UNSELECTED
+                ),
+                text=value.checkbox_label,
+                parent=field_value,
+            )
+        return field_value
+
     def _handle_text_element(
         self,
         element: TextElement,
@@ -650,7 +668,7 @@ class ReadingOrderModel:
         current_list: GroupItem | None,
         parent: NodeItem | None,
         page_height: float,
-    ) -> tuple[TextItem, GroupItem | None]:
+    ) -> tuple[NodeItem, GroupItem | None]:
         cap_text = element.text
 
         prov = ProvenanceItem(
@@ -659,6 +677,31 @@ class ReadingOrderModel:
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
         label = element.label
+        if element.field_item is not None:
+            # The paragraph inlines widgets: emit a field_item in this paragraph's
+            # own place -- inside its list when it is a list item, else under the
+            # current parent -- with its text as the key and the widgets as values.
+            # No separate field_region: the item stays where the paragraph was.
+            if label == DocItemLabel.LIST_ITEM:
+                if current_list is None:
+                    current_list = out_doc.add_group(
+                        label=GroupLabel.LIST, name="list", parent=parent
+                    )
+                item_parent: NodeItem | None = current_list
+            else:
+                current_list = None
+                item_parent = parent
+            field_item = out_doc.add_field_item(parent=item_parent)
+            out_doc.add_field_key(text=cap_text, prov=prov, parent=field_item)
+            for value in element.field_item.values:
+                self._add_field_value(
+                    value,
+                    out_doc=out_doc,
+                    parent=field_item,
+                    page_no=element.page_no,
+                    page_height=page_height,
+                )
+            return field_item, current_list
         if label == DocItemLabel.LIST_ITEM:
             if current_list is None:
                 current_list = out_doc.add_group(

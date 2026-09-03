@@ -453,6 +453,12 @@ class TableStructurePrediction(BaseModel):
 class TextElement(BasePageElement):
     text: str
     hyperlink: Optional[Union[AnyUrl, Path]] = None
+    # Set when this paragraph inlines AcroForm widgets (e.g. a sentence with an
+    # inline checkbox and a fillable amount). The paragraph then materializes as
+    # a field_item -- its text becomes the key, the widgets its values -- in the
+    # paragraph's own place in the reading order (its list, its container), rather
+    # than being pulled out into a separate field_region.
+    field_item: Optional["FieldItemPrediction"] = None
 
 
 class FigureElement(BasePageElement):

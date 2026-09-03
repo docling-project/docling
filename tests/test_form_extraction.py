@@ -354,21 +354,28 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     assert result.pages[0].assembled is not None
     # The layout detector merges the three checkbox lines into one text cluster,
     # so their widgets share an enclosing paragraph and group under one keyed
-    # item; the text field sits in its own keyless region. Two regions, keyed on
-    # the paragraph cluster (id 0) and the page-wide unmatched fallback.
+    # field_item materialized in place of that paragraph. The text field has no
+    # enclosing paragraph and stays a keyless value in the page-wide region.
     assert [
         region.source_container_id
         for region in result.pages[0].predictions.field_regions
     ] == [0, None]
-    assert len(result.document.field_regions) == 2
-    # One keyed item (paragraph key + three checkbox values) and one keyless
-    # single-value item for the text field.
+    # Only the text field's page-wide region survives as a field_region; the
+    # paragraph item lives inline in the body, not wrapped in a region of its own.
+    assert len(result.document.field_regions) == 1
+    # One keyed inline item (paragraph key + three checkbox values) and one
+    # keyless single-value item for the text field.
     assert len(result.document.field_items) == 2
     keys = [
         item for item in result.document.texts if item.label == DocItemLabel.FIELD_KEY
     ]
     assert len(keys) == 1
     assert "I agree to the terms" in keys[0].text
+    # The keyed field_item materializes in the paragraph's own place, NOT wrapped
+    # in a field_region of its own (it would be, if pulled out into a region).
+    keyed_item = keys[0].parent.resolve(result.document)
+    assert keyed_item.label == DocItemLabel.FIELD_ITEM
+    assert keyed_item.parent.resolve(result.document).label != DocItemLabel.FIELD_REGION
 
     values = [
         item for item in result.document.texts if isinstance(item, FieldValueItem)
@@ -408,19 +415,9 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     assert disabled.pages[0].predictions.field_regions == []
     assert disabled.document.field_regions == []
     assert disabled.document.field_items == []
-    # Extraction promotes the paragraph that hosts the checkbox widgets out of the
-    # plain-text body (it becomes the field key), so the enabled layout is the
-    # disabled one minus that one cluster; every other cluster is untouched.
-    enabled_ids = {c.id for c in result.pages[0].predictions.layout.clusters}
-    disabled_ids = {c.id for c in disabled.pages[0].predictions.layout.clusters}
-    promoted = disabled_ids - enabled_ids
-    assert len(promoted) == 1
-    promoted_cluster = next(
-        c for c in disabled.pages[0].predictions.layout.clusters if c.id in promoted
-    )
-    assert "I agree to the terms" in " ".join(
-        cell.text for cell in promoted_cluster.cells
-    )
+    # The hosting paragraph is not dropped -- it is reinterpreted as a field_item
+    # at materialization -- so extraction leaves the layout clusters untouched.
+    assert result.pages[0].predictions.layout == disabled.pages[0].predictions.layout
 
 
 def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
@@ -469,5 +466,6 @@ def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
         ("", "unselected"),
         ("1221.00", None),
     ]
-    # The paragraph is promoted out of the plain-text body (becomes the key).
-    assert paragraph not in page.predictions.layout.clusters
+    # The paragraph stays in the layout -- it is reinterpreted as a field_item in
+    # place at materialization, keeping its position in its list/container.
+    assert paragraph in page.predictions.layout.clusters

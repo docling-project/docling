@@ -212,6 +212,15 @@ class PageAssembleModel(BasePageModel):
                             ]
                             text = self.sanitize_text(textlines)
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
+                            # A paragraph that inlines AcroForm widgets carries a
+                            # single keyed field item; attach it so it materializes
+                            # as a field_item in place (see TextElement.field_item)
+                            # instead of being pulled into a separate field_region.
+                            inline_region = field_regions_by_source.get(cluster.id)
+                            field_item = None
+                            if inline_region is not None and inline_region.items:
+                                field_item = inline_region.items[0]
+                                assembled_field_sources.add(cluster.id)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -219,6 +228,7 @@ class PageAssembleModel(BasePageModel):
                                 hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
+                                field_item=field_item,
                             )
                             elements.append(text_el)
 

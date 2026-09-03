@@ -217,10 +217,10 @@ class PdfFormFieldModel(BasePageModel):
                     ):
                         text_containers[text_cluster.id] = text_cluster
                         text_values.setdefault(text_cluster.id, []).append(value)
-                        # Promote the paragraph out of the plain-text stream; it
-                        # becomes the field item's key instead (same mechanism as
-                        # a matched checkbox cluster).
-                        promoted_cluster_ids.add(text_cluster.id)
+                        # The paragraph cluster stays in the body: it materializes
+                        # in place as a field_item (key = its text, values = these
+                        # widgets), keeping its position in its list/container.
+                        # page_assemble attaches the item onto the text element.
                         continue
                     if form is not None:
                         matched_forms[form.id] = form
