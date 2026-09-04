@@ -810,6 +810,36 @@ def test_jats_figure_image_falls_back_after_undecodable_alternative(tmp_path: Pa
     assert image.size == (9, 6)
 
 
+def test_jats_figure_image_falls_back_after_absolute_alternative(tmp_path: Path):
+    absolute_path = tmp_path / "absolute.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(absolute_path)
+    relative_path = tmp_path / "images" / "relative.png"
+    relative_path.parent.mkdir()
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(relative_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        "<fig><alternatives>"
+        f'<graphic xlink:href="{absolute_path.as_posix()}"/>'
+        '<graphic xlink:href="images/relative.png"/>'
+        "</alternatives></fig>",
+    )
+
+    with pytest.warns(UserWarning, match="Absolute paths are not allowed"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    image = get_pictures(doc)[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
+    assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
 @pytest.mark.parametrize(
     "graphic",
     [
@@ -863,10 +893,15 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
     article_dir = tmp_path / "article"
     article_dir.mkdir()
+    fallback_path = article_dir / "fallback.png"
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(fallback_path)
     jats_path = article_dir / "article.nxml"
     write_jats_body(
         jats_path,
-        '<fig><graphic xlink:href="../outside.png"/></fig>'
+        "<fig><alternatives>"
+        '<graphic xlink:href="../outside.png"/>'
+        '<graphic xlink:href="fallback.png"/>'
+        "</alternatives></fig>"
         "<p>Content after the blocked figure.</p>",
     )
 

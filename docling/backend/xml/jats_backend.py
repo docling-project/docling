@@ -926,6 +926,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if not ImageResourceLoader.is_local_path(href):
                 continue
 
+            # An absolute rendition is invalid for a confined local base, but it
+            # must not prevent a later relative rendition from being used.
+            if ImageResourceLoader.is_absolute_path(href):
+                warnings.warn(
+                    "Could not process an image from "
+                    f"{href}: Absolute paths are not allowed with local base_path."
+                )
+                continue
+
             if Path(href).suffix.lower() == ".svg":
                 _log.warning("Skipping unsupported JATS SVG figure image: %s", href)
                 continue
