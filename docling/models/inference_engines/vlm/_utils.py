@@ -7,17 +7,100 @@ This module contains shared utility functions used across different VLM runtime
 implementations to avoid code duplication and ensure consistency.
 """
 
+import importlib.metadata
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
+from packaging import version
 from PIL import Image
 
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
+
+# The third-party library each inline engine runs on. A model spec's
+# ``min_engine_version`` is checked against the installed release of this package.
+_ENGINE_PACKAGES: Dict[VlmEngineType, str] = {
+    VlmEngineType.MLX: "mlx-vlm",
+    VlmEngineType.TRANSFORMERS: "transformers",
+    VlmEngineType.VLLM: "vllm",
+}
+
+
+def _installed_engine_version(engine_type: VlmEngineType) -> Optional[str]:
+    """Installed version of an engine's backing library.
+
+    Returns None when the engine has no known backing package or the package is
+    not installed, in which case the version requirement cannot be evaluated.
+    """
+    package = _ENGINE_PACKAGES.get(engine_type)
+    if package is None:
+        return None
+    try:
+        return importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def check_min_engine_version(
+    engine_type: VlmEngineType, min_version: Optional[str]
+) -> None:
+    """Raise when the engine's backing library is older than the model requires.
+
+    Why: an outdated backing library typically fails deep inside the vendor code
+    (e.g. a TypeError in mlx-vlm's Qwen3-VL vision tower) rather than at load
+    time, which is hard to act on.
+    """
+    if min_version is None:
+        return
+
+    installed = _installed_engine_version(engine_type)
+    if installed is None:
+        # Nothing to compare against; the engine's own import will report the
+        # missing dependency with a clearer message than we could here.
+        return
+
+    if version.parse(installed) < version.parse(min_version):
+        package = _ENGINE_PACKAGES[engine_type]
+        raise RuntimeError(
+            f"This model requires {package}>={min_version}, but {installed} is "
+            f"installed. Upgrade {package}, or select a different engine."
+        )
+
+
+def engine_version_satisfied(
+    engine_type: VlmEngineType, min_version: Optional[str]
+) -> bool:
+    """Non-raising variant of :func:`check_min_engine_version` for auto-selection.
+
+    Logs why an engine was skipped so the fallback is not silent.
+    """
+    if min_version is None:
+        return True
+
+    installed = _installed_engine_version(engine_type)
+    if installed is None:
+        return True
+
+    if version.parse(installed) >= version.parse(min_version):
+        return True
+
+    package = _ENGINE_PACKAGES[engine_type]
+    _log.warning(
+        "%s engine not selected: %s %s is installed but this model requires "
+        ">=%s. Install %s>=%s to use it.",
+        engine_type.value,
+        package,
+        installed,
+        min_version,
+        package,
+        min_version,
+    )
+    return False
 
 
 def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image:

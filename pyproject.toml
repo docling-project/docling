@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.124.0"  # DO NOT EDIT, updated automatically
+version = "2.125.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -232,7 +232,9 @@ feat-ocr-nemotron = [
 models-local = [
   'torch>=2.2.2,<3.0.0',
   'torchvision>=0,<1',
-  'docling-ibm-models>=3.13.0,<5',
+  # >=4.0.2 relaxed its transformers pin; older releases cap transformers<5.9.0
+  # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
+  'docling-ibm-models>=4.0.2,<5',
   'accelerate>=1.0.0,<2',
   'huggingface_hub>=0.23,<2',
   'defusedxml>=0.7.1,<0.8.0',
@@ -253,11 +255,17 @@ models-onnxruntime = [
 
 # Vision Language Models for inline processing
 models-vlm-inline = [
-  # temporary solution until huggingface/transformers#46159 is resolved
-  'transformers>=4.42.0,<5.9.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform == "darwin"',
-  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform != "darwin"',
+  # transformers 5.9.0-5.15.x crash on MPS: build_2d_sinusoidal_position_embedding
+  # builds float64 tensors on-device, which MPS cannot represent (RT-DETR, D-FINE,
+  # ViT-MAE and friends). Fixed in 5.16.0, so exclude that window on macOS instead
+  # of capping below it -- mlx-vlm needs transformers>=5.14.
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.9.*,!=5.10.*,!=5.11.*,!=5.12.*,!=5.13.*,!=5.14.*,!=5.15.* ; sys_platform == "darwin"',
+  # 5.13.0 breaks docling-ibm-models' AutoImageProcessor.register() with a string
+  # config_class (huggingface/transformers#47148, fixed in 5.13.1). The macOS line
+  # already excludes all of 5.13.*; docling-ibm-models no longer pins it itself.
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0 ; sys_platform != "darwin"',
   'accelerate>=1.2.1,<2.0.0',
-  'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm>=0.6.17,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
   'peft>=0.18.1',
 ]
@@ -267,7 +275,9 @@ models-vlm-inline = [
 # ============================================================================
 # Document chunking for RAG applications
 feat-chunking = [
-  'docling-core[chunking]>=2.73.0,<3.0.0',
+  # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
+  # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
+  'docling-core[chunking]>=2.94.1,<3.0.0',
 ]
 
 service-client = [
@@ -319,7 +329,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.73.0,<3.0.0)",
+  "docling-core[chunking] (>=2.94.1,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.15.12",

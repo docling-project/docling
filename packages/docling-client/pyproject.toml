@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-client"
-version = "2.124.0"  # DO NOT EDIT, updated automatically
+version = "2.125.0"  # DO NOT EDIT, updated automatically
 description = "Client SDK for converting documents via a remote Docling Serve endpoint."
 license = "MIT"
 keywords = [
@@ -47,7 +47,7 @@ requires-python = '>=3.10,<4.0'
 # Meta-package: pulls in docling-slim with the service-client extra.
 # The `docling` Python module itself is provided by docling-slim.
 dependencies = [
-  'docling-slim[service-client]==2.124.0',
+  'docling-slim[service-client]==2.125.0',
 ]
 
 [project.urls]
