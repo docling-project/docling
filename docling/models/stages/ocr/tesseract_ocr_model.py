@@ -76,7 +76,12 @@ class TesseractOcrModel(BaseOcrModel):
             except Exception:
                 raise ImportError(install_errmsg)
 
-            _, self._tesserocr_languages = tesserocr.get_languages()
+            if self.options.path is not None:
+                _, self._tesserocr_languages = tesserocr.get_languages(
+                    path=self.options.path
+                )
+            else:
+                _, self._tesserocr_languages = tesserocr.get_languages()
             if not self._tesserocr_languages:
                 raise ImportError(missing_langs_errmsg)
 
