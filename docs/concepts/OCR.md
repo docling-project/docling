@@ -202,9 +202,17 @@ The engine's own vocabulary, in its own codes, is listed in
 
 ### Nemotron-OCR language input
 
-`english` selects the English recognizer, and so do `iso:en` and an empty list. `multilingual`
-selects the multilingual one, as do the five languages it is trained on: `iso:zh`, `iso:zh-Hant`,
-`iso:ja`, `iso:ko` and `iso:ru`. Any other language raises.
+A request reaches one of three answers:
+
+- `english` selects the English recognizer, and so do `iso:en` and an empty list.
+- `multilingual` selects the multilingual one, as do the five languages it is trained on:
+  `iso:zh`, `iso:zh-Hant`, `iso:ja`, `iso:ko` and `iso:ru`.
+- Any other Latin-script language whose alphabet the English recognizer can spell is routed to it
+  as a best effort: `iso:de`, `iso:fr`, `iso:pl`, `iso:sr-Latn` and about 170 more. NVIDIA
+  validates none of these, so docling logs a warning saying that the accuracy on them is untested.
+  The full set is what `supported_ocr_languages()` reports.
+
+Everything else raises.
 
 
 ## Tesseract - TesserOCR
