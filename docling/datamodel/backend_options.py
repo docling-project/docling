@@ -693,9 +693,35 @@ class EbcdicBackendOptions(BaseBackendOptions):
         return self
 
 
+class AfpBackendOptions(BaseBackendOptions):
+    """Options specific to the AFP (MO:DCA) backend."""
+
+    kind: Annotated[Literal["afp"], Field(exclude=True, repr=False)] = "afp"
+    encoding: Annotated[
+        str,
+        Field(
+            description=(
+                "Python codec used for PTOCA character data. AFP font and code-page "
+                "resources are not interpreted by the MVP parser, so callers should "
+                "set the codec used by the document, for example `cp037` or `cp500`."
+            )
+        ),
+    ] = "cp500"
+    warn_on_unsupported_content: Annotated[
+        bool,
+        Field(
+            description=(
+                "Emit one warning per unsupported AFP content architecture found "
+                "(images, graphics, barcodes, or object containers)."
+            )
+        ),
+    ] = True
+
+
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        AfpBackendOptions,
         AsciiDocBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,

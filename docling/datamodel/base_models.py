@@ -128,6 +128,7 @@ class InputFormat(str, Enum):
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
     EBCDIC = "ebcdic"
+    AFP = "afp"
 
 
 class OutputFormat(str, Enum):
@@ -177,6 +178,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
+    InputFormat.AFP: ["afp"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -264,6 +266,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/x-iwork-pages-sffpages",
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
+    InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
