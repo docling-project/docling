@@ -112,21 +112,32 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
 
     with pypdfium2_lock:
         try:
-            toc = list(pdoc.get_toc())
+            # pypdfium2 4.x defaults to depth 15; use an explicit generous
+            # bound so deeply nested outlines are not silently truncated.
+            toc = list(pdoc.get_toc(max_depth=1000))
         except PdfiumError as exc:
             _log.debug("Could not read PDF outline: %s", exc)
             return []
 
         for bm in toc:
-            title = (bm.get_title() or "").strip()
+            try:
+                title = bm.get_title()
+            except AttributeError:
+                # pypdfium2 4.x exposes outline records as namedtuples.
+                title = bm.title
+            title = (title or "").strip()
             if not title:
                 continue
 
             page_no: int | None = None
             y_top: float | None = None
             try:
-                dest = bm.get_dest()
-            except PdfiumError:
+                try:
+                    dest = bm.get_dest()
+                except AttributeError:
+                    # pypdfium2 4.x stores the destination on the record.
+                    dest = bm.dest
+            except (AttributeError, PdfiumError):
                 dest = None
             if dest is not None:
                 page_index, y_pdf = _dest_top_pdf(dest)

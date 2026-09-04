@@ -373,15 +373,17 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         return self.page_count() > 0
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the PDF outline, preferring PDFium's page-aware bookmarks."""
-        if self._pdoc is not None:
-            pdfium_outline = extract_outline_from_pdfium(self._pdoc)
-            if pdfium_outline:
-                return pdfium_outline
-
         if self.dp_doc is None:
             return []
-        return extract_outline_from_docling_parse(self.dp_doc)
+        native_outline = extract_outline_from_docling_parse(self.dp_doc)
+        if native_outline:
+            return native_outline
+
+        # Keep PDFium as a compatibility fallback for older docling-parse wheels
+        # that do not expose destination pages through their native ToC.
+        if self._pdoc is not None:
+            return extract_outline_from_pdfium(self._pdoc)
+        return []
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -634,21 +636,10 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the PDF outline, preferring PDFium's page-aware bookmarks.
-
-        The threaded parser exposes no table-of-contents accessor. If PDFium cannot read an
-        outline, a lightweight lazy docling-parse document is loaded as a structure-only fallback.
-        """
+        """Extract the outline from native docling-parse data with PDFium fallback."""
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        pdfium_outline = extract_outline_from_pdfium_path_or_stream(
-            self.path_or_stream,
-            password=password,
-        )
-        if pdfium_outline:
-            return pdfium_outline
-
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
         dp_doc = DoclingPdfParser(loglevel="fatal").load(
@@ -657,9 +648,16 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         if dp_doc is None:
             return []
         try:
-            return extract_outline_from_docling_parse(dp_doc)
+            native_outline = extract_outline_from_docling_parse(dp_doc)
+            if native_outline:
+                return native_outline
         finally:
             dp_doc.unload()
+
+        return extract_outline_from_pdfium_path_or_stream(
+            self.path_or_stream,
+            password=password,
+        )
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
