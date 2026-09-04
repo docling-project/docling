@@ -1180,7 +1180,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
 
                 for nested in nested_lists:
-                    self._walk_linear(doc, new_parent, nested)
+                    nested_group = doc.add_group(
+                        label=GroupLabel.LIST, name="list", parent=new_parent
+                    )
+                    self._walk_linear(doc, nested_group, nested)
 
                 stop_walk = True
 
