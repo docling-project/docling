@@ -344,6 +344,9 @@ class Cluster(BaseModel):
     confidence: float = 1.0
     cells: list[TextCell] = []
     children: list["Cluster"] = []  # Add child cluster support
+    reading_order: list[int] = Field(
+        default_factory=list
+    )  # List of child cluster IDs in reading order
 
     @field_serializer("confidence")
     def _serialize(self, value: float, info: FieldSerializationInfo) -> float:
