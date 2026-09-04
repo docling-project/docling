@@ -9,7 +9,7 @@ import importlib.metadata
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from packaging import version
 
@@ -67,6 +67,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
         )
         self.options: TransformersObjectDetectionEngineOptions = options
         self._model: Optional[AutoModelForObjectDetection] = None
+        self._uncompiled_model: Optional[AutoModelForObjectDetection] = None
         self._device: Optional[torch.device] = None
 
     def _resolve_device(self) -> torch.device:
@@ -181,9 +182,11 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             # environment skips the check (safe for our fixed-resolution exports).
             if self.options.compile_model:
                 if sys.version_info < (3, 14):
+                    self._uncompiled_model = self._model
                     self._model = torch.compile(self._model)  # type: ignore[arg-type,assignment]
                     _log.debug("Model compiled with torch.compile()")
                 elif version.parse(torch.__version__) >= version.parse("2.10"):
+                    self._uncompiled_model = self._model
                     self._model = torch.compile(self._model)  # type: ignore[arg-type,assignment]
                     _log.debug("Model compiled with torch.compile()")
                 else:
@@ -198,6 +201,30 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
         _log.info(
             f"Transformers engine ready (device={self._device}, dtype={self._model.dtype})"  # type: ignore[union-attr]
         )
+
+    def _forward(self, **inputs: torch.Tensor) -> Any:
+        """Run the model, degrading to the uncompiled one if compilation fails.
+
+        ``torch.compile()`` is lazy: the backend only builds a kernel on the
+        first forward pass, so a machine without a working C++ compiler raises
+        here rather than in ``initialize()``. Compilation is an optimization,
+        so fall back to the uncompiled model instead of failing the conversion.
+        """
+        import torch
+
+        try:
+            return self._model(**inputs)  # type: ignore[operator]
+        except torch._dynamo.exc.TorchDynamoException as exc:
+            if self._uncompiled_model is None:
+                raise
+            _log.warning(
+                "torch.compile() failed (%s); falling back to the uncompiled model. "
+                "Set DOCLING_INFERENCE_COMPILE_TORCH_MODELS=false to skip compilation.",
+                type(exc).__name__,
+            )
+            self._model = self._uncompiled_model
+            self._uncompiled_model = None
+            return self._model(**inputs)  # type: ignore[operator]
 
     def predict_batch(
         self, input_batch: List[ObjectDetectionEngineInput]
@@ -228,7 +255,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Run inference
         with torch.inference_mode():
-            outputs = self._model(**inputs)  # type: ignore[operator]
+            outputs = self._forward(**inputs)
 
         # Post-process using HuggingFace processor
         results = self._processor.post_process_object_detection(  # type: ignore[attr-defined]
