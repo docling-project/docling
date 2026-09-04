@@ -185,6 +185,18 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
         images = [item.image.convert("RGB") for item in input_batch]
         inputs = self._processor(images=images, return_tensors="pt").to(self._device)
 
+        # Align the input tensor dtype with the model weights. When a non-default
+        # torch_dtype (e.g. bfloat16) is configured, the weights are loaded in that
+        # dtype but the preprocessor still emits float32 inputs, which crashes at
+        # inference with "mat1 and mat2 must have the same dtype". Cast only
+        # floating-point tensors so integer tensors (e.g. pixel_mask) are preserved.
+        model_dtype = self._model.dtype  # type: ignore[union-attr]
+        if model_dtype is not None:
+            inputs = {
+                k: (v.to(dtype=model_dtype) if torch.is_floating_point(v) else v)
+                for k, v in inputs.items()
+            }
+
         with torch.inference_mode():
             outputs = self._model(**inputs)  # type: ignore[operator]
             probs_batch = torch.softmax(outputs.logits, dim=-1)
