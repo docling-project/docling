@@ -254,6 +254,8 @@ def test_non_numeric_image_dimensions_do_not_crash() -> None:
 def test_local_images_are_embedded_and_missing_images_do_not_break_export(
     tmp_path: Path,
 ) -> None:
+    import pytest
+
     in_path = Path("tests/data/asciidoc/sources/asciidoc_03.asciidoc")
     options = AsciiDocBackendOptions(
         fetch_images=True,
@@ -266,7 +268,8 @@ def test_local_images_are_embedded_and_missing_images_do_not_break_export(
         backend=AsciiDocBackend,
         backend_options=options,
     )
-    doc = in_doc._backend.convert()
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        doc = in_doc._backend.convert()
 
     assert doc.pictures[0].image is not None
     assert doc.pictures[0].image.uri.scheme == "data"
