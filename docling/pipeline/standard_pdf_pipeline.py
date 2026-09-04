@@ -46,7 +46,9 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     ErrorItem,
     FailureCategory,
+    FigureElement,
     Page,
+    Table,
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -693,11 +695,35 @@ class StandardPdfPipeline(ConvertPipeline):
             accelerator_options=self.pipeline_options.accelerator_options,
         )
 
+    def _page_image_has_consumer(self, page: Page) -> bool:
+        """Whether this page's rendered image is still needed after assembly.
+
+        `keep_images` is document-wide, so one figure anywhere in the document
+        pins *every* page's image until `_assemble_document` runs. Only the
+        pages carrying an element that step will crop actually need to survive
+        that long; on a 1356-page manual holding nine figures, that is the
+        difference between growing ~14 MB per page and levelling off.
+        """
+        options = self.pipeline_options
+        if options.generate_page_images:
+            # Every page image is part of the requested output.
+            return True
+        assembled = page.assembled
+        if assembled is None:
+            # Nothing assembled yet, so what the page holds is unknown: keep it.
+            return True
+        for element in assembled.elements:
+            if options.generate_picture_images and isinstance(element, FigureElement):
+                return True
+            if options.generate_table_images and isinstance(element, Table):
+                return True
+        return False
+
     def _release_page_resources(self, item: ThreadedItem) -> None:
         page = item.payload
         if page is None:
             return
-        if not self.keep_images:
+        if not self.keep_images or not self._page_image_has_consumer(page):
             page._image_cache = {}
         if not self.keep_backend and page._backend is not None:
             page._backend.unload()
