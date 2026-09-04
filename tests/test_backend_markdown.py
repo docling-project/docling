@@ -139,9 +139,10 @@ Here is some content...
 <!-- image -->
 """
 
-    conv_result: ConversionResult = converter.convert_string(
-        markdown, format=InputFormat.MD
-    )
+    with pytest.warns(UserWarning, match="Detected potentially incorrect Markdown"):
+        conv_result: ConversionResult = converter.convert_string(
+            markdown, format=InputFormat.MD
+        )
 
     pred_md = conv_result.document.export_to_markdown()
 
