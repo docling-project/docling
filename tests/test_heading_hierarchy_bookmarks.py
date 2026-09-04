@@ -3,6 +3,7 @@
 
 """Tests for PDF-bookmark / ToC heading inference and list-item promotion."""
 
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,6 +17,11 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 
+import docling.models.stages.heading_hierarchy.heading_hierarchy_model as hh_module
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -28,6 +34,7 @@ from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
     extract_outline_from_pdfium,
+    extract_outline_from_pdfium_path_or_stream,
 )
 
 SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
@@ -157,6 +164,33 @@ def test_wrong_page_bookmark_does_not_match():
     assert [h.level for h in doc.texts] == [1]
 
 
+def test_page_aware_bookmarks_only_match_same_page_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    doc = DoclingDocument(name="t")
+    doc.add_page(page_no=1, size=Size(width=600, height=800))
+    doc.add_page(page_no=2, size=Size(width=600, height=800))
+    for i in range(50):
+        text = f"Page 1 heading {i}"
+        doc.add_heading(text=text, prov=_prov(1, text, 40 + i))
+    doc.add_heading(text="Target", prov=_prov(2, "Target", 40))
+
+    matched_texts: list[str] = []
+
+    def _fake_match_score(cand_text: str, bm_title: str) -> float:
+        matched_texts.append(cand_text)
+        return 1.0 if cand_text == bm_title else 0.0
+
+    monkeypatch.setattr(hh_module, "_match_score", _fake_match_score)
+
+    outline = [_PdfOutlineItem(title="Target", level=0, page_no=2)]
+    _model(use_numbering=False, use_style=False).assign_heading_levels(
+        doc, outline=outline
+    )
+
+    assert matched_texts == ["Target"]
+
+
 def test_use_bookmarks_false_ignores_outline():
     doc = DoclingDocument(name="t")
     doc.add_page(page_no=1, size=Size(width=600, height=800))
@@ -202,6 +236,17 @@ def test_extract_outline_from_generated_pdf(tmp_path):
         ("Section 1.1", 1, 2),
         ("Chapter 2", 0, 3),
     ]
+
+
+def test_extract_outline_from_pdfium_path_or_stream_preserves_stream_position():
+    stream = BytesIO(SAMPLE_PDF.read_bytes())
+    stream.seek(13)
+
+    outline = extract_outline_from_pdfium_path_or_stream(stream)
+
+    assert stream.tell() == 13
+    assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
+    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
 
 
 # ------------------------------------------------------------------------- wiring
@@ -267,10 +312,30 @@ def test_pypdfium_backend_outline_from_sample_pdf():
     assert all(o.y_top is not None and o.y_top > 0 for o in outline)
 
 
+@pytest.mark.parametrize(
+    "backend_cls",
+    [DoclingParseDocumentBackend, ThreadedDoclingParseDocumentBackend],
+    ids=["docling_parse", "threaded_docling_parse"],
+)
+def test_docling_parse_backends_outline_from_sample_pdf_have_page_targets(backend_cls):
+    in_doc = InputDocument(
+        path_or_stream=SAMPLE_PDF,
+        format=InputFormat.PDF,
+        backend=backend_cls,
+    )
+    try:
+        outline = in_doc._backend.get_document_outline()
+    finally:
+        in_doc._backend.unload()
+
+    assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
+    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
+    assert all(o.y_top is not None and o.y_top > 0 for o in outline)
+
+
 def test_docling_parse_native_outline_from_sample_pdf():
-    # docling-parse backends use the native get_table_of_contents() (no pypdfium2). It carries
-    # titles + hierarchy only, so page_no/y_top are None. Loaded via the parser directly because
-    # the same tree drives DoclingParseDocumentBackend.get_document_outline().
+    # The native docling-parse fallback carries titles + hierarchy only, so page_no/y_top are
+    # None. The docling-parse backends prefer PDFium before falling back to this path.
     from docling_parse.pdf_parser import DoclingPdfParser
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))

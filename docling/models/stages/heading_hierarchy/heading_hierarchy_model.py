@@ -415,6 +415,14 @@ def _infer_from_bookmarks(
         return {}
 
     info = [(item, *_item_page_and_top(item, document)) for item in candidates]
+    candidate_indices_by_page: dict[int, list[int]] = {}
+    unpaged_candidate_indices: list[int] = []
+    for idx, (_, page_no, _) in enumerate(info):
+        if page_no is None:
+            unpaged_candidate_indices.append(idx)
+        else:
+            candidate_indices_by_page.setdefault(page_no, []).append(idx)
+
     claimed: set[int] = set()
     matches: list[tuple[SectionHeaderItem | ListItem, int]] = []
 
@@ -429,10 +437,19 @@ def _infer_from_bookmarks(
         best_idx: int | None = None
         best_score = 0.0
         best_dist = float("inf")
-        for idx, (item, page_no, top) in enumerate(info):
-            if idx in claimed:
+        if bm.page_no is None:
+            candidate_indices = range(len(info))
+        else:
+            page_candidate_indices = candidate_indices_by_page.get(bm.page_no, [])
+            if not page_candidate_indices and not unpaged_candidate_indices:
                 continue
-            if bm.page_no is not None and page_no is not None and page_no != bm.page_no:
+            candidate_indices = sorted(
+                page_candidate_indices + unpaged_candidate_indices
+            )
+
+        for idx in candidate_indices:
+            item, _, top = info[idx]
+            if idx in claimed:
                 continue
             score = _match_score(item.text, title)
             if score < threshold:

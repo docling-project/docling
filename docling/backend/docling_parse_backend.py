@@ -45,6 +45,8 @@ from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
+    extract_outline_from_pdfium,
+    extract_outline_from_pdfium_path_or_stream,
 )
 
 if TYPE_CHECKING:
@@ -371,7 +373,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         return self.page_count() > 0
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
+        """Extract the PDF outline, preferring PDFium's page-aware bookmarks."""
+        if self._pdoc is not None:
+            pdfium_outline = extract_outline_from_pdfium(self._pdoc)
+            if pdfium_outline:
+                return pdfium_outline
+
         if self.dp_doc is None:
             return []
         return extract_outline_from_docling_parse(self.dp_doc)
@@ -627,14 +634,21 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+        """Extract the PDF outline, preferring PDFium's page-aware bookmarks.
 
-        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
-        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        The threaded parser exposes no table-of-contents accessor. If PDFium cannot read an
+        outline, a lightweight lazy docling-parse document is loaded as a structure-only fallback.
         """
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
+        pdfium_outline = extract_outline_from_pdfium_path_or_stream(
+            self.path_or_stream,
+            password=password,
+        )
+        if pdfium_outline:
+            return pdfium_outline
+
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
         dp_doc = DoclingPdfParser(loglevel="fatal").load(

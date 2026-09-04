@@ -4,13 +4,13 @@
 """Extract a PDF's outline (bookmarks / table-of-contents).
 
 The outline, when present, is the most authoritative heading-hierarchy signal in a PDF. Two
-extractors are provided so each backend uses its own native capability:
+extractors are provided:
 
 * :func:`extract_outline_from_pdfium` -- for the pypdfium2 backend. Returns the richest data:
   title, depth, target page and vertical position.
-* :func:`extract_outline_from_docling_parse` -- for the docling-parse backends, using their native
-  ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries titles and
-  hierarchy only, so page number and position are left unset.
+* :func:`extract_outline_from_docling_parse` -- fallback for the docling-parse backends, using
+  their native ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries
+  titles and hierarchy only, so page number and position are left unset.
 
 ``pypdfium2`` is imported lazily, inside the functions that use it, never at module level:
 ``datamodel.document`` imports this module for the ``_PdfOutlineItem`` model, which places it on
@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import logging
 from functools import cache
+from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -144,6 +146,44 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
             )
 
     return items
+
+
+def extract_outline_from_pdfium_path_or_stream(
+    path_or_stream: BytesIO | Path,
+    *,
+    password: str | None = None,
+) -> list[_PdfOutlineItem]:
+    """Open a transient PDFium document and extract its outline.
+
+    Used by backends that do not keep a PDFium document handle alive. ``BytesIO`` inputs are
+    rewound for PDFium and restored to their original position before returning.
+    """
+    # lazy imports (see module docstring)
+    import pypdfium2 as pdfium
+    from pypdfium2._helpers.misc import PdfiumError
+
+    stream_pos: int | None = None
+    if isinstance(path_or_stream, BytesIO):
+        stream_pos = path_or_stream.tell()
+        path_or_stream.seek(0)
+
+    pdoc: pdfium.PdfDocument | None = None
+    try:
+        with pypdfium2_lock:
+            pdoc = pdfium.PdfDocument(path_or_stream, password=password)
+        return extract_outline_from_pdfium(pdoc)
+    except (PdfiumError, RuntimeError) as exc:
+        _log.debug("Could not open PDF with PDFium for outline extraction: %s", exc)
+        return []
+    finally:
+        if pdoc is not None:
+            try:
+                with pypdfium2_lock:
+                    pdoc.close()
+            except (PdfiumError, RuntimeError) as exc:
+                _log.debug("Could not close PDFium outline document: %s", exc)
+        if stream_pos is not None:
+            path_or_stream.seek(stream_pos)
 
 
 def extract_outline_from_docling_parse(
