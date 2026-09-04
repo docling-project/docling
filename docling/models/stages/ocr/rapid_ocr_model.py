@@ -412,6 +412,18 @@ class RapidOcrModel(BaseOcrModel):
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 "EngineConfig.onnxruntime.use_cuda": use_cuda,
                 "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
+                # RapidOCR defaults this to EXHAUSTIVE, which re-searches the
+                # convolution algorithms for every new input shape. Detection
+                # sees one shape per page size and amortizes that search, but
+                # recognition runs one text-line crop at a time, so its shape
+                # changes constantly and the search never pays for itself. On an
+                # L4 that is 0.12s vs 0.22s on detection against 11.3s vs 1.3s
+                # on recognition, i.e. the difference between CUDA being 4.4x
+                # slower than the CPU and 1.6x faster. HEURISTIC still searches;
+                # only DEFAULT skips it. RapidOCR shares one engine config
+                # across Det/Cls/Rec, so this cannot be chosen per model.
+                "EngineConfig.onnxruntime.cuda_ep_cfg.cudnn_conv_algo_search": "DEFAULT",
+                "EngineConfig.onnxruntime.use_dml": use_dml,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
                 # "Global.verbose": self.options.print_verbose,
