@@ -85,14 +85,12 @@ def osd_script_to_tesseract_code(script: str) -> str:
     return f"{_TESSERACT_SCRIPT_FILE_PREFIX}{script}"
 
 
-def language_to_tesseract_code(language: OcrLanguage) -> str | None:
+def language_to_tesseract_code(language: OcrLanguage) -> str:
     """Map an OcrLanguage object to a tesseract code"""
     if language.native is not None:
         return language.native
-    if language.is_multilingual:
-        return None
-    if language.bcp47 in _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS:
-        return _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47]
+    if language.bcp47() in _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS:
+        return _TESSERACT_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47()]
     # Tesseract's vocabulary *is* ISO 639-2/T: deu, fra, ell, ces, kat.
     assert language.bcp47_language is not None
     return langcodes.Language.get(language.bcp47_language).to_alpha3(variant="T")
@@ -108,15 +106,13 @@ def installed_tesseract_languages(codes: Sequence[str]) -> OcrLanguageSupport:
         # First resolve against the deviational codes
         tag = _TESSERACT_CODE_TO_CANONICAL_DEVIATIONS.get(code, code)
 
-        # Try to canonicalize or receive a None language
-        language = OcrLanguageResolver.canonicalize_ocr_language(
-            tag, raise_exception=False
-        )
+        # Try to read the code as a tag, or receive a None language
+        language = OcrLanguageResolver.canonicalize_bcp47(tag, raise_exception=False)
         # A customly produced traineddata
         if language is None or language_to_tesseract_code(language) != code:
             native.add(code)
         else:
-            tags.add(language.short_tag)
+            tags.add(language.short_tag())
     return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
 

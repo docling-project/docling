@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 # Default OCR language as a canonical tag, for the prefetch entry points.
-_RAPIDOCR_DEFAULT_LANGUAGE = "zh-Hans"
+_RAPIDOCR_DEFAULT_LANGUAGE = "ch"
 
 # Recognition/detection model size for the PP-OCRv6 path; v4/v5 use "mobile".
 _RAPIDOCR_DET_MODEL_LANG = "ch"
@@ -108,62 +108,12 @@ _PPOCR_SCRIPT_TO_CODE: dict[str, str] = {
 
 # Reverse of the language table
 _PPOCR_CODE_TO_CANONICAL_DEVIATIONS: dict[str, list[str]] = {}
-for _tag, _token in _PPOCR_CANONICAL_TO_CODE_DEVIATIONS.items():
-    if _token is not None:
-        _PPOCR_CODE_TO_CANONICAL_DEVIATIONS.setdefault(_token, []).append(_tag)
+for tag, token in _PPOCR_CANONICAL_TO_CODE_DEVIATIONS.items():
+    if token is not None:
+        _PPOCR_CODE_TO_CANONICAL_DEVIATIONS.setdefault(token, []).append(tag)
 
-# PP-OCRv6 codes that duplicate a language already reachable by its subtag.
+# PP-OCRv6 codes that duplicate a language already reachable by its subtag
 _PPOCR_REDUNDANT_CODES = frozenset({"french", "german"})
-
-
-def _ppocr_code(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None:
-    """Map a canonical tag onto a PP-OCR code, or `None` if there is no model.
-
-    `vocabulary` is the union of code sets the caller can actually reach, so
-    the resolution never returns a code the backend cannot serve.
-    """
-    if language.is_passthrough:
-        return language.native if language.native in vocabulary else None
-    if language.is_multilingual:
-        return None
-
-    if language.bcp47 in _PPOCR_CANONICAL_TO_CODE_DEVIATIONS:
-        code = _PPOCR_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47]
-        return code if code is not None and code in vocabulary else None
-
-    # The bcp47 language matches the PPOCR code only when it uses its default script
-    if language.has_default_script and language.bcp47_language in vocabulary:
-        return language.bcp47_language
-
-    # Otherwise try to match the bcp47 script with the PPOCR script-based languages
-    family = _PPOCR_SCRIPT_TO_CODE.get(language.bcp47_script or "")
-    if family is not None and family in vocabulary:
-        return family
-    return None
-
-
-def _ppocr_supported_languages(vocabulary: frozenset[str]) -> OcrLanguageSupport:
-    """What a PP-OCR code vocabulary can serve, as tags and as native codes."""
-    tags: set[str] = set()
-    native: set[str] = set()
-    for code in vocabulary:
-        if code in _PPOCR_REDUNDANT_CODES:
-            continue
-        # A code several tags deviate onto -- `eslav` is `ru`, `uk` and `be` --
-        # is advertised as every one of them.
-        deviations = _PPOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, [code])
-        for deviation in deviations:
-            language = OcrLanguageResolver.canonicalize_ocr_language(
-                deviation, raise_exception=False
-            )
-            if language is not None and _ppocr_code(language, vocabulary) == code:
-                tags.add(language.short_tag)
-            else:
-                # A recognizer no tag can name -- the `latin`, `cyrillic`,
-                # `arabic` and `devanagari` script models -- is offered as the
-                # code itself, which is the only spelling that reaches it.
-                native.add(code)
-    return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
 
 @dataclass(frozen=True)
@@ -197,45 +147,29 @@ class _RapidOcrModelSpec:
     ppocr_version: "OCRVersion | None" = None
 
 
-def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
-    """Parse a `<backend>:<lang>` prefetch spec into its requested form.
-
-    The split is on the first colon alone: a passthrough language carries one of its
-    own, `onnxruntime:native:arabic`, which is the spelling the model hands the user.
-    """
-    backend, separator, lang = value.partition(":")
-    if not separator or not backend or not lang:
-        raise ValueError(
-            f"Invalid RapidOCR model spec {value!r}. "
-            "Expected '<backend>:<lang>', e.g. 'onnxruntime:th-Thai'."
-        )
-    if backend not in _RAPIDOCR_BACKENDS:
-        raise ValueError(
-            f"Unknown RapidOCR backend {backend!r} in {value!r}. "
-            f"Supported: {sorted(_RAPIDOCR_BACKENDS)}."
-        )
-    try:
-        _resolve_rapidocr(lang, backend)
-    except (ValueError, OcrLanguageNotSupportedError) as err:
-        raise ValueError(f"Invalid RapidOCR model spec {value!r}: {err}") from err
-    return _RapidOcrModelSpec(backend=backend, user_lang=lang)
-
-
-def _backend_to_engine_type(backend: str) -> "EngineType":
-    """Map a docling backend name onto the rapidocr EngineType it stands for."""
-    from rapidocr.utils.typings import EngineType
-
-    engine_types = {
-        "onnxruntime": EngineType.ONNXRUNTIME,
-        "openvino": EngineType.OPENVINO,
-        "paddle": EngineType.PADDLE,
-        "torch": EngineType.TORCH,
-    }
-    if backend not in engine_types:
-        raise ValueError(
-            f"Unknown RapidOCR backend {backend!r}. Supported: {sorted(_RAPIDOCR_BACKENDS)}."
-        )
-    return engine_types[backend]
+@lru_cache(maxsize=len(_RAPIDOCR_BACKENDS))
+def _ppocr_supported_languages(vocabulary: frozenset[str]) -> OcrLanguageSupport:
+    """What a PP-OCR code vocabulary can serve, as tags and as native codes."""
+    tags: set[str] = set()
+    native: set[str] = set()
+    for code in vocabulary:
+        if code in _PPOCR_REDUNDANT_CODES:
+            continue
+        # A code several tags deviate onto -- `eslav` is `ru`, `uk` and `be` --
+        # is advertised as every one of them.
+        deviations = _PPOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, [code])
+        for deviation in deviations:
+            language = OcrLanguageResolver.canonicalize_bcp47(
+                deviation, raise_exception=False
+            )
+            if language is not None and _ppocr_code(language, vocabulary) == code:
+                tags.add(language.short_tag())
+            else:
+                # A recognizer no tag can name -- the `latin`, `cyrillic`,
+                # `arabic` and `devanagari` script models -- is offered as the
+                # code itself, which is the only spelling that reaches it.
+                native.add(code)
+    return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
 
 @lru_cache(maxsize=1)
@@ -263,6 +197,54 @@ def _rapidocr_vocabulary(backend: str) -> frozenset[str]:
     return _installed_ppocrv6_codes() | fallback
 
 
+def _ppocr_code(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None:
+    """Map a canonical tag onto a PP-OCR code, or `None` if there is no model.
+
+    `vocabulary` is the union of code sets the caller can actually reach, so
+    the resolution never returns a code the backend cannot serve.
+    """
+    if language.is_passthrough():
+        return language.native if language.native in vocabulary else None
+
+    if language.bcp47() in _PPOCR_CANONICAL_TO_CODE_DEVIATIONS:
+        code = _PPOCR_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47()]
+        return code if code is not None and code in vocabulary else None
+
+    # The bcp47 language matches the PPOCR code only when it uses its default script
+    if language.has_default_script() and language.bcp47_language in vocabulary:
+        return language.bcp47_language
+
+    # Otherwise try to match the bcp47 script with the PPOCR script-based languages
+    family = _PPOCR_SCRIPT_TO_CODE.get(language.bcp47_script or "")
+    if family is not None and family in vocabulary:
+        return family
+    return None
+
+
+def _parse_rapidocr_model_spec(value: str) -> _RapidOcrModelSpec:
+    """Parse a `<backend>:<lang>` prefetch spec into its requested form.
+
+    The split is on the first colon alone: a BCP-47 language carries one of its
+    own, `onnxruntime:iso:th-Thai`, which is the spelling the model hands the user.
+    """
+    backend, separator, lang = value.partition(":")
+    if not separator or not backend or not lang:
+        raise ValueError(
+            f"Invalid RapidOCR model spec {value!r}. "
+            "Expected '<backend>:<lang>', e.g. 'onnxruntime:ch'."
+        )
+    if backend not in _RAPIDOCR_BACKENDS:
+        raise ValueError(
+            f"Unknown RapidOCR backend {backend!r} in {value!r}. "
+            f"Supported: {sorted(_RAPIDOCR_BACKENDS)}."
+        )
+    try:
+        _resolve_rapidocr(lang, backend)
+    except (ValueError, OcrLanguageNotSupportedError) as err:
+        raise ValueError(f"Invalid RapidOCR model spec {value!r}: {err}") from err
+    return _RapidOcrModelSpec(backend=backend, user_lang=lang)
+
+
 def _ppocr_version_for_code(code: str, backend: str) -> "OCRVersion":
     """Which PP-OCR backbone serves a code on this backend.
 
@@ -282,7 +264,7 @@ def _ppocr_version_for_code(code: str, backend: str) -> "OCRVersion":
 def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
     """Map one language + backend onto a fully populated _RapidOcrModelSpec.
 
-    `lang` may be a BCP-47 tag or one of PP-OCR's native codes
+    `lang` may be one of PP-OCR's own codes or a BCP-47 tag behind `iso:`
 
     Raises:
         ValueError: `lang` is neither a PP-OCR code nor a valid BCP-47 tag.
@@ -295,7 +277,7 @@ def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
     if code is None:
         raise OcrLanguageNotSupportedError(
             f"RapidOCR (backend={backend})",
-            language.tag,
+            language.tag(),
             supported=_ppocr_supported_languages(_rapidocr_vocabulary(backend)),
         )
     version = _ppocr_version_for_code(code, backend)
@@ -313,6 +295,23 @@ def _resolve_rapidocr(lang: str, backend: str) -> _RapidOcrModelSpec:
         rapidocr_code=code,
         ppocr_version=version,
     )
+
+
+def _backend_to_engine_type(backend: str) -> "EngineType":
+    """Map a docling backend name onto the rapidocr EngineType it stands for."""
+    from rapidocr.utils.typings import EngineType
+
+    engine_types = {
+        "onnxruntime": EngineType.ONNXRUNTIME,
+        "openvino": EngineType.OPENVINO,
+        "paddle": EngineType.PADDLE,
+        "torch": EngineType.TORCH,
+    }
+    if backend not in engine_types:
+        raise ValueError(
+            f"Unknown RapidOCR backend {backend!r}. Supported: {sorted(_RAPIDOCR_BACKENDS)}."
+        )
+    return engine_types[backend]
 
 
 def _rapidocr_artifacts(
@@ -346,7 +345,11 @@ def _rapidocr_artifacts(
         )
     if need_cls:
         file_infos["cls"] = FileInfo(
-            engine, OCRVersion.PPOCRV4, TaskType.CLS, _RAPIDOCR_CLS_MODEL_LANG, cls_size
+            engine,
+            OCRVersion.PPOCRV4,
+            TaskType.CLS,
+            _RAPIDOCR_CLS_MODEL_LANG,
+            cls_size,
         )
     if need_rec:
         file_infos["rec"] = FileInfo(engine, version, TaskType.REC, rec_code, size)
@@ -430,7 +433,9 @@ class RapidOcrModel(BaseOcrModel):
             self._native_codes = self.resolve_ocr_languages()
             rec_code = self._native_codes[0]
             lang = (
-                self.languages[0].tag if self.languages else _RAPIDOCR_DEFAULT_LANGUAGE
+                self.languages[0].tag()
+                if self.languages
+                else _RAPIDOCR_DEFAULT_LANGUAGE
             )
             ppocr_version = _ppocr_version_for_code(rec_code, self.options.backend)
 
@@ -579,9 +584,9 @@ class RapidOcrModel(BaseOcrModel):
 
     def resolve_ocr_languages(self) -> list[str]:
         # An empty `lang` list means "the engine's own default", which for PP-OCR
-        # is the Simplified Chinese recognizer. Derived from the tag rather than
-        # written out as a code, so the recognizer this loads and the one the
-        # prefetch hint names cannot drift apart.
+        # is the Simplified Chinese recognizer. Resolved the same way a request
+        # is, so the recognizer this loads and the one the prefetch hint names
+        # cannot drift apart.
         if not self.languages:
             default = OcrLanguageResolver.canonicalize_ocr_language(
                 _RAPIDOCR_DEFAULT_LANGUAGE
@@ -599,14 +604,8 @@ class RapidOcrModel(BaseOcrModel):
         if code is None:
             raise OcrLanguageNotSupportedError(
                 f"RapidOCR (backend={self.options.backend})",
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
-                detail=(
-                    "RapidOCR has no multilingual recognizer; name the languages "
-                    "explicitly."
-                )
-                if language.is_multilingual
-                else None,
             )
         return code
 

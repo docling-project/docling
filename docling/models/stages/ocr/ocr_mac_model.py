@@ -31,6 +31,28 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
+def _get_vision_languages() -> list[str]:
+    """The recognition languages the running macOS reports.
+
+    The list is OS-version dependent, so it is always queried rather than hardcoded.
+    """
+    errmsg = (
+        "Apple Vision did not report any recognition language. "
+        "The OcrMac engine cannot be used on this system."
+    )
+    try:
+        import Vision
+
+        # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
+        request = Vision.VNRecognizeTextRequest.alloc().init()  # ty: ignore[unresolved-attribute]
+        languages, error = request.supportedRecognitionLanguagesAndReturnError_(None)
+    except Exception as exc:  # pyobjc/Vision availability varies by OS version
+        raise RuntimeError(errmsg) from exc
+    if error is not None or not languages:
+        raise RuntimeError(f"{errmsg} Vision reported: {error}")
+    return [str(language) for language in languages]
+
+
 class OcrMacModel(BaseOcrModel):
     multiple_languages = True
 
@@ -70,83 +92,54 @@ class OcrMacModel(BaseOcrModel):
 
             self.reader_RIL = ocrmac.OCR
 
-            self._vision_languages = self._get_vision_languages()
+            self._vision_languages = _get_vision_languages()
             self._native_codes = self.resolve_ocr_languages()
 
-    @staticmethod
-    def _get_vision_languages() -> list[str]:
-        """The recognition languages the running macOS reports.
-
-        The list is OS-version dependent, so it is always queried rather than hardcoded.
-        """
-        errmsg = (
-            "Apple Vision did not report any recognition language. "
-            "The OcrMac engine cannot be used on this system."
-        )
-        try:
-            import Vision
-
-            # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
-            request = Vision.VNRecognizeTextRequest.alloc().init()  # ty: ignore[unresolved-attribute]
-            languages, error = request.supportedRecognitionLanguagesAndReturnError_(
-                None
-            )
-        except Exception as exc:  # pyobjc/Vision availability varies by OS version
-            raise RuntimeError(errmsg) from exc
-        if error is not None or not languages:
-            raise RuntimeError(f"{errmsg} Vision reported: {error}")
-        return [str(language) for language in languages]
-
     def supported_ocr_languages(self) -> OcrLanguageSupport:
-        # Map the Vision language tags to the canonical tags. Vision spells its
-        # own vocabulary with regions, and not always well -- it reports
-        # `vi-VT`, whose region is not one -- so the primary subtag is tried
-        # after the whole tag before the code is treated as native.
+        # Map the Vision language tags to the canonical tags.
         tags: set[str] = set()
         native: set[str] = set()
         for vision_tag in self._vision_languages:
-            for candidate in (vision_tag, vision_tag.split("-")[0]):
-                language = OcrLanguageResolver.canonicalize_ocr_language(
-                    candidate, raise_exception=False
-                )
-                if language is not None and (
-                    OcrLanguageResolver.match_ocr_language(
-                        language, self._vision_languages
+            # Vision spells its own vocabulary with regions but not always well:
+            # it reports `vi-VT`, and VT is not a valid region, so the primary
+            # subtag is tried after the whole tag.
+            candidates = [
+                OcrLanguageResolver.canonicalize_bcp47(candidate, raise_exception=False)
+                for candidate in (vision_tag, vision_tag.split("-")[0])
+            ]
+
+            for candidate in candidates:
+                if (
+                    candidate is not None
+                    and OcrLanguageResolver.match_ocr_language(
+                        candidate, self._vision_languages
                     )
                     == vision_tag
                 ):
-                    tags.add(language.short_tag)
+                    tags.add(candidate.short_tag())
                     break
             else:
-                # A recognition language no tag can reach is offered as the
-                # Vision code itself, the only spelling that names it.
+                # A recognition language no tag can reach is offered as the Vision code itself
                 native.add(vision_tag)
+
         return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
-        if language.is_passthrough:
-            # One of Vision's own recognition languages handed over rather than matched.
+        if language.is_passthrough():
+            # One of Vision's own recognition languages
             if language.native in self._vision_languages:
                 return language.native
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
             )
-        if language.is_multilingual:
-            # Vision has no multilingual model
-            raise OcrLanguageNotSupportedError(
-                self._engine_name,
-                language.tag,
-                supported=self.supported_ocr_languages(),
-                detail="Apple Vision needs explicit languages.",
-            )
-        # Vision's own vocabulary is BCP-47 with regions, so match rather than map.
+        # Vision's own vocabulary is BCP-47 with regions, so match rather than map
         code = OcrLanguageResolver.match_ocr_language(language, self._vision_languages)
         if code is None:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
             )
         return code

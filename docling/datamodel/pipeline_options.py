@@ -223,17 +223,18 @@ class OcrOptions(BaseOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags (e.g. `en`, `de-DE`, `zh-Hant`), in "
-                "order of preference. Tags are canonicalized to a language-script "
-                "pair, so `deu`, `ger`, `de` and `de-DE` are all `de-Latn`. An empty "
-                "list means the engine's own default, which for Tesseract is "
-                "per-page script detection. One tag carries engine-independent "
-                "meaning and must be used alone: `mul`, the engine's broadest "
-                "multilingual model, on the engines that ship one. "
-                "A language the selected engine has no model for raises an error "
-                "rather than falling back silently."
+                "OCR languages, in order of preference."
+                " A language is written either as a native code of the OCR engine"
+                " (e.g. `deu`, `ch`, `script/Cyrillic`), which is handed to the engine untouched,"
+                f" or as a BCP-47 tag prefixed by '{OcrLanguageResolver._ISO_PREFIX}'."
+                " A tag is canonicalized to a language-script pair, so `iso:deu`, `iso:ger`,"
+                " `iso:de` and `iso:de-DE` are all `iso:de-Latn`."
+                " An empty list means the engine's own default, which for Tesseract is per-page"
+                " script detection."
+                " A language the selected engine has no model for raises an error"
+                " rather than falling back silently."
             ),
-            examples=[["de", "en"], ["zh-Hans"], []],
+            examples=[["deu", "eng"], ["iso:zh-Hans"], []],
         ),
     ]
 
@@ -273,7 +274,7 @@ class OcrOptions(BaseOptions):
     @field_validator("lang", mode="after")
     @classmethod
     def _canonicalize_lang(cls, value: list[str]) -> list[str]:
-        """Rewrite every entry into its canonical BCP-47 form.
+        """Rewrite every entry into its canonical form.
 
         Declared once on the base: pydantic collects field validators by field
         name across the MRO, so it fires for the subclasses that redefine `lang`
@@ -283,7 +284,7 @@ class OcrOptions(BaseOptions):
         if not cls.canonicalize_lang:
             return value
         return [
-            language.tag
+            language.tag()
             for language in OcrLanguageResolver.canonicalize_ocr_languages(value)
         ]
 
@@ -325,12 +326,13 @@ class OcrAutoOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags, forwarded to the automatically "
-                "selected engine. The default empty list leaves the choice of model "
-                "to that engine. Engines with no model for the requested language "
-                "are skipped during selection."
+                "OCR languages forwarded to the automatically selected engine. A "
+                "bare code is the engine's own, so with no engine picked yet prefer "
+                "a BCP-47 tag behind the `iso:` prefix. The default empty list "
+                "leaves the choice of model to that engine. Engines with no model "
+                "for the requested language are skipped during selection."
             ),
-            examples=[[], ["de", "en"]],
+            examples=[[], ["iso:de", "iso:en"]],
         ),
     ] = []
 
@@ -352,21 +354,20 @@ class RapidOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "Recognition language as a BCP-47 tag. RapidOCR runs a single "
-                "language per run; if more than one tag is given the first is used "
-                "and the rest are ignored with a warning. Tags are mapped onto a "
-                "PP-OCR recognizer: PP-OCRv6 covers ~52 languages, and a language "
-                "PP-OCR serves only through a script-wide recognizer routes to "
-                "PP-OCRv5 (onnxruntime/openvino/paddle) or PP-OCRv4 (torch). "
-                "PP-OCR's script recognizers can also be named directly with their "
-                "own tokens (`latin`, `cyrillic`, `arabic`, `devanagari`). An empty "
-                "list selects the Simplified Chinese default; `mul` is not "
-                "supported. A language the resolved backend cannot serve raises an "
-                "error rather than falling back silently."
+                "Recognition language, written as a PP-OCR code (`ch`, `latin`, "
+                "`cyrillic`) or as a BCP-47 tag behind the `iso:` prefix. RapidOCR "
+                "runs a single language per run; if more than one is given the "
+                "first is used and the rest are ignored with a warning. A tag is "
+                "mapped onto a PP-OCR recognizer: PP-OCRv6 covers ~52 languages, "
+                "and a language PP-OCR serves only through a script-wide recognizer "
+                "routes to PP-OCRv5 (onnxruntime/openvino/paddle) or PP-OCRv4 "
+                "(torch). An empty list selects the Simplified Chinese default. "
+                "A language the resolved backend cannot serve raises an error "
+                "rather than falling back silently."
             ),
-            examples=[["zh-Hans"], ["en"], ["cyrillic"]],
+            examples=[["ch"], ["iso:zh-Hans"], ["cyrillic"]],
         ),
-    ] = ["zh"]
+    ] = ["ch"]
     backend: Annotated[
         RapidOcrBackend,
         Field(
@@ -474,16 +475,18 @@ class NemotronOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "Recognition language as a BCP-47 tag. nemotron-OCR-v2 ships two "
-                "recognizers: `en` and an empty list both select the English "
-                "model, while `mul` and the languages the multilingual model "
-                "covers (`zh-Hans`, `zh-Hant`, `ja`, `ko`, `ru`) select the "
-                "multilingual one. Any other language raises; use `mul` to opt "
-                "into the multilingual model explicitly."
+                "Recognition language, written as one of nemotron-OCR's own codes "
+                "(`english`, `multilingual`) or as a BCP-47 tag behind the `iso:` "
+                "prefix. nemotron-OCR-v2 ships two recognizers: `english`, "
+                "`iso:en` and an empty list all select the English model, while "
+                "`multilingual` and the languages that model covers (`iso:zh-Hans`, "
+                "`iso:zh-Hant`, `iso:ja`, `iso:ko`, `iso:ru`) select the "
+                "multilingual one. Any other language raises; write `multilingual` "
+                "to opt into the multilingual model explicitly."
             ),
-            examples=[["en"], ["mul"]],
+            examples=[["english"], ["multilingual"]],
         ),
-    ] = ["en"]
+    ] = ["english"]
     merge_level: Annotated[
         Literal["word", "sentence", "paragraph"],
         Field(
@@ -515,14 +518,15 @@ class EasyOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags. EasyOCR covers 80+ languages and "
-                "runs several at once, but they must share a recognition model, so "
-                "keep the list short and script-consistent. Each language is routed "
-                "to the recognition network of its script, so `ru` reaches the "
-                "Cyrillic model. `mul` is not supported -- list the languages "
-                "explicitly."
+                "OCR languages, written as EasyOCR's own codes (`en`, `ch_sim`, "
+                "`ang`) or as BCP-47 tags behind the `iso:` prefix. EasyOCR covers "
+                "80+ languages and runs several at once, but they must share a "
+                "recognition model, so keep the list short and script-consistent. "
+                "Each language is routed to the recognition network of its script, "
+                "so `ru` reaches the Cyrillic model. EasyOCR has no multilingual "
+                "model -- list the languages explicitly."
             ),
-            examples=[["fr", "de", "es", "en"], ["ru", "uk"]],
+            examples=[["en", "es", "fr", "de"], ["ru", "uk"]],
         ),
     ] = ["en", "es", "fr", "de"]
     use_gpu: Annotated[
@@ -593,18 +597,19 @@ class TesseractCliOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags, mapped onto the installed tessdata "
-                "files (`de` becomes `deu`, `zh-Hant` becomes `chi_tra`). Multiple "
-                "languages enable multilingual OCR and are joined in the order "
-                "given, which Tesseract treats as preference order. A `script/` "
-                "traineddata file can be named directly (`script/Cyrillic`), and an "
-                "empty list runs orientation and script detection per page "
-                "(requires the `osd` traineddata). Languages without an installed "
-                "traineddata file raise at construction time."
+                "OCR languages, written as the stems of the installed tessdata "
+                "files (`deu`, `chi_tra`, `script/Cyrillic`, a traineddata file of "
+                "your own) or as BCP-47 tags behind the `iso:` prefix, which are "
+                "mapped onto those files (`iso:de` becomes `deu`, `iso:zh-Hant` "
+                "becomes `chi_tra`). Multiple languages enable multilingual OCR and "
+                "are joined in the order given, which Tesseract treats as "
+                "preference order. An empty list runs orientation and script "
+                "detection per page (requires the `osd` traineddata). Languages "
+                "without an installed traineddata file raise at construction time."
             ),
-            examples=[["fr", "de", "es", "en"], []],
+            examples=[["eng", "deu"], ["iso:fr", "iso:de"], []],
         ),
-    ] = ["en", "es", "fr", "de"]
+    ] = ["eng", "spa", "fra", "deu"]
     tesseract_cmd: Annotated[
         str,
         Field(
@@ -645,18 +650,19 @@ class TesseractOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags, mapped onto the installed tessdata "
-                "files (`de` becomes `deu`, `zh-Hant` becomes `chi_tra`). Multiple "
-                "languages enable multilingual OCR and are joined in the order "
-                "given, which Tesseract treats as preference order. A `script/` "
-                "traineddata file can be named directly (`script/Cyrillic`), and an "
-                "empty list runs orientation and script detection per page "
-                "(requires the `osd` traineddata). Languages without an installed "
-                "traineddata file raise at construction time."
+                "OCR languages, written as the stems of the installed tessdata "
+                "files (`deu`, `chi_tra`, `script/Cyrillic`, a traineddata file of "
+                "your own) or as BCP-47 tags behind the `iso:` prefix, which are "
+                "mapped onto those files (`iso:de` becomes `deu`, `iso:zh-Hant` "
+                "becomes `chi_tra`). Multiple languages enable multilingual OCR and "
+                "are joined in the order given, which Tesseract treats as "
+                "preference order. An empty list runs orientation and script "
+                "detection per page (requires the `osd` traineddata). Languages "
+                "without an installed traineddata file raise at construction time."
             ),
-            examples=[["fr", "de", "es", "en"], []],
+            examples=[["eng", "deu"], ["iso:fr", "iso:de"], []],
         ),
-    ] = ["en", "es", "fr", "de"]
+    ] = ["eng", "spa", "fra", "deu"]
     path: Annotated[
         str | None,
         Field(
@@ -688,14 +694,15 @@ class OcrMacOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "OCR languages as BCP-47 tags, matched against the recognition "
-                "languages the running macOS reports (`de` becomes `de-DE`, `pt` "
-                "becomes `pt-BR`). An empty list hands the choice to Vision's own "
-                "automatic behaviour. `mul` is not supported."
+                "OCR languages, written as the recognition languages the running "
+                "macOS reports (`en-US`, `zh-Hans`) or as BCP-47 tags behind the "
+                "`iso:` prefix, which are matched against them (`iso:de` becomes "
+                "`de-DE`, `iso:pt` becomes `pt-BR`). An empty list hands the choice "
+                "to Vision's own automatic behaviour."
             ),
-            examples=[["fr", "de", "es", "en"], []],
+            examples=[["en-US", "de-DE"], ["iso:fr", "iso:de"], []],
         ),
-    ] = ["en", "es", "fr", "de"]
+    ] = ["en-US", "es-ES", "fr-FR", "de-DE"]
     recognition: Annotated[
         str,
         Field(

@@ -143,16 +143,12 @@ class TesseractOcrModel(BaseOcrModel):
 
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         name = language_to_tesseract_code(language)
-        if name is None or name not in self._tesseract_vocabulary:
+        if name not in self._tesseract_vocabulary:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
-                detail=(
-                    f"No traineddata file {name!r} is installed."
-                    if name is not None
-                    else "Tesseract has no traineddata for it."
-                ),
+                detail=f"No traineddata file {name!r} is installed.",
             )
         return name
 

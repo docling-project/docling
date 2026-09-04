@@ -178,7 +178,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
             "--no-ocr",
             "--no-tables",
             "--ocr-lang",
-            "en,de",
+            "iso:en,iso:de",
             "--page-range",
             "2-5",
             "--output",
@@ -192,8 +192,8 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
-    # `en,de` still works; it is canonicalized rather than rejected.
-    assert opts.ocr_lang == ["en-Latn", "de-Latn"]
+    # A tag is canonicalized locally, so the service receives the resolved pair.
+    assert opts.ocr_lang == ["iso:en-Latn", "iso:de-Latn"]
     assert opts.page_range == (2, 5)
     # Both requested formats are written locally.
     assert (output / "report.md").exists()

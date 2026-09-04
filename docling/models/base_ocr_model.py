@@ -176,16 +176,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Raises:
             OcrLanguageNotSupportedError: The engine has no model for it.
         """
-        if language.is_passthrough or language.is_multilingual:
-            # A passthrough names a script recognizer of *some* engine; an engine
-            # that has not overridden this method does not have one.
+        if language.is_passthrough():
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
-                detail="This engine needs an explicit language.",
+                detail="This engine needs a BCP-47 tag behind the `iso:` prefix.",
             )
-        # Most ISO-639 engines want the primary subtag and nothing else.
         return language.bcp47_language
 
     def resolve_ocr_languages(self) -> list[str]:
@@ -204,8 +201,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 "%s handles one OCR language at a time. Using %s and ignoring %s; "
                 "the order of `lang` is the order of preference.",
                 self._engine_name,
-                [languages[0].tag],
-                [lang.tag for lang in languages[1:]],
+                [languages[0].tag()],
+                [lang.tag() for lang in languages[1:]],
             )
             languages = languages[:1]
 

@@ -31,20 +31,20 @@ def _single_line_cli_output(output: str) -> str:
 @pytest.mark.parametrize(
     ("tag", "model_name"),
     [
-        ("en", "english_g2"),
-        ("de", "latin_g2"),
-        ("ar", "arabic_g1"),
-        ("bn", "bengali_g1"),
-        ("hi", "devanagari_g1"),
-        ("ru", "cyrillic_g2"),
-        ("th", "thai_g1"),
-        ("zh-Hant", "zh_tra_g1"),
-        ("zh-Hans", "zh_sim_g2"),
-        ("ja", "japanese_g2"),
-        ("ko", "korean_g2"),
-        ("ta", "tamil_g1"),
-        ("te", "telugu_g2"),
-        ("kn", "kannada_g2"),
+        ("iso:en", "english_g2"),
+        ("iso:de", "latin_g2"),
+        ("iso:ar", "arabic_g1"),
+        ("iso:bn", "bengali_g1"),
+        ("iso:hi", "devanagari_g1"),
+        ("iso:ru", "cyrillic_g2"),
+        ("iso:th", "thai_g1"),
+        ("iso:zh-Hant", "zh_tra_g1"),
+        ("iso:zh-Hans", "zh_sim_g2"),
+        ("iso:ja", "japanese_g2"),
+        ("iso:ko", "korean_g2"),
+        ("iso:ta", "tamil_g1"),
+        ("iso:te", "telugu_g2"),
+        ("iso:kn", "kannada_g2"),
     ],
 )
 def test_prefetch_resolves_bcp47_to_a_checkpoint(tag: str, model_name: str) -> None:
@@ -55,7 +55,9 @@ def test_prefetch_resolves_bcp47_to_a_checkpoint(tag: str, model_name: str) -> N
 
 def test_resolve_easyocr_languages_maps_to_native_codes() -> None:
     """EasyOCR keeps its own vocabulary internally; only the input changed."""
-    assert easyocr_model.resolve_easyocr_codes(["zh-Hant", "sr-Latn", "tg"]) == [
+    assert easyocr_model.resolve_easyocr_codes(
+        ["iso:zh-Hant", "iso:sr-Latn", "iso:tg"]
+    ) == [
         "ch_tra",
         "rs_latin",
         "tjk",
@@ -65,14 +67,16 @@ def test_resolve_easyocr_languages_maps_to_native_codes() -> None:
 def test_resolve_easyocr_languages_routes_to_the_script_model() -> None:
     """Each language reaches the recognition network of its own script, so the
     caller names languages and never a script."""
-    codes = easyocr_model.resolve_easyocr_codes(["ru", "sr-Cyrl"])
+    codes = easyocr_model.resolve_easyocr_codes(["iso:ru", "iso:sr-Cyrl"])
 
     assert codes == ["ru", "rs_cyrillic"]
     assert easyocr_model._resolve_easyocr_recognition_models(codes) == ["cyrillic_g2"]
 
 
 def test_resolve_easyocr_languages_deduplicates_models() -> None:
-    codes = easyocr_model.resolve_easyocr_codes(["de", "fr", "zh-Hans", "de-AT"])
+    codes = easyocr_model.resolve_easyocr_codes(
+        ["iso:de", "iso:fr", "iso:zh-Hans", "iso:de-AT"]
+    )
 
     assert easyocr_model._resolve_easyocr_recognition_models(codes) == [
         "latin_g2",
@@ -82,13 +86,13 @@ def test_resolve_easyocr_languages_deduplicates_models() -> None:
 
 def test_resolve_easyocr_languages_rejects_malformed_tag() -> None:
     with pytest.raises(ValueError, match="BCP-47"):
-        easyocr_model.resolve_easyocr_codes(["xx"])
+        easyocr_model.resolve_easyocr_codes(["iso:xx"])
 
 
 def test_resolve_easyocr_languages_rejects_uncovered_language() -> None:
     """`haw` is a valid tag EasyOCR simply has no recognizer for."""
-    with pytest.raises(ValueError, match="Unsupported EasyOCR language: haw"):
-        easyocr_model.resolve_easyocr_codes(["haw"])
+    with pytest.raises(ValueError, match="Unsupported EasyOCR language: iso:haw"):
+        easyocr_model.resolve_easyocr_codes(["iso:haw"])
 
 
 def test_resolve_easyocr_recognition_models_rejects_unsupported_code() -> None:
@@ -200,7 +204,7 @@ def test_model_downloader_resolves_requested_easyocr_languages(
         with_picture_classifier=False,
         with_rapidocr=False,
         with_easyocr=True,
-        easyocr_languages=["zh-Hans", "ja", "zh-CN"],
+        easyocr_languages=["iso:zh-Hans", "ja", "iso:zh-CN"],
     )
 
     assert len(captured_calls) == 1
@@ -251,7 +255,7 @@ def test_model_downloader_validates_easyocr_languages_before_io(
             with_picture_classifier=False,
             with_rapidocr=False,
             with_easyocr=True,
-            easyocr_languages=["xx"],
+            easyocr_languages=["iso:xx"],
         )
 
     assert not output_dir.exists()
@@ -293,7 +297,7 @@ def test_models_cli_accepts_repeated_easyocr_languages(
             "download",
             *model_args,
             "--easyocr-lang",
-            "zh-Hans",
+            "iso:zh-Hans",
             "--easyocr-lang",
             "ja",
             "--output-dir",
@@ -305,7 +309,7 @@ def test_models_cli_accepts_repeated_easyocr_languages(
     assert result.exit_code == 0, result.output
     assert len(captured_calls) == 1
     # The CLI hands the downloader the user's tags; they are resolved there.
-    assert captured_calls[0]["easyocr_languages"] == ["zh-Hans", "ja"]
+    assert captured_calls[0]["easyocr_languages"] == ["iso:zh-Hans", "ja"]
 
 
 def test_models_cli_rejects_easyocr_languages_without_easyocr(
@@ -359,7 +363,7 @@ def test_models_cli_rejects_unsupported_easyocr_language(
             "download",
             "easyocr",
             "--easyocr-lang",
-            "xx",
+            "iso:xx",
             "--output-dir",
             str(tmp_path),
             "--quiet",

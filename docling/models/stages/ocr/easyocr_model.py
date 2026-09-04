@@ -112,17 +112,13 @@ def _easyocr_code_to_model() -> dict[str, str]:
 
 def _easyocr_code(language: OcrLanguage) -> Optional[str]:
     """The EasyOCR code for a canonical language, or `None` when there is no model."""
-    if language.is_passthrough:
+    if language.is_passthrough():
         code = language.native
-    elif language.is_multilingual:
-        # EasyOCR's codes are all language codes: it has no multilingual model.
-        return None
     else:
-        code = _EASYOCR_CANONICAL_TO_CODE_DEVIATIONS.get(language.bcp47)
+        code = _EASYOCR_CANONICAL_TO_CODE_DEVIATIONS.get(language.bcp47())
         if code is None:
-            # EasyOCR's codes are language-based, so the primary subtag identifies the right model
-            # only when the script is the default one
-            if not language.has_default_script:
+            # Outside the deviations, an EasyOCR code is a bare language code with
+            if not language.has_default_script():
                 return None
             code = language.bcp47_language
     return code if code in _easyocr_code_to_model() else None
@@ -234,16 +230,19 @@ class EasyOcrModel(BaseOcrModel):
                 )
 
     def supported_ocr_languages(self) -> OcrLanguageSupport:
-        r"""Report the BCP74 and native languages without script whenever it is not needed"""
+        r"""Report the native and BCP74 languages without script whenever it is not needed"""
         tags: set[str] = set()
         native: set[str] = set()
         for code in _easyocr_code_to_model():
-            tag = _easyocr_code_to_tag(code)
-            if tag is not None:
-                tags.add(tag)
+            # First resolve against the deviational codes
+            tag = _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, code)
+            language = OcrLanguageResolver.canonicalize_bcp47(
+                tag, raise_exception=False
+            )
+            if language is not None and _easyocr_code(language) == code:
+                tags.add(language.short_tag())
             else:
-                # A recognizer no tag can name is offered as the code itself,
-                # which is the only spelling that reaches it.
+                # A recognizer no tag can name is offered as the code itself
                 native.add(code)
         return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
@@ -252,11 +251,8 @@ class EasyOcrModel(BaseOcrModel):
         if code is None:
             raise OcrLanguageNotSupportedError(
                 self._engine_name,
-                language.tag,
+                language.tag(),
                 supported=self.supported_ocr_languages(),
-                detail="EasyOCR has no multilingual model; list the languages explicitly."
-                if language.is_multilingual
-                else None,
             )
         return code
 
@@ -379,13 +375,3 @@ class EasyOcrModel(BaseOcrModel):
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
         return EasyOcrOptions
-
-
-def _easyocr_code_to_tag(code: str) -> Optional[str]:
-    """The shortest tag naming one EasyOCR code, or `None` when no tag does."""
-    # First resolve against the deviational codes
-    tag = _EASYOCR_CODE_TO_CANONICAL_DEVIATIONS.get(code, code)
-    language = OcrLanguageResolver.canonicalize_ocr_language(tag, raise_exception=False)
-    if language is None or _easyocr_code(language) != code:
-        return None
-    return language.short_tag

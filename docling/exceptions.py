@@ -55,13 +55,13 @@ class OcrLanguageNotSupportedError(BaseError):
         message = f"{engine} has no model for the OCR language {language!r}."
         if detail:
             message = f"{message} {detail}"
-        if self.supported.bcp47:
-            message = f"{message} Supported: {', '.join(self.supported.bcp47)}."
         if self.supported.native:
+            message = f"{message} Engine codes: {', '.join(self.supported.native)}."
+        if self.supported.bcp47:
             # Rendered the way they have to be written back, prefix and all.
-            codes = ", ".join(
-                f"{OcrLanguageResolver._NATIVE_PREFIX}{code}"
-                for code in self.supported.native
+            tags = ", ".join(
+                f"{OcrLanguageResolver._ISO_PREFIX}{tag}"
+                for tag in self.supported.bcp47
             )
-            message = f"{message} Engine codes: {codes}."
+            message = f"{message} Supported: {tags}."
         super().__init__(message)

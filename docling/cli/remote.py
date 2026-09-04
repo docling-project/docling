@@ -42,12 +42,11 @@ _log = logging.getLogger(__name__)
 
 
 def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
-    """Canonicalize --ocr-lang locally, so a typo fails here and not remotely.
+    """Canonicalize --ocr-lang locally, so a malformed tag fails here and not remotely.
 
-    This command has no `--ocr-engine`, so it cannot pick an engine's own
-    vocabulary and uses the engine-independent one: native tokens that every
-    engine agrees on are accepted, and the handful that clash with a BCP-47 tag
-    of a different language are not.
+    This command has no `--ocr-engine`, so only a request written behind the
+    `iso:` prefix can be checked: a bare value is a code of whichever engine the
+    service runs, and travels verbatim.
     """
     # `_split_list` returns None only when the option was not given, so an
     # explicitly empty value survives as `[]`: "let the engine choose".
@@ -56,7 +55,7 @@ def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
         return None
     try:
         return [
-            language.tag
+            language.tag()
             for language in OcrLanguageResolver.canonicalize_ocr_languages(tags)
         ]
     except ValueError as err:
@@ -216,10 +215,13 @@ def convert_remote(
         Optional[str],
         typer.Option(
             help=(
-                "Comma-separated list of OCR languages, given as canonicalized BCP-47 tags"
-                " (e.g. 'en,de' or 'zh-Hant'). The service picks the OCR engine, so the tags"
-                " are canonicalized locally and resolved to the engine's own languages remotely."
-                " When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language."
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a 'native' tag, which is specific to the selected OCR engine/backend, or as a"
+                " canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant')."
+                " By default the language is handled as a native tag and is passed through verbatim"
+                " to the OCR engine."
+                f" A BCP-47 tag must be prefixed with '{OcrLanguageResolver._ISO_PREFIX}'."
+                " When an empty language is provided the OCR engine chooses the language."
                 " An empty language triggers the OSD script detection for Tesseract and selects a "
                 " default language for the other engines."
                 " To skip OCR entirely use --no-ocr."

@@ -37,24 +37,27 @@ from docling.utils.profiling import TimeIntervalRecorder
 _log = logging.getLogger(__name__)
 
 
+# Nemotron repo/commit
 _NEMOTRON_OCR_REPO_ID = "nvidia/nemotron-ocr-v2"
 _NEMOTRON_OCR_COMMIT = "0e83e83f17943524b90afa6c0fd82ac2bc1a40ca"
 
-_NEMOTRON_OCR_ENGLISH = "english"
-_NEMOTRON_OCR_MULTILINGUAL = "multilingual"
-
 # The recognizer used when the request does not name a language
-_NEMOTRON_OCR_DEFAULT_LANGUAGE = _NEMOTRON_OCR_ENGLISH
+_NEMOTRON_OCR_DEFAULT_LANGUAGE = "english"
 
-# Canonical tags the multilingual recognizer is trained on.
-_NEMOTRON_OCR_MULTILINGUAL_TAGS = frozenset(
-    {"zh-Hans", "zh-Hant", "ja-Jpan", "ko-Kore", "ru-Cyrl"}
-)
+# Canonical tag -> the recognizer trained on it. Also the BCP-47 vocabulary nemotron-OCR advertises
+_NEMOTRON_OCR_TAG_TO_CODE = {
+    "en-Latn": "english",
+    "ja-Jpan": "multilingual",
+    "ko-Kore": "multilingual",
+    "ru-Cyrl": "multilingual",
+    "zh-Hans": "multilingual",
+    "zh-Hant": "multilingual",
+}
 
-# Mappings of nemotron language to the artifacts subdir
+# Mappings of nemotron language to the artifacts subdir. Also nemotron's own native vocabulary
 _NEMOTRON_CODE_TO_ARTIFACT = {
-    _NEMOTRON_OCR_ENGLISH: "v2_english",
-    _NEMOTRON_OCR_MULTILINGUAL: "v2_multilingual",
+    "english": "v2_english",
+    "multilingual": "v2_multilingual",
 }
 
 
@@ -154,31 +157,28 @@ class NemotronOcrModel(BaseOcrModel):
         r"""Report the BCP74 and native languages without script whenever it is not needed"""
         return OcrLanguageSupport(
             bcp47=[
-                OcrLanguageResolver.canonicalize_ocr_language(tag).short_tag
-                for tag in ("en-Latn", "mul", *sorted(_NEMOTRON_OCR_MULTILINGUAL_TAGS))
-            ]
+                OcrLanguageResolver.canonicalize_bcp47(tag).short_tag()
+                for tag in sorted(_NEMOTRON_OCR_TAG_TO_CODE)
+            ],
+            native=sorted(_NEMOTRON_CODE_TO_ARTIFACT),
         )
 
     def map_ocr_language(self, language: OcrLanguage) -> str:
-        if language.is_passthrough:
+        if language.is_passthrough():
             # `english`, `multilingual`: nemotron's own recognizer names.
             if language.native in _NEMOTRON_CODE_TO_ARTIFACT:
-                assert language.native is not None
                 return language.native
-        elif language.is_multilingual:
-            return _NEMOTRON_OCR_MULTILINGUAL
         else:
-            if language.bcp47 == "en-Latn":
-                return _NEMOTRON_OCR_ENGLISH
-            if language.bcp47 in _NEMOTRON_OCR_MULTILINGUAL_TAGS:
-                return _NEMOTRON_OCR_MULTILINGUAL
+            code = _NEMOTRON_OCR_TAG_TO_CODE.get(language.bcp47())
+            if code is not None:
+                return code
         raise OcrLanguageNotSupportedError(
             self._engine_name,
-            language.tag,
+            language.tag(),
             supported=self.supported_ocr_languages(),
             detail=(
                 "nemotron-OCR-v2 ships an English and a multilingual recognizer "
-                "only; use 'mul' to run the multilingual one."
+                "only; write 'multilingual' to run the multilingual one."
             ),
         )
 

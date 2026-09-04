@@ -74,9 +74,10 @@ def test_unprefixed_script_traineddata_is_advertised_natively() -> None:
     """Some tessdata installs list a hand-placed script pack without the prefix.
 
     Only `script/<Name>` selects a pack through the OSD path, so a bare file is
-    named back verbatim behind `native:`: that is the only spelling that reaches
-    Tesseract unchanged. Left as a plain tag, `Latin` is unparseable and `Lao`
-    would read as the Lao language, whose `lao` traineddata is not installed.
+    named back verbatim, which is the only spelling that reaches Tesseract
+    unchanged. Advertised as a tag it would be wrong twice over: `Latin` is
+    unparseable, and `Lao` would read as the Lao language, whose `lao`
+    traineddata is not installed.
     """
     names = ["eng", "Latin", "Cyrillic", "Lao", "Japanese_vert"]
 
@@ -115,7 +116,7 @@ def test_installed_language_maps_to_its_traineddata_name() -> None:
     if "eng" not in installed:
         pytest.skip("the eng traineddata is not installed")
 
-    model = _build(["en"])
+    model = _build(["iso:en"])
 
     assert model._native_codes == ["eng"]
 
@@ -126,7 +127,12 @@ def test_uninstalled_language_fails_at_construction() -> None:
     surfaced as a per-page CLI failure much later."""
     installed = _installed_languages()
     # Pick a language whose traineddata is definitely absent.
-    candidates = [("ka", "kat"), ("th", "tha"), ("el", "ell"), ("hi", "hin")]
+    candidates = [
+        ("iso:ka", "kat"),
+        ("iso:th", "tha"),
+        ("iso:el", "ell"),
+        ("iso:hi", "hin"),
+    ]
     choice = next(
         (tag for tag, name in candidates if name not in installed),
         None,
@@ -166,7 +172,7 @@ def test_language_order_is_preserved_for_the_plus_join() -> None:
     if "eng" not in installed or "osd" not in installed:
         pytest.skip("needs both eng and osd installed")
 
-    model = _build(["en", "en-US", "eng"])
+    model = _build(["iso:en", "iso:en-US", "eng"])
 
     # Duplicates collapse; a single language remains.
     assert model._native_codes == ["eng"]

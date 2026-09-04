@@ -69,7 +69,8 @@ docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesserac
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
-docling scan.pdf --ocr-lang en,de --output /tmp/         # BCP-47 tags, comma-separated
+docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
+docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
 ```
 
 OCR engines are optional dependencies — see

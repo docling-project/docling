@@ -1,18 +1,18 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Docling's OCR language policy: canonicalize to BCP-47, or hand it over verbatim.
+"""Docling's OCR language policy: hand it over verbatim, or canonicalize to BCP-47.
 
-A token is either a BCP-47 tag, which is reduced to a `(language, script)` pair,
-or it carries the `native:` prefix and reaches the engine untouched. There is no
-third case: the resolver does not know which engine was selected, so it cannot
-prefer an engine's reading of a bare token over the standard one. These assert
-docling decisions -- drop the region, keep the script, refuse `und` and `zxx` --
-rather than langcodes behaviour.
+A token is a code of the selected engine, which reaches it untouched, unless it
+carries the `iso:` prefix, which makes it a BCP-47 tag reduced to a
+`(language, script)` pair. There is no third case: the resolver does not know
+which engine was selected, so a bare token is never given a reading of its own.
+These assert docling decisions -- drop the region, keep the script, refuse `und`,
+`zxx` and `mul` -- rather than langcodes behaviour.
 
 Four sections, following one user-supplied string all the way to a stored tag:
-the resolver itself, the `native:` passthrough, the `OcrOptions` validator that
-calls it, and the `--ocr-lang` CLI flag that feeds that validator.
+the resolver itself, the engine codes it passes through, the `OcrOptions`
+validator that calls it, and the `--ocr-lang` CLI flag that feeds that validator.
 """
 
 import warnings
@@ -43,10 +43,15 @@ from docling.utils.ocr_language import (
 )
 
 
+def _iso(value: str) -> OcrLanguage:
+    """Canonicalize `value` as a BCP-47 request, the way a user writes it."""
+    return OcrLanguageResolver.canonicalize_ocr_language(f"iso:{value}")
+
+
 def _canonical_tags(values: list[str]) -> list[str]:
     """The tags `OcrOptions.lang` would store for `values`."""
     return [
-        language.tag
+        language.tag()
         for language in OcrLanguageResolver.canonicalize_ocr_languages(values)
     ]
 
@@ -80,13 +85,11 @@ def _canonical_tags(values: list[str]) -> list[str]:
         ("ja", "ja-Jpan"),
         ("jpn", "ja-Jpan"),
         ("ru", "ru-Cyrl"),
-        # The reserved tag passes through untouched.
-        ("mul", "mul"),
         ("  de  ", "de-Latn"),
     ],
 )
 def test_canonicalization(value: str, expected: str) -> None:
-    assert OcrLanguageResolver.canonicalize_ocr_language(value).tag == expected
+    assert _iso(value).bcp47() == expected
 
 
 @pytest.mark.parametrize("value", ["und", "und-Latn", "und-latn", "und-Cyrl"])
@@ -98,19 +101,34 @@ def test_undetermined_tags_are_rejected(value: str) -> None:
     list carries the "let the engine decide" meaning instead.
     """
     with pytest.raises(ValueError, match="no script families"):
-        OcrLanguageResolver.canonicalize_ocr_language(value)
+        _iso(value)
 
 
 @pytest.mark.parametrize("value", ["klingon", "", "   ", "de-DE-DE", "zz"])
 def test_malformed_tags_raise(value: str) -> None:
     with pytest.raises(ValueError):
+        _iso(value)
+
+
+@pytest.mark.parametrize("value", ["", "   "])
+def test_an_empty_value_is_not_an_engine_code_either(value: str) -> None:
+    """Nothing is passed through blank: `lang=[]` is how "let the engine decide"
+    is spelled, and `lang=[""]` is a mistake rather than a shorter way to say it."""
+    with pytest.raises(ValueError, match="empty"):
         OcrLanguageResolver.canonicalize_ocr_language(value)
 
 
-def test_reserved_tag_must_stand_alone() -> None:
-    for combination in (["mul", "en"], ["en", "mul"]):
-        with pytest.raises(ValueError, match="on its own"):
-            OcrLanguageResolver.canonicalize_ocr_languages(combination)
+@pytest.mark.parametrize("value", ["mul", "MUL", "  mul  "])
+def test_multiple_languages_is_not_a_tag_docling_accepts(value: str) -> None:
+    """`mul` names "multiple languages", which is a fact about a document rather
+    than a recognizer. An engine that ships a multilingual model names it in its
+    own vocabulary, so that code is what reaches it."""
+    with pytest.raises(ValueError, match="multiple languages"):
+        _iso(value)
+
+    assert OcrLanguageResolver.canonicalize_ocr_language("multilingual").native == (
+        "multilingual"
+    )
 
 
 @pytest.mark.parametrize("value", ["zxx", "ZXX", "  zxx  "])
@@ -118,7 +136,7 @@ def test_no_linguistic_content_is_not_an_ocr_language(value: str) -> None:
     """`zxx` used to disable the engine; skipping OCR is a pipeline switch, not a
     language, and langcodes would otherwise read the tag as `zxx-Latn`."""
     with pytest.raises(ValueError, match="do_ocr=False"):
-        OcrLanguageResolver.canonicalize_ocr_language(value)
+        _iso(value)
 
 
 def test_empty_list_means_the_engine_decides() -> None:
@@ -128,29 +146,27 @@ def test_empty_list_means_the_engine_decides() -> None:
 
 def test_duplicates_collapse_and_order_is_preserved() -> None:
     """Order is preference order for engines that join languages (Tesseract `+`)."""
-    assert _canonical_tags(["fr", "de", "fr-FR", "en-GB", "deu"]) == [
-        "fr-Latn",
-        "de-Latn",
-        "en-Latn",
+    assert _canonical_tags(
+        ["iso:fr", "iso:de", "iso:fr-FR", "iso:en-GB", "iso:deu"]
+    ) == [
+        "iso:fr-Latn",
+        "iso:de-Latn",
+        "iso:en-Latn",
     ]
 
 
 def test_canonicalization_is_idempotent() -> None:
-    once = _canonical_tags(["deu", "zh-TW", "sr-Latn", "pa-PK"])
+    once = _canonical_tags(["iso:deu", "iso:zh-TW", "iso:sr-Latn", "iso:pa-PK"])
 
     assert _canonical_tags(once) == once
 
 
 def test_has_default_script_separates_the_script_variants() -> None:
     """Engines key on this to decide whether the primary subtag is enough."""
-    assert OcrLanguageResolver.canonicalize_ocr_language("de").has_default_script
-    assert OcrLanguageResolver.canonicalize_ocr_language("sr").has_default_script
-    assert not OcrLanguageResolver.canonicalize_ocr_language(
-        "sr-Latn"
-    ).has_default_script
-    assert not OcrLanguageResolver.canonicalize_ocr_language(
-        "az-Cyrl"
-    ).has_default_script
+    assert _iso("de").has_default_script()
+    assert _iso("sr").has_default_script()
+    assert not _iso("sr-Latn").has_default_script()
+    assert not _iso("az-Cyrl").has_default_script()
 
 
 @pytest.mark.parametrize(
@@ -168,62 +184,48 @@ def test_has_default_script_separates_the_script_variants() -> None:
         ("sr-Latn", "sr-Latn"),
         ("az-Cyrl", "az-Cyrl"),
         ("anp-Deva", "anp-Deva"),
-        # Neither of these names a `(language, script)` pair to begin with.
-        ("mul", "mul"),
-        ("native:script/Cyrillic", "native:script/Cyrillic"),
     ],
 )
 def test_short_tag_drops_only_the_inferred_script(value: str, expected: str) -> None:
     """What an engine advertises: the shortest spelling that still round-trips.
 
     `supported_ocr_languages()` fills the "Supported:" line of
-    `OcrLanguageNotSupportedError`, so every entry is something a user pastes
-    back -- and asking for it again has to land on the same recognizer.
+    `OcrLanguageNotSupportedError`, where the entries are rendered behind the
+    prefix, so every one of them is something a user pastes back as `iso:<tag>`
+    -- and asking for it again has to land on the same recognizer.
     """
-    language = OcrLanguageResolver.canonicalize_ocr_language(value)
+    language = _iso(value)
 
-    assert language.short_tag == expected
-    assert OcrLanguageResolver.canonicalize_ocr_language(language.short_tag) == language
+    assert language.short_tag() == expected
+    assert _iso(language.short_tag()) == language
+
+
+def test_an_engine_code_is_already_as_short_as_it_gets() -> None:
+    """The other half of the same error message: no prefix is added to those."""
+    language = OcrLanguageResolver.canonicalize_ocr_language("script/Cyrillic")
+
+    assert language.short_tag() == "script/Cyrillic"
+    assert (
+        OcrLanguageResolver.canonicalize_ocr_language(language.short_tag()) == language
+    )
 
 
 def test_ocr_language_is_hashable() -> None:
     """Engines key dicts and caches on the canonical pair."""
-    assert {OcrLanguage(bcp47_language="de", bcp47_script="Latn")} == {
-        OcrLanguageResolver.canonicalize_ocr_language("de-DE")
-    }
+    assert {OcrLanguage(bcp47_language="de", bcp47_script="Latn")} == {_iso("de-DE")}
 
 
 def test_match_against_a_region_bearing_vocabulary() -> None:
     """Apple Vision's own vocabulary is BCP-47 with regions."""
     supported = ["en-US", "fr-FR", "de-DE", "pt-BR", "zh-Hans"]
 
-    assert (
-        OcrLanguageResolver.match_ocr_language(
-            OcrLanguageResolver.canonicalize_ocr_language("de"), supported
-        )
-        == "de-DE"
-    )
-    assert (
-        OcrLanguageResolver.match_ocr_language(
-            OcrLanguageResolver.canonicalize_ocr_language("pt"), supported
-        )
-        == "pt-BR"
-    )
-    assert (
-        OcrLanguageResolver.match_ocr_language(
-            OcrLanguageResolver.canonicalize_ocr_language("zh-CN"), supported
-        )
-        == "zh-Hans"
-    )
-    assert (
-        OcrLanguageResolver.match_ocr_language(
-            OcrLanguageResolver.canonicalize_ocr_language("th"), supported
-        )
-        is None
-    )
+    assert OcrLanguageResolver.match_ocr_language(_iso("de"), supported) == "de-DE"
+    assert OcrLanguageResolver.match_ocr_language(_iso("pt"), supported) == "pt-BR"
+    assert OcrLanguageResolver.match_ocr_language(_iso("zh-CN"), supported) == "zh-Hans"
+    assert OcrLanguageResolver.match_ocr_language(_iso("th"), supported) is None
 
 
-# --- the `native:` passthrough ----------------------------------------------
+# --- the engine's own codes -------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -234,114 +236,111 @@ def test_match_against_a_region_bearing_vocabulary() -> None:
         "script/HanS_vert",  # not a tag at all
     ],
 )
-def test_canonicalize_can_answer_none_instead_of_raising(value: str) -> None:
+def test_canonicalize_bcp47_can_answer_none_instead_of_raising(value: str) -> None:
     """The failure guard, for the callers that build a vocabulary rather than
     serve a user.
 
-    `installed_tesseract_languages` and `_ppocr_supported_languages` walk an engine's
-    own code list and ask which entries are tags; a rejection never reaches
-    anyone there, so they opt out of it. Every user-facing path keeps the default
-    `ValueError`, which carries one.
+    `installed_tesseract_languages` and `_ppocr_supported_languages` walk an
+    engine's own code list and ask which entries are tags; a rejection never
+    reaches anyone there, so they opt out of it. Every user-facing path keeps the
+    default `ValueError`, which carries one.
     """
-    assert (
-        OcrLanguageResolver.canonicalize_ocr_language(value, raise_exception=False)
-        is None
-    )
+    assert OcrLanguageResolver.canonicalize_bcp47(value, raise_exception=False) is None
     with pytest.raises(ValueError):
-        OcrLanguageResolver.canonicalize_ocr_language(value)
+        OcrLanguageResolver.canonicalize_bcp47(value)
 
 
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("native:ch", "native:ch"),
-        # The prefix is matched on the lowercased token but sliced off the
-        # original, so the engine's own casing survives: a tessdata script file
-        # has to reach tesseract spelled as it is installed.
-        ("NATIVE:ch", "native:ch"),
-        ("Native:script/Cyrillic", "native:script/Cyrillic"),
+        ("iso:de", "iso:de-Latn"),
+        # The prefix is matched on the lowercased token, and what follows it is a
+        # tag, which is case-insensitive too.
+        ("ISO:de-DE", "iso:de-Latn"),
+        ("Iso:ZH-hant", "iso:zh-Hant"),
         # Whitespace is stripped on both sides of the prefix.
-        ("  native:  ch  ", "native:ch"),
+        ("  iso:  zh-Hant  ", "iso:zh-Hant"),
     ],
 )
-def test_the_native_prefix_is_case_insensitive_but_its_payload_is_not(
+def test_the_iso_prefix_is_case_insensitive(value: str, expected: str) -> None:
+    assert OcrLanguageResolver.canonicalize_ocr_language(value).tag() == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("ch", "ch"),
+        # An engine code is not a tag, so its casing is never touched: a tessdata
+        # script file has to reach tesseract spelled as it is installed.
+        ("script/Cyrillic", "script/Cyrillic"),
+        ("jpn_vert", "jpn_vert"),
+        ("  chi_tra  ", "chi_tra"),
+    ],
+)
+def test_an_engine_code_reaches_the_engine_as_written(
     value: str, expected: str
 ) -> None:
-    assert OcrLanguageResolver.canonicalize_ocr_language(value).tag == expected
+    assert OcrLanguageResolver.canonicalize_ocr_language(value).tag() == expected
 
 
-def test_a_passthrough_round_trips_through_the_prefix() -> None:
-    """`tag` re-attaches the prefix, which is what keeps `lang` idempotent:
-    revalidating a stored `native:` token must not move it."""
-    once = _canonical_tags(["native:arabic", "native:script/Cyrillic"])
+def test_both_forms_round_trip_through_tag() -> None:
+    """`tag` is the storage form, and re-reading it must not move a request:
+    an engine code stays bare, a tag keeps its prefix."""
+    once = _canonical_tags(["arabic", "script/Cyrillic", "iso:de", "iso:zh-TW"])
 
-    assert once == ["native:arabic", "native:script/Cyrillic"]
+    assert once == ["arabic", "script/Cyrillic", "iso:de-Latn", "iso:zh-Hant"]
     assert _canonical_tags(once) == once
 
 
-def test_a_passthrough_names_no_language() -> None:
+def test_an_engine_code_names_no_language() -> None:
     """`bcp47` is the pair an engine's table is keyed on and `tag` is the storage
-    form; only for a passthrough do they differ, and that split is what keeps an
-    engine code out of langcodes."""
-    language = OcrLanguageResolver.canonicalize_ocr_language("native:cyrillic")
+    form; only for an engine code do they differ, and that split is what keeps
+    the code out of langcodes."""
+    language = OcrLanguageResolver.canonicalize_ocr_language("cyrillic")
 
-    assert language.is_passthrough
+    assert language.is_passthrough()
     assert language.native == "cyrillic"
-    assert language.tag == "native:cyrillic"
-    assert language.bcp47 == ""
+    assert language.tag() == "cyrillic"
+    assert language.bcp47() == ""
     assert language.bcp47_language is None and language.bcp47_script is None
     # It names a script, so there is no language whose default script it could be.
-    assert not language.has_default_script
-    assert not language.is_multilingual
+    assert not language.has_default_script()
 
 
-def test_an_ordinary_tag_carries_no_prefix() -> None:
-    language = OcrLanguageResolver.canonicalize_ocr_language("de-DE")
+def test_a_tag_carries_the_prefix() -> None:
+    language = _iso("de-DE")
 
-    assert not language.is_passthrough
+    assert not language.is_passthrough()
     assert language.native is None
-    assert language.bcp47 == language.tag == "de-Latn"
+    assert language.bcp47() == "de-Latn"
+    assert language.tag() == "iso:de-Latn"
 
 
 @pytest.mark.parametrize(
     ("options_cls", "native", "expected"),
     [
-        (RapidOcrOptions, ["native:ch"], ["native:ch"]),
-        (RapidOcrOptions, ["native:chinese_cht"], ["native:chinese_cht"]),
-        (TesseractOcrOptions, ["native:chi_tra"], ["native:chi_tra"]),
-        # Only the prefix is case insensitive: a tessdata script file is
-        # TitleCase and has to reach the engine spelled as it is installed.
-        (
-            TesseractCliOcrOptions,
-            ["native:script/Cyrillic"],
-            ["native:script/Cyrillic"],
-        ),
-        (
-            EasyOcrOptions,
-            ["native:ch_sim", "native:ang"],
-            ["native:ch_sim", "native:ang"],
-        ),
-        (NemotronOcrOptions, ["native:multilingual"], ["native:multilingual"]),
-        (OcrAutoOptions, ["native:chinese"], ["native:chinese"]),
-        # ocrmac has no native vocabulary: Vision's codes already are BCP-47.
-        (OcrMacOptions, ["en-US"], ["en-Latn"]),
+        (RapidOcrOptions, ["ch"], ["ch"]),
+        (RapidOcrOptions, ["chinese_cht"], ["chinese_cht"]),
+        (TesseractOcrOptions, ["chi_tra"], ["chi_tra"]),
+        (TesseractCliOcrOptions, ["script/Cyrillic"], ["script/Cyrillic"]),
+        (EasyOcrOptions, ["ch_sim", "ang"], ["ch_sim", "ang"]),
+        (NemotronOcrOptions, ["multilingual"], ["multilingual"]),
+        (OcrAutoOptions, ["chinese"], ["chinese"]),
+        # Vision's codes look like tags but are not read as any: they are what
+        # the running macOS reports, region and all.
+        (OcrMacOptions, ["en-US"], ["en-US"]),
     ],
 )
 def test_options_accept_their_own_engines_codes(
     options_cls: type, native: list[str], expected: list[str]
 ) -> None:
-    """A `native:` token is stored as written, so revalidating `lang` cannot move it."""
+    """An engine code is stored as written, so revalidating `lang` cannot move it."""
     assert options_cls(lang=native).lang == expected
 
 
 def test_tesseract_fraktur_keeps_its_own_traineddata() -> None:
     """`de-Latf` used to flatten to `deu` through to_alpha3(), losing Fraktur."""
-    assert (
-        language_to_tesseract_code(
-            OcrLanguageResolver.canonicalize_ocr_language("de-Latf")
-        )
-        == "deu_latf"
-    )
+    assert language_to_tesseract_code(_iso("de-Latf")) == "deu_latf"
 
 
 # --- the options validator --------------------------------------------------
@@ -350,7 +349,7 @@ def test_tesseract_fraktur_keeps_its_own_traineddata() -> None:
 # *redefines* `lang` with its own default and its own `ConfigDict`. The design
 # assumes pydantic collects validators by field name across the MRO and merges
 # `model_config` down it. Both are asserted here, because a silent regression
-# would let an engine-native token through unvalidated.
+# would let a malformed tag through unvalidated.
 
 _OPTION_CLASSES = [
     OcrAutoOptions,
@@ -369,9 +368,9 @@ def _build(cls, **kwargs):
 
 @pytest.mark.parametrize("cls", _OPTION_CLASSES)
 def test_base_validator_fires_on_every_subclass(cls) -> None:
-    options = _build(cls, lang=["deu", "en-US", "zh-TW"])
+    options = _build(cls, lang=["iso:deu", "iso:en-US", "iso:zh-TW"])
 
-    assert options.lang == ["de-Latn", "en-Latn", "zh-Hant"]
+    assert options.lang == ["iso:de-Latn", "iso:en-Latn", "iso:zh-Hant"]
 
 
 @pytest.mark.parametrize("cls", _OPTION_CLASSES)
@@ -383,10 +382,14 @@ def test_defaults_are_already_canonical(cls) -> None:
 
 
 @pytest.mark.parametrize("cls", _OPTION_CLASSES)
-def test_unregistered_tokens_are_rejected(cls) -> None:
-    """`auto` is structurally a valid primary subtag; only IANA rejects it."""
+def test_unregistered_tags_are_rejected(cls) -> None:
+    """`auto` is structurally a valid primary subtag; only IANA rejects it.
+
+    Bare, it is whatever the engine makes of it; behind the prefix it is a claim
+    about BCP-47 that docling can check, and does.
+    """
     with pytest.raises(ValidationError, match="not registered with IANA"):
-        _build(cls, lang=["auto"])
+        _build(cls, lang=["iso:auto"])
 
 
 @pytest.mark.parametrize("cls", _OPTION_CLASSES)
@@ -402,11 +405,11 @@ def test_assignment_is_validated() -> None:
     """
     options = EasyOcrOptions()
 
-    options.lang = ["fra", "de-DE"]
-    assert options.lang == ["fr-Latn", "de-Latn"]
+    options.lang = ["iso:fra", "iso:de-DE"]
+    assert options.lang == ["iso:fr-Latn", "iso:de-Latn"]
 
     with pytest.raises(ValidationError, match="Invalid OCR language"):
-        options.lang = ["chinese"]
+        options.lang = ["iso:chinese"]
 
 
 def test_force_full_page_ocr_bridge_survives_validate_assignment() -> None:
@@ -425,11 +428,11 @@ def test_force_full_page_ocr_bridge_survives_validate_assignment() -> None:
 
 
 def test_serialized_options_round_trip() -> None:
-    options = TesseractCliOcrOptions(lang=["fra", "deu"])
+    options = TesseractCliOcrOptions(lang=["iso:fra", "deu"])
 
     restored = TesseractCliOcrOptions.model_validate(options.model_dump())
 
-    assert restored.lang == options.lang == ["fr-Latn", "de-Latn"]
+    assert restored.lang == options.lang == ["iso:fr-Latn", "deu"]
 
 
 # --- the CLI ----------------------------------------------------------------
@@ -477,20 +480,22 @@ def test_ocr_lang_reaches_the_options(monkeypatch, tmp_path: Path) -> None:
     """The CLI constructs the options with `lang=`; it used to assign afterwards,
     which bypassed validation entirely."""
     result, ocr_options = _capture_ocr_options(
-        monkeypatch, ["--ocr-engine", "easyocr", "--ocr-lang", "zh-Hant"], tmp_path
+        monkeypatch, ["--ocr-engine", "easyocr", "--ocr-lang", "iso:zh-Hant"], tmp_path
     )
 
     assert result.exit_code == 0, result.output
-    assert ocr_options.lang == ["zh-Hant"]
+    assert ocr_options.lang == ["iso:zh-Hant"]
 
 
 def test_ocr_lang_strips_whitespace(monkeypatch, tmp_path: Path) -> None:
     result, ocr_options = _capture_ocr_options(
-        monkeypatch, ["--ocr-engine", "easyocr", "--ocr-lang", "en, de"], tmp_path
+        monkeypatch,
+        ["--ocr-engine", "easyocr", "--ocr-lang", "iso:en, iso:de"],
+        tmp_path,
     )
 
     assert result.exit_code == 0, result.output
-    assert ocr_options.lang == ["en-Latn", "de-Latn"]
+    assert ocr_options.lang == ["iso:en-Latn", "iso:de-Latn"]
 
 
 def test_an_empty_ocr_lang_asks_the_engine_to_choose(
@@ -520,10 +525,12 @@ def test_ocr_lang_defaults_to_the_engine_default(monkeypatch, tmp_path: Path) ->
     )
 
     assert result.exit_code == 0, result.output
-    assert ocr_options.lang == ["zh-Hans"]
+    assert ocr_options.lang == ["ch"]
 
 
-@pytest.mark.parametrize(("value", "hint"), [("klingon", "BCP-47"), ("auto", "IANA")])
+@pytest.mark.parametrize(
+    ("value", "hint"), [("iso:klingon", "BCP-47"), ("iso:auto", "IANA")]
+)
 def test_malformed_ocr_lang_fails_with_a_hint(
     tmp_path: Path, value: str, hint: str
 ) -> None:
@@ -539,12 +546,12 @@ def test_malformed_ocr_lang_fails_with_a_hint(
 @pytest.mark.parametrize(
     ("engine", "value", "expected"),
     [
-        ("rapidocr", "native:ch", ["native:ch"]),
-        ("rapidocr", "native:chinese_cht", ["native:chinese_cht"]),
-        ("tesseract", "native:chi_tra", ["native:chi_tra"]),
-        ("easyocr", "native:ch_sim", ["native:ch_sim"]),
+        ("rapidocr", "ch", ["ch"]),
+        ("rapidocr", "chinese_cht", ["chinese_cht"]),
+        ("tesseract", "chi_tra", ["chi_tra"]),
+        ("easyocr", "ch_sim", ["ch_sim"]),
         # No engine named on the command line.
-        (None, "native:chinese", ["native:chinese"]),
+        (None, "chinese", ["chinese"]),
     ],
 )
 def test_engine_native_ocr_lang_is_accepted(
