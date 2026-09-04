@@ -46,6 +46,17 @@ from docling.utils.utils import chunkify
 _log = logging.getLogger(__name__)
 
 
+def get_expected_page_nos(conv_res: ConversionResult) -> list[int]:
+    """The 1-based page numbers to convert, clipped to the requested page range."""
+    start_page, end_page = conv_res.input.limits.page_range
+    return list(
+        range(
+            max(1, start_page),
+            min(conv_res.input.page_count, end_page) + 1,
+        )
+    )
+
+
 class BasePipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
         self.pipeline_options = pipeline_options

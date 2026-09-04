@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Type, Union
 
+from docling_core.types.doc.page import TextCellUnit
 from pydantic import ConfigDict, Field, model_validator, validate_call
 from typing_extensions import Self
 
@@ -23,7 +24,10 @@ from docling.backend.abstract_backend import (
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.ebcdic_backend import EbcdicDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
@@ -65,6 +69,7 @@ from docling.datamodel.backend_options import (
     MetsGbsBackendOptions,
     MsWordBackendOptions,
     PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
     XBRLBackendOptions,
 )
 from docling.datamodel.base_models import (
@@ -84,7 +89,11 @@ from docling.datamodel.document import (
     build_invalid_input_errors,
     get_input_rejection_cause,
 )
-from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
+from docling.datamodel.pipeline_options import (
+    ConvertPipelineOptions,
+    NativePdfPipelineOptions,
+    PipelineOptions,
+)
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -94,6 +103,7 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
@@ -261,6 +271,38 @@ class IWorkNumbersFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = IWorkNumbersDocumentBackend
     backend_options: IWorkBackendOptions | None = None
+class NativePdfFormatOption(PdfFormatOption):
+    """PDF format option for the model-free `NativePdfPipeline`.
+
+    Defaults to the threaded docling-parse backend, configured from the pipeline
+    options: it parses with `parser_threads` threads, only decodes the embedded
+    bitmaps and only renders page images when the pipeline asks for them.
+    """
+
+    pipeline_cls: Type = NativePdfPipeline
+    backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
+
+    @model_validator(mode="after")
+    def configure_backend_options(self) -> Self:
+        if not isinstance(self.pipeline_options, NativePdfPipelineOptions):
+            return self
+
+        if self.backend_options is None:
+            backend_options = ThreadedDoclingParseBackendOptions(
+                parser_threads=self.pipeline_options.parser_threads,
+                include_bitmap_images=self.pipeline_options.generate_picture_images,
+                render_pages=self.pipeline_options.generate_page_images,
+                render_scale=self.pipeline_options.images_scale,
+            )
+        else:
+            backend_options = self.backend_options.model_copy(deep=True)
+
+        backend_options._materialize_char_cells = (
+            self.pipeline_options.text_cell_unit == TextCellUnit.CHAR
+        )
+        self.backend_options = backend_options
+
+        return self
 
 
 class MetsGbsFormatOption(FormatOption):

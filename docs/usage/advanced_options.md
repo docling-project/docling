@@ -148,6 +148,36 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Extract the native content of a PDF
+
+`NativePdfPipeline` uses docling-parse alone: one text item per native text cell
+and one picture per embedded bitmap, without layout, OCR or table models.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.document_converter import DocumentConverter, NativePdfFormatOption
+
+pipeline_options = NativePdfPipelineOptions()
+pipeline_options.generate_page_images = True
+pipeline_options.images_scale = 2.0
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: NativePdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+Set `generate_page_images=False` to skip rendering. `parser_threads` configures
+docling-parse independently of model-inference `accelerator_options.num_threads`.
+
+```sh
+docling --pipeline native --from pdf FILE
+docling --pipeline native --from pdf --parser-threads 8 FILE
+```
+
+
 ### Recover PDF heading levels
 
 The layout model marks section headers but not how deep they sit, so by default every heading in a

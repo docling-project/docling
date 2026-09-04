@@ -102,6 +102,13 @@ class PdfPageBackend(ABC):
     def is_valid(self) -> bool:
         pass
 
+    def get_error_message(self) -> str:
+        """Why this page is not valid, when the backend knows.
+
+        Returns an empty string by default, and for a page that parsed fine.
+        """
+        return ""
+
     @abstractmethod
     def unload(self):
         pass

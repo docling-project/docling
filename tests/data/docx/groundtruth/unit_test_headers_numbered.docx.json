@@ -4,7 +4,7 @@
   "name": "unit_test_headers_numbered",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 10626469277266827274,
+    "binary_hash": 2504453942509889212,
     "filename": "unit_test_headers_numbered.docx"
   },
   "furniture": {
@@ -169,6 +169,9 @@
       },
       {
         "$ref": "#/texts/65"
+      },
+      {
+        "$ref": "#/groups/20"
       }
     ],
     "content_layer": "body",
@@ -489,6 +492,34 @@
       "children": [
         {
           "$ref": "#/texts/63"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-1",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-0",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/21",
+      "parent": {
+        "$ref": "#/groups/20"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/66"
         }
       ],
       "content_layer": "body",
@@ -1541,6 +1572,19 @@
         "strikethrough": false,
         "script": "baseline"
       }
+    },
+    {
+      "self_ref": "#/texts/66",
+      "parent": {
+        "$ref": "#/groups/21"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "2.3 Inherited numbering section",
+      "text": "2.3 Inherited numbering section",
+      "level": 2
     }
   ],
   "pictures": [],
