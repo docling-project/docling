@@ -62,6 +62,11 @@ _INVISIBLE_RENDERING_MODES = frozenset(
 )
 
 
+def _outline_has_page_targets(outline: list[_PdfOutlineItem]) -> bool:
+    """Return whether an outline contains at least one resolvable target page."""
+    return any(item.page_no is not None for item in outline)
+
+
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
     """Keep only the cells that paint ink on the page"""
     return [
@@ -376,14 +381,17 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         if self.dp_doc is None:
             return []
         native_outline = extract_outline_from_docling_parse(self.dp_doc)
-        if native_outline:
+        if native_outline and _outline_has_page_targets(native_outline):
             return native_outline
 
-        # Keep PDFium as a compatibility fallback for older docling-parse wheels
-        # that do not expose destination pages through their native ToC.
+        # Older docling-parse wheels expose the outline but not destination pages. In that case
+        # use PDFium so bookmark matching remains page-local. Preserve the native outline if the
+        # compatibility extractor cannot provide anything useful.
         if self._pdoc is not None:
-            return extract_outline_from_pdfium(self._pdoc)
-        return []
+            pdfium_outline = extract_outline_from_pdfium(self._pdoc)
+            if pdfium_outline:
+                return pdfium_outline
+        return native_outline
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -636,7 +644,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline from native docling-parse data with PDFium fallback."""
+        """Extract a page-aware native outline, with PDFium compatibility fallback."""
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
@@ -648,24 +656,25 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             )
         except (RuntimeError, ValueError):
             dp_doc = None
-        if dp_doc is None:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.path_or_stream.seek(0)
-            return extract_outline_from_pdfium_path_or_stream(
-                self.path_or_stream,
-                password=password,
-            )
-        try:
-            native_outline = extract_outline_from_docling_parse(dp_doc)
-            if native_outline:
-                return native_outline
-        finally:
-            dp_doc.unload()
+        native_outline: list[_PdfOutlineItem] = []
+        if dp_doc is not None:
+            try:
+                native_outline = extract_outline_from_docling_parse(dp_doc)
+            finally:
+                dp_doc.unload()
 
-        return extract_outline_from_pdfium_path_or_stream(
+            if native_outline and _outline_has_page_targets(native_outline):
+                return native_outline
+
+        # Reset streams because native parsing may have consumed bytes before the compatibility
+        # extractor opens the document. The native outline is retained if PDFium cannot recover.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        pdfium_outline = extract_outline_from_pdfium_path_or_stream(
             self.path_or_stream,
             password=password,
         )
+        return pdfium_outline or native_outline
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

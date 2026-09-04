@@ -228,7 +228,13 @@ def extract_outline_from_docling_parse(
         node, level = stack.pop()
         title = (node.text or node.orig or "").strip()
         if title:
-            page_no = node.page + 1 if node.page is not None else None
+            # ``page`` was added to docling-parse's ToC model after the initial API release.
+            # Keep reading older wheels so the backend can use its PDFium compatibility path.
+            try:
+                page = node.page
+            except AttributeError:
+                page = None
+            page_no = page + 1 if page is not None else None
             items.append(_PdfOutlineItem(title=title, level=level, page_no=page_no))
         stack.extend((child, level + 1) for child in reversed(node.children or []))
 
