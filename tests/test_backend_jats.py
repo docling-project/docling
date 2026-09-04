@@ -161,6 +161,7 @@ def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocum
 
 
 def test_jats_structured_abstract_sections_are_preserved():
+    """Each <sec> inside a structured abstract becomes its own heading + paragraph."""
     doc = convert_jats_article_meta(
         """
       <title-group><article-title>Structured Abstract Test</article-title></title-group>
@@ -178,9 +179,27 @@ def test_jats_structured_abstract_sections_are_preserved():
     )
 
     md = doc.export_to_markdown()
+    # Top-level abstract heading
     assert "## Abstract" in md
-    assert "Background: Background text." in md
-    assert "Methods: Methods text." in md
+    # Section titles rendered as sub-headings (not inlined into text)
+    assert "### Background" in md
+    assert "### Methods" in md
+    # Section content appears as separate paragraphs, not prefixed with title
+    assert "Background text." in md
+    assert "Methods text." in md
+    # Old flat format must NOT appear
+    assert "Background: Background text." not in md
+    assert "Methods: Methods text." not in md
+
+    # Verify document structure: two headings parented under the Abstract heading
+    headings = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER
+    ]
+    heading_texts = [h.text for h in headings]
+    assert "Background" in heading_texts
+    assert "Methods" in heading_texts
 
 
 def test_jats_nested_lists_are_preserved():
