@@ -4,13 +4,13 @@
 """Extract a PDF's outline (bookmarks / table-of-contents).
 
 The outline, when present, is the most authoritative heading-hierarchy signal in a PDF. Two
-extractors are provided so each backend uses its own native capability:
+extractors are provided:
 
 * :func:`extract_outline_from_pdfium` -- for the pypdfium2 backend. Returns the richest data:
   title, depth, target page and vertical position.
-* :func:`extract_outline_from_docling_parse` -- for the docling-parse backends, using their native
-  ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries titles and
-  hierarchy only, so page number and position are left unset.
+* :func:`extract_outline_from_docling_parse` -- fallback for the docling-parse backends, using
+  their native ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries
+  titles, hierarchy, and an optional target page; position is left unset.
 
 ``pypdfium2`` is imported lazily, inside the functions that use it, never at module level:
 ``datamodel.document`` imports this module for the ``_PdfOutlineItem`` model, which places it on
@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import logging
 from functools import cache
+from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -32,7 +34,7 @@ if TYPE_CHECKING:
     import pypdfium2 as pdfium
     from docling_parse.pdf_parser import (
         PdfDocument as DoclingParsePdfDocument,
-        PdfTableOfContents,
+        PdfTableOfContentsWithPage,
     )
 
 _log = logging.getLogger(__name__)
@@ -110,21 +112,32 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
 
     with pypdfium2_lock:
         try:
-            toc = list(pdoc.get_toc())
+            # pypdfium2 4.x defaults to depth 15; use an explicit generous
+            # bound so deeply nested outlines are not silently truncated.
+            toc = list(pdoc.get_toc(max_depth=1000))
         except PdfiumError as exc:
             _log.debug("Could not read PDF outline: %s", exc)
             return []
 
         for bm in toc:
-            title = (bm.get_title() or "").strip()
+            try:
+                title = bm.get_title()
+            except AttributeError:
+                # pypdfium2 4.x exposes outline records as namedtuples.
+                title = bm.title
+            title = (title or "").strip()
             if not title:
                 continue
 
             page_no: int | None = None
             y_top: float | None = None
             try:
-                dest = bm.get_dest()
-            except PdfiumError:
+                try:
+                    dest = bm.get_dest()
+                except AttributeError:
+                    # pypdfium2 4.x stores the destination on the record.
+                    dest = bm.dest
+            except (AttributeError, PdfiumError):
                 dest = None
             if dest is not None:
                 page_index, y_pdf = _dest_top_pdf(dest)
@@ -146,6 +159,44 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
     return items
 
 
+def extract_outline_from_pdfium_path_or_stream(
+    path_or_stream: BytesIO | Path,
+    *,
+    password: str | None = None,
+) -> list[_PdfOutlineItem]:
+    """Open a transient PDFium document and extract its outline.
+
+    Used by backends that do not keep a PDFium document handle alive. ``BytesIO`` inputs are
+    rewound for PDFium and restored to their original position before returning.
+    """
+    # lazy imports (see module docstring)
+    import pypdfium2 as pdfium
+    from pypdfium2._helpers.misc import PdfiumError
+
+    stream_pos: int | None = None
+    if isinstance(path_or_stream, BytesIO):
+        stream_pos = path_or_stream.tell()
+        path_or_stream.seek(0)
+
+    pdoc: pdfium.PdfDocument | None = None
+    try:
+        with pypdfium2_lock:
+            pdoc = pdfium.PdfDocument(path_or_stream, password=password)
+        return extract_outline_from_pdfium(pdoc)
+    except (PdfiumError, RuntimeError) as exc:
+        _log.debug("Could not open PDF with PDFium for outline extraction: %s", exc)
+        return []
+    finally:
+        if pdoc is not None:
+            try:
+                with pypdfium2_lock:
+                    pdoc.close()
+            except (PdfiumError, RuntimeError) as exc:
+                _log.debug("Could not close PDFium outline document: %s", exc)
+        if stream_pos is not None:
+            path_or_stream.seek(stream_pos)
+
+
 def extract_outline_from_docling_parse(
     dp_doc: DoclingParsePdfDocument,
 ) -> list[_PdfOutlineItem]:
@@ -153,9 +204,9 @@ def extract_outline_from_docling_parse(
 
     Walks the ``PdfTableOfContents`` tree returned by ``PdfDocument.get_table_of_contents()``,
     depth-first, assigning each node a 0-based ``level`` from its depth (top-level entries at
-    level 0, matching the pypdfium2 extractor). The native outline exposes only the title and
-    the tree structure -- no target page or vertical position -- so ``page_no`` and ``y_top``
-    are left ``None`` and the heading matcher falls back to title-only matching.
+    level 0, matching the pypdfium2 extractor). Target pages are converted from docling-parse's
+    zero-based representation to the 1-based page numbering used by Docling. Vertical position
+    is left unset.
 
     ``get_table_of_contents()`` returns ``None`` for PDFs without an embedded outline, in which
     case an empty list is returned.
@@ -170,14 +221,21 @@ def extract_outline_from_docling_parse(
     # call-stack recursion limit. Some large real-world documents (technical manuals,
     # legal filings) legitimately nest headings hundreds of levels deep, and malformed
     # PDFs can nest further still; a naive recursive walk here raises RecursionError.
-    stack: list[tuple[PdfTableOfContents, int]] = [
+    stack: list[tuple[PdfTableOfContentsWithPage, int]] = [
         (child, 0) for child in reversed(toc.children or [])
     ]
     while stack:
         node, level = stack.pop()
         title = (node.text or node.orig or "").strip()
         if title:
-            items.append(_PdfOutlineItem(title=title, level=level))
+            # ``page`` was added to docling-parse's ToC model after the initial API release.
+            # Keep reading older wheels so the backend can use its PDFium compatibility path.
+            try:
+                page = node.page
+            except AttributeError:
+                page = None
+            page_no = page + 1 if page is not None else None
+            items.append(_PdfOutlineItem(title=title, level=level, page_no=page_no))
         stack.extend((child, level + 1) for child in reversed(node.children or []))
 
     return items

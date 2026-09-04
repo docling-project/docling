@@ -45,6 +45,8 @@ from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
+    extract_outline_from_pdfium,
+    extract_outline_from_pdfium_path_or_stream,
 )
 
 if TYPE_CHECKING:
@@ -58,6 +60,11 @@ _log = logging.getLogger(__name__)
 _INVISIBLE_RENDERING_MODES = frozenset(
     {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
 )
+
+
+def _outline_has_page_targets(outline: list[_PdfOutlineItem]) -> bool:
+    """Return whether an outline contains at least one resolvable target page."""
+    return any(item.page_no is not None for item in outline)
 
 
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
@@ -387,10 +394,20 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         return self.page_count() > 0
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
         if self.dp_doc is None:
             return []
-        return extract_outline_from_docling_parse(self.dp_doc)
+        native_outline = extract_outline_from_docling_parse(self.dp_doc)
+        if native_outline and _outline_has_page_targets(native_outline):
+            return native_outline
+
+        # Older docling-parse wheels expose the outline but not destination pages. In that case
+        # use PDFium so bookmark matching remains page-local. Preserve the native outline if the
+        # compatibility extractor cannot provide anything useful.
+        if self._pdoc is not None:
+            pdfium_outline = extract_outline_from_pdfium(self._pdoc)
+            if pdfium_outline:
+                return pdfium_outline
+        return native_outline
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -661,25 +678,37 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
-
-        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
-        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
-        """
+        """Extract a page-aware native outline, with PDFium compatibility fallback."""
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
-        dp_doc = DoclingPdfParser(loglevel="fatal").load(
-            path_or_stream=self.path_or_stream, lazy=True, password=password
-        )
-        if dp_doc is None:
-            return []
         try:
-            return extract_outline_from_docling_parse(dp_doc)
-        finally:
-            dp_doc.unload()
+            dp_doc = DoclingPdfParser(loglevel="fatal").load(
+                path_or_stream=self.path_or_stream, lazy=True, password=password
+            )
+        except (RuntimeError, ValueError):
+            dp_doc = None
+        native_outline: list[_PdfOutlineItem] = []
+        if dp_doc is not None:
+            try:
+                native_outline = extract_outline_from_docling_parse(dp_doc)
+            finally:
+                dp_doc.unload()
+
+            if native_outline and _outline_has_page_targets(native_outline):
+                return native_outline
+
+        # Reset streams because native parsing may have consumed bytes before the compatibility
+        # extractor opens the document. The native outline is retained if PDFium cannot recover.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        pdfium_outline = extract_outline_from_pdfium_path_or_stream(
+            self.path_or_stream,
+            password=password,
+        )
+        return pdfium_outline or native_outline
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
