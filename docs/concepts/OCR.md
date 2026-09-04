@@ -181,6 +181,11 @@ The following table shows how the language resolution works:
 | any other PP-OCR token                               | the token itself        | wherever it lives |
 | an empty list                                        | `ch`                    | the default       |
 
+`chinese` and `english` are the spellings docling used before OCR languages were canonicalized.
+They still resolve, onto `ch` and `en`, so older configurations keep working -- but each one logs
+a warning naming the PP-OCR code to write instead, and neither is reported by
+`supported_ocr_languages()`.
+
 
 ## EasyOCR
 
