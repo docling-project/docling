@@ -34,6 +34,36 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
+class AsciiDocBackendOptions(BaseBackendOptions):
+    """Options specific to the AsciiDoc backend."""
+
+    kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
+    fetch_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether the backend should access remote or local resources to parse "
+                "images in the AsciiDoc document."
+            )
+        ),
+    ] = False
+    source_uri: Annotated[
+        AnyUrl | PurePath | None,
+        Field(
+            description=(
+                "The URI that originates the AsciiDoc document. If provided, the backend "
+                "will use it to resolve relative image paths."
+            ),
+        ),
+    ] = None
+    max_image_data_base64_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="The maximum number of base64 data bytes that the backend will accept.",
+        ),
+    ] = 20 * 1024 * 1024  # 20 MB
+
+
 class HTMLBackendOptions(BaseBackendOptions):
     """Options specific to the HTML backend.
 
@@ -580,6 +610,13 @@ class EbcdicLayout(BaseModel):
             raise ValueError(
                 "record_type_field is required for a layout with several records"
             )
+        if len(self.records) > 1:
+            names = [item.name for item in self.records]
+            if len(set(names)) != len(names):
+                # The parser buckets decoded rows by name and the name becomes
+                # the table heading, so duplicates silently merge two schemas'
+                # rows.
+                raise ValueError("record names must be unique")
         if self.record_type_field is not None:
             selectors = [item.selector for item in self.records]
             if None in selectors:
@@ -630,6 +667,7 @@ class EbcdicBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        AsciiDocBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,

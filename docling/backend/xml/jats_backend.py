@@ -42,6 +42,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -73,6 +74,7 @@ DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
+_XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
 
 # Maps JATS formatting tags to docling-core formatting attributes.
 _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
@@ -96,11 +98,14 @@ class InlineSegment:
             is a formula.
         formatting: Emphasis accumulated from the enclosing tags (bold, italic,
             underline, strike, sub, sup), or ``None`` when the run is unstyled.
+        hyperlink: External link target inherited from an enclosing ``ext-link``,
+            or ``None`` when the run is unlinked.
     """
 
     label: DocItemLabel
     text: str
     formatting: Formatting | None = None
+    hyperlink: AnyUrl | Path | None = None
 
 
 class Abstract(TypedDict):
@@ -699,6 +704,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return base.model_copy(update=_JATS_FORMAT_TAG_MAP[tag])
 
     @staticmethod
+    def _parse_ext_link_href(href: str | None) -> AnyUrl | Path | None:
+        if href is None or not (href := href.strip()):
+            return None
+        try:
+            return AnyUrl(href)
+        except ValidationError:
+            return Path(href)
+
+    @staticmethod
     def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
         stripped: list[InlineSegment] = []
         for segment in segments:
@@ -709,7 +723,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _walk_inline_formula(
-        node: etree._Element, formatting: Formatting | None = None
+        node: etree._Element,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         segments: list[InlineSegment] = []
@@ -718,7 +734,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if text:
                 segments.append(
                     InlineSegment(
-                        label=DocItemLabel.TEXT, text=text, formatting=current
+                        label=DocItemLabel.TEXT,
+                        text=text,
+                        formatting=current,
+                        hyperlink=hyperlink,
                     )
                 )
         for child in node:
@@ -730,27 +749,37 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 formula = JatsDocumentBackend._extract_tex_math(child)
                 if formula is not None:
                     segments.append(
-                        InlineSegment(label=DocItemLabel.FORMULA, text=formula)
+                        InlineSegment(
+                            label=DocItemLabel.FORMULA,
+                            text=formula,
+                            hyperlink=hyperlink,
+                        )
                     )
             else:
                 segments.extend(
-                    JatsDocumentBackend._walk_inline_formula(child, current)
+                    JatsDocumentBackend._walk_inline_formula(child, current, hyperlink)
                 )
             if child.tail:
                 tail = child.tail.replace("\n", " ")
                 if tail:
                     segments.append(
                         InlineSegment(
-                            label=DocItemLabel.TEXT, text=tail, formatting=current
+                            label=DocItemLabel.TEXT,
+                            text=tail,
+                            formatting=current,
+                            hyperlink=hyperlink,
                         )
                     )
         return segments
 
     @staticmethod
     def _append_run(
-        segments: list[InlineSegment], text: str, formatting: Formatting | None
+        segments: list[InlineSegment],
+        text: str,
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> None:
-        """Append a text run, coalescing into the previous run when formatting matches."""
+        """Append text, coalescing when formatting and hyperlink both match."""
         text = text.replace("\n", " ")
         if not text:
             return
@@ -758,22 +787,31 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             segments
             and segments[-1].label == DocItemLabel.TEXT
             and segments[-1].formatting == formatting
+            and segments[-1].hyperlink == hyperlink
         ):
             segments[-1] = replace(segments[-1], text=segments[-1].text + text)
         else:
             segments.append(
-                InlineSegment(label=DocItemLabel.TEXT, text=text, formatting=formatting)
+                InlineSegment(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
             )
 
     @staticmethod
     def _extend_segments(
         segments: list[InlineSegment], more: list[InlineSegment]
     ) -> None:
-        """Extend ``segments`` with ``more``, coalescing adjacent equal-format text."""
+        """Extend ``segments``, coalescing text with equal formatting and hyperlink."""
         for segment in more:
             if segment.label == DocItemLabel.TEXT:
                 JatsDocumentBackend._append_run(
-                    segments, segment.text, segment.formatting
+                    segments,
+                    segment.text,
+                    segment.formatting,
+                    segment.hyperlink,
                 )
             else:
                 segments.append(segment)
@@ -792,6 +830,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 label=segment.label,
                 text=segment.text,
                 formatting=segment.formatting,
+                hyperlink=segment.hyperlink,
                 parent=container,
             )
 
@@ -1052,14 +1091,22 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         node: etree._Element,
         formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
         skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        current_hyperlink = hyperlink
+        if node.tag == "ext-link":
+            ext_link = JatsDocumentBackend._parse_ext_link_href(node.get(_XLINK_HREF))
+            if ext_link is not None:
+                current_hyperlink = ext_link
         inline_segments: list[InlineSegment] = []
         if node.tag not in skip_tags and node.text:
-            JatsDocumentBackend._append_run(inline_segments, node.text, current)
+            JatsDocumentBackend._append_run(
+                inline_segments, node.text, current, current_hyperlink
+            )
 
         for child in list(node):
             stop_walk: bool = False
@@ -1152,13 +1199,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 # Inline formula: tex-math stays inline, unlike block <disp-formula>.
                 JatsDocumentBackend._extend_segments(
                     inline_segments,
-                    JatsDocumentBackend._walk_inline_formula(child, current),
+                    JatsDocumentBackend._walk_inline_formula(
+                        child, current, current_hyperlink
+                    ),
                 )
                 stop_walk = True
 
             # step into child
             if not stop_walk:
-                child_segments = self._walk_linear(doc, new_parent, child, current)
+                child_segments = self._walk_linear(
+                    doc, new_parent, child, current, current_hyperlink
+                )
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
                     JatsDocumentBackend._extend_segments(
                         inline_segments, child_segments
@@ -1168,7 +1219,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
             # pick up the tail text
             if child.tail:
-                JatsDocumentBackend._append_run(inline_segments, child.tail, current)
+                JatsDocumentBackend._append_run(
+                    inline_segments, child.tail, current, current_hyperlink
+                )
 
         # emit the paragraph, or backpropagate inline content to the parent
         if node.tag == "p":

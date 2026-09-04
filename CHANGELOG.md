@@ -1,3 +1,21 @@
+## [v2.125.0](https://github.com/docling-project/docling/releases/tag/v2.125.0) - 2026-09-03
+
+### Feature
+
+* Introduce min-version check for VLM engines (fixes chandra-ocr-v2 MLX) ([#4150](https://github.com/docling-project/docling/issues/4150)) ([`9876e73`](https://github.com/docling-project/docling/commit/9876e736272cfc3e8edbc1d4fdeab16eefcb98d5))
+
+### Fix
+
+* **vlm:** Handle tables labeled as forms by Chandra ([#4135](https://github.com/docling-project/docling/issues/4135)) ([`d6a6de4`](https://github.com/docling-project/docling/commit/d6a6de490fa2139568a8ba4c75c8a4a7c195fbd3))
+* **html:** Parse tables and captions inside <figure> tags ([#4050](https://github.com/docling-project/docling/issues/4050)) ([`70eb711`](https://github.com/docling-project/docling/commit/70eb711a35ee206182f98468942c33ae25eb8c95))
+* **ebcdic:** Require record names to be unique ([#4126](https://github.com/docling-project/docling/issues/4126)) ([`a72a3c1`](https://github.com/docling-project/docling/commit/a72a3c166b263bf45b211f7bc758db2d454dd7cd))
+* **asciidoc:** Preserve ordered lists and literal blocks ([#4118](https://github.com/docling-project/docling/issues/4118)) ([`c09ddfa`](https://github.com/docling-project/docling/commit/c09ddfabff27b1ba6217ab47e207cb646b4ba023))
+* **webvtt:** Keep cue text in order after a multi-line span ([#4105](https://github.com/docling-project/docling/issues/4105)) ([`397bd4e`](https://github.com/docling-project/docling/commit/397bd4e61587c789a35c6bf1d09617b14253a3b0))
+* Enable CUDA for RapidOCR ONNX Runtime ([#4103](https://github.com/docling-project/docling/issues/4103)) ([`97bdf30`](https://github.com/docling-project/docling/commit/97bdf30c3b87c88ffc1ed0a66be440000e9a5e72))
+* **uspto:** Accept CRLF patent headers ([#4111](https://github.com/docling-project/docling/issues/4111)) ([`355bb21`](https://github.com/docling-project/docling/commit/355bb210d633dfc8a2e5345369efc3382e81ee0f))
+* **pptx:** Keep EMF/WMF pictures instead of dropping them ([#4089](https://github.com/docling-project/docling/issues/4089)) ([`19ea044`](https://github.com/docling-project/docling/commit/19ea044bffcb5868f4ddbfec191c0ceb910afdf7))
+* **cli:** Propagate service flags to AsrPipelineOptions ([#4003](https://github.com/docling-project/docling/issues/4003)) ([`3abb87a`](https://github.com/docling-project/docling/commit/3abb87a7a05ce60264399ab45047304e81bda926))
+
 ## [v2.124.0](https://github.com/docling-project/docling/releases/tag/v2.124.0) - 2026-08-31
 
 ### Feature

@@ -35,7 +35,7 @@ def test_convert_valid():
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]
-    json_filter = ["escaped_characters", "signature_stamp_01"]
+    json_filter = ["escaped_characters", "line_breaks", "signature_stamp_01"]
 
     for in_path in relevant_paths:
         md_gt_path = md_path / "groundtruth" / f"{in_path.name}.md"
@@ -508,3 +508,82 @@ def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Title"
         assert doc.texts[1].text == "Some body text."
+
+
+def test_convert_line_breaks():
+    """GFM line-break semantics are correctly mapped to DoclingDocument text fields.
+
+    - Soft break (bare newline): two runs joined with a space.
+    - Hard break (two trailing spaces or backslash before newline): two runs joined with '\\n'.
+    - Paragraph break (blank line): two separate TextItems.
+    - Hard break across a formatting boundary: runs that differ in formatting are
+      kept as separate TextItems; the break does not merge them.
+    - Hard and soft breaks inside list items are handled the same as in paragraphs,
+      and do not bleed across sibling items.
+    - Multiple hard breaks and mixed hard+soft breaks in one paragraph are all preserved.
+    """
+    opt = MarkdownBackendOptions()
+
+    # Soft break: joined with a space (GFM §6.7)
+    doc = _convert_markdown("Author 1\nAffiliation 1", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1 Affiliation 1"
+
+    # Hard break (trailing spaces): joined with '\n'
+    doc = _convert_markdown("Author 1  \nAffiliation 1", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1\nAffiliation 1"
+
+    # Paragraph break: two separate items
+    doc = _convert_markdown("Author 1\n\nAffiliation 1", opt)
+    assert len(doc.texts) == 2
+    assert doc.texts[0].text == "Author 1"
+    assert doc.texts[1].text == "Affiliation 1"
+
+    # Hard break across a formatting boundary: the break is preserved as a
+    # leading '\n' on the run that follows, since the runs cannot be merged.
+    doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
+    assert len(doc.texts) == 3
+    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].formatting is None
+    assert doc.texts[1].text == "John"
+    assert doc.texts[1].formatting is not None
+    assert doc.texts[1].formatting.bold is True
+    assert doc.texts[2].text == "\nUniversity XYZ"
+    assert doc.texts[2].formatting is None
+
+    # Multiple hard breaks in one paragraph
+    doc = _convert_markdown("Line1  \nLine2  \nLine3", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Line1\nLine2\nLine3"
+
+    # Mixed hard + soft in one paragraph
+    doc = _convert_markdown("Line1  \nLine2\nLine3", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Line1\nLine2 Line3"
+
+    # Hard break in a list item
+    doc = _convert_markdown("- Item 1  \n  continued", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "Item 1\ncontinued"
+
+    # Multiple hard breaks in one list item
+    doc = _convert_markdown("- first  \nsecond  \nthird", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "first\nsecond\nthird"
+
+    # Hard break does not bleed into the next sibling list item
+    doc = _convert_markdown("- Item 1  \n  continued\n- Item 2", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "Item 1\ncontinued"
+    assert list_items[1].text == "Item 2"
+
+    # Soft break in a list item: joined with a space
+    doc = _convert_markdown("- First\n  Second\n- Item 2", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "First Second"
+    assert list_items[1].text == "Item 2"

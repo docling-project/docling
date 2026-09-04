@@ -2629,11 +2629,66 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         tag_name = tag.name.lower()
 
         if tag_name == "figure":
-            img_tag = tag.find("img")
-            if isinstance(img_tag, Tag):
-                im_ref = self._emit_image(img_tag, doc)
-                if im_ref is not None:
-                    added_refs.append(im_ref)
+            # 1. Dispatch all direct children except <figcaption>.
+            # This leaves <figcaption> in the tree so _emit_image can find it
+            # and link it to the PictureItem automatically.
+            for child in tag.contents:
+                if isinstance(child, Tag) and child.name != "figcaption":
+                    name = child.name.lower()
+                    if name == "img":
+                        im_ref = self._emit_image(child, doc)
+                        if im_ref is not None:
+                            added_refs.append(im_ref)
+                    elif name == "input":
+                        input_ref = self._emit_input(child, doc)
+                        if input_ref is not None:
+                            added_refs.append(input_ref)
+                    elif name in _BLOCK_TAGS:
+                        added_refs.extend(self._handle_block(child, doc))
+                    else:
+                        added_refs.extend(self._walk(child, doc))
+
+            # 2. Check if an image was produced. If so, _emit_image handled the caption.
+            any_image_produced = any(
+                isinstance(ref.resolve(doc), PictureItem) for ref in added_refs
+            )
+
+            # 3. If no image was produced, manually handle the <figcaption>
+            # and link it to the first item (e.g., a table).
+            if not any_image_produced:
+                caption_tag = tag.find("figcaption", recursive=False)
+                if isinstance(caption_tag, Tag):
+                    cap_list = self._extract_text_and_hyperlink_recursively(
+                        caption_tag, find_parent_annotation=True
+                    )
+                    cap_anno = cap_list.to_single_text_element()
+                    if cap_anno.text:
+                        cap_text = HTMLDocumentBackend._clean_unicode(
+                            cap_anno.text.strip()
+                        )
+                        cap_prov = self._make_prov(
+                            text=cap_text,
+                            tag=caption_tag,
+                            source_tag_id=cap_anno.source_tag_id,
+                        )
+
+                        # Emit the caption as a standalone item under the current parent
+                        cap_item = doc.add_text(
+                            label=DocItemLabel.CAPTION,
+                            text=cap_text,
+                            orig=cap_anno.text,
+                            content_layer=self.content_layer,
+                            formatting=cap_anno.formatting,
+                            hyperlink=cap_anno.hyperlink,
+                            prov=cap_prov,
+                            parent=self.parents[self.level],
+                        )
+
+                        # Populate the captions list on the TableItem if present
+                        if added_refs:
+                            first_item = added_refs[0].resolve(doc)
+                            if isinstance(first_item, TableItem):
+                                first_item.captions.append(cap_item.get_ref())
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
