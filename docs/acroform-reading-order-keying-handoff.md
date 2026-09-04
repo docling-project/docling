@@ -299,10 +299,13 @@ Dropped for good: `/TU` tooltips (empty), `/T` field name as displayed key
 
 **Read this so no future session re-establishes the setup.**
 
-- **Fixtures** (15 forms; multi-country, single/multi-column, checkbox-heavy,
-  prefilled) live OUTSIDE the repo at
+- **Fixtures** (multi-country, single/multi-column, checkbox-heavy, prefilled)
+  live OUTSIDE the repo at
   `/Users/cau/Documents/Data/DocLayNet_v3_campaign_data/test_fixtures_15forms_thinned`.
-  Override with env `DOCLING_FORM_FIXTURES=/path` or `--fixtures`.
+  Override with env `DOCLING_FORM_FIXTURES=/path` or `--fixtures`. Named for 15
+  forms, but the 2026-09-04 run converted **11** `.pdf`s from that dir (see
+  §7.2); reconcile the count (missing PDFs vs. convert failures) before quoting
+  a corpus size.
 - **What it does**: converts each fixture with `extract_form_fields=True` +
   `generate_page_images=True` (`images_scale=2.0`) and writes
   `<out>/<name>.dclx` (+ `.md`). Default out: `<repo>/scratch_acroform_out/`.
@@ -315,7 +318,7 @@ Dropped for good: `/TU` tooltips (empty), `/T` field name as displayed key
 
 Run:
 
-    uv run python scripts/validate_acroform_forms.py                 # all 15
+    uv run python scripts/validate_acroform_forms.py                 # whole dir (11 on 2026-09-04)
     uv run python scripts/validate_acroform_forms.py --only gst494   # subset
     uv run python scripts/validate_acroform_forms.py --out before    # baseline
 
@@ -329,3 +332,114 @@ Run:
 
 The harness itself is validated (converts gst494, emits a well-formed archive
 with an embedded page raster).
+
+## 7. Phase-1 as built + fixture observations (2026-09-04)
+
+Branch `feat/acroform-label-binding`, stacked on `feat/acroform-native-fields`.
+This section is the record of what the code actually does now and what the
+fixtures showed — so a later phase starts from evidence, not the design sketch.
+
+### 7.1 What was implemented (files + surface)
+
+All in `docling/models/stages/form_field/form_field_model.py`:
+
+- **Pure core (module-level, no `Page` dependency)** — unit-tested in
+  `tests/test_acroform_label_binding.py`:
+  - `_gap(w, c)` — rectangle edge-gap `dx + dy`; 0 when the rects overlap on an
+    axis. This single number is the direction logic (left / above / below fall
+    out for free); a diagonal distractor scores worse.
+  - `_precedes(c, frontier, row_band)` — **row-only** no-crossing guard: true
+    iff `c`'s y-center is more than `row_band` above the frontier's. **No
+    left/right gate** (see §3 correction; this was the load-bearing fix).
+  - `_match_labels(widgets, labels, cap, row_band)` — greedy forward pass in
+    `widget.index` order; each widget takes the nearest unconsumed label within
+    `cap`, subject to the guard; returns `widget.index -> Cluster`. 1:1 via a
+    `used` set. Banded DP was **not** built (not needed on the fixtures).
+- **Model surface**:
+  - `_median_line_height(clusters)` — text scale for the cap (median label
+    cluster height; 0 short-circuits the pass).
+  - Two calibration constants: `_LABEL_GAP_CAP_LINES = 2.0`,
+    `_LABEL_ROW_BAND_LINES = 1.5` (both × median line-height). Not yet swept —
+    the current corpus did not force a change; revisit if a fixture needs it.
+  - `__call__` wiring: after the per-widget triage, collect keyless FORM-matched
+    + unmatched widgets (`widget.index` order), build the label pool =
+    `text_clusters` minus consumed `text_containers`, run `_match_labels`, set
+    `key_text`/`key_bbox` on the bound items, and add bound labels to
+    `promoted_cluster_ids` so `_drop_clusters` removes them from the body. No new
+    plumbing on the assembly side — `readingorder_model.py:575` already
+    materializes `key_text`/`key_bbox`.
+- **Keyless predicate**: a widget is bound only if `not value.checkbox_label`
+  (empty string, the default) — matched checkboxes already carry their option
+  label and are left untouched. The earlier `is None` test was always false and
+  made the whole pass dead; fixed.
+- **Test delta**: `test_pipeline_materializes_format_neutral_fields` updated —
+  the text field now correctly binds its detached `Full name:` left label (2
+  keys, and that label cluster is the single one dropped from the body).
+
+### 7.2 Fixture results (11 forms converted from the thinned set)
+
+`keyed / total field_items`. Coverage is **not** the quality metric — many
+fields are legitimately keyless (tabular columns, matrix grids). Read it as
+"the bindings that were made are mostly correct; low coverage = mostly correct
+keyless-ness on dense grids."
+
+| Form | keyed | shape / observation |
+|---|---|---|
+| ca_other__rc7190-ws | 19/19 | single-column; checkbox option labels + line-numbers bound (label-right). Clean. |
+| usa…f1120so | 21/21 | single-column, label-adjacent. Clean. |
+| usa…f14446cn (chinese) | 35/40 | mostly correct. |
+| usa…f1040lep | 16/23 | partial-page prefilled; mostly correct. |
+| norway__rf-1125s | 51/96 | mixed; single-column parts bind, denser parts keyless. |
+| ca…gst111-fill-08e | 38/84 | mixed. |
+| ca…gst494-fill-09e | 14/43 | **deep-checked: 11/12 correct** (§7.3). |
+| ca…t3mb-fill-15e | 19/83 | many tabular fields legitimately keyless. |
+| italy…agenziaentrate | 78/326 | large dense form; most fields tabular/keyless. |
+| norway__rf-1177s | 9/129 | dense line-item grid; the 9 are header labels (label-above), correct; rest keyless (Phase 4). |
+| norway__rf-1084s | 4/63 | **bordered table-form; column-crossing mis-binds** (§7.4). |
+
+### 7.3 gst494 deep check (the reference case)
+
+Keys compared to the rendered raster, 11/12 correct:
+
+- **Correct**: `Complete legal name`, `Contact person`, `Title`,
+  `Telephone number` (all label-above); `Year`/`Month`/`Day` date comb captions;
+  `Quarterly`/`Annual` (checkbox to the right of its label); `RT` (real trailing
+  BN sub-label).
+- **The one miss — `ULUL`**: bound to the To-date year comb. `ULUL` is a
+  **garbage layout text cluster** (comb guide-marks OCR'd as text), not a
+  binding error — the algorithm matched the nearest label; the label is noise.
+  Deferred fix: drop degenerate/very-short non-alphanumeric label clusters from
+  the pool (a layout-noise filter, not an algorithm change). Low priority.
+
+### 7.4 Known-broken, deferred (with the phase that fixes each)
+
+- **Bordered table-form column crossing — rf-1084s (Phase 4).** A field
+  sandwiched between its own left label (`Namma`) and the next column's label
+  (`Organisašunnummar`) binds the geometrically *nearer* one — the wrong
+  column's — because the real labels are table cells, thin in the free-text
+  label pool, and edge-gap has no column signal. **Accepted ceiling
+  (2026-09-04):** do not add a left-order tiebreak to mask it (that is the
+  assumption §3 removed). Fix needs table/border cell structure fed into the
+  label pool. This is where the low-coverage dense forms lose correctness, not
+  just recall.
+- **Shared label ↔ many widgets (Phase 4).** Column header over N fields binds
+  one field (1:1); the rest stay keyless. Unchanged from the original design.
+- **Garbage layout labels (layout-noise filter, any phase).** `ULUL` above;
+  comb guide-marks and rule fragments occasionally surface as text clusters and
+  can win a binding. Cheap to filter; not an algorithm defect.
+- **Checkbox option label vs. key (watch).** On rc7190 some checkbox option
+  labels bind as `key_text` (label-right). This is plausible but overlaps the
+  checkbox-label path conceptually; if it produces double-labelling on a future
+  fixture, exclude option-label clusters from the pool.
+- **Cap / row-band constants un-swept.** `2.0` / `1.5` were not calibrated
+  against the corpus (they did not need to move to pass what was checked). A
+  focused sweep is owed before the constants are trusted on unseen forms.
+
+### 7.5 What was deliberately NOT built
+
+- **Banded DP (Phase 2)** — the mis-binds are a *missing-signal* problem
+  (table structure), not a local-optimum problem, so the DP would not help.
+- **`widget.index` order override + RO fence (Phase 3 / §4)** — inspecting keyed
+  field_items directly in the `.dclx` against the raster was enough to validate;
+  the fence was never needed. Leave the RO model as-is until a fixture shows
+  order (not binding) is wrong.
