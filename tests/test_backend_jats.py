@@ -781,6 +781,35 @@ def test_jats_figure_image_resolves_extensionless_href(tmp_path: Path, graphic: 
     assert image.size == (9, 6)
 
 
+def test_jats_figure_image_falls_back_after_undecodable_alternative(tmp_path: Path):
+    broken_path = tmp_path / "images" / "broken.png"
+    broken_path.parent.mkdir()
+    broken_path.write_bytes(b"not an image")
+    image_path = tmp_path / "images" / "figure.png"
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        "<fig><alternatives>"
+        '<graphic xlink:href="images/broken.png"/>'
+        '<graphic xlink:href="images/figure.png"/>'
+        "</alternatives></fig>",
+    )
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    image = get_pictures(doc)[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
+
+
 @pytest.mark.parametrize(
     "graphic",
     [

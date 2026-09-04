@@ -936,6 +936,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     f"{href}{suffix}" for suffix in _RASTER_IMAGE_SUFFIXES
                 )
 
+            found_candidate = False
             for candidate_href in candidate_hrefs:
                 try:
                     resolved_href = self._image_loader.resolve_relative_path(
@@ -950,11 +951,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 # emit one warning per suffix; decoding remains centralized in the
                 # loader.
                 if Path(resolved_href).is_file():
-                    return self._image_loader.create_image_ref(
+                    found_candidate = True
+                    image_ref = self._image_loader.create_image_ref(
                         resolved_href, self.base_path
                     )
+                    if image_ref is not None:
+                        return image_ref
 
-            missing_hrefs.append(href)
+            if not found_candidate:
+                missing_hrefs.append(href)
 
         if missing_hrefs:
             warnings.warn(
