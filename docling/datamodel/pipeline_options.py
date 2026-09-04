@@ -1948,6 +1948,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    extract_form_fields: Annotated[
+        bool,
+        Field(
+            description=(
+                "Extract the interactive form layer (AcroForm widget annotations) of born-digital PDFs: field names, "
+                "values, checkbox/radio states, and widget geometry, represented as one FormItem with a key/value graph "
+                "per page that has form fields. Reads document metadata only — no models involved, negligible cost. "
+                "Scanned/flattened forms have no widget annotations and are unaffected."
+            )
+        ),
+    ] = False
     do_ocr: Annotated[
         bool,
         Field(

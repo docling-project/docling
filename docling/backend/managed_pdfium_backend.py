@@ -12,11 +12,17 @@ from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
 
 if TYPE_CHECKING:
+    import pypdfium2 as pdfium
+
     from docling.datamodel.document import InputDocument
+    from docling.utils.form_utils import FormFieldInfo
 
 
 class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
     """Shared lifecycle management for PDFium-backed document backends."""
+
+    # Concrete backends hold their native document here and set it to None on close.
+    _pdoc: Optional[pdfium.PdfDocument]
 
     def __init__(
         self,
@@ -32,6 +38,14 @@ class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
     @abstractmethod
     def _close_native_document(self) -> None:
         pass
+
+    def get_form_fields(self) -> list[FormFieldInfo]:
+        """Read AcroForm widget fields from the underlying pypdfium2 document."""
+        from docling.utils.form_utils import extract_form_fields
+
+        if self._pdoc is None:
+            return []
+        return extract_form_fields(self._pdoc)
 
     def unload(self) -> None:
         if self._closed:
