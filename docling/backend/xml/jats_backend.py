@@ -108,9 +108,17 @@ class InlineSegment:
     hyperlink: AnyUrl | Path | None = None
 
 
+class AbstractSection(TypedDict):
+    """A single titled section inside a structured abstract."""
+
+    title: str
+    paragraphs: list[str]
+
+
 class Abstract(TypedDict):
     label: str
-    content: str
+    content: str  # plain (un-sectioned) paragraphs joined together
+    sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
 
 class Author(TypedDict):
@@ -281,34 +289,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
 
     @staticmethod
-    def _parse_abstract_section(section_node: etree._Element) -> str:
-        section_texts: list[str] = []
+    def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
+        """Parse a single `<sec>` element inside an abstract into an
+        `AbstractSection` with a title and a list of paragraph strings."""
+        title_nodes = section_node.xpath("title|label")
+        title = (
+            JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
+        )
 
+        paragraphs: list[str] = []
         for child_node in section_node:
             if child_node.tag == "p":
-                paragraph_text = JatsDocumentBackend._normalize_whitespace(
+                text = JatsDocumentBackend._normalize_whitespace(
                     JatsDocumentBackend._get_text(child_node)
                 )
-                if paragraph_text:
-                    section_texts.append(paragraph_text)
-            elif child_node.tag == "sec":
-                section_text = JatsDocumentBackend._parse_abstract_section(child_node)
-                if section_text:
-                    section_texts.append(section_text)
+                if text:
+                    paragraphs.append(text)
 
-        section_content = JatsDocumentBackend._normalize_whitespace(
-            " ".join(section_texts)
-        )
-        if not section_content:
-            return ""
-
-        label_node = section_node.xpath("title|label")
-        if len(label_node) > 0:
-            label = JatsDocumentBackend._get_node_text(label_node[0])
-            if label:
-                return f"{label}: {section_content}"
-
-        return section_content
+        return AbstractSection(title=title, paragraphs=paragraphs)
 
     @staticmethod
     def _parse_structured_name(name_node: etree._Element) -> str:
@@ -386,8 +384,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            abstract: Abstract = dict(label="", content="")
-            texts: list[str] = []
+            plain_texts: list[str] = []
+            sections: list[AbstractSection] = []
 
             for child_node in abs_node:
                 if child_node.tag == "p":
@@ -395,22 +393,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         JatsDocumentBackend._get_text(child_node)
                     )
                     if paragraph_text:
-                        texts.append(paragraph_text)
+                        plain_texts.append(paragraph_text)
                 elif child_node.tag == "sec":
-                    section_text = JatsDocumentBackend._parse_abstract_section(
-                        child_node
-                    )
-                    if section_text:
-                        texts.append(section_text)
-
-            abstract["content"] = JatsDocumentBackend._normalize_whitespace(
-                " ".join(texts)
-            )
+                    section = JatsDocumentBackend._parse_abstract_section(child_node)
+                    if section["paragraphs"]:
+                        sections.append(section)
 
             label_node = abs_node.xpath("title|label")
-            if len(label_node) > 0:
-                abstract["label"] = JatsDocumentBackend._get_node_text(label_node[0])
+            label = (
+                JatsDocumentBackend._get_node_text(label_node[0]) if label_node else ""
+            )
 
+            abstract: Abstract = Abstract(
+                label=label,
+                content=JatsDocumentBackend._normalize_whitespace(
+                    " ".join(plain_texts)
+                ),
+                sections=sections,
+            )
             abs_list.append(abstract)
 
         return abs_list
@@ -497,18 +497,44 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
         for abstract in xml_components["abstract"]:
-            text: str = abstract["content"]
-            title: str = abstract["label"] or DEFAULT_HEADER_ABSTRACT
-            if not text:
+            sections = abstract["sections"]
+            plain_text = abstract["content"]
+            title = abstract["label"] or DEFAULT_HEADER_ABSTRACT
+
+            # Skip empty abstracts.
+            if not plain_text and not sections:
                 continue
-            parent = doc.add_heading(
+
+            abstract_heading = doc.add_heading(
                 parent=self.root, text=title, level=self.hlevel + 1
             )
-            doc.add_text(
-                parent=parent,
-                text=text,
-                label=DocItemLabel.TEXT,
-            )
+
+            if sections:
+                # Structured abstract: emit each <sec> as a sub-heading with
+                # its own paragraph(s) beneath the abstract heading.
+                for section in sections:
+                    section_title = section["title"]
+                    if section_title:
+                        section_parent: NodeItem = doc.add_heading(
+                            parent=abstract_heading,
+                            text=section_title,
+                            level=self.hlevel + 2,
+                        )
+                    else:
+                        section_parent = abstract_heading
+                    for paragraph in section["paragraphs"]:
+                        doc.add_text(
+                            parent=section_parent,
+                            text=paragraph,
+                            label=DocItemLabel.TEXT,
+                        )
+            else:
+                # Plain (un-sectioned) abstract: single text item.
+                doc.add_text(
+                    parent=abstract_heading,
+                    text=plain_text,
+                    label=DocItemLabel.TEXT,
+                )
 
         return
 
@@ -1154,7 +1180,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
 
                 for nested in nested_lists:
-                    self._walk_linear(doc, new_parent, nested)
+                    nested_group = doc.add_group(
+                        label=GroupLabel.LIST, name="list", parent=new_parent
+                    )
+                    self._walk_linear(doc, nested_group, nested)
 
                 stop_walk = True
 
