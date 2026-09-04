@@ -18,6 +18,7 @@ from docling.models.stages.form_field.form_field_model import (
     _gap,
     _match_labels,
     _precedes,
+    _table_of,
 )
 
 LINE = 10.0
@@ -31,6 +32,10 @@ def _bbox(left: float, t: float, r: float, b: float) -> BoundingBox:
 
 def _label(id_: int, left: float, t: float, r: float, b: float) -> Cluster:
     return Cluster(id=id_, label=DocItemLabel.TEXT, bbox=_bbox(left, t, r, b))
+
+
+def _table(id_: int, left: float, t: float, r: float, b: float) -> Cluster:
+    return Cluster(id=id_, label=DocItemLabel.TABLE, bbox=_bbox(left, t, r, b))
 
 
 def test_gap_is_zero_on_overlap_and_sums_axis_distances():
@@ -98,6 +103,50 @@ def test_shared_header_binds_one_widget_the_rest_skip():
     w1, w2 = _bbox(10, 30, 50, 40), _bbox(100, 30, 140, 40)
     bound = _match_labels([(0, w1), (1, w2)], [header], CAP, ROW_BAND)
     assert bound == {0: header} or (bound[0].id == 1 and 1 not in bound)
+
+
+def test_table_of_returns_smallest_enclosing_table_by_center():
+    outer = _table(1, 0, 0, 200, 200)
+    inner = _table(2, 50, 50, 150, 150)  # nested, smaller area
+    tables = [outer, inner]
+    # Center inside both -> smallest wins (nested sub-table beats its wrapper).
+    assert _table_of(_bbox(90, 90, 110, 110), tables) == 2
+    # Center in the outer only.
+    assert _table_of(_bbox(10, 10, 30, 30), tables) == 1
+    # Center outside every table -> free region.
+    assert _table_of(_bbox(300, 300, 320, 320), tables) is None
+
+
+def test_binding_does_not_cross_a_table_boundary():
+    # The Phase-4 rule, exercised through the same grouping __call__ does: a widget
+    # inside a table and a label OUTSIDE it (e.g. a section header above the table)
+    # land in different groups and must not bind, even when their gap is within cap.
+    # A label in the SAME table (a cell's own key+value) still binds.
+    table = _table(1, 0, 100, 200, 300)
+    widget = _bbox(80, 105, 120, 115)  # center (100, 110) -> just inside the table
+    header = _label(2, 80, 90, 120, 99)  # center (100, 94) -> just above, outside
+    in_cell = _label(3, 20, 105, 70, 115)  # center (45, 110) -> inside, same row
+
+    def grouped_match(widgets, labels, tables):
+        by_w: dict[int | None, list] = {}
+        for i, w in widgets:
+            by_w.setdefault(_table_of(w, tables), []).append((i, w))
+        by_l: dict[int | None, list] = {}
+        for c in labels:
+            by_l.setdefault(_table_of(c.bbox, tables), []).append(c)
+        bound = {}
+        for key, ws in by_w.items():
+            if by_l.get(key):
+                bound.update(_match_labels(ws, by_l[key], CAP, ROW_BAND))
+        return bound
+
+    # Header alone: the widget cannot reach across the boundary -> keyless.
+    assert grouped_match([(0, widget)], [header], [table]) == {}
+    # Ungrouped, the header IS within cap and would wrongly bind -- the boundary is
+    # doing the work, not distance.
+    assert _match_labels([(0, widget)], [header], CAP, ROW_BAND)[0].id == 2
+    # A same-table label binds normally.
+    assert grouped_match([(0, widget)], [in_cell], [table])[0].id == 3
 
 
 def test_precedes_is_row_only_no_left_right_gate():

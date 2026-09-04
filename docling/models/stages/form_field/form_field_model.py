@@ -15,7 +15,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.models.base_layout_model import TEXT_ELEM_LABELS
+from docling.models.base_layout_model import TABLE_LABELS, TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
@@ -48,6 +48,30 @@ def _precedes(c: BoundingBox, frontier: BoundingBox, row_band: float) -> bool:
     """
     cy, fy = (c.t + c.b) / 2.0, (frontier.t + frontier.b) / 2.0
     return cy < fy - row_band
+
+
+def _table_of(bbox: BoundingBox, tables: list[Cluster]) -> int | None:
+    """Id of the smallest table region whose bbox holds ``bbox``'s center, else None.
+
+    The label binding must not cross this boundary. A table body cell's real key is
+    a structural row/column header the layout absorbs into the table (never a
+    free-standing label in the binding pool), so a widget inside a table stays
+    keyless unless a label sits in the *same* table -- a cell carrying its own
+    key+value, e.g. a radio option with its caption. Center-in-rect is robust at
+    cell borders where an edge label's IoS with the table is fragile; smallest
+    enclosing table wins so a nested sub-table beats its wrapper.
+    """
+    cx, cy = (bbox.l + bbox.r) / 2.0, (bbox.t + bbox.b) / 2.0
+    best: tuple[float, int] | None = None
+    for table in tables:
+        tb = table.bbox
+        if (
+            tb.l <= cx <= tb.r
+            and tb.t <= cy <= tb.b
+            and (best is None or tb.area() < best[0])
+        ):
+            best = (tb.area(), table.id)
+    return best[1] if best else None
 
 
 def _match_labels(
@@ -342,22 +366,50 @@ class PdfFormFieldModel(BasePageModel):
                 # reading order. text_containers are already keys, so they leave
                 # the candidate pool. Bound labels become field-item keys and drop
                 # from the body, reusing the overlapping-case promotion machinery.
-                # ponytail: bordered table-forms mis-bind -- a field sandwiched
-                # between its own left label and the next column's label takes the
-                # geometrically nearer one, and the real labels are table cells
-                # thin in this pool (validated on rf-1084s). Accepted Phase-1
-                # ceiling; needs table/border structure, not a left-order tiebreak
-                # (see docs/acroform-reading-order-keying-handoff.md).
                 label_pool = [c for c in text_clusters if c.id not in text_containers]
                 line_height = self._median_line_height(label_pool)
+                # Binding must not cross a table boundary. A table body cell's real
+                # key is a structural row/column header that the layout absorbs
+                # into the table (never a free-standing label in this pool), so a
+                # widget in a table stays keyless -- unless a label sits in the
+                # SAME table (a cell carrying its own key+value, e.g. rf-1125s
+                # radio options with their captions). Grouping by containing table
+                # removes the mis-bind class where a widget grabs a section header
+                # above the table (italy SEZIONE/QUADRO) or a wrong-column
+                # neighbour (rf-1084s). See docs/acroform-reading-order-keying-handoff.md.
+                tables = [
+                    cluster
+                    for cluster in page.predictions.layout.clusters
+                    if cluster.label in TABLE_LABELS
+                ]
+
                 bound_value_keys: dict[int, Cluster] = {}
                 if keyless and label_pool and line_height > 0:
-                    bound = _match_labels(
-                        widgets=[(index, value.bbox) for index, value in keyless],
-                        labels=label_pool,
-                        cap=self._LABEL_GAP_CAP_LINES * line_height,
-                        row_band=self._LABEL_ROW_BAND_LINES * line_height,
-                    )
+                    labels_by_table: dict[int | None, list[Cluster]] = {}
+                    for cluster in label_pool:
+                        labels_by_table.setdefault(
+                            _table_of(cluster.bbox, tables), []
+                        ).append(cluster)
+                    widgets_by_table: dict[
+                        int | None, list[tuple[int, BoundingBox]]
+                    ] = {}
+                    for index, value in keyless:
+                        widgets_by_table.setdefault(
+                            _table_of(value.bbox, tables), []
+                        ).append((index, value.bbox))
+                    bound: dict[int, Cluster] = {}
+                    for table_id, group_widgets in widgets_by_table.items():
+                        group_labels = labels_by_table.get(table_id)
+                        if not group_labels:
+                            continue
+                        bound.update(
+                            _match_labels(
+                                widgets=group_widgets,
+                                labels=group_labels,
+                                cap=self._LABEL_GAP_CAP_LINES * line_height,
+                                row_band=self._LABEL_ROW_BAND_LINES * line_height,
+                            )
+                        )
                     value_by_index = dict(keyless)
                     for index, cluster in bound.items():
                         # Identity map: values are unique, live objects for this

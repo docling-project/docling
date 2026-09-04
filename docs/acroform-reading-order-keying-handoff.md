@@ -2,9 +2,10 @@
 
 Status snapshot: 2026-09-04
 Base branch: `feat/acroform-native-fields`, head `505a96be`.
-**Phase 1 is now BUILT & VALIDATED on branch `feat/acroform-label-binding`
+**Phases 1 and 4 are BUILT & VALIDATED on branch `feat/acroform-label-binding`
 (stacked on the base). See §5 for the outcome; §3's `_precedes` carries a
-validated correction (row-only guard, no left-order gate).**
+validated correction (row-only guard, no left-order gate); §9 covers the Phase-4
+table-boundary rule (which reverses the original §7.4 sketch).**
 Working tree adds `scripts/validate_acroform_forms.py` (the validation harness,
 see §6) — commit or keep it alongside this work.
 
@@ -289,8 +290,14 @@ result to the binding rather than to interference.
   upgrade the greedy to the **banded DP** (§3), same cost function and cap.
 - **Phase 3** — only if Phase-1/2 DCLX shows order still wrong: `widget.index`
   ordering behind the form-dominated per-page flag + knob (§4).
-- **Phase 4** — only if a fixture needs it: shared-label / column-header /
-  matrix association.
+- **Phase 4 — BUILT & VALIDATED (2026-09-04), branch `feat/acroform-label-binding`.**
+  Table-boundary rule: label binding may not cross a TABLE/DOCUMENT_INDEX region
+  boundary. See §9. **This is the opposite of the original sketch** ("feed table
+  cells *into* the label pool") — the correct rule is to *exclude* cross-boundary
+  binding, because at form_field time the cell grid does not exist yet (the table
+  model runs after) and the row/column keys are absorbed as table children, not
+  free-standing labels. Shared-label / column-header / matrix association within a
+  table is still unbuilt (needs the cell grid; a later phase).
 
 Dropped for good: `/TU` tooltips (empty), `/T` field name as displayed key
 (garbage).
@@ -571,3 +578,83 @@ is the rf-1084s column-crossing failure (§7.4).
   failure is missing table structure, which neither addresses.
 - The next real lever is **Phase 4 table/border structure into the label pool**
   (§7.4), gated on wanting bordered-form coverage — not a bigger matcher.
+  **Done, but as a boundary, not a pool merge — see §9.**
+
+## 9. Phase 4 as built — table-boundary rule (2026-09-04)
+
+Branch `feat/acroform-label-binding`. Same files as Phase 1
+(`docling/models/stages/form_field/form_field_model.py`, tests in
+`tests/test_acroform_label_binding.py`).
+
+### 9.1 What the empirical probe found (the pivot)
+
+The user's Phase-4 framing was: *"When something is captured as a sub-table
+inside a form, the widgets in the table can be removed from the key-matching
+algorithm, unless keys AND values sit in each table cell."* Probing the corpus at
+form_field time (monkeypatch dump of `page.predictions.layout.clusters` +
+`widget.rect`) established the facts the original §7.4 sketch got wrong:
+
+- **`form_field` runs BEFORE the table model** (pipeline order:
+  `layout_postprocess → form_field → table`). So at binding time there is **no
+  cell grid** — only the layout model's TABLE *region* bboxes (with absorbed
+  child clusters). The "feed table cells into the label pool" idea is not
+  buildable here; the cells do not exist yet.
+- **Table row/column keys are absorbed as TABLE children, not free-standing
+  labels.** On every widget-containing table across all 11 fixtures, the count of
+  standalone `TEXT_ELEM_LABELS` clusters whose center sits inside the table was
+  **0**. That is exactly why in-table widgets mis-bind: their true key is not in
+  the label pool, so the matcher reaches *outside* the table for the nearest
+  free-text — a section header above it, or a wrong-column neighbour.
+- **The rf-1084s "column crossing" is NOT in its table.** rf-1084s has 0 FORM
+  clusters and 1 TABLE (56/63 widgets inside). Its 4 keyed binds (3 wrong:
+  `Organisašunnummar`/`Riegádannummar`/`Suohkan` → left-column values) are all in
+  the **free 2-column header block above** the table (y<196), not in the table.
+  The 56 in-table widgets were already keyless. So table handling does **not**
+  move rf-1084s — that top-block column-cross is a separate free-region problem
+  (still open; §7.4's borderless 2-col case).
+- **The real table mis-binds were section headers → body cells:** italy
+  `agenziaentrate` bound `SEZIONE II…`, `QUADRO C…`, `SEZIONE VI…` etc. (headers
+  above tables) onto numeric body widgets (12 such on p3, 2 on p2); rf-1177s bound
+  a `IV. Die đ ut…` section header onto a body cell. These are unambiguously wrong.
+
+### 9.2 The rule
+
+**Label binding may not cross a table boundary.** A widget whose center is inside
+a TABLE/DOCUMENT_INDEX region may bind only to a label whose center is inside the
+*same* table; a free widget binds only free labels. Implementation: a pure
+`_table_of(bbox, tables)` returns the smallest enclosing table id (center-in-rect,
+robust at cell borders where IoS is fragile; smallest-area so a nested sub-table
+wins), and `__call__` partitions both the keyless widgets and the label pool by
+`_table_of`, then runs the **unchanged** `_match_labels` once per group and merges.
+No matcher change, no new constant.
+
+This encodes the user's exception for free: a table cell that carries its **own**
+label+widget (rf-1125s radio options with captions) keeps binding because that
+label is in the same table; a body cell whose only nearby label is an out-of-table
+header stays keyless.
+
+### 9.3 Before → after (corpus)
+
+| Form | before | after | note |
+|---|---|---|---|
+| italy agenziaentrate | 78/326 | 67/326 | **−11**, the `SEZIONE`/`QUADRO` header→body mis-binds removed |
+| rf-1177s | 9/129 | 12/129 | +3; the `IV. Die đ…` header mis-bind gone, frontier freed for 3 real free binds |
+| rf-1125s | 51/96 | 50/96 | −1; 3 checkbox-option-label binds (radio captions) dropped as in-table, 2 free binds gained. Acceptable (option labels are the §7.4 "watch" case). |
+| gst494 | 14/43 | 14/43 | **byte-identical** — all 12 ground-truth binds intact (its table is Schedule A at the bottom; the correct binds are free-region sections A/B). |
+| rf-1084s | 4/63 | 4/63 | unchanged (binds are free top-block; in-table cells already keyless). |
+| rc7190, f1120so, f14446cn, f1040lep, gst111, t3mb | — | — | unchanged (no tables, or in-table cells already keyless). |
+
+Net: removes the whole "section header bound to a table body cell" mis-bind class,
+zero regression on the validated reference (gst494), one minor acceptable loss
+(rf-1125s option labels).
+
+### 9.4 Still open after Phase 4
+
+- **rf-1084s free top-block column crossing** — borderless 2-column header where
+  the next column's label is geometrically nearer than the field's own left label.
+  Not a table (no TABLE cluster there), so the boundary rule does not touch it.
+  Needs a free-region column signal, not table structure.
+- **In-table shared-label / column-header / matrix association** — a body cell's
+  real key is still absorbed structure; recovering it needs the cell grid, i.e.
+  binding *after* the table model runs (a pipeline-ordering change) or reading
+  the table's own header cells. Deferred.
