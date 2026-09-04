@@ -664,18 +664,23 @@ class StandardPdfPipeline(ConvertPipeline):
             }
         )
 
+        # Code Formula Enrichment Model (using new VLM runtime system). A local, because the
+        # table-cell stage below reuses this instance rather than building a second engine.
+        code_formula_model = CodeFormulaVlmModel(
+            enabled=self.pipeline_options.do_code_enrichment
+            or self.pipeline_options.do_formula_enrichment,
+            artifacts_path=self.artifacts_path,
+            options=code_formula_opts,
+            accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+        )
+
         self.enrichment_pipe = [
-            # Code Formula Enrichment Model (using new VLM runtime system)
-            CodeFormulaVlmModel(
-                enabled=self.pipeline_options.do_code_enrichment
-                or self.pipeline_options.do_formula_enrichment,
-                artifacts_path=self.artifacts_path,
-                options=code_formula_opts,
-                accelerator_options=self.pipeline_options.accelerator_options,
-                enable_remote_services=self.pipeline_options.enable_remote_services,
-            ),
+            code_formula_model,
+            # Shares the engine above, which also owns its lifecycle.
             TableCellFormulaVlmModel(
                 enabled=self.pipeline_options.do_table_cell_formula_enrichment,
+                code_formula_model=code_formula_model,
             ),
             *self.enrichment_pipe,
         ]
