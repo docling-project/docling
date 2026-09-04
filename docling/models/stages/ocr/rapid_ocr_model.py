@@ -40,6 +40,10 @@ _log = logging.getLogger(__name__)
 # Default OCR language as a canonical tag, for the prefetch entry points.
 _RAPIDOCR_DEFAULT_LANGUAGE = "ch"
 
+# Docling's pre-canonicalization spellings for the two default recognizers, kept so that configs
+# written before OCR languages were canonicalized keep working
+_RAPIDOCR_LEGACY_ALIASES = {"chinese": "ch", "english": "en"}
+
 # Recognition/detection model size for the PP-OCRv6 path; v4/v5 use "mobile".
 _RAPIDOCR_DET_MODEL_LANG = "ch"
 _RAPIDOCR_CLS_MODEL_LANG = "ch"
@@ -204,7 +208,17 @@ def _ppocr_code(language: OcrLanguage, vocabulary: frozenset[str]) -> str | None
     the resolution never returns a code the backend cannot serve.
     """
     if language.is_passthrough():
-        return language.native if language.native in vocabulary else None
+        native = language.native
+        alias = _RAPIDOCR_LEGACY_ALIASES.get(native or "")
+        if alias is not None:
+            _log.warning(
+                "%r is a docling alias for the PP-OCR code %r. Write %r instead.",
+                native,
+                alias,
+                alias,
+            )
+            native = alias
+        return native if native in vocabulary else None
 
     if language.bcp47() in _PPOCR_CANONICAL_TO_CODE_DEVIATIONS:
         code = _PPOCR_CANONICAL_TO_CODE_DEVIATIONS[language.bcp47()]

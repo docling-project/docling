@@ -363,7 +363,9 @@ class RapidOcrOptions(OcrOptions):
                 "routes to PP-OCRv5 (onnxruntime/openvino/paddle) or PP-OCRv4 "
                 "(torch). An empty list selects the Simplified Chinese default. "
                 "A language the resolved backend cannot serve raises an error "
-                "rather than falling back silently."
+                "rather than falling back silently. The pre-canonicalization "
+                "docling spellings `chinese` and `english` still resolve to `ch` "
+                "and `en`, with a warning."
             ),
             examples=[["ch"], ["iso:zh-Hans"], ["cyrillic"]],
         ),
