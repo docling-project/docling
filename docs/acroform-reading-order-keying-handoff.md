@@ -443,3 +443,79 @@ Keys compared to the rendered raster, 11/12 correct:
   field_items directly in the `.dclx` against the raster was enough to validate;
   the fence was never needed. Leave the RO model as-is until a fixture shows
   order (not binding) is wrong.
+
+## 8. Cold-start for the next agent
+
+Everything an agent needs to resume without re-deriving this session.
+
+### 8.1 Resume state
+
+- **Branch**: `feat/acroform-label-binding` (5 commits on top of
+  `feat/acroform-native-fields` @ `505a96be`). **No PR opened yet** — when
+  opening, target `feat/acroform-native-fields`, not `main`. Commit as the repo
+  user's own identity (no impersonation, no Claude attribution unless the repo
+  says otherwise).
+- **Tests for this work**:
+
+      uv run pytest tests/test_acroform_label_binding.py tests/test_form_extraction.py -q
+
+  Plus `make check` for the read-only gate. Both pass at `e363ae46`.
+- **First, reconcile the corpus count** (§6): the dir is named for 15 forms but
+  the run converted 11. Check for missing/failed PDFs before quoting coverage.
+
+### 8.2 How to judge results WITHOUT the doclang viewer (headless)
+
+§6 says "open the `.dclx` in the viewer" — a coding agent can't. This is the
+method that actually worked: a `.dclx` is a plain zip; parse the doclang and
+read the raster.
+
+    uv run python scripts/validate_acroform_forms.py --only gst494 --out after
+    # then, per form:
+    #   unzip -o after/<name>.dclx -d /tmp/x
+    #   parse /tmp/x/document.xml, read /tmp/x/pages/1.png
+
+Parse `document.xml` with stdlib ElementTree; each `<field_item>` holds
+`<key>` and `<value>` children, and every keyed element carries **four**
+`<location value=.../>` = `(l, t, r, b)` in a doclang coord space (~0–500 wide
+on gst494, top-left origin — **sanity-check against the png, don't assume it is
+pixels**):
+
+```python
+import xml.etree.ElementTree as ET
+root = ET.parse("document.xml").getroot()
+def loc(el):
+    v = [c.get("value") for c in el.findall("location")]
+    return tuple(map(float, v)) if len(v) == 4 else None
+for fi in root.iter("field_item"):
+    keys = fi.findall("key")
+    if keys:
+        print("".join(keys[0].itertext()).strip(), loc(keys[0]),
+              "->", [loc(v) for v in fi.findall("value")])
+```
+
+Then **Read `pages/1.png`** (the Read tool renders it) and check each key's bbox
+against its value's bbox on the actual form: is the label the field's real
+label, and on which side (left / above / right / below)? That side check is the
+whole judgment — a key to the right of a field in a bordered multi-column block
+is the rf-1084s column-crossing failure (§7.4).
+
+### 8.3 Two debugging patterns that paid off
+
+- **Instrument the model, don't guess.** The dead-pass bug (§7.1) was invisible
+  until a temporary env-gated print dumped `len(keyless)`, `len(label_pool)`,
+  `line_height`, `cap` from inside `__call__`. When a whole form binds nothing,
+  print those four first — `keyless=0` means the triage never queued the widgets
+  (check the keyless predicate), not that the matcher failed.
+- **Replay the pure core offline.** `_gap`/`_precedes`/`_match_labels` are pure;
+  paste the extracted widget + label bboxes into a standalone script and run the
+  matcher to see per-widget why a bind was blocked (guard vs. cap). This is how
+  the left-order-gate poisoning was pinned to a specific frontier jump.
+
+### 8.4 Guardrails (do NOT re-introduce)
+
+- **No left/right tiebreak** in `_precedes`. It was removed on purpose (§3
+  correction); re-adding it to lift rf-1084s coverage re-breaks gst494.
+- **No banded DP, no RO fence** until a fixture *demands* it (§7.5) — the open
+  failure is missing table structure, which neither addresses.
+- The next real lever is **Phase 4 table/border structure into the label pool**
+  (§7.4), gated on wanting bordered-form coverage — not a bigger matcher.
