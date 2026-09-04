@@ -1135,6 +1135,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid, ilvl or 0
         )
 
+    def _get_outline_level_from_paragraph(self, paragraph: Paragraph) -> int | None:
+        """Extract outlineLvl from a paragraph's direct formatting.
+
+        In OOXML, outlineLvl is 0-indexed: 0-8 are heading levels 1-9 and 9 is
+        the "body text" sentinel. This method returns the 1-indexed value
+        (outlineLvl + 1), so heading levels are 1-9 and body text is 10.
+        """
+
+        if paragraph is None:
+            return None
+
+        p_pr = paragraph._p.pPr
+        if p_pr is None:
+            return None
+
+        # Look for outlineLvl in the paragraph properties
+        outline_elem = p_pr.find(f"{self._W_NS_CLARK}outlineLvl")
+        val = (
+            outline_elem.get(f"{self._W_NS_CLARK}val")
+            if outline_elem is not None
+            else None
+        )
+
+        if val is not None:
+            try:
+                # Convert 0-indexed outlineLvl to 1-indexed heading level
+                return int(val) + 1
+            except ValueError:
+                pass
+
+        return None
+
     def _get_outline_level_from_style(self, style: ParagraphStyle | None) -> int | None:
         """Extract outlineLvl from a paragraph style definition.
 
@@ -1400,7 +1432,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # 1-9 are real heading levels; 10 is the "body text" sentinel.
-        outline_level = self._get_outline_level_from_style(style)
+        outline_level = self._get_outline_level_from_paragraph(paragraph)
+        if outline_level is None:
+            outline_level = self._get_outline_level_from_style(style)
         if outline_level is not None and not 1 <= outline_level <= 9:
             outline_level = None
 
