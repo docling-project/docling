@@ -1,3 +1,19 @@
+## [v2.126.0](https://github.com/docling-project/docling/releases/tag/v2.126.0) - 2026-09-04
+
+### Feature
+
+* Add native pdf pipeline ([#3979](https://github.com/docling-project/docling/issues/3979)) ([`1c96dd3`](https://github.com/docling-project/docling/commit/1c96dd37ce9af206752f276f73030e5bf4d2fb69))
+* **jats:** Preserve external hyperlinks ([#4029](https://github.com/docling-project/docling/issues/4029)) ([`cf38d90`](https://github.com/docling-project/docling/commit/cf38d9049cc5633c1736a1c2042dacd029e91c55))
+* **iwork:** Complete the parsing of Apple Pages documents ([#4062](https://github.com/docling-project/docling/issues/4062)) ([`554b10a`](https://github.com/docling-project/docling/commit/554b10ac1c6a4252d9a193f4c02e3826df378e6a))
+
+### Fix
+
+* **markdown:** Preserve ordered list start numbers in conversion ([#4138](https://github.com/docling-project/docling/issues/4138)) ([`a4e9462`](https://github.com/docling-project/docling/commit/a4e94624ef2630641ed2a9e8f91b683f56898f41))
+* **docx:** Inherit heading numId through the style basedOn chain (#3916) ([#3917](https://github.com/docling-project/docling/issues/3917)) ([`b2d333e`](https://github.com/docling-project/docling/commit/b2d333e12260fc9cb74d8e8748b0d45505afcabb))
+* **ocr:** Apply the deprecated force_full_page_ocr flag on assignment (#4082) ([#4085](https://github.com/docling-project/docling/issues/4085)) ([`cb39dc1`](https://github.com/docling-project/docling/commit/cb39dc1f396a624df15812feafea93dd10634f09))
+* **markdown:** Preserve hard line breaks ([#4019](https://github.com/docling-project/docling/issues/4019)) ([`1c2b794`](https://github.com/docling-project/docling/commit/1c2b794b00f45c16c33479f2b0e04cfceed19d94))
+* **asciidoc:** Gate image loading ([#4156](https://github.com/docling-project/docling/issues/4156)) ([`63d1808`](https://github.com/docling-project/docling/commit/63d1808c7593b0add340394f485e12d7f0feda05))
+
 ## [v2.125.0](https://github.com/docling-project/docling/releases/tag/v2.125.0) - 2026-09-03
 
 ### Feature

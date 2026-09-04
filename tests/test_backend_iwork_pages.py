@@ -146,6 +146,25 @@ def test_legacy_placeholder_text_is_not_emitted():
     assert "Lorem ipsum dolor sit amet" not in text
 
 
+@pytest.mark.parametrize(
+    "source",
+    [PAGES_IWORK09, PAGES_IWORK09_COMMENTS, PAGES_IWORK09_FORMATTED],
+    ids=lambda path: path.name,
+)
+def test_reused_placeholder_text_is_not_emitted(source: Path):
+    """A template defines each placeholder once and every later paragraph that
+    reuses it carries an sf:ghost-text-ref instead — which names the original by
+    IDREF but holds its own inline copy of the text. Pruning only sf:ghost-text
+    let that copy through as a paragraph of garbled pseudo-English that is not
+    in the document at all."""
+    raw = zipfile.ZipFile(source).read("index.xml").decode("utf-8", "replace")
+    assert "ghost-text-ref" in raw, "fixture no longer reuses a placeholder"
+
+    text = _backend(source).convert().export_to_markdown()
+    assert "Plloaso mako nuto uf cakso dodtos" not in text
+    assert "Nunc volutpat dapibus nisi" not in text
+
+
 def test_pages_backend_accepts_a_stream():
     stream = BytesIO(PAGES_2013.read_bytes())
     in_doc = InputDocument(
