@@ -13,12 +13,14 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     GroupItem,
     GroupLabel,
     ImageRef,
     ListItem,
     TableCell,
     TableData,
+    TextItem,
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -110,9 +112,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return doc
 
     def _parse(self, doc: DoclingDocument):
-        """
-        Main function that orchestrates the parsing by yielding components:
-        title, section headers, text, lists, and tables.
+        """Orchestrate parsing and populate `doc` from the source lines.
+
+        Handles titles, section headers, text paragraphs, lists, tables,
+        pictures, literal (code) blocks, and block titles.
+
+        Block titles (AsciiDoc lines that start with `.` immediately
+        followed by text, e.g. `.Procedure`) are treated as follows:
+
+        * FloatingItem targets (picture, table, code block): the block
+          title is created as a `CAPTION`-labelled `TextItem` and
+          attached to the floating item via its `caption` parameter, so it
+          participates in the standard caption relationship.
+        * All other targets (lists, paragraphs, ...): the block title is
+          emitted as a bold `PARAGRAPH` `TextItem` inserted
+          immediately before the element it precedes.  This preserves
+          reading order while acknowledging that non-floating items (e.g.
+          `GroupItem`) have no caption slot.
         """
 
         in_list = False
@@ -149,13 +165,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     text_data=text_data,
                     parent=self._get_current_parent(parents),
                 )
-                caption_data = self._flush_caption_data(
-                    doc=doc,
-                    caption_data=caption_data,
-                    parent=self._get_current_parent(parents),
-                )
+                caption: Optional[TextItem] = None
+                if caption_data:
+                    caption = doc.add_text(
+                        text=" ".join(caption_data),
+                        label=DocItemLabel.CAPTION,
+                    )
+                    caption_data = []
                 doc.add_code(
                     text=block.text,
+                    caption=caption,
                     parent=(
                         last_list_item if in_list else self._get_current_parent(parents)
                     ),
@@ -188,8 +207,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_section_header(line)
                 level = item["level"]
 
+                ancestor = next(
+                    (parents[k] for k in range(level - 1, -1, -1) if parents[k]),
+                    None,
+                )
                 parents[level] = doc.add_heading(
-                    text=item["text"], level=item["level"], parent=parents[level - 1]
+                    text=item["text"], level=item["level"], parent=ancestor
                 )
                 for k, v in parents.items():
                     if k > level:
@@ -205,11 +228,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 if not in_list:
                     in_list = True
-                    caption_data = self._flush_caption_data(
-                        doc=doc,
-                        caption_data=caption_data,
-                        parent=parents[level],
-                    )
+                    # GroupItem has no caption slot; emit the pending block
+                    # title as a bold paragraph immediately before the list.
+                    if caption_data:
+                        doc.add_text(
+                            text=" ".join(caption_data),
+                            label=DocItemLabel.PARAGRAPH,
+                            parent=parents[level],
+                            formatting=Formatting(bold=True),
+                        )
+                        caption_data = []
 
                     parents[level + 1] = doc.add_group(
                         parent=parents[level], name="list", label=GroupLabel.LIST
@@ -292,7 +320,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 doc.add_picture(
                     image=image,
                     caption=caption,
-                    parent=last_list_item if in_list else None,
+                    parent=last_list_item
+                    if in_list
+                    else self._get_current_parent(parents),
                 )
                 list_continuation = False
 
@@ -408,21 +438,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             doc.add_text(
                 text=" ".join(text_data),
                 label=DocItemLabel.PARAGRAPH,
-                parent=parent,
-            )
-        return []
-
-    @staticmethod
-    def _flush_caption_data(
-        *,
-        doc: DoclingDocument,
-        caption_data: list[str],
-        parent: GroupItem | None,
-    ) -> list[str]:
-        if len(caption_data) > 0:
-            doc.add_text(
-                text=" ".join(caption_data),
-                label=DocItemLabel.CAPTION,
                 parent=parent,
             )
         return []

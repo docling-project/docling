@@ -21,9 +21,17 @@ This is an abstract.
 
 bla bla
 
+#### SubSubSection 2.1.1
+
 bla bla bla bli bla ble
 
 ## Section 3: test image
+
+<!-- image -->
+
+An example caption for the image
+
+<!-- image -->
 
 ## Section 4: test tables
 
@@ -72,11 +80,3 @@ Table 5 with multiple empty cells
 |  | Cell 14 | Cell 15 |  |
 |  |  |  |  |
 | Cell 19 | Cell 20 | Cell 21 |  |
-
-#### SubSubSection 2.1.1
-
-<!-- image -->
-
-An example caption for the image
-
-<!-- image -->

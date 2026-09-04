@@ -106,7 +106,9 @@ After the block.
     assert "After the block." in doc.export_to_markdown()
 
 
-def test_literal_block_flushes_pending_caption() -> None:
+def test_literal_block_attaches_caption_to_code_item() -> None:
+    # A block title before a literal block must be attached as a proper caption
+    # on the CodeItem (FloatingItem), not emitted as a standalone orphan.
     source = b""".Literal example
 ....
 raw literal
@@ -122,10 +124,42 @@ image::next.png[]
     )
     doc = in_doc._backend.convert()
 
-    assert [(item.label, item.text) for item in doc.texts[:2]] == [
-        (DocItemLabel.CAPTION, "Literal example"),
-        (DocItemLabel.CODE, "raw literal"),
-    ]
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert len(code_items) == 1
+    assert code_items[0].text == "raw literal"
+    # The block title must be structurally linked as the code item's caption.
+    assert len(code_items[0].captions) == 1
+    assert code_items[0].captions[0].resolve(doc).text == "Literal example"
+
+
+def test_block_title_before_list_renders_as_bold_paragraph() -> None:
+    # A block title preceding a list (GroupItem) has no caption slot; it must
+    # be emitted as a bold PARAGRAPH immediately before the list.
+    source = b""".Steps
+
+. First step
+. Second step
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    from docling_core.types.doc import Formatting
+
+    non_list_texts = [item for item in doc.texts if not isinstance(item, ListItem)]
+    assert len(non_list_texts) == 1
+    title_item = non_list_texts[0]
+    assert title_item.label == DocItemLabel.PARAGRAPH
+    assert title_item.text == "Steps"
+    assert title_item.formatting == Formatting(bold=True)
+
+    # The block title must appear before the list items in export order.
+    md = doc.export_to_markdown()
+    assert md.index("**Steps**") < md.index("First step")
 
 
 def test_parse_picture() -> None:
