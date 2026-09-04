@@ -431,9 +431,10 @@ Keys compared to the rendered raster, 11/12 correct:
   labels bind as `key_text` (label-right). This is plausible but overlaps the
   checkbox-label path conceptually; if it produces double-labelling on a future
   fixture, exclude option-label clusters from the pool.
-- **Cap / row-band constants un-swept.** `2.0` / `1.5` were not calibrated
-  against the corpus (they did not need to move to pass what was checked). A
-  focused sweep is owed before the constants are trusted on unseen forms.
+- **Cap / row-band constants — SWEPT & validated (2026-09-04, §7.6).** `2.0` /
+  `1.5` sit on the correctness knee, not a cliff: cap is the load-bearing knob
+  (below 2.0 under-binds real labels, above it grabs wrong ones), row-band is
+  forgiving over `[1.0, 2.0]`. No change made. Details + numbers in §7.6.
 
 ### 7.5 What was deliberately NOT built
 
@@ -443,6 +444,57 @@ Keys compared to the rendered raster, 11/12 correct:
   field_items directly in the `.dclx` against the raster was enough to validate;
   the fence was never needed. Leave the RO model as-is until a fixture shows
   order (not binding) is wrong.
+
+### 7.6 Constant sweep — `_LABEL_GAP_CAP_LINES` / `_LABEL_ROW_BAND_LINES` (2026-09-04)
+
+The two calibration constants (`2.0` / `1.5`) were validated against the corpus.
+**Outcome: keep both; they sit on the correctness knee, not a cliff.**
+
+**Method (fully reproducible for counts; see the caveat for correctness).**
+`_match_labels` is pure, so the sweep does not re-convert per combo. Capture its
+inputs once (monkeypatch the module-level `_match_labels` during one 11-form
+conversion; dump per page `(line_height, widgets, labels)`), then replay the
+matcher offline over a `cap_lines × band_lines` grid. `cap = cap_lines ×
+line_height`, `row_band = band_lines × line_height`, per form.
+
+**Corpus-wide sensitivity vs. the (2.0, 1.5) baseline** (added / removed /
+changed bindings, summed over 11 forms; total keyed at baseline = 238):
+
+- **cap is the load-bearing knob.** 2.0→1.5 *removes* 7 real bindings;
+  2.0→2.5 *flips* ~7 to different (worse) labels; 2.0→4.0 adds ~40 but they are
+  mostly wrong grabs (section headers, sentence fragments).
+- **row-band is forgiving.** 1.5→1.0 moves ≤4; 1.5→2.0 is essentially flat
+  (+1/~1); only 2.5 opens ~10 reach-back over-binds. Any band in `[1.0, 2.0]`
+  is safe; 1.5 is central.
+
+**Correctness, scored against a frozen ground truth (the reproducibility gap).**
+Counts alone can't say a binding is *right* — that needs a visual read of the
+form, which AcroForm gives no oracle for (§1). So the one deep-check form
+(gst494) has its correct bindings frozen into an explicit `widget.index → label`
+map (`GST494_GT`, 12 entries), established by reading the rendered raster
+(`pages/1.png`) once; every combo is then scored automatically against it. The
+irreducible part is that the map *originates* from one visual read — pinning it
+down is what makes the verdict rerunnable, not re-deriving perception.
+
+gst494 `correct / wrong / missed` (band has **zero** effect here — cap only):
+
+| cap | score | note |
+|---|---|---|
+| 1.0 | 10 / 0 / 2 | under-binds — loses `Quarterly`, `Annual` |
+| 1.5 | 11 / 0 / 1 | still short one |
+| **2.0** | **12 / 0 / 0** | lower edge of the correct plateau |
+| 2.5 | 12 / 0 / 0 | still clean on gst494, but corpus starts flipping |
+| 3.0 | 12 / 0 / 0 | |
+| 4.0 | 11 / 3 / 1 | grabs `Telephone number`, `Schedule A`, `, hereby certify…` |
+
+`2.0` is chosen as the **lower edge** of the `[2.0, 3.0]` correct plateau: the
+most conservative cap that still captures all 12 true labels, and the last value
+before corpus-wide over-binding starts at 2.5. No change made.
+
+**Ground-truth map** (freeze; reuse if the constants are ever re-swept):
+`{3: legal-name, 4: RT, 6: Contact person, 7: Title, 8: Telephone number,
+9/10/11: Year/Month/Day (from-date comb), 12: Year (to-date), 16: Quarterly,
+17: Annual, 46: (date)}`. `#4 RT` accepted per §7.3 (BN sub-token, not ideal).
 
 ## 8. Cold-start for the next agent
 
