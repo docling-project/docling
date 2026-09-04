@@ -1,21 +1,21 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Backend for Apple Pages (``.pages``) documents.
+"""Backends for Apple iWork documents.
 
-A ``.pages`` file is a ZIP container, but what is inside changed completely with
-Pages 5:
+A ``.pages`` or ``.numbers`` file is a ZIP container, but what is inside changed
+completely in 2013:
 
-* **Pages 5 and later (2013 onwards)** store the document as ``Index/*.iwa`` —
+* **Pages 5 and Numbers 3 onwards** store the document as ``Index/*.iwa`` —
   Snappy-framed protobuf whose schemas Apple has never published. This is what
-  essentially every Pages document in circulation looks like.
+  essentially every iWork document in circulation looks like.
 * **iWork '09 and earlier** stored it as a plain ``index.xml``, optionally
-  gzipped, alongside a ``QuickLook/Preview.pdf`` render that Apple stopped
-  writing after that release.
+  gzipped, alongside a ``QuickLook`` render that Apple stopped writing after
+  that release.
 
-Both are read into the same model, so the backend is declarative: it builds a
-:class:`~docling_core.types.doc.DoclingDocument` directly rather than rendering
-pages and running layout analysis over them.
+Each application's two generations are read into one model, so the backends are
+declarative: they build a :class:`~docling_core.types.doc.DoclingDocument`
+directly rather than rendering pages and running layout analysis over them.
 """
 
 import logging
@@ -26,11 +26,24 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
+    BoundingBox,
     ContentLayer,
+    CoordOrigin,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GroupLabel,
     ImageRef,
+    NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
+    ProvenanceItem,
+    Size,
+    TableCell,
+    TableData,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import TextItem
@@ -38,8 +51,17 @@ from PIL import Image
 from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.iwork import pages_iwa, pages_xml
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
+    PaginatedDocumentBackend,
+)
+from docling.backend.iwork import (
+    numbers_content,
+    numbers_iwa,
+    numbers_xml,
+    pages_iwa,
+    pages_xml,
+)
 from docling.backend.iwork.content import (
     Block,
     Comment,
@@ -64,6 +86,10 @@ _PAGES_MIMETYPE = "application/vnd.apple.pages"
 # the stdlib the real Apple type keeps the origin honest without waiting on a
 # docling-core release; it also makes mimetypes.guess_type() correct for callers.
 mimetypes.add_type(_PAGES_MIMETYPE, ".pages")
+
+_NUMBERS_MIMETYPE = "application/vnd.apple.numbers"
+
+mimetypes.add_type(_NUMBERS_MIMETYPE, ".numbers")
 
 _MODERN_INDEX_PREFIX = "Index/"
 
@@ -474,3 +500,382 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     except ValidationError:
         _log.debug("Skipping malformed Pages hyperlink address: %r", address)
         return None
+
+
+class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
+    """Extract sheets and tables from Apple Numbers documents of either generation.
+
+    Each sheet becomes a page and a sheet group. Tables and charts on it become
+    table and picture items in the order they are laid out down the page, and
+    each sticky note becomes a comment in the notes layer.
+
+    Known limitations:
+        * Cell values are read, but the number format beside them is not, so a
+          currency, percentage or scientific cell reads as the plain number it
+          holds. This matches the Excel and OpenDocument backends.
+        * In a 2013+ document, a cell driven by a pop-up menu yields the index
+          Numbers stores rather than the label it shows; the labels are not
+          reachable from the cell. An iWork '09 document stores the label, and
+          that is what is read there.
+        * A chart's kind is not read, so every chart is classified as a chart of
+          unspecified kind. Numbers stores the kind as an integer whose meaning
+          Apple has never published and which differs between the two container
+          generations.
+        * Only sheet-level comments — the ones Numbers calls sticky notes — are
+          read. A comment attached to a cell is stored beside the table rather
+          than on the sheet and is not.
+        * Images and shapes are not extracted.
+        * Password-protected documents cannot be read.
+        * ``.numbers`` bundles saved as a *directory* package rather than a
+          single file are not recognised; the converter cannot address a
+          directory as an input document.
+    """
+
+    @override
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: IWorkBackendOptions | None = None,
+    ):
+        if options is None:
+            options = IWorkBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: IWorkBackendOptions = options
+        self.page_range = in_doc.limits.page_range
+
+        self._sheets: list[numbers_content.Sheet] = []
+        self._valid = False
+
+        try:
+            with zipfile.ZipFile(path_or_stream) as archive:
+                self._sheets = self._read_document(archive)
+        except DocumentLoadError:
+            raise
+        except RecursionError as exc:
+            # RecursionError subclasses RuntimeError, so it must be caught first;
+            # otherwise deeply nested XML would be reported as an encryption
+            # problem, hiding a real robustness failure behind benign advice.
+            raise DocumentLoadError(
+                f"Numbers document with hash {self.document_hash} is nested too "
+                "deeply to parse."
+            ) from exc
+        except (NotImplementedError, RuntimeError) as exc:
+            # Encryption is normally detected up front from the member table.
+            # Anything reaching here is an unreadable member for some other
+            # reason (an unknown compression method, a missing codec module), so
+            # the message stays about the container rather than about passwords.
+            raise DocumentLoadError(
+                f"Could not read Numbers document with hash {self.document_hash}: "
+                f"the archive contains a member Docling cannot decompress ({exc})."
+            ) from exc
+        except (zipfile.BadZipFile, OSError) as exc:
+            raise DocumentLoadError(
+                f"Could not open Numbers document with hash {self.document_hash}: "
+                "the file is not a readable ZIP container."
+            ) from exc
+
+        self._valid = True
+
+    def _read_document(self, archive: zipfile.ZipFile) -> list[numbers_content.Sheet]:
+        """Dispatch to the reader for whichever generation wrote the container."""
+        infos = archive.infolist()
+        if len(infos) > self.options.max_member_count:
+            raise DocumentLoadError(
+                f"Numbers archive has {len(infos)} members, exceeding the "
+                f"max_member_count limit of {self.options.max_member_count}."
+            )
+        total_bytes = sum(info.file_size for info in infos)
+        if total_bytes > self.options.max_total_bytes:
+            raise DocumentLoadError(
+                f"Numbers archive expands to {total_bytes} bytes, exceeding the "
+                f"max_total_bytes limit of {self.options.max_total_bytes}."
+            )
+
+        if any(is_encrypted(info) for info in infos):
+            raise DocumentLoadError(
+                f"Numbers document with hash {self.document_hash} is "
+                "password-protected; Docling cannot read encrypted iWork "
+                "documents. Remove the password in Numbers and save again."
+            )
+
+        names = {info.filename for info in infos}
+        if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
+            return numbers_iwa.read_content(
+                archive, infos, self.options.max_file_bytes, self.document_hash
+            )
+
+        legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
+        if legacy is not None:
+            return numbers_xml.read_content(
+                archive,
+                legacy,
+                self.options.max_total_bytes,
+                self.options.max_file_bytes,
+                self.document_hash,
+            )
+
+        raise DocumentLoadError(
+            f"Document with hash {self.document_hash} is a ZIP archive but does "
+            "not look like a Numbers document: it has neither an Index/ "
+            "directory nor an index.xml."
+        )
+
+    @override
+    def is_valid(self) -> bool:
+        return self._valid
+
+    @classmethod
+    @override
+    def supports_pagination(cls) -> bool:
+        return True
+
+    @override
+    def page_count(self) -> int:
+        return len(self._selected_sheets()) if self.is_valid() else 0
+
+    @classmethod
+    @override
+    def supported_formats(cls) -> set[InputFormat]:
+        return {InputFormat.IWORK_NUMBERS}
+
+    def _selected_sheets(self) -> list[numbers_content.Sheet]:
+        """Apply the ``sheet_names`` filter, keeping the document's order."""
+        wanted = self.options.sheet_names
+        if wanted is None:
+            return self._sheets
+
+        selected = [sheet for sheet in self._sheets if sheet.name in wanted]
+        unmatched = set(wanted) - {sheet.name for sheet in self._sheets}
+        if unmatched:
+            _log.warning(
+                "sheet_names filter contains names not found in the document: %s",
+                sorted(unmatched),
+            )
+        return selected
+
+    @override
+    def convert(self) -> DoclingDocument:
+        if not self.is_valid():
+            raise RuntimeError(
+                f"Cannot convert Numbers document with hash {self.document_hash} "
+                "because the backend failed to init."
+            )
+
+        origin = DocumentOrigin(
+            filename=self.file.name or "file",
+            mimetype=_NUMBERS_MIMETYPE,
+            binary_hash=self.document_hash,
+        )
+        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+
+        start_page, end_page = self.page_range
+        for index, sheet in enumerate(self._selected_sheets(), start=1):
+            # Page numbers are 1-based positions within the selected sheets, so a
+            # selected sheet keeps its number when a page range narrows the
+            # document further.
+            if index < start_page or index > end_page:
+                continue
+
+            page = doc.add_page(page_no=index, size=Size(width=0, height=0))
+            group = doc.add_group(
+                parent=None,
+                label=GroupLabel.SHEET,
+                name=sheet.name or f"Sheet {index}",
+            )
+
+            # Tables and charts share the sheet canvas, so they are laid out in
+            # one pass down the page rather than one kind after the other.
+            drawn: list[numbers_content.Table | numbers_content.Chart] = [
+                *sheet.tables,
+                *sheet.charts,
+            ]
+            for drawable in sorted(drawn, key=numbers_content.reading_order):
+                if isinstance(drawable, numbers_content.Table):
+                    _add_sheet_table(doc, drawable, parent=group, page_no=index)
+                elif isinstance(drawable, numbers_content.Chart):
+                    _add_chart(doc, drawable, parent=group, page_no=index)
+
+            for position, comment in enumerate(sheet.comments, start=1):
+                _add_sheet_comment(doc, comment, sheet=sheet.name, position=position)
+
+            width, height = _sheet_extent(sheet)
+            page.size = Size(width=width, height=height)
+
+        return doc
+
+
+_EMPTY_BBOX = BoundingBox(l=0, t=0, r=0, b=0, coord_origin=CoordOrigin.TOPLEFT)
+"""Stand-in frame for something the document does not say the position of."""
+
+
+def _add_sheet_table(
+    doc: DoclingDocument,
+    table: numbers_content.Table,
+    *,
+    parent: NodeItem,
+    page_no: int,
+) -> None:
+    """Attach one Numbers table to the document under its sheet group."""
+    data = TableData(num_rows=table.num_rows, num_cols=table.num_cols, table_cells=[])
+    for cell in table.cells:
+        data.table_cells.append(
+            TableCell(
+                text=cell.text,
+                col_span=cell.col_span,
+                start_row_offset_idx=cell.row,
+                end_row_offset_idx=cell.row + 1,
+                start_col_offset_idx=cell.col,
+                end_col_offset_idx=cell.col + cell.col_span,
+                column_header=cell.row < table.header_rows,
+                row_header=cell.row >= table.header_rows
+                and cell.col < table.header_cols,
+            )
+        )
+
+    caption = (
+        doc.add_text(label=DocItemLabel.CAPTION, text=table.name, parent=parent)
+        if table.name
+        else None
+    )
+    doc.add_table(
+        data=data,
+        caption=caption,
+        parent=parent,
+        prov=ProvenanceItem(
+            page_no=page_no, charspan=(0, 0), bbox=table.bbox or _EMPTY_BBOX
+        ),
+    )
+
+
+def _add_chart(
+    doc: DoclingDocument,
+    chart: numbers_content.Chart,
+    *,
+    parent: NodeItem,
+    page_no: int,
+) -> None:
+    """Attach one Numbers chart, with the data it plots, under its sheet group.
+
+    Numbers gives no rendered image for a chart, so the picture item carries the
+    cached data instead — the same shape the Excel and OpenDocument backends
+    attach to their charts.
+    """
+    caption = (
+        doc.add_text(label=DocItemLabel.CAPTION, text=chart.name, parent=parent)
+        if chart.name
+        else None
+    )
+    picture = doc.add_picture(
+        parent=parent,
+        caption=caption,
+        prov=ProvenanceItem(
+            page_no=page_no, charspan=(0, 0), bbox=chart.bbox or _EMPTY_BBOX
+        ),
+    )
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[
+                PictureClassificationPrediction(
+                    class_name=PictureClassificationLabel.OTHER_CHART
+                )
+            ]
+        ),
+        tabular_chart=TabularChartMetaField(chart_data=_chart_table(chart)),
+    )
+
+
+def _point_text(points: list, series: int) -> str:
+    """Render one plotted value, leaving a gap in a series empty."""
+    if series >= len(points):
+        return ""
+    value = points[series]
+    return "" if value is None else numbers_content.format_number(value)
+
+
+def _chart_table(chart: numbers_content.Chart) -> TableData:
+    """Lay a chart's cached data out as a grid, categories down the first column.
+
+    Args:
+        chart: The chart whose data to lay out.
+
+    Returns:
+        The data as a table: a header row of series names, then one row per
+        category.
+    """
+    cells: list[TableCell] = []
+    for column, label in enumerate(["", *chart.series]):
+        cells.append(
+            TableCell(
+                text=label,
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=column,
+                end_col_offset_idx=column + 1,
+                column_header=True,
+            )
+        )
+
+    for index, category in enumerate(chart.categories):
+        points = chart.values[index] if index < len(chart.values) else []
+        texts = [
+            category,
+            *(_point_text(points, series) for series in range(len(chart.series))),
+        ]
+        for column, text in enumerate(texts):
+            cells.append(
+                TableCell(
+                    text=text,
+                    start_row_offset_idx=index + 1,
+                    end_row_offset_idx=index + 2,
+                    start_col_offset_idx=column,
+                    end_col_offset_idx=column + 1,
+                    row_header=column == 0,
+                )
+            )
+
+    return TableData(
+        num_rows=len(chart.categories) + 1,
+        num_cols=1 + len(chart.series),
+        table_cells=cells,
+    )
+
+
+def _add_sheet_comment(
+    doc: DoclingDocument,
+    comment: numbers_content.Comment,
+    *,
+    sheet: str,
+    position: int,
+) -> None:
+    """Attach one sticky note, with whoever left it and when.
+
+    Numbers sticky notes float on the sheet rather than hanging off a cell, so
+    the comment has no target to point at; it is filed under its own comment
+    section the way the Excel backend files a cell comment.
+    """
+    metadata = []
+    if comment.author:
+        metadata.append(f"author: {comment.author}")
+    if comment.timestamp is not None:
+        metadata.append(f"time: {comment.timestamp.isoformat(timespec='milliseconds')}")
+
+    text = f"[{', '.join(metadata)}]: {comment.text}" if metadata else comment.text
+    group = doc.add_group(
+        label=GroupLabel.COMMENT_SECTION,
+        name=f"comment-{sheet}-{position}",
+        content_layer=ContentLayer.NOTES,
+    )
+    doc.add_comment(text=text, parent=group)
+
+
+def _sheet_extent(sheet: numbers_content.Sheet) -> tuple[float, float]:
+    """Return how far a sheet's contents reach, in points from its top left."""
+    width = 0.0
+    height = 0.0
+    for drawable in (*sheet.tables, *sheet.charts, *sheet.comments):
+        if drawable.bbox is None:
+            continue
+        width = max(width, drawable.bbox.r)
+        height = max(height, drawable.bbox.b)
+    return (width, height)

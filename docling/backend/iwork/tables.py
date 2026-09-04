@@ -13,8 +13,10 @@ so equal values share one entry — which is why the tiles have to be read rathe
 than assuming a value list is already in cell order.
 """
 
+import struct
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from decimal import Decimal
 from typing import NamedTuple
 
 from docling_core.types.doc import TableCell, TableData
@@ -33,6 +35,35 @@ class CellValues(NamedTuple):
     strings: dict[int, str] = {}
     rich_text: dict[int, str] = {}
 
+
+class Placement(NamedTuple):
+    """Where one stored cell sits in a table, and where to find its bytes."""
+
+    row: int
+    col: int
+    storage: bytes
+    start: int
+
+
+class Cell(NamedTuple):
+    """One packed cell, decoded into whichever pieces it turned out to carry.
+
+    A cell holds at most one of these: text from one of the shared value lists,
+    or a number. What the number *means* is the type's business — a date and a
+    duration are both spans of seconds, and a boolean is a number that is either
+    positive or not — so it is left as read and named by ``type``.
+    """
+
+    type: int
+    text: str | None = None
+    number: Decimal | float | None = None
+
+
+TST_TABLE_INFO = 6000
+"""Message type of ``TST.TableInfoArchive``, one table placed in a document."""
+
+TST_TABLE_MODEL = 6001
+"""Message type of ``TST.TableModelArchive``, the table itself."""
 
 TST_TILE = 6002
 """Message type of ``TST.Tile``, which lays a table's cells out into rows."""
@@ -54,6 +85,13 @@ TABLE_DATA_STORE_FIELD = 4
 """Fields of ``TST.TableModelArchive``: geometry, header rows, and data store."""
 
 STORE_TILES_FIELD = 3
+
+TILE_LIST_FIELD = 1
+
+TILE_ENTRY_ROW_FIELD = 1
+
+TILE_ENTRY_TILE_FIELD = 2
+"""Fields of the tile list: each entry's first row, and the tile itself."""
 
 STORE_STRINGS_FIELD = 4
 
@@ -126,13 +164,53 @@ CELL_VERSION_LEGACY = 4
 CELL_VERSION_CURRENT = 5
 """Storage versions of a packed cell, in byte 0."""
 
+CELL_TYPE_EMPTY = 0
+
+CELL_TYPE_NUMBER = 2
+
 CELL_TYPE_TEXT = 3
 
-CELL_TYPE_RICH_TEXT = 9
-"""Value types of a packed cell, in byte 1, that carry text."""
+CELL_TYPE_DATE = 5
 
-CELL_KEY_OFFSET = 16
-"""Where a version 4 cell keeps the key of its string."""
+CELL_TYPE_BOOL = 6
+
+CELL_TYPE_DURATION = 7
+
+CELL_TYPE_RICH_TEXT = 9
+
+CELL_TYPE_CURRENCY = 10
+"""Value types of a packed cell, in byte 1.
+
+Anything not named here is left undecoded rather than guessed at from bytes
+whose meaning has not been established against a real document.
+"""
+
+CELL_NUMERIC_TYPES = frozenset(
+    {
+        CELL_TYPE_NUMBER,
+        CELL_TYPE_DATE,
+        CELL_TYPE_BOOL,
+        CELL_TYPE_DURATION,
+        CELL_TYPE_CURRENCY,
+    }
+)
+"""Types whose cell carries a number rather than only identifiers."""
+
+CELL_FLAGS_OFFSET_LEGACY = 4
+"""Where a version 4 cell keeps the bitmask of the fields it carries.
+
+Apple never published this layout and it does not describe itself, so it is read
+the way a genuine document writes it: one four-byte identifier per set bit, a
+single IEEE double in front of the last identifier when the cell's type carries a
+value, and the key of a text cell's string *as* that last identifier. The length
+that implies is checked against the bytes actually present, so a cell that does
+not fit the layout yields nothing rather than misread bytes.
+"""
+
+CELL_VALUE_WIDTH = 8
+
+CELL_IDENTIFIER_WIDTH = 4
+"""Widths of the two things a version 4 cell appends after its header."""
 
 CELL_FLAGS_OFFSET = 8
 
@@ -147,19 +225,28 @@ CELL_FLAG_STRING = 0x8
 
 CELL_FLAG_RICH_TEXT = 0x10
 
+CELL_FLAG_DECIMAL = 0x1
+
+CELL_FLAG_DOUBLE = 0x2
+
+CELL_FLAG_SECONDS = 0x4
+
 CELL_VALUE_WIDTHS = (
-    (0x1, 16),
-    (0x2, 8),
-    (0x4, 8),
+    (CELL_FLAG_DECIMAL, 16),
+    (CELL_FLAG_DOUBLE, 8),
+    (CELL_FLAG_SECONDS, 8),
     (CELL_FLAG_STRING, 4),
     (CELL_FLAG_RICH_TEXT, 4),
 )
 """The values a version 5 cell may hold, in the order they are laid out.
 
-A decimal, a double and a duration come first, then the keys of the string and
-the rich text a cell may reference. Nothing after the rich text key is needed,
+A decimal, a double and a span of seconds come first, then the keys of the string
+and the rich text a cell may reference. Nothing after the rich text key is wanted,
 so the walk stops there.
 """
+
+DECIMAL128_BIAS = 6176
+"""Amount subtracted from a decimal128's stored exponent to get the real one."""
 
 
 def reference_field(payload: bytes, field: int) -> int | None:
@@ -207,17 +294,26 @@ def table(model: IWAObject, objects: dict[int, IWAObject]) -> TableData | None:
         return None
 
     header_rows = fields.get(TABLE_HEADER_ROWS_FIELD, [0])[0]
+    if not isinstance(header_rows, int):
+        header_rows = 0
     store = safe_fields(store_raw)
     values = cell_values(store, objects)
 
     cells: list[TableCell] = []
-    for tile in tiles(store, objects):
-        cells.extend(
-            tile_cells(
-                tile,
-                values,
-                num_cols,
-                header_rows if isinstance(header_rows, int) else 0,
+    for placed in placements(store, objects):
+        if placed.row >= num_rows or placed.col >= num_cols:
+            continue
+        text = cell_text(placed.storage, placed.start, values)
+        if text is None:
+            continue
+        cells.append(
+            TableCell(
+                text=text,
+                start_row_offset_idx=placed.row,
+                end_row_offset_idx=placed.row + 1,
+                start_col_offset_idx=placed.col,
+                end_col_offset_idx=placed.col + 1,
+                column_header=placed.row < header_rows,
             )
         )
 
@@ -314,37 +410,49 @@ def entry_rich_text(
     return text.strip() or None
 
 
-def tiles(
+def placements(
     store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> list[IWAObject]:
-    """Resolve the tiles a table's data store points at."""
-    tiles: list[IWAObject] = []
+) -> Iterator[Placement]:
+    """Walk a table's tiles, yielding where each stored cell sits.
+
+    A table taller than one tile is split across several, and each tile numbers
+    its rows from its own start rather than from the table's, so the entry's
+    first row is added back here.
+
+    Args:
+        store: The table's decoded data store.
+        objects: Every object in the document, keyed by identifier.
+
+    Yields:
+        One placement per stored cell, in tile order.
+    """
     container = store.get(STORE_TILES_FIELD, [None])[0]
     if not isinstance(container, bytes):
-        return tiles
+        return
 
-    for entry in safe_fields(container).get(1, []):
+    for entry in safe_fields(container).get(TILE_LIST_FIELD, []):
         if not isinstance(entry, bytes):
             continue
-        reference = safe_fields(entry).get(2, [None])[0]
+        parsed = safe_fields(entry)
+        first_row = parsed.get(TILE_ENTRY_ROW_FIELD, [0])[0]
+        reference = parsed.get(TILE_ENTRY_TILE_FIELD, [None])[0]
         target = read_reference(reference) if isinstance(reference, bytes) else None
         tile = objects.get(target) if target is not None else None
-        if tile is not None and tile.message_type == TST_TILE:
-            tiles.append(tile)
-    return tiles
+        if tile is None or tile.message_type != TST_TILE:
+            continue
+        yield from tile_placements(tile, first_row if isinstance(first_row, int) else 0)
 
 
-def tile_cells(
-    tile: IWAObject, values: CellValues, num_cols: int, header_rows: int
-) -> list[TableCell]:
-    """Read one tile's cells, placing them by each row's per-column offsets."""
-    cells: list[TableCell] = []
-
+def tile_placements(tile: IWAObject, first_row: int) -> Iterator[Placement]:
+    """Walk one tile's rows, placing each cell by its per-column offset."""
     for row_message in safe_fields(tile.payload).get(TILE_ROWS_FIELD, []):
         if not isinstance(row_message, bytes):
             continue
         row = safe_fields(row_message)
         row_index = row.get(ROW_INDEX_FIELD, [None])[0]
+        if not isinstance(row_index, int):
+            continue
+
         storage = row.get(ROW_WIDE_STORAGE_FIELD, [None])[0]
         offsets = row.get(ROW_WIDE_OFFSETS_FIELD, [None])[0]
         scale = 4 if row.get(ROW_WIDE_OFFSETS_FLAG, [0])[0] else 1
@@ -352,38 +460,20 @@ def tile_cells(
             storage = row.get(ROW_STORAGE_FIELD, [None])[0]
             offsets = row.get(ROW_OFFSETS_FIELD, [None])[0]
             scale = 1
-        if not isinstance(row_index, int):
-            continue
         if not isinstance(storage, bytes) or not isinstance(offsets, bytes):
             continue
 
-        for column in range(min(num_cols, len(offsets) // 2)):
+        for column in range(len(offsets) // 2):
             start = int.from_bytes(
                 offsets[column * 2 : column * 2 + 2], "little", signed=True
             )
-            text = cell_text(storage, start * scale, values)
-            if text is None:
+            if start < 0:
                 continue
-            cells.append(
-                TableCell(
-                    text=text,
-                    start_row_offset_idx=row_index,
-                    end_row_offset_idx=row_index + 1,
-                    start_col_offset_idx=column,
-                    end_col_offset_idx=column + 1,
-                    column_header=row_index < header_rows,
-                )
-            )
-
-    return cells
+            yield Placement(first_row + row_index, column, storage, start * scale)
 
 
 def cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
-    """Read one packed cell, or None when there is nothing readable there.
-
-    Only the layouts that carry text are decoded. Any other value type — a
-    number, a date, a formula result — is skipped rather than guessed at from
-    bytes whose meaning has not been established against a real document.
+    """Read the text of one packed cell, or None when it holds none.
 
     Args:
         storage: The row's packed cell buffer.
@@ -391,38 +481,132 @@ def cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
         values: The table's shared value lists.
 
     Returns:
-        The cell's text, or None when it holds none.
+        The cell's text, or None for an empty cell or one holding a number.
+    """
+    decoded = cell(storage, start, values)
+    return decoded.text if decoded is not None else None
+
+
+def cell(storage: bytes, start: int, values: CellValues) -> Cell | None:
+    """Decode one packed cell, in either of the two layouts Apple has written.
+
+    Args:
+        storage: The row's packed cell buffer.
+        start: Where in the buffer this cell begins.
+        values: The table's shared value lists.
+
+    Returns:
+        The cell, or None when the bytes there do not describe one this reader
+        recognises.
     """
     if start < 0 or start + CELL_VALUES_OFFSET > len(storage):
         return None
 
     version = storage[start]
     if version == CELL_VERSION_LEGACY:
-        if storage[start + 1] != CELL_TYPE_TEXT:
-            return None
-        key_at = start + CELL_KEY_OFFSET
-        if key_at + 4 > len(storage):
-            return None
-        return values.strings.get(read_uint32(storage, key_at))
+        return legacy_cell(storage, start, values)
+    if version == CELL_VERSION_CURRENT:
+        return current_cell(storage, start, values)
+    return None
 
-    if version != CELL_VERSION_CURRENT:
-        return None
-    if storage[start + 1] not in (CELL_TYPE_TEXT, CELL_TYPE_RICH_TEXT):
+
+def legacy_cell(storage: bytes, start: int, values: CellValues) -> Cell | None:
+    """Decode a version 4 cell, whose layout has to be inferred from its bitmask.
+
+    See :data:`CELL_FLAGS_OFFSET_LEGACY` for the layout and why it is checked
+    rather than trusted.
+    """
+    cell_type = storage[start + 1]
+    flags = read_uint32(storage, start + CELL_FLAGS_OFFSET_LEGACY)
+    identifiers = bin(flags).count("1")
+    if not identifiers:
         return None
 
+    numeric = cell_type in CELL_NUMERIC_TYPES
+    length = (
+        CELL_VALUES_OFFSET
+        + CELL_IDENTIFIER_WIDTH * identifiers
+        + (CELL_VALUE_WIDTH if numeric else 0)
+    )
+    if start + length > len(storage):
+        return None
+
+    last = start + length - CELL_IDENTIFIER_WIDTH
+    if numeric:
+        return Cell(cell_type, number=read_double(storage, last - CELL_VALUE_WIDTH))
+    if cell_type != CELL_TYPE_TEXT:
+        return None
+
+    # A key that names nothing in the table means the layout was read wrong, so
+    # the cell yields nothing rather than an entry that happens to exist.
+    text = values.strings.get(read_uint32(storage, last))
+    return None if text is None else Cell(cell_type, text=text)
+
+
+def current_cell(storage: bytes, start: int, values: CellValues) -> Cell | None:
+    """Decode a version 5 cell, whose bitmask says which fields follow."""
+    cell_type = storage[start + 1]
     flags = read_uint32(storage, start + CELL_FLAGS_OFFSET)
+
     offset = start + CELL_VALUES_OFFSET
+    decoded = Cell(cell_type)
     for flag, width in CELL_VALUE_WIDTHS:
         if not flags & flag:
             continue
         if offset + width > len(storage):
             return None
-        if flag == CELL_FLAG_STRING:
-            return values.strings.get(read_uint32(storage, offset))
-        if flag == CELL_FLAG_RICH_TEXT:
-            return values.rich_text.get(read_uint32(storage, offset))
+        if flag == CELL_FLAG_DECIMAL:
+            decoded = decoded._replace(number=read_decimal128(storage, offset))
+        elif flag in (CELL_FLAG_DOUBLE, CELL_FLAG_SECONDS):
+            decoded = decoded._replace(number=read_double(storage, offset))
+        elif flag == CELL_FLAG_STRING:
+            decoded = decoded._replace(
+                text=values.strings.get(read_uint32(storage, offset))
+            )
+        elif flag == CELL_FLAG_RICH_TEXT:
+            decoded = decoded._replace(
+                text=values.rich_text.get(read_uint32(storage, offset))
+            )
         offset += width
-    return None
+
+    return decoded
+
+
+def read_double(buffer: bytes, at: int) -> float | None:
+    """Read one little-endian IEEE double out of a packed cell buffer."""
+    field = buffer[at : at + CELL_VALUE_WIDTH]
+    if len(field) != CELL_VALUE_WIDTH:
+        return None
+    return float(struct.unpack("<d", field)[0])
+
+
+def read_decimal128(buffer: bytes, at: int) -> Decimal | None:
+    """Read one IEEE 754-2008 decimal128 in its binary integer encoding.
+
+    Numbers has stored numeric cells this way since 2017, which is why a
+    spreadsheet no longer rounds 0.1 the way binary floating point would. The
+    encoding is a sign bit, a biased fourteen-bit exponent and a coefficient; the
+    combination values that mean an infinity or a NaN are rejected rather than
+    rendered.
+
+    Args:
+        buffer: The row's packed cell buffer.
+        at: Where in the buffer the value begins.
+
+    Returns:
+        The value, or None when the bytes do not encode a finite number.
+    """
+    field = buffer[at : at + 16]
+    if len(field) != 16 or field[15] & 0x78 == 0x78:
+        return None
+
+    exponent = (((field[15] & 0x7F) << 7) | (field[14] >> 1)) - DECIMAL128_BIAS
+    coefficient = field[14] & 0x1
+    for byte in reversed(field[:14]):
+        coefficient = coefficient * 256 + byte
+    if field[15] & 0x80:
+        coefficient = -coefficient
+    return Decimal(coefficient).scaleb(exponent)
 
 
 def read_uint32(buffer: bytes, at: int) -> int:

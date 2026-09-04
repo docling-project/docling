@@ -285,6 +285,18 @@ class IWorkBackendOptions(BaseBackendOptions):
     max_member_count: Annotated[
         PositiveInt, Field(description="Maximum number of archive members to inspect")
     ] = 5000
+    sheet_names: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "An optional list of sheet names to include when converting a "
+                "Numbers spreadsheet. When set, only sheets whose names appear "
+                "in this list will be processed. Sheet names are matched "
+                "case-sensitively. Set to None (default) to include all sheets. "
+                "Ignored by the Pages backend, which has no sheets."
+            )
+        ),
+    ] = None
 
 
 class MsExcelBackendOptions(BaseBackendOptions):

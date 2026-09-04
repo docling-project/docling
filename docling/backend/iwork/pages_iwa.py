@@ -124,10 +124,7 @@ STYLE_SUPER_FIELD = 1
 STYLE_NAME_FIELD = 1
 """Field of ``TSS.StyleArchive`` holding the style's human-facing name."""
 
-TST_TABLE_MODEL = 6001
-"""Message type of ``TST.TableModelArchive``, the root of one table."""
-
-TST_TABULAR_INFO = 6000
+tables.TST_TABLE_INFO = 6000
 """Message type of ``TST.TableInfoArchive``, the drawable a table sits in."""
 
 TABULAR_INFO_MODEL_FIELD = 2
@@ -796,10 +793,10 @@ class IWAReader:
         if drawable.message_type == TSD_IMAGE:
             return [self._picture(drawable)]
 
-        if drawable.message_type == TST_TABULAR_INFO:
+        if drawable.message_type == tables.TST_TABLE_INFO:
             model = tables.reference_field(drawable.payload, TABULAR_INFO_MODEL_FIELD)
             table = self._objects.get(model) if model is not None else None
-            if table is None or table.message_type != TST_TABLE_MODEL:
+            if table is None or table.message_type != tables.TST_TABLE_MODEL:
                 return []
             data = tables.table(table, self._objects)
             return [data] if data is not None else []
