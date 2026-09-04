@@ -1381,6 +1381,16 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the formula enrichment model in the pipeline."),
     ] = False,
+    enrich_formula_table_cells: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Also run formula recognition over table cells, emitting rich table cells. "
+                "Requires --enrich-formula."
+            ),
+        ),
+    ] = False,
     enrich_picture_classes: Annotated[
         bool,
         typer.Option(
@@ -1971,6 +1981,7 @@ def convert(  # noqa: C901
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
+                do_table_cell_formula_enrichment=enrich_formula_table_cells,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
                 generate_picture_images=use_embedded_picture_images,
