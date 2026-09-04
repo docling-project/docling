@@ -3,14 +3,9 @@
 
 """Pre-filter for table-cell formula enrichment.
 
-The predicate gates a VLM call per table cell, so it is the whole cost control for the
-feature -- and because the option is opt-in, it is deliberately tuned for recall: a false
-positive costs one extra cheap call, a false negative silently drops normative content.
-
-The cases below are not invented. The positives marked "TR 38.901" are real cells from 3GPP
-TR 38.901 Table 7.4.1-1, taken from the measurement in docling#3828, including the two that
-made the design what it is: a subscripted-variable assignment that reads like a bare number
-after extraction, and a cell whose text begins with Private Use Area font glyphs.
+The cases marked "TR 38.901" are real cells from 3GPP TR 38.901 Table 7.4.1-1, including the
+two that shaped the design: an assignment that reads like a bare number after extraction, and
+a cell beginning with Private Use Area font glyphs.
 """
 
 import pytest

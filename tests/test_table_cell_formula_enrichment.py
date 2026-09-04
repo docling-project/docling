@@ -3,9 +3,9 @@
 
 """Table-cell formula enrichment: rich-cell construction, gating and failure modes.
 
-Driven by a stub engine so the whole file runs on CPU in CI. What the stub returns matters:
-it appends ``</formula>`` and ``<end_of_utterance>``, which only disappear if the stage really
-routes its output through the shared ``CodeFormulaVlmModel._post_process``.
+Driven by a stub engine so the file runs on CPU. The stub appends ``</formula>`` and
+``<end_of_utterance>``, which only disappear if the stage really post-processes through the
+shared ``CodeFormulaVlmModel``.
 """
 
 from collections.abc import Iterable
@@ -107,8 +107,7 @@ def _make_stage(
 
 
 def _cell(text: str, row: int, col: int, *, row_span: int = 1, col_span: int = 1):
-    # Cell boxes are laid out on a notional grid well inside the page, so clamping never
-    # changes them and a test failure means the code, not the geometry.
+    # Well inside the page, so clamping never changes them.
     return TableCell(
         text=text,
         bbox=BoundingBox(
