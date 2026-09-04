@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 from functools import cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -83,6 +83,31 @@ def _view_top_index() -> dict[int, int]:
     }
 
 
+def _outline_entry(bm: Any) -> tuple[str, int, int | None, float | None]:
+    """Read one bookmark as ``(title, level, 0-based page index, top in PDF coords)``.
+
+    docling supports ``pypdfium2>=4.30,<6`` and the two majors expose the outline
+    differently: 5 yields bookmark objects carrying ``get_title()``/``get_dest()``, while 4.30
+    yields a ``PdfOutlineItem`` namedtuple that already holds the destination fields. Accept
+    either, so the outline is not silently lost on a supported version.
+    """
+    # lazy import (see module docstring)
+    from pypdfium2._helpers.misc import PdfiumError
+
+    if hasattr(bm, "get_title"):
+        try:
+            dest = bm.get_dest()
+        except PdfiumError:
+            dest = None
+        page_index, y_pdf = _dest_top_pdf(dest) if dest is not None else (None, None)
+        return (bm.get_title() or ""), int(bm.level), page_index, y_pdf
+
+    pos = bm.view_pos or ()
+    idx = _view_top_index().get(bm.view_mode)
+    y_pdf = pos[idx] if idx is not None and idx < len(pos) else None
+    return (bm.title or ""), int(bm.level), bm.page_index, y_pdf
+
+
 def _dest_top_pdf(dest: pdfium.PdfDest) -> tuple[int | None, float | None]:
     """Return ``(0-based page index, vertical top in PDF bottom-left coords)`` for a dest.
 
@@ -116,31 +141,24 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
             return []
 
         for bm in toc:
-            title = (bm.get_title() or "").strip()
+            raw_title, level, page_index, y_pdf = _outline_entry(bm)
+            title = raw_title.strip()
             if not title:
                 continue
 
             page_no: int | None = None
             y_top: float | None = None
-            try:
-                dest = bm.get_dest()
-            except PdfiumError:
-                dest = None
-            if dest is not None:
-                page_index, y_pdf = _dest_top_pdf(dest)
-                if page_index is not None:
-                    page_no = page_index + 1
-                    if y_pdf is not None:
-                        if page_index not in page_heights:
-                            page = pdoc[page_index]
-                            page_heights[page_index] = page.get_height()
-                            page.close()
-                        y_top = page_heights[page_index] - y_pdf
+            if page_index is not None:
+                page_no = page_index + 1
+                if y_pdf is not None:
+                    if page_index not in page_heights:
+                        page = pdoc[page_index]
+                        page_heights[page_index] = page.get_height()
+                        page.close()
+                    y_top = page_heights[page_index] - y_pdf
 
             items.append(
-                _PdfOutlineItem(
-                    title=title, level=int(bm.level), page_no=page_no, y_top=y_top
-                )
+                _PdfOutlineItem(title=title, level=level, page_no=page_no, y_top=y_top)
             )
 
     return items
