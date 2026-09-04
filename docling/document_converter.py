@@ -29,7 +29,10 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.ebcdic_backend import EbcdicDocumentBackend
-from docling.backend.email_backend import EmailDocumentBackend
+from docling.backend.email_backend import (
+    EmailDocumentBackend,
+    register_attachment_converter_factory,
+)
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
@@ -866,3 +869,10 @@ class DocumentConverter:
                 self._unload_input_document(in_doc)
 
         return conv_res
+
+
+# The email backend can parse attachments with Docling, but it lives in a lower
+# architecture layer and must not import DocumentConverter directly. Inject a
+# factory here (entrypoints layer) so EmailBackendOptions.process_attachments
+# works while keeping the module-boundary rules satisfied.
+register_attachment_converter_factory(lambda: DocumentConverter())

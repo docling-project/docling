@@ -24,7 +24,7 @@ Below you can find a listing of all supported input and output formats.
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
-| Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
+| Email | MIME (`.eml`) and Outlook (`.msg`) email messages; via `EmailBackendOptions`, attachment names can optionally be listed (`list_attachments`) or attachments parsed with Docling and embedded (`process_attachments`) |
 
 Schema-specific support:
 

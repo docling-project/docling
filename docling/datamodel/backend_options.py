@@ -486,6 +486,46 @@ class EmailBackendOptions(BaseBackendOptions):
             "is never embedded. Opt-in (default False)."
         ),
     )
+    process_attachments: bool = Field(
+        False,
+        description=(
+            "Whether to parse the email's attachments with Docling and embed "
+            "their converted content under an 'Attachments' section, each "
+            "attachment as its own subsection. Every supported format is routed "
+            "through Docling's own DocumentConverter, so PDF/DOCX/PPTX/XLSX/"
+            "images/HTML/... are handled the same way as standalone documents. "
+            "Attachments whose format is unsupported, whose backend dependency "
+            "is missing, or that fail to convert fall back to a name/type note. "
+            "Opt-in (default False) because it runs the full conversion pipeline "
+            "per attachment. Takes precedence over list_attachments."
+        ),
+    )
+    max_attachments: int = Field(
+        32,
+        ge=0,
+        description=(
+            "Maximum number of attachments to process when process_attachments "
+            "is enabled. Attachments beyond this count are ignored."
+        ),
+    )
+    max_attachment_bytes: int = Field(
+        25 * 1024 * 1024,  # 25 MB
+        ge=0,
+        description=(
+            "Maximum size in bytes of a single attachment to process when "
+            "process_attachments is enabled. Larger attachments are skipped with "
+            "a note instead of being converted."
+        ),
+    )
+    max_attachment_total_bytes: int = Field(
+        100 * 1024 * 1024,  # 100 MB
+        ge=0,
+        description=(
+            "Maximum cumulative size in bytes of all attachments processed for a "
+            "single email when process_attachments is enabled. Once the budget is "
+            "exhausted, remaining attachments are skipped with a note."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):
