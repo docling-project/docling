@@ -642,11 +642,19 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
-        dp_doc = DoclingPdfParser(loglevel="fatal").load(
-            path_or_stream=self.path_or_stream, lazy=True, password=password
-        )
+        try:
+            dp_doc = DoclingPdfParser(loglevel="fatal").load(
+                path_or_stream=self.path_or_stream, lazy=True, password=password
+            )
+        except (RuntimeError, ValueError):
+            dp_doc = None
         if dp_doc is None:
-            return []
+            if isinstance(self.path_or_stream, BytesIO):
+                self.path_or_stream.seek(0)
+            return extract_outline_from_pdfium_path_or_stream(
+                self.path_or_stream,
+                password=password,
+            )
         try:
             native_outline = extract_outline_from_docling_parse(dp_doc)
             if native_outline:
