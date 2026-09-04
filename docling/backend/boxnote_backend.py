@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import json
 import logging
 from io import BytesIO
@@ -50,12 +53,15 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.data: dict[str, Any] = {}
+        # utf-8-sig drops a leading BOM. Kept, it reaches json.loads, which
+        # rejects it as an unexpected character and fails the whole load.
+        # Equivalent to utf-8 when no BOM is present.
         try:
             raw = ""
             if isinstance(self.path_or_stream, BytesIO):
-                raw = self.path_or_stream.getvalue().decode("utf-8")
+                raw = self.path_or_stream.getvalue().decode("utf-8-sig")
             elif isinstance(self.path_or_stream, Path):
-                raw = self.path_or_stream.read_text(encoding="utf-8")
+                raw = self.path_or_stream.read_text(encoding="utf-8-sig")
             if raw.strip():
                 loaded = json.loads(raw)
                 if isinstance(loaded, dict):

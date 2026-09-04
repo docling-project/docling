@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import logging
@@ -93,6 +96,33 @@ _CreationPayload = Annotated[
     ],
     Field(discriminator="kind"),
 ]
+
+
+def _only_plain_line_breaks(children: list) -> bool:
+    """Return True when children consist solely of RawText/Literal runs separated
+    by LineBreak nodes (soft or hard), with at least one break present.
+
+    Such content is fully handled by the pending-line-break merge paths and does
+    not need an inline_group wrapper.  Multiple plain runs without any LineBreak
+    (e.g. `RawText + Literal + RawText` from an escaped character) return False
+    so they still use the regular inline_group path.
+
+    Args:
+        children: Inline child nodes of a marko Paragraph, Heading, or ListItem
+            paragraph to inspect.
+
+    Returns:
+        True if all children are plain-text runs joined only by line breaks,
+        False otherwise.
+    """
+    if not _MARKO_AVAILABLE:
+        return False
+    has_break = any(isinstance(c, marko.inline.LineBreak) for c in children)
+    return has_break and all(
+        isinstance(c, (marko.inline.RawText, marko.inline.Literal))
+        or isinstance(c, marko.inline.LineBreak)
+        for c in children
+    )
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -242,12 +272,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.in_pipeless_table = False
         self.md_table_buffer: list[str] = []
+        self._pending_hard_line_break = False
+        self._pending_soft_line_break = False
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
+        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # leading "# Title" is parsed as paragraph text and the BOM reaches the
+        # output. Equivalent to utf-8 when no BOM is present.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
+                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
                 # remove invalid sequences
                 # very long sequences of underscores will lead to unnecessary long processing times.
                 # In any proper Markdown files, underscores have to be escaped,
@@ -255,7 +290,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self.markdown = self._shorten_underscore_sequences(text_stream)
                 self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     md_content = f.read()
                     # remove invalid sequences
                     # very long sequences of underscores will lead to unnecessary long processing times.
@@ -511,7 +546,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 for item in child.children
                 if not isinstance(item, marko.block.ListItem)
             ]
-            if len(non_list_children) > 1:  # inline group will be created further down
+            # Skip the inline_group path for items whose children are plain text
+            # runs separated by line breaks; the pending-line-break merge paths
+            # will produce a single list_item with the correct joined text.
+            if len(non_list_children) > 1 and not _only_plain_line_breaks(
+                non_list_children
+            ):  # inline group will be created further down
                 parent_ref: Optional[str] = (
                     parent_item.self_ref if parent_item else None
                 )
@@ -601,14 +641,36 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         formatting=formatting,
                         hyperlink=hyperlink,
                     )
+                    self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
                 else:
-                    doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        parent=parent_item,
-                        text=snippet_text,
-                        formatting=formatting,
-                        hyperlink=hyperlink,
-                    )
+                    if (
+                        self._pending_hard_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += "\n" + snippet_text
+                        doc.texts[-1].orig += "\n" + snippet_text
+                    elif (
+                        self._pending_soft_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += " " + snippet_text
+                        doc.texts[-1].orig += " " + snippet_text
+                    else:
+                        prefix = "\n" if self._pending_hard_line_break else ""
+                        doc.add_text(
+                            label=DocItemLabel.TEXT,
+                            parent=parent_item,
+                            text=prefix + snippet_text,
+                            formatting=formatting,
+                            hyperlink=hyperlink,
+                        )
+                    self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
@@ -656,6 +718,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if self.in_table:
                 _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
+            elif element.soft:
+                _log.debug("Soft line break")
+                self._pending_soft_line_break = True
+            else:
+                _log.debug("Hard line break")
+                self._pending_hard_line_break = True
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
@@ -686,9 +754,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element
             )
 
+        element_children = getattr(element, "children", [])
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
-            and len(element.children) > 1
+            and len(element_children) > 1
+            and not _only_plain_line_breaks(element_children)
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 

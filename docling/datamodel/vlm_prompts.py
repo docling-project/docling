@@ -1,4 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared VLM prompt constants owned by the datamodel layer."""
+
+# Default Docling page-conversion prompt (gets augmented with layout objects
+# in the layout-aware pipeline).
+DOCLING_BASE_PAGE_PROMPT = "Convert this page to docling."
 
 CHANDRA_ALLOWED_TAGS = (
     "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "

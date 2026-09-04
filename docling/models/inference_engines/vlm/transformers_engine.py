@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Transformers-based VLM inference engine."""
 
 import importlib
@@ -30,6 +33,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     extract_generation_stoppers,
     preprocess_image_batch,
     resolve_model_artifacts_path,
@@ -38,8 +42,12 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
-from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    build_generation_config,
+)
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
@@ -120,6 +128,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return
 
         _log.info("Initializing Transformers VLM inference engine...")
+
+        check_min_engine_version(
+            VlmEngineType.TRANSFORMERS,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
 
         # Determine device
         supported_devices = [
@@ -251,6 +264,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
         )
 
+        _log.info(f"Loading model {repo_id} into memory (device: {self.device})...")
+        load_start_time = time.monotonic()
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
@@ -282,7 +297,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             artifacts_path, revision=revision
         )
 
-        _log.info(f"Loaded model {repo_id} (revision: {revision})")
+        _log.info(
+            f"Loaded model {repo_id} (revision: {revision}) in "
+            f"{time.monotonic() - load_start_time:.2f} sec."
+        )
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
@@ -441,23 +459,32 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate
+        merged_generation_config = build_generation_config(
+            self.generation_config,
+            overrides=generation_config,
+            max_new_tokens=first_input.max_new_tokens,
+            use_cache=self.options.use_kv_cache,
+            do_sample=first_input.temperature > 0,
+            temperature=(
+                first_input.temperature if first_input.temperature > 0 else None
+            ),
+            pad_token_id=getattr(tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        )
         gen_kwargs = {
             **inputs,
-            "max_new_tokens": first_input.max_new_tokens,
-            "use_cache": self.options.use_kv_cache,
-            "generation_config": self.generation_config,
-            **generation_config,
+            "generation_config": merged_generation_config,
         }
-
-        if first_input.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = first_input.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         if stopping_criteria_list:
             gen_kwargs["stopping_criteria"] = stopping_criteria_list
 
+        _log.info(
+            "Running Transformers inference on %s image(s) on %s (max_new_tokens=%s)...",
+            len(input_batch),
+            self.device,
+            first_input.max_new_tokens,
+        )
         start_time = time.time()
         with torch.inference_mode():
             generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
@@ -482,6 +509,25 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
+        pad_token_id = getattr(tokenizer, "pad_token_id", None)
+        if pad_token_id is None:
+            generated_token_counts = [
+                int(trimmed_sequences.shape[1])
+            ] * trimmed_sequences.shape[0]
+        else:
+            generated_token_counts = (
+                (trimmed_sequences != pad_token_id).sum(dim=1).tolist()
+            )
+        total_generated_tokens = sum(generated_token_counts)
+
+        _log.info(
+            "Transformers generated %s tokens for %s image(s) in %.2f sec. (%.2f tok/s)",
+            total_generated_tokens,
+            len(input_batch),
+            generation_time,
+            total_generated_tokens / generation_time if generation_time > 0 else 0.0,
+        )
+
         if self.strip_stop_strings and first_input.stop_strings:
             from docling.utils.vlm_utils import strip_stop_strings
 
@@ -496,8 +542,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     stop_reason="unspecified",
                     metadata={
                         "generation_time": generation_time / len(input_batch),
-                        "num_tokens": int(generated_ids[i].shape[0])
-                        if i < generated_ids.shape[0]
+                        "num_tokens": generated_token_counts[i]
+                        if i < len(generated_token_counts)
                         else None,
                         "batch_size": len(input_batch),
                     },

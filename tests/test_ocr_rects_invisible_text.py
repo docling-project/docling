@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """OCR rect selection must not treat an invisible text layer as programmatic text."""
 
 from collections.abc import Iterable

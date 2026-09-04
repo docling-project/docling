@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Remote VLM calls driven against a real OpenAI-compatible server.
 
 Every remote VLM and picture-description path funnels through

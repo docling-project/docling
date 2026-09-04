@@ -72,7 +72,7 @@
         "$ref": "#/texts/320"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/321"
       },
       {
         "$ref": "#/texts/322"
@@ -90,16 +90,13 @@
         "$ref": "#/texts/326"
       },
       {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       {
         "$ref": "#/texts/331"
       },
       {
-        "$ref": "#/texts/332"
-      },
-      {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/334"
@@ -195,7 +192,7 @@
         "$ref": "#/texts/376"
       },
       {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/383"
@@ -279,10 +276,10 @@
         "$ref": "#/texts/438"
       },
       {
-        "$ref": "#/tables/4"
+        "$ref": "#/texts/439"
       },
       {
-        "$ref": "#/texts/439"
+        "$ref": "#/tables/4"
       },
       {
         "$ref": "#/texts/440"
@@ -309,22 +306,25 @@
         "$ref": "#/texts/447"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/448"
       },
       {
-        "$ref": "#/texts/461"
+        "$ref": "#/groups/3"
       },
       {
         "$ref": "#/texts/462"
       },
       {
+        "$ref": "#/texts/463"
+      },
+      {
         "$ref": "#/pictures/5"
       },
       {
-        "$ref": "#/texts/486"
+        "$ref": "#/texts/487"
       },
       {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       }
     ],
     "content_layer": "body",
@@ -334,20 +334,6 @@
   "groups": [
     {
       "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/321"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "key_value_area"
-    },
-    {
-      "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
@@ -370,11 +356,14 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/2",
+      "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/332"
+        },
         {
           "$ref": "#/texts/333"
         }
@@ -384,7 +373,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/3",
+      "self_ref": "#/groups/2",
       "parent": {
         "$ref": "#/body"
       },
@@ -413,14 +402,11 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/4",
+      "self_ref": "#/groups/3",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/448"
-        },
         {
           "$ref": "#/texts/449"
         },
@@ -456,6 +442,9 @@
         },
         {
           "$ref": "#/texts/460"
+        },
+        {
+          "$ref": "#/texts/461"
         }
       ],
       "content_layer": "body",
@@ -463,14 +452,11 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/4",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/487"
-        },
         {
           "$ref": "#/texts/488"
         },
@@ -497,6 +483,9 @@
         },
         {
           "$ref": "#/texts/496"
+        },
+        {
+          "$ref": "#/texts/497"
         }
       ],
       "content_layer": "body",
@@ -596,10 +585,24 @@
             74,
             145
           ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 419.26,
+            "t": 657.75,
+            "r": 522.03,
+            "b": 611.92,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            146,
+            216
+          ]
         }
       ],
-      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com",
-      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com"
+      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com",
+      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com"
     },
     {
       "self_ref": "#/texts/3",
@@ -613,20 +616,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 182.27,
+            "l": 172.54,
             "t": 599.37,
-            "r": 265.39,
-            "b": 577.44,
+            "r": 275.31,
+            "b": 565.49,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            53
           ]
         }
       ],
-      "orig": "Ahmed S. Nassar IBM Research",
-      "text": "Ahmed S. Nassar IBM Research"
+      "orig": "Ahmed S. Nassar IBM Research Rueschlikon, Switzerland",
+      "text": "Ahmed S. Nassar IBM Research Rueschlikon, Switzerland"
     },
     {
       "self_ref": "#/texts/4",
@@ -640,29 +643,15 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 172.54,
-            "t": 574.16,
-            "r": 275.31,
+            "l": 180.53,
+            "t": 562.2,
+            "r": 267.32,
             "b": 553.53,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            43
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 419.26,
-            "t": 657.75,
-            "r": 522.03,
-            "b": 611.92,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            44,
-            114
+            18
           ]
         },
         {
@@ -671,31 +660,17 @@
             "l": 336.69,
             "t": 599.37,
             "r": 439.46,
-            "b": 565.49,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            115,
-            164
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 346.21,
-            "t": 562.2,
-            "r": 429.94,
             "b": 553.53,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            165,
-            183
+            19,
+            87
           ]
         }
       ],
-      "orig": "Rueschlikon, Switzerland ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
-      "text": "Rueschlikon, Switzerland ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
+      "orig": "ahn@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
+      "text": "ahn@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
     },
     {
       "self_ref": "#/texts/5",
@@ -9236,11 +9211,11 @@
     {
       "self_ref": "#/texts/321",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
-      "label": "text",
+      "content_layer": "furniture",
+      "label": "page_footer",
       "prov": [
         {
           "page_no": 1,
@@ -9258,7 +9233,8 @@
         }
       ],
       "orig": "https://doi.org/10.1145/3534678.3539043",
-      "text": "https://doi.org/10.1145/3534678.3539043"
+      "text": "https://doi.org/10.1145/3534678.3539043",
+      "hyperlink": "https://doi.org/10.1145/3534678.3539043"
     },
     {
       "self_ref": "#/texts/322",
@@ -9266,8 +9242,8 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
-      "label": "text",
+      "content_layer": "furniture",
+      "label": "page_header",
       "prov": [
         {
           "page_no": 2,
@@ -9399,7 +9375,7 @@
     {
       "self_ref": "#/texts/327",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -9428,7 +9404,7 @@
     {
       "self_ref": "#/texts/328",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -9457,7 +9433,7 @@
     {
       "self_ref": "#/texts/329",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -9486,7 +9462,7 @@
     {
       "self_ref": "#/texts/330",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -9543,11 +9519,11 @@
     {
       "self_ref": "#/texts/332",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "list_item",
       "prov": [
         {
           "page_no": 2,
@@ -9565,12 +9541,14 @@
         }
       ],
       "orig": "This enables experimentation with annotation uncertainty and quality control analysis.",
-      "text": "This enables experimentation with annotation uncertainty and quality control analysis."
+      "text": "This enables experimentation with annotation uncertainty and quality control analysis.",
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/333",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -10820,7 +10798,7 @@
     {
       "self_ref": "#/texts/377",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -10849,7 +10827,7 @@
     {
       "self_ref": "#/texts/378",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -10878,7 +10856,7 @@
     {
       "self_ref": "#/texts/379",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -10907,7 +10885,7 @@
     {
       "self_ref": "#/texts/380",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -10936,7 +10914,7 @@
     {
       "self_ref": "#/texts/381",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -10965,7 +10943,7 @@
     {
       "self_ref": "#/texts/382",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -12550,20 +12528,6 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 53.8,
-            "t": 731.44,
-            "r": 558.2,
-            "b": 723.51,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            522,
-            652
-          ]
-        },
-        {
-          "page_no": 8,
-          "bbox": {
             "l": 53.5,
             "t": 704.36,
             "r": 295.65,
@@ -12571,16 +12535,43 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            653,
-            951
+            522,
+            820
           ]
         }
       ],
-      "orig": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.",
-      "text": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets."
+      "orig": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.",
+      "text": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets."
     },
     {
       "self_ref": "#/texts/439",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_header",
+      "prov": [
+        {
+          "page_no": 8,
+          "bbox": {
+            "l": 53.8,
+            "t": 731.44,
+            "r": 558.2,
+            "b": 723.51,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            130
+          ]
+        }
+      ],
+      "orig": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar",
+      "text": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar"
+    },
+    {
+      "self_ref": "#/texts/440",
       "parent": {
         "$ref": "#/body"
       },
@@ -12607,7 +12598,7 @@
       "text": "Section-header , Table and Text . Before training, we either mapped or excluded DocLayNet's other labels as specified in table 3, and also PubLayNet's List to Text . Note that the different clustering of lists (by list-element vs. whole list objects) naturally decreases the mAP score for Text ."
     },
     {
-      "self_ref": "#/texts/440",
+      "self_ref": "#/texts/441",
       "parent": {
         "$ref": "#/body"
       },
@@ -12634,7 +12625,7 @@
       "text": "For comparison of DocBank with DocLayNet, we trained only on Picture and Table clusters of each dataset. We had to exclude Text because successive paragraphs are often grouped together into a single object in DocBank. This paragraph grouping is incompatible with the individual paragraphs of DocLayNet. As can be seen in Table 5, DocLayNet trained models yield better performance compared to the previous datasets. It is noteworthy that the models trained on PubLayNet and DocBank perform very well on their own test set, but have a much lower performance on the foreign datasets. While this also applies to DocLayNet, the difference is far less pronounced. Thus we conclude that DocLayNet trained models are overall more robust and will produce better results for challenging, unseen layouts."
     },
     {
-      "self_ref": "#/texts/441",
+      "self_ref": "#/texts/442",
       "parent": {
         "$ref": "#/body"
       },
@@ -12662,7 +12653,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/442",
+      "self_ref": "#/texts/443",
       "parent": {
         "$ref": "#/body"
       },
@@ -12689,7 +12680,7 @@
       "text": "To conclude this section, we illustrate the quality of layout predictions one can expect from DocLayNet-trained models by providing a selection of examples without any further post-processing applied. Figure 6 shows selected layout predictions on pages from the test-set of DocLayNet. Results look decent in general across document categories, however one can also observe mistakes such as overlapping clusters of different classes, or entirely missing boxes due to low confidence."
     },
     {
-      "self_ref": "#/texts/443",
+      "self_ref": "#/texts/444",
       "parent": {
         "$ref": "#/body"
       },
@@ -12717,7 +12708,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/444",
+      "self_ref": "#/texts/445",
       "parent": {
         "$ref": "#/body"
       },
@@ -12744,7 +12735,7 @@
       "text": "In this paper, we presented the DocLayNet dataset. It provides the document conversion and layout analysis research community a new and challenging dataset to improve and fine-tune novel ML methods on. In contrast to many other datasets, DocLayNet was created by human annotation in order to obtain reliable layout ground-truth on a wide variety of publication- and typesettingstyles. Including a large proportion of documents outside the scientific publishing domain adds significant value in this respect."
     },
     {
-      "self_ref": "#/texts/445",
+      "self_ref": "#/texts/446",
       "parent": {
         "$ref": "#/body"
       },
@@ -12771,7 +12762,7 @@
       "text": "From the dataset, we have derived on the one hand reference metrics for human performance on document-layout annotation (through double and triple annotations) and on the other hand evaluated the baseline performance of commonly used object detection methods. We also illustrated the impact of various dataset-related aspects on model performance through data-ablation experiments, both from a size and class-label perspective. Last but not least, we compared the accuracy of models trained on other public datasets and showed that DocLayNet trained models are more robust."
     },
     {
-      "self_ref": "#/texts/446",
+      "self_ref": "#/texts/447",
       "parent": {
         "$ref": "#/body"
       },
@@ -12798,7 +12789,7 @@
       "text": "To date, there is still a significant gap between human and ML accuracy on the layout interpretation task, and we hope that this work will inspire the research community to close that gap."
     },
     {
-      "self_ref": "#/texts/447",
+      "self_ref": "#/texts/448",
       "parent": {
         "$ref": "#/body"
       },
@@ -12826,9 +12817,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/448",
+      "self_ref": "#/texts/449",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -12855,9 +12846,9 @@
       "marker": "[1]"
     },
     {
-      "self_ref": "#/texts/449",
+      "self_ref": "#/texts/450",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -12874,19 +12865,19 @@
           },
           "charspan": [
             0,
-            279
+            281
           ]
         }
       ],
-      "orig": "[2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
-      "text": "Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
+      "orig": "[2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts - rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
+      "text": "Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts - rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
       "enumerated": true,
       "marker": "[2]"
     },
     {
-      "self_ref": "#/texts/450",
+      "self_ref": "#/texts/451",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -12913,9 +12904,9 @@
       "marker": "[3]"
     },
     {
-      "self_ref": "#/texts/451",
+      "self_ref": "#/texts/452",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -12942,9 +12933,9 @@
       "marker": "[4]"
     },
     {
-      "self_ref": "#/texts/452",
+      "self_ref": "#/texts/453",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -12971,9 +12962,9 @@
       "marker": "[5]"
     },
     {
-      "self_ref": "#/texts/453",
+      "self_ref": "#/texts/454",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13000,9 +12991,9 @@
       "marker": "[6]"
     },
     {
-      "self_ref": "#/texts/454",
+      "self_ref": "#/texts/455",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13029,9 +13020,9 @@
       "marker": "[7]"
     },
     {
-      "self_ref": "#/texts/455",
+      "self_ref": "#/texts/456",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13058,9 +13049,9 @@
       "marker": "[8]"
     },
     {
-      "self_ref": "#/texts/456",
+      "self_ref": "#/texts/457",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13087,9 +13078,9 @@
       "marker": "[9]"
     },
     {
-      "self_ref": "#/texts/457",
+      "self_ref": "#/texts/458",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13116,9 +13107,9 @@
       "marker": "[10]"
     },
     {
-      "self_ref": "#/texts/458",
+      "self_ref": "#/texts/459",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13145,9 +13136,9 @@
       "marker": "[11]"
     },
     {
-      "self_ref": "#/texts/459",
+      "self_ref": "#/texts/460",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13174,9 +13165,9 @@
       "marker": "[12]"
     },
     {
-      "self_ref": "#/texts/460",
+      "self_ref": "#/texts/461",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -13203,7 +13194,7 @@
       "marker": "[13]"
     },
     {
-      "self_ref": "#/texts/461",
+      "self_ref": "#/texts/462",
       "parent": {
         "$ref": "#/body"
       },
@@ -13230,7 +13221,7 @@
       "text": "DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis"
     },
     {
-      "self_ref": "#/texts/462",
+      "self_ref": "#/texts/463",
       "parent": {
         "$ref": "#/body"
       },
@@ -13257,7 +13248,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/463",
+      "self_ref": "#/texts/464",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13284,7 +13275,7 @@
       "text": "Figure 6: Example layout predictions on selected pages from the DocLayNet test-set. (A, D) exhibit favourable results on coloured backgrounds. (B, C) show accurate list-item and paragraph differentiation despite densely-spaced lines. (E) demonstrates good table and figure distinction. (F) shows predictions on a Chinese patent with multiple overlaps, label confusion and missing boxes."
     },
     {
-      "self_ref": "#/texts/464",
+      "self_ref": "#/texts/465",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13311,7 +13302,7 @@
       "text": "4bed2a8aa51ac37058e79605821bbc426d032b0b6ca8bdf3409ed8508ccd8c67"
     },
     {
-      "self_ref": "#/texts/465",
+      "self_ref": "#/texts/466",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13338,7 +13329,7 @@
       "text": "2f2a06d08f5ad565d0f5e815f4ddf666365b2cff435cdaeb8850217e8a8efabf"
     },
     {
-      "self_ref": "#/texts/466",
+      "self_ref": "#/texts/467",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13365,7 +13356,7 @@
       "text": "7f2fd7293e04bf4f1756ae51f5779764933da1d1d2002e3915356050570fc75b"
     },
     {
-      "self_ref": "#/texts/467",
+      "self_ref": "#/texts/468",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13392,7 +13383,7 @@
       "text": "1b81cf65f47456ad4faa725d1eb09879bd633af16cfe2bf8cea661b87907bfac"
     },
     {
-      "self_ref": "#/texts/468",
+      "self_ref": "#/texts/469",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13419,7 +13410,7 @@
       "text": "b60da9d26f488cb133e47d101d35fda1bdca2671ade60764d1cd569590270327"
     },
     {
-      "self_ref": "#/texts/469",
+      "self_ref": "#/texts/470",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13446,7 +13437,7 @@
       "text": "2b7b8355a42ebef0cf91583aad9f30f7c9fa63c5b05911730ba15275c024965b"
     },
     {
-      "self_ref": "#/texts/470",
+      "self_ref": "#/texts/471",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13473,7 +13464,7 @@
       "text": "A"
     },
     {
-      "self_ref": "#/texts/471",
+      "self_ref": "#/texts/472",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13500,7 +13491,7 @@
       "text": "B"
     },
     {
-      "self_ref": "#/texts/472",
+      "self_ref": "#/texts/473",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13527,7 +13518,7 @@
       "text": "C"
     },
     {
-      "self_ref": "#/texts/473",
+      "self_ref": "#/texts/474",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13554,7 +13545,7 @@
       "text": "D"
     },
     {
-      "self_ref": "#/texts/474",
+      "self_ref": "#/texts/475",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13581,7 +13572,7 @@
       "text": "E"
     },
     {
-      "self_ref": "#/texts/475",
+      "self_ref": "#/texts/476",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13608,7 +13599,7 @@
       "text": "F"
     },
     {
-      "self_ref": "#/texts/476",
+      "self_ref": "#/texts/477",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13635,7 +13626,7 @@
       "text": "Text"
     },
     {
-      "self_ref": "#/texts/477",
+      "self_ref": "#/texts/478",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13662,7 +13653,7 @@
       "text": "Caption"
     },
     {
-      "self_ref": "#/texts/478",
+      "self_ref": "#/texts/479",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13689,7 +13680,7 @@
       "text": "List-Item"
     },
     {
-      "self_ref": "#/texts/479",
+      "self_ref": "#/texts/480",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13716,7 +13707,7 @@
       "text": "Formula"
     },
     {
-      "self_ref": "#/texts/480",
+      "self_ref": "#/texts/481",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13743,7 +13734,7 @@
       "text": "Table"
     },
     {
-      "self_ref": "#/texts/481",
+      "self_ref": "#/texts/482",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13770,7 +13761,7 @@
       "text": "Section-Header"
     },
     {
-      "self_ref": "#/texts/482",
+      "self_ref": "#/texts/483",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13797,7 +13788,7 @@
       "text": "Picture"
     },
     {
-      "self_ref": "#/texts/483",
+      "self_ref": "#/texts/484",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13824,7 +13815,7 @@
       "text": "Page-Header"
     },
     {
-      "self_ref": "#/texts/484",
+      "self_ref": "#/texts/485",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13851,7 +13842,7 @@
       "text": "Page-Footer"
     },
     {
-      "self_ref": "#/texts/485",
+      "self_ref": "#/texts/486",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13878,7 +13869,7 @@
       "text": "Title"
     },
     {
-      "self_ref": "#/texts/486",
+      "self_ref": "#/texts/487",
       "parent": {
         "$ref": "#/body"
       },
@@ -13905,9 +13896,9 @@
       "text": "Diaconu, Mai Thanh Minh, Marc, albinxavi, fatih, oleg, and wanghao yang. ultralytics/yolov5: v6.0 - yolov5n nano models, roboflow integration, tensorflow export, opencv dnn support, October 2021."
     },
     {
-      "self_ref": "#/texts/487",
+      "self_ref": "#/texts/488",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -13934,9 +13925,9 @@
       "marker": "[14]"
     },
     {
-      "self_ref": "#/texts/488",
+      "self_ref": "#/texts/489",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -13963,9 +13954,9 @@
       "marker": "[15]"
     },
     {
-      "self_ref": "#/texts/489",
+      "self_ref": "#/texts/490",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -13992,9 +13983,9 @@
       "marker": "[16]"
     },
     {
-      "self_ref": "#/texts/490",
+      "self_ref": "#/texts/491",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14021,9 +14012,9 @@
       "marker": "[17]"
     },
     {
-      "self_ref": "#/texts/491",
+      "self_ref": "#/texts/492",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14050,9 +14041,9 @@
       "marker": "[18]"
     },
     {
-      "self_ref": "#/texts/492",
+      "self_ref": "#/texts/493",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14079,9 +14070,9 @@
       "marker": "[19]"
     },
     {
-      "self_ref": "#/texts/493",
+      "self_ref": "#/texts/494",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14108,9 +14099,9 @@
       "marker": "[20]"
     },
     {
-      "self_ref": "#/texts/494",
+      "self_ref": "#/texts/495",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14137,9 +14128,9 @@
       "marker": "[21]"
     },
     {
-      "self_ref": "#/texts/495",
+      "self_ref": "#/texts/496",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -14166,9 +14157,9 @@
       "marker": "[22]"
     },
     {
-      "self_ref": "#/texts/496",
+      "self_ref": "#/texts/497",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -15121,10 +15112,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.79,
-            "t": 543.26,
-            "r": 554.34,
-            "b": 266.09,
+            "l": 322.43,
+            "t": 545.45,
+            "r": 555.29,
+            "b": 264.33,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15194,10 +15185,10 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 87.63,
-            "t": 700.11,
-            "r": 262.94,
-            "b": 571.39,
+            "l": 87.79,
+            "t": 699.82,
+            "r": 262.96,
+            "b": 571.38,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15231,10 +15222,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 52.52,
-            "t": 481.72,
-            "r": 295.6,
-            "b": 251.28,
+            "l": 52.62,
+            "t": 481.7,
+            "r": 295.64,
+            "b": 251.3,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15295,10 +15286,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 315.66,
-            "t": 708.15,
-            "r": 558.95,
-            "b": 332.93,
+            "l": 315.25,
+            "t": 710.57,
+            "r": 564.85,
+            "b": 332.67,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15388,10 +15379,10 @@
         {
           "page_no": 6,
           "bbox": {
-            "l": 322.08,
-            "t": 702.78,
-            "r": 553.86,
-            "b": 531.03,
+            "l": 322.02,
+            "t": 702.87,
+            "r": 553.89,
+            "b": 531.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15415,9 +15406,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/463"
-        },
         {
           "$ref": "#/texts/464"
         },
@@ -15483,6 +15471,9 @@
         },
         {
           "$ref": "#/texts/485"
+        },
+        {
+          "$ref": "#/texts/486"
         }
       ],
       "content_layer": "body",
@@ -15491,10 +15482,10 @@
         {
           "page_no": 9,
           "bbox": {
-            "l": 53.58,
-            "t": 707.21,
-            "r": 558.02,
-            "b": 343.49,
+            "l": 53.97,
+            "t": 707.35,
+            "r": 569.62,
+            "b": 343.54,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15505,7 +15496,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/463"
+          "$ref": "#/texts/464"
         }
       ],
       "references": [],
@@ -15530,10 +15521,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 98.78,
-            "t": 654.61,
-            "r": 512.73,
-            "b": 498.0,
+            "l": 98.82,
+            "t": 654.65,
+            "r": 512.74,
+            "b": 497.86,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -22110,10 +22101,10 @@
         {
           "page_no": 6,
           "bbox": {
-            "l": 61.68,
-            "t": 596.7,
-            "r": 285.67,
-            "b": 440.36,
+            "l": 61.54,
+            "t": 596.72,
+            "r": 286.01,
+            "b": 440.21,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -25443,10 +25434,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 79.98,
-            "t": 641.61,
-            "r": 267.64,
-            "b": 495.97,
+            "l": 80.16,
+            "t": 641.58,
+            "r": 267.58,
+            "b": 495.91,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -28115,10 +28106,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 352.47,
-            "t": 641.49,
-            "r": 523.37,
-            "b": 485.13,
+            "l": 352.48,
+            "t": 641.5,
+            "r": 523.49,
+            "b": 485.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -28141,7 +28132,7 @@
               "l": 358.64,
               "t": 153.53,
               "r": 401.73,
-              "b": 172.29,
+              "b": 161.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -28150,7 +28141,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Class-count Split",
+            "text": "Class-count",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -28192,6 +28183,26 @@
             "end_col_offset_idx": 5,
             "text": "5",
             "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 358.64,
+              "t": 164.49,
+              "r": 375.27,
+              "b": 172.29,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Split",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
@@ -29247,7 +29258,7 @@
                 "l": 358.64,
                 "t": 153.53,
                 "r": 401.73,
-                "b": 172.29,
+                "b": 161.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -29256,7 +29267,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Class-count Split",
+              "text": "Class-count",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -29345,13 +29356,20 @@
           ],
           [
             {
+              "bbox": {
+                "l": 358.64,
+                "t": 164.49,
+                "r": 375.27,
+                "b": 172.29,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "Split",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -30595,9 +30613,9 @@
           "page_no": 8,
           "bbox": {
             "l": 72.56,
-            "t": 619.85,
-            "r": 274.91,
-            "b": 451.92,
+            "t": 619.9,
+            "r": 274.84,
+            "b": 451.82,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

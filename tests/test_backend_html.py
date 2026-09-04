@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import base64
 import os
 import threading
@@ -9,7 +12,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem, RichTableCell
+from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -184,6 +187,119 @@ def test_table_header_rowspan_without_body_does_not_crash():
 
     assert len(doc.tables) == 1
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
+
+
+def test_table_inside_figure_is_parsed():
+    """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
+    html = (
+        b"<html><body>"
+        b'<figure class="ltx_table">'
+        b"<table>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"<figcaption>Table 1: demo caption.</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 2
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    # Assert caption is linked to the table
+    assert len(doc.tables[0].captions) == 1
+    cap_ref = doc.tables[0].captions[0]
+    cap_item = cap_ref.resolve(doc)
+    assert cap_item.text == "Table 1: demo caption."
+    assert cap_item.label == DocItemLabel.CAPTION
+
+
+def test_image_inside_figure_is_parsed():
+    """Regular HTML figures with images should still be parsed."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="x.png" alt="alt"/>'
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+
+    # Assert caption is linked to the picture and no duplicates exist
+    assert len(doc.pictures[0].captions) == 1
+    cap_ref = doc.pictures[0].captions[0]
+    cap_item = cap_ref.resolve(doc)
+    assert cap_item.text == "cap"
+
+    # Ensure exactly one caption item was emitted and linked to the picture
+    caption_items = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert len(caption_items) == 1
+    assert caption_items[0].text == "cap"
+
+
+def test_table_and_image_inside_figure_are_parsed():
+    """A figure containing both an image and a table should preserve both."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="a.png" alt="alt"/>'
+        b"<table>"
+        b"<tr><td>x</td></tr>"
+        b"</table>"
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+    assert len(doc.tables) == 1
+
+    assert doc.tables[0].data.num_rows == 1
+    assert doc.tables[0].data.num_cols == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["x"]
+
+    # The image should claim the figcaption
+    assert len(doc.pictures[0].captions) == 1
+    assert doc.pictures[0].captions[0].resolve(doc).text == "cap"
+
+    # The table should NOT have the caption
+    assert len(doc.tables[0].captions) == 0
 
 
 def test_ordered_lists():

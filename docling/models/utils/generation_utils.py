@@ -1,9 +1,16 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import itertools
 import logging
 import re
 import sys
 from abc import abstractmethod
-from typing import List
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any, List
+
+if TYPE_CHECKING:
+    from transformers import GenerationConfig
 
 _log = logging.getLogger(__name__)
 
@@ -21,6 +28,53 @@ class GenerationStopper:
 
     def lookback_tokens(self) -> int:
         return sys.maxsize
+
+
+def build_generation_config(
+    base_config: "GenerationConfig | None",
+    *,
+    overrides: dict[str, Any] | None = None,
+    max_new_tokens: int | None = None,
+    use_cache: bool | None = None,
+    do_sample: bool | None = None,
+    temperature: float | None = None,
+    pad_token_id: int | list[int] | None = None,
+    eos_token_id: int | list[int] | None = None,
+) -> "GenerationConfig":
+    from transformers import GenerationConfig
+
+    config = deepcopy(base_config) if base_config is not None else GenerationConfig()
+
+    # Model-level defaults, kept at the lowest precedence so caller overrides
+    # still win over them -- matching the previous behavior where these were
+    # spread as loose generate() kwargs *before* extra_generation_config.
+    if max_new_tokens is not None:
+        config.max_new_tokens = max_new_tokens
+    if use_cache is not None:
+        config.use_cache = use_cache
+
+    # Default pad_token_id to the tokenizer's, falling back to eos_token_id, to
+    # silence the transformers pad_token_id warning. This only fills a gap, so a
+    # caller override below can still replace it.
+    if pad_token_id is not None:
+        config.pad_token_id = pad_token_id
+    elif config.pad_token_id is None and eos_token_id is not None:
+        config.pad_token_id = eos_token_id
+
+    # Caller overrides (e.g. vlm_options.extra_generation_config) win over the
+    # model defaults above. update() validates and preserves custom entries such
+    # as num_logits_to_keep, unlike a raw setattr loop.
+    if overrides:
+        config.update(allow_custom_entries=True, **overrides)
+
+    # The explicit sampling decision has the final say, matching the old ordering
+    # where do_sample/temperature were set after the override spread.
+    if do_sample is not None:
+        config.do_sample = do_sample
+    if temperature is not None:
+        config.temperature = temperature
+
+    return config
 
 
 class DocTagsRepetitionStopper(GenerationStopper):

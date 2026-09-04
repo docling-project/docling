@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for PDF-bookmark / ToC heading inference and list-item promotion."""
 
 from pathlib import Path

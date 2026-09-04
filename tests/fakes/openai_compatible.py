@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """An OpenAI-compatible chat-completions route pack.
 
 Every remote VLM and picture-description path in Docling funnels through

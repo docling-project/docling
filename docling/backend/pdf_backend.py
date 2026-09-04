@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from io import BytesIO
@@ -99,6 +102,13 @@ class PdfPageBackend(ABC):
     def is_valid(self) -> bool:
         pass
 
+    def get_error_message(self) -> str:
+        """Why this page is not valid, when the backend knows.
+
+        Returns an empty string by default, and for a page that parsed fine.
+        """
+        return ""
+
     @abstractmethod
     def unload(self):
         pass
@@ -151,3 +161,39 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
     @classmethod
     def supports_pagination(cls) -> bool:
         return True
+
+
+def iter_pdf_page_backends(
+    backend: PdfDocumentBackend, page_nos: Iterable[int]
+) -> Iterator[PdfPageBackend]:
+    """Yield requested page backends, identified by absolute one-based page number.
+
+    The caller owns each yielded backend. Unrequested pages and a yielded page
+    abandoned by closing the iterator are unloaded here.
+    """
+    if backend.supports_random_page_access:
+        for page_no in page_nos:
+            page_backend = backend.load_page(page_no - 1)
+            try:
+                yield page_backend
+            except GeneratorExit:
+                page_backend.unload()
+                raise
+        return
+
+    remaining_page_nos = set(page_nos)
+    if not remaining_page_nos:
+        return
+    for page_backend in backend.iter_pages():
+        if page_backend.page_no not in remaining_page_nos:
+            page_backend.unload()
+            continue
+
+        remaining_page_nos.remove(page_backend.page_no)
+        try:
+            yield page_backend
+        except GeneratorExit:
+            page_backend.unload()
+            raise
+        if not remaining_page_nos:
+            return

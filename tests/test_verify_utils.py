@@ -1,10 +1,15 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from pathlib import Path
+
 import pytest
 from docling_core.types.doc import DoclingDocument, ImageRef, ProvenanceItem
 from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
-from tests.verify_utils import verify_docitems
+from tests.verify_utils import verify_docitems, verify_export
 
 
 def _make_doc_with_bbox(
@@ -176,4 +181,17 @@ def test_verify_docitems_fuzzy_skips_image_size_check() -> None:
         doc_true=doc_true,
         fuzzy=True,
         pdf_filename="fixture.pdf",
+    )
+
+
+def test_verify_export_ignores_embedded_image_data(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture.html"
+    groundtruth = '<img src="data:image/png;base64,AAAA">'
+    prediction = '<img src="data:image/png;base64,BBBB">'
+
+    assert verify_export(groundtruth, str(fixture), generate=True)
+    assert fixture.read_text(encoding="utf-8") == groundtruth
+    assert verify_export(prediction, str(fixture))
+    assert not verify_export(
+        prediction.replace("image/png", "image/jpeg"), str(fixture)
     )

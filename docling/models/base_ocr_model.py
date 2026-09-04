@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import copy
 import logging
 from abc import abstractmethod
@@ -47,6 +50,14 @@ def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
         coord_origin=CoordOrigin.BOTTOMLEFT,
     )
     bbox = BoundingBox(l=0, t=height, r=width, b=0, coord_origin=CoordOrigin.BOTTOMLEFT)
+    # NOTE: angle is hardcoded to 0.0 rather than reflecting the page's true
+    # rotation. No PdfPageBackend currently exposes rotation (or the individual
+    # crop/media/art/bleed/trim boxes) without triggering content decoding --
+    # the very work skip_cell_extraction exists to avoid. Left for future work:
+    # add a cheap PdfPageBackend.get_page_geometry() primitive (pypdfium2:
+    # ppage.get_rotation() plus the existing get_pdf_page_geometry() helper;
+    # docling-parse sync/threaded: page_decoder.get_page_dimension()) and
+    # source the dimension from it here.
     return SegmentedPdfPage(
         dimension=PdfPageGeometry(
             angle=0.0,

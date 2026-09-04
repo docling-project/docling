@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for Word heading detection via the ``w:outlineLvl`` style property.
 
 Kept separate from ``test_backend_msword.py`` so that file stays under the

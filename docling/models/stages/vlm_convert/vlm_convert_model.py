@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """VLM-based document conversion stage using the new runtime system.
 
 This stage converts document pages to structured formats (DocTags, Markdown, etc.)
@@ -215,10 +218,19 @@ class VlmConvertModel(BasePageModel):
                 # Run batch inference
                 batch_start = time.perf_counter()
                 outputs = self.engine.predict_batch(engine_inputs)
-                _log.debug(
-                    "Processed %s pages through VLM engine in %.3fs",
+                batch_time = time.perf_counter() - batch_start
+
+                # Engines report generated (not prompt) token counts, so this is
+                # decode throughput for the batch.
+                batch_tokens = sum(
+                    output.metadata.get("num_tokens") or 0 for output in outputs
+                )
+                _log.info(
+                    "Processed %s page(s): %s tokens in %.2f sec. (%.2f tok/s)",
                     len(engine_inputs),
-                    time.perf_counter() - batch_start,
+                    batch_tokens,
+                    batch_time,
+                    batch_tokens / batch_time if batch_time > 0 else 0.0,
                 )
 
                 # Attach predictions to pages

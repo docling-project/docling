@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for pipeline timing instrumentation.
 
 Timing is gated behind ``settings.debug.profile_pipeline_timings``, which is

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from collections.abc import Iterable, Iterator
 from io import BytesIO
@@ -84,23 +87,31 @@ def _make_docling_parse_page_content_config(
     *,
     create_words: bool,
     create_textlines: bool,
+    materialize_char_cells: bool = False,
     compute_shapes: bool = True,
+    include_bitmap_bytes: bool = False,
 ) -> ContentConfig:
     compute = ContentLevel.COMPUTE
     materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
     skip = ContentLevel.SKIP
 
     return ContentConfig(
-        char_cells_content_level=compute
-        if (create_words or create_textlines)
-        else skip,
+        char_cells_content_level=(
+            materialize
+            if materialize_char_cells
+            else compute
+            if (create_words or create_textlines)
+            else skip
+        ),
         word_cells_content_level=materialize if create_words else skip,
         line_cells_content_level=materialize if create_textlines else skip,
         # The threaded parser renders the page image from this same decode, so
         # shapes must be computed there or the render loses all vector content.
         shapes_content_level=compute if compute_shapes else skip,
         bitmaps_content_level=materialize,
-        include_bitmap_bytes=False,  # only need bitmap rectangles for OCR
+        # Decoding the bitmap bytes is only needed when the embedded images are
+        # consumed as such; OCR gets by with the bitmap rectangles alone.
+        include_bitmap_bytes=include_bitmap_bytes,
     )
 
 
@@ -113,6 +124,8 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         page_no: int,
         create_words: bool = True,
         create_textlines: bool = True,
+        materialize_char_cells: bool = False,
+        include_bitmap_images: bool = False,
         keep_chars: bool = False,
         keep_lines: bool = False,
         keep_images: bool = True,
@@ -124,6 +137,8 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
 
         self._create_words = create_words
         self._create_textlines = create_textlines
+        self._materialize_char_cells = materialize_char_cells
+        self._include_bitmap_images = include_bitmap_images
 
         self._keep_chars = keep_chars
         self._keep_lines = keep_lines
@@ -148,7 +163,9 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            materialize_char_cells=self._materialize_char_cells,
             compute_shapes=True,
+            include_bitmap_bytes=self._include_bitmap_images,
         )
 
         assert self._dp_doc is not None
@@ -362,6 +379,8 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             page_no=page_no,
             create_words=create_words,
             create_textlines=create_textlines,
+            materialize_char_cells=self.options._materialize_char_cells,
+            include_bitmap_images=self.options.include_bitmap_images,
         )
 
     def is_valid(self) -> bool:
@@ -412,8 +431,9 @@ def _resolve_threaded_page_numbers(
 
 
 class ThreadedDoclingParsePageBackend(PdfPageBackend):
-    def __init__(self, result: PageParseResult):
+    def __init__(self, result: PageParseResult, rendered: bool = True):
         self._result = result
+        self._rendered = rendered
         self._seg_page: Optional[SegmentedPdfPage] = None
 
     @property
@@ -422,6 +442,9 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
 
     def is_valid(self) -> bool:
         return self._result.success
+
+    def get_error_message(self) -> str:
+        return self._result.error_message
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         segmented_page = self.get_segmented_page()
@@ -530,6 +553,11 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
+        if not self._rendered:
+            raise RuntimeError(
+                "This backend was configured with render_pages=False, so page "
+                f"{self.page_no} was parsed but never rendered and no page image exists."
+            )
         return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
 
     def get_size(self) -> Size:
@@ -553,36 +581,39 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
         self._closed = False
+        self._iterating = False
 
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        requested_page_numbers = _resolve_threaded_page_numbers(
-            self.path_or_stream,
-            password,
-            in_doc.limits.page_range,
-        )
-
-        parser_threads = (
-            self.options.parser_threads
+        threaded_options = (
+            self.options
             if isinstance(self.options, ThreadedDoclingParseBackendOptions)
-            and self.options.parser_threads is not None
+            else ThreadedDoclingParseBackendOptions()
+        )
+        parser_threads = (
+            threaded_options.parser_threads
+            if threaded_options.parser_threads is not None
             else AcceleratorOptions().num_threads
         )
-        render_config = RenderConfig()
-        render_config.scale = 1.0
-        native_memory_release_interval = (
-            self.options.release_native_memory_every_n_pages
-            if isinstance(self.options, ThreadedDoclingParseBackendOptions)
-            else 128
-        )
+        self._render_pages = threaded_options.render_pages
+        render_config: RenderConfig | None = None
+        if self._render_pages:
+            render_config = RenderConfig()
+            render_config.scale = threaded_options.render_scale
         decode_config = _make_docling_parse_decode_config(
             enforce_same_font=self.options.enforce_same_font,
-            release_native_memory_every_n_pages=native_memory_release_interval,
+            release_native_memory_every_n_pages=(
+                threaded_options.release_native_memory_every_n_pages
+            ),
         )
         content_config = _make_docling_parse_page_content_config(
             create_words=True,
             create_textlines=True,
+            materialize_char_cells=self.options._materialize_char_cells,
+            # Shapes only matter for the render; skip them when nothing is rendered.
+            compute_shapes=self._render_pages,
+            include_bitmap_bytes=self.options.include_bitmap_images,
         )
 
         self.parser = DoclingThreadedPdfParser(
@@ -594,15 +625,34 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             ),
             decode_config=decode_config,
         )
-        # The threaded parser derives its document key by hashing from the current stream
-        # offset, so the stream has to be rewound for that key to cover the whole document.
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.seek(0)
-        self.doc_key = self.parser.load(
-            self.path_or_stream,
-            password=password,
-            page_numbers=requested_page_numbers,
-        )
+        try:
+            requested_page_numbers = _resolve_threaded_page_numbers(
+                self.path_or_stream,
+                password,
+                in_doc.limits.page_range,
+            )
+            # The threaded parser derives its document key by hashing from the current
+            # stream offset, so the stream has to be rewound for that key to cover the
+            # whole document.
+            if isinstance(self.path_or_stream, BytesIO):
+                self.path_or_stream.seek(0)
+            self.doc_key = self.parser.load(
+                self.path_or_stream,
+                password=password,
+                page_numbers=requested_page_numbers,
+            )
+        except (RuntimeError, ValueError) as e:
+            # pypdfium2 (PdfiumError) raises RuntimeError; the threaded parser
+            # surfaces native parse failures on unreadable bytes as ValueError
+            # (e.g. "vector::reserve"). Tag both as load failures.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
     def is_valid(self) -> bool:
         return not self._closed and self.page_count() > 0
@@ -637,12 +687,19 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
 
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
+        self._iterating = True
         for result in self.parser.iterate_results():
-            yield ThreadedDoclingParsePageBackend(result)
+            yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
+        self._iterating = False
 
     def unload(self) -> None:
         if self._closed:
             return
         self._closed = True
+        # The parser cannot unload while an iteration is active. Drain the raw
+        # tasks rather than creating page backends for work a consumer abandoned.
+        while self.parser.has_tasks():
+            self.parser.get_task()
+        self._iterating = False
         self.parser.unload(self.doc_key)
         super().unload()

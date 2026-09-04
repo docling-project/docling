@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Service client tests driven against a real in-process docling-serve fake.
 
 The existing unit tests reach into ``client._http_client`` to install an

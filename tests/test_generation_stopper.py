@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the DocTags repetition stopper.
 
 This is the guard that aborts a VLM generation stuck in a loop, so both

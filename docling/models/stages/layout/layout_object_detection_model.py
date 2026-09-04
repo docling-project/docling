@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Layout detection stage backed by object-detection runtimes."""
 
 from __future__ import annotations

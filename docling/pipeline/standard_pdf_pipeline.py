@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Thread-safe, production-ready PDF pipeline
 ================================================
 A self-contained, thread-safe PDF conversion pipeline exploiting parallelism between pipeline stages and models.
@@ -36,7 +39,7 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConversionStatus,
@@ -78,7 +81,10 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
     ReadingOrderOptions,
 )
-from docling.pipeline.base_pipeline import ConvertPipeline
+from docling.pipeline.base_pipeline import (
+    ConvertPipeline,
+    get_expected_page_nos,
+)
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -781,27 +787,8 @@ class StandardPdfPipeline(ConvertPipeline):
         )
 
     # --------------------------------------------------------------------- build
-    def _iter_requested_page_backends(
-        self, backend: PdfDocumentBackend, expected_page_nos: list[int]
-    ) -> Iterable[PdfPageBackend]:
-        if backend.supports_random_page_access:
-            for page_no in expected_page_nos:
-                yield backend.load_page(page_no - 1)
-            return
-
-        expected_page_no_set = set(expected_page_nos)
-        for page_backend in backend.iter_pages():
-            if page_backend.page_no in expected_page_no_set:
-                yield page_backend
-
     def _get_expected_page_nos(self, conv_res: ConversionResult) -> list[int]:
-        start_page, end_page = conv_res.input.limits.page_range
-        return list(
-            range(
-                max(1, start_page),
-                min(conv_res.input.page_count, end_page) + 1,
-            )
-        )
+        return get_expected_page_nos(conv_res)
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.
@@ -853,11 +840,10 @@ class StandardPdfPipeline(ConvertPipeline):
 
         def _produce_pages() -> None:
             try:
-                for page_backend in self._iter_requested_page_backends(
-                    backend, expected_page_nos
-                ):
+                for page_backend in iter_pdf_page_backends(backend, expected_page_nos):
                     page = page_by_no.get(page_backend.page_no)
                     if page is None:
+                        page_backend.unload()
                         continue
                     page._backend = page_backend
                     try:
@@ -865,6 +851,8 @@ class StandardPdfPipeline(ConvertPipeline):
                         self._page_sizes_by_no[page.page_no] = page.size
                     except Exception:
                         if page_backend.is_valid():
+                            page_backend.unload()
+                            page._backend = None
                             raise
                     if not ctx.first_stage.input_queue.put(
                         ThreadedItem(
@@ -874,6 +862,8 @@ class StandardPdfPipeline(ConvertPipeline):
                             conv_res=conv_res,
                         )
                     ):
+                        page_backend.unload()
+                        page._backend = None
                         break
             except Exception as exc:
                 producer_error.append(exc)

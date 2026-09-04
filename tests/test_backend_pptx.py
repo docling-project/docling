@@ -1,3 +1,10 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+import logging
+import struct
+import warnings
+import zlib
 from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,7 +20,10 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
-from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
+from docling.backend.mspowerpoint_backend import (
+    MsPowerpointDocumentBackend,
+    _is_metafile,
+)
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -500,3 +510,206 @@ def test_pptx_row_grouping_uses_sliding_window():
 
     # a, b, c are in the same row sorted left-to-right; d is in its own row.
     assert ordered == ["b", "a", "c", "d"]
+
+
+def _emf_bytes(width: int = 200, height: int = 100, drawable: bool = False) -> bytes:
+    """Build a structurally valid EMF.
+
+    python-pptx reads the header for the picture's dimensions, and the backend
+    only has to recognize the " EMF" signature 40 bytes in, so the header and
+    EMR_EOF are enough on their own. ``drawable`` adds a rectangle and an
+    ellipse for the cases that rasterize the picture for real and need it to
+    produce visible ink. Synthesizing the bytes keeps a binary fixture out of
+    ``tests/data``.
+
+    Args:
+        width: Picture width in device units.
+        height: Picture height in device units.
+        drawable: Whether to emit drawing records.
+
+    Returns:
+        The bytes of a complete EMF.
+    """
+    records = b""
+    record_count = 2
+    if drawable:
+        records += struct.pack("<II4i", 43, 24, 10, 10, width - 10, height - 10)
+        records += struct.pack("<II4i", 42, 24, 30, 20, width - 30, height - 20)
+        record_count += 2
+
+    header = struct.pack(
+        "<II4i4i4sIIIHHIII2i2i",
+        1,
+        88,
+        0,
+        0,
+        width,
+        height,
+        0,
+        0,
+        width * 100,
+        height * 100,
+        b" EMF",
+        0x10000,
+        88 + len(records) + 20,
+        record_count,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1920,
+        1080,
+        508,
+        286,
+    )
+    eof = struct.pack("<IIIII", 14, 20, 0, 16, 20)
+    return header + records + eof
+
+
+def _deck_with_picture(tmp_path: Path, image_bytes: bytes, suffix: str) -> Path:
+    """Save a one-slide deck holding a title and a single picture."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    image_path = tmp_path / f"picture{suffix}"
+    image_path.write_bytes(image_bytes)
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    slide.shapes.title.text = "Quarterly results"
+    slide.shapes.add_picture(str(image_path), Inches(1), Inches(2), width=Inches(4))
+
+    deck_path = tmp_path / f"deck{suffix}.pptx"
+    prs.save(deck_path)
+    return deck_path
+
+
+@pytest.mark.parametrize(
+    ("image_bytes", "expected"),
+    [
+        (_emf_bytes(), True),
+        (b"\xd7\xcd\xc6\x9a" + b"\x00" * 60, True),
+        (b"\x89PNG\r\n\x1a\n" + b"\x00" * 60, False),
+        (b"\xff\xd8\xff\xe0" + b"\x00" * 60, False),
+        (b"\x01\x00\x09\x00" + b"\x00" * 60, False),
+        (b"", False),
+    ],
+    ids=["emf", "placeable-wmf", "png", "jpeg", "bare-wmf", "empty"],
+)
+def test_metafile_detection(image_bytes: bytes, expected: bool):
+    """Only the metafile flavours Pillow identifies count as metafiles.
+
+    The signature check decides whether an undecodable picture is worth
+    rasterizing externally or is simply broken, so a raster format must never
+    match — otherwise a corrupt JPEG would be silently turned into an empty
+    picture instead of being reported.
+
+    A bare (non-placeable) WMF is deliberately excluded: Pillow's ``_accept``
+    only recognizes the placeable magic and EMF, so python-pptx raises while
+    reading the picture and the bytes never reach this check.
+    """
+    assert _is_metafile(image_bytes) is expected
+
+
+def test_pptx_emf_picture_survives_without_pillow_metafile_support(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """An EMF picture stays in the document when nothing can rasterize it.
+
+    Pillow only draws metafiles on Windows, where it delegates to the GDI
+    ``PlayEnhMetaFile`` API; every other platform gets a stub that raises on
+    load. Dropping the shape there loses the picture -- commonly a chart pasted
+    in from Excel -- from an otherwise successful conversion, and does so on
+    Linux only. Clearing the handler reproduces a non-Windows Pillow, and
+    emptying PATH reproduces a machine without LibreOffice, so the picture has
+    to survive on structure alone.
+    """
+    from PIL import WmfImagePlugin
+
+    # The plugin registers a GDI-backed handler at import time on Windows only;
+    # on other platforms this attribute is already None.
+    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    # LibreOffice is found with shutil.which, so an empty PATH hides it whether
+    # or not the machine running the tests happens to have it installed.
+    monkeypatch.setenv("PATH", str(tmp_path))
+
+    deck_path = _deck_with_picture(tmp_path, _emf_bytes(), ".emf")
+
+    with caplog.at_level(
+        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
+    ):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            doc = get_converter().convert(deck_path).document
+
+    assert len(doc.pictures) == 1, "the EMF picture should survive the conversion"
+    picture = doc.pictures[0]
+    assert picture.prov, "the picture should keep its place on the slide"
+    assert picture.prov[0].page_no == 1
+    assert picture.get_image(doc=doc) is None, (
+        "without a rasterizer the picture is recorded without image data"
+    )
+    assert "LibreOffice is required" in caplog.text, (
+        "the user should be told how to recover the picture's pixels"
+    )
+
+    assert "Quarterly results" in [t.text for t in doc.texts]
+
+
+def test_pptx_undecodable_raster_picture_is_still_skipped(tmp_path: Path):
+    """A truncated raster picture is skipped, not turned into a placeholder.
+
+    Recovering metafiles must not quietly widen into recovering every image
+    Pillow rejects: a genuinely broken raster carries no position worth keeping
+    and should still be reported to the caller.
+    """
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        crc = zlib.crc32(tag + data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+    # Identifies as an 8x8 PNG, so python-pptx accepts it, but the pixel data
+    # is not a zlib stream, so decoding it raises.
+    broken_png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 8, 8, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", b"not-a-zlib-stream")
+        + chunk(b"IEND", b"")
+    )
+    deck_path = _deck_with_picture(tmp_path, broken_png, ".png")
+
+    with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
+        doc = get_converter().convert(deck_path).document
+
+    assert len(doc.pictures) == 0
+    assert "Quarterly results" in [t.text for t in doc.texts]
+
+
+def test_pptx_emf_picture_rasterized_via_libreoffice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, libreoffice_available: bool
+):
+    """LibreOffice recovers the actual pixels of a metafile Pillow cannot draw.
+
+    Keeping the picture without image data preserves the document structure,
+    but the drawing itself is recoverable whenever LibreOffice is installed —
+    the same tool the chart path already shells out to. Its output is not
+    byte-stable across versions, so this asserts the picture carries a
+    plausibly sized image rather than comparing pixels.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — rasterization cannot be tested")
+
+    from PIL import WmfImagePlugin
+
+    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+
+    deck_path = _deck_with_picture(tmp_path, _emf_bytes(drawable=True), ".emf")
+    doc = get_converter().convert(deck_path).document
+
+    assert len(doc.pictures) == 1
+    image = doc.pictures[0].get_image(doc=doc)
+    assert image is not None, "the metafile should have been rasterized"
+    assert image.width > 50 and image.height > 20, (
+        f"rasterized metafile is implausibly small: {image.size}"
+    )

@@ -118,6 +118,37 @@ opts = PdfPipelineOptions(
 )
 ```
 
+## Native PDF pipeline (no models)
+
+Extracts what the PDF already contains — one text item per native text cell, one
+picture per embedded bitmap — with docling-parse only. Very fast, but the result
+has no reading order, headings or tables. PDF input only.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.document_converter import DocumentConverter, NativePdfFormatOption
+from docling_core.types.doc.page import TextCellUnit
+
+pipeline_options = NativePdfPipelineOptions(
+    text_cell_unit=TextCellUnit.LINE,  # or WORD / CHAR
+    generate_page_images=True,  # parse *and* render each page; False = parse only
+    images_scale=2.0,  # 144 DPI page images
+    generate_picture_images=True,  # decode the embedded bitmaps
+    # parser_threads defaults to all but one CPU thread (no model runs here, so
+    # accelerator_options.num_threads does not apply)
+)
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: NativePdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = converter.convert("report.pdf")
+```
+
+CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
+
 ## VLM pipeline (local inference)
 
 Processes each page as an image through a vision-language model, replacing the

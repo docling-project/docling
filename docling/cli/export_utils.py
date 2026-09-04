@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import re
 from pathlib import Path
 
@@ -14,6 +17,7 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.VTT,
         OutputFormat.DOCLANG,
         OutputFormat.CHUNKS,
+        OutputFormat.LATEX,
     }
 )
 
@@ -48,6 +52,7 @@ def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool
         "export_doclang": OutputFormat.DOCLANG in to_formats,
         "export_dclx": OutputFormat.DCLX in to_formats,
         "export_chunks": OutputFormat.CHUNKS in to_formats,
+        "export_latex": OutputFormat.LATEX in to_formats,
     }
 
 

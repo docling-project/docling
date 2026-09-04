@@ -8,14 +8,14 @@ This is an abstract.
     - Nested item 1
     - Nested item 2
 - Second item
-    - Nested ordered item 1
-    - Nested ordered item 2
+    1. Nested ordered item 1
+    2. Nested ordered item 2
         - Deeper nested unordered item
 - Third item
-    - Nested ordered item 1
-    - Nested ordered item 2
+    1. Nested ordered item 1
+    2. Nested ordered item 2
         - Deeper nested unordered item
-    - Nested ordered item 2
+    3. Nested ordered item 2
 
 ## Section 2
 

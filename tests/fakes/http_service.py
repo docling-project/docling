@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """A FastAPI app served by uvicorn on an ephemeral localhost port.
 
 Docling reaches remote services through two client libraries -- ``httpx`` in

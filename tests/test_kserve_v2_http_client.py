@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """The KServe v2 REST transport, driven against a real inference server.
 
 ``KserveV2HttpClient`` is the shared foundation under every KServe consumer --

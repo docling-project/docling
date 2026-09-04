@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 import threading
 from collections.abc import Iterable
@@ -12,6 +15,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmOptions,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -119,9 +123,15 @@ class PictureDescriptionVlmModel(
 
         from typing import Any, cast
 
+        tokenizer = getattr(self.processor, "tokenizer", None)
+        generation_config = build_generation_config(
+            GenerationConfig(**self.options.generation_config),
+            pad_token_id=getattr(tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        )
         generated_ids = cast(Any, self.model).generate(
             **inputs,
-            generation_config=GenerationConfig(**self.options.generation_config),
+            generation_config=generation_config,
         )
         generated_texts = self.processor.batch_decode(
             generated_ids[:, inputs["input_ids"].shape[1] :],

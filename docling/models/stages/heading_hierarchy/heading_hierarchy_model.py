@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Section-header level inference for the PDF/image pipeline.
 
 The layout model classifies regions as ``SECTION_HEADER`` without a level, so every heading

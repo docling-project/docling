@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Regression tests for skipping native cell extraction (issue #4058).
 
 In full-page OCR mode the native text cells are discarded during OCR

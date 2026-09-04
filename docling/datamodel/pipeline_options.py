@@ -1,4 +1,8 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
+import os
 import warnings
 from datetime import datetime
 from enum import Enum
@@ -6,11 +10,14 @@ from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal
 
 from docling_core.types.doc import PictureClassificationLabel
+from docling_core.types.doc.page import TextCellUnit
 from pydantic import (
     AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
+    computed_field,
     field_validator,
     model_validator,
 )
@@ -230,32 +237,34 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
-    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
-    # When set to True it forces `mode` to FULL_PAGE
-    force_full_page_ocr: Annotated[
-        bool,
-        Field(
-            description="If enabled, a full-page OCR is always applied.",
-            examples=[False],
-            deprecated=(
-                "`force_full_page_ocr` is deprecated; set "
-                "`mode=OcrMode.FULL_PAGE` instead."
-            ),
-        ),
-    ] = False
-
-    @model_validator(mode="after")
-    def _apply_force_full_page_ocr(self) -> "OcrOptions":
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_force_full_page_ocr(cls, data: Any) -> Any:
         r"""
-        Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
-        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE`.
+        Accept the deprecated `force_full_page_ocr` constructor keyword and
+        translate it into the `mode` it is an old name for.
         """
-        with warnings.catch_warnings():  # deprecated force_full_page_ocr
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            forced = self.force_full_page_ocr
-        if forced:
+        if isinstance(data, dict) and data.pop("force_full_page_ocr", False):
+            data["mode"] = OcrMode.FULL_PAGE
+        return data
+
+    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards
+    # compatibility as a view over `mode`, so the two can never drift apart.
+    @computed_field(  # type: ignore[prop-decorator]
+        deprecated=(
+            "`force_full_page_ocr` is deprecated; set `mode=OcrMode.FULL_PAGE` instead."
+        ),
+        description="If enabled, a full-page OCR is always applied.",
+        examples=[False],
+    )
+    @property
+    def force_full_page_ocr(self) -> bool:
+        return self.mode is OcrMode.FULL_PAGE
+
+    @force_full_page_ocr.setter
+    def force_full_page_ocr(self, value: bool) -> None:
+        if value:
             self.mode = OcrMode.FULL_PAGE
-        return self
 
 
 class OcrAutoOptions(OcrOptions):
@@ -1147,9 +1156,11 @@ class PdfBackend(str, Enum):
             reliable for basic text extraction.
         DOCLING_PARSE: Docling Parse backend providing enhanced layout
             analysis, structure preservation, and advanced table detection.
-            This is the recommended backend for most use cases.
+            Single-threaded; use `THREADED_DOCLING_PARSE` unless serialized
+            page parsing is required.
         THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
-            concurrent page parsing in the standard PDF pipeline.
+            concurrent page parsing in the standard PDF pipeline. This is the
+            default and recommended backend for most use cases.
         DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
@@ -2156,12 +2167,14 @@ class ProcessingPipeline(str, Enum):
     Attributes:
         LEGACY: Legacy pipeline for backward compatibility with older document processing workflows.
         STANDARD: Standard pipeline for general document processing (PDF, DOCX, images, etc.) with layout analysis.
+        NATIVE: Model-free pipeline extracting the native text and images of a PDF with docling-parse.
         VLM: Vision-Language Model pipeline for advanced document understanding using multimodal AI models.
         ASR: Automatic Speech Recognition pipeline for audio and video transcription to text.
     """
 
     LEGACY = "legacy"
     STANDARD = "standard"
+    NATIVE = "native"
     VLM = "vlm"
     ASR = "asr"
 
@@ -2178,3 +2191,68 @@ class ThreadedPdfPipelineOptions(PdfPipelineOptions):
     See Also:
         `PdfPipelineOptions`: Base class with all batch and queue settings.
     """
+
+
+def default_parser_threads() -> int:
+    """All but one of the machine's CPU threads, so the machine stays responsive."""
+    return max(1, (os.cpu_count() or 2) - 1)
+
+
+class NativePdfPipelineOptions(PaginatedPipelineOptions):
+    """Pipeline options for the native (model-free) PDF pipeline.
+
+    The native pipeline reads what is already encoded in the PDF: the text cells
+    and the embedded bitmap images reported by docling-parse. It runs no layout,
+    OCR or table-structure model, so conversion is fast but the resulting
+    `DoclingDocument` carries one plain `TextItem` per text cell in the parser's
+    order, without reading order, headings or tables.
+
+    Note:
+        Native picture images additionally require the PDF backend to decode the
+        embedded bitmaps (`PdfBackendOptions.include_bitmap_images=True`);
+        without it, pictures are still emitted, but only with their bounding box.
+
+    See Also:
+        `PdfPipelineOptions`: Full PDF pipeline with layout, OCR and tables.
+    """
+
+    text_cell_unit: Annotated[
+        TextCellUnit,
+        Field(
+            description=(
+                "Granularity of the native text cells emitted as text items: one item per line "
+                "(default), per word, or per character. The PDF backend must materialize the "
+                "requested cell unit; the docling-parse backends materialize words and lines."
+            )
+        ),
+    ] = TextCellUnit.LINE
+    parser_threads: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Number of PDF parser worker threads. This is the only parallelism this "
+                "pipeline has, since it runs no model: `accelerator_options` governs model "
+                "inference and is unused here. Defaults to all but one of the machine's "
+                "CPU threads."
+            ),
+        ),
+    ] = Field(default_factory=default_parser_threads)
+    generate_picture_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Attach the embedded bitmap images of the PDF to the picture items. Requires a "
+                "PDF backend configured with `include_bitmap_images=True`."
+            )
+        ),
+    ] = True
+    generate_page_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Attach a rendered image of every page to the document. Page images are produced "
+                "by rasterizing the page, so the pipeline parses *and* renders each page, at "
+                "`images_scale` pixels per point. Disable it to parse only, which is faster."
+            )
+        ),
+    ] = True

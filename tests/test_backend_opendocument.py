@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the OpenDocument Format (ODF) backends (ODT/ODS/ODP).
 
 This module includes two types of tests:

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import json
 from io import BytesIO
 from pathlib import Path
@@ -140,3 +143,28 @@ def test_non_string_hyperlink_is_dropped(href):
     doc = get_converter().convert(_boxnote_stream(_linked_paragraph(href))).document
 
     assert doc.texts[0].hyperlink is None
+
+
+def test_utf8_bom_does_not_fail_the_load(tmp_path):
+    """A leading UTF-8 BOM must not survive into the text handed to json.loads.
+
+    Decoding with plain utf-8 kept it, so the document failed to load outright
+    rather than losing a heading. Both the stream and the file path are covered,
+    since each decodes separately.
+    """
+    source = Path("./tests/data/boxnote/sources/sample.boxnote")
+    boxnote_bytes = b"\xef\xbb\xbf" + source.read_bytes()
+    converter = get_converter()
+
+    stream_doc = converter.convert(
+        DocumentStream(name="bom.boxnote", stream=BytesIO(boxnote_bytes)),
+        raises_on_error=True,
+    ).document
+
+    boxnote_file = tmp_path / "bom.boxnote"
+    boxnote_file.write_bytes(boxnote_bytes)
+    file_doc = converter.convert(boxnote_file, raises_on_error=True).document
+
+    expected = converter.convert(source, raises_on_error=True).document
+    for doc in (stream_doc, file_doc):
+        assert doc.export_to_markdown() == expected.export_to_markdown()

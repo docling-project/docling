@@ -1,0 +1,340 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "pages_iwork09_comments",
+  "origin": {
+    "mimetype": "application/vnd.apple.pages",
+    "binary_hash": 5118113357429640954,
+    "filename": "pages_iwork09_comments.pages"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
+        "$ref": "#/texts/6"
+      },
+      {
+        "$ref": "#/texts/7"
+      },
+      {
+        "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
+      },
+      {
+        "$ref": "#/texts/11"
+      },
+      {
+        "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
+      },
+      {
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
+      },
+      {
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Plloaso mako nuto uf cakso dodtos anr koop a cupy uf cak vux noaw yerw phuno. Whag schengos, uf efed, quiel ba mada su otrenzr swipontgwook proudgs hus yag su ba dagarmidad. Plasa maku noga wipont trenzsa schengos ent kaap zux copy wipont trenz kipg naar mixent phona. Cak pwico siructiun ruos nust apoply tyu cak UCU sisulutiun munityuw uw cak UCU-TGU jot scannow. Trens roxas eis ti Plokeing quert loppe eis yop prexs. Piy opher hawers, eit yaggles orn ti sumbloat alohe plok. Su havo loasor cakso tgu pwuructs tyu. Nunc volutpat dapibus nisi. Maecenas vel nulla. Proin et erat ac odio mattis suscipit. In hac habitasse platea dictumst. Sed tempus fermentum arcu. Cras egestas mauris cursus eros. Morbi vulputate, neque vel fermentum egestas, diam neque vestibulum risus, dapibus fermentum diam lacus et purus. In hac habitasse platea dictumst. Pellentesque id enim id tortor lacinia fermentum. Nam eu metus quis mauris ullamcorper mollis. Nullam vehicula.",
+      "text": "Plloaso mako nuto uf cakso dodtos anr koop a cupy uf cak vux noaw yerw phuno. Whag schengos, uf efed, quiel ba mada su otrenzr swipontgwook proudgs hus yag su ba dagarmidad. Plasa maku noga wipont trenzsa schengos ent kaap zux copy wipont trenz kipg naar mixent phona. Cak pwico siructiun ruos nust apoply tyu cak UCU sisulutiun munityuw uw cak UCU-TGU jot scannow. Trens roxas eis ti Plokeing quert loppe eis yop prexs. Piy opher hawers, eit yaggles orn ti sumbloat alohe plok. Su havo loasor cakso tgu pwuructs tyu. Nunc volutpat dapibus nisi. Maecenas vel nulla. Proin et erat ac odio mattis suscipit. In hac habitasse platea dictumst. Sed tempus fermentum arcu. Cras egestas mauris cursus eros. Morbi vulputate, neque vel fermentum egestas, diam neque vestibulum risus, dapibus fermentum diam lacus et purus. In hac habitasse platea dictumst. Pellentesque id enim id tortor lacinia fermentum. Nam eu metus quis mauris ullamcorper mollis. Nullam vehicula."
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sample pages document - this is the template document",
+      "text": "Sample pages document - this is the template document"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Some plain text to parse.",
+      "text": "Some plain text to parse."
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "comments": [
+        {
+          "$ref": "#/texts/18"
+        }
+      ],
+      "orig": "Both Pages 1.x and Keynote 2.x, which form the basis of Apple’s iWork package, are powerful, yet easy to use applications that have attracted large and ever-growing customer bases. The iWork package is part of a family of iApps productivity tools.",
+      "text": "Both Pages 1.x and Keynote 2.x, which form the basis of Apple’s iWork package, are powerful, yet easy to use applications that have attracted large and ever-growing customer bases. The iWork package is part of a family of iApps productivity tools.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Because Keynote uses an open, easily accessible file format, developers can take advantage of its XML schema to enhance existing products or create new ones. Beginning with Keynote 1.x, it is possible to build applications that will create or change the contents of a Keynote presentation. For example, developers can use any of Keynote’s themes and build an entire presentation of their own design simply by filling out the<key:slide-list> element in a text editor of their choice.",
+      "text": "Because Keynote uses an open, easily accessible file format, developers can take advantage of its XML schema to enhance existing products or create new ones. Beginning with Keynote 1.x, it is possible to build applications that will create or change the contents of a Keynote presentation. For example, developers can use any of Keynote’s themes and build an entire presentation of their own design simply by filling out the<key:slide-list> element in a text editor of their choice."
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "comments": [
+        {
+          "$ref": "#/texts/16"
+        }
+      ],
+      "orig": "The Keynote APXL file is the engine that drives every presentation, specifying every detail of the presentation’s appearance and behavior––from master slide and each individual slide to the transitions used between slides. The APXL file also defines the state of the presentation when the user first opens it. An understanding of how the elements in an APXL file combine to create a presentation is critical to developing applications that are robust and well-behaved.",
+      "text": "The Keynote APXL file is the engine that drives every presentation, specifying every detail of the presentation’s appearance and behavior––from master slide and each individual slide to the transitions used between slides. The APXL file also defines the state of the presentation when the user first opens it. An understanding of how the elements in an APXL file combine to create a presentation is critical to developing applications that are robust and well-behaved."
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Similarly, understanding the Pages document structure is important for Apple developers who want to customize their own page layouts or add value to their existing application.",
+      "text": "Similarly, understanding the Pages document structure is important for Apple developers who want to customize their own page layouts or add value to their existing application."
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Extensible Markup Language (XML) is a ubiquitous and flexible markup standard for processing and exchanging data. You can find XML in a wide range of categories, including property lists and file formats for various applications. XML is used extensively to specify the format of various sources of information on the Internet, including web-based services. XML is at the heart of both iWork applications, Keynote and Pages, developed by Apple.",
+      "text": "Extensible Markup Language (XML) is a ubiquitous and flexible markup standard for processing and exchanging data. You can find XML in a wide range of categories, including property lists and file formats for various applications. XML is used extensively to specify the format of various sources of information on the Internet, including web-based services. XML is at the heart of both iWork applications, Keynote and Pages, developed by Apple."
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "this should be page 2",
+      "text": "this should be page 2"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "blah blah blah meh meh hello how are you doing today just writing a bunch of random text here nothing special move along.",
+      "text": "blah blah blah meh meh hello how are you doing today just writing a bunch of random text here nothing special move along."
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "now we’ll start a new paragraph and put in more meaningless text. LOL LOL ROFL",
+      "text": "now we’ll start a new paragraph and put in more meaningless text. LOL LOL ROFL"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "hmmm mmmmm aaaaaarrrrrrrgggggh",
+      "text": "hmmm mmmmm aaaaaarrrrrrrgggggh"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Content analytics starts with the gathering of relevant enterprise content.",
+      "text": "Content analytics starts with the gathering of relevant enterprise content."
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "IBM® Content Analytics provides crawlers for a wide variety of enterprise content sources that allow content, metadata, structured data, and unstructured data to be collected and fed into the analytics pipeline. Crawler configuration is flexible and scalable, enabling you to gather the source information that you need to intelligently answer content-based questions.",
+      "text": "IBM® Content Analytics provides crawlers for a wide variety of enterprise content sources that allow content, metadata, structured data, and unstructured data to be collected and fed into the analytics pipeline. Crawler configuration is flexible and scalable, enabling you to gather the source information that you need to intelligently answer content-based questions."
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "comments": [
+        {
+          "$ref": "#/texts/17"
+        }
+      ],
+      "orig": "Because IBM Content Analytics implements the open Unstructured Information Management Architecture (UIMA) framework, you can fully customize the processing of content and take advantage of existing UIMA annotators, both open source and commercial, to enhance your automated content analysis capabilities.",
+      "text": "Because IBM Content Analytics implements the open Unstructured Information Management Architecture (UIMA) framework, you can fully customize the processing of content and take advantage of existing UIMA annotators, both open source and commercial, to enhance your automated content analysis capabilities."
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Deep, automated analysis of content can be a computing-intensive operation. To support fast and efficient analysis of large amounts of content, IBM Content Analytics provides a highly scalable implementation of the UIMA specification, which allows you to distribute content analysis across multiple machines.",
+      "text": "Deep, automated analysis of content can be a computing-intensive operation. To support fast and efficient analysis of large amounts of content, IBM Content Analytics provides a highly scalable implementation of the UIMA specification, which allows you to distribute content analysis across multiple machines."
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "comment about the APXL file here!!",
+      "text": "comment about the APXL file here!!"
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "comment about UIMA annotators",
+      "text": "comment about UIMA annotators"
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "are there really a lot of people using iWork?!?!",
+      "text": "are there really a lot of people using iWork?!?!"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

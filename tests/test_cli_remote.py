@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the `docling convert-remote` command.
 
 The service client is faked so these run without a live docling-serve instance.

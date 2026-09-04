@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Unit tests for Unlimited-OCR grounding output parsing.
 
 These operate on plain strings: no model, no network, no reference test data.

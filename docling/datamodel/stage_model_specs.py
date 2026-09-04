@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Model specifications and presets for stage models.
 
 This module defines:
@@ -22,6 +25,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
+    DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
@@ -69,6 +73,15 @@ class EngineModelConfig(BaseModel):
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
+    min_engine_version: str | None = Field(
+        default=None,
+        description=(
+            "Minimum version of the engine's backing library required to run this "
+            "model (e.g. '0.6.17' for mlx-vlm). Auto-inline skips the engine when "
+            "the installed version is older."
+        ),
+    )
+
     extra_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional engine-specific configuration"
     )
@@ -89,6 +102,7 @@ class EngineModelConfig(BaseModel):
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
+            min_engine_version=self.min_engine_version,
             extra_config=self.extra_config,
         )
 
@@ -257,17 +271,21 @@ class VlmModelSpec(BaseModel):
         repo_id = self.get_repo_id(engine_type)
         revision = self.get_revision(engine_type)
 
-        # Get engine-specific extra_config and torch_dtype
+        # Get engine-specific extra_config, torch_dtype and version requirement
         extra_config = {}
         torch_dtype = None
+        min_engine_version = None
         if engine_type in self.engine_overrides:
-            extra_config = self.engine_overrides[engine_type].extra_config.copy()
-            torch_dtype = self.engine_overrides[engine_type].torch_dtype
+            override = self.engine_overrides[engine_type]
+            extra_config = override.extra_config.copy()
+            torch_dtype = override.torch_dtype
+            min_engine_version = override.min_engine_version
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             torch_dtype=torch_dtype,
+            min_engine_version=min_engine_version,
             extra_config=extra_config,
         )
 
@@ -1084,7 +1102,7 @@ VLM_CONVERT_SMOLDOCLING = StageModelPreset(
     model_spec=VlmModelSpec(
         name="SmolDocling-256M",
         default_repo_id="docling-project/SmolDocling-256M-preview",
-        prompt="Convert this page to docling.",
+        prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
         stop_strings=["</doctag>", "<end_of_utterance>"],
         engine_overrides={
@@ -1109,7 +1127,7 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     description="IBM Granite DocTags model for document conversion (258M parameters)",
     model_spec=VlmModelSpec(
         **GRANITE_DOCLING_MODEL_SPEC_BASE,
-        prompt="Convert this page to docling.",
+        prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
     ),
     scale=2.0,
@@ -1658,6 +1676,15 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
         trust_remote_code=True,
         stop_strings=["<|im_end|>", "<|endoftext|>"],
         engine_overrides={
+            # The Qwen3-VL vision tower needs mlx-vlm>=0.6.17; older releases
+            # raise a TypeError inside mlx_vlm/models/qwen3_vl/vision.py. The
+            # models-vlm-inline extra pins that floor, but the declaration here
+            # keeps auto-inline from picking MLX in an environment that does
+            # not. No bf16 MLX export is published; this is the 8-bit conversion.
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/chandra-ocr-2-oQ8",
+                min_engine_version="0.6.17",
+            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={

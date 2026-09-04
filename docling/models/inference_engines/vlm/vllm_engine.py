@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """vLLM-based VLM inference engine for high-throughput serving."""
 
 import logging
@@ -10,6 +13,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     format_prompt_for_vlm,
     preprocess_image_batch,
     resolve_model_artifacts_path,
@@ -18,6 +22,7 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
 from docling.utils.accelerator_utils import decide_device
 
@@ -122,6 +127,11 @@ class VllmVlmEngine(BaseVlmEngine):
             return
 
         _log.info("Initializing vLLM VLM inference engine...")
+
+        check_min_engine_version(
+            VlmEngineType.VLLM,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
 
         try:
             from transformers import AutoProcessor
@@ -318,13 +328,25 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Generate
+        _log.info(
+            "Running vLLM inference on %s image(s) (max_new_tokens=%s)...",
+            len(input_batch),
+            first_input.max_new_tokens,
+        )
         start_time = time.time()
         outputs = self.llm.generate(llm_inputs, sampling_params=sampling_params)
         generation_time = time.time() - start_time
 
-        _log.debug(
-            f"vLLM generated {len(outputs)} outputs in {generation_time:.2f}s "
-            f"({len(outputs) / generation_time:.1f} outputs/sec)"
+        total_generated_tokens = sum(
+            len(output.outputs[0].token_ids) if output.outputs else 0
+            for output in outputs
+        )
+        _log.info(
+            "vLLM generated %s tokens for %s image(s) in %.2f sec. (%.2f tok/s)",
+            total_generated_tokens,
+            len(outputs),
+            generation_time,
+            total_generated_tokens / generation_time if generation_time > 0 else 0.0,
         )
 
         # Create output objects
