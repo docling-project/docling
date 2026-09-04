@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from pathlib import Path
 
 from docling_core.types.doc import (
@@ -73,7 +73,12 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                self.content = self.path_or_stream.getvalue().decode("utf-8-sig")
+                # TextIOWrapper gives the same universal newline translation as
+                # the text-mode read below. It reads from the current position,
+                # which is EOF here, so it wraps a copy rather than the input.
+                self.content = TextIOWrapper(
+                    BytesIO(self.path_or_stream.getvalue()), encoding="utf-8-sig"
+                ).read()
             if isinstance(self.path_or_stream, Path):
                 with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     self.content = f.read()
