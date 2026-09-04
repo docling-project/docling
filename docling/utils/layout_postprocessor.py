@@ -108,6 +108,9 @@ class SpatialClusterIndex:
 class LayoutPostprocessor:
     """Postprocesses layout predictions by cleaning up clusters and mapping cells."""
 
+    _SECTION_HEADER_OVERLAP_THRESHOLD = 0.2
+    _SECTION_HEADER_VERTICAL_OVERLAP_THRESHOLD = 0.5
+
     # Cluster type-specific parameters for overlap resolution
     OVERLAP_PARAMS = {
         "regular": {"area_threshold": 1.3, "conf_threshold": 0.05},
@@ -551,7 +554,9 @@ class LayoutPostprocessor:
         return current_best if current_best else group_clusters[0]
 
     def _merge_overlapping_section_headers(
-        self, clusters: list[Cluster], overlap_threshold: float = 0.2
+        self,
+        clusters: list[Cluster],
+        overlap_threshold: float = _SECTION_HEADER_OVERLAP_THRESHOLD,
     ) -> list[Cluster]:
         headers = [
             cluster
@@ -573,7 +578,11 @@ class LayoutPostprocessor:
                     header.bbox.t, other.bbox.t
                 )
                 min_height = min(header.bbox.height, other.bbox.height)
-                if min_height <= 0 or vertical_overlap / min_height <= 0.5:
+                if (
+                    min_height <= 0
+                    or vertical_overlap / min_height
+                    <= self._SECTION_HEADER_VERTICAL_OVERLAP_THRESHOLD
+                ):
                     continue
 
                 if header.bbox.intersection_over_union(other.bbox) > overlap_threshold:
@@ -628,6 +637,8 @@ class LayoutPostprocessor:
             return []
 
         spatial_index = (
+            # Header merging may replace clusters and tighten their bboxes. Build
+            # an index from the active set so refinement sees the current geometry.
             SpatialClusterIndex(clusters)
             if cluster_type == "regular"
             else self.picture_index

@@ -37,15 +37,17 @@ def _list_item(text: str):
     )
 
 
-def _element(cluster_id: int, text: str) -> TextElement:
+def _element(
+    cluster_id: int, text: str, label: DocItemLabel = DocItemLabel.LIST_ITEM
+) -> TextElement:
     return TextElement(
         id=cluster_id,
         page_no=1,
-        label=DocItemLabel.LIST_ITEM,
+        label=label,
         text=text,
         cluster=Cluster(
             id=cluster_id,
-            label=DocItemLabel.LIST_ITEM,
+            label=label,
             bbox=_bounding_box(),
         ),
     )
@@ -68,6 +70,30 @@ def test_merge_elements_dehyphenates_lowercase_continuations(
     model._merge_elements(
         _element(1, prefix),
         _element(2, continuation),
+        item,
+        page_height=100,
+    )
+
+    assert item.text == expected
+    assert item.orig == expected
+
+
+@pytest.mark.parametrize(
+    ("prefix", "continuation", "expected"),
+    [
+        ("Public", "utilities", "Public utilities"),
+        ("Gen-", "eral Manager", "General Manager"),
+    ],
+)
+def test_merge_elements_handles_section_header_wraps(
+    prefix: str, continuation: str, expected: str
+) -> None:
+    item = _list_item(prefix).model_copy(update={"label": DocItemLabel.SECTION_HEADER})
+    model = ReadingOrderModel(ReadingOrderOptions())
+
+    model._merge_elements(
+        _element(1, prefix, DocItemLabel.SECTION_HEADER),
+        _element(2, continuation, DocItemLabel.SECTION_HEADER),
         item,
         page_height=100,
     )
