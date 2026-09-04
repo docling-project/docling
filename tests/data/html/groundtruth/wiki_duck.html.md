@@ -321,6 +321,8 @@ Pecten along the bill
 
 <!-- image -->
 
+[Mallard duckling preening](/wiki/Mallard)
+
 Ducks eat food sources such as [grasses](/wiki/Poaceae) , aquatic plants, fish, insects, small amphibians, worms, and small [molluscs](/wiki/Mollusc) .
 
 [Dabbling ducks](/wiki/Dabbling_duck) feed on the surface of water or on land, or as deep as they can reach by up-ending without completely submerging. [[ 24 ]](#cite_note-24) Along the edge of the bill, there is a comb-like structure called a [pecten](/wiki/Pecten_(biology)) . This strains the water squirting from the side of the bill and traps any food. The pecten is also used to preen feathers and to hold slippery food items.

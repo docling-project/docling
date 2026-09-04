@@ -17,6 +17,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    computed_field,
     field_validator,
     model_validator,
 )
@@ -236,32 +237,34 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
-    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards compatibility
-    # When set to True it forces `mode` to FULL_PAGE
-    force_full_page_ocr: Annotated[
-        bool,
-        Field(
-            description="If enabled, a full-page OCR is always applied.",
-            examples=[False],
-            deprecated=(
-                "`force_full_page_ocr` is deprecated; set "
-                "`mode=OcrMode.FULL_PAGE` instead."
-            ),
-        ),
-    ] = False
-
-    @model_validator(mode="after")
-    def _apply_force_full_page_ocr(self) -> "OcrOptions":
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_force_full_page_ocr(cls, data: Any) -> Any:
         r"""
-        Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
-        flag: when it is set, force `mode` to `OcrMode.FULL_PAGE`.
+        Accept the deprecated `force_full_page_ocr` constructor keyword and
+        translate it into the `mode` it is an old name for.
         """
-        with warnings.catch_warnings():  # deprecated force_full_page_ocr
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            forced = self.force_full_page_ocr
-        if forced:
+        if isinstance(data, dict) and data.pop("force_full_page_ocr", False):
+            data["mode"] = OcrMode.FULL_PAGE
+        return data
+
+    # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards
+    # compatibility as a view over `mode`, so the two can never drift apart.
+    @computed_field(  # type: ignore[prop-decorator]
+        deprecated=(
+            "`force_full_page_ocr` is deprecated; set `mode=OcrMode.FULL_PAGE` instead."
+        ),
+        description="If enabled, a full-page OCR is always applied.",
+        examples=[False],
+    )
+    @property
+    def force_full_page_ocr(self) -> bool:
+        return self.mode is OcrMode.FULL_PAGE
+
+    @force_full_page_ocr.setter
+    def force_full_page_ocr(self, value: bool) -> None:
+        if value:
             self.mode = OcrMode.FULL_PAGE
-        return self
 
 
 class OcrAutoOptions(OcrOptions):

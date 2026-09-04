@@ -1180,6 +1180,18 @@ def convert(  # noqa: C901
             # (e.g. AI agents) that need fully silent output.
             logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
             logging.getLogger("docling.document_converter").setLevel(logging.INFO)
+            # Model download, load and inference are the other long-running steps
+            # with no output of their own: without these a multi-gigabyte fetch or
+            # a slow first inference looks like the CLI has hung.
+            logging.getLogger("docling.models.utils.hf_model_download").setLevel(
+                logging.INFO
+            )
+            logging.getLogger("docling.models.inference_engines.vlm").setLevel(
+                logging.INFO
+            )
+            logging.getLogger("docling.models.stages.vlm_convert").setLevel(
+                logging.INFO
+            )
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:

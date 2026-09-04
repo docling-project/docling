@@ -33,7 +33,7 @@ from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.iwork.pages_backend import IWorkPagesDocumentBackend
+from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -54,6 +54,7 @@ from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
+    AsciiDocBackendOptions,
     BackendOptions,
     EbcdicBackendOptions,
     EmailBackendOptions,
@@ -177,6 +178,22 @@ class MarkdownFormatOption(FormatOption):
 class AsciiDocFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = AsciiDocBackend
+    backend_options: AsciiDocBackendOptions | None = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> AsciiDocBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return AsciiDocBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
 
 
 class HTMLFormatOption(FormatOption):

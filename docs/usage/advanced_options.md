@@ -205,40 +205,22 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
-### Convert Apple Pages documents
+### Apple Pages options
 
-Apple Pages (`.pages`) documents convert like any other format, and both
-container generations are read (requires the `format-iwork` extra):
+Headers, footers and footnotes go into the `furniture` content layer, and
+comments into `notes`, so they stay out of the reading order by default. To
+include them in an export, pass the extra layers explicitly (this applies to
+any `DoclingDocument`, not just Pages):
 
 ```python
+from docling_core.types.doc import ContentLayer
 from docling.document_converter import DocumentConverter
 
 doc = DocumentConverter().convert("report.pages").document
-print(doc.export_to_markdown())
+print(doc.export_to_markdown(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}))
 ```
 
-Pages changed its container completely in 2013, so Docling reads whichever one
-the document uses:
-
-- **Pages 5 and later (2013 onwards)** store the document as `Index/*.iwa`,
-  Snappy-framed protobuf archives. Docling walks that object graph directly.
-- **iWork '09 and earlier** stored a plain `index.xml`, which is parsed instead.
-  Template placeholder text (`sf:ghost-text`) is skipped, so an untouched
-  template yields no spurious content.
-
-Titles and headings are recovered from the paragraph styles Pages applies
-("Title", "Heading 1", "Subheading"), which are named identically in both
-generations.
-
-!!! note "Not yet extracted"
-
-    Character formatting, lists, text boxes, headers, footers, footnotes
-    and comments are not included — only the main body and its tables are
-    read — and password-protected documents cannot be read. Table cells
-    holding anything other than text are left empty.
-
-The container is untrusted input, so member count, total size, per-member size
-and decompressed output are all bounded. Those limits can be tuned with
+The container is untrusted input, so size limits apply. They can be tuned with
 `IWorkBackendOptions`:
 
 ```python
