@@ -19,6 +19,71 @@ from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
 
+def _gap(w: BoundingBox, c: BoundingBox) -> float:
+    """Rectangle edge-gap between a widget and a candidate label.
+
+    Top-left origin: ``t`` is the upper edge (smaller y), ``b`` the lower. The gap
+    is the direction logic for free -- a label directly left shares a horizontal
+    band (``dy=0``, gap = horizontal spacing); a label above/below shares a
+    vertical band (``dx=0``, gap = vertical spacing); a diagonal distractor has
+    both nonzero and so scores worse. Zero when the rects overlap on both axes.
+    """
+    dx = max(0.0, w.l - c.r, c.l - w.r)
+    dy = max(0.0, w.t - c.b, c.t - w.b)
+    return dx + dy
+
+
+def _precedes(c: BoundingBox, frontier: BoundingBox, row_band: float) -> bool:
+    """True when ``c`` sits before ``frontier`` in reading order (top->bottom,
+    left->right).
+
+    Same-row is a y-center band of ``row_band`` (one calibration unit, currently
+    a line-height); within it, order is by x-center. This is the no-crossing
+    guard: once a widget binds a label, no later widget may bind a label that
+    precedes it, which structurally removes the "grabbed a label from the wrong
+    row" error class. ``row_band`` starts as a simple line-height band; column
+    awareness is added only if the multi-column fixtures mis-thread.
+    """
+    cy, fy = (c.t + c.b) / 2.0, (frontier.t + frontier.b) / 2.0
+    if abs(cy - fy) > row_band:
+        return cy < fy  # different rows: the earlier row is higher on the page
+    return (c.l + c.r) / 2.0 < (frontier.l + frontier.r) / 2.0  # same row: leftward
+
+
+def _match_labels(
+    widgets: list[tuple[int, BoundingBox]],  # (widget.index, bbox), in index order
+    labels: list[Cluster],  # unconsumed TEXT_ELEM_LABELS clusters
+    cap: float,  # bind only if gap <= cap (text-scale bound, same units as bbox)
+    row_band: float,  # same-row tolerance for the crossing guard
+) -> dict[int, Cluster]:  # widget.index -> bound key cluster
+    """Monotonic order-preserving binding of widgets to label clusters.
+
+    One forward pass in ``widget.index`` order (proven effectively reading order).
+    Each widget takes the nearest unconsumed label at or after the last binding in
+    reading order, within ``cap``. Minimizing total gap subject to no-crossings
+    *is* "minimize global ordering deviation"; a widget with no label in reach (a
+    standalone tabular field) falls out as a skip. Binding is 1:1 -- a shared
+    header binds one field and the rest stay keyless (a later-phase concern).
+    """
+    bound: dict[int, Cluster] = {}
+    used: set[int] = set()
+    frontier: BoundingBox | None = None  # last bound label -> no crossing past it
+    for index, w in widgets:
+        best: tuple[float, Cluster] | None = None
+        for c in labels:
+            if c.id in used or (
+                frontier is not None and _precedes(c.bbox, frontier, row_band)
+            ):
+                continue
+            g = _gap(w, c.bbox)
+            if g <= cap and (best is None or g < best[0]):
+                best = (g, c)
+        if best is not None:
+            bound[index], frontier = best[1], best[1].bbox
+            used.add(best[1].id)
+    return bound
+
+
 class PdfFormFieldModel(BasePageModel):
     _FORM_COVERAGE_THRESHOLD = 0.8
     _PUSHBUTTON_FLAG = 1 << 16
