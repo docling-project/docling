@@ -58,12 +58,6 @@ class AsciiDocBackendOptions(BaseBackendOptions):
             ),
         ),
     ] = None
-    max_image_data_base64_bytes: Annotated[
-        PositiveInt,
-        Field(
-            description="The maximum number of base64 data bytes that the backend will accept.",
-        ),
-    ] = 20 * 1024 * 1024  # 20 MB
 
 
 class HTMLBackendOptions(BaseBackendOptions):
