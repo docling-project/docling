@@ -344,6 +344,12 @@ class Cluster(BaseModel):
     confidence: float = 1.0
     cells: list[TextCell] = []
     children: list["Cluster"] = []  # Add child cluster support
+    # Position of this cluster in a reading order supplied by an upstream stage
+    # (a layout model that predicts one, or the tagged-PDF structure tree). When
+    # every element on a page carries an index, the reading-order stage sorts
+    # that page by it instead of running the predictor; pages with any element
+    # lacking one are predicted as before.
+    reading_order: int | None = None
 
     @field_serializer("confidence")
     def _serialize(self, value: float, info: FieldSerializationInfo) -> float:
