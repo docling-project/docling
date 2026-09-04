@@ -100,11 +100,14 @@ def test_shared_header_binds_one_widget_the_rest_skip():
     assert bound == {0: header} or (bound[0].id == 1 and 1 not in bound)
 
 
-def test_precedes_orders_by_row_then_left():
+def test_precedes_is_row_only_no_left_right_gate():
+    # Order/no-crossing is vertical only. A strictly-higher row precedes; a label
+    # in the same row does NOT precede regardless of left/right -- we make no
+    # left-to-right assumption, 1:1 consumption handles same-row instead.
     upper = _bbox(200, 10, 280, 20)
-    lower_left = _bbox(10, 60, 90, 70)
-    same_row_left = _bbox(10, 12, 90, 22)  # within row band of `upper`, further left
-    assert _precedes(upper, lower_left, ROW_BAND)  # earlier row precedes
-    assert not _precedes(lower_left, upper, ROW_BAND)
-    assert _precedes(same_row_left, upper, ROW_BAND)  # same row, to the left
+    lower = _bbox(10, 60, 90, 70)
+    same_row_left = _bbox(10, 12, 90, 22)  # same row as `upper`, further left
+    assert _precedes(upper, lower, ROW_BAND)  # higher row precedes a lower one
+    assert not _precedes(lower, upper, ROW_BAND)
+    assert not _precedes(same_row_left, upper, ROW_BAND)  # same row: not a crossing
     assert not _precedes(upper, same_row_left, ROW_BAND)

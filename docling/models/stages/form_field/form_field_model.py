@@ -35,20 +35,19 @@ def _gap(w: BoundingBox, c: BoundingBox) -> float:
 
 
 def _precedes(c: BoundingBox, frontier: BoundingBox, row_band: float) -> bool:
-    """True when ``c`` sits before ``frontier`` in reading order (top->bottom,
-    left->right).
+    """True when ``c`` sits in a strictly higher row than ``frontier``.
 
-    Same-row is a y-center band of ``row_band`` (one calibration unit, currently
-    a line-height); within it, order is by x-center. This is the no-crossing
-    guard: once a widget binds a label, no later widget may bind a label that
-    precedes it, which structurally removes the "grabbed a label from the wrong
-    row" error class. ``row_band`` starts as a simple line-height band; column
-    awareness is added only if the multi-column fixtures mis-thread.
+    The no-crossing guard blocks a later widget from reaching back to a label in
+    an earlier (higher) row -- vertical monotonicity only. It deliberately does
+    *not* gate on left/right within a row: horizontal order is where multi-column
+    forms interleave, and binding a right-side label (e.g. a trailing "RT")
+    otherwise poisons the frontier so every left-side label in the next row is
+    wrongly seen as preceding it. Per-label 1:1 consumption (``used``) handles
+    the same-row case instead. ``row_band`` (a line-height multiple) is how much
+    higher a center must be to count as a previous row.
     """
     cy, fy = (c.t + c.b) / 2.0, (frontier.t + frontier.b) / 2.0
-    if abs(cy - fy) > row_band:
-        return cy < fy  # different rows: the earlier row is higher on the page
-    return (c.l + c.r) / 2.0 < (frontier.l + frontier.r) / 2.0  # same row: leftward
+    return cy < fy - row_band
 
 
 def _match_labels(
@@ -332,9 +331,10 @@ class PdfFormFieldModel(BasePageModel):
                         unmatched_values.append(value)
                     # Value-only so far: a keyless FORM/unmatched widget whose label
                     # (if any) lives detached in the body. Queue it for the binding
-                    # pass. A matched checkbox already carries its option label, so
-                    # it is not keyless -- leave its validated behaviour untouched.
-                    if value.checkbox_label is None:
+                    # pass. A matched checkbox already carries its option label (a
+                    # non-empty checkbox_label), so it is not keyless -- leave its
+                    # validated behaviour untouched.
+                    if not value.checkbox_label:
                         keyless.append((widget.index, value))
 
                 # Order-preserving binding: pair each keyless widget with the

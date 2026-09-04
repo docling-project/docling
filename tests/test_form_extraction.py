@@ -374,7 +374,8 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     # The layout detector merges the three checkbox lines into one text cluster,
     # so their widgets share an enclosing paragraph and group under one keyed
     # field_item materialized in place of that paragraph. The text field has no
-    # enclosing paragraph and stays a keyless value in the page-wide region.
+    # enclosing paragraph, so it lands in the page-wide region -- but its detached
+    # "Full name:" label to its left now binds to it via order-preserving matching.
     assert [
         region.source_container_id
         for region in result.pages[0].predictions.field_regions
@@ -383,18 +384,21 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     # paragraph item lives inline in the body, not wrapped in a region of its own.
     assert len(result.document.field_regions) == 1
     # One keyed inline item (paragraph key + three checkbox values) and one
-    # keyless single-value item for the text field.
+    # single-value item for the text field, now keyed by its bound left label.
     assert len(result.document.field_items) == 2
     keys = [
         item for item in result.document.texts if item.label == DocItemLabel.FIELD_KEY
     ]
-    assert len(keys) == 1
-    assert "I agree to the terms" in keys[0].text
-    # The keyed field_item materializes in the paragraph's own place, NOT wrapped
-    # in a field_region of its own (it would be, if pulled out into a region).
-    keyed_item = keys[0].parent.resolve(result.document)
+    assert len(keys) == 2
+    paragraph_key = next(k for k in keys if "I agree to the terms" in k.text)
+    fullname_key = next(k for k in keys if "Full name" in k.text)
+    # The inline paragraph item materializes in the paragraph's own place, NOT
+    # wrapped in a field_region of its own (it would be, if pulled into a region).
+    keyed_item = paragraph_key.parent.resolve(result.document)
     assert keyed_item.label == DocItemLabel.FIELD_ITEM
     assert keyed_item.parent.resolve(result.document).label != DocItemLabel.FIELD_REGION
+    # The text field's detached left label binds as its key via the alignment pass.
+    assert fullname_key.parent.resolve(result.document).label == DocItemLabel.FIELD_ITEM
 
     values = [
         item for item in result.document.texts if isinstance(item, FieldValueItem)
@@ -435,8 +439,17 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     assert disabled.document.field_regions == []
     assert disabled.document.field_items == []
     # The hosting paragraph is not dropped -- it is reinterpreted as a field_item
-    # at materialization -- so extraction leaves the layout clusters untouched.
-    assert result.pages[0].predictions.layout == disabled.pages[0].predictions.layout
+    # at materialization. The only cluster extraction removes is the "Full name:"
+    # label promoted out of the body to become the text field's bound key.
+    enabled_clusters = result.pages[0].predictions.layout.clusters
+    disabled_clusters = disabled.pages[0].predictions.layout.clusters
+    enabled_ids = {cluster.id for cluster in enabled_clusters}
+    dropped = [
+        PdfFormFieldModel._cluster_text(cluster)
+        for cluster in disabled_clusters
+        if cluster.id not in enabled_ids
+    ]
+    assert dropped == ["Fullname:"]
 
 
 def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
