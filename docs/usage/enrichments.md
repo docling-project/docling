@@ -8,6 +8,7 @@ The following table provides an overview of the default enrichment models availa
 | ------- | --------- | ---------------| ----------- |
 | Code understanding | `do_code_enrichment` | `CodeItem` | See [docs below](#code-understanding). |
 | Formula understanding | `do_formula_enrichment` | `TextItem` with label `FORMULA` | See [docs below](#formula-understanding). |
+| Formulas inside table cells | `do_table_cell_formula_enrichment` | `TableCell` | See [docs below](#formulas-inside-table-cells). |
 | Picture classification | `do_picture_classification` | `PictureItem` | See [docs below](#picture-classification). |
 | Picture description | `do_picture_description` | `PictureItem` | See [docs below](#picture-description). |
 
@@ -74,6 +75,53 @@ converter = DocumentConverter(format_options={
 
 result = converter.convert("https://arxiv.org/pdf/2501.17887")
 doc = result.document
+```
+
+#### Formulas inside table cells
+
+Formula understanding only reaches items the enrichment loop iterates, so an equation that
+sits *inside a table cell* is not covered by it. In technical standards that is a common
+place for normative maths to live, and for PDF sources the cell arrives as plain text in
+visual glyph order -- often including Private Use Area codepoints for the pieces of large
+symbols, which carry no Unicode meaning -- so it cannot be recovered downstream.
+
+`do_table_cell_formula_enrichment` runs the same formula model over table cells and replaces
+each recognised cell with a `RichTableCell` whose `ref` points at a group holding the
+recognised `FormulaItem`s in order. It reuses the formula model already loaded, so it adds no
+extra weights, and it requires `do_formula_enrichment` to be enabled as well.
+
+It is off by default because it costs one model call per candidate cell. Which cells are
+candidates is decided by a text heuristic over the extracted cell text, deliberately biased
+towards recall: the layout model does not emit `FORMULA` clusters inside table regions, so
+there is no layout signal to key off, and missing a cell loses content silently whereas an
+extra call merely costs time. Override
+`TableCellFormulaVlmModel._may_contain_formula` to retune it.
+
+Example command line:
+
+```sh
+docling --enrich-formula --enrich-formula-table-cells FILE
+```
+
+Example code:
+
+```py
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.base_models import InputFormat
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_formula_enrichment = True
+pipeline_options.do_table_cell_formula_enrichment = True
+
+converter = DocumentConverter(format_options={
+    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+})
+
+result = converter.convert("FILE")
+table = result.document.tables[0]
+# Rich cells serialize through their ref, so the LaTeX shows up in the exported table.
+print(table.export_to_dataframe(doc=result.document))
 ```
 
 ### Picture classification
