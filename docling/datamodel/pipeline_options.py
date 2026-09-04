@@ -329,6 +329,17 @@ class RapidOcrOptions(OcrOptions):
             )
         ),
     ] = "onnxruntime"
+    model_size: Annotated[
+        Literal["tiny", "small", "medium"],
+        Field(
+            description=(
+                "Detection/recognition model size for the PP-OCRv6 backbone. Only affects "
+                "languages that resolve to PP-OCRv6 (see `lang`); it has no effect on languages "
+                "served by PP-OCRv5/PP-OCRv4, and never affects the classification model. "
+                "`tiny` is not available for Japanese."
+            )
+        ),
+    ] = "small"
     text_score: Annotated[
         float,
         Field(

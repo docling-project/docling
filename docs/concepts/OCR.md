@@ -36,6 +36,45 @@ Docling currently (2026.07.28) supports: "PP-OCR v4", "PP-OCR v5", "PP-OCR v6".
 <u>Notice</u>: torch on PP-OCRv5 supports ONLY chinese.
 
 
+### RapidOCR model size
+
+For languages that resolve to PP-OCRv6 (see [RapidOCR language support](#rapidocr-language-support)
+below), the detection and recognition checkpoints are available in three sizes:
+
+| Size     | Notes                                  |
+| -------- | --------------------------------------- |
+| `tiny`   | Not available for `japan`.              |
+| `small`  | Default.                                |
+| `medium` |                                          |
+
+`tiny`, `small`, and `medium` are three separate checkpoints for the same detection/recognition task.
+Docling does not benchmark or recommend one over another — if the choice matters for your documents,
+measure it on your own workload and hardware.
+
+<u>Notices</u>:
+
+- `model_size` only affects the PP-OCRv6 detection and recognition checkpoints. It has no effect on
+  languages served by PP-OCRv5 or PP-OCRv4 (see the backend table above) — those always use their
+  normal model assets, and a non-default `model_size` in that case logs a warning rather than
+  silently doing nothing or raising an error.
+- The classification checkpoint is unaffected by `model_size` in every case: it is always the
+  PP-OCRv4 `mobile` model.
+
+Python configuration:
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(lang=["en"], model_size="tiny")
+```
+
+CLI prefetch (for offline/`artifacts_path` use):
+
+```sh
+docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --model-size tiny
+```
+
+
 ### RapidOCR language support
 
 **PP-OCRv4 supported languages/scripts:**
