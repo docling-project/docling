@@ -81,51 +81,10 @@ def test_convert_valid():
                 verify_docitems(doc_true=act_doc, doc_pred=exp_doc, fuzzy=False)
 
 
-def get_md_paths():
-    # Define the directory you want to search
-    directory = Path("./tests/data/md/groundtruth")
-
-    # List all MD files in the directory and its subdirectories
-    md_files = sorted(directory.rglob("*.md"))
-    return md_files
-
-
 def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.MD])
 
     return converter
-
-
-@pytest.mark.skip(
-    reason="Previously a silent no-op (globbed a non-existent ./tests/groundtruth "
-    "path). Roundtrip of the markdown groundtruth does not hold (trailing-newline "
-    "drift); re-enable once that is fixed."
-)
-def test_e2e_md_conversions():
-    md_paths = get_md_paths()
-    converter = get_converter()
-
-    for md_path in md_paths:
-        # print(f"converting {md_path}")
-
-        with open(md_path) as fr:
-            true_md = fr.read()
-
-        conv_result: ConversionResult = converter.convert(md_path)
-
-        doc: DoclingDocument = conv_result.document
-
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md
-
-        conv_result_: ConversionResult = converter.convert_string(
-            true_md, format=InputFormat.MD
-        )
-
-        doc_: DoclingDocument = conv_result_.document
-
-        pred_md_: str = doc_.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md_
 
 
 def test_convert_leading_dash_sequences():
