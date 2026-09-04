@@ -207,6 +207,70 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### Convert Apple Numbers spreadsheets
+
+Apple Numbers (`.numbers`) spreadsheets convert like any other format, and both
+container generations are read (requires the `format-iwork` extra):
+
+```python
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("budget.numbers").document
+print(doc.export_to_markdown())
+```
+
+The output follows the Excel and OpenDocument spreadsheet backends: every sheet
+becomes a page and a sheet group, and every table on it becomes a table item
+carrying the table's header rows and header columns, captioned with the name
+Numbers gives it. Unlike a worksheet, a Numbers sheet is a canvas holding
+separate tables, charts and notes, each with its own frame, so they come out in
+the order they are laid out down the page rather than the order they happen to
+be stored in.
+
+Charts become picture items carrying the data they plot — categories down the
+first column, one column per series — the same shape the Excel backend attaches
+to a chart. Numbers renders no image for a chart, and it caches this data beside
+the chart itself, so a chart still reads correctly when the table it was built
+from has since been deleted. Sticky notes, which is what Numbers calls a sheet's
+comments, become comments in the notes content layer.
+
+Cell values are read as values: numbers, dates, durations, booleans and the
+results Numbers cached for its formulas. Numbers stores a numeric cell as a
+decimal since 2017, so a value written as `0.1` comes out as `0.1` rather than
+as its binary floating point expansion.
+
+Use `sheet_names` to convert only some of the sheets, and `page_range` to narrow
+the selection further:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkNumbersFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(
+            backend_options=IWorkBackendOptions(sheet_names=["Summary", "Q1"])
+        )
+    }
+)
+```
+
+!!! note "Not yet extracted"
+
+    Images and shapes are skipped, and so is a comment attached to a cell rather
+    than to the sheet. A chart's *kind* is not read either — Numbers stores it as
+    an integer whose meaning Apple has never published — so every chart is
+    classified as a chart of unspecified kind. The number format beside a cell is
+    not applied, so a currency or percentage cell reads as the plain number it
+    holds, as it does for Excel and OpenDocument. In a 2013+ document a pop-up
+    menu cell yields the index Numbers stores rather than the label it shows; an
+    iWork '09 document stores the label and it is read. Password-protected
+    documents cannot be read.
+
+The same `IWorkBackendOptions` size limits apply as for Pages, since both formats
+share the container.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
