@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_raw
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     PdfCellRenderingMode,
@@ -248,6 +249,55 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
                 cropbox = cropbox.scaled(scale=scale)
 
                 yield cropbox
+
+    _SHAPE_LINE_MAX_THICKNESS = 2.5
+
+    def get_shape_lines(
+        self,
+        *,
+        horizontal: bool = True,
+        vertical: bool = True,
+        tolerance: float = 1e-3,
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        max_thickness = max(tolerance, self._SHAPE_LINE_MAX_THICKNESS)
+        segments: list[BoundingBox] = []
+        with pypdfium2_lock:
+            for obj in self._ppage.get_objects():
+                if obj.type != pdfium_raw.FPDF_PAGEOBJ_PATH:
+                    continue
+                try:
+                    left, bottom, right, top = obj.get_bounds()
+                except AttributeError:
+                    left, bottom, right, top = obj.get_pos()
+                width = right - left
+                height = top - bottom
+                if horizontal and height <= max_thickness and width > height:
+                    y = page_height - (bottom + top) / 2
+                    segments.append(
+                        BoundingBox(
+                            l=left,
+                            t=y,
+                            r=right,
+                            b=y,
+                            coord_origin=CoordOrigin.TOPLEFT,
+                        )
+                    )
+                elif vertical and width <= max_thickness and height > width:
+                    x = (left + right) / 2
+                    segments.append(
+                        BoundingBox(
+                            l=x,
+                            t=page_height - top,
+                            r=x,
+                            b=page_height - bottom,
+                            coord_origin=CoordOrigin.TOPLEFT,
+                        )
+                    )
+        return segments
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None

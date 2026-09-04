@@ -28,6 +28,7 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.table_rule_reconciler import reconcile_table_rows_with_rules
 
 _log = logging.getLogger(__name__)
 
@@ -301,6 +302,19 @@ class TableStructureModel(BaseTableStructureModel):
                         cluster=table_cluster,
                         label=table_cluster.label,
                     )
+
+                    if self.options.reconcile_rows_with_rules:
+                        rules = page._backend.get_shape_lines(
+                            horizontal=True, vertical=False
+                        )
+                        if rules:
+                            reconcile_table_rows_with_rules(
+                                tbl,
+                                rules=rules,
+                                word_cells=[
+                                    c for c in tcells if len(c.text.strip()) > 0
+                                ],
+                            )
 
                     table_prediction.table_map[table_cluster.id] = tbl
 
