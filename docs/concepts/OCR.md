@@ -13,363 +13,234 @@ Docling supports multiple OCR engines that can be installed as extra packages:
 
 ## Language selection
 
-Every OCR engine takes its languages through the same field, `OcrOptions.lang`, and every engine
-takes them in the same vocabulary: **BCP-47 (RFC 5646) language tags**, the notation behind `en`,
-`de-DE` and `zh-Hant`. Docling canonicalizes each tag to a `(language, script)` pair and each engine
-translates that pair into its own notation.
+Every OCR engine takes its languages through the same field, `OcrOptions.lang`.
+
+An entry of `lang` is written in one of exactly two forms:
+
+- A code of the engine you selected, handed to that engine untouched: `deu`, `ch`,
+  `script/Cyrillic`
+- A **[BCP-47 (RFC 5646)](https://en.wikipedia.org/wiki/IETF_language_tag) language tag** behind the
+  **`iso:` prefix**, canonicalized to a `(language, script)` pair and then mapped onto that engine's
+  own notation: `iso:de`, `iso:en-US`, `iso:zh-Hant`
 
 ```python
 from docling.datamodel.pipeline_options import TesseractCliOcrOptions
 
-TesseractCliOcrOptions(lang=["de", "en"])  # -> tesseract -l deu+eng
+TesseractCliOcrOptions(lang=["deu", "eng"])          # -> tesseract -l deu+eng
+TesseractCliOcrOptions(lang=["iso:de", "iso:en"])    # the same thing, said portably
 ```
 
-Canonicalization drops the region once it has told us the script, because no OCR engine
-distinguishes `de-DE` from `de-AT`:
+By default a language is written in the spelling native to the selected OCR engine. An alternative
+syntax is to provide the language in [BCP-47 format](https://en.wikipedia.org/wiki/IETF_language_tag)
+prefixed with `iso:` (e.g. `iso:el`). There is no need to provide the script, unless it is a
+non-default script. For example if you want serbian latin you *must* specific the script `sr-Latn`
+because the default script for serbian is Cyrillic.
 
-| You write                     | Docling stores | Why                                       |
-| ----------------------------- | -------------- | ----------------------------------------- |
-| `de`, `de-DE`, `deu`, `ger`   | `de-Latn`      | ISO 639-1/2/3 fold together; region drops |
-| `en`, `en-US`, `eng`          | `en-Latn`      |                                           |
-| `zh`, `zh-CN`, `zho`          | `zh-Hans`      | Simplified is the likely script for `zh`  |
-| `zh-TW`, `zh-HK`, `zh-Hant`   | `zh-Hant`      | Traditional                               |
-| `sr`                          | `sr-Cyrl`      | Serbian defaults to Cyrillic              |
-| `sr-Latn`                     | `sr-Latn`      | Same language, a different model          |
-| `pa`, `pa-IN`                 | `pa-Guru`      | Gurmukhi                                  |
-| `pa-PK`                       | `pa-Arab`      | Shahmukhi                                 |
+All OCR engines report which language codes they support via the `supported_ocr_languages()` API
+call. This method returns a list of the `native` and the `BCP47` supported languages.
 
-The list order is preference order. Duplicates collapse, so `["de", "de-AT"]` is one language.
 
-### The reserved tag
+### The tags docling refuses
 
-One tag carries engine-independent meaning, and it must be used **alone**.
+Three BCP-47 tags name something other than a language and are rejected behind `iso:`:
 
-| Tag   | Meaning            | Behaviour                                |
-| ----- | ------------------ | ---------------------------------------- |
-| `mul` | multiple languages | The engine's broadest multilingual model |
+| Tag   | Means                 | Say this instead                                                                       |
+| ----- | --------------------- | -------------------------------------------------------------------------------------- |
+| `mul` | multiple languages    | The engine's own code for its multilingual model, e.g. `multilingual` for Nemotron-OCR |
+| `und` | undetermined          | An empty list, or a language written in the script you want                            |
+| `zxx` | no linguistic content | Turn OCR off: `--no-ocr`, or `do_ocr=False`                                            |
 
-An **empty list** is how you say "let the engine decide", and a script is named by naming a
-language written in it. To skip OCR altogether, turn the stage off — `--no-ocr` on the CLI,
-`do_ocr=False` in the pipeline options.
-
-What each engine does with an empty `lang` and with `mul`:
-
-| Engine            | `lang=[]`                          | `mul`                       |
-| ----------------- | ---------------------------------- | --------------------------- |
-| Tesseract (both)  | Per-page orientation and script    | Error                       |
-|                   | detection; needs the `osd` file    |                             |
-| EasyOCR           | English (`en`)                     | Error -- list the languages |
-| RapidOCR          | The Simplified Chinese default     | Error -- list the languages |
-| KServe            | Sends `en`                         | Sent to the server verbatim |
-| Nemotron-OCR      | The English model                  | The multilingual model      |
-| ocrmac            | Vision's own automatic behaviour   | Error                       |
-
+An **empty list** is how you say "let the engine decide".
 On the CLI, omitting `--ocr-lang` applies the engine's default languages; an empty value,
-`--ocr-lang ""`, is how you ask for the `lang=[]` column above.
+`--ocr-lang ""`, is how you ask for the `lang=[]` column below:
 
-Engines that ship a recognizer named after a script rather than a language expose it under
-that engine's own token: `latin`, `cyrillic`, `arabic` and `devanagari` for RapidOCR, and
-`script/<Name>` files such as `script/Cyrillic` for Tesseract. They are engine
-vocabulary, not portable tags, so they are only accepted by the engine that defines them.
+| Engine            | `lang=[]`                          |
+| ----------------- | ---------------------------------- |
+| Tesseract (both)  | Per-page orientation and script    |
+|                   | detection; needs the `osd` file    |
+| EasyOCR           | English (`en`)                     |
+| RapidOCR          | The Simplified Chinese default     |
+| KServe            | Sends `en`                         |
+| Nemotron-OCR      | The English model                  |
+| ocrmac            | Vision's own automatic behaviour   |
 
-The KServe client is the exception to everything in this page: it canonicalizes nothing. Only the
-deployed model knows which languages it serves, so `lang` is neither validated nor mapped -- the
-first entry is sent to the server exactly as written, and the rest are dropped with a warning. Use
-the codes your deployment expects (`english`, `chinese`, `ch`, ...); a BCP-47 tag is only right if
-the server itself speaks BCP-47, and the `native:` prefix has no meaning there.
+The KServe client is the exception to everything in this page: it canonicalizes nothing at all.
+Only the deployed model knows which languages it serves, so `lang` is neither validated nor mapped
+-- the first entry is sent to the server exactly as written, and the rest are dropped with a
+warning. Use the codes your deployment expects (`english`, `chinese`, `ch`, ...); an `iso:` tag is
+only right if the server itself speaks that prefix, which no deployment does.
 
-### Engine-native language codes
+### Native engine codes
 
-You can also write the language codes of the engine you selected, and they mean what that engine
-means by them. Docling canonicalizes them on the way in, so `lang` always ends up holding BCP-47:
+A language input without the `iso:` prefix is native to the selected OCR engine. The input is
+validated against the vocabulary of that engine and propagated verbatim to it.
+
 
 ```python
 from docling.datamodel.pipeline_options import RapidOcrOptions
 
-RapidOcrOptions(lang=["ch"]).lang  # -> ["zh-Hans"]
+RapidOcrOptions(lang=["ch"]).lang          # -> ["ch"]
+RapidOcrOptions(lang=["iso:zh-Hans"]).lang # -> ["iso:zh-Hans"], the same PP-OCR recognizer
 ```
 
-| Engine            | Codes accepted in addition to BCP-47                               |
-| ----------------- | ------------------------------------------------------------------ |
-| RapidOCR          | PP-OCR tokens: `ch`, `chinese_cht`, `japan`, `korean`, `ka`,       |
-|                   | `eslav`, `latin`, `cyrillic`, `arabic`, `devanagari`, `rs_latin`,  |
-|                   | `french`, `german` -- the last two always canonicalize to `fr`     |
-|                   | and `de`                                                           |
-| Tesseract (both)  | tessdata names: `chi_sim`, `chi_tra`, `srp_latn`, `aze_cyrl`,      |
-|                   | `uzb_cyrl`, `deu_latf`, `frk`, and any `script/<Name>` file        |
-| EasyOCR           | EasyOCR codes: `ch_sim`, `ch_tra`, `rs_latin`, `rs_cyrillic`,      |
-|                   | `tjk`, `ang`, `mah`, `tab`                                          |
-| Nemotron-OCR      | `english`, `multilingual`                                           |
-| ocrmac            | none needed -- Vision's own vocabulary already is BCP-47            |
+Two cases need the bare code:
 
-Only codes the engine spells differently from ISO 639 are listed. The rest of every engine's
-vocabulary (`deu`, `fra`, `ru`, `ta`, `en-US`, ...) is valid BCP-47 already and has always worked.
+- the model has no `(language, script)` name at all -- see
+  [Models no tag can name](#models-no-tag-can-name)
+- you want the engine's reading of a code that is also a tag for something else -- see
+  [Codes that shadow a tag](#codes-that-shadow-a-tag)
 
-A code belongs to **one** engine. Asking RapidOCR for Tesseract's `chi_sim` is an error naming the
-tag to write instead, because reading another engine's vocabulary would make the same string mean
-different things depending on a setting elsewhere in your config.
 
-### Common surprises
+| Engine            | What it accepts as a bare code                                        |
+| ----------------- | --------------------------------------------------------------------- |
+| RapidOCR          | Any PP-OCR token the resolved backbone serves: `ch`, `chinese_cht`,   |
+|                   | `japan`, `korean`, `ka`, `eslav`, `rs_latin`, `french`, `german`,     |
+|                   | and the script recognizers `latin`, `cyrillic`, `arabic`,             |
+|                   | `devanagari`                                                          |
+| Tesseract (both)  | Any installed traineddata name: `chi_sim`, `chi_tra`, `srp_latn`,     |
+|                   | `aze_cyrl`, `uzb_cyrl`, `deu_latf`, `frk`, `script/<Name>`, and       |
+|                   | files you trained yourself                                            |
+| EasyOCR           | Any EasyOCR code: `ch_sim`, `ch_tra`, `rs_latin`, `rs_cyrillic`,      |
+|                   | `tjk`, `ang`, `mah`, `tab`                                            |
+| Nemotron-OCR      | `english`, `multilingual`                                             |
+| ocrmac            | Any recognition language the running macOS reports, e.g. `en-US`,     |
+|                   | `zh-Hans`                                                             |
+| KServe            | Everything -- `lang` is sent verbatim either way                      |
 
-Six codes are a legitimate BCP-47 tag for one language and an engine's own name for a different one.
-The engine that owns the code wins, which is what makes existing configurations keep working:
 
-| Code  | Engine means         | BCP-47 means | Owned by  |
-| ----- | -------------------- | ------------ | --------- |
-| `ch`  | Chinese Simplified   | Chamorro     | PP-OCR    |
-| `ka`  | Kannada              | Georgian     | PP-OCR    |
-| `ang` | Angika               | Old English  | EasyOCR   |
-| `mah` | Magahi               | Marshallese  | EasyOCR   |
-| `tab` | Tabasaran (Cyrillic) | Tabasaran    | EasyOCR   |
-| `frk` | German Fraktur       | Frankish     | Tesseract |
+### Codes that shadow a tag
 
-This is safe rather than lucky: no engine ships a recognizer for any of the shadowed readings, so
-nothing that was reachable before becomes unreachable. A test enforces that property, so an engine
-that later gains one of those models turns the code into a reported ambiguity instead of a silent
-wrong answer.
+A handful of engine codes are also BCP-47 subtags for an unrelated language. Bare, they are always
+the engine's own reading:
 
-To ask for the BCP-47 meaning anyway, write the script out. The tables above are keyed on the bare
-code, so a qualified tag bypasses them:
+| Code  | Bare, it reaches                                 | `iso:<code>` means         |
+| ----- | ------------------------------------------------ | -------------------------- |
+| `ch`  | PP-OCR's `ch`, Chinese Simplified                | `ch-Latn`, Chamorro        |
+| `ang` | EasyOCR's `ang`, Angika                          | `ang-Latn`, Old English    |
+| `frk` | Tesseract's `frk`, German Fraktur                | `frk-Latn`, Frankish       |
+| `tab` | EasyOCR's `tab`, which is Cyrillic Tabasaran     | `tab-Latn`, Tabasaran      |
+| `ka`  | PP-OCR's `ka`, Kannada; Tesseract has no such    | `ka-Geor`, Georgian, which |
+|       | file, so it is an error there                    | PP-OCR cannot serve at all |
+| `mah` | EasyOCR's Magahi                                 | `mh-Latn`, Marshallese     |
+
+Write the tag when you mean the language, and the bare code when you mean the model:
 
 ```python
-RapidOcrOptions(lang=["ch-Latn"])   # Chamorro -- and so, an honest "no model" error
-RapidOcrOptions(lang=["ka-Geor"])   # Georgian, not Kannada
-EasyOcrOptions(lang=["ang-Latn"])   # Old English, not Angika
+RapidOcrOptions(lang=["iso:zh-Hans"])        # Chinese Simplified, said portably
+RapidOcrOptions(lang=["ka"])                 # PP-OCR's Kannada recognizer
+TesseractCliOcrOptions(lang=["iso:de-Latf"]) # German Fraktur, said portably
+EasyOcrOptions(lang=["ang"])                 # EasyOCR's Angika recognizer
 ```
-
-With no engine selected -- `docling convert-remote`, or `--ocr-engine auto` before it has picked one
--- there is nothing to prefer an engine's reading over the standard one, so only the codes every
-engine agrees on carry their engine meaning. `ch` is refused there and names `zh-Hans` in the
-message; the other five parse as ordinary BCP-47 and mean the *BCP-47* column above, so `ka` is
-Georgian and `ang` is Old English. Name the engine, or write the qualified tag, to be explicit.
-
-### Codes with no tag
-
-A few native codes name a model that a `(language, script)` pair cannot describe. Docling refuses
-them rather than quietly selecting a neighbouring recognizer:
-
-| Code                                  | Names                        |
-| ------------------------------------- | ---------------------------- |
-| `jpn_vert`, `chi_sim_vert`, ...       | Vertical-text models         |
-| `ita_old`, `spa_old`, `kat_old`       | Historical orthographies     |
-| `equ`                                 | Mathematical notation        |
-
-Custom traineddata files you trained yourself fall in the same category and are not reachable
-through `lang`.
 
 ### When an engine has no model
 
-A language the selected engine cannot serve is an **error**, uniformly, for every engine. Docling
-never quietly substitutes a different recognizer; the message names the languages that engine does
-support, as canonical tags. Engines that run one language at a time (RapidOCR, Nemotron-OCR) take
-the **first** tag and warn about the rest. The KServe client also sends only the first entry, but
-it never raises for coverage: the deployment is the only thing that can.
+An exception is raised whenever an OCR engine cannot serve the input language. Docling never quietly
+substitutes a different recognizer. The message reports what that engine *can* serve in a spelling
+you can paste straight back into `lang`:
+
+- `Engine codes:` -- the engine's own name for every model no tag can reach, written bare
+- `Supported:` -- the canonical tags, each in its shortest spelling and carrying the `iso:` prefix
+
+```console
+TesseractOcrCli has no model for the OCR language 'iso:th-Thai'. No traineddata file 'tha' is installed. Engine codes: jpn_vert, script/Cyrillic. Supported: iso:de, iso:en, iso:ja, iso:zh.
+```
+
+Engines that run one language at a time (RapidOCR, Nemotron-OCR) take the **first** tag and warn
+about the rest. The KServe client also sends only the first entry.
+
 
 ## RapidOCR
 
-This section describes RapidOCR for versions `v3.9.1`, `v3.9.2`.
-
 The engine's own vocabulary, in its own codes, is listed in
 [Native OCR engines](OCR_native.md#rapidocr).
-
-### RapidOCR backends
-
-RapidOCR supports multiple backends.
-Docling currently (2026.07.28) supports: "onnxruntime" (default), "openvino", "paddle", "torch".
-
-RapidOCR relies on the [PP-OCR](https://rapidai.github.io/RapidOCRDocs/main/model_list/#_2) models.
-Docling currently (2026.07.28) supports: "PP-OCR v4", "PP-OCR v5", "PP-OCR v6".
-
-**PP-OCR versions supported by each rapidocr backend:**
-
-| Backend     | PP-OCR versions      |
-| ----------- | -------------------- |
-| onnxruntime | v4, v5, v6           |
-| openvino    | v4, v5, v6           |
-| paddle      | v4, v5, v6           |
-| torch       | v4, v5 (ch only), v6 |
-
-<u>Notice</u>: torch on PP-OCRv5 supports ONLY chinese.
-
-
-### RapidOCR language support
-
-**PP-OCRv4 supported languages/scripts:**
-
-```
-arabic, ch, chinese_cht, cyrillic, devanagari, en, japan, ka, korean, latin, ta, te
-```
-
-<u>Notice</u>: `cyrillic`, `devanagari`, `latin` are actually scripts and each one supports multiple
-languages.
-
-
-**PP-OCRv5 supported languages/scripts:**
-
-```
-arabic, ch, cyrillic, devanagari, el, en, eslav, korean, latin, ta, te, th
-```
-
-
-**PP-OCRv6 supported languages:**
-
-```
-ch, chinese_cht, en, japan, af, az, bs, ca, cs, cy, da, de, es, et, eu, fi, fr, ga, gl,
-hr, hu, id, is, it, ku, la, lb, lt, lv, mi, ms, mt, nl, no, oc, pl, pt, qu, rm, ro,
-rs_latin, sk, sl, sq, sv, sw, tl, tr, uz, vi, french, german
-```
-
-<u>Notices</u>:
-
-- These are PP-OCR's own tokens, listed here to document what the checkpoints cover. You never
-  write them: docling takes BCP-47 tags and maps them onto these tokens for you.
-- German exists in 2 formats: `de`, `german`; French in `fr`, `french`. Docling always picks the
-  two-letter one.
-- Korean is actually not supported in PP-OCR v6 (only the alias exists).
-
 
 ### RapidOCR language input
 
 RapidOCR runs a **single** language per conversion. If `lang` holds more than one tag the first is
 used and the rest are dropped with a warning.
 
-Tags resolve to a PP-OCR recognizer in this order: an explicit entry in the table below, then the
-primary subtag if PP-OCR has it under that name, then the script family, then an error.
+An `iso:` tag resolves to a PP-OCR recognizer in this order: an explicit entry in the table below,
+then the primary subtag if PP-OCR has it under that name, then the script family, then an error.
+The following table shows how the language resolution works:
 
-| You write                                  | PP-OCR token            | Backbone           |
-| ------------------------------------------ | ----------------------- | ------------------ |
-| `zh-Hans` / `zh-Hant`                      | `ch` / `chinese_cht`    | v6                 |
-| `ja`                                       | `japan`                 | v6                 |
-| `ko`                                       | `korean`                | v5 / v4            |
-| `en`, `de`, `fr`, and the other v6 codes   | the primary subtag      | v6                 |
-| `sr-Latn`                                  | `rs_latin`              | v6                 |
-| `ru`, `uk`, `be`                           | `eslav`                 | v5 -- narrower     |
-| other Cyrillic-script languages            | `cyrillic`              | v5 / v4            |
-| Arabic- and Devanagari-script languages    | `arabic` / `devanagari` | v5 / v4            |
-| `el`, `ta`, `te`, `th`                     | `el`, `ta`, `te`, `th`  | v5                 |
-| `kn`                                       | `ka` (PP-OCR's Kannada) | v4                 |
-| `ka-Geor` (Georgian)                       | --                      | **error**          |
-| `latin`, `cyrillic`, `arabic`,             | the token itself        | v5 / v4            |
-| `devanagari` (PP-OCR's own tokens)         |                         |                    |
-| an empty list                              | `ch`                    | the default        |
-| `mul`                                      | --                      | **error**          |
+| You write                                            | PP-OCR token            | PP-OCR version    |
+| ---------------------------------------------------- | ----------------------- | ----------------- |
+| `iso:zh-Hans` / `iso:zh-Hant`                        | `ch` / `chinese_cht`    | v6                |
+| `iso:ja`                                             | `japan`                 | v6                |
+| `iso:ko`                                             | `korean`                | v5 / v4           |
+| `iso:en`, `iso:de`, `iso:fr`, and the other v6 codes | the primary subtag      | v6                |
+| `iso:sr-Latn`                                        | `rs_latin`              | v6                |
+| `iso:ru`, `iso:uk`, `iso:be`                         | `eslav`                 | v5                |
+| other Cyrillic-script languages                      | `cyrillic`              | v5 / v4           |
+| Arabic and Devanagari (script languages)             | `arabic` / `devanagari` | v5 / v4           |
+| `iso:el`, `iso:ta`, `iso:te`, `iso:th`               | `el`, `ta`, `te`, `th`  | v5                |
+| `iso:kn`                                             | `ka` (PP-OCR's Kannada) | v4                |
+| `iso:ka-Geor` (Georgian)                             | -- (`ka` is Kannada)    | **error**         |
+| `ka`                                                 | `ka` (PP-OCR's Kannada) | v4                |
+| `latin`, `cyrillic`, `arabic`, `devanagari`          | the token itself        | v5 / v4           |
+| any other PP-OCR token                               | the token itself        | wherever it lives |
+| an empty list                                        | `ch`                    | the default       |
 
-A language written in a script PP-OCR does not serve under that language's own name falls back to
-the script family: `uz` is PP-OCR's Latin Uzbek, so `uz-Cyrl` resolves to `cyrillic` rather than
-silently using the Latin recognizer.
-
-Prefetching follows the same vocabulary:
-
-```console
-docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:th-Thai
-```
 
 ## EasyOCR
-
-This section describes EasyOCR for versions `v1.7.2`, `v1.7.1`.
-The model checkpoints are those of `gen2`.
 
 The engine's own vocabulary, in its own codes, is listed in
 [Native OCR engines](OCR_native.md#easyocr).
 
-### EasyOCR language support
+### EasyOCR language input
 
-EasyOCR accepts a list of languages and picks the recognition model that covers all of them.
-Docling translates each BCP-47 tag into EasyOCR's own code -- `zh-Hant` becomes `ch_tra`,
-`sr-Cyrl` becomes `rs_cyrillic`, `tg` becomes `tjk` -- and EasyOCR then selects the recognition
-checkpoint for the script those codes share, so `ru` reaches the Cyrillic model without you
-naming it. EasyOCR has no multilingual model, so `mul` raises; list the languages instead.
-
-The following table shows which recognition model is enabled per language combination
-(the detection checkpoint `craft_mlt_25k.pth` is required in all cases; the codes are EasyOCR's
-own, shown here to explain the grouping):
-
-| Recognition checkpoint | Supported languages                                                     |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `english_g2.pth`       | `en`                                                                    |
-| `latin_g2.pth`         | `af`, `az`, `bs`, `cs`, `cy`, `da`, `de`, `en`, `es`, `et`, `fr`, `ga`, |
-|                        | `hr`, `hu`, `id`, `is`, `it`, `ku`, `la`, `lt`, `lv`, `mi`, `ms`, `mt`, |
-|                        | `nl`, `no`, `oc`, `pi`, `pl`, `pt`, `ro`, `rs_latin`, `sk`, `sl`, `sq`, |
-|                        | `sv`, `sw`, `tl`, `tr`, `uz`, `vi`                                      |
-| `zh_sim_g2.pth`        | `ch_sim` + `en`                                                         |
-| `japanese_g2.pth`      | `ja` + `en`                                                             |
-| `korean_g2.pth`        | `ko` + `en`                                                             |
-| `telugu.pth`           | `te` + `en`                                                             |
-| `kannada.pth`          | `kn` + `en`                                                             |
-| `cyrillic_g2.pth`      | `ru`, `rs_cyrillic`, `be`, `bg`, `uk`, `mn`, `abq`, `ady`, `kbd`,       |
-|                        | `ava`, `dar`, `inh`, `che`, `lbe`, `lez`, `tab`, `tjk`, `en`            |
-
-<u>Notice</u>: keep the requested language list as short and specific as possible. Because the
-resolution picks a model that covers *all* requested languages, adding a language you do not need
-downgrades the model for the ones you do. For example, `["en"]` selects the English-specific
-`english_g2.pth`, while `["en", "de"]` falls back to the broader `latin_g2.pth`, which is generally
-less accurate on English text.
-
-Check the semantic of easyocr language inputs here: https://www.jaided.ai/easyocr/
-
-
+EasyOCR takes several languages at once. Its own codes -- `ch_tra`, `rs_cyrillic`, `tjk` -- are
+written bare. A BCP-47 tag behind `iso:` is translated into one of them: `iso:zh-Hant` becomes
+`ch_tra`, `iso:sr-Cyrl` becomes `rs_cyrillic`, `iso:tg` becomes `tjk`. EasyOCR then picks the one
+checkpoint covering every requested code, by the script they share, so `iso:ru` reaches the
+Cyrillic model unnamed. The grouping is in [Native OCR engines](OCR_native.md#easyocr).
 
 ## Nemotron-OCR
-
-This section describes Nemotron-OCR for versions `v2.0.0`, `v2.0.2`.
 
 The engine's own vocabulary, in its own codes, is listed in
 [Native OCR engines](OCR_native.md#nemotron-ocr).
 
-Nemotron works only on Linux and requires CUDA (Docling enforces 13.x).
+### Nemotron-OCR language input
 
-The following table shows the supported Python versions and languages
-
-
-| Nemotron version | Python version   | Supported language inputs             |
-| ---------------- | ---------------- | ------------------------------------- |
-| v2.0.0           | 3.12 only        | `en`, `mul`                           |
-| v2.0.2           | 3.11, 3.12, 3.13 | `en`, `mul`                           |
-
-`en`, and an empty list, select the English recognizer. `mul` selects the multilingual one, as do
-the languages it is trained on: English, Chinese (Simplified and Traditional), Japanese, Korean and
-Russian. Any other language raises rather than silently loading the multilingual model -- ask for
-`mul` explicitly if that is what you want.
+`english` selects the English recognizer, and so do `iso:en` and an empty list. `multilingual`
+selects the multilingual one, as do the five languages it is trained on: `iso:zh`, `iso:zh-Hant`,
+`iso:ja`, `iso:ko` and `iso:ru`. Any other language raises.
 
 
 ## Tesseract - TesserOCR
 
-Tesseract must be installed as a system package (see
-[installation](../getting_started/installation.md)).
-TesserOCR is a python library that wraps the Tesseract engine.
-
 The engine's own vocabulary, in its own codes, is listed in
 [Native OCR engines](OCR_native.md#tesseract-tesserocr).
 
-Tesseract's own vocabulary *is* ISO 639-2/T, so most tags map straight through: `de` becomes `deu`,
-`el` becomes `ell`, `cs` becomes `ces`. Docling handles the deviations for you -- `zh-Hant` becomes
-`chi_tra`, `sr-Latn` becomes `srp_latn`, `az-Cyrl` becomes `aze_cyrl`, `ku` becomes `kmr`. A
-`script/` traineddata file can be named directly, e.g. `lang=["script/Latin"]`.
+### Tesseract language input
+
+A traineddata file is named by its own stem: `deu`, `chi_tra`, `script/Latin`, `jpn_vert`,
+`ita_old`, or a file you trained yourself. That is the only way to reach the ones no tag describes.
+
+Tesseract's own vocabulary *is* ISO 639-2/T, so most `iso:` tags map straight through: `iso:de`
+becomes `deu`, `iso:el` becomes `ell`, `iso:cs` becomes `ces`. Docling handles the deviations for
+you -- `iso:zh-Hant` becomes `chi_tra`, `iso:sr-Latn` becomes `srp_latn`, `iso:az-Cyrl` becomes
+`aze_cyrl`, `iso:ku` becomes `kmr`.
 
 Languages are checked against the installed tessdata **at construction time**, so a missing
-traineddata file now fails immediately with the installed set in the message, instead of failing
-per page during conversion.
+traineddata file fails immediately with the installed set in the message, instead of failing
+per page during conversion. That set is reported back in the spelling you would write: an `iso:`
+tag where one exists, and the bare file name for everything else.
 
 An empty `lang` list runs Tesseract's per-page orientation and script detection. That requires
 the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 
-[Languages support](https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html)
-
-
 ## OcrMac
-
-This section describes ocrmac for versions `v1.0.0`, `v1.0.1`.
 
 The engine's own vocabulary, in its own codes, is listed in
 [Native OCR engines](OCR_native.md#ocrmac).
 
-ocrmac is a thin wrapper around Apple's Vision framework. It is macOS-only and ships no model
-artifacts of its own — the recognizers are part of the operating system. The supported language set
-is therefore a property of the macOS version, not of the ocrmac release.
+### OcrMac language input
 
-Vision's own vocabulary is BCP-47 with regions, so docling matches your tag against the list the
-running macOS reports rather than mapping it through a table: `de` finds `de-DE`, `pt` finds
-`pt-BR`, `zh-CN` finds `zh-Hans`. A tag with no close enough match raises, and the message lists
-what this particular macOS actually offers. An empty `lang` list hands the choice to Vision's own
-automatic behaviour; `mul` is not supported.
+Vision's vocabulary is BCP-47 with regions. Docling therefore matches an `iso:` tag against the
+languages the running macOS reports, instead of mapping it through a table: `iso:de` finds `de-DE`,
+`iso:pt` finds `pt-BR`, `iso:zh-CN` finds `zh-Hans`. A tag with no close match raises.
+
+Some Vision codes carry a region that is not ISO valid like `vi-VT`. Such cases should be passed as
+bare/native inputs. An empty `lang` list lets Vision choose.
 

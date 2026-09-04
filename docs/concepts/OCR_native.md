@@ -1,16 +1,4 @@
-# Native OCR engines
-
-## Overview
-
-Docling supports multiple OCR engines that can be installed as extra packages:
-
-- [RapidOCR](https://github.com/RapidAI/RapidOCR)
-- [Nemotron-OCR](https://huggingface.co/nvidia/nemotron-ocr-v2)
-- [EasyOCR](https://github.com/jaidedai/easyocr)
-- [ocrmac](https://github.com/straussmaximilian/ocrmac)
-- [tesseract-CLI](https://github.com/tesseract-ocr/tesseract)
-- [tesserocr](https://github.com/sirfz/tesserocr)
-
+# Low-level language support across Docling's OCR engines
 
 ## RapidOCR
 
