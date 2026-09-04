@@ -8,7 +8,7 @@ You can rename a bookmark to distinguish it from other bookmarks. If you have bo
 
 Renaming the bookmark does not rename the folder.
 
-Procedure
+**Procedure**
 
 1. Right-click the bookmark in the side bar.
 2. Select *Rename…*.
@@ -17,7 +17,7 @@ Procedure
 <!-- image -->
 4. Click btn:[Rename].
 
-Verification
+**Verification**
 
 - Check that the side bar lists the bookmark under the new name.
 <!-- image -->
