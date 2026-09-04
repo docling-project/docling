@@ -136,9 +136,12 @@ class _MockPdfiumDocument:
         self._toc = toc
         self._page_height = page_height
         self.pages_opened: list[int] = []
+        self.max_depth_used: int | None = None
 
-    def get_toc(self):
-        return iter(self._toc)
+    def get_toc(self, max_depth: int = 15):
+        # Mirrors pypdfium2: entries below the depth bound are dropped silently.
+        self.max_depth_used = max_depth
+        return iter([bm for bm in self._toc if bm.level < max_depth])
 
     def __getitem__(self, index: int) -> _MockPdfiumPage:
         self.pages_opened.append(index)
@@ -291,3 +294,68 @@ def test_outline_pdfium_reuses_one_page_height_per_page():
 
     assert [i.y_top for i in items] == [100.0, 200.0]
     assert doc.pages_opened == [7]
+
+
+def _deep_outline_pdf(depth: int) -> bytes:
+    """A one-page PDF whose outline is a single chain `depth` levels deep.
+
+    Written out by hand rather than with a PDF library: nothing that can author an
+    outline is a dependency of this project, and this test has to run everywhere.
+    """
+    catalog, pages, page, outlines = 1, 2, 3, 4
+    first_item = outlines + 1
+    objects: dict[int, str] = {
+        catalog: f"<< /Type /Catalog /Pages {pages} 0 R /Outlines {outlines} 0 R >>",
+        pages: f"<< /Type /Pages /Kids [{page} 0 R] /Count 1 >>",
+        page: f"<< /Type /Page /Parent {pages} 0 R /MediaBox [0 0 612 792] >>",
+        outlines: (
+            f"<< /Type /Outlines /First {first_item} 0 R "
+            f"/Last {first_item} 0 R /Count {depth} >>"
+        ),
+    }
+    for i in range(depth):
+        num = first_item + i
+        parent = outlines if i == 0 else num - 1
+        entry = (
+            f"<< /Title (level {i}) /Parent {parent} 0 R "
+            f"/Dest [{page} 0 R /XYZ 0 {700 - i} 0]"
+        )
+        if i + 1 < depth:
+            entry += f" /First {num + 1} 0 R /Last {num + 1} 0 R /Count 1"
+        objects[num] = entry + " >>"
+
+    out = bytearray(b"%PDF-1.7\n")
+    offsets: dict[int, int] = {}
+    for num in sorted(objects):
+        offsets[num] = len(out)
+        out += f"{num} 0 obj\n{objects[num]}\nendobj\n".encode()
+    xref_offset = len(out)
+    size = max(objects) + 1
+    out += f"xref\n0 {size}\n0000000000 65535 f \n".encode()
+    for num in range(1, size):
+        out += f"{offsets[num]:010d} 00000 n \n".encode()
+    out += (
+        f"trailer\n<< /Size {size} /Root {catalog} 0 R >>\n"
+        f"startxref\n{xref_offset}\n%%EOF\n"
+    ).encode()
+    return bytes(out)
+
+
+def test_outline_pdfium_reads_past_the_default_depth_limit():
+    """Regression test: pypdfium2's `get_toc()` stops at 15 levels unless told
+    otherwise, so a deeper outline came back silently truncated -- unlike the
+    docling-parse walker, which is unbounded."""
+    from io import BytesIO
+
+    import pypdfium2 as pdfium
+
+    from docling.utils.pdf_outline import extract_outline_from_pdfium
+
+    depth = 20
+    pdoc = pdfium.PdfDocument(BytesIO(_deep_outline_pdf(depth)))
+
+    items = extract_outline_from_pdfium(pdoc)
+
+    assert [item.title for item in items] == [f"level {i}" for i in range(depth)]
+    assert [item.level for item in items] == list(range(depth))
+    assert all(item.page_no == 1 for item in items)

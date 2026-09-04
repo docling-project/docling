@@ -56,6 +56,16 @@ class _PdfOutlineItem(BaseModel):
     y_top: float | None = None
 
 
+# pypdfium2 walks the outline recursively and stops at 15 levels by default,
+# silently dropping every entry below that. Real outlines are nowhere near this
+# deep; the bound exists only so a malformed document cannot exhaust the
+# interpreter stack, which a recursive walk otherwise would. Raise it to a depth
+# no genuine table of contents reaches while staying far inside the recursion
+# limit. (`extract_outline_from_docling_parse` walks iteratively and needs no
+# such bound.)
+_PDFIUM_OUTLINE_MAX_DEPTH = 128
+
+
 @cache
 def _view_top_index() -> dict[int, int]:
     """Destination view modes whose coordinates carry a usable vertical (top) position.
@@ -135,7 +145,7 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
 
     with pypdfium2_lock:
         try:
-            toc = list(pdoc.get_toc())
+            toc = list(pdoc.get_toc(max_depth=_PDFIUM_OUTLINE_MAX_DEPTH))
         except PdfiumError as exc:
             _log.debug("Could not read PDF outline: %s", exc)
             return []
