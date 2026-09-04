@@ -251,9 +251,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     indents[level + 1] = item["indent"]
 
                 elif in_list and item["indent"] < indents[level]:
-                    # print(item["indent"], " => ", indents[level])
                     while level > 0 and item["indent"] < indents[level]:
-                        # print(item["indent"], " => ", indents[level])
+                        # Only pop the current level if there is an outer group
+                        # to fall back to; otherwise keep it as the list root.
+                        if indents[level - 1] is None:
+                            break
                         parents[level] = None
                         indents[level] = None
                         level -= 1
