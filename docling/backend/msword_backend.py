@@ -2710,7 +2710,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
-            cell_element = table.rows[0].cells[0]
+            # ``table.rows[0].cells`` walks ``CT_Row.tc_lst``, which only yields
+            # direct ``w:tc`` children, so a lone cell Word wrapped in a content
+            # control (``w:sdt``) would be missed and ``cells[0]`` would raise
+            # IndexError -- the caller swallows it and silently drops the cell.
+            single_row_cells = MsWordDocumentBackend._row_cells(table.rows[0]._tr)
+            if not single_row_cells:
+                return elem_ref
+            cell_element = _Cell(single_row_cells[0], table)
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
             self._clear_list_group_cache()
