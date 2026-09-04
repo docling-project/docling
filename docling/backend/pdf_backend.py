@@ -16,6 +16,7 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.utils.pdf_outline import _PdfOutlineItem
+from docling.utils.pdf_struct_tree import _PdfFormulaStruct
 
 
 class PdfPageBackend(ABC):
@@ -144,6 +145,17 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         A flat, document-ordered list where each entry carries its own depth (``level``). The
         default returns an empty list; PDFium-backed backends override this with the real
         outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
+        """
+        return []
+
+    def get_formula_structures(
+        self, page_nos: Iterable[int]
+    ) -> list[_PdfFormulaStruct]:
+        """Return the ``Formula`` structure elements on the given 1-based pages.
+
+        Only tagged (accessible / PDF-UA) PDFs carry these. The default returns an empty
+        list; PDFium-backed backends override it. Backends with no access to the structure
+        tree (e.g. OCR/image) keep the default.
         """
         return []
 

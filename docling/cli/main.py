@@ -947,6 +947,16 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the formula enrichment model in the pipeline."),
     ] = False,
+    native_formula: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Use the MathML embedded in a tagged PDF's Formula structure elements "
+                "instead of reconstructing those equations with the enrichment model."
+            ),
+        ),
+    ] = False,
     enrich_picture_classes: Annotated[
         bool,
         typer.Option(
@@ -1344,6 +1354,7 @@ def convert(  # noqa: C901
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
+                do_native_formula_extraction=native_formula,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
                 do_chart_extraction=enrich_chart_extraction,

@@ -46,6 +46,10 @@ from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
 )
+from docling.utils.pdf_struct_tree import (
+    _PdfFormulaStruct,
+    extract_formula_structs_from_pdfium,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -376,6 +380,17 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             return []
         return extract_outline_from_docling_parse(self.dp_doc)
 
+    def get_formula_structures(
+        self, page_nos: Iterable[int]
+    ) -> list[_PdfFormulaStruct]:
+        """Read the structure tree from the pypdfium2 handle this backend already holds.
+
+        docling-parse exposes no structure-tree accessor, so pypdfium2 does the work.
+        """
+        if self._pdoc is None:
+            return []
+        return extract_formula_structs_from_pdfium(self._pdoc, page_nos)
+
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
             self.dp_doc.unload()
@@ -646,6 +661,29 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             return extract_outline_from_docling_parse(dp_doc)
         finally:
             dp_doc.unload()
+
+    def get_formula_structures(
+        self, page_nos: Iterable[int]
+    ) -> list[_PdfFormulaStruct]:
+        """Extract the structure tree via a short-lived pypdfium2 document.
+
+        This backend holds no pypdfium2 handle, and docling-parse exposes no structure-tree
+        accessor, so one is opened purely for this read -- the same approach
+        :meth:`get_document_outline` takes for the table of contents. Called at most once
+        per conversion, and only when native formula extraction is enabled.
+        """
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        with pypdfium2_lock:
+            pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
+        try:
+            return extract_formula_structs_from_pdfium(pdoc, page_nos)
+        finally:
+            with pypdfium2_lock:
+                pdoc.close()
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

@@ -32,6 +32,10 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
+from docling.utils.pdf_struct_tree import (
+    _PdfFormulaStruct,
+    extract_formula_structs_from_pdfium,
+)
 
 
 def _merge_overlapping_boxes(
@@ -659,6 +663,14 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
         if self._pdoc is None:
             return []
         return extract_outline_from_pdfium(self._pdoc)
+
+    def get_formula_structures(
+        self, page_nos: Iterable[int]
+    ) -> list[_PdfFormulaStruct]:
+        """Extract the ``Formula`` structure elements from the pypdfium2 document."""
+        if self._pdoc is None:
+            return []
+        return extract_formula_structs_from_pdfium(self._pdoc, page_nos)
 
     def _close_native_document(self) -> None:
         with pypdfium2_lock:
