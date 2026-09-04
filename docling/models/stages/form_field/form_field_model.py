@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import statistics
 from collections.abc import Iterable
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
@@ -100,6 +101,14 @@ class PdfFormFieldModel(BasePageModel):
     # before tightening. Unselected boxes usually have no overlapping cluster and
     # fall through to the widget-only path (see docs handoff prereq B.5).
     _CHECKBOX_OVERLAP_THRESHOLD = 0.5
+    # Bind a keyless widget to a nearby label only when their rectangle edge-gap
+    # is within this many median line-heights -- a text-scale bound, not a page
+    # fraction, so a field with no nearby label stays keyless. Row-band is the
+    # same-row tolerance for the crossing guard. Both are the calibration knobs
+    # the fixtures set; ponytail: 2.0 / 1.5 are the starting points, tune on the
+    # 15-form corpus before trusting them.
+    _LABEL_GAP_CAP_LINES = 2.0
+    _LABEL_ROW_BAND_LINES = 1.5
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
@@ -150,6 +159,17 @@ class PdfFormFieldModel(BasePageModel):
             )
 
         return FieldValuePrediction(text=source_value, orig=source_value, bbox=bbox)
+
+    @staticmethod
+    def _median_line_height(clusters: list[Cluster]) -> float:
+        """Text scale for the label-gap cap: median label-cluster height.
+
+        Most field labels are a single line, so cluster height is a good line-height
+        proxy without digging into per-cell rects. Zero when there are no labels,
+        which short-circuits the binding pass.
+        """
+        heights = [c.bbox.height for c in clusters if c.bbox.height > 0]
+        return statistics.median(heights) if heights else 0.0
 
     @classmethod
     def _cluster_label_text(cls, cluster: Cluster) -> str:
@@ -259,6 +279,9 @@ class PdfFormFieldModel(BasePageModel):
                 text_containers: dict[int, Cluster] = {}
                 unmatched_values: list[FieldValuePrediction] = []
                 promoted_cluster_ids: set[int] = set()
+                # (widget.index, value) for keyless widgets, in index order, fed to
+                # the order-preserving label binding after the triage loop.
+                keyless: list[tuple[int, FieldValuePrediction]] = []
 
                 for widget in page.parsed_page.widgets:
                     bbox = widget.rect.to_bounding_box().to_top_left_origin(
@@ -305,14 +328,52 @@ class PdfFormFieldModel(BasePageModel):
                     if form is not None:
                         matched_forms[form.id] = form
                         matched_values.setdefault(form.id, []).append(value)
-                        continue
-                    unmatched_values.append(value)
+                    else:
+                        unmatched_values.append(value)
+                    # Value-only so far: a keyless FORM/unmatched widget whose label
+                    # (if any) lives detached in the body. Queue it for the binding
+                    # pass. A matched checkbox already carries its option label, so
+                    # it is not keyless -- leave its validated behaviour untouched.
+                    if value.checkbox_label is None:
+                        keyless.append((widget.index, value))
+
+                # Order-preserving binding: pair each keyless widget with the
+                # nearest unconsumed body label at or after the last binding in
+                # reading order. text_containers are already keys, so they leave
+                # the candidate pool. Bound labels become field-item keys and drop
+                # from the body, reusing the overlapping-case promotion machinery.
+                label_pool = [c for c in text_clusters if c.id not in text_containers]
+                line_height = self._median_line_height(label_pool)
+                bound_value_keys: dict[int, Cluster] = {}
+                if keyless and label_pool and line_height > 0:
+                    bound = _match_labels(
+                        widgets=[(index, value.bbox) for index, value in keyless],
+                        labels=label_pool,
+                        cap=self._LABEL_GAP_CAP_LINES * line_height,
+                        row_band=self._LABEL_ROW_BAND_LINES * line_height,
+                    )
+                    value_by_index = dict(keyless)
+                    for index, cluster in bound.items():
+                        # Identity map: values are unique, live objects for this
+                        # page, so id() safely tags which item gets the key below.
+                        bound_value_keys[id(value_by_index[index])] = cluster
+                        promoted_cluster_ids.add(cluster.id)
+
+                def _field_item(value: FieldValuePrediction) -> FieldItemPrediction:
+                    cluster = bound_value_keys.get(id(value))
+                    if cluster is None:
+                        return FieldItemPrediction(values=[value])
+                    return FieldItemPrediction(
+                        key_text=self._cluster_label_text(cluster),
+                        key_bbox=cluster.bbox,
+                        values=[value],
+                    )
 
                 regions = [
                     FieldRegionPrediction(
                         source_container_id=form_id,
                         bbox=matched_forms[form_id].bbox,
-                        items=[FieldItemPrediction(values=[value]) for value in values],
+                        items=[_field_item(value) for value in values],
                     )
                     for form_id, values in matched_values.items()
                 ]
@@ -340,10 +401,7 @@ class PdfFormFieldModel(BasePageModel):
                             bbox=BoundingBox.enclosing_bbox(
                                 [value.bbox for value in unmatched_values]
                             ),
-                            items=[
-                                FieldItemPrediction(values=[value])
-                                for value in unmatched_values
-                            ],
+                            items=[_field_item(value) for value in unmatched_values],
                         )
                     )
                 page.predictions.field_regions = regions
