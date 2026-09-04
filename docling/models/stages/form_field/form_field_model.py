@@ -342,6 +342,12 @@ class PdfFormFieldModel(BasePageModel):
                 # reading order. text_containers are already keys, so they leave
                 # the candidate pool. Bound labels become field-item keys and drop
                 # from the body, reusing the overlapping-case promotion machinery.
+                # ponytail: bordered table-forms mis-bind -- a field sandwiched
+                # between its own left label and the next column's label takes the
+                # geometrically nearer one, and the real labels are table cells
+                # thin in this pool (validated on rf-1084s). Accepted Phase-1
+                # ceiling; needs table/border structure, not a left-order tiebreak
+                # (see docs/acroform-reading-order-keying-handoff.md).
                 label_pool = [c for c in text_clusters if c.id not in text_containers]
                 line_height = self._median_line_height(label_pool)
                 bound_value_keys: dict[int, Cluster] = {}
