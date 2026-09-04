@@ -345,7 +345,8 @@ def test_docling_parse_native_outline_from_sample_pdf():
         dp_doc.unload()
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
-    assert all(o.page_no is None and o.y_top is None for o in outline)
+    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
+    assert all(o.y_top is None for o in outline)
 
 
 def test_outline_empty_for_pdf_without_bookmarks(tmp_path):

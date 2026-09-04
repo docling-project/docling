@@ -10,7 +10,7 @@ extractors are provided:
   title, depth, target page and vertical position.
 * :func:`extract_outline_from_docling_parse` -- fallback for the docling-parse backends, using
   their native ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries
-  titles and hierarchy only, so page number and position are left unset.
+  titles, hierarchy, and an optional target page; position is left unset.
 
 ``pypdfium2`` is imported lazily, inside the functions that use it, never at module level:
 ``datamodel.document`` imports this module for the ``_PdfOutlineItem`` model, which places it on
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     import pypdfium2 as pdfium
     from docling_parse.pdf_parser import (
         PdfDocument as DoclingParsePdfDocument,
-        PdfTableOfContents,
+        PdfTableOfContentsWithPage,
     )
 
 _log = logging.getLogger(__name__)
@@ -193,9 +193,9 @@ def extract_outline_from_docling_parse(
 
     Walks the ``PdfTableOfContents`` tree returned by ``PdfDocument.get_table_of_contents()``,
     depth-first, assigning each node a 0-based ``level`` from its depth (top-level entries at
-    level 0, matching the pypdfium2 extractor). The native outline exposes only the title and
-    the tree structure -- no target page or vertical position -- so ``page_no`` and ``y_top``
-    are left ``None`` and the heading matcher falls back to title-only matching.
+    level 0, matching the pypdfium2 extractor). Target pages are converted from docling-parse's
+    zero-based representation to the 1-based page numbering used by Docling. Vertical position
+    is left unset.
 
     ``get_table_of_contents()`` returns ``None`` for PDFs without an embedded outline, in which
     case an empty list is returned.
@@ -210,14 +210,15 @@ def extract_outline_from_docling_parse(
     # call-stack recursion limit. Some large real-world documents (technical manuals,
     # legal filings) legitimately nest headings hundreds of levels deep, and malformed
     # PDFs can nest further still; a naive recursive walk here raises RecursionError.
-    stack: list[tuple[PdfTableOfContents, int]] = [
+    stack: list[tuple[PdfTableOfContentsWithPage, int]] = [
         (child, 0) for child in reversed(toc.children or [])
     ]
     while stack:
         node, level = stack.pop()
         title = (node.text or node.orig or "").strip()
         if title:
-            items.append(_PdfOutlineItem(title=title, level=level))
+            page_no = node.page + 1 if node.page is not None else None
+            items.append(_PdfOutlineItem(title=title, level=level, page_no=page_no))
         stack.extend((child, level + 1) for child in reversed(node.children or []))
 
     return items
