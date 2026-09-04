@@ -664,18 +664,27 @@ class StandardPdfPipeline(ConvertPipeline):
             }
         )
 
+        # Code Formula Enrichment Model (using new VLM runtime system). Hoisted to a local
+        # because the table-cell stage below reuses this instance rather than building a
+        # second engine over the same weights.
+        code_formula_model = CodeFormulaVlmModel(
+            enabled=self.pipeline_options.do_code_enrichment
+            or self.pipeline_options.do_formula_enrichment,
+            artifacts_path=self.artifacts_path,
+            options=code_formula_opts,
+            accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+        )
+
         self.enrichment_pipe = [
-            # Code Formula Enrichment Model (using new VLM runtime system)
-            CodeFormulaVlmModel(
-                enabled=self.pipeline_options.do_code_enrichment
-                or self.pipeline_options.do_formula_enrichment,
-                artifacts_path=self.artifacts_path,
-                options=code_formula_opts,
-                accelerator_options=self.pipeline_options.accelerator_options,
-                enable_remote_services=self.pipeline_options.enable_remote_services,
-            ),
+            code_formula_model,
+            # Shares code_formula_model's engine, prompt and post-processing, so a formula
+            # transcribed inside a table cell is identical to the same formula transcribed as
+            # a page-level FormulaItem, and no second copy of the weights is loaded.
+            # code_formula_model owns the engine lifecycle (its __del__ calls engine.cleanup()).
             TableCellFormulaVlmModel(
                 enabled=self.pipeline_options.do_table_cell_formula_enrichment,
+                code_formula_model=code_formula_model,
             ),
             *self.enrichment_pipe,
         ]

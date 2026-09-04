@@ -622,6 +622,19 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = False
 
+    do_table_cell_formula_enrichment: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, run formula recognition over table cells and return rich "
+                "table cells whose `ref` points at the recognised content. "
+                "Requires do_formula_enrichment. "
+                "Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
     do_picture_classification: Annotated[
         bool,
         Field(

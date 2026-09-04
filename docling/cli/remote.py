@@ -202,6 +202,15 @@ def convert_remote(
         bool,
         typer.Option(help="Enable the service's formula enrichment model."),
     ] = False,
+    enrich_formula_table_cells: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Also run the service's formula recognition over table cells. "
+                "Requires --enrich-formula."
+            )
+        ),
+    ] = False,
     enrich_picture_classes: Annotated[
         bool,
         typer.Option(help="Enable the service's picture classification model."),
@@ -314,6 +323,7 @@ def convert_remote(
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
         "do_formula_enrichment": enrich_formula,
+        "do_table_cell_formula_enrichment": enrich_formula_table_cells,
         "do_picture_classification": enrich_picture_classes,
         "do_picture_description": enrich_picture_description,
         "do_chart_extraction": enrich_chart_extraction,
