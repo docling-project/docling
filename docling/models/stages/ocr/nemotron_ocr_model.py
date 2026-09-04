@@ -54,6 +54,25 @@ _NEMOTRON_OCR_TAG_TO_CODE = {
     "zh-Hant": "multilingual",
 }
 
+# NVIDIA validates only the languages in `_NEMOTRON_OCR_TAG_TO_CODE`
+# Routing these to `english` is best effort
+# The list is the CLDR exemplar alphabet of every Latin-script locale, minus the ones the charset
+# cannot spell (`ca`, `cy`, `hu`, `lt`, `lv`, `mt`, `sk`, `vi`, ...). Regenerate it against a new
+# checkpoint's charset rather than editing it by hand.
+_NEMOTRON_OCR_BEST_EFFORT_TAGS = frozenset(
+    f"{subtag}-Latn"
+    for subtag in """
+    aa af ak an arn asa ast az bal bem bez bm br bs cad cch ceb cgg cho cic co cs da dav
+    de dua dyo ebu es et eu fi fil fo fr frr fur fy ga gaa gd gl gsw guz gv haw hi hr
+    hsb ht ia id ie ig io is it iu jbo jmc jv kaj kam kcg kde kea ki kkj kl kln ksb ksh
+    ku kw kxv la lb lg lij lld lmo ln lu luo luy mer mfe mg mgh mgo mhn mi mic moh ms
+    mus nb nd nds nl nn no nr nso nus ny nyn oc om pap pcm pis pl pms pt qu quc rm rn ro
+    rof rw rwk saq sbp sc scn seh sg sgs shi sid sl sma smj smn sn so sq sr ss ssy st su
+    sv sw szl teo tk tn to tpi tr trv ts tzm uz vec vmw vo vun wa wae wbp wo xh xog yav
+    za zu
+    """.split()
+)
+
 # Mappings of nemotron language to the artifacts subdir. Also nemotron's own native vocabulary
 _NEMOTRON_CODE_TO_ARTIFACT = {
     "english": "v2_english",
@@ -158,7 +177,9 @@ class NemotronOcrModel(BaseOcrModel):
         return OcrLanguageSupport(
             bcp47=[
                 OcrLanguageResolver.canonicalize_bcp47(tag).short_tag()
-                for tag in sorted(_NEMOTRON_OCR_TAG_TO_CODE)
+                for tag in sorted(
+                    _NEMOTRON_OCR_TAG_TO_CODE.keys() | _NEMOTRON_OCR_BEST_EFFORT_TAGS
+                )
             ],
             native=sorted(_NEMOTRON_CODE_TO_ARTIFACT),
         )
@@ -169,9 +190,19 @@ class NemotronOcrModel(BaseOcrModel):
             if language.native in _NEMOTRON_CODE_TO_ARTIFACT:
                 return language.native
         else:
-            code = _NEMOTRON_OCR_TAG_TO_CODE.get(language.bcp47())
+            tag = language.bcp47()
+            code = _NEMOTRON_OCR_TAG_TO_CODE.get(tag)
             if code is not None:
                 return code
+            if tag in _NEMOTRON_OCR_BEST_EFFORT_TAGS:
+                _log.warning(
+                    "nemotron-OCR was not trained on %s. Running it on the '%s' "
+                    "recognizer, whose character set covers the alphabet of this "
+                    "language, but whose accuracy on it is untested.",
+                    language.tag(),
+                    _NEMOTRON_OCR_DEFAULT_LANGUAGE,
+                )
+                return _NEMOTRON_OCR_DEFAULT_LANGUAGE
         raise OcrLanguageNotSupportedError(
             self._engine_name,
             language.tag(),

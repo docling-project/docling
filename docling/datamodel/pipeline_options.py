@@ -481,8 +481,11 @@ class NemotronOcrOptions(OcrOptions):
                 "`iso:en` and an empty list all select the English model, while "
                 "`multilingual` and the languages that model covers (`iso:zh-Hans`, "
                 "`iso:zh-Hant`, `iso:ja`, `iso:ko`, `iso:ru`) select the "
-                "multilingual one. Any other language raises; write `multilingual` "
-                "to opt into the multilingual model explicitly."
+                "multilingual one. Any other Latin-script language whose alphabet "
+                "the English recognizer can spell (`iso:de`, `iso:fr`, `iso:pl`, "
+                "`iso:sr-Latn`, ...) is routed to the English model as a best "
+                "effort, with a warning: NVIDIA validates none of them. A language "
+                "that model cannot spell raises"
             ),
             examples=[["english"], ["multilingual"]],
         ),
