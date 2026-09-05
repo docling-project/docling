@@ -11,6 +11,7 @@ Below you can find a listing of all supported input and output formats.
 | PDF | |
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
+| RTF | Rich Text Format; converted to DOCX before parsing; requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
 | Pages | Apple Pages documents (`.pages`), both container generations (Pages 5+ and iWork '09); requires the `format-iwork` extra |

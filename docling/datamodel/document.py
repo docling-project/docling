@@ -1000,6 +1000,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.DOCX][0]
         elif ext in FormatToExtensions[InputFormat.DOC]:
             mime = FormatToMimeType[InputFormat.DOC][0]
+        elif ext in FormatToExtensions[InputFormat.RTF]:
+            mime = FormatToMimeType[InputFormat.RTF][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.PPT]:
