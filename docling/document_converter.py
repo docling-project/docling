@@ -271,6 +271,8 @@ class IWorkNumbersFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = IWorkNumbersDocumentBackend
     backend_options: IWorkBackendOptions | None = None
+
+
 class NativePdfFormatOption(PdfFormatOption):
     """PDF format option for the model-free `NativePdfPipeline`.
 
