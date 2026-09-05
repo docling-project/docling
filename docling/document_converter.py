@@ -33,7 +33,10 @@ from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.iwork_backend import IWorkPagesDocumentBackend
+from docling.backend.iwork_backend import (
+    IWorkNumbersDocumentBackend,
+    IWorkPagesDocumentBackend,
+)
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -262,6 +265,14 @@ class IWorkPagesFormatOption(FormatOption):
     backend_options: IWorkBackendOptions | None = None
 
 
+class IWorkNumbersFormatOption(FormatOption):
+    """Format option for Apple Numbers input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkNumbersDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
 class NativePdfFormatOption(PdfFormatOption):
     """PDF format option for the model-free `NativePdfPipeline`.
 
@@ -378,6 +389,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
         InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
