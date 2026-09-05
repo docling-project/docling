@@ -22,8 +22,8 @@
     "sha256": "3da05cf8344db3e29ce8c41b93ee3a5cca523c2a15f11ce87a5fdc8ad84745c6",
     "content_origin": "self-authored test page",
     "license": "Apache-2.0",
-    "generator_path": "sources/generate_self_authored_page.py",
-    "generator_sha256": "583fcedd057602bea7e70e2791d45c155040f80a63e94ed95b6ec35fe9a9a946"
+    "generator_path": "helpers/generate_self_authored_page.py",
+    "generator_sha256": "b3648a50b400c219f27a85d4c9942dacd9c1a55480ac34a201c3f3ee10ac75e8"
   },
   "extraction": {
     "response_path": "result.parsingResult.layoutParsingResults[0].prunedResult",

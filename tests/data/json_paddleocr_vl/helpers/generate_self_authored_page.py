@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-OUTPUT_PATH = Path(__file__).with_name("self_authored_page.png")
+OUTPUT_PATH = Path(__file__).resolve().parents[1] / "sources" / "self_authored_page.png"
 
 
 def main() -> None:
