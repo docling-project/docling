@@ -8,11 +8,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
+from docling_core.types.doc.page import TextCell
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    Cluster,
     ContainerElement,
     FigureElement,
     Page,
@@ -112,7 +114,8 @@ class PageAssembleModel(BasePageModel):
         except ValidationError:
             return Path(best_uri)
 
-    def sanitize_text(self, lines: List[str]) -> str:
+    @staticmethod
+    def sanitize_text(lines: List[str]) -> str:
         """Join the text lines of a cluster into a single normalized string.
 
         Lines are joined with a space, except across a hyphen that splits a
@@ -177,6 +180,80 @@ class PageAssembleModel(BasePageModel):
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
+    @staticmethod
+    def _get_unmatched_table_cells(table: Table, page_height: float) -> list[TextCell]:
+        """Return source cells not covered by the predicted table structure."""
+        predicted_bboxes = [
+            cell.bbox.to_top_left_origin(page_height)
+            for cell in table.table_cells
+            if cell.bbox is not None
+        ]
+        unmatched_cells = []
+        for source_cell in table.cluster.cells:
+            if not source_cell.text.strip():
+                continue
+            source_bbox = source_cell.rect.to_bounding_box().to_top_left_origin(
+                page_height
+            )
+            source_center_x = (source_bbox.l + source_bbox.r) / 2
+            source_center_y = (source_bbox.t + source_bbox.b) / 2
+            is_matched = any(
+                predicted_bbox.intersection_over_self(source_bbox) >= 0.5
+                or (
+                    predicted_bbox.l <= source_center_x <= predicted_bbox.r
+                    and predicted_bbox.t <= source_center_y <= predicted_bbox.b
+                )
+                for predicted_bbox in predicted_bboxes
+            )
+            if not is_matched:
+                unmatched_cells.append(source_cell)
+        unmatched_cells.sort(
+            key=lambda cell: (
+                cell.rect.to_bounding_box().to_top_left_origin(page_height).t,
+                cell.rect.to_bounding_box().to_top_left_origin(page_height).l,
+            )
+        )
+        return unmatched_cells
+
+    @classmethod
+    def _make_unmatched_table_text(
+        cls, table: Table, page_height: float, next_cluster_id: int
+    ) -> TextElement | None:
+        """Represent table text omitted by a failed structure prediction."""
+        unmatched_cells = cls._get_unmatched_table_cells(table, page_height)
+        if not unmatched_cells:
+            return None
+
+        _log.warning(
+            "Recovered %d text cells omitted by table structure prediction on page %d "
+            "from table cluster %d.",
+            len(unmatched_cells),
+            table.page_no,
+            table.cluster.id,
+        )
+
+        bboxes = [
+            cell.rect.to_bounding_box().to_top_left_origin(page_height)
+            for cell in unmatched_cells
+        ]
+        cluster = Cluster(
+            id=next_cluster_id,
+            label=DocItemLabel.TEXT,
+            bbox=BoundingBox.enclosing_bbox(bboxes),
+            cells=unmatched_cells,
+        )
+        text = cls.sanitize_text(
+            [cell.text.replace("\x02", "-").strip() for cell in unmatched_cells]
+        )
+        return TextElement(
+            label=DocItemLabel.TEXT,
+            id=next_cluster_id,
+            text=text,
+            hyperlink=None,
+            page_no=table.page_no,
+            cluster=cluster,
+        )
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -193,6 +270,16 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    next_cluster_id = (
+                        max(
+                            (
+                                cluster.id
+                                for cluster in page.predictions.layout.clusters
+                            ),
+                            default=-1,
+                        )
+                        + 1
+                    )
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
@@ -237,6 +324,15 @@ class PageAssembleModel(BasePageModel):
 
                             elements.append(tbl)
                             body.append(tbl)
+                            unmatched_text = self._make_unmatched_table_text(
+                                tbl,
+                                page.size.height,
+                                next_cluster_id=next_cluster_id,
+                            )
+                            if unmatched_text is not None:
+                                elements.append(unmatched_text)
+                                body.append(unmatched_text)
+                                next_cluster_id += 1
                         elif cluster.label == FIGURE_LABEL:
                             fig = None
                             if page.predictions.figures_classification:
