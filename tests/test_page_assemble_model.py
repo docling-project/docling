@@ -324,6 +324,7 @@ def _text_cell(text: str, bbox: BoundingBox, index: int) -> TextCell:
 def test_unmatched_table_text_is_preserved(model):
     matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
     orphan = _text_cell("outside", BoundingBox(l=100, t=100, r=130, b=110), 2)
+    earlier_orphan = _text_cell("earlier", BoundingBox(l=100, t=60, r=130, b=70), 3)
     table = Table(
         label=DocItemLabel.TABLE,
         id=5,
@@ -332,7 +333,7 @@ def test_unmatched_table_text_is_preserved(model):
             id=5,
             label=DocItemLabel.TABLE,
             bbox=BoundingBox(l=0, t=0, r=150, b=150),
-            cells=[matched, orphan],
+            cells=[matched, orphan, earlier_orphan],
         ),
         otsl_seq=[],
         num_rows=1,
@@ -349,7 +350,10 @@ def test_unmatched_table_text_is_preserved(model):
         ],
     )
 
-    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == [orphan]
+    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == [
+        earlier_orphan,
+        orphan,
+    ]
     fallback = model._make_unmatched_table_text(table, 150, 6)
     assert fallback is not None
-    assert fallback.text == "outside"
+    assert fallback.text == "earlier outside"

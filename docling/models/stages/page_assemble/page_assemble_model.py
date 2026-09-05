@@ -207,6 +207,12 @@ class PageAssembleModel(BasePageModel):
             )
             if not is_matched:
                 unmatched_cells.append(source_cell)
+        unmatched_cells.sort(
+            key=lambda cell: (
+                cell.rect.to_bounding_box().to_top_left_origin(page_height).t,
+                cell.rect.to_bounding_box().to_top_left_origin(page_height).l,
+            )
+        )
         return unmatched_cells
 
     @classmethod
@@ -217,6 +223,14 @@ class PageAssembleModel(BasePageModel):
         unmatched_cells = cls._get_unmatched_table_cells(table, page_height)
         if not unmatched_cells:
             return None
+
+        _log.warning(
+            "Recovered %d text cells omitted by table structure prediction on page %d "
+            "from table cluster %d.",
+            len(unmatched_cells),
+            table.page_no,
+            table.cluster.id,
+        )
 
         bboxes = [
             cell.rect.to_bounding_box().to_top_left_origin(page_height)
