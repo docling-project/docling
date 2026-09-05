@@ -5,6 +5,7 @@
 
 from types import SimpleNamespace
 
+import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
@@ -70,8 +71,77 @@ def test_levels_are_relative_to_schemes_present():
 
 
 def test_dotted_decimal_depth():
-    # A bare integer needs trailing "." or ")"; dotted forms do not.
+    # Explicit separators and dotted forms do not need sequence evidence.
     assert _levels(["1. A", "1.2 B", "1.2.3 C"]) == {0: 1, 1: 2, 2: 3}
+
+
+@pytest.mark.parametrize("separator", [" ", "   ", "\t", "\u00a0", "\u2003"])
+def test_bare_arabic_chapters_outrank_dotted_sections(separator):
+    texts = [
+        f"1{separator}INTRODUCTION",
+        "1.1 Background",
+        "1.1.1 Earlier work",
+        "Context",
+        f"2{separator}REQUIREMENTS",
+        "2.1 Functional requirements",
+        "2.1.1 Interfaces",
+        f"3{separator}CONCLUSION",
+        "3.1 Summary",
+    ]
+    assert _levels(texts) == {0: 1, 1: 2, 2: 3, 4: 1, 5: 2, 6: 3, 7: 1, 8: 2}
+
+
+@pytest.mark.parametrize(
+    "texts",
+    [
+        ["1 Introduction", "2 Methods", "3 Results"],
+        ["1. Introduction", "2 Methods", "3) Results"],
+        ["1 Introduction", "2) Methods", "3 Results"],
+    ],
+)
+def test_bare_arabic_sequence_without_dotted_sections(texts):
+    assert _levels(texts) == {0: 1, 1: 1, 2: 1}
+
+
+@pytest.mark.parametrize(
+    "texts",
+    [
+        ["2024 Annual report", "2025 Annual report", "2026 Annual report"],
+        ["10 ways to improve", "100 kg capacity"],
+        ["1 possible explanation"],
+        ["1 possibility", "3 alternatives"],
+        ["2 alternatives", "1 possibility"],
+        ["1", "2"],
+        ["1Introduction", "2Methods"],
+    ],
+)
+def test_bare_numbers_without_chapter_sequence_are_ignored(texts):
+    assert _levels(texts) == {}
+
+
+def test_bare_arabic_sequence_does_not_claim_unrelated_numbers():
+    assert _levels(
+        [
+            "2024 Annual report",
+            "1 Introduction",
+            "2 Methods",
+            "100 kg capacity",
+            "101 kg capacity",
+        ]
+    ) == {1: 1, 2: 1}
+
+
+def test_bare_arabic_sequence_can_restart_under_parts():
+    assert _levels(
+        ["PART I", "1 Introduction", "2 Methods", "PART II", "1 Results", "2 Summary"]
+    ) == {0: 1, 1: 2, 2: 2, 3: 1, 4: 2, 5: 2}
+
+
+def test_bare_arabic_chapters_respect_custom_scheme_order():
+    assert _levels(
+        ["I. Introduction", "1 Background", "1.1 Details", "2 Methods"],
+        numbering_schemes=["arabic", "roman_u"],
+    ) == {0: 3, 1: 1, 2: 2, 3: 1}
 
 
 def test_unnumbered_headings_have_no_numbering_level():
@@ -181,6 +251,63 @@ def _segmented_page(cells, width=600, height=800):
         has_words=False,
         has_lines=True,
     )
+
+
+def test_bare_chapters_and_style_fallback_preserve_hierarchy():
+    # Reproduce #4175 at the hierarchy stage, without PDF layout-model inference.
+    rows = [
+        ("1 INTRODUCTION", 20),
+        ("1.1 Background", 16),
+        ("1.1.1 Earlier work", 13),
+        ("Context", 11),
+        ("1.2 Objectives", 16),
+        ("2 REQUIREMENTS", 20),
+        ("2.1 Functional requirements", 16),
+        ("2.1.1 Interfaces", 13),
+        ("Assumptions", 11),
+        ("2.2 Non-functional requirements", 16),
+        ("Constraints", 11),
+        ("3 CONCLUSION", 20),
+        ("3.1 Summary", 16),
+    ]
+    doc = DoclingDocument(name="bare-chapters")
+    cells = []
+    for i, (text, size) in enumerate(rows):
+        top = 40 * i
+        doc.add_heading(
+            text=text,
+            prov=ProvenanceItem(
+                page_no=1,
+                charspan=(0, len(text)),
+                bbox=_bbox(100, top, 500, top + size),
+            ),
+        )
+        cells.append(_cell(text, 100, top, 500, top + size))
+
+    HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True)
+    ).assign_heading_levels(doc, parsed_pages={1: _segmented_page(cells)})
+
+    assert [heading.level for heading in doc.texts] == [
+        1,
+        2,
+        3,
+        4,
+        2,
+        1,
+        2,
+        3,
+        4,
+        2,
+        4,
+        1,
+        2,
+    ]
+    markdown = doc.export_to_markdown()
+    assert "# 1 INTRODUCTION\n" in markdown
+    assert "## 1.1 Background\n" in markdown
+    assert "### 1.1.1 Earlier work\n" in markdown
+    assert "#### Context\n" in markdown
 
 
 def test_style_fallback_assigns_levels_by_font_size():
