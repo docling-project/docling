@@ -980,6 +980,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
+        elif ext in FormatToExtensions[InputFormat.MHTML]:
+            mime = FormatToMimeType[InputFormat.MHTML][0]
         elif ext in FormatToExtensions[InputFormat.XML_USPTO]:
             # USPTO text files share the "txt" extension with Markdown. Leave mime=None
             # so content probing can distinguish PATN text from plain Markdown text.

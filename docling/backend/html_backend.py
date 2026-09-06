@@ -5,15 +5,21 @@ from __future__ import annotations
 
 import logging
 import math
+import mimetypes
+import ntpath
+import posixpath
 import re
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field as dataclass_field
+from email import policy
+from email.message import Message
+from email.parser import BytesParser
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
-from urllib.parse import urlparse
+from urllib.parse import unquote, urljoin, urlparse
 from urllib.request import url2pathname
 
 from docling_core.types.doc import (
@@ -46,7 +52,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
@@ -55,7 +61,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import (
@@ -87,6 +93,11 @@ _BR_SENTINEL = "\ue000"
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
+
+_MHTML_MIMETYPE = FormatToMimeType[InputFormat.MHTML][0]
+_MHTML_SYNTHETIC_BASE = "thismessage:/"
+mimetypes.add_type(_MHTML_MIMETYPE, ".mhtml")
+mimetypes.add_type(_MHTML_MIMETYPE, ".mht")
 
 # Tags that initiate distinct Docling items
 _BLOCK_TAGS: Final = {
@@ -435,9 +446,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
-        self.base_path: Optional[str] = (
+        configured_base_path: Optional[str] = (
             str(options.source_uri) if options.source_uri is not None else None
         )
+        self.base_path = configured_base_path
+        self._mhtml_resources: dict[str, bytes] | None = None
         self._image_loader = ImageResourceLoader(
             enable_local_fetch=options.enable_local_fetch,
             enable_remote_fetch=options.enable_remote_fetch,
@@ -476,8 +489,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if isinstance(path_or_stream, BytesIO)
                 else Path(path_or_stream).read_bytes()
             )
+            if self.input_format == InputFormat.MHTML:
+                if options.render_page:
+                    raise DocumentLoadError(
+                        "Browser rendering is not supported for MHTML input."
+                    )
+                raw, resources, root_location = self._parse_mhtml(
+                    raw, configured_base_path
+                )
+                self._mhtml_resources = resources
+                self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
             self.soup = BeautifulSoup(raw, "html.parser")
+        except DocumentLoadError:
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 "Could not initialize HTML backend for file with "
@@ -502,7 +527,257 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.HTML}
+        return {InputFormat.HTML, InputFormat.MHTML}
+
+    @staticmethod
+    def _normalize_content_id(value: str) -> str:
+        content_id = value.strip()
+        if content_id.lower().startswith("cid:"):
+            content_id = content_id[4:]
+        return f"cid:{content_id.strip('<>').casefold()}"
+
+    @staticmethod
+    def _mime_children(message: Message) -> list[Message]:
+        payload = message.get_payload()
+        if not isinstance(payload, list):
+            return []
+        return [part for part in payload if isinstance(part, Message)]
+
+    @classmethod
+    def _find_html_root(cls, root_entity: Message) -> Message | None:
+        if root_entity.get_content_type().lower() == "text/html":
+            return root_entity
+        if root_entity.get_content_type().lower() != "multipart/alternative":
+            return None
+
+        for part in reversed(cls._mime_children(root_entity)):
+            if html_part := cls._find_html_root(part):
+                return html_part
+        return None
+
+    @classmethod
+    def _find_mhtml_root(cls, message: Message) -> tuple[Message, Message]:
+        related_scope = next(
+            (
+                part
+                for part in message.walk()
+                if part.get_content_type().lower() == "multipart/related"
+            ),
+            None,
+        )
+        if related_scope is None:
+            if message.get_content_type().lower() == "text/html":
+                return message, message
+            raise ValueError("MHTML input has no multipart/related root.")
+
+        children = cls._mime_children(related_scope)
+        if not children:
+            raise ValueError("The MHTML multipart/related root is empty.")
+
+        start = related_scope.get_param("start", header="content-type")
+        if start:
+            target_id = cls._normalize_content_id(str(start))
+            root_entity = next(
+                (
+                    part
+                    for part in children
+                    if part.get("Content-ID") is not None
+                    and cls._normalize_content_id(str(part.get("Content-ID")))
+                    == target_id
+                ),
+                None,
+            )
+            if root_entity is None:
+                raise ValueError("The MHTML start part was not found.")
+        else:
+            root_entity = children[0]
+
+        root_part = cls._find_html_root(root_entity)
+        if root_part is None:
+            raise ValueError("The MHTML root entity has no HTML representation.")
+        return related_scope, root_part
+
+    @staticmethod
+    def _decode_mime_payload(part: Message) -> bytes:
+        payload = part.get_payload(decode=True)
+        return payload if isinstance(payload, bytes) else b""
+
+    @classmethod
+    def _decode_mhtml_html(cls, part: Message) -> bytes:
+        payload = cls._decode_mime_payload(part)
+        charset = part.get_content_charset()
+        if not charset:
+            return payload
+        try:
+            return payload.decode(charset, errors="replace").encode("utf-8")
+        except LookupError:
+            return payload
+
+    @staticmethod
+    def _mhtml_local_path(value: str) -> str | None:
+        """Return a filesystem spelling for local paths and file URIs."""
+        value = value.strip()
+        parsed = urlparse(value)
+        if parsed.scheme.lower() == "file":
+            path = unquote(parsed.path)
+            if parsed.netloc and parsed.netloc.lower() != "localhost":
+                path = f"//{parsed.netloc}{path}"
+            if re.match(r"^/[A-Za-z]:[/\\\\]", path):
+                path = path[1:]
+            return path
+        if ImageResourceLoader.is_local_path(value):
+            return value
+        return None
+
+    @staticmethod
+    def _is_windows_absolute_path(value: str) -> bool:
+        return PureWindowsPath(value).is_absolute()
+
+    @classmethod
+    def _resolve_confined_local_root(
+        cls, root_location: str, configured_base: str
+    ) -> str | None:
+        """Resolve a MIME root without leaving the source document directory."""
+        source = cls._mhtml_local_path(configured_base)
+        root = cls._mhtml_local_path(root_location)
+        if source is None or root is None:
+            return None
+
+        if cls._is_windows_absolute_path(source):
+            if Path(root).is_absolute() and not cls._is_windows_absolute_path(root):
+                return None
+            source_dir = ntpath.dirname(ntpath.normpath(source))
+            candidate = ntpath.normpath(
+                root
+                if cls._is_windows_absolute_path(root)
+                else ntpath.join(source_dir, root)
+            )
+            try:
+                common = ntpath.commonpath([source_dir, candidate])
+            except ValueError:
+                return None
+            if ntpath.normcase(common) != ntpath.normcase(source_dir):
+                return None
+            return candidate
+
+        if cls._is_windows_absolute_path(root):
+            return None
+        source_path = Path(source).resolve()
+        source_dir_path = source_path.parent
+        root_path = Path(root)
+        candidate_path = (
+            root_path.resolve()
+            if root_path.is_absolute()
+            else (source_dir_path / root_path).resolve()
+        )
+        if not candidate_path.is_relative_to(source_dir_path):
+            return None
+        return str(candidate_path)
+
+    @staticmethod
+    def _join_mhtml_location(base: str, location: str) -> str:
+        location = location.strip()
+        location_is_local = HTMLDocumentBackend._mhtml_local_path(location) is not None
+        if (not location_is_local and urlparse(location).scheme) or location.startswith(
+            "//"
+        ):
+            return location
+        if base.startswith(_MHTML_SYNTHETIC_BASE):
+            base_path = urlparse(base).path
+            safe_location = location.replace("\\", "/")
+            joined_path = posixpath.normpath(
+                posixpath.join(posixpath.dirname(base_path), safe_location)
+            )
+            joined_path = f"/{joined_path.lstrip('/')}"
+            return f"thismessage:{joined_path}"
+
+        base_local = HTMLDocumentBackend._mhtml_local_path(base)
+        location_local = HTMLDocumentBackend._mhtml_local_path(location)
+        if base_local is not None and location_local is not None:
+            if HTMLDocumentBackend._is_windows_absolute_path(base_local):
+                return ntpath.normpath(
+                    ntpath.join(ntpath.dirname(base_local), location_local)
+                )
+            return posixpath.normpath(
+                posixpath.join(posixpath.dirname(base_local), location_local)
+            )
+        return urljoin(base, location)
+
+    @classmethod
+    def _resolve_mhtml_base(
+        cls, root_location: str | None, configured_base: str | None
+    ) -> str:
+        if not root_location:
+            return configured_base or _MHTML_SYNTHETIC_BASE
+
+        root_location = root_location.strip()
+        if root_location.startswith("//"):
+            return f"https:{root_location}"
+        if ImageResourceLoader.is_remote_url(root_location):
+            return root_location
+
+        local_root = cls._mhtml_local_path(root_location)
+        if local_root is not None and configured_base:
+            if ImageResourceLoader.is_remote_url(configured_base):
+                if not ImageResourceLoader.is_absolute_path(local_root):
+                    return urljoin(configured_base, local_root)
+            elif confined_root := cls._resolve_confined_local_root(
+                local_root, configured_base
+            ):
+                return confined_root
+
+        if local_root is not None:
+            return cls._join_mhtml_location(_MHTML_SYNTHETIC_BASE, local_root)
+        if urlparse(root_location).scheme:
+            return root_location
+
+        return cls._join_mhtml_location(_MHTML_SYNTHETIC_BASE, root_location)
+
+    @classmethod
+    def _collect_mhtml_resources(
+        cls, related_scope: Message, effective_base: str
+    ) -> dict[str, bytes]:
+        resources: dict[str, bytes] = {}
+        for part in related_scope.walk():
+            if part.is_multipart() or part.get_content_maintype().lower() != "image":
+                continue
+            payload = cls._decode_mime_payload(part)
+            if not payload:
+                continue
+
+            content_location = part.get("Content-Location")
+            if content_location is not None:
+                location = str(content_location).strip()
+                resources.setdefault(location, payload)
+                resources.setdefault(
+                    cls._join_mhtml_location(effective_base, location), payload
+                )
+
+            content_id = part.get("Content-ID")
+            if content_id is not None:
+                resources.setdefault(
+                    cls._normalize_content_id(str(content_id)), payload
+                )
+        return resources
+
+    @classmethod
+    def _parse_mhtml(
+        cls, raw: bytes, configured_base: str | None
+    ) -> tuple[bytes, dict[str, bytes], str]:
+        message = BytesParser(policy=policy.default).parsebytes(raw)
+        if message.get("Content-Type") is None:
+            raise ValueError("MHTML input has no MIME Content-Type header.")
+
+        related_scope, root_part = cls._find_mhtml_root(message)
+        html_bytes = cls._decode_mhtml_html(root_part)
+        if not html_bytes.strip():
+            raise ValueError("The MHTML HTML root part is empty.")
+
+        root_header = root_part.get("Content-Location")
+        root_location = str(root_header).strip() if root_header else None
+        effective_base = cls._resolve_mhtml_base(root_location, configured_base)
+        resources = cls._collect_mhtml_resources(related_scope, effective_base)
+        return html_bytes, resources, effective_base
 
     @override
     def convert(self) -> DoclingDocument:
@@ -512,7 +787,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="text/html",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -1362,6 +1637,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent.insert(idx, n)
 
     def _resolve_relative_path(self, loc: str) -> str:
+        if self._mhtml_resources is not None:
+            archive_location = loc.strip()
+            if archive_location.lower().startswith("cid:"):
+                archive_location = self._normalize_content_id(archive_location)
+            elif self.base_path:
+                archive_location = self._join_mhtml_location(
+                    self.base_path, archive_location
+                )
+
+            if archive_location in self._mhtml_resources:
+                return archive_location
+            if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
+                return archive_location
         return self._image_loader.resolve_relative_path(loc, self.base_path)
 
     @staticmethod
@@ -4586,6 +4874,37 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return input_item.get_ref()
 
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
+        if self._mhtml_resources is not None:
+            resource_key = (
+                self._normalize_content_id(src_url)
+                if src_url.lower().startswith("cid:")
+                else src_url
+            )
+            image_data = self._mhtml_resources.get(resource_key)
+            if image_data is not None:
+                max_bytes = self.options.max_image_data_base64_bytes
+                if len(image_data) > max_bytes:
+                    warnings.warn(
+                        "Could not process an embedded MHTML image: "
+                        f"resource exceeds size limit of {max_bytes} bytes."
+                    )
+                    return None
+                try:
+                    image = Image.open(BytesIO(image_data))
+                    image.load()
+                    return ImageRef.from_pil(
+                        image, dpi=int(image.info.get("dpi", (72,))[0])
+                    )
+                except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
+                    warnings.warn(
+                        f"Could not process an embedded MHTML image from {src_url}: "
+                        f"{exc}"
+                    )
+                    return None
+            if src_url.lower().startswith("cid:"):
+                return None
+            if src_url.startswith(_MHTML_SYNTHETIC_BASE):
+                return None
         return self._image_loader.create_image_ref(src_url, self.base_path)
 
     def _load_image_data(self, src_loc: str) -> Optional[bytes]:
