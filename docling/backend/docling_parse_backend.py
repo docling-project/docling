@@ -390,7 +390,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
         if self.dp_doc is None:
             return []
-        return extract_outline_from_docling_parse(self.dp_doc)
+        return extract_outline_from_docling_parse(self.dp_doc.get_table_of_contents())
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -661,25 +661,16 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+        """Extract the outline from the threaded parser's native annotations (no pypdfium2).
 
-        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
-        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        The annotations are structure-only: reading them decodes no page, so the outline of the
+        already-loaded document is available without opening a second document and without
+        waiting for, or interfering with, the threaded page decoding.
         """
-        password = (
-            self.options.password.get_secret_value() if self.options.password else None
-        )
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.seek(0)
-        dp_doc = DoclingPdfParser(loglevel="fatal").load(
-            path_or_stream=self.path_or_stream, lazy=True, password=password
-        )
-        if dp_doc is None:
+        annotations = self.parser.get_annotations(self.doc_key)
+        if annotations is None:
             return []
-        try:
-            return extract_outline_from_docling_parse(dp_doc)
-        finally:
-            dp_doc.unload()
+        return extract_outline_from_docling_parse(annotations.table_of_contents)
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

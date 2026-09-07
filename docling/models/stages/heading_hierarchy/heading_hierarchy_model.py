@@ -415,6 +415,22 @@ def _infer_from_bookmarks(
         return {}
 
     info = [(item, *_item_page_and_top(item, document)) for item in candidates]
+
+    # Index the candidates by page so a bookmark only scores the headings on the page it
+    # targets. Both PDF outline extractors resolve destination pages, so this turns the match
+    # from document-wide into page-local -- both cheaper and, more importantly, immune to a
+    # same-titled heading elsewhere in the document winning the match. Candidates without
+    # provenance have no page and stay eligible for every bookmark.
+    by_page: dict[int, list[int]] = {}
+    unpaged: list[int] = []
+    for idx, (_, page_no, _) in enumerate(info):
+        if page_no is None:
+            unpaged.append(idx)
+        else:
+            by_page.setdefault(page_no, []).append(idx)
+    # Merged per-page candidate lists, in document order, built once per page on first use.
+    eligible: dict[int, list[int]] = {}
+
     claimed: set[int] = set()
     matches: list[tuple[SectionHeaderItem | ListItem, int]] = []
 
@@ -429,11 +445,18 @@ def _infer_from_bookmarks(
         best_idx: int | None = None
         best_score = 0.0
         best_dist = float("inf")
-        for idx, (item, page_no, top) in enumerate(info):
+        if bm.page_no is None:
+            candidate_indices: list[int] = list(range(len(info)))
+        elif bm.page_no in eligible:
+            candidate_indices = eligible[bm.page_no]
+        else:
+            candidate_indices = sorted(by_page.get(bm.page_no, []) + unpaged)
+            eligible[bm.page_no] = candidate_indices
+
+        for idx in candidate_indices:
             if idx in claimed:
                 continue
-            if bm.page_no is not None and page_no is not None and page_no != bm.page_no:
-                continue
+            item, _, top = info[idx]
             score = _match_score(item.text, title)
             if score < threshold:
                 continue

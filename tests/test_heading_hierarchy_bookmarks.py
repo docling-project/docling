@@ -16,6 +16,11 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 
+import docling.models.stages.heading_hierarchy.heading_hierarchy_model as hh_module
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -157,6 +162,39 @@ def test_wrong_page_bookmark_does_not_match():
     assert [h.level for h in doc.texts] == [1]
 
 
+def test_bookmark_only_scores_candidates_on_its_target_page(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Regression for #4162: a bookmark must not be scored against other pages' headings.
+
+    Now that every backend resolves destination pages, matching is page-local. Counting the
+    scored candidates proves the narrowing actually happens rather than the right answer being
+    reached by out-scoring 50 decoys.
+    """
+    doc = DoclingDocument(name="t")
+    doc.add_page(page_no=1, size=Size(width=600, height=800))
+    doc.add_page(page_no=2, size=Size(width=600, height=800))
+    for i in range(50):
+        text = f"Page 1 heading {i}"
+        doc.add_heading(text=text, prov=_prov(1, text, 40 + i))
+    doc.add_heading(text="Target", prov=_prov(2, "Target", 40))
+
+    scored: list[str] = []
+
+    def _spy_match_score(cand_text: str, bm_title: str) -> float:
+        scored.append(cand_text)
+        return 1.0 if cand_text == bm_title else 0.0
+
+    monkeypatch.setattr(hh_module, "_match_score", _spy_match_score)
+
+    outline = [_PdfOutlineItem(title="Target", level=0, page_no=2)]
+    _model(use_numbering=False, use_style=False).assign_heading_levels(
+        doc, outline=outline
+    )
+
+    assert scored == ["Target"]
+
+
 def test_use_bookmarks_false_ignores_outline():
     doc = DoclingDocument(name="t")
     doc.add_page(page_no=1, size=Size(width=600, height=800))
@@ -267,20 +305,45 @@ def test_pypdfium_backend_outline_from_sample_pdf():
     assert all(o.y_top is not None and o.y_top > 0 for o in outline)
 
 
-def test_docling_parse_native_outline_from_sample_pdf():
-    # docling-parse backends use the native get_table_of_contents() (no pypdfium2). It carries
-    # titles + hierarchy only, so page_no/y_top are None. Loaded via the parser directly because
-    # the same tree drives DoclingParseDocumentBackend.get_document_outline().
-    from docling_parse.pdf_parser import DoclingPdfParser
+EXPECTED_OUTLINE_PAGES = [1, 1, 1, 2, 2, 2, 3, 3]
 
-    dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
+
+@pytest.mark.parametrize(
+    "backend_cls",
+    [DoclingParseDocumentBackend, ThreadedDoclingParseDocumentBackend],
+    ids=["docling_parse", "threaded_docling_parse"],
+)
+def test_docling_parse_backends_outline_matches_pypdfium(backend_cls):
+    """Both docling-parse backends resolve destinations natively, with no pypdfium2 handle.
+
+    The outline they produce has to be interchangeable with the pypdfium2 backend's, down to
+    the vertical target: the heading matcher tie-breaks on ``y_top``, so a backend that placed
+    it in a different coordinate frame would silently rank matches differently.
+    """
+    in_doc = InputDocument(
+        path_or_stream=SAMPLE_PDF, format=InputFormat.PDF, backend=backend_cls
+    )
     try:
-        outline = extract_outline_from_docling_parse(dp_doc)
+        outline = in_doc._backend.get_document_outline()
     finally:
-        dp_doc.unload()
+        in_doc._backend.unload()
+
+    reference = InputDocument(
+        path_or_stream=SAMPLE_PDF,
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+    )
+    try:
+        pdfium_outline = reference._backend.get_document_outline()
+    finally:
+        reference._backend.unload()
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
-    assert all(o.page_no is None and o.y_top is None for o in outline)
+    assert [o.page_no for o in outline] == EXPECTED_OUTLINE_PAGES
+    assert [o.page_no for o in outline] == [o.page_no for o in pdfium_outline]
+    for item, expected in zip(outline, pdfium_outline, strict=True):
+        assert item.y_top is not None and expected.y_top is not None
+        assert item.y_top == pytest.approx(expected.y_top, abs=0.5)
 
 
 def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
@@ -301,6 +364,6 @@ def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(path))
     try:
-        assert extract_outline_from_docling_parse(dp_doc) == []
+        assert extract_outline_from_docling_parse(dp_doc.get_table_of_contents()) == []
     finally:
         dp_doc.unload()

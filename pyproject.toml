@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.91.0,<3.0.0',
+  'docling-core>=2.95.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -97,7 +97,7 @@ format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 format-pdf-docling = [
-  'docling-parse>=7.16.0,<8.0.0',
+  'docling-parse>=7.18.0,<8.0.0',
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 
@@ -330,7 +330,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.94.1,<3.0.0)",
+  "docling-core[chunking] (>=2.95.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.15.12",
@@ -396,6 +396,9 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# TEMPORARY: page-aware outline destinations land in docling-parse 7.18.0, which is not
+# released yet. Remove this source (and keep the >=7.18.0 floor) once it ships.
+docling-parse = { git = "https://github.com/docling-project/docling-parse", branch = "main" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 

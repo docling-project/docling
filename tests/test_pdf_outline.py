@@ -1,60 +1,62 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+from docling_core.types.doc import CoordOrigin, Size
+from docling_core.types.doc.page import (
+    Coord2D,
+    PdfDestination,
+    PdfDestinationKind,
+    PdfTableOfContents,
+)
+
 from docling.utils.pdf_outline import extract_outline_from_docling_parse
 
-
-class _MockTocNode:
-    """Duck-typed stand-in for docling_parse's PdfTableOfContents node.
-
-    extract_outline_from_docling_parse only accesses .children, .text, and
-    .orig on each node, so a lightweight mock is sufficient and avoids a
-    dependency on constructing a real PDF with an outline.
-    """
-
-    def __init__(self, text="", children=None):
-        self.text = text
-        self.orig = text
-        self.children = children or []
+PAGE_SIZE = Size(width=612.0, height=792.0)
 
 
-class _MockPdfDocument:
-    """Duck-typed stand-in for docling_parse's PdfDocument, exposing only
-    the one method extract_outline_from_docling_parse calls."""
+def _node(
+    text: str,
+    *,
+    children: list[PdfTableOfContents] | None = None,
+    destination: PdfDestination | None = None,
+) -> PdfTableOfContents:
+    return PdfTableOfContents(
+        text=text, destination=destination, children=children or []
+    )
 
-    def __init__(self, toc_root):
-        self._toc_root = toc_root
 
-    def get_table_of_contents(self):
-        return self._toc_root
+def _dest(
+    page_no: int,
+    *,
+    kind: PdfDestinationKind = PdfDestinationKind.XYZ,
+    y_bottom_left: float | None = 726.0,
+) -> PdfDestination:
+    """A destination as docling-parse reports it: the target page's own frame, bottom-left."""
+    return PdfDestination(
+        page_no=page_no,
+        kind=kind,
+        point=None if y_bottom_left is None else Coord2D(x=0.0, y=y_bottom_left),
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+        page_size=PAGE_SIZE,
+    )
 
 
-def _build_chain(depth: int) -> _MockTocNode:
+def _build_chain(depth: int) -> PdfTableOfContents:
     """Build a linear chain of nested nodes depth levels deep:
     root -> child -> child -> ... (depth - 1 named children below root)."""
-    root = _MockTocNode("level_0")
-    current = root
-    for i in range(1, depth):
-        child = _MockTocNode(f"level_{i}")
-        current.children = [child]
-        current = child
-    return root
+    node = _node(f"level_{depth - 1}")
+    for i in range(depth - 2, -1, -1):
+        node = _node(f"level_{i}", children=[node])
+    return node
 
 
 def test_outline_no_toc_returns_empty_list():
-    class _NoTocDoc:
-        def get_table_of_contents(self):
-            return None
-
-    assert extract_outline_from_docling_parse(_NoTocDoc()) == []
+    assert extract_outline_from_docling_parse(None) == []
 
 
 def test_outline_flat_structure():
-    root = _MockTocNode(
-        "root",
-        children=[_MockTocNode("First"), _MockTocNode("Second"), _MockTocNode("Third")],
-    )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    root = _node("root", children=[_node("First"), _node("Second"), _node("Third")])
+    items = extract_outline_from_docling_parse(root)
     assert [(item.title, item.level) for item in items] == [
         ("First", 0),
         ("Second", 0),
@@ -63,17 +65,14 @@ def test_outline_flat_structure():
 
 
 def test_outline_nested_structure_preserves_order_and_levels():
-    root = _MockTocNode(
+    root = _node(
         "root",
         children=[
-            _MockTocNode(
-                "Chapter 1",
-                children=[_MockTocNode("1.1"), _MockTocNode("1.2")],
-            ),
-            _MockTocNode("Chapter 2"),
+            _node("Chapter 1", children=[_node("1.1"), _node("1.2")]),
+            _node("Chapter 2"),
         ],
     )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
     assert [(item.title, item.level) for item in items] == [
         ("Chapter 1", 0),
         ("1.1", 1),
@@ -83,16 +82,47 @@ def test_outline_nested_structure_preserves_order_and_levels():
 
 
 def test_outline_blank_and_whitespace_titles_are_excluded():
-    root = _MockTocNode(
+    root = _node("root", children=[_node(""), _node("   "), _node("  Real Title  ")])
+    items = extract_outline_from_docling_parse(root)
+    assert [(item.title, item.level) for item in items] == [("Real Title", 0)]
+
+
+def test_outline_untitled_node_still_deepens_its_children():
+    """A skipped title must not collapse the level of the subtree below it."""
+    root = _node("root", children=[_node("", children=[_node("Buried")])])
+    items = extract_outline_from_docling_parse(root)
+    assert [(item.title, item.level) for item in items] == [("Buried", 1)]
+
+
+def test_destination_yields_page_and_top_left_position():
+    """docling-parse reports bottom-left coordinates; matching needs a top-left origin."""
+    root = _node("root", children=[_node("Chapter 1", destination=_dest(3))])
+    (item,) = extract_outline_from_docling_parse(root)
+    assert item.page_no == 3
+    assert item.y_top == PAGE_SIZE.height - 726.0
+
+
+def test_destination_without_a_position_still_yields_its_page():
+    """FIT and FIT_B encode no coordinate, but the target page is still authoritative."""
+    root = _node(
         "root",
         children=[
-            _MockTocNode(""),
-            _MockTocNode("   "),
-            _MockTocNode("  Real Title  "),
+            _node(
+                "Chapter 1",
+                destination=_dest(2, kind=PdfDestinationKind.FIT, y_bottom_left=None),
+            )
         ],
     )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
-    assert [(item.title, item.level) for item in items] == [("Real Title", 0)]
+    (item,) = extract_outline_from_docling_parse(root)
+    assert item.page_no == 2
+    assert item.y_top is None
+
+
+def test_entry_without_a_destination_leaves_page_and_position_unset():
+    root = _node("root", children=[_node("Unresolvable")])
+    (item,) = extract_outline_from_docling_parse(root)
+    assert item.page_no is None
+    assert item.y_top is None
 
 
 def test_outline_deep_chain_does_not_raise_recursion_error():
@@ -105,7 +135,7 @@ def test_outline_deep_chain_does_not_raise_recursion_error():
     depth = 5000
     root = _build_chain(depth)
 
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
 
     assert len(items) == depth - 1
     assert items[0].title == "level_1"
