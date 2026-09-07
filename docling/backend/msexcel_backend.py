@@ -1431,6 +1431,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     doc.add_text(
                         label=DocItemLabel.CAPTION,
                         text=caption_text,
+                        parent=self.parent,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, len(caption_text)),
+                            bbox=bbox,
+                        ),
                         content_layer=content_layer,
                     )
                     if caption_text

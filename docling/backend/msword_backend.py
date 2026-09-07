@@ -3546,6 +3546,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc.add_text(
                 label=DocItemLabel.CAPTION,
                 text=caption_text,
+                parent=parent,
                 content_layer=self.content_layer,
             )
             if caption_text

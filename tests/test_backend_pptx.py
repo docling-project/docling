@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import (
     ContentLayer,
+    DocItemLabel,
     GroupItem,
     NodeItem,
     PictureClassificationLabel,
@@ -713,3 +714,76 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
     assert image.width > 50 and image.height > 20, (
         f"rasterized metafile is implausibly small: {image.size}"
     )
+
+
+def test_chart_caption_is_parented_to_its_slide():
+    """A chart caption belongs to the slide holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced as a stray
+    item between the slide groups and carried no provenance.
+    """
+    doc = get_converter().convert(CHART_PPTX).document
+
+    slide = doc.pictures[0].parent.resolve(doc)
+    caption = doc.pictures[0].captions[0].resolve(doc)
+
+    assert caption.parent.cref == slide.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {slide.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in slide.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))
+
+
+def test_paragraph_provenance_spans_its_own_text():
+    """Each paragraph of a shape gets a charspan for its own text.
+
+    The provenance used to be built once per shape from the whole shape text,
+    so every paragraph and list item of a multi-paragraph shape reported the
+    same charspan.
+    """
+    doc = (
+        get_converter()
+        .convert(Path("./tests/data/pptx/sources/powerpoint_sample.pptx"))
+        .document
+    )
+
+    texts = [t for t in doc.texts if t.text.strip()]
+    assert len(texts) > 1
+
+    for item in texts:
+        for prov in item.prov:
+            assert prov.charspan == (0, len(item.text)), (
+                f"{item.self_ref} ({item.label}) spans {prov.charspan} "
+                f"but its text is {len(item.text)} characters"
+            )
+
+
+def _subtitle_labels(subtitles_as_section_headers: bool) -> list:
+    options = MsPowerpointBackendOptions(
+        subtitles_as_section_headers=subtitles_as_section_headers
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX],
+        format_options={
+            InputFormat.PPTX: PowerpointFormatOption(backend_options=options)
+        },
+    )
+    doc = converter.convert(
+        Path("./tests/data/pptx/sources/powerpoint_with_image.pptx")
+    ).document
+    return [t.label for t in doc.texts if t.text.strip() == "Image test"]
+
+
+def test_subtitle_is_a_paragraph_by_default():
+    """Subtitle placeholders keep the PARAGRAPH label unless opted in."""
+    assert _subtitle_labels(False) == [DocItemLabel.PARAGRAPH]
+
+
+def test_subtitle_promoted_to_section_header_when_enabled():
+    """``subtitles_as_section_headers`` labels a subtitle as a section header."""
+    assert _subtitle_labels(True) == [DocItemLabel.SECTION_HEADER]

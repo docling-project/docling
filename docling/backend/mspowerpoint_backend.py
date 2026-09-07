@@ -190,6 +190,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.pptx_to_pdf_converter: Optional[Callable] = None
         self.pptx_to_pdf_converter_init: bool = False
         self._render_charts: bool = False
+        self._subtitles_as_section_headers: bool = False
         self._metafile_hint_emitted: bool = False
 
         self.pptx_obj: Optional[presentation.Presentation] = None
@@ -731,7 +732,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         enum_list_item_value = 0
         new_list = None
         doc_label = DocItemLabel.LIST_ITEM
-        prov = self._generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
 
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
@@ -745,6 +745,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     p_text += " "
                 else:
                     p_text += e.text
+
+            prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
 
             if is_a_list:
                 enum_marker = ""
@@ -785,35 +787,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     ]:
                         # It's a title
                         doc_label = DocItemLabel.TITLE
+                    elif (
+                        placeholder_type == PP_PLACEHOLDER.SUBTITLE
+                        and self._subtitles_as_section_headers
+                    ):
+                        doc_label = DocItemLabel.SECTION_HEADER
 
                 # output accumulated inline text:
                 doc.add_text(
                     label=doc_label,
                     parent=parent_slide,
                     text=p_text,
-                    prov=prov,
-                )
-        return
-
-    def _handle_title(self, shape, parent_slide, slide_ind, doc):
-        placeholder_type = shape.placeholder_format.type
-        txt = shape.text.strip()
-        prov = self._generate_prov(shape, slide_ind, txt)
-
-        if len(txt.strip()) > 0:
-            # title = slide.shapes.title.text if slide.shapes.title else "No title"
-            if placeholder_type in [PP_PLACEHOLDER.CENTER_TITLE, PP_PLACEHOLDER.TITLE]:
-                _log.info(f"Title found: {shape.text}")
-                doc.add_text(
-                    label=DocItemLabel.TITLE, parent=parent_slide, text=txt, prov=prov
-                )
-            elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
-                _log.info(f"Subtitle found: {shape.text}")
-                # Using DocItemLabel.FOOTNOTE, while SUBTITLE label is not avail.
-                doc.add_text(
-                    label=DocItemLabel.SECTION_HEADER,
-                    parent=parent_slide,
-                    text=txt,
                     prov=prov,
                 )
         return
@@ -1182,7 +1166,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
 
         caption_item = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=caption_text)
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=caption_text,
+                parent=parent_slide,
+                prov=self._generate_prov(shape, slide_ind, caption_text, slide_size),
+            )
             if caption_text
             else None
         )
@@ -1332,6 +1321,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if self._render_charts and self._get_libreoffice_converter() is None:
             _log.warning(_CHART_RENDER_HINT)
             self._render_charts = False
+
+        self._subtitles_as_section_headers = (
+            isinstance(self.options, MsPowerpointBackendOptions)
+            and self.options.subtitles_as_section_headers
+        )
 
         max_levels = 10
         parents = {}  # type: ignore

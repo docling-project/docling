@@ -24,12 +24,6 @@
         "$ref": "#/groups/1"
       },
       {
-        "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
-      },
-      {
         "$ref": "#/groups/2"
       },
       {
@@ -68,10 +62,16 @@
           "$ref": "#/tables/2"
         },
         {
+          "$ref": "#/texts/1"
+        },
+        {
           "$ref": "#/pictures/1"
         },
         {
           "$ref": "#/tables/3"
+        },
+        {
+          "$ref": "#/texts/0"
         },
         {
           "$ref": "#/pictures/0"
@@ -120,24 +120,54 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 4.0,
+            "t": 21.0,
+            "r": 10.0,
+            "b": 36.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            36
+          ]
+        }
+      ],
       "orig": "'col-2', 'col-3', 'col-4' by 'col-1'",
       "text": "'col-2', 'col-3', 'col-4' by 'col-1'"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 9.0,
+            "t": 4.0,
+            "r": 16.0,
+            "b": 19.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        }
+      ],
       "orig": "'col-3'",
       "text": "'col-3'"
     }
