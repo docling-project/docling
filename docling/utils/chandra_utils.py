@@ -72,6 +72,8 @@ _TAG_RE = re.compile(r"<[^>]+>")
 
 def _strip_tags(html: str) -> str:
     """Remove HTML tags and collapse whitespace."""
+    # Preserve spacing represented by HTML line breaks.
+    html = re.sub(r"<br\s*/?>", " ", html)
     text = _TAG_RE.sub("", html)
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -306,6 +308,9 @@ def parse_chandra_html(
         doc_label = _LABEL_MAP.get(label_str, DocItemLabel.TEXT)
 
         if label_str == "Table":
+            table_data = _parse_table_html(inner_html)
+            doc.add_table(data=table_data, prov=prov)
+        elif label_str == "Form" and "<table" in inner_html.lower():
             table_data = _parse_table_html(inner_html)
             doc.add_table(data=table_data, prov=prov)
         elif label_str == "List-Group":

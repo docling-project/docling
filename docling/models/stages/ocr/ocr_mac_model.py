@@ -195,6 +195,8 @@ class OcrMacModel(BaseOcrModel):
                             x2 = x1 + w * im_width
                             y1 = y2 - h * im_height
 
+                            # ocrmac returns coordinates relative to the cropped
+                            # high-res image; shift them back into page space.
                             left = x1 / self.scale + ocr_rect.l
                             top = y1 / self.scale + ocr_rect.t
                             right = x2 / self.scale + ocr_rect.l

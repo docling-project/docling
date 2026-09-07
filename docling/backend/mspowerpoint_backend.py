@@ -87,6 +87,21 @@ _CHART_RENDER_HINT = (
     "data without it."
 )
 
+_IMAGE_RENDER_HINT = (
+    "LibreOffice is required to rasterize EMF/WMF pictures embedded in slides. "
+    "Install LibreOffice and make sure `soffice` is on PATH. Such pictures are "
+    "still recorded with their position on the slide without it, but carry no "
+    "image data."
+)
+
+# Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
+# EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
+# These are the two Pillow itself identifies, so a bare WMF never reaches here.
+_WMF_PLACEABLE_MAGIC: Final = b"\xd7\xcd\xc6\x9a"
+_EMF_SIGNATURE: Final = b" EMF"
+_EMF_SIGNATURE_OFFSET: Final = 40
+
+
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
@@ -94,6 +109,25 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     dtd_validation=False,
 )
 """Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
+
+def _is_metafile(image_bytes: bytes) -> bool:
+    """Return True when the bytes are a Windows metafile (WMF or EMF).
+
+    Pillow renders metafiles only on Windows, where it delegates to the GDI
+    ``PlayEnhMetaFile`` API; the wheels for every other platform carry a stub
+    that raises on load. Telling a metafile apart from a genuinely broken
+    image decides whether a picture is worth rasterizing externally.
+
+    Args:
+        image_bytes: Raw bytes of an embedded picture.
+
+    Returns:
+        True when the bytes carry a placeable WMF or an EMF signature.
+    """
+    return image_bytes[:4] == _WMF_PLACEABLE_MAGIC or (
+        image_bytes[_EMF_SIGNATURE_OFFSET : _EMF_SIGNATURE_OFFSET + 4] == _EMF_SIGNATURE
+    )
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -156,6 +190,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.pptx_to_pdf_converter: Optional[Callable] = None
         self.pptx_to_pdf_converter_init: bool = False
         self._render_charts: bool = False
+        self._metafile_hint_emitted: bool = False
 
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
@@ -783,36 +818,103 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
-        # Open it with PIL
+    def _rasterize_metafile(self, image_bytes: bytes) -> Optional[Image.Image]:
+        """Rasterize a raw EMF or WMF picture via LibreOffice.
+
+        LibreOffice converts a standalone ``.emf``/``.wmf`` to PDF directly, so
+        no wrapper document is needed; the first page is then rendered with
+        pypdfium2. This is the same route ``_render_chart_image`` already takes
+        for native charts.
+
+        Args:
+            image_bytes: Raw metafile data.
+
+        Returns:
+            A PIL Image, or None when LibreOffice is unavailable or the
+            conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            if not self._metafile_hint_emitted:
+                self._metafile_hint_emitted = True
+                _log.warning(_IMAGE_RENDER_HINT)
+            return None
+
+        suffix = ".wmf" if image_bytes[:4] == _WMF_PLACEABLE_MAGIC else ".emf"
+        temp_dir = Path(mkdtemp())
         try:
-            # Get the image bytes
+            input_path = temp_dir / f"image{suffix}"
+            output_path = temp_dir / "image.pdf"
+            input_path.write_bytes(image_bytes)
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("EMF/WMF rasterization via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
+        # Read the picture out of the package. A shape that slips past other
+        # tools' parsers can still fail here, and there is nothing to record.
+        try:
             image = shape.image
             image_bytes = image.blob
             im_dpi, _ = image.dpi
-            pil_image = Image.open(BytesIO(image_bytes))
-
-            # shape has picture
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
-            doc.add_picture(
-                parent=parent_slide,
-                image=ImageRef.from_pil(image=pil_image, dpi=im_dpi),
-                caption=None,
-                prov=prov,
-            )
         except (
             UnidentifiedImageError,
-            OSError,
-            ValueError,
             InvalidXmlError,
             KeyError,
             AttributeError,
+            ValueError,
+            OSError,
         ) as e:
             warnings.warn(
                 f"Skipping malformed picture shape: {e}",
                 UserWarning,
                 stacklevel=2,
             )
+            return
+
+        # Open it with PIL
+        image_ref: Optional[ImageRef] = None
+        try:
+            pil_image = Image.open(BytesIO(image_bytes))
+            image_ref = ImageRef.from_pil(image=pil_image, dpi=im_dpi)
+        except (UnidentifiedImageError, OSError, ValueError) as e:
+            if not _is_metafile(image_bytes):
+                warnings.warn(
+                    f"Skipping malformed picture shape: {e}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                return
+            # A metafile Pillow cannot draw on this platform. Rasterize it
+            # externally when possible, and otherwise still record the picture
+            # so its place on the slide survives -- only the pixels are lost.
+            _log.debug("Pillow cannot render this metafile: %s", e)
+            rasterized = self._rasterize_metafile(image_bytes)
+            if rasterized is not None:
+                # Rendered from a PDF rather than decoded from the original
+                # picture, so the metafile's own dpi no longer describes it;
+                # 72 matches the other LibreOffice-rendered images.
+                image_ref = ImageRef.from_pil(image=rasterized, dpi=72)
+
+        doc.add_picture(
+            parent=parent_slide,
+            image=image_ref,
+            caption=None,
+            prov=prov,
+        )
         return
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):

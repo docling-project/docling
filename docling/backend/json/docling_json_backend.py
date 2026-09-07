@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import codecs
 from io import BytesIO
 from pathlib import Path
 from typing import Union
@@ -40,13 +41,17 @@ class DoclingJSONBackend(DeclarativeDocumentBackend):
         return {InputFormat.JSON_DOCLING}
 
     def _get_doc_or_err(self) -> Union[DoclingDocument, Exception]:
+        # A leading BOM is rejected by model_validate_json as an unexpected
+        # character, failing the whole load. utf-8-sig drops it when decoding,
+        # and is equivalent to utf-8 when no BOM is present; the stream branch
+        # never decodes, so the bytes are stripped directly instead.
         try:
             json_data: Union[str, bytes]
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8-sig") as f:
                     json_data = f.read()
             elif isinstance(self.path_or_stream, BytesIO):
-                json_data = self.path_or_stream.getvalue()
+                json_data = self.path_or_stream.getvalue().removeprefix(codecs.BOM_UTF8)
             else:
                 raise RuntimeError(f"Unexpected: {type(self.path_or_stream)=}")
             return DoclingDocument.model_validate_json(json_data=json_data)

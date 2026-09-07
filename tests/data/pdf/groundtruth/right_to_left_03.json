@@ -66,7 +66,7 @@
           "$ref": "#/texts/8"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/groups/1"
         },
         {
           "$ref": "#/texts/10"
@@ -90,6 +90,20 @@
       "content_layer": "body",
       "name": "group",
       "label": "form_area"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
     }
   ],
   "texts": [
@@ -162,9 +176,9 @@
           "page_no": 1,
           "bbox": {
             "l": 366.31,
-            "t": 703.4,
+            "t": 703.41,
             "r": 479.53,
-            "b": 685.37,
+            "b": 685.38,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -342,11 +356,11 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "list_item",
       "prov": [
         {
           "page_no": 1,
@@ -364,7 +378,9 @@
         }
       ],
       "orig": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
-      "text": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f"
+      "text": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/10",
@@ -543,10 +559,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 388.88,
-            "t": 806.32,
-            "r": 482.71,
-            "b": 739.05,
+            "l": 389.06,
+            "t": 805.64,
+            "r": 482.37,
+            "b": 739.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -574,10 +590,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 71.2,
-            "t": 475.48,
-            "r": 501.82,
-            "b": 244.02,
+            "l": 71.0,
+            "t": 475.83,
+            "r": 501.09,
+            "b": 244.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
