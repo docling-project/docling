@@ -413,8 +413,9 @@ def test_assignment_is_validated() -> None:
 
 
 def test_force_full_page_ocr_bridge_survives_validate_assignment() -> None:
-    """The deprecated flag assigns `mode` from inside a model validator, which
-    `validate_assignment` re-enters; it must settle rather than recurse."""
+    """The deprecated flag is a computed-field view over `mode`, and this class
+    turns on `validate_assignment`. Assigning any other field re-validates the
+    model, which must leave the forced `mode` alone rather than reset it."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         options = EasyOcrOptions(force_full_page_ocr=True)
