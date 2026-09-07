@@ -73,9 +73,6 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         # verify_signature() reject the file. Equivalent to utf-8 without a BOM.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                # TextIOWrapper gives the same universal newline translation as
-                # the text-mode read below. It reads from the current position,
-                # which is EOF here, so it wraps a copy rather than the input.
                 self.content = TextIOWrapper(
                     BytesIO(self.path_or_stream.getvalue()), encoding="utf-8-sig"
                 ).read()
