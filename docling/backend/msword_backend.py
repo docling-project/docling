@@ -476,6 +476,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
+        self._empty_docx_template: DocxDocument | None = None
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -3142,11 +3143,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         try:
-            # Create a temporary document with just these elements
-            temp_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
+            # Load once; del body[:] resets cheaply on every call
+            if self._empty_docx_template is None:
+                self._empty_docx_template = self.load_msword_file(
+                    self.path_or_stream, self.document_hash
+                )
+            temp_doc = self._empty_docx_template
             body = temp_doc._element.body
-            for child in list(body):
-                body.remove(child)
+            del body[:]
 
             # Add elements to empty document
             new_para = temp_doc.add_paragraph()
