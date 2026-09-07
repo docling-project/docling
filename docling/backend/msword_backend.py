@@ -2599,8 +2599,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ``level_at_new_list + word_ilevel``.  When it starts at a higher
         level we must subtract the starting level so that the first item
         always lands at ``level_at_new_list``.
+
+        Items shallower than the starting level (``word_ilevel <
+        level_start_ilevel``, e.g. a resumed list whose first post-gap item
+        sits at level 1 and later returns to level 0) are clamped to the list
+        base so they stay inside the current list instead of mapping below it.
         """
-        return self.level_at_new_list + (word_ilevel - self.level_start_ilevel)
+        return self.level_at_new_list + max(0, word_ilevel - self.level_start_ilevel)
 
     def _manage_list_structure(
         self,

@@ -1,9 +1,3 @@
-## Unreleased
-
-### Fix
-
-* **docx:** Keep list items when a list starts above indent level 0 ([#4185](https://github.com/docling-project/docling/issues/4185))
-
 ## [v2.126.0](https://github.com/docling-project/docling/releases/tag/v2.126.0) - 2026-09-04
 
 ### Feature
