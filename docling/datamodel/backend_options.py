@@ -386,18 +386,6 @@ class MsPowerpointBackendOptions(BaseBackendOptions):
         ),
     )
 
-    subtitles_as_section_headers: bool = Field(
-        False,
-        description=(
-            "Whether text in a subtitle placeholder is labelled as a section "
-            "header instead of a plain paragraph. A slide subtitle is "
-            "structurally subordinate to the slide title, but there is no "
-            "dedicated subtitle label, so promoting it to a section header "
-            "makes it a heading in the exported markdown. Opt-in (default "
-            "False) because it changes the label of existing output."
-        ),
-    )
-
 
 class MsWordBackendOptions(BaseBackendOptions):
     """Options specific to the MS Word backend."""

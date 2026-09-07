@@ -190,7 +190,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.pptx_to_pdf_converter: Optional[Callable] = None
         self.pptx_to_pdf_converter_init: bool = False
         self._render_charts: bool = False
-        self._subtitles_as_section_headers: bool = False
         self._metafile_hint_emitted: bool = False
 
         self.pptx_obj: Optional[presentation.Presentation] = None
@@ -787,11 +786,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     ]:
                         # It's a title
                         doc_label = DocItemLabel.TITLE
-                    elif (
-                        placeholder_type == PP_PLACEHOLDER.SUBTITLE
-                        and self._subtitles_as_section_headers
-                    ):
-                        doc_label = DocItemLabel.SECTION_HEADER
 
                 # output accumulated inline text:
                 doc.add_text(
@@ -1321,11 +1315,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if self._render_charts and self._get_libreoffice_converter() is None:
             _log.warning(_CHART_RENDER_HINT)
             self._render_charts = False
-
-        self._subtitles_as_section_headers = (
-            isinstance(self.options, MsPowerpointBackendOptions)
-            and self.options.subtitles_as_section_headers
-        )
 
         max_levels = 10
         parents = {}  # type: ignore

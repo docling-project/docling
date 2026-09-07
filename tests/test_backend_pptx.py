@@ -12,7 +12,6 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import (
     ContentLayer,
-    DocItemLabel,
     GroupItem,
     NodeItem,
     PictureClassificationLabel,
@@ -761,29 +760,3 @@ def test_paragraph_provenance_spans_its_own_text():
                 f"{item.self_ref} ({item.label}) spans {prov.charspan} "
                 f"but its text is {len(item.text)} characters"
             )
-
-
-def _subtitle_labels(subtitles_as_section_headers: bool) -> list:
-    options = MsPowerpointBackendOptions(
-        subtitles_as_section_headers=subtitles_as_section_headers
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.PPTX],
-        format_options={
-            InputFormat.PPTX: PowerpointFormatOption(backend_options=options)
-        },
-    )
-    doc = converter.convert(
-        Path("./tests/data/pptx/sources/powerpoint_with_image.pptx")
-    ).document
-    return [t.label for t in doc.texts if t.text.strip() == "Image test"]
-
-
-def test_subtitle_is_a_paragraph_by_default():
-    """Subtitle placeholders keep the PARAGRAPH label unless opted in."""
-    assert _subtitle_labels(False) == [DocItemLabel.PARAGRAPH]
-
-
-def test_subtitle_promoted_to_section_header_when_enabled():
-    """``subtitles_as_section_headers`` labels a subtitle as a section header."""
-    assert _subtitle_labels(True) == [DocItemLabel.SECTION_HEADER]

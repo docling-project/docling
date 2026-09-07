@@ -3,6 +3,7 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -29,7 +30,7 @@ import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.backend_options import MsWordBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -318,6 +319,80 @@ def test_chart_image_opt_out_keeps_no_image():
 
     assert chart.get_image(doc=doc) is None
     assert chart.meta.tabular_chart is not None
+
+
+def _docx_with_titled_chart_under_a_heading(title: str):
+    """Build a copy of CHART_DOCX whose chart has a title and sits under a heading.
+
+    The chart in drawingml.docx carries an empty ``c:title`` placeholder with no
+    ``a:t`` runs, so no caption is produced, and it sits at the top level, where
+    its parent is the body. Both are needed to observe the caption's parent: a
+    title so that a caption exists at all, and a heading so that the expected
+    parent is something other than the body.
+    """
+    import zipfile
+    from io import BytesIO
+
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    insert_at = chart.index("</a:p>", chart.index("<c:title>"))
+    entries["word/charts/chart1.xml"] = (
+        chart[:insert_at] + f"<a:r><a:t>{title}</a:t></a:r>" + chart[insert_at:]
+    ).encode("utf-8")
+
+    document = entries["word/document.xml"].decode("utf-8")
+    drawing_at = document.index("<w:drawing>", document.index("<w:body>"))
+    while "chart" not in document[drawing_at : drawing_at + 600]:
+        drawing_at = document.index("<w:drawing>", drawing_at + 1)
+    paragraph_at = max(
+        m.start() for m in re.finditer(r"<w:p[ >]", document) if m.start() < drawing_at
+    )
+    heading = (
+        '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>'
+        "<w:r><w:t>Revenue section</w:t></w:r></w:p>"
+    )
+    entries["word/document.xml"] = (
+        document[:paragraph_at] + heading + document[paragraph_at:]
+    ).encode("utf-8")
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def test_chart_caption_is_parented_to_the_chart_container():
+    """A chart caption belongs to whatever holds the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so a chart nested under a
+    heading had its caption surface outside that heading.
+    """
+    title = "Quarterly Revenue"
+    stream = DocumentStream(
+        name="chart_with_title.docx",
+        stream=_docx_with_titled_chart_under_a_heading(title),
+    )
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    picture = _single_chart_picture(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.text == title
+    assert picture.parent.cref != "#/body", (
+        "fixture should nest the chart under a heading"
+    )
+    assert caption.parent.cref == picture.parent.cref, (
+        f"caption is parented to {caption.parent.cref}, expected {picture.parent.cref}"
+    )
+    container = picture.parent.resolve(doc)
+    assert caption.self_ref in [child.cref for child in container.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
 
 
 def test_is_rich_table_cell(docx_paths):
