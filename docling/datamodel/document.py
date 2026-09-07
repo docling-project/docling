@@ -129,13 +129,13 @@ class InputDocument(BaseModel):
     """A document as an input of a Docling conversion."""
 
     file: Annotated[
-        PurePath, Field(description="A path representation the input document.")
+        PurePath, Field(description="A path representation of the input document.")
     ]
     document_hash: Annotated[
         str,
         Field(description="A stable hash of the path or stream of the input document."),
     ]
-    valid: bool = Field(True, description="Whether this is is a valid input document.")
+    valid: bool = Field(True, description="Whether this is a valid input document.")
     backend_options: Optional[BackendOptions] = Field(
         None, description="Custom options for backends."
     )
