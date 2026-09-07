@@ -48,6 +48,8 @@ from docling.utils.ocr_language import (
     OcrLanguageResolver,
 )
 
+pytestmark = pytest.mark.ml_ocr
+
 _ONNX_VOCABULARY = _rapidocr_vocabulary("onnxruntime")
 _TORCH_VOCABULARY = _rapidocr_vocabulary("torch")
 
@@ -480,7 +482,6 @@ def _auto_model(lang: list[str]) -> OcrAutoModel:
     )
 
 
-@pytest.mark.ml_ocr
 def test_auto_gives_the_delegate_the_users_language() -> None:
     model = _auto_model(["iso:zh-Hant"])
 
@@ -488,7 +489,6 @@ def test_auto_gives_the_delegate_the_users_language() -> None:
     assert model._engine.options.lang == ["iso:zh-Hant"]
 
 
-@pytest.mark.ml_ocr
 @pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
 def test_auto_falls_through_an_engine_that_cannot_serve_the_language(
     caplog: pytest.LogCaptureFixture,
@@ -505,7 +505,6 @@ def test_auto_falls_through_an_engine_that_cannot_serve_the_language(
     assert not isinstance(model._engine, type(model))
 
 
-@pytest.mark.ml_ocr
 def test_auto_reports_every_candidate_when_none_can_serve_the_language() -> None:
     """The aggregated error replaces a bare "No OCR engine found." warning."""
     with pytest.raises(OcrLanguageNotSupportedError) as excinfo:

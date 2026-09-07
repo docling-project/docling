@@ -7,7 +7,8 @@ Two halves. The first drives `--list-langs` from a fake `subprocess.run`, so the
 listing under test is chosen rather than whatever is installed; that is the only
 way to assert the Windows `script\\Name` spelling from a posix machine. The
 second reads the real installation and phrases its assertions against whatever
-that set turns out to be, and carries `pytest.mark.ml_ocr` per test.
+that set turns out to be. CI selects whole modules, so `ml_ocr` is declared once
+at module level and the mocked half rides along in the OCR suite.
 """
 
 import shutil
@@ -24,6 +25,8 @@ from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliMod
 from docling.models.stages.ocr.tesseract_utils import installed_tesseract_languages
 
 _MODULE = "docling.models.stages.ocr.tesseract_ocr_cli_model"
+
+pytestmark = pytest.mark.ml_ocr
 
 
 # --- a chosen `--list-langs` listing ----------------------------------------
@@ -110,7 +113,6 @@ def _build(lang: list[str]) -> TesseractOcrCliModel:
     )
 
 
-@pytest.mark.ml_ocr
 def test_installed_language_maps_to_its_traineddata_name() -> None:
     installed = _installed_languages()
     if "eng" not in installed:
@@ -121,7 +123,6 @@ def test_installed_language_maps_to_its_traineddata_name() -> None:
     assert model._native_codes == ["eng"]
 
 
-@pytest.mark.ml_ocr
 def test_uninstalled_language_fails_at_construction() -> None:
     """Tesseract never validated `options.lang` before, so a missing traineddata
     surfaced as a per-page CLI failure much later."""
@@ -151,7 +152,6 @@ def test_uninstalled_language_fails_at_construction() -> None:
         assert "en" in excinfo.value.supported.bcp47
 
 
-@pytest.mark.ml_ocr
 def test_empty_lang_requires_the_osd_traineddata() -> None:
     """An empty list runs orientation-and-script detection, which needs its own
     file. No language is resolved up front: OSD picks one per page."""
@@ -165,7 +165,6 @@ def test_empty_lang_requires_the_osd_traineddata() -> None:
             _build([])
 
 
-@pytest.mark.ml_ocr
 def test_language_order_is_preserved_for_the_plus_join() -> None:
     """Tesseract treats `-l a+b` order as preference order."""
     installed = _installed_languages()
