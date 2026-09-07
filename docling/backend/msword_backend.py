@@ -3143,17 +3143,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         try:
-            # Load once; del body[:] resets cheaply on every call
+            # Loaded once per backend instance; del body[:] clears cheaply on every call.
             if self._empty_docx_template is None:
                 self._empty_docx_template = self.load_msword_file(
                     self.path_or_stream, self.document_hash
                 )
-            temp_doc = self._empty_docx_template
-            body = temp_doc._element.body
+            render_doc = self._empty_docx_template
+            body = render_doc._element.body
             del body[:]
 
-            # Add elements to empty document
-            new_para = temp_doc.add_paragraph()
+            # Populate the now-empty body with the element(s) to render.
+            new_para = render_doc.add_paragraph()
             new_r = new_para.add_run()
 
             # Handle list of elements (e.g., multiple DrawingML elements)
@@ -3182,7 +3182,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Convert DOCX->PDF->PNG
             pil_image = get_pil_from_dml_docx(
-                temp_doc, converter=self.docx_to_pdf_converter
+                render_doc, converter=self.docx_to_pdf_converter
             )
             return pil_image
         except Exception as e:
