@@ -25,7 +25,12 @@ import pytest
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.datamodel.document import (
+    ConversionResult,
+    ConversionStatus,
+    DoclingDocument,
+    InputDocument,
+)
 from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -236,7 +241,14 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
         names=["chapter 1.xhtml", "épilogue.xhtml", "plain.xhtml"],
     )
 
-    doc = get_converter().convert(epub_path).document
+    result = get_converter().convert(epub_path)
+
+    # The unfixed backend swallowed the lookup failure, so the dropped chapters
+    # were reported as a clean success rather than as an error.
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
     text = "\n".join(item.text for item in doc.texts)
 
     assert "Chapter 0 body." in text
