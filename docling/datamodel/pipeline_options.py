@@ -1882,11 +1882,12 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     """
 
     vlm_options: Annotated[
-        InlineVlmOptions,
+        InlineVlmOptions | ApiVlmOptions,
         Field(
             description=(
-                "Vision-Language Model (VLM) configuration for structured information extraction. Specifies which VLM "
-                "to use and its parameters for extracting structured data from documents using vision models."
+                "Vision-Language Model (VLM) configuration for structured information extraction. Either a local "
+                "`InlineVlmOptions` (HuggingFace transformers) or a remote `ApiVlmOptions` pointing at an "
+                "OpenAI-conformant endpoint (requires `enable_remote_services=True`)."
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS

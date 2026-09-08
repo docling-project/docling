@@ -67,23 +67,27 @@ def build_nuextract_inputs(
 def build_granite_vision_inputs(
     processor: Any,
     images: list[Image],
-    templates: list[str],
+    prompts: list[str],
     device: str,
 ) -> dict[str, Any]:
-    """Build inputs using standard chat conversation format with extraction prompt."""
-    extraction_prompts = [_build_extraction_prompt(t) for t in templates]
+    """Build inputs using standard chat conversation format.
 
+    ``prompts`` are the final, ready-to-send prompt strings. The VAREX
+    instruction wrapper (:func:`_build_extraction_prompt`) is applied upstream in
+    the extraction pipeline so that every engine (transformers/api/vllm) shares
+    one prompt-construction path; do not wrap again here.
+    """
     conversations = [
         [
             {
                 "role": "user",
                 "content": [
                     {"type": "image"},
-                    {"type": "text", "text": ep},
+                    {"type": "text", "text": prompt},
                 ],
             }
         ]
-        for ep in extraction_prompts
+        for prompt in prompts
     ]
     texts = [
         processor.apply_chat_template(conv, tokenize=False, add_generation_prompt=True)

@@ -163,7 +163,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             processor_inputs = build_granite_vision_inputs(
                 processor=self.processor,
                 images=pil_images,
-                templates=templates,
+                prompts=templates,
                 device=self.device,
             )
 

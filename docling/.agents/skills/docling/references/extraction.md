@@ -57,6 +57,57 @@ result = extractor.extract(source="invoice.pdf",
 Prefer a **Pydantic model class** for durable schemas — it documents intent and
 gives you validation on the way out.
 
+## Choosing the engine
+
+Extraction runs a vision model, configured through
+`VlmExtractionPipelineOptions.vlm_options`. Two prompt styles exist, set with
+`extraction_prompt_style`:
+
+- **NuExtract** (default, `ExtractionPromptStyle.NUEXTRACT`): local
+  `numind/NuExtract-2.0-2B`. The template is consumed via the model's own chat
+  template; this style is local-only.
+- **Granite / VAREX** (`ExtractionPromptStyle.GRANITE_VISION`): the same
+  serialized template, wrapped in a plain-text instruction prompt. Works with
+  local Granite Vision **and** any OpenAI-conformant endpoint serving it.
+
+Point extraction at a remote endpoint by passing `ApiVlmOptions` and
+`enable_remote_services=True` (mirrors the VLM convert pipeline):
+
+```python
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_model_specs import GRANITE_VISION_4_1_API
+from docling.document_extractor import DocumentExtractor, ExtractionFormatOption
+from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+
+api_options = GRANITE_VISION_4_1_API.model_copy(update={
+    "url": "https://my-endpoint/v1/chat/completions",
+    "headers": {"Authorization": "Bearer <TOKEN>"},
+    "params": {"model": "ibm-granite/granite-vision-4.1-4b"},
+})
+
+pipeline_options = VlmExtractionPipelineOptions(
+    vlm_options=api_options,
+    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    enable_remote_services=True,
+)
+extractor = DocumentExtractor(
+    allowed_formats=[InputFormat.PDF],
+    extraction_format_options={
+        InputFormat.PDF: ExtractionFormatOption(
+            pipeline_cls=ExtractionVlmPipeline,
+            pipeline_options=pipeline_options,
+            backend=ThreadedDoclingParseDocumentBackend,
+        ),
+    },
+)
+```
+
+Only `vlm_options` changes; `extract(...)` / `extract_all(...)` work exactly as
+above, with inference running on the remote endpoint instead of locally.
+
 ## Reading the result
 
 `ExtractionResult` has `status` (a `ConversionStatus`), `errors`, and `pages`

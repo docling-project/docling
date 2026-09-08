@@ -25,16 +25,20 @@ from docling.datamodel.extraction import (
     ExtractionResult,
     ExtractionTemplateType,
 )
+from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmExtractionPipelineOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.datamodel.settings import settings
+from docling.models.base_model import BaseVlmModel
+from docling.models.extraction.prompt_utils import _build_extraction_prompt
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
+from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
-from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
 
@@ -43,16 +47,27 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
     def __init__(self, pipeline_options: VlmExtractionPipelineOptions):
         super().__init__(pipeline_options)
 
-        self.accelerator_options = pipeline_options.accelerator_options
         self.pipeline_options: VlmExtractionPipelineOptions
+        vlm_options = pipeline_options.vlm_options
+        self.vlm_model: BaseVlmModel
 
-        self.vlm_model = TransformersExtractionModel(
-            enabled=True,
-            artifacts_path=self.artifacts_path,
-            accelerator_options=self.accelerator_options,
-            vlm_options=pipeline_options.vlm_options,
-            prompt_style=pipeline_options.extraction_prompt_style,
-        )
+        if isinstance(vlm_options, ApiVlmOptions):
+            # Remote OpenAI-conformant endpoint. Prompt construction happens in
+            # `_build_prompt`, so this shares the same code path as the local
+            # engines and only differs in how the image + prompt are executed.
+            self.vlm_model = ApiVlmModel(
+                enabled=True,
+                enable_remote_services=pipeline_options.enable_remote_services,
+                vlm_options=vlm_options,
+            )
+        else:
+            self.vlm_model = TransformersExtractionModel(
+                enabled=True,
+                artifacts_path=self.artifacts_path,
+                accelerator_options=pipeline_options.accelerator_options,
+                vlm_options=vlm_options,
+                prompt_style=pipeline_options.extraction_prompt_style,
+            )
 
     def _extract_data(
         self,
@@ -62,10 +77,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         """Extract data using the VLM model."""
         try:
             images = self._get_images_from_input(ext_res.input)
-            if template is not None:
-                prompt = self._serialize_template(template)
-            else:
-                prompt = "Extract all text and structured information from this document. Return as JSON."
+            prompt = self._build_prompt(template)
 
             processed_image = False
             started_at = time.monotonic()
@@ -209,8 +221,30 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             if isinstance(page_iterator, Generator):
                 page_iterator.close()
 
+    def _build_prompt(self, template: Optional[ExtractionTemplateType]) -> str:
+        """Turn the template into the final prompt text for the chosen style.
+
+        Serialization is engine-independent: any of the four template forms
+        becomes one schema string via ``_serialize_template``. Only the
+        *embedding* differs by prompt style — NuExtract feeds the string through
+        the model's own ``template=`` chat kwarg (passthrough here), while
+        GRANITE_VISION/VAREX wraps it in a plain-text instruction that any
+        transformers or OpenAI-conformant API engine consumes.
+        """
+        if template is None:
+            return "Extract all text and structured information from this document. Return as JSON."
+
+        text = self._serialize_template(template)
+        if (
+            self.pipeline_options.extraction_prompt_style
+            == ExtractionPromptStyle.NUEXTRACT
+        ):
+            return text
+
+        return _build_extraction_prompt(text)
+
     def _serialize_template(self, template: ExtractionTemplateType) -> str:
-        """Serialize template to string based on its type."""
+        """Serialize any of the four template forms to a schema string."""
         if isinstance(template, str):
             return template
         elif isinstance(template, dict):

@@ -569,6 +569,19 @@ GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
     trust_remote_code=True,
 )
 
+# Granite Vision 4.1 served over an OpenAI-conformant endpoint (e.g. vLLM).
+# Use with ExtractionPromptStyle.GRANITE_VISION; the extraction pipeline builds
+# the VAREX prompt from the template, so `prompt` is left empty here.
+GRANITE_VISION_4_1_API = ApiVlmOptions(
+    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
+    params={"model": "ibm-granite/granite-vision-4.1-4b"},
+    prompt="",
+    scale=2.0,
+    timeout=120,
+    response_format=ResponseFormat.PLAINTEXT,
+    temperature=0.0,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
