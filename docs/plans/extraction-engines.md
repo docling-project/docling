@@ -1,46 +1,24 @@
 # Plan: generalize `DocumentExtractor` to multiple engines (esp. OpenAI-conformant API)
 
-## Update — as shipped
-
-The plan below is the original design record. The final implementation differs
-in **where the prompt style lives**, following the convert-side rule that the
-model spec owns prompt shaping (`build_prompt` / `decode_response`):
-
-- Prompt style moved **onto the spec**. New `InlineExtractionVlmOptions` /
-  `ApiExtractionVlmOptions` (a mixin carrying `extraction_prompt_style` plus
-  `serialize_template` + `build_extraction_prompt`) replace the plan's plan of
-  keeping `extraction_prompt_style` as a separate `VlmExtractionPipelineOptions`
-  field (§1) and branching on it in the pipeline (§4.1). The standalone field is
-  gone; `vlm_options` is `InlineExtractionVlmOptions | ApiExtractionVlmOptions`.
-  Presets weld each model to the only style it can honor, so illegal
-  model/style pairings are unconstructable — the gap the plan left open.
-- Serialization is now **style-aware** (the plan's §4.2, done rather than
-  deferred): a Pydantic class serializes to a real JSON Schema for the Granite
-  schema-instruction style and to a sample instance for NuExtract. Both
-  serialization and the schema-instruction wrapper live on the spec, not the
-  pipeline.
-
-Everything else (dispatch, the API preset, the enable_remote_services guard,
-the engine × prompt-style matrix) landed as described.
-
 ## Goal
 
-Today the extraction pipeline runs **only** local HuggingFace transformers
-(NuExtract / Granite-Vision). We want the same engine flexibility the VLM
-*convert* pipeline already has — at minimum an **OpenAI-conformant remote API**
-engine, ideally also mlx / vllm — reusing the convert-side machinery.
+Give the extraction pipeline the same engine flexibility the VLM *convert*
+pipeline has. Previously extraction ran **only** local HuggingFace transformers
+(NuExtract / Granite-Vision); it now also runs against an **OpenAI-conformant
+remote API**, reusing the convert-side `ApiVlmModel`. mlx / vllm are a cheap
+follow-on left for later.
 
 ## Key finding: the interface is already shared
 
 `ExtractionVlmPipeline` interacts with its model through exactly one call:
 
 ```python
-# docling/pipeline/extraction_vlm_pipeline.py:76
+# docling/pipeline/extraction_vlm_pipeline.py
 predictions = list(self.vlm_model.process_images([image], prompt))
 ```
 
 `process_images(image_batch, prompt) -> Iterable[VlmPrediction]` is the
-`BaseVlmModel` abstract interface (`docling/models/base_model.py:49`). Every
+`BaseVlmModel` abstract interface (`docling/models/base_model.py`). Every
 convert-side engine already implements it:
 
 | Engine | Class | Options type |
@@ -49,128 +27,119 @@ convert-side engine already implements it:
 | transformers | `HuggingFaceTransformersVlmModel` | `InlineVlmOptions` |
 | mlx | `HuggingFaceMlxModel` | `InlineVlmOptions` |
 | vllm | `VllmVlmModel` | `InlineVlmOptions` |
-| **extraction (current)** | `TransformersExtractionModel` | `InlineVlmOptions` + `ExtractionPromptStyle` |
 
-`VlmPipeline._initialize_legacy_vlm_models` (`pipeline/vlm_pipeline.py:126`)
-already dispatches over these based on the options type / `inference_framework`.
-**We copy that dispatch into the extraction pipeline.** No new abstraction is
-needed — the port `process_images(images, prompt)` is the whole contract.
+`VlmPipeline._initialize_legacy_vlm_models` (`pipeline/vlm_pipeline.py`) already
+dispatches over these based on the options type. The extraction pipeline copies
+that dispatch — no new abstraction; `process_images(images, prompt)` is the
+whole contract.
 
-The prompt already flows correctly: `_extract_data` computes
-`prompt = self._serialize_template(template)` and passes it straight into
-`process_images`. `ApiVlmModel.process_images` uses that passed-in prompt
-(not `vlm_options.prompt`), so the serialized template becomes the API text
-prompt with no extra work.
+The prompt already flows correctly: the pipeline builds the prompt from the
+template and passes it straight into `process_images`.
+`ApiVlmModel.process_images` uses that passed-in prompt (not
+`vlm_options.prompt`), so the built prompt becomes the API text prompt with no
+extra work.
 
-## What blocks the API engine today
+## Design: prompt shaping lives on the spec
 
-1. **Type gate.** `VlmExtractionPipelineOptions.vlm_options` is typed
-   `InlineVlmOptions` (`pipeline_options.py:1884`) — an `ApiVlmOptions` can't
-   even be assigned.
-2. **Hardcoded model.** `ExtractionVlmPipeline.__init__` unconditionally builds
-   `TransformersExtractionModel` (`extraction_vlm_pipeline.py:49`).
-3. **No preset.** No `ApiVlmOptions` extraction preset exists in
-   `vlm_model_specs.py` (only the two local `InlineVlmOptions`).
+The convert side attaches prompt shaping to the model spec (`build_prompt` /
+`decode_response`). Extraction follows the same rule so the pipeline never
+interprets prompt style and an illegal model/style pairing cannot be
+constructed.
 
-Everything else is already in place: `enable_remote_services` is inherited from
-`PipelineOptions` (`pipeline_options.py:1370`), and `ApiVlmModel` enforces it.
+- Extraction has its own spec types, `InlineExtractionVlmOptions` and
+  `ApiExtractionVlmOptions` (`datamodel/extraction_options.py`). Both mix in
+  `ExtractionVlmOptionsMixin`, which carries `extraction_prompt_style` plus
+  `serialize_template` + `build_extraction_prompt`.
+- `VlmExtractionPipelineOptions.vlm_options` is
+  `InlineExtractionVlmOptions | ApiExtractionVlmOptions`. There is no standalone
+  `extraction_prompt_style` field on the pipeline options — the style travels
+  with the spec.
+- Each preset welds a model to the only style it can honor, so illegal
+  model/style pairings are unconstructable.
 
-## Changes (recommended scope: add the API engine)
+Both the template **serialization** and the prompt **embedding** are decided on
+the spec, keyed on `ExtractionPromptStyle`, so transformers and API engines run
+one shared path:
 
-### 1. Widen the options type — `datamodel/pipeline_options.py`
-Change `VlmExtractionPipelineOptions.vlm_options` from `InlineVlmOptions` to
-`Union[InlineVlmOptions, ApiVlmOptions]` (discriminated on the existing `kind`
-literal, same pattern as the convert side). Default stays
-`NU_EXTRACT_2B_TRANSFORMERS`. `extraction_prompt_style` stays meaningful on the
-API path too (it selects the schema-instruction serialization+wrapper, see §4); only the
-NuExtract style is transformers-only.
+- **NuExtract** (`NU_EXTRACT_2B_TRANSFORMERS`, local-only): the template is fed
+  through the model's *own* chat template via a special `template=` kwarg, so
+  `build_extraction_prompt` returns it unwrapped. A Pydantic class serializes to
+  a **sample instance** (via polyfactory). Not served over generic endpoints.
+- **Granite schema-instruction** (`GRANITE_VISION_4_1_TRANSFORMERS`,
+  `GRANITE_VISION_4_1_API`): the serialized template is wrapped in a plain-text
+  instruction ("Extract structured data… Return a JSON object matching this
+  schema… Return ONLY valid JSON") and fed through a standard chat conversation.
+  A Pydantic class serializes to a real **JSON Schema** with field descriptions
+  (`model_json_schema()`). This is the key-value extraction format from the
+  Granite Vision model card (the format the model was evaluated with on the
+  VAREX benchmark), and plain-text + standard chat is exactly what an
+  OpenAI-conformant endpoint consumes.
 
-### 2. Dispatch on engine — `pipeline/extraction_vlm_pipeline.py`
-In `__init__`, replace the hardcoded `TransformersExtractionModel` with a
-type/framework switch mirroring `VlmPipeline._initialize_legacy_vlm_models`:
+Net: prompt style — not engine — decides how the template becomes text; the
+engine only decides how that text + image are executed.
+
+`ExtractionPromptStyle.GRANITE_VISION` is really a generic JSON-schema
+extraction style and would work for any instruction-tuned VLM over the API, not
+only Granite. (VAREX is the benchmark Granite was evaluated on, not the name of
+the prompt format — it is not reused as the style name.) A neutral alias such as
+`SCHEMA` is possible later but not part of this change.
+
+## Changes
+
+### 1. Extraction spec types — `datamodel/extraction_options.py`
+`ExtractionVlmOptionsMixin` adds `extraction_prompt_style`, `serialize_template`,
+and `build_extraction_prompt`. `InlineExtractionVlmOptions` and
+`ApiExtractionVlmOptions` combine the mixin with `InlineVlmOptions` /
+`ApiVlmOptions`. `_build_extraction_prompt` (the schema-instruction wrapper)
+lives here and is re-exported from `models/extraction/prompt_utils.py`.
+
+### 2. Widen the options type — `datamodel/pipeline_options.py`
+`VlmExtractionPipelineOptions.vlm_options` is
+`InlineExtractionVlmOptions | ApiExtractionVlmOptions`. Default stays
+`NU_EXTRACT_2B_TRANSFORMERS`.
+
+### 3. Dispatch on engine — `pipeline/extraction_vlm_pipeline.py`
+`__init__` picks the model from the spec type, mirroring
+`VlmPipeline._initialize_legacy_vlm_models`:
 
 ```python
 opts = pipeline_options.vlm_options
-if isinstance(opts, ApiVlmOptions):
+if isinstance(opts, ApiExtractionVlmOptions):
     self.vlm_model = ApiVlmModel(
         enabled=True,
         enable_remote_services=pipeline_options.enable_remote_services,
         vlm_options=opts,
     )
-else:  # InlineVlmOptions -> local transformers extraction model
-    self.vlm_model = TransformersExtractionModel(... as today ...)
+else:  # InlineExtractionVlmOptions -> local transformers extraction model
+    self.vlm_model = TransformersExtractionModel(...)
 ```
 
 `_extract_data` / `_determine_status` are unchanged — `ApiVlmModel` returns real
 `stop_reason`s, which the existing LENGTH/STOP_SEQUENCE → PARTIAL_SUCCESS logic
-already handles.
+already handles. The granite transformers builder consumes the already-wrapped
+prompt and does not wrap again.
 
-### 3. Ship an API preset — `datamodel/vlm_model_specs.py`
-Add an `ApiVlmOptions` extraction preset targeting a **Granite schema-instruction**
-endpoint (e.g. Granite Vision 4.1 served on vLLM or Ollama, `response_format=PLAINTEXT`,
-`temperature=0.0`), following the existing `GRANITE_VISION_OLLAMA` shape. Pair it
-with `extraction_prompt_style = GRANITE_VISION`. Users override `url`,
-`headers` (bearer token), and `params["model"]`.
+### 4. Ship an API preset — `datamodel/vlm_model_specs.py`
+`GRANITE_VISION_4_1_API`: an `ApiExtractionVlmOptions` targeting a Granite
+schema-instruction endpoint (Granite Vision 4.1 on vLLM or Ollama,
+`ResponseFormat.PLAINTEXT`, `temperature=0.0`), with
+`extraction_prompt_style = GRANITE_VISION`. Users override `url`, `headers`
+(bearer token), and `params["model"]`.
 
-### 4. Make prompt construction engine-independent (the real design point)
-
-Target models are **NuExtract** and **Granite Vision 4.1** — no commercial GPT
-support needed. That pins the design, because these two already represent the
-two prompt regimes, and Granite's is the generalizable one:
-
-- **NuExtract** (`build_nuextract_inputs`): the raw template is fed through the
-  model's *own* chat template via a special `template=` kwarg. Model-specific,
-  not API-able — and that's fine, NuExtract isn't served over generic endpoints.
-- **Granite Vision** (`build_granite_vision_inputs` → `_build_extraction_prompt`,
-  `prompt_utils.py:102`): the template is wrapped in a plain-text instruction
-  ("Extract structured data… Return a JSON object matching this schema… Return
-  ONLY valid JSON") and fed through a **standard chat conversation**. This is
-  exactly the key-value extraction format from the Granite model card (the format
-  the model was evaluated with on the VAREX benchmark), and plain-text + standard
-  chat is exactly what an OpenAI-conformant endpoint consumes.
-
-So the schema-instruction wrapper we need for the API engine **already exists** — it's just
-trapped inside the transformers input builder. Two moves:
-
-1. **Hoist the wrapper into the pipeline.** Move `_build_extraction_prompt` out
-   of `build_granite_vision_inputs` up to the extraction pipeline's prompt
-   assembly, keyed on `ExtractionPromptStyle`, so transformers / api / vllm all
-   share it. NuExtract style → passthrough (model applies `template=`). Granite
-   style → schema-instruction-wrapped plain text. The granite transformers builder then just
-   applies the chat template to the already-finished text (drop its internal
-   `_build_extraction_prompt` call — do **not** double-wrap).
-
-2. **Make serialization style-aware too.** Template *serialization* also differs
-   by regime, not just the wrapper: NuExtract wants a **sample instance** (current
-   `_serialize_template`, via polyfactory); the Granite schema-instruction style wants a real **JSON Schema**
-   with field descriptions (the Granite card passes `{"type":"object",
-   "properties":{…}}`). For a Pydantic model that's `model_json_schema()` instead
-   of building a sample instance. Both serialization and wrapping become a
-   function of prompt style and live in the one engine-independent place.
-
-Net: prompt style — not engine — decides how the template becomes text; the
-engine only decides how that text + image are executed. No GPT special-casing,
-no NuExtract over-fitting.
-
-**Naming nicety (optional):** `ExtractionPromptStyle.GRANITE_VISION` is really
-"generic JSON-schema extraction" and works for any instruction-tuned VLM over the
-API, not only Granite. (VAREX is the benchmark Granite was evaluated on, not the
-name of this prompt format — don't reuse it as the style name.) Consider a neutral
-alias (`SCHEMA`) with `GRANITE_VISION` kept as a deprecated alias. Not required for
-the feature.
-
-### Engine × prompt-style matrix
+## Engine × prompt-style matrix
 
 | Prompt style | transformers (local) | API / vllm |
 |--------------|----------------------|------------|
 | NuExtract    | ✅ (special `template=`) | ✗ (model-specific format) |
-| Granite schema-instruction | ✅ | ✅ — **this is what the API engine unlocks** |
+| Granite schema-instruction | ✅ | ✅ — this is what the API engine unlocks |
 
 ## Optional follow-on: local mlx / vllm engines
-Cheap once the dispatch + shared prompt assembly exist: route `InlineVlmOptions`
-with `inference_framework == MLX/VLLM` to the existing `HuggingFaceMlxModel` /
-`VllmVlmModel`. They consume the schema-instruction-wrapped text like any chat model, so they
-work for the Granite schema-instruction style but not NuExtract's special format. Defer until asked.
+Cheap once the dispatch + shared prompt assembly exist: route
+`InlineExtractionVlmOptions` with `inference_framework == MLX/VLLM` to the
+existing `HuggingFaceMlxModel` / `VllmVlmModel`. They consume the
+schema-instruction-wrapped text like any chat model, so they work for the
+Granite schema-instruction style but not NuExtract's special format. Deferred
+until asked.
 
 ## Out of scope
 - Chart extraction (`datamodel/chart_extraction_options.py`,
@@ -178,24 +147,16 @@ work for the Granite schema-instruction style but not NuExtract's special format
 - There is no extraction CLI today; this stays a Python-API-only change.
 
 ## Testing
-- Unit: extractor with an `ApiVlmOptions` preset against a mocked
-  OpenAI-conformant endpoint (assert the serialized template reaches the request
-  body and JSON is parsed into `ExtractedPageData.extracted_data`). Mirror
-  `tests/test_extraction_vlm_streaming.py`, which already exercises the
-  streaming/API request path.
-- Guard: constructing the pipeline with `ApiVlmOptions` and
-  `enable_remote_services=False` must raise `OperationNotAllowed` (inherited
-  from `ApiVlmModel`).
-- Keep existing local-model tests (`test_extraction.py`,
-  `test_granite_vision_extraction.py`) green — CI-skipped, heavy datasets.
+- `tests/test_extraction_api.py`: dispatch to `ApiVlmModel`, both prompt-style
+  regimes (Granite schema-instruction wraps a JSON Schema; NuExtract passes a
+  sample instance through unwrapped), and the `enable_remote_services=False`
+  guard raising `OperationNotAllowed`.
+- `tests/test_granite_vision_extraction.py`: the Granite preset carries the
+  schema-instruction style on the spec.
 
 ## Docs / packaging
-- Update `docling/.agents/skills/docling/references/extraction.md` with an API
-  engine example + `enable_remote_services=True`.
+- `docling/.agents/skills/docling/references/extraction.md` gains a "Choosing
+  the engine" section with a remote example and `enable_remote_services=True`.
 - Slim extras: API-only extraction needs no torch. Check whether a
   `models-vlm-api`-style extra should cover extraction so users can run remote
   extraction without `models-vlm-inline`. Note it in `slim-packaging.md`.
-
-## Diff size estimate
-~4 files for the core capability (options type, pipeline dispatch, one preset,
-one test) + docs. No new modules, no new base classes.
