@@ -73,42 +73,29 @@ picks its style — you never set them separately:
   model card). Works with local Granite Vision **and** any OpenAI-conformant
   endpoint serving it.
 
-Point extraction at a remote endpoint by passing an `ApiExtractionVlmOptions`
-preset and `enable_remote_services=True` (mirrors the VLM convert pipeline):
+To run remotely, build the options from an `ApiExtractionVlmOptions` preset with
+`enable_remote_services=True`, then wire them into the `DocumentExtractor` the
+usual way. Only these two objects differ from a local setup:
 
 ```python
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
-from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_model_specs import GRANITE_VISION_4_1_API
-from docling.document_extractor import DocumentExtractor, ExtractionFormatOption
-from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
-# The preset already carries GRANITE_VISION schema-instruction style; just point it at your endpoint.
+# The preset already carries the Granite schema-instruction style; just point it at your endpoint.
 api_options = GRANITE_VISION_4_1_API.model_copy(update={
     "url": "https://my-endpoint/v1/chat/completions",
     "headers": {"Authorization": "Bearer <TOKEN>"},
     "params": {"model": "ibm-granite/granite-vision-4.1-4b"},
 })
-
 pipeline_options = VlmExtractionPipelineOptions(
     vlm_options=api_options,
-    enable_remote_services=True,
-)
-extractor = DocumentExtractor(
-    allowed_formats=[InputFormat.PDF],
-    extraction_format_options={
-        InputFormat.PDF: ExtractionFormatOption(
-            pipeline_cls=ExtractionVlmPipeline,
-            pipeline_options=pipeline_options,
-            backend=ThreadedDoclingParseDocumentBackend,
-        ),
-    },
+    enable_remote_services=True,  # required for any remote engine
 )
 ```
 
-Only `vlm_options` changes; `extract(...)` / `extract_all(...)` work exactly as
-above, with inference running on the remote endpoint instead of locally.
+Pass `pipeline_options` to `ExtractionFormatOption(pipeline_cls=ExtractionVlmPipeline, ...)`
+as usual; `extract(...)` / `extract_all(...)` then run inference on the remote
+endpoint instead of locally.
 
 ## Reading the result
 
