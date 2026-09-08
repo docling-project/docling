@@ -1883,7 +1883,7 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     ``InlineExtractionVlmOptions`` / ``ApiExtractionVlmOptions``), so a preset
     pairs the model with the only style it can honor:
         - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) — NuExtract style
-        - ``GRANITE_VISION_4_1_TRANSFORMERS`` / ``GRANITE_VISION_4_1_API`` — VAREX style
+        - ``GRANITE_VISION_4_1_TRANSFORMERS`` / ``GRANITE_VISION_4_1_API`` — Granite schema-instruction style
     """
 
     vlm_options: Annotated[

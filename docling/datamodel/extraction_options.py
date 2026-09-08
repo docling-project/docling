@@ -23,7 +23,7 @@ class ExtractionPromptStyle(str, Enum):
 
 
 def _build_extraction_prompt(template: str) -> str:
-    """Wrap a serialized template in the VAREX plain-text instruction.
+    """Wrap a serialized template in the Granite schema-instruction prompt.
 
     Kept as a module-level function (and re-exported from
     ``models.extraction.prompt_utils``) so it can be reused and tested on its own.
@@ -52,8 +52,8 @@ class ExtractionVlmOptionsMixin(BaseModel):
         """Serialize any of the four template forms to a schema string.
 
         Only a Pydantic *class* is style-dependent: NuExtract wants a sample
-        instance (field name -> example value), VAREX wants a real JSON Schema
-        with field descriptions (the format from the Granite model card).
+        instance (field name -> example value), GRANITE_VISION wants a real JSON
+        Schema with field descriptions (the format from the Granite model card).
         """
         if isinstance(template, str):
             return template
@@ -78,8 +78,8 @@ class ExtractionVlmOptionsMixin(BaseModel):
         """Turn a template into the final prompt text for this model's style.
 
         NuExtract feeds the serialized template through the model's own
-        ``template=`` chat kwarg, so it is returned unwrapped. GRANITE_VISION /
-        VAREX wraps it in a plain-text instruction that any transformers or
+        ``template=`` chat kwarg, so it is returned unwrapped. GRANITE_VISION
+        wraps it in a plain-text schema instruction that any transformers or
         OpenAI-conformant API engine consumes.
         """
         text = self.serialize_template(template)

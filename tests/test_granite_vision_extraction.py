@@ -30,8 +30,8 @@ def test_default_spec_uses_nuextract_style() -> None:
     )
 
 
-def test_granite_vision_preset_carries_varex_style() -> None:
-    """The Granite preset welds VAREX style to the model — no separate setting."""
+def test_granite_vision_preset_carries_schema_instruction_style() -> None:
+    """The Granite preset welds the schema-instruction style to the model — no separate setting."""
     options = VlmExtractionPipelineOptions(vlm_options=GRANITE_VISION_4_1_TRANSFORMERS)
     assert (
         options.vlm_options.extraction_prompt_style

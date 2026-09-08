@@ -577,8 +577,8 @@ GRANITE_VISION_4_1_TRANSFORMERS = InlineExtractionVlmOptions(
 )
 
 # Granite Vision 4.1 served over an OpenAI-conformant endpoint (e.g. vLLM).
-# The spec carries GRANITE_VISION/VAREX style, so it builds the VAREX prompt from
-# the template itself and `prompt` is left empty here.
+# The spec carries GRANITE_VISION style, so it builds the schema-instruction prompt
+# from the template itself and `prompt` is left empty here.
 GRANITE_VISION_4_1_API = ApiExtractionVlmOptions(
     extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
     url=AnyUrl("http://localhost:8000/v1/chat/completions"),

@@ -11,7 +11,7 @@ from typing import Any
 
 from PIL.Image import Image
 
-# Re-exported: the VAREX wrapper now lives with the model spec in datamodel.
+# Re-exported: the schema-instruction wrapper now lives with the model spec in datamodel.
 from docling.datamodel.extraction_options import _build_extraction_prompt
 
 __all__ = [
@@ -81,8 +81,8 @@ def build_granite_vision_inputs(
 ) -> dict[str, Any]:
     """Build inputs using standard chat conversation format.
 
-    ``prompts`` are the final, ready-to-send prompt strings. The VAREX
-    instruction wrapper (:func:`_build_extraction_prompt`) is applied upstream in
+    ``prompts`` are the final, ready-to-send prompt strings. The schema-instruction
+    wrapper (:func:`_build_extraction_prompt`) is applied upstream in
     the extraction pipeline so that every engine (transformers/api/vllm) shares
     one prompt-construction path; do not wrap again here.
     """

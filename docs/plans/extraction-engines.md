@@ -15,9 +15,10 @@ model spec owns prompt shaping (`build_prompt` / `decode_response`):
   Presets weld each model to the only style it can honor, so illegal
   model/style pairings are unconstructable — the gap the plan left open.
 - Serialization is now **style-aware** (the plan's §4.2, done rather than
-  deferred): a Pydantic class serializes to a real JSON Schema for VAREX and to
-  a sample instance for NuExtract. Both serialization and the VAREX wrapper live
-  on the spec, not the pipeline.
+  deferred): a Pydantic class serializes to a real JSON Schema for the Granite
+  schema-instruction style and to a sample instance for NuExtract. Both
+  serialization and the schema-instruction wrapper live on the spec, not the
+  pipeline.
 
 Everything else (dispatch, the API preset, the enable_remote_services guard,
 the engine × prompt-style matrix) landed as described.
@@ -81,7 +82,7 @@ Change `VlmExtractionPipelineOptions.vlm_options` from `InlineVlmOptions` to
 `Union[InlineVlmOptions, ApiVlmOptions]` (discriminated on the existing `kind`
 literal, same pattern as the convert side). Default stays
 `NU_EXTRACT_2B_TRANSFORMERS`. `extraction_prompt_style` stays meaningful on the
-API path too (it selects the VAREX serialization+wrapper, see §4); only the
+API path too (it selects the schema-instruction serialization+wrapper, see §4); only the
 NuExtract style is transformers-only.
 
 ### 2. Dispatch on engine — `pipeline/extraction_vlm_pipeline.py`
@@ -105,10 +106,10 @@ else:  # InlineVlmOptions -> local transformers extraction model
 already handles.
 
 ### 3. Ship an API preset — `datamodel/vlm_model_specs.py`
-Add an `ApiVlmOptions` extraction preset targeting a **Granite/VAREX** endpoint
-(e.g. Granite Vision 4.1 served on vLLM or Ollama, `response_format=PLAINTEXT`,
+Add an `ApiVlmOptions` extraction preset targeting a **Granite schema-instruction**
+endpoint (e.g. Granite Vision 4.1 served on vLLM or Ollama, `response_format=PLAINTEXT`,
 `temperature=0.0`), following the existing `GRANITE_VISION_OLLAMA` shape. Pair it
-with `extraction_prompt_style = GRANITE_VISION` (VAREX). Users override `url`,
+with `extraction_prompt_style = GRANITE_VISION`. Users override `url`,
 `headers` (bearer token), and `params["model"]`.
 
 ### 4. Make prompt construction engine-independent (the real design point)
@@ -124,23 +125,24 @@ two prompt regimes, and Granite's is the generalizable one:
   `prompt_utils.py:102`): the template is wrapped in a plain-text instruction
   ("Extract structured data… Return a JSON object matching this schema… Return
   ONLY valid JSON") and fed through a **standard chat conversation**. This is
-  exactly the VAREX format from the Granite model card, and plain-text + standard
+  exactly the key-value extraction format from the Granite model card (the format
+  the model was evaluated with on the VAREX benchmark), and plain-text + standard
   chat is exactly what an OpenAI-conformant endpoint consumes.
 
-So the VAREX wrapper we need for the API engine **already exists** — it's just
+So the schema-instruction wrapper we need for the API engine **already exists** — it's just
 trapped inside the transformers input builder. Two moves:
 
 1. **Hoist the wrapper into the pipeline.** Move `_build_extraction_prompt` out
    of `build_granite_vision_inputs` up to the extraction pipeline's prompt
    assembly, keyed on `ExtractionPromptStyle`, so transformers / api / vllm all
    share it. NuExtract style → passthrough (model applies `template=`). Granite
-   style → VAREX-wrapped plain text. The granite transformers builder then just
+   style → schema-instruction-wrapped plain text. The granite transformers builder then just
    applies the chat template to the already-finished text (drop its internal
    `_build_extraction_prompt` call — do **not** double-wrap).
 
 2. **Make serialization style-aware too.** Template *serialization* also differs
    by regime, not just the wrapper: NuExtract wants a **sample instance** (current
-   `_serialize_template`, via polyfactory); VAREX wants a real **JSON Schema**
+   `_serialize_template`, via polyfactory); the Granite schema-instruction style wants a real **JSON Schema**
    with field descriptions (the Granite card passes `{"type":"object",
    "properties":{…}}`). For a Pydantic model that's `model_json_schema()` instead
    of building a sample instance. Both serialization and wrapping become a
@@ -151,22 +153,24 @@ engine only decides how that text + image are executed. No GPT special-casing,
 no NuExtract over-fitting.
 
 **Naming nicety (optional):** `ExtractionPromptStyle.GRANITE_VISION` is really
-"generic JSON-schema / VAREX extraction" and works for any instruction-tuned VLM
-over the API, not only Granite. Consider a neutral alias (`SCHEMA` / `VAREX`)
-with `GRANITE_VISION` kept as a deprecated alias. Not required for the feature.
+"generic JSON-schema extraction" and works for any instruction-tuned VLM over the
+API, not only Granite. (VAREX is the benchmark Granite was evaluated on, not the
+name of this prompt format — don't reuse it as the style name.) Consider a neutral
+alias (`SCHEMA`) with `GRANITE_VISION` kept as a deprecated alias. Not required for
+the feature.
 
 ### Engine × prompt-style matrix
 
 | Prompt style | transformers (local) | API / vllm |
 |--------------|----------------------|------------|
 | NuExtract    | ✅ (special `template=`) | ✗ (model-specific format) |
-| Granite / VAREX | ✅ | ✅ — **this is what the API engine unlocks** |
+| Granite schema-instruction | ✅ | ✅ — **this is what the API engine unlocks** |
 
 ## Optional follow-on: local mlx / vllm engines
 Cheap once the dispatch + shared prompt assembly exist: route `InlineVlmOptions`
 with `inference_framework == MLX/VLLM` to the existing `HuggingFaceMlxModel` /
-`VllmVlmModel`. They consume the VAREX-wrapped text like any chat model, so they
-work for Granite/VAREX style but not NuExtract's special format. Defer until asked.
+`VllmVlmModel`. They consume the schema-instruction-wrapped text like any chat model, so they
+work for the Granite schema-instruction style but not NuExtract's special format. Defer until asked.
 
 ## Out of scope
 - Chart extraction (`datamodel/chart_extraction_options.py`,

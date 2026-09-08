@@ -67,10 +67,11 @@ picks its style — you never set them separately:
 - **NuExtract** (default, `NU_EXTRACT_2B_TRANSFORMERS`): local
   `numind/NuExtract-2.0-2B`. The template is consumed via the model's own chat
   template; this style is local-only.
-- **Granite / VAREX** (`GRANITE_VISION_4_1_TRANSFORMERS`,
+- **Granite schema-instruction** (`GRANITE_VISION_4_1_TRANSFORMERS`,
   `GRANITE_VISION_4_1_API`): the serialized JSON Schema wrapped in a plain-text
-  instruction prompt. Works with local Granite Vision **and** any
-  OpenAI-conformant endpoint serving it.
+  instruction prompt (the key-value extraction format from the Granite Vision
+  model card). Works with local Granite Vision **and** any OpenAI-conformant
+  endpoint serving it.
 
 Point extraction at a remote endpoint by passing an `ApiExtractionVlmOptions`
 preset and `enable_remote_services=True` (mirrors the VLM convert pipeline):
@@ -83,7 +84,7 @@ from docling.datamodel.vlm_model_specs import GRANITE_VISION_4_1_API
 from docling.document_extractor import DocumentExtractor, ExtractionFormatOption
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
-# The preset already carries GRANITE_VISION/VAREX style; just point it at your endpoint.
+# The preset already carries GRANITE_VISION schema-instruction style; just point it at your endpoint.
 api_options = GRANITE_VISION_4_1_API.model_copy(update={
     "url": "https://my-endpoint/v1/chat/completions",
     "headers": {"Authorization": "Bearer <TOKEN>"},

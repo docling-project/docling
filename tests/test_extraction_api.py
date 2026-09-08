@@ -61,14 +61,14 @@ def _prompt_only_pipeline(style: ExtractionPromptStyle) -> ExtractionVlmPipeline
     return pipeline
 
 
-def test_varex_prompt_is_schema_plus_instruction() -> None:
-    """Granite/VAREX style wraps a JSON Schema in the instruction."""
+def test_granite_prompt_is_schema_plus_instruction() -> None:
+    """Granite schema-instruction style wraps a JSON Schema in the instruction."""
     pipeline = _prompt_only_pipeline(ExtractionPromptStyle.GRANITE_VISION)
     prompt = pipeline._build_prompt(_Invoice)
 
     assert "Extract structured data" in prompt
     assert "Return ONLY valid JSON" in prompt
-    # VAREX serializes a Pydantic class to a real JSON Schema: fields nest under
+    # GRANITE_VISION serializes a Pydantic class to a real JSON Schema: fields nest under
     # "properties" and carry their Field(description=...) text.
     body_start = prompt.index("{")
     body = json.loads(prompt[body_start : prompt.rindex("}") + 1])
@@ -79,7 +79,7 @@ def test_varex_prompt_is_schema_plus_instruction() -> None:
 
 
 def test_nuextract_prompt_is_passthrough_instance() -> None:
-    """NuExtract style passes a sample instance through, no VAREX wrapper."""
+    """NuExtract style passes a sample instance through, no schema-instruction wrapper."""
     pipeline = _prompt_only_pipeline(ExtractionPromptStyle.NUEXTRACT)
     prompt = pipeline._build_prompt('{"invoice_date": "string"}')
 
