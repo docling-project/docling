@@ -1,5 +1,27 @@
 # Plan: generalize `DocumentExtractor` to multiple engines (esp. OpenAI-conformant API)
 
+## Update — as shipped
+
+The plan below is the original design record. The final implementation differs
+in **where the prompt style lives**, following the convert-side rule that the
+model spec owns prompt shaping (`build_prompt` / `decode_response`):
+
+- Prompt style moved **onto the spec**. New `InlineExtractionVlmOptions` /
+  `ApiExtractionVlmOptions` (a mixin carrying `extraction_prompt_style` plus
+  `serialize_template` + `build_extraction_prompt`) replace the plan's plan of
+  keeping `extraction_prompt_style` as a separate `VlmExtractionPipelineOptions`
+  field (§1) and branching on it in the pipeline (§4.1). The standalone field is
+  gone; `vlm_options` is `InlineExtractionVlmOptions | ApiExtractionVlmOptions`.
+  Presets weld each model to the only style it can honor, so illegal
+  model/style pairings are unconstructable — the gap the plan left open.
+- Serialization is now **style-aware** (the plan's §4.2, done rather than
+  deferred): a Pydantic class serializes to a real JSON Schema for VAREX and to
+  a sample instance for NuExtract. Both serialization and the VAREX wrapper live
+  on the spec, not the pipeline.
+
+Everything else (dispatch, the API preset, the enable_remote_services guard,
+the engine × prompt-style matrix) landed as described.
+
 ## Goal
 
 Today the extraction pipeline runs **only** local HuggingFace transformers
