@@ -41,6 +41,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
+from docling.utils.text_decoding import decode_text
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -278,27 +279,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
-        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
-        # output. Equivalent to utf-8 when no BOM is present.
+        # output.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
-                # remove invalid sequences
-                # very long sequences of underscores will lead to unnecessary long processing times.
-                # In any proper Markdown files, underscores have to be escaped,
-                # otherwise they represent emphasis (bold or italic)
-                self.markdown = self._shorten_underscore_sequences(text_stream)
-                self.markdown = self._shorten_leading_dash_sequences(self.markdown)
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8-sig") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
-                    self.markdown = self._shorten_leading_dash_sequences(self.markdown)
+            md_content = decode_text(self.path_or_stream)
+            # remove invalid sequences
+            # very long sequences of underscores will lead to unnecessary long processing times.
+            # In any proper Markdown files, underscores have to be escaped,
+            # otherwise they represent emphasis (bold or italic)
+            self.markdown = self._shorten_underscore_sequences(md_content)
+            self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             self.valid = True
 
             _log.debug(self.markdown)
