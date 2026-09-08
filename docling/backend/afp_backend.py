@@ -11,6 +11,7 @@ deliberately outside this first, dependency-free implementation.
 
 import codecs
 import logging
+import mimetypes
 import unicodedata
 import warnings
 from collections import Counter
@@ -42,6 +43,12 @@ from docling.exceptions import DocumentLoadError
 _log = logging.getLogger(__name__)
 
 _MIME_TYPE = "application/vnd.ibm.modcap"
+
+# DocumentOrigin validates MIME types against the stdlib registry. Register AFP
+# explicitly because the platform MIME database is not loaded consistently
+# across Python versions and test execution orders.
+mimetypes.add_type(_MIME_TYPE, ".afp")
+
 _INTRODUCER = 0x5A
 _BASE_INTRODUCER_LENGTH = 8
 _MAX_STRUCTURED_FIELD_LENGTH = 32767
