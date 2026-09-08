@@ -13,7 +13,7 @@ Below you can find a listing of all supported input and output formats.
 | DOC, XLS, PPT | Legacy binary Office formats (97–2004); requires LibreOffice |
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
-| Pages | Apple Pages documents (`.pages`), both container generations: Pages 5+ (2013 onwards) via its `Index/*.iwa` archives and iWork '09 via `index.xml`. Body text with titles, headings and tables (requires the `format-iwork` extra) |
+| Pages | Apple Pages documents (`.pages`), both container generations (Pages 5+ and iWork '09); requires the `format-iwork` extra |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |

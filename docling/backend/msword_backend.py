@@ -938,28 +938,58 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
-        # If not found directly in paragraph, check if the style defines numbering
+        # If not found directly in paragraph, check if the style defines numbering.
+        # A resolved ilvl without a numId is not usable: every consumer of this
+        # pair keys off numId, so fall through to (None, None) in that case. A
+        # numId without an ilvl is kept -- _is_numbered_heading treats a missing
+        # level as 0, matching Word.
         if paragraph.style is not None:
-            style_elem = paragraph.style.element
+            numId, ilvl = self._style_numbering(paragraph.style)
+            if numId is not None:
+                return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
+
+        return None, None  # If the paragraph is not part of a list
+
+    def _style_numbering(
+        self, style: ParagraphStyle | None
+    ) -> tuple[str | None, str | None]:
+        """Resolve a style's (numId, ilvl), following the ``basedOn`` chain.
+
+        Word inherits numbering through the style hierarchy, and numId and
+        ilvl inherit independently: a heading style may override the level
+        (ilvl) while taking the numId from the style it is based on. Word's
+        stock ``heading 2`` does exactly this -- it carries only ``ilvl`` and
+        inherits ``numId`` from ``heading 1``. Reading a single style element
+        misses that inherited numId, leaving the heading unnumbered while its
+        siblings at other levels are numbered.
+        """
+        numId: str | None = None
+        ilvl: str | None = None
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            style_elem = getattr(style, "element", None)
             if style_elem is not None:
                 style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
                 if style_numPr is not None:
-                    numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
-                    ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
-                    numId = (
-                        numId_elem.get(self.XML_KEY) if numId_elem is not None else None
-                    )
-                    ilvl = (
-                        ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
-                    )
+                    if numId is None:
+                        numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                        if numId_elem is not None:
+                            numId = numId_elem.get(self.XML_KEY)
+                    if ilvl is None:
+                        ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                        if ilvl_elem is not None:
+                            ilvl = ilvl_elem.get(self.XML_KEY)
+            if numId is not None and ilvl is not None:
+                break
+            # A malformed basedOn chain can hop to a style type that lacks
+            # base_style; getattr keeps the walk safe.
+            style = getattr(style, "base_style", None)
+            depth += 1
 
-                    # If numId is found but ilvl is not specified, default to level 0
-                    if numId is not None and ilvl is None:
-                        ilvl = "0"
-
-                    return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
-
-        return None, None  # If the paragraph is not part of a list
+        # If numId is found but ilvl is not specified, default to level 0
+        if numId is not None and ilvl is None:
+            ilvl = "0"
+        return numId, ilvl
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
         """Find the level element from the numbering XML for a given numId and ilvl."""

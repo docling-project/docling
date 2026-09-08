@@ -1366,3 +1366,110 @@ def test_cli_asr_pipeline_options_default_to_false(tmp_path, monkeypatch):
     assert asr_pipeline_options is not None
     assert asr_pipeline_options.allow_external_plugins is False
     assert asr_pipeline_options.enable_remote_services is False
+
+
+def test_cli_native_pipeline_converts_pdf(tmp_path: Path) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [source, "--output", str(output), "--pipeline", "native", "--from", "pdf"],
+    )
+
+    assert result.exit_code == 0
+    assert (
+        "Optimized Table Tokenization" in (output / "2305.03393v1-pg9.md").read_text()
+    )
+
+
+def test_cli_native_pipeline_defaults_to_pdf_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_formats: list[InputFormat] = []
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured_formats.extend(allowed_formats)
+
+        def convert_all(
+            self, input_doc_paths, headers=None, raises_on_error=False, page_range=None
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            "native",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_formats == [InputFormat.PDF]
+
+
+def test_cli_native_pipeline_rejects_invalid_input_or_backend(tmp_path: Path) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    for extra_args in (
+        ["--from", "docx"],
+        ["--pdf-backend", PdfBackend.PYPDFIUM2.value],
+    ):
+        result = runner.invoke(
+            app,
+            [
+                source,
+                "--output",
+                str(tmp_path / "out"),
+                "--pipeline",
+                "native",
+                *extra_args,
+            ],
+        )
+        assert result.exit_code != 0
+
+
+def test_cli_native_pipeline_parser_threads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["pipeline_options"] = pdf_option.pipeline_options
+            captured["backend_options"] = pdf_option.backend_options
+
+        def convert_all(
+            self, input_doc_paths, headers=None, raises_on_error=False, page_range=None
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            "native",
+            "--parser-threads",
+            "3",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["pipeline_options"].parser_threads == 3
+    assert captured["backend_options"].parser_threads == 3
+    assert captured["pipeline_options"].accelerator_options.num_threads == 7

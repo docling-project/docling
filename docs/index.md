@@ -56,7 +56,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
-- 🍎 Parsing of Apple Pages (`.pages`) documents, both the modern IWA container and iWork '09
+- 🍎 Parsing of Apple Pages (`.pages`) documents, both container generations (Pages 5+ and iWork '09)
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
 - 📊 Chart understanding (Barchart, Piechart, LinePlot): convert them into tables or code and add detailed descriptions
 - 🔠 Opt-in recovery of [PDF heading levels](usage/heading_levels.md) from the bookmarks, the outline numbering and the font styling, instead of a flat list of level-1 headings

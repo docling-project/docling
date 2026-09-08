@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Union
+from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -17,20 +17,18 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     ListItem,
-    Size,
     TableCell,
     TableData,
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
-
-DEFAULT_IMAGE_WIDTH: Final = 128
-DEFAULT_IMAGE_HEIGHT: Final = 128
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+), alignment (<, ^, >, .^), style (a/d/e/h/l/m/s).
@@ -44,10 +42,23 @@ class _LiteralBlock:
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[AsciiDocBackendOptions] = None,
+    ):
+        if options is None:
+            options = AsciiDocBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
         self.path_or_stream = path_or_stream
+        self.options: AsciiDocBackendOptions
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+            max_image_data_base64_bytes=options.max_image_data_base64_bytes,
+        )
 
         # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
         # document title ("= Title") is no longer recognized as one and the BOM
@@ -270,30 +281,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 item = self._parse_picture(line)
 
-                size: Size
-                try:
-                    size = Size(width=int(item["width"]), height=int(item["height"]))
-                except (KeyError, ValueError):
-                    # width/height may be absent or non-numeric (e.g. "50%", "auto")
-                    size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
-
-                uri = None
-                if (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("//")
-                ):
-                    uri = "file:" + item["uri"]
-                elif (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("/")
-                ):
-                    uri = "file:/" + item["uri"]
-                elif "uri" in item and not item["uri"].startswith("http"):
-                    uri = "file://" + item["uri"]
-
-                image = ImageRef(mimetype="image/png", size=size, dpi=70, uri=uri)
+                image: Optional[ImageRef] = None
+                if "uri" in item and self.options.fetch_images:
+                    base_path = (
+                        str(self.options.source_uri)
+                        if self.options.source_uri is not None
+                        else None
+                    )
+                    image = self._image_loader.load_image_ref(item["uri"], base_path)
                 doc.add_picture(
                     image=image,
                     caption=caption,
