@@ -23,10 +23,11 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.stages.ocr.nemotron_ocr_model import (
     NemotronOcrModel,
-    resolve_nemotronocr_language,
 )
+from docling.utils.ocr_language import OcrLanguageResolver
 
 from .groundtruth_paths import (
     GroundTruthPaths,
@@ -128,32 +129,39 @@ def get_converter(ocr_options: OcrOptions, ocr_batch_size: Optional[int] = None)
 
 
 @pytest.mark.parametrize(
-    ("req_languages", "expected"),
+    ("tag", "expected"),
     [
-        # No request -> english default
-        (None, "english"),
-        ([], "english"),
-        # English aliases (and case / whitespace / region-tag normalization)
-        (["en"], "english"),
-        (["eng"], "english"),
-        (["english"], "english"),
-        (["EN"], "english"),
-        (["English"], "english"),
-        (["  en  "], "english"),
-        (["en-US"], "english"),
-        (["en_US"], "english"),
-        (["en", "english", "eng"], "english"),
-        # Any non-english language maps to multilingual
-        (["de"], "multilingual"),
-        (["fr"], "multilingual"),
-        (["zh-CN"], "multilingual"),
-        # A single non-english language is enough to promote the whole request
-        (["en", "de"], "multilingual"),
-        (["de", "en"], "multilingual"),
+        # Every spelling of English canonicalizes to the same recognizer.
+        ("en", "english"),
+        ("eng", "english"),
+        ("EN", "english"),
+        ("  en  ", "english"),
+        ("en-US", "english"),
+        # The languages the multilingual checkpoint is trained on.
+        ("zh-CN", "multilingual"),
+        ("zh-Hant", "multilingual"),
+        ("ja", "multilingual"),
+        ("ko", "multilingual"),
+        ("ru", "multilingual"),
+        # ...and the explicit escape hatch.
+        ("mul", "multilingual"),
     ],
 )
-def test_nemotron_language_resolution(req_languages, expected):
-    assert resolve_nemotronocr_language(req_languages) == expected
+def test_nemotron_language_mapping(tag, expected):
+    model = NemotronOcrModel.__new__(NemotronOcrModel)
+    assert (
+        model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
+        == expected
+    )
+
+
+@pytest.mark.parametrize("tag", ["de", "fr", "ar", "hi"])
+def test_nemotron_rejects_uncovered_language(tag):
+    """A language neither checkpoint serves errors instead of silently
+    falling back to the multilingual model, which is what used to happen."""
+    model = NemotronOcrModel.__new__(NemotronOcrModel)
+    with pytest.raises(OcrLanguageNotSupportedError, match="mul"):
+        model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
 
 
 def test_e2e_nemotron_ocr_conversions():

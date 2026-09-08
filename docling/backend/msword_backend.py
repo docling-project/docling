@@ -165,6 +165,62 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
 )
 """OOXML numFmt values that produce visible list/heading markers."""
 
+_NON_DECIMAL_NUMBERING_FORMATS: Final[frozenset[str]] = _VISIBLE_NUMBERING_FORMATS - {
+    "decimal"
+}
+"""numFmt values that cannot be rendered as a raw decimal counter."""
+
+_ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
+    (1000, "M"),
+    (900, "CM"),
+    (500, "D"),
+    (400, "CD"),
+    (100, "C"),
+    (90, "XC"),
+    (50, "L"),
+    (40, "XL"),
+    (10, "X"),
+    (9, "IX"),
+    (5, "V"),
+    (4, "IV"),
+    (1, "I"),
+)
+
+
+def _int_to_letter_marker(value: int) -> str:
+    """Map a 1-based counter to OOXML lowerLetter (a, b, ..., z, aa, bb, ...)."""
+    if value <= 0:
+        return str(value)
+    return chr(ord("a") + (value - 1) % 26) * ((value - 1) // 26 + 1)
+
+
+def _int_to_roman_marker(value: int) -> str:
+    """Map a 1-based counter to an upper-roman numeral string."""
+    if value <= 0:
+        return str(value)
+    remaining = value
+    parts: list[str] = []
+    for amount, numeral in _ROMAN_NUMERALS:
+        count, remaining = divmod(remaining, amount)
+        if count:
+            parts.append(numeral * count)
+    return "".join(parts)
+
+
+def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
+    """Render a list counter using an OOXML ``w:numFmt`` value."""
+    if num_fmt == "lowerLetter":
+        return _int_to_letter_marker(counter)
+    if num_fmt == "upperLetter":
+        return _int_to_letter_marker(counter).upper()
+    if num_fmt == "lowerRoman":
+        return _int_to_roman_marker(counter).lower()
+    if num_fmt == "upperRoman":
+        return _int_to_roman_marker(counter)
+    if num_fmt == "decimalZero":
+        return f"{counter:02d}"
+    return str(counter)
+
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
@@ -420,6 +476,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
+        self._empty_docx_template: DocxDocument | None = None
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -938,28 +995,58 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
-        # If not found directly in paragraph, check if the style defines numbering
+        # If not found directly in paragraph, check if the style defines numbering.
+        # A resolved ilvl without a numId is not usable: every consumer of this
+        # pair keys off numId, so fall through to (None, None) in that case. A
+        # numId without an ilvl is kept -- _is_numbered_heading treats a missing
+        # level as 0, matching Word.
         if paragraph.style is not None:
-            style_elem = paragraph.style.element
+            numId, ilvl = self._style_numbering(paragraph.style)
+            if numId is not None:
+                return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
+
+        return None, None  # If the paragraph is not part of a list
+
+    def _style_numbering(
+        self, style: ParagraphStyle | None
+    ) -> tuple[str | None, str | None]:
+        """Resolve a style's (numId, ilvl), following the ``basedOn`` chain.
+
+        Word inherits numbering through the style hierarchy, and numId and
+        ilvl inherit independently: a heading style may override the level
+        (ilvl) while taking the numId from the style it is based on. Word's
+        stock ``heading 2`` does exactly this -- it carries only ``ilvl`` and
+        inherits ``numId`` from ``heading 1``. Reading a single style element
+        misses that inherited numId, leaving the heading unnumbered while its
+        siblings at other levels are numbered.
+        """
+        numId: str | None = None
+        ilvl: str | None = None
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            style_elem = getattr(style, "element", None)
             if style_elem is not None:
                 style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
                 if style_numPr is not None:
-                    numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
-                    ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
-                    numId = (
-                        numId_elem.get(self.XML_KEY) if numId_elem is not None else None
-                    )
-                    ilvl = (
-                        ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
-                    )
+                    if numId is None:
+                        numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                        if numId_elem is not None:
+                            numId = numId_elem.get(self.XML_KEY)
+                    if ilvl is None:
+                        ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                        if ilvl_elem is not None:
+                            ilvl = ilvl_elem.get(self.XML_KEY)
+            if numId is not None and ilvl is not None:
+                break
+            # A malformed basedOn chain can hop to a style type that lacks
+            # base_style; getattr keeps the walk safe.
+            style = getattr(style, "base_style", None)
+            depth += 1
 
-                    # If numId is found but ilvl is not specified, default to level 0
-                    if numId is not None and ilvl is None:
-                        ilvl = "0"
-
-                    return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
-
-        return None, None  # If the paragraph is not part of a list
+        # If numId is found but ilvl is not specified, default to level 0
+        if numId is not None and ilvl is None:
+            ilvl = "0"
+        return numId, ilvl
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
         """Find the level element from the numbering XML for a given numId and ilvl."""
@@ -1006,6 +1093,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Error finding level element: {e}")
             return None
 
+    def _get_level_num_fmt(self, numid: int, ilvl: int) -> str | None:
+        """Return the OOXML ``w:numFmt`` value for a numbering level, if present."""
+        lvl_element = self._get_level_element(numid, ilvl)
+        if lvl_element is None:
+            return None
+        namespaces = {"w": self._W_NS}
+        num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+        if num_fmt_element is None:
+            return None
+        return num_fmt_element.get(self.XML_KEY)
+
     def _get_start_value(self, numid: int, ilvl: int) -> int:
         """Read the start value from the abstractNum definition."""
         lvl_element = self._get_level_element(numid, ilvl)
@@ -1040,32 +1138,53 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _build_enum_marker(self, numid: int, ilvl: int) -> str:
         """Build enumeration marker from the lvlText template (e.g. 'Proposal %1:').
 
-        Uses lvlText when it contains a text prefix/suffix beyond simple
-        placeholders and separators.  Falls back to the default '1.2.3.'
-        pattern for plain numeric markers.
+        Uses ``lvlText`` when it contains a text prefix/suffix beyond simple
+        placeholders and separators. The same path is also taken when the
+        level's ``w:numFmt`` is letter/roman/decimalZero even if ``lvlText``
+        only has placeholders plus punctuation (e.g. ``%2)`` → ``a)``): without
+        that guard those non-decimal levels used to fall through to the
+        hierarchical decimal form (``1.a.``). Plain decimal markers still use
+        the default ``1.2.3.`` fallback.
         """
         lvl_element = self._get_level_element(numid, ilvl)
         namespaces = {"w": self._W_NS}
         lvl_text = None
+        num_fmt = None
         if lvl_element is not None:
             lt = lvl_element.find(".//w:lvlText", namespaces=namespaces)
             if lt is not None:
                 lvl_text = lt.get(self.XML_KEY)
+            nf = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+            if nf is not None:
+                num_fmt = nf.get(self.XML_KEY)
 
-        # Use lvlText as template only when it contains %N placeholders
-        # alongside non-trivial text (e.g. "Proposal %1:", "Table %1").
+        # Use lvlText as template when it contains %N placeholders alongside
+        # non-trivial text (e.g. "Proposal %1:", "Table %1"), or when numFmt
+        # is not plain decimal so the suffix in "%1)" / "(%1)" must be kept.
         # Skip when lvlText is a bare bullet symbol like "o" or "•".
         if lvl_text and re.search(r"%\d+", lvl_text):
             stripped = re.sub(r"%\d+", "", lvl_text)
             stripped = stripped.strip(" .)(:[]")
-            if stripped:
+            if stripped or num_fmt in _NON_DECIMAL_NUMBERING_FORMATS:
+                # Resolve each placeholder level's numFmt once. The current
+                # level already has ``num_fmt``; other %N levels would otherwise
+                # re-traverse numbering.xml inside re.sub via _get_level_num_fmt.
+                fmt_by_lvl: dict[int, str | None] = {}
+                for match in re.finditer(r"%(\d+)", lvl_text):
+                    lvl_idx = int(match.group(1)) - 1
+                    if lvl_idx in fmt_by_lvl:
+                        continue
+                    if lvl_idx == ilvl:
+                        fmt_by_lvl[lvl_idx] = num_fmt
+                    else:
+                        fmt_by_lvl[lvl_idx] = self._get_level_num_fmt(numid, lvl_idx)
 
-                def _replace(match):
+                def _replace(match, _fmts=fmt_by_lvl):
                     lvl_idx = int(match.group(1)) - 1
                     counter = self.list_counters.get((numid, lvl_idx))
                     if counter is None:
                         counter = self._get_start_value(numid, lvl_idx)
-                    return str(counter)
+                    return _format_enum_counter(counter, _fmts.get(lvl_idx))
 
                 return re.sub(r"%(\d+)", _replace, lvl_text)
 
@@ -1075,7 +1194,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             counter = self.list_counters.get((numid, lvl))
             if counter is None:
                 counter = self._get_start_value(numid, lvl)
-            parts.append(str(counter))
+            parts.append(
+                _format_enum_counter(counter, self._get_level_num_fmt(numid, lvl))
+            )
         return ".".join(parts) + "."
 
     def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
@@ -3022,14 +3143,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         try:
-            # Create a temporary document with just these elements
-            temp_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
-            body = temp_doc._element.body
-            for child in list(body):
-                body.remove(child)
+            # Loaded once per backend instance; del body[:] clears cheaply on every call.
+            if self._empty_docx_template is None:
+                self._empty_docx_template = self.load_msword_file(
+                    self.path_or_stream, self.document_hash
+                )
+            render_doc = self._empty_docx_template
+            body = render_doc._element.body
+            del body[:]
 
-            # Add elements to empty document
-            new_para = temp_doc.add_paragraph()
+            # Populate the now-empty body with the element(s) to render.
+            new_para = render_doc.add_paragraph()
             new_r = new_para.add_run()
 
             # Handle list of elements (e.g., multiple DrawingML elements)
@@ -3058,7 +3182,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Convert DOCX->PDF->PNG
             pil_image = get_pil_from_dml_docx(
-                temp_doc, converter=self.docx_to_pdf_converter
+                render_doc, converter=self.docx_to_pdf_converter
             )
             return pil_image
         except Exception as e:

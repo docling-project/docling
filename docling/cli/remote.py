@@ -36,8 +36,31 @@ from docling.service_client import (
     DoclingServiceClient,
     StatusWatcherKind,
 )
+from docling.utils.ocr_language import OcrLanguageResolver
 
 _log = logging.getLogger(__name__)
+
+
+def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
+    """Canonicalize --ocr-lang locally, so a malformed tag fails here and not remotely.
+
+    This command has no `--ocr-engine`, so only a request written behind the
+    `iso:` prefix can be checked: a bare value is a code of whichever engine the
+    service runs, and travels verbatim.
+    """
+    # `_split_list` returns None only when the option was not given, so an
+    # explicitly empty value survives as `[]`: "let the engine choose".
+    tags = _split_list(raw)
+    if tags is None:
+        return None
+    try:
+        return [
+            language.tag()
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(tags)
+        ]
+    except ValueError as err:
+        raise typer.BadParameter(str(err), param_hint="--ocr-lang") from err
+
 
 _REMOTE_HELP = """\
 Convert documents through a remote docling-serve service instead of locally.
@@ -191,7 +214,18 @@ def convert_remote(
     ocr_lang: Annotated[
         Optional[str],
         typer.Option(
-            help="Comma-separated list of OCR languages (engine-specific names).",
+            help=(
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a 'native' tag, which is specific to the selected OCR engine/backend, or as a"
+                " canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant')."
+                " By default the language is handled as a native tag and is passed through verbatim"
+                " to the OCR engine."
+                f" A BCP-47 tag must be prefixed with '{OcrLanguageResolver._ISO_PREFIX}'."
+                " When an empty language is provided the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " To skip OCR entirely use --no-ocr."
+            ),
         ),
     ] = None,
     enrich_code: Annotated[
@@ -309,7 +343,7 @@ def convert_remote(
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
-        "ocr_lang": _split_list(ocr_lang),
+        "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
