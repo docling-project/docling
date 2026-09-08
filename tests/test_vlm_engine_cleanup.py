@@ -49,3 +49,38 @@ def test_cleanup_handles_unavailable_module_logger(
     monkeypatch.setattr(module, "_log", None)
 
     engine.cleanup()
+
+
+@pytest.mark.parametrize(
+    ("module_name", "class_name"),
+    [
+        (
+            "docling.models.stages.vlm_convert.vlm_convert_model",
+            "VlmConvertModel",
+        ),
+        (
+            "docling.models.stages.picture_description.picture_description_vlm_engine_model",
+            "PictureDescriptionVlmEngineModel",
+        ),
+    ],
+)
+def test_model_destructor_handles_unavailable_module_logger(
+    monkeypatch, module_name, class_name
+):
+    module = importlib.import_module(module_name)
+    model_cls = getattr(module, class_name)
+
+    class FailingEngine:
+        def cleanup(self):
+            raise RuntimeError("cleanup failed")
+
+    model = object.__new__(model_cls)
+    model.engine = FailingEngine()
+    monkeypatch.setattr(module, "_log", None)
+
+    model_cls.__del__(model)
+
+    if class_name == "VlmConvertModel":
+        del model.engine
+    else:
+        model.engine = None
