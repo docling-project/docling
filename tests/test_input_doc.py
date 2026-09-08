@@ -156,6 +156,40 @@ def test_html_backend_options_set_source_uri_per_input(tmp_path):
     assert backend_options.source_uri is None
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        b"",
+        b"\x5a\x00\x08",
+        b"\x00\x00\x08\xd3\xa8\xa8\x00\x00\x00",
+        b"\x5a\x00\x07\xd3\xa8\xa8\x00\x00\x00",
+        b"\x5a\x80\x00\xd3\xa8\xa8\x00\x00\x00",
+        b"\x5a\x00\x08\x00\xa8\xa8\x00\x00\x00",
+    ],
+)
+def test_detect_afp_rejects_invalid_headers(content):
+    assert _DocumentConversionInput._detect_afp(content) is None
+
+
+def test_detect_afp_accepts_valid_modca_header():
+    content = b"\x5a\x00\x08\xd3\xa8\xa8\x00\x00\x00"
+
+    assert _DocumentConversionInput._detect_afp(content) == "application/vnd.ibm.modcap"
+
+
+def test_guess_format_sniffs_afp_from_octet_stream(tmp_path, monkeypatch):
+    content = b"\x5a\x00\x08\xd3\xa8\xa8\x00\x00\x00"
+    afp_path = tmp_path / "print-stream.bin"
+    afp_path.write_bytes(content)
+    monkeypatch.setattr(
+        "docling.datamodel.document.filetype.guess_mime",
+        lambda _: "application/octet-stream",
+    )
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(afp_path) is InputFormat.AFP
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])

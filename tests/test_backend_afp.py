@@ -7,11 +7,17 @@ The fixture contains no third-party document content and can be distributed
 under the repository license.
 """
 
+import warnings
 from io import BytesIO
 
 import pytest
 
-from docling.backend.afp_backend import AfpDocumentBackend, AfpParseError
+from docling.backend.afp_backend import (
+    AfpDocumentBackend,
+    AfpParseError,
+    _extract_ptoca_text,
+    _iter_structured_fields,
+)
 from docling.datamodel.backend_options import AfpBackendOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
@@ -27,6 +33,7 @@ BPT = b"\xd3\xa8\x9b"
 EPT = b"\xd3\xa9\x9b"
 PTX = b"\xd3\xee\x9b"
 IPD = b"\xd3\xee\xfb"
+GAD = b"\xd3\xee\xbb"
 BPS = b"\xd3\xa8\x5f"
 EPS = b"\xd3\xa9\x5f"
 
@@ -232,6 +239,160 @@ def test_malformed_structured_field_reports_offset():
 
     with pytest.raises(AfpParseError, match=r"byte 0 declares 32 bytes"):
         _backend(malformed)
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        (b"\x5a\x00\x08", "truncated structured-field introducer"),
+        (b"\x00\x00\x08\xd3\xa8\xa8\x00\x00\x00", "Expected AFP.*X'5A'"),
+        (b"\x5a\x00\x07\xd3\xa8\xa8\x00\x00\x00", "minimum is 8"),
+        (b"\x5a\x80\x00\xd3\xa8\xa8\x00\x00\x00", "maximum is 32767"),
+    ],
+)
+def test_structured_field_rejects_invalid_introducers(data: bytes, message: str):
+    with pytest.raises(AfpParseError, match=message):
+        list(_iter_structured_fields(data))
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        (b"\x5a\x00\x08\xd3\xa8\xa8\x01\x00\x00", "does not contain its length"),
+        (
+            b"\x5a\x00\x09\xd3\xa8\xa8\x01\x00\x00\x00",
+            "invalid introducer extension length 0",
+        ),
+        (
+            b"\x5a\x00\x0a\xd3\xa8\xa8\x01\x00\x00\x03\xaa",
+            "invalid introducer extension length 3",
+        ),
+        (
+            b"\x5a\x00\x09\xd3\xa8\xa8\x10\x00\x00\x00",
+            "invalid padding length 0",
+        ),
+    ],
+)
+def test_structured_field_rejects_invalid_extension_and_padding(
+    field: bytes, message: str
+):
+    with pytest.raises(AfpParseError, match=message):
+        list(_iter_structured_fields(field))
+
+
+def test_structured_field_accepts_two_byte_padding_length():
+    field = bytearray(_structured_field(PTX, b"payload" + b"\x00\x03\x00"))
+    field[6] = 0x10
+
+    parsed = list(_iter_structured_fields(bytes(field)))
+
+    assert parsed[0].data == b"payload"
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        (b"\x2b\xd3", "ends inside a control-sequence header"),
+        (b"\x2b\xd3\x01\xda", "minimum is 2"),
+        (b"\x2b\xd3\x05\xdaA", "presentation-text object ends first"),
+    ],
+)
+def test_ptoca_rejects_truncated_or_invalid_sequences(data: bytes, message: str):
+    with pytest.raises(AfpParseError, match=message):
+        _extract_ptoca_text(data, "cp500")
+
+
+def test_ptoca_extracts_chained_trn_and_filters_control_characters():
+    data = _trn("First") + _trn("\u0000Second", chained=True) + b"\x00"
+
+    assert _extract_ptoca_text(data, "cp500") == "FirstSecond"
+
+
+def test_begin_page_before_end_page_is_rejected():
+    data = _structured_field(BPG) + _structured_field(BPG)
+
+    with pytest.raises(
+        AfpParseError, match=r"Begin Page.*before the preceding page ends"
+    ):
+        _backend(data)
+
+
+def test_end_page_without_begin_page_is_rejected():
+    with pytest.raises(AfpParseError, match=r"End Page.*no matching Begin Page"):
+        _backend(_structured_field(EPG))
+
+
+def test_unclosed_page_is_rejected():
+    with pytest.raises(AfpParseError, match="page 1 has no matching End Page"):
+        _backend(_structured_field(BPG))
+
+
+def test_presentation_text_outside_page_is_ignored():
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(PTX, _trn("Outside")),
+            _structured_field(BPG),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    backend = _backend(data)
+
+    assert backend.page_count() == 1
+    assert backend.convert().texts == []
+
+
+def test_unsupported_warnings_can_be_disabled():
+    data = _structured_field(BDT) + _page(_trn("Text"), include_image=True)
+    options = AfpBackendOptions(warn_on_unsupported_content=False)
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        doc = _backend(data, options).convert()
+
+    assert recorded == []
+    assert [item.text for item in doc.texts] == ["Text"]
+
+
+def test_unsupported_warnings_are_aggregated_by_content_type():
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(BPG),
+            _structured_field(IPD, b"one"),
+            _structured_field(IPD, b"two"),
+            _structured_field(GAD, b"graphics"),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    with pytest.warns(UserWarning) as recorded:
+        _backend(data).convert()
+
+    messages = [str(item.message) for item in recorded]
+    assert len(messages) == 2
+    assert any("Skipped 2 AFP image data" in message for message in messages)
+    assert any("Skipped 1 AFP graphics data" in message for message in messages)
+
+
+def test_afp_backend_reports_capabilities_and_page_count(synthetic_afp: bytes):
+    backend = _backend(synthetic_afp)
+
+    assert backend.supports_pagination() is True
+    assert backend.supported_formats() == {InputFormat.AFP}
+    assert backend.page_count() == 2
+
+
+def test_convert_rejects_content_that_is_no_longer_valid(synthetic_afp: bytes):
+    backend = _backend(synthetic_afp)
+    backend.content = b""
+
+    assert backend.is_valid() is False
+    with pytest.raises(DocumentLoadError, match="does not start with a valid MO:DCA"):
+        backend.convert()
 
 
 def test_unknown_afp_codec_is_reported(synthetic_afp: bytes):
