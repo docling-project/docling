@@ -11,6 +11,15 @@ from typing import Any
 
 from PIL.Image import Image
 
+# Re-exported: the VAREX wrapper now lives with the model spec in datamodel.
+from docling.datamodel.extraction_options import _build_extraction_prompt
+
+__all__ = [
+    "_build_extraction_prompt",
+    "build_granite_vision_inputs",
+    "build_nuextract_inputs",
+]
+
 
 def build_nuextract_inputs(
     processor: Any,
@@ -101,16 +110,6 @@ def build_granite_vision_inputs(
         do_pad=True,
     )
     return {k: v.to(device) for k, v in processor_inputs.items()}
-
-
-def _build_extraction_prompt(template: str) -> str:
-    return (
-        "Extract structured data from this document image.\n"
-        "Return a JSON object matching this schema:\n\n"
-        f"{template}\n\n"
-        "Return null for fields you cannot find in the document.\n"
-        "Return ONLY valid JSON, no other text."
-    )
 
 
 def _process_all_vision_info(messages: list, examples: list | None = None) -> Any:

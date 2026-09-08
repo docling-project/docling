@@ -22,37 +22,40 @@ def test_granite_vision_spec_has_correct_repo_id() -> None:
     assert GRANITE_VISION_4_1_TRANSFORMERS.trust_remote_code is True
 
 
-def test_default_prompt_style_is_nuextract() -> None:
-    """Verify default extraction_prompt_style is NUEXTRACT."""
+def test_default_spec_uses_nuextract_style() -> None:
+    """The default preset carries NUEXTRACT style."""
     options = VlmExtractionPipelineOptions()
-    assert options.extraction_prompt_style == ExtractionPromptStyle.NUEXTRACT
-
-
-def test_granite_vision_prompt_style_option() -> None:
-    """Verify Granite Vision prompt style can be set in options."""
-    options = VlmExtractionPipelineOptions(
-        vlm_options=GRANITE_VISION_4_1_TRANSFORMERS,
-        extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    assert (
+        options.vlm_options.extraction_prompt_style == ExtractionPromptStyle.NUEXTRACT
     )
-    assert options.extraction_prompt_style == ExtractionPromptStyle.GRANITE_VISION
+
+
+def test_granite_vision_preset_carries_varex_style() -> None:
+    """The Granite preset welds VAREX style to the model — no separate setting."""
+    options = VlmExtractionPipelineOptions(vlm_options=GRANITE_VISION_4_1_TRANSFORMERS)
+    assert (
+        options.vlm_options.extraction_prompt_style
+        == ExtractionPromptStyle.GRANITE_VISION
+    )
     assert options.vlm_options.repo_id == "ibm-granite/granite-vision-4.1-4b"
 
 
 @patch(
     "docling.pipeline.extraction_vlm_pipeline.TransformersExtractionModel",
 )
-def test_pipeline_passes_prompt_style_to_model(mock_model_cls: object) -> None:
-    """Verify pipeline passes extraction_prompt_style to the model."""
+def test_pipeline_hands_style_carrying_spec_to_model(mock_model_cls: object) -> None:
+    """The pipeline hands the model the spec, which carries the style itself."""
     from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
-    options = VlmExtractionPipelineOptions(
-        vlm_options=GRANITE_VISION_4_1_TRANSFORMERS,
-        extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
-    )
+    options = VlmExtractionPipelineOptions(vlm_options=GRANITE_VISION_4_1_TRANSFORMERS)
     _ = ExtractionVlmPipeline(pipeline_options=options)
     mock_model_cls.assert_called_once()  # type: ignore[union-attr]
     call_kwargs = mock_model_cls.call_args[1]  # type: ignore[union-attr]
-    assert call_kwargs["prompt_style"] == ExtractionPromptStyle.GRANITE_VISION
+    assert "prompt_style" not in call_kwargs
+    assert (
+        call_kwargs["vlm_options"].extraction_prompt_style
+        == ExtractionPromptStyle.GRANITE_VISION
+    )
 
 
 def test_build_extraction_prompt() -> None:

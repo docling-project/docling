@@ -9,6 +9,11 @@ from pydantic import (
 )
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.extraction_options import (
+    ApiExtractionVlmOptions,
+    ExtractionPromptStyle,
+    InlineExtractionVlmOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -531,7 +536,8 @@ DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
 )
 
 # NuExtract
-NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
+NU_EXTRACT_2B_TRANSFORMERS = InlineExtractionVlmOptions(
+    extraction_prompt_style=ExtractionPromptStyle.NUEXTRACT,
     repo_id="numind/NuExtract-2.0-2B",
     revision="fe5b2f0b63b81150721435a3ca1129a75c59c74e",  # 489efed leads to MPS issues
     prompt="",  # This won't be used, template is passed separately
@@ -550,7 +556,8 @@ NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
 )
 
 # Granite Vision 4.1
-GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
+GRANITE_VISION_4_1_TRANSFORMERS = InlineExtractionVlmOptions(
+    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
     repo_id="ibm-granite/granite-vision-4.1-4b",
     revision="dd48e97503de471803850df70843cf9eb5da8712",
     prompt="",  # Template is passed separately via extract()
@@ -570,9 +577,10 @@ GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
 )
 
 # Granite Vision 4.1 served over an OpenAI-conformant endpoint (e.g. vLLM).
-# Use with ExtractionPromptStyle.GRANITE_VISION; the extraction pipeline builds
-# the VAREX prompt from the template, so `prompt` is left empty here.
-GRANITE_VISION_4_1_API = ApiVlmOptions(
+# The spec carries GRANITE_VISION/VAREX style, so it builds the VAREX prompt from
+# the template itself and `prompt` is left empty here.
+GRANITE_VISION_4_1_API = ApiExtractionVlmOptions(
+    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
     url=AnyUrl("http://localhost:8000/v1/chat/completions"),
     params={"model": "ibm-granite/granite-vision-4.1-4b"},
     prompt="",

@@ -16,8 +16,10 @@ from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationC
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
-from docling.datamodel.extraction_options import ExtractionPromptStyle
-from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+from docling.datamodel.extraction_options import (
+    ExtractionPromptStyle,
+    InlineExtractionVlmOptions,
+)
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
     build_granite_vision_inputs,
@@ -38,12 +40,11 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        vlm_options: InlineVlmOptions,
-        prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT,
+        vlm_options: InlineExtractionVlmOptions,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
-        self.prompt_style = prompt_style
+        self.prompt_style = vlm_options.extraction_prompt_style
 
         if self.enabled:
             self.device = decide_device(
@@ -51,7 +52,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 supported_devices=vlm_options.supported_devices,
             )
             _log.debug(
-                f"Available device for extraction VLM ({prompt_style.value}): "
+                f"Available device for extraction VLM ({self.prompt_style.value}): "
                 f"{self.device}"
             )
 
@@ -100,16 +101,20 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             if hasattr(self.vlm_model, "merge_lora_adapters"):
                 cast(Any, self.vlm_model).merge_lora_adapters()
 
-            if prompt_style == ExtractionPromptStyle.NUEXTRACT and sys.version_info < (
-                3,
-                14,
+            if (
+                self.prompt_style == ExtractionPromptStyle.NUEXTRACT
+                and sys.version_info
+                < (
+                    3,
+                    14,
+                )
             ):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
             else:
                 self.vlm_model.eval()
 
             self.generation_config: Optional[GenerationConfig] = None
-            if prompt_style == ExtractionPromptStyle.NUEXTRACT:
+            if self.prompt_style == ExtractionPromptStyle.NUEXTRACT:
                 self.processor.tokenizer.padding_side = "left"
                 self.generation_config = GenerationConfig.from_pretrained(
                     artifacts_path

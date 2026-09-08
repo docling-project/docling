@@ -35,7 +35,10 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
-from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.extraction_options import (
+    ApiExtractionVlmOptions,
+    InlineExtractionVlmOptions,
+)
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -1876,31 +1879,24 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
 
-    Supported models:
-        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) with ``ExtractionPromptStyle.NUEXTRACT``
-        - ``GRANITE_VISION_4_1_TRANSFORMERS`` with ``ExtractionPromptStyle.GRANITE_VISION``
+    The prompt style travels with the spec (``extraction_prompt_style`` on
+    ``InlineExtractionVlmOptions`` / ``ApiExtractionVlmOptions``), so a preset
+    pairs the model with the only style it can honor:
+        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) — NuExtract style
+        - ``GRANITE_VISION_4_1_TRANSFORMERS`` / ``GRANITE_VISION_4_1_API`` — VAREX style
     """
 
     vlm_options: Annotated[
-        InlineVlmOptions | ApiVlmOptions,
+        InlineExtractionVlmOptions | ApiExtractionVlmOptions,
         Field(
             description=(
                 "Vision-Language Model (VLM) configuration for structured information extraction. Either a local "
-                "`InlineVlmOptions` (HuggingFace transformers) or a remote `ApiVlmOptions` pointing at an "
-                "OpenAI-conformant endpoint (requires `enable_remote_services=True`)."
+                "`InlineExtractionVlmOptions` (HuggingFace transformers) or a remote `ApiExtractionVlmOptions` "
+                "pointing at an OpenAI-conformant endpoint (requires `enable_remote_services=True`). Each spec "
+                "carries its own `extraction_prompt_style`."
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
-
-    extraction_prompt_style: Annotated[
-        "ExtractionPromptStyle",
-        Field(
-            description=(
-                "Prompt style to use for extraction. Determines how the template "
-                "is formatted and passed to the model."
-            )
-        ),
-    ] = ExtractionPromptStyle.NUEXTRACT
 
 
 class HeadingHierarchyOptions(BaseModel):

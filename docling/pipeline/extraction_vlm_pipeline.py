@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import inspect
 import json
 import logging
 import time
@@ -9,7 +8,6 @@ from collections.abc import Generator
 from typing import Optional
 
 from PIL.Image import Image
-from pydantic import BaseModel
 
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.datamodel.base_models import (
@@ -25,15 +23,13 @@ from docling.datamodel.extraction import (
     ExtractionResult,
     ExtractionTemplateType,
 )
-from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.extraction_options import ApiExtractionVlmOptions
 from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmExtractionPipelineOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BaseVlmModel
-from docling.models.extraction.prompt_utils import _build_extraction_prompt
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
@@ -51,10 +47,11 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         vlm_options = pipeline_options.vlm_options
         self.vlm_model: BaseVlmModel
 
-        if isinstance(vlm_options, ApiVlmOptions):
-            # Remote OpenAI-conformant endpoint. Prompt construction happens in
-            # `_build_prompt`, so this shares the same code path as the local
-            # engines and only differs in how the image + prompt are executed.
+        if isinstance(vlm_options, ApiExtractionVlmOptions):
+            # Remote OpenAI-conformant endpoint. Prompt construction happens on
+            # the spec (`build_extraction_prompt`), so this shares the same code
+            # path as the local engines and only differs in how the image +
+            # prompt are executed.
             self.vlm_model = ApiVlmModel(
                 enabled=True,
                 enable_remote_services=pipeline_options.enable_remote_services,
@@ -66,7 +63,6 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
                 vlm_options=vlm_options,
-                prompt_style=pipeline_options.extraction_prompt_style,
             )
 
     def _extract_data(
@@ -222,48 +218,16 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 page_iterator.close()
 
     def _build_prompt(self, template: Optional[ExtractionTemplateType]) -> str:
-        """Turn the template into the final prompt text for the chosen style.
+        """Turn the template into the final prompt text.
 
-        Serialization is engine-independent: any of the four template forms
-        becomes one schema string via ``_serialize_template``. Only the
-        *embedding* differs by prompt style — NuExtract feeds the string through
-        the model's own ``template=`` chat kwarg (passthrough here), while
-        GRANITE_VISION/VAREX wraps it in a plain-text instruction that any
-        transformers or OpenAI-conformant API engine consumes.
+        Both serialization and embedding live on the model spec, keyed on its
+        ``extraction_prompt_style``, so every engine shares one path and the
+        pipeline never has to know which style is in play.
         """
         if template is None:
             return "Extract all text and structured information from this document. Return as JSON."
 
-        text = self._serialize_template(template)
-        if (
-            self.pipeline_options.extraction_prompt_style
-            == ExtractionPromptStyle.NUEXTRACT
-        ):
-            return text
-
-        return _build_extraction_prompt(text)
-
-    def _serialize_template(self, template: ExtractionTemplateType) -> str:
-        """Serialize any of the four template forms to a schema string."""
-        if isinstance(template, str):
-            return template
-        elif isinstance(template, dict):
-            return json.dumps(template, indent=2)
-        elif isinstance(template, BaseModel):
-            return template.model_dump_json(indent=2)
-        elif inspect.isclass(template) and issubclass(template, BaseModel):
-            from polyfactory.factories.pydantic_factory import ModelFactory
-
-            class ExtractionTemplateFactory(ModelFactory[template]):  # type: ignore
-                __use_examples__ = True  # prefer Field(examples=...) when present
-                __use_defaults__ = True  # use field defaults instead of random values
-                __check_model__ = (
-                    True  # setting the value to avoid deprecation warnings
-                )
-
-            return ExtractionTemplateFactory.build().model_dump_json(indent=2)  # type: ignore
-        else:
-            raise ValueError(f"Unsupported template type: {type(template)}")
+        return self.pipeline_options.vlm_options.build_extraction_prompt(template)
 
     @classmethod
     def get_default_options(cls) -> PipelineOptions:

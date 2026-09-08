@@ -60,28 +60,30 @@ gives you validation on the way out.
 ## Choosing the engine
 
 Extraction runs a vision model, configured through
-`VlmExtractionPipelineOptions.vlm_options`. Two prompt styles exist, set with
-`extraction_prompt_style`:
+`VlmExtractionPipelineOptions.vlm_options`. The prompt style travels **with the
+spec** (`extraction_prompt_style` on the options object), so picking a preset
+picks its style — you never set them separately:
 
-- **NuExtract** (default, `ExtractionPromptStyle.NUEXTRACT`): local
+- **NuExtract** (default, `NU_EXTRACT_2B_TRANSFORMERS`): local
   `numind/NuExtract-2.0-2B`. The template is consumed via the model's own chat
   template; this style is local-only.
-- **Granite / VAREX** (`ExtractionPromptStyle.GRANITE_VISION`): the same
-  serialized template, wrapped in a plain-text instruction prompt. Works with
-  local Granite Vision **and** any OpenAI-conformant endpoint serving it.
+- **Granite / VAREX** (`GRANITE_VISION_4_1_TRANSFORMERS`,
+  `GRANITE_VISION_4_1_API`): the serialized JSON Schema wrapped in a plain-text
+  instruction prompt. Works with local Granite Vision **and** any
+  OpenAI-conformant endpoint serving it.
 
-Point extraction at a remote endpoint by passing `ApiVlmOptions` and
-`enable_remote_services=True` (mirrors the VLM convert pipeline):
+Point extraction at a remote endpoint by passing an `ApiExtractionVlmOptions`
+preset and `enable_remote_services=True` (mirrors the VLM convert pipeline):
 
 ```python
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_model_specs import GRANITE_VISION_4_1_API
 from docling.document_extractor import DocumentExtractor, ExtractionFormatOption
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
+# The preset already carries GRANITE_VISION/VAREX style; just point it at your endpoint.
 api_options = GRANITE_VISION_4_1_API.model_copy(update={
     "url": "https://my-endpoint/v1/chat/completions",
     "headers": {"Authorization": "Bearer <TOKEN>"},
@@ -90,7 +92,6 @@ api_options = GRANITE_VISION_4_1_API.model_copy(update={
 
 pipeline_options = VlmExtractionPipelineOptions(
     vlm_options=api_options,
-    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
     enable_remote_services=True,
 )
 extractor = DocumentExtractor(
