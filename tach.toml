@@ -25,10 +25,15 @@ layers = [
 [[modules]]
 path = "docling.exceptions"
 layer = "foundation"
-depends_on = []
+depends_on = ["docling.utils.ocr_language"]
 
 [[modules]]
 path = "docling.chunking"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.utils.ocr_language"
 layer = "foundation"
 depends_on = []
 
@@ -91,6 +96,7 @@ depends_on = [
   "docling.models.inference_engines.vlm",
   "docling.models.utils",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -190,6 +196,8 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
+  "docling.exceptions",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -298,9 +306,11 @@ path = "docling.models.stages.ocr"
 layer = "core"
 depends_on = [
   "docling.datamodel",
+  "docling.exceptions",
   "docling.models",
   "docling.models.inference_engines.common",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -517,6 +527,16 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.pipeline.native_pdf_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.pipeline.threaded_standard_pdf_pipeline"
 layer = "pipeline"
 depends_on = ["docling.pipeline.standard_pdf_pipeline"]
@@ -542,6 +562,7 @@ depends_on = [
   "docling.pipeline",
   "docling.pipeline.asr_pipeline",
   "docling.pipeline.base_pipeline",
+  "docling.pipeline.native_pdf_pipeline",
   "docling.pipeline.simple_pipeline",
   "docling.pipeline.standard_pdf_pipeline",
   "docling.utils",

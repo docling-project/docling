@@ -81,7 +81,10 @@ from docling.models.stages.reading_order.readingorder_model import (
     ReadingOrderModel,
     ReadingOrderOptions,
 )
-from docling.pipeline.base_pipeline import ConvertPipeline
+from docling.pipeline.base_pipeline import (
+    ConvertPipeline,
+    get_expected_page_nos,
+)
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -785,13 +788,7 @@ class StandardPdfPipeline(ConvertPipeline):
 
     # --------------------------------------------------------------------- build
     def _get_expected_page_nos(self, conv_res: ConversionResult) -> list[int]:
-        start_page, end_page = conv_res.input.limits.page_range
-        return list(
-            range(
-                max(1, start_page),
-                min(conv_res.input.page_count, end_page) + 1,
-            )
-        )
+        return get_expected_page_nos(conv_res)
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.

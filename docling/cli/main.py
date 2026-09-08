@@ -11,10 +11,11 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Literal, cast
+from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
+from docling.utils.ocr_language import OcrLanguageResolver
 
 # Check for CLI dependencies
 try:
@@ -44,7 +45,7 @@ from docling_core.transforms.serializer.latex import LaTeXDocSerializer
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import SecretStr, TypeAdapter
+from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
 
 from docling.cli.export_utils import (
@@ -121,6 +122,7 @@ from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
+    NativePdfPipelineOptions,
     OcrAutoOptions,
     OcrMode,
     OcrOptions,
@@ -157,6 +159,17 @@ except ImportError:
 
 if TYPE_CHECKING:
     from docling.models.factories.base_factory import BaseFactory
+
+
+def _first_error_message(err: ValidationError) -> str:
+    """The most useful line of a pydantic error, for a typer.BadParameter."""
+    errors = err.errors()
+    if not errors:
+        return str(err)
+    message = errors[0].get("msg", "")
+    # Pydantic prefixes messages raised from a validator with "Value error, ".
+    return message.removeprefix("Value error, ") or str(err)
+
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -911,7 +924,22 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             ...,
-            help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
+            help=(
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a 'native' tag, which is specific to the selected OCR engine/backend, or as a"
+                " canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant')."
+                " By default the language is handled as a native tag and is passed through verbatim"
+                " to the OCR engine. For example '--ocr-engine rapidocr --ocr-lang ch' is PP-OCR's"
+                " Simplified Chinese, and '--ocr-engine tesseract --ocr-lang deu' is the deu.traineddata."
+                f" A BCP-47 tag must be prefixed with '{OcrLanguageResolver._ISO_PREFIX}', e.g."
+                f" '--ocr-engine rapidocr --ocr-lang {OcrLanguageResolver._ISO_PREFIX}zh-Hans'."
+                " When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " In case of the Kserve engine, there is zero language validation. The entire input"
+                " is pass through verbatim to the remote OCR engine."
+                " To skip OCR entirely use --no-ocr."
+            ),
         ),
     ] = None,
     psm: Annotated[
@@ -1060,7 +1088,19 @@ def convert(  # noqa: C901
             help="The timeout for processing each document, in seconds.",
         ),
     ] = None,
-    num_threads: Annotated[int, typer.Option(..., help="Number of threads")] = 4,
+    num_threads: Annotated[
+        int, typer.Option(..., help="Number of threads for model inference")
+    ] = 4,
+    parser_threads: Annotated[
+        int | None,
+        typer.Option(
+            ...,
+            help=(
+                "Number of PDF parser threads used by `--pipeline native`. "
+                "Defaults to all but one of the machine's CPU threads."
+            ),
+        ),
+    ] = None,
     release_native_memory_every_n_pages: Annotated[
         int,
         typer.Option(
@@ -1123,6 +1163,7 @@ def convert(  # noqa: C901
         IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
+        NativePdfFormatOption,
         OdpFormatOption,
         OdsFormatOption,
         OdtFormatOption,
@@ -1166,6 +1207,18 @@ def convert(  # noqa: C901
             # (e.g. AI agents) that need fully silent output.
             logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
             logging.getLogger("docling.document_converter").setLevel(logging.INFO)
+            # Model download, load and inference are the other long-running steps
+            # with no output of their own: without these a multi-gigabyte fetch or
+            # a slow first inference looks like the CLI has hung.
+            logging.getLogger("docling.models.utils.hf_model_download").setLevel(
+                logging.INFO
+            )
+            logging.getLogger("docling.models.inference_engines.vlm").setLevel(
+                logging.INFO
+            )
+            logging.getLogger("docling.models.stages.vlm_convert").setLevel(
+                logging.INFO
+            )
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:
@@ -1177,7 +1230,19 @@ def convert(  # noqa: C901
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
 
+    requested_from_formats = from_formats
     from_formats = _expand_from_formats(from_formats)
+
+    if pipeline == ProcessingPipeline.NATIVE:
+        # The native pipeline reads the native content of a PDF; it has nothing to
+        # offer for the other input formats, so it never silently handles them.
+        if requested_from_formats is None:
+            from_formats = [InputFormat.PDF]
+        elif set(from_formats) != {InputFormat.PDF}:
+            err_console.print(
+                "[red]Error: --pipeline native is only available for --from pdf.[/red]"
+            )
+            raise typer.Abort()
 
     parsed_headers: dict[str, str] | None = None
     if headers is not None:
@@ -1284,14 +1349,21 @@ def convert(  # noqa: C901
             resolved_ocr_mode = OcrMode.FULL_PAGE
         else:
             resolved_ocr_mode = ocr_mode
-        ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
-            kind=ocr_engine,
-            mode=resolved_ocr_mode,
-        )
-
+        ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
         ocr_lang_list = _split_list(ocr_lang)
+        # `_split_list` returns None only when the option was not given, so an
+        # explicitly empty value reaches the engine as `lang=[]`: "your default".
         if ocr_lang_list is not None:
-            ocr_options.lang = ocr_lang_list
+            ocr_kwargs["lang"] = ocr_lang_list
+        try:
+            ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
+                kind=ocr_engine,
+                **ocr_kwargs,
+            )
+        except ValidationError as err:
+            raise typer.BadParameter(
+                _first_error_message(err), param_hint="--ocr-lang"
+            ) from err
         if psm is not None and isinstance(
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
@@ -1446,6 +1518,55 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option,
                     backend_options=LatexBackendOptions(),
                 ),
+            }
+
+        elif pipeline == ProcessingPipeline.NATIVE:
+            normalized_pdf_backend = normalize_pdf_backend(pdf_backend)
+            if normalized_pdf_backend not in (
+                PdfBackend.DOCLING_PARSE,
+                PdfBackend.THREADED_DOCLING_PARSE,
+            ):
+                err_console.print(
+                    f"[red]Error: --pipeline native requires a docling-parse PDF backend, "
+                    f"got '{normalized_pdf_backend.value}'.[/red]"
+                )
+                raise typer.Abort()
+
+            native_pipeline_options = NativePdfPipelineOptions(
+                allow_external_plugins=allow_external_plugins,
+                enable_remote_services=enable_remote_services,
+                accelerator_options=accelerator_options,
+                do_picture_description=enrich_picture_description,
+                do_picture_classification=enrich_picture_classes,
+                do_chart_extraction=enrich_chart_extraction,
+                document_timeout=document_timeout,
+            )
+            if parser_threads is not None:
+                native_pipeline_options.parser_threads = parser_threads
+            # Rasterizing and encoding a page image costs more than parsing the
+            # page, so only pay for it when an output actually carries images.
+            if _should_generate_export_images(image_export_mode, to_formats):
+                native_pipeline_options.images_scale = 2
+            else:
+                native_pipeline_options.generate_page_images = False
+            pipeline_options = native_pipeline_options
+
+            format_options = {
+                InputFormat.PDF: NativePdfFormatOption(
+                    pipeline_options=native_pipeline_options,
+                    backend_options=ThreadedDoclingParseBackendOptions(
+                        password=pdf_password,
+                        parser_threads=native_pipeline_options.parser_threads,
+                        release_native_memory_every_n_pages=(
+                            release_native_memory_every_n_pages
+                        ),
+                        include_bitmap_images=(
+                            native_pipeline_options.generate_picture_images
+                        ),
+                        render_pages=native_pipeline_options.generate_page_images,
+                        render_scale=native_pipeline_options.images_scale,
+                    ),
+                )
             }
 
         elif pipeline == ProcessingPipeline.VLM:

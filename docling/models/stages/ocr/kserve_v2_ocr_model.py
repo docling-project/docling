@@ -61,6 +61,7 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path: Path to model artifacts (not used for remote inference).
             options: KServe v2 OCR configuration options.
             accelerator_options: Accelerator configuration (not used for remote inference).
+            default_language: Language sent when `options.lang` is empty.
         """
         super().__init__(
             enabled=enabled,
@@ -73,6 +74,15 @@ class KserveV2OcrModel(BaseOcrModel):
 
         if self.enabled:
             self._initialize_client()
+
+            # Keep only the first language and warn
+            if len(options.lang) > 1:
+                _log.warning(
+                    "KServe v2 OCR sends one language at a time. Using %r and "
+                    "ignoring %s; the order of `lang` is the order of preference.",
+                    options.lang[0],
+                    options.lang[1:],
+                )
 
             # Prepare the lang_input during the initialization as it stays the same for all requests
             self._lang = options.lang[0] if len(options.lang) > 0 else default_language

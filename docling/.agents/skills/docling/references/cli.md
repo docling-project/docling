@@ -34,17 +34,19 @@ XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 
 ## Picking a pipeline (PDF / images)
 
-Docling has two pipeline families for PDFs and images. Choose with `--pipeline`.
+Docling has three pipeline families for PDFs and images. Choose with `--pipeline`.
 
 | Pipeline | Flag | Best for | Tradeoff |
 |---|---|---|---|
 | **Standard** (default) | `--pipeline standard` | Born-digital PDFs, speed | CPU-only OK; OCR handles scanned pages |
 | **VLM** | `--pipeline vlm` | Complex layout, handwriting, formulas, figures with text | Needs GPU (or Apple MPS); slower |
+| **Native** | `--pipeline native --from pdf` | Dumping the text and images a born-digital PDF already contains, as fast as possible | No models at all: no reading order, headings or tables; PDF input only |
 
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
+docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
 Decision guide:
@@ -57,6 +59,7 @@ Decision guide:
 | Handwriting or formulas | `--pipeline vlm` (standard OCR won't handle these) |
 | Air-gapped / no GPU | Standard |
 | Speed-critical, accuracy secondary | Standard with `--no-ocr` and/or `--no-tables` |
+| Only the raw text/images of a born-digital PDF, structure not needed | `--pipeline native --from pdf` |
 
 ## OCR (scanned PDFs and images)
 
@@ -69,7 +72,8 @@ docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesserac
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
-docling scan.pdf --ocr-lang en --ocr-lang de --output /tmp/   # restrict languages
+docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
+docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
 ```
 
 OCR engines are optional dependencies — see

@@ -202,6 +202,12 @@
         },
         {
           "$ref": "#/texts/64"
+        },
+        {
+          "$ref": "#/texts/65"
+        },
+        {
+          "$ref": "#/texts/66"
         }
       ],
       "content_layer": "body",
@@ -211,29 +217,18 @@
     {
       "self_ref": "#/groups/7",
       "parent": {
-        "$ref": "#/texts/65"
+        "$ref": "#/texts/67"
       },
       "children": [
-        {
-          "$ref": "#/texts/66"
-        },
-        {
-          "$ref": "#/texts/67"
-        },
         {
           "$ref": "#/texts/68"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/8",
-      "parent": {
-        "$ref": "#/texts/70"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/69"
+        },
+        {
+          "$ref": "#/texts/70"
+        },
         {
           "$ref": "#/texts/71"
         },
@@ -242,18 +237,10 @@
         },
         {
           "$ref": "#/texts/73"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
-        "$ref": "#/texts/74"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/74"
+        },
         {
           "$ref": "#/texts/75"
         },
@@ -274,6 +261,79 @@
         },
         {
           "$ref": "#/texts/81"
+        },
+        {
+          "$ref": "#/texts/82"
+        },
+        {
+          "$ref": "#/texts/83"
+        },
+        {
+          "$ref": "#/texts/84"
+        },
+        {
+          "$ref": "#/texts/85"
+        },
+        {
+          "$ref": "#/texts/86"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/texts/67"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/87"
+        },
+        {
+          "$ref": "#/texts/88"
+        },
+        {
+          "$ref": "#/texts/89"
+        },
+        {
+          "$ref": "#/texts/90"
+        },
+        {
+          "$ref": "#/texts/91"
+        },
+        {
+          "$ref": "#/texts/92"
+        },
+        {
+          "$ref": "#/texts/93"
+        },
+        {
+          "$ref": "#/texts/94"
+        },
+        {
+          "$ref": "#/texts/95"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/texts/96"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/97"
+        },
+        {
+          "$ref": "#/texts/98"
+        },
+        {
+          "$ref": "#/texts/99"
         }
       ],
       "content_layer": "body",
@@ -283,214 +343,57 @@
     {
       "self_ref": "#/groups/10",
       "parent": {
-        "$ref": "#/texts/84"
+        "$ref": "#/texts/100"
       },
       "children": [
         {
-          "$ref": "#/texts/85"
+          "$ref": "#/texts/101"
         },
         {
-          "$ref": "#/texts/86"
+          "$ref": "#/texts/102"
         },
-        {
-          "$ref": "#/texts/87"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/11",
-      "parent": {
-        "$ref": "#/texts/88"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/89"
-        },
-        {
-          "$ref": "#/texts/90"
-        },
-        {
-          "$ref": "#/texts/91"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/texts/92"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/94"
-        },
-        {
-          "$ref": "#/texts/95"
-        },
-        {
-          "$ref": "#/texts/96"
-        },
-        {
-          "$ref": "#/texts/97"
-        },
-        {
-          "$ref": "#/texts/98"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/13",
-      "parent": {
-        "$ref": "#/texts/102"
-      },
-      "children": [
         {
           "$ref": "#/texts/103"
-        }
-      ],
-      "content_layer": "body",
-      "name": "footnotes",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/14",
-      "parent": {
-        "$ref": "#/texts/103"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/104"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/15",
-      "parent": {
-        "$ref": "#/texts/105"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/105"
+        },
         {
           "$ref": "#/texts/106"
+        },
+        {
+          "$ref": "#/texts/107"
         },
         {
           "$ref": "#/texts/108"
         },
         {
+          "$ref": "#/texts/109"
+        },
+        {
           "$ref": "#/texts/110"
+        },
+        {
+          "$ref": "#/texts/111"
         },
         {
           "$ref": "#/texts/112"
         },
         {
+          "$ref": "#/texts/113"
+        },
+        {
           "$ref": "#/texts/114"
+        },
+        {
+          "$ref": "#/texts/115"
         },
         {
           "$ref": "#/texts/116"
         },
-        {
-          "$ref": "#/texts/118"
-        },
-        {
-          "$ref": "#/texts/120"
-        },
-        {
-          "$ref": "#/texts/122"
-        },
-        {
-          "$ref": "#/texts/124"
-        }
-      ],
-      "content_layer": "body",
-      "name": "footnotes",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/texts/106"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/107"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/texts/108"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/109"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/texts/110"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/111"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/19",
-      "parent": {
-        "$ref": "#/texts/112"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/113"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/20",
-      "parent": {
-        "$ref": "#/texts/114"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/115"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/21",
-      "parent": {
-        "$ref": "#/texts/116"
-      },
-      "children": [
         {
           "$ref": "#/texts/117"
         }
@@ -500,39 +403,17 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/22",
-      "parent": {
-        "$ref": "#/texts/118"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/119"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/23",
+      "self_ref": "#/groups/11",
       "parent": {
         "$ref": "#/texts/120"
       },
       "children": [
         {
           "$ref": "#/texts/121"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/24",
-      "parent": {
-        "$ref": "#/texts/122"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/122"
+        },
         {
           "$ref": "#/texts/123"
         }
@@ -542,13 +423,240 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/25",
+      "self_ref": "#/groups/12",
       "parent": {
         "$ref": "#/texts/124"
       },
       "children": [
         {
           "$ref": "#/texts/125"
+        },
+        {
+          "$ref": "#/texts/126"
+        },
+        {
+          "$ref": "#/texts/127"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/13",
+      "parent": {
+        "$ref": "#/texts/128"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/130"
+        },
+        {
+          "$ref": "#/texts/131"
+        },
+        {
+          "$ref": "#/texts/132"
+        },
+        {
+          "$ref": "#/texts/133"
+        },
+        {
+          "$ref": "#/texts/134"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/texts/138"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/139"
+        }
+      ],
+      "content_layer": "body",
+      "name": "footnotes",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/15",
+      "parent": {
+        "$ref": "#/texts/139"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/140"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/texts/141"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/142"
+        },
+        {
+          "$ref": "#/texts/144"
+        },
+        {
+          "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/148"
+        },
+        {
+          "$ref": "#/texts/150"
+        },
+        {
+          "$ref": "#/texts/152"
+        },
+        {
+          "$ref": "#/texts/154"
+        },
+        {
+          "$ref": "#/texts/156"
+        },
+        {
+          "$ref": "#/texts/158"
+        },
+        {
+          "$ref": "#/texts/160"
+        }
+      ],
+      "content_layer": "body",
+      "name": "footnotes",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/17",
+      "parent": {
+        "$ref": "#/texts/142"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/143"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/texts/144"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/145"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/19",
+      "parent": {
+        "$ref": "#/texts/146"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/147"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/20",
+      "parent": {
+        "$ref": "#/texts/148"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/149"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/21",
+      "parent": {
+        "$ref": "#/texts/150"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/151"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/22",
+      "parent": {
+        "$ref": "#/texts/152"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/153"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/23",
+      "parent": {
+        "$ref": "#/texts/154"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/155"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/24",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/157"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/25",
+      "parent": {
+        "$ref": "#/texts/158"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/159"
         }
       ],
       "content_layer": "body",
@@ -558,25 +666,11 @@
     {
       "self_ref": "#/groups/26",
       "parent": {
-        "$ref": "#/texts/126"
+        "$ref": "#/texts/160"
       },
       "children": [
         {
-          "$ref": "#/texts/127"
-        }
-      ],
-      "content_layer": "body",
-      "name": "footnotes",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/27",
-      "parent": {
-        "$ref": "#/texts/127"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/128"
+          "$ref": "#/texts/161"
         }
       ],
       "content_layer": "body",
@@ -584,119 +678,39 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/28",
+      "self_ref": "#/groups/27",
       "parent": {
-        "$ref": "#/texts/140"
+        "$ref": "#/texts/162"
       },
       "children": [
         {
-          "$ref": "#/texts/141"
-        },
-        {
-          "$ref": "#/texts/142"
-        },
-        {
-          "$ref": "#/texts/143"
-        },
-        {
-          "$ref": "#/texts/144"
-        },
-        {
-          "$ref": "#/texts/145"
-        },
-        {
-          "$ref": "#/texts/146"
-        },
-        {
-          "$ref": "#/texts/147"
-        },
-        {
-          "$ref": "#/texts/148"
-        },
-        {
-          "$ref": "#/texts/149"
-        },
-        {
-          "$ref": "#/texts/150"
-        },
-        {
-          "$ref": "#/texts/151"
-        },
-        {
-          "$ref": "#/texts/152"
-        },
-        {
-          "$ref": "#/texts/153"
-        },
-        {
-          "$ref": "#/texts/154"
-        },
-        {
-          "$ref": "#/texts/155"
-        },
-        {
-          "$ref": "#/texts/156"
-        },
-        {
-          "$ref": "#/texts/157"
-        },
-        {
-          "$ref": "#/texts/158"
-        },
-        {
-          "$ref": "#/texts/159"
-        },
-        {
-          "$ref": "#/texts/160"
-        },
-        {
-          "$ref": "#/texts/161"
-        },
-        {
-          "$ref": "#/texts/162"
-        },
-        {
           "$ref": "#/texts/163"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "footnotes",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/28",
+      "parent": {
+        "$ref": "#/texts/163"
+      },
+      "children": [
         {
           "$ref": "#/texts/164"
-        },
-        {
-          "$ref": "#/texts/165"
-        },
-        {
-          "$ref": "#/texts/166"
-        },
-        {
-          "$ref": "#/texts/167"
-        },
-        {
-          "$ref": "#/texts/168"
-        },
-        {
-          "$ref": "#/texts/169"
-        },
-        {
-          "$ref": "#/texts/170"
-        },
-        {
-          "$ref": "#/texts/171"
-        },
-        {
-          "$ref": "#/texts/172"
-        },
-        {
-          "$ref": "#/texts/173"
-        },
-        {
-          "$ref": "#/texts/174"
-        },
-        {
-          "$ref": "#/texts/175"
-        },
-        {
-          "$ref": "#/texts/176"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/29",
+      "parent": {
+        "$ref": "#/texts/176"
+      },
+      "children": [
         {
           "$ref": "#/texts/177"
         },
@@ -756,6 +770,114 @@
         },
         {
           "$ref": "#/texts/196"
+        },
+        {
+          "$ref": "#/texts/197"
+        },
+        {
+          "$ref": "#/texts/198"
+        },
+        {
+          "$ref": "#/texts/199"
+        },
+        {
+          "$ref": "#/texts/200"
+        },
+        {
+          "$ref": "#/texts/201"
+        },
+        {
+          "$ref": "#/texts/202"
+        },
+        {
+          "$ref": "#/texts/203"
+        },
+        {
+          "$ref": "#/texts/204"
+        },
+        {
+          "$ref": "#/texts/205"
+        },
+        {
+          "$ref": "#/texts/206"
+        },
+        {
+          "$ref": "#/texts/207"
+        },
+        {
+          "$ref": "#/texts/208"
+        },
+        {
+          "$ref": "#/texts/209"
+        },
+        {
+          "$ref": "#/texts/210"
+        },
+        {
+          "$ref": "#/texts/211"
+        },
+        {
+          "$ref": "#/texts/212"
+        },
+        {
+          "$ref": "#/texts/213"
+        },
+        {
+          "$ref": "#/texts/214"
+        },
+        {
+          "$ref": "#/texts/215"
+        },
+        {
+          "$ref": "#/texts/216"
+        },
+        {
+          "$ref": "#/texts/217"
+        },
+        {
+          "$ref": "#/texts/218"
+        },
+        {
+          "$ref": "#/texts/219"
+        },
+        {
+          "$ref": "#/texts/220"
+        },
+        {
+          "$ref": "#/texts/221"
+        },
+        {
+          "$ref": "#/texts/222"
+        },
+        {
+          "$ref": "#/texts/223"
+        },
+        {
+          "$ref": "#/texts/224"
+        },
+        {
+          "$ref": "#/texts/225"
+        },
+        {
+          "$ref": "#/texts/226"
+        },
+        {
+          "$ref": "#/texts/227"
+        },
+        {
+          "$ref": "#/texts/228"
+        },
+        {
+          "$ref": "#/texts/229"
+        },
+        {
+          "$ref": "#/texts/230"
+        },
+        {
+          "$ref": "#/texts/231"
+        },
+        {
+          "$ref": "#/texts/232"
         }
       ],
       "content_layer": "body",
@@ -792,22 +914,22 @@
           "$ref": "#/texts/51"
         },
         {
-          "$ref": "#/texts/92"
+          "$ref": "#/texts/128"
         },
         {
-          "$ref": "#/texts/99"
+          "$ref": "#/texts/135"
         },
         {
-          "$ref": "#/texts/101"
+          "$ref": "#/texts/137"
         },
         {
-          "$ref": "#/texts/129"
+          "$ref": "#/texts/165"
         },
         {
-          "$ref": "#/texts/130"
+          "$ref": "#/texts/166"
         },
         {
-          "$ref": "#/texts/140"
+          "$ref": "#/texts/176"
         }
       ],
       "content_layer": "body",
@@ -1591,22 +1713,22 @@
           "$ref": "#/texts/61"
         },
         {
-          "$ref": "#/texts/65"
+          "$ref": "#/texts/67"
         },
         {
-          "$ref": "#/texts/70"
+          "$ref": "#/texts/96"
         },
         {
-          "$ref": "#/texts/74"
+          "$ref": "#/texts/100"
         },
         {
-          "$ref": "#/texts/82"
+          "$ref": "#/texts/118"
         },
         {
-          "$ref": "#/texts/84"
+          "$ref": "#/texts/120"
         },
         {
-          "$ref": "#/texts/88"
+          "$ref": "#/texts/124"
         }
       ],
       "content_layer": "body",
@@ -1774,11 +1896,36 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "All gRNAs were expressed from the pX330-U6-Chimeric_BB-CBh-hSpCas9 vector (RRID:Addgene_42230) and nucleofected into 10",
-      "text": "All gRNAs were expressed from the pX330-U6-Chimeric_BB-CBh-hSpCas9 vector (RRID:Addgene_42230) and nucleofected into 10"
+      "orig": "All gRNAs were expressed from the pX330-U6-Chimeric_BB-CBh-hSpCas9 vector (RRID:",
+      "text": "All gRNAs were expressed from the pX330-U6-Chimeric_BB-CBh-hSpCas9 vector (RRID:"
     },
     {
       "self_ref": "#/texts/63",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Addgene_42230",
+      "text": "Addgene_42230",
+      "hyperlink": "https://scicrunch.org/resolver/Addgene_42230"
+    },
+    {
+      "self_ref": "#/texts/64",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") and nucleofected into 10",
+      "text": ") and nucleofected into 10"
+    },
+    {
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -1797,7 +1944,7 @@
       }
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -1809,7 +1956,7 @@
       "text": "ES cells using Amaxa nucleofection in the following amounts: 5 µg of each pX330-gRNA plasmid, 1 µg pPGK-puro and 500 pmoles single-stranded repair oligos (Supplementary file 3). One day after nucleofection, cells were kept under puromycin selection (1 µg/ml) for 24 hr. Individual KO and WT clones were picked 7–8 days after nucleofection and expanded for PCR genotyping (Supplementary file 3)."
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/texts/51"
       },
@@ -1818,7 +1965,7 @@
           "$ref": "#/groups/7"
         },
         {
-          "$ref": "#/texts/69"
+          "$ref": "#/groups/8"
         }
       ],
       "content_layer": "body",
@@ -1829,7 +1976,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -1841,7 +1988,7 @@
       "text": "For ChIP-seq analysis of KRAB-ZFP expressing cells, 5–10 × 10"
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -1860,7 +2007,7 @@
       }
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -1868,29 +2015,329 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "cells were crosslinked and immunoprecipitated with anti-FLAG (Sigma-Aldrich Cat# F1804, RRID:AB_262044) or anti-HA (Abcam Cat# ab9110, RRID:AB_307019 or Covance Cat# MMS-101P-200, RRID:AB_10064068) antibody using one of two previously described protocols (O'Geen et al., 2010; Imbeault et al., 2017) as indicated in Supplementary file 1. H3K9me3 distribution in Chr4-cl, Chr10-cl, Chr13.1-cl and Chr13.2-cl KO ES cells was determined by native ChIP-seq with anti-H3K9me3 serum (Active Motif Cat# 39161, RRID:AB_2532132) as described previously (Karimi et al., 2011). In Chr2-cl KO ES cells, H3K9me3 and KAP1 ChIP-seq was performed as previously described (Ecco et al., 2016). In Chr4-cl KO and WT ES cells KAP1 binding was determined by endogenous tagging of KAP1 with C-terminal GFP (Supplementary file 3), followed by FACS to enrich for GFP-positive cells and ChIP with anti-GFP (Thermo Fisher Scientific Cat# A-11122, RRID:AB_221569) using a previously described protocol (O'Geen et al., 2010). For ChIP-seq analysis of active histone marks, cross-linked chromatin from ES cells or testis (from two-week old mice) was immunoprecipitated with antibodies against H3K4me3 (Abcam Cat# ab8580, RRID:AB_306649), H3K4me1 (Abcam Cat# ab8895, RRID:AB_306847) and H3K27ac (Abcam Cat# ab4729, RRID:AB_2118291) following the protocol developed by O'Geen et al., 2010 or Khil et al., 2012 respectively.",
-      "text": "cells were crosslinked and immunoprecipitated with anti-FLAG (Sigma-Aldrich Cat# F1804, RRID:AB_262044) or anti-HA (Abcam Cat# ab9110, RRID:AB_307019 or Covance Cat# MMS-101P-200, RRID:AB_10064068) antibody using one of two previously described protocols (O'Geen et al., 2010; Imbeault et al., 2017) as indicated in Supplementary file 1. H3K9me3 distribution in Chr4-cl, Chr10-cl, Chr13.1-cl and Chr13.2-cl KO ES cells was determined by native ChIP-seq with anti-H3K9me3 serum (Active Motif Cat# 39161, RRID:AB_2532132) as described previously (Karimi et al., 2011). In Chr2-cl KO ES cells, H3K9me3 and KAP1 ChIP-seq was performed as previously described (Ecco et al., 2016). In Chr4-cl KO and WT ES cells KAP1 binding was determined by endogenous tagging of KAP1 with C-terminal GFP (Supplementary file 3), followed by FACS to enrich for GFP-positive cells and ChIP with anti-GFP (Thermo Fisher Scientific Cat# A-11122, RRID:AB_221569) using a previously described protocol (O'Geen et al., 2010). For ChIP-seq analysis of active histone marks, cross-linked chromatin from ES cells or testis (from two-week old mice) was immunoprecipitated with antibodies against H3K4me3 (Abcam Cat# ab8580, RRID:AB_306649), H3K4me1 (Abcam Cat# ab8895, RRID:AB_306847) and H3K27ac (Abcam Cat# ab4729, RRID:AB_2118291) following the protocol developed by O'Geen et al., 2010 or Khil et al., 2012 respectively."
+      "orig": "cells were crosslinked and immunoprecipitated with anti-FLAG (Sigma-Aldrich Cat# F1804, RRID:",
+      "text": "cells were crosslinked and immunoprecipitated with anti-FLAG (Sigma-Aldrich Cat# F1804, RRID:"
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/71",
       "parent": {
-        "$ref": "#/texts/65"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ChIP-seq libraries were constructed and sequenced as indicated in Supplementary file 4. Reads were mapped to the mm9 genome using Bowtie (RRID:SCR_005476; settings: --best) or Bowtie2 (Langmead and Salzberg, 2012) as indicated in Supplementary file 4. Under these settings, reads that map to multiple genomic regions are assigned to the top-scored match and, if a set of equally good choices is encountered, a pseudo-random number is used to choose one location. Peaks were called using MACS14 (RRID:SCR_013291) under high stringency settings (p<1e-10, peak enrichment >20) (Zhang et al., 2008). Peaks were called both over the Input control and a FLAG or HA control ChIP (unless otherwise stated in Supplementary file 4) and only peaks that were called in both settings were kept for further analysis. In cases when the stringency settings did not result in at least 50 peaks, the settings were changed to medium (p<1e-10, peak enrichment >10) or low (p<1e-5, peak enrichment >10) stringency (Supplementary file 4). For further analysis, all peaks were scaled to 200 bp regions centered around the peak summits. The overlap of the scaled peaks to each repeat element in UCSC Genome Browser (RRID:SCR_005780) were calculated by using the bedfisher function (settings: -f 0.25) from BEDTools (RRID:SCR_006646). The right-tailed p-values between pair-wise comparison of each ChIP-seq peak and repeat element were extracted, and then adjusted using the Benjamini-Hochberg approach implemented in the R function p.adjust(). Binding motifs were determined using only nonrepetitive (<10% repeat content) peaks with MEME (Bailey et al., 2009). MEME motifs were compared with in silico predicted motifs (Najafabadi et al., 2015) using Tomtom (Bailey et al., 2009) and considered as significantly overlapping with a False Discovery Rate (FDR) below 0.1. To find MEME and predicted motifs in repetitive peaks, we used FIMO (Bailey et al., 2009). Differential H3K9me3 and KAP1 distribution in WT and Chr2-cl or Chr4-cl KO ES cells at TEs was determined by counting ChIP-seq reads overlapping annotated insertions of each TE group using BEDTools (MultiCovBed). Additionally, ChIP-seq reads were counted at the TE fraction that was bound by Chr2-cl or Chr4-cl KRAB-ZFPs (overlapping with 200 bp peaks). Count tables were concatenated and analyzed using DESeq2 (Love et al., 2014). The previously published ChIP-seq datasets for KAP1 (Castro-Diaz et al., 2014) and H3K9me3 (Dan et al., 2014) were re-mapped using Bowtie (--best).",
-      "text": "ChIP-seq libraries were constructed and sequenced as indicated in Supplementary file 4. Reads were mapped to the mm9 genome using Bowtie (RRID:SCR_005476; settings: --best) or Bowtie2 (Langmead and Salzberg, 2012) as indicated in Supplementary file 4. Under these settings, reads that map to multiple genomic regions are assigned to the top-scored match and, if a set of equally good choices is encountered, a pseudo-random number is used to choose one location. Peaks were called using MACS14 (RRID:SCR_013291) under high stringency settings (p<1e-10, peak enrichment >20) (Zhang et al., 2008). Peaks were called both over the Input control and a FLAG or HA control ChIP (unless otherwise stated in Supplementary file 4) and only peaks that were called in both settings were kept for further analysis. In cases when the stringency settings did not result in at least 50 peaks, the settings were changed to medium (p<1e-10, peak enrichment >10) or low (p<1e-5, peak enrichment >10) stringency (Supplementary file 4). For further analysis, all peaks were scaled to 200 bp regions centered around the peak summits. The overlap of the scaled peaks to each repeat element in UCSC Genome Browser (RRID:SCR_005780) were calculated by using the bedfisher function (settings: -f 0.25) from BEDTools (RRID:SCR_006646). The right-tailed p-values between pair-wise comparison of each ChIP-seq peak and repeat element were extracted, and then adjusted using the Benjamini-Hochberg approach implemented in the R function p.adjust(). Binding motifs were determined using only nonrepetitive (<10% repeat content) peaks with MEME (Bailey et al., 2009). MEME motifs were compared with in silico predicted motifs (Najafabadi et al., 2015) using Tomtom (Bailey et al., 2009) and considered as significantly overlapping with a False Discovery Rate (FDR) below 0.1. To find MEME and predicted motifs in repetitive peaks, we used FIMO (Bailey et al., 2009). Differential H3K9me3 and KAP1 distribution in WT and Chr2-cl or Chr4-cl KO ES cells at TEs was determined by counting ChIP-seq reads overlapping annotated insertions of each TE group using BEDTools (MultiCovBed). Additionally, ChIP-seq reads were counted at the TE fraction that was bound by Chr2-cl or Chr4-cl KRAB-ZFPs (overlapping with 200 bp peaks). Count tables were concatenated and analyzed using DESeq2 (Love et al., 2014). The previously published ChIP-seq datasets for KAP1 (Castro-Diaz et al., 2014) and H3K9me3 (Dan et al., 2014) were re-mapped using Bowtie (--best)."
+      "orig": "AB_262044",
+      "text": "AB_262044",
+      "hyperlink": "https://scicrunch.org/resolver/AB_262044"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/72",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") or anti-HA (Abcam Cat# ab9110, RRID:",
+      "text": ") or anti-HA (Abcam Cat# ab9110, RRID:"
+    },
+    {
+      "self_ref": "#/texts/73",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_307019",
+      "text": "AB_307019",
+      "hyperlink": "https://scicrunch.org/resolver/AB_307019"
+    },
+    {
+      "self_ref": "#/texts/74",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "or Covance Cat# MMS-101P-200, RRID:",
+      "text": "or Covance Cat# MMS-101P-200, RRID:"
+    },
+    {
+      "self_ref": "#/texts/75",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_10064068",
+      "text": "AB_10064068",
+      "hyperlink": "https://scicrunch.org/resolver/AB_10064068"
+    },
+    {
+      "self_ref": "#/texts/76",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") antibody using one of two previously described protocols (O'Geen et al., 2010; Imbeault et al., 2017) as indicated in Supplementary file 1. H3K9me3 distribution in Chr4-cl, Chr10-cl, Chr13.1-cl and Chr13.2-cl KO ES cells was determined by native ChIP-seq with anti-H3K9me3 serum (Active Motif Cat# 39161, RRID:",
+      "text": ") antibody using one of two previously described protocols (O'Geen et al., 2010; Imbeault et al., 2017) as indicated in Supplementary file 1. H3K9me3 distribution in Chr4-cl, Chr10-cl, Chr13.1-cl and Chr13.2-cl KO ES cells was determined by native ChIP-seq with anti-H3K9me3 serum (Active Motif Cat# 39161, RRID:"
+    },
+    {
+      "self_ref": "#/texts/77",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_2532132",
+      "text": "AB_2532132",
+      "hyperlink": "https://scicrunch.org/resolver/AB_2532132"
+    },
+    {
+      "self_ref": "#/texts/78",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") as described previously (Karimi et al., 2011). In Chr2-cl KO ES cells, H3K9me3 and KAP1 ChIP-seq was performed as previously described (Ecco et al., 2016). In Chr4-cl KO and WT ES cells KAP1 binding was determined by endogenous tagging of KAP1 with C-terminal GFP (Supplementary file 3), followed by FACS to enrich for GFP-positive cells and ChIP with anti-GFP (Thermo Fisher Scientific Cat# A-11122, RRID:",
+      "text": ") as described previously (Karimi et al., 2011). In Chr2-cl KO ES cells, H3K9me3 and KAP1 ChIP-seq was performed as previously described (Ecco et al., 2016). In Chr4-cl KO and WT ES cells KAP1 binding was determined by endogenous tagging of KAP1 with C-terminal GFP (Supplementary file 3), followed by FACS to enrich for GFP-positive cells and ChIP with anti-GFP (Thermo Fisher Scientific Cat# A-11122, RRID:"
+    },
+    {
+      "self_ref": "#/texts/79",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_221569",
+      "text": "AB_221569",
+      "hyperlink": "https://scicrunch.org/resolver/AB_221569"
+    },
+    {
+      "self_ref": "#/texts/80",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") using a previously described protocol (O'Geen et al., 2010). For ChIP-seq analysis of active histone marks, cross-linked chromatin from ES cells or testis (from two-week old mice) was immunoprecipitated with antibodies against H3K4me3 (Abcam Cat# ab8580, RRID:",
+      "text": ") using a previously described protocol (O'Geen et al., 2010). For ChIP-seq analysis of active histone marks, cross-linked chromatin from ES cells or testis (from two-week old mice) was immunoprecipitated with antibodies against H3K4me3 (Abcam Cat# ab8580, RRID:"
+    },
+    {
+      "self_ref": "#/texts/81",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_306649",
+      "text": "AB_306649",
+      "hyperlink": "https://scicrunch.org/resolver/AB_306649"
+    },
+    {
+      "self_ref": "#/texts/82",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "), H3K4me1 (Abcam Cat# ab8895, RRID:",
+      "text": "), H3K4me1 (Abcam Cat# ab8895, RRID:"
+    },
+    {
+      "self_ref": "#/texts/83",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_306847",
+      "text": "AB_306847",
+      "hyperlink": "https://scicrunch.org/resolver/AB_306847"
+    },
+    {
+      "self_ref": "#/texts/84",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") and H3K27ac (Abcam Cat# ab4729, RRID:",
+      "text": ") and H3K27ac (Abcam Cat# ab4729, RRID:"
+    },
+    {
+      "self_ref": "#/texts/85",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "AB_2118291",
+      "text": "AB_2118291",
+      "hyperlink": "https://scicrunch.org/resolver/AB_2118291"
+    },
+    {
+      "self_ref": "#/texts/86",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") following the protocol developed by O'Geen et al., 2010 or Khil et al., 2012 respectively.",
+      "text": ") following the protocol developed by O'Geen et al., 2010 or Khil et al., 2012 respectively."
+    },
+    {
+      "self_ref": "#/texts/87",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "ChIP-seq libraries were constructed and sequenced as indicated in Supplementary file 4. Reads were mapped to the mm9 genome using Bowtie (RRID:",
+      "text": "ChIP-seq libraries were constructed and sequenced as indicated in Supplementary file 4. Reads were mapped to the mm9 genome using Bowtie (RRID:"
+    },
+    {
+      "self_ref": "#/texts/88",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_005476",
+      "text": "SCR_005476",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_005476"
+    },
+    {
+      "self_ref": "#/texts/89",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "; settings: --best) or Bowtie2 (Langmead and Salzberg, 2012) as indicated in Supplementary file 4. Under these settings, reads that map to multiple genomic regions are assigned to the top-scored match and, if a set of equally good choices is encountered, a pseudo-random number is used to choose one location. Peaks were called using MACS14 (RRID:",
+      "text": "; settings: --best) or Bowtie2 (Langmead and Salzberg, 2012) as indicated in Supplementary file 4. Under these settings, reads that map to multiple genomic regions are assigned to the top-scored match and, if a set of equally good choices is encountered, a pseudo-random number is used to choose one location. Peaks were called using MACS14 (RRID:"
+    },
+    {
+      "self_ref": "#/texts/90",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_013291",
+      "text": "SCR_013291",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_013291"
+    },
+    {
+      "self_ref": "#/texts/91",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") under high stringency settings (p<1e-10, peak enrichment >20) (Zhang et al., 2008). Peaks were called both over the Input control and a FLAG or HA control ChIP (unless otherwise stated in Supplementary file 4) and only peaks that were called in both settings were kept for further analysis. In cases when the stringency settings did not result in at least 50 peaks, the settings were changed to medium (p<1e-10, peak enrichment >10) or low (p<1e-5, peak enrichment >10) stringency (Supplementary file 4). For further analysis, all peaks were scaled to 200 bp regions centered around the peak summits. The overlap of the scaled peaks to each repeat element in UCSC Genome Browser (RRID:",
+      "text": ") under high stringency settings (p<1e-10, peak enrichment >20) (Zhang et al., 2008). Peaks were called both over the Input control and a FLAG or HA control ChIP (unless otherwise stated in Supplementary file 4) and only peaks that were called in both settings were kept for further analysis. In cases when the stringency settings did not result in at least 50 peaks, the settings were changed to medium (p<1e-10, peak enrichment >10) or low (p<1e-5, peak enrichment >10) stringency (Supplementary file 4). For further analysis, all peaks were scaled to 200 bp regions centered around the peak summits. The overlap of the scaled peaks to each repeat element in UCSC Genome Browser (RRID:"
+    },
+    {
+      "self_ref": "#/texts/92",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_005780",
+      "text": "SCR_005780",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_005780"
+    },
+    {
+      "self_ref": "#/texts/93",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") were calculated by using the bedfisher function (settings: -f 0.25) from BEDTools (RRID:",
+      "text": ") were calculated by using the bedfisher function (settings: -f 0.25) from BEDTools (RRID:"
+    },
+    {
+      "self_ref": "#/texts/94",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_006646",
+      "text": "SCR_006646",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_006646"
+    },
+    {
+      "self_ref": "#/texts/95",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "). The right-tailed p-values between pair-wise comparison of each ChIP-seq peak and repeat element were extracted, and then adjusted using the Benjamini-Hochberg approach implemented in the R function p.adjust(). Binding motifs were determined using only nonrepetitive (<10% repeat content) peaks with MEME (Bailey et al., 2009). MEME motifs were compared with in silico predicted motifs (Najafabadi et al., 2015) using Tomtom (Bailey et al., 2009) and considered as significantly overlapping with a False Discovery Rate (FDR) below 0.1. To find MEME and predicted motifs in repetitive peaks, we used FIMO (Bailey et al., 2009). Differential H3K9me3 and KAP1 distribution in WT and Chr2-cl or Chr4-cl KO ES cells at TEs was determined by counting ChIP-seq reads overlapping annotated insertions of each TE group using BEDTools (MultiCovBed). Additionally, ChIP-seq reads were counted at the TE fraction that was bound by Chr2-cl or Chr4-cl KRAB-ZFPs (overlapping with 200 bp peaks). Count tables were concatenated and analyzed using DESeq2 (Love et al., 2014). The previously published ChIP-seq datasets for KAP1 (Castro-Diaz et al., 2014) and H3K9me3 (Dan et al., 2014) were re-mapped using Bowtie (--best).",
+      "text": "). The right-tailed p-values between pair-wise comparison of each ChIP-seq peak and repeat element were extracted, and then adjusted using the Benjamini-Hochberg approach implemented in the R function p.adjust(). Binding motifs were determined using only nonrepetitive (<10% repeat content) peaks with MEME (Bailey et al., 2009). MEME motifs were compared with in silico predicted motifs (Najafabadi et al., 2015) using Tomtom (Bailey et al., 2009) and considered as significantly overlapping with a False Discovery Rate (FDR) below 0.1. To find MEME and predicted motifs in repetitive peaks, we used FIMO (Bailey et al., 2009). Differential H3K9me3 and KAP1 distribution in WT and Chr2-cl or Chr4-cl KO ES cells at TEs was determined by counting ChIP-seq reads overlapping annotated insertions of each TE group using BEDTools (MultiCovBed). Additionally, ChIP-seq reads were counted at the TE fraction that was bound by Chr2-cl or Chr4-cl KRAB-ZFPs (overlapping with 200 bp peaks). Count tables were concatenated and analyzed using DESeq2 (Love et al., 2014). The previously published ChIP-seq datasets for KAP1 (Castro-Diaz et al., 2014) and H3K9me3 (Dan et al., 2014) were re-mapped using Bowtie (--best)."
+    },
+    {
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/texts/51"
       },
       "children": [
         {
-          "$ref": "#/groups/8"
+          "$ref": "#/groups/9"
         }
       ],
       "content_layer": "body",
@@ -1901,9 +2348,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/97",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -1913,9 +2360,9 @@
       "text": "For KRAB-ZFP repression assays, double-stranded DNA oligos containing KRAB-ZFP target sequences (Supplementary file 3) were cloned upstream of the SV40 promoter of the pGL3-Promoter vector (Promega) between the restriction sites for NheI and XhoI. 33 ng of reporter vectors were co-transfected (Lipofectamine 2000, Thermofisher) with 33 ng pRL-SV40 (Promega) for normalization and 33 ng of transient KRAB-ZFP expression vectors (in pcDNA3.1) or empty pcDNA3.1 into 293 T cells seeded one day earlier in 96-well plates. Cells were lysed 48 hr after transfection and luciferase/Renilla luciferase activity was measured using the Dual-Luciferase Reporter Assay System (Promega). To measure the transcriptional activity of the MMETn element upstream of the"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/98",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -1932,9 +2379,9 @@
       }
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/99",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -1944,13 +2391,13 @@
       "text": "gene, fragments of varying sizes (Supplementary file 3) were cloned into the promoter-less pGL3-basic vector (Promega) using NheI and NcoI sites. 70 ng of reporter vectors were cotransfected with 30 ng pRL-SV40 into feeder-depleted Chr4-cl WT and KO ES cells, seeded into a gelatinized 96-well plate 2 hr before transfection. Luciferase activity was measured 48 hr after transfection as described above."
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/texts/51"
       },
       "children": [
         {
-          "$ref": "#/groups/9"
+          "$ref": "#/groups/10"
         }
       ],
       "content_layer": "body",
@@ -1961,21 +2408,146 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/101",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Whole RNA was purified using RNeasy columns (Qiagen) with on column DNase treatment or the High Pure RNA Isolation Kit (Roche) (Supplementary file 4). Tissues were first lysed in TRIzol reagent (ThermoFisher) and RNA was purified after the isopropanol precipitation step using RNeasy columns (Qiagen) with on column DNase treatment. Libraries were generated using the SureSelect Strand-Specific RNA Library Prep kit (Agilent) or Illumina’s TruSeq RNA Library Prep Kit (with polyA selection) and sequenced as 50 or 100 bp paired-end reads on an Illumina HiSeq2500 (RRID:SCR_016383) or HiSeq3000 (RRID:SCR_016386) machine (Supplementary file 4). RNA-seq reads were mapped to the mouse genome (mm9) using Tophat (RRID:SCR_013035; settings: --I 200000 g 1) unless otherwise stated. These settings allow each mappable read to be reported once, in case the read maps to multiple locations equally well, one match is randomly chosen. For differential transposon expression, mapped reads that overlap with TEs annotated in Repeatmasker (RRID:SCR_012954) were counted using BEDTools MultiCovBed (setting: -split). Reads mapping to multiple fragments that belong to the same TE insertion (as indicated by the repeat ID) were summed up. Only transposons with a total of at least 20 (for two biological replicates) or 30 (for three biological replicates) mapped reads across WT and KO samples were considered for differential expression analysis. Transposons within the deleted KRAB-ZFP cluster were excluded from the analysis. Read count tables were used for differential expression analysis with DESeq2 (RRID:SCR_015687). For differential gene expression analysis, reads overlapping with gene exons were counted using HTSeq-count and analyzed using DESeq2. To test if KRAB-ZFP peaks are significantly enriched near up- or down-regulated genes, a binomial test was performed. Briefly, the proportion of the peaks that are located within a certain distance up- or downstream to the TSS of genes was determined using the windowBed function of BED tools. The probability",
-      "text": "Whole RNA was purified using RNeasy columns (Qiagen) with on column DNase treatment or the High Pure RNA Isolation Kit (Roche) (Supplementary file 4). Tissues were first lysed in TRIzol reagent (ThermoFisher) and RNA was purified after the isopropanol precipitation step using RNeasy columns (Qiagen) with on column DNase treatment. Libraries were generated using the SureSelect Strand-Specific RNA Library Prep kit (Agilent) or Illumina’s TruSeq RNA Library Prep Kit (with polyA selection) and sequenced as 50 or 100 bp paired-end reads on an Illumina HiSeq2500 (RRID:SCR_016383) or HiSeq3000 (RRID:SCR_016386) machine (Supplementary file 4). RNA-seq reads were mapped to the mouse genome (mm9) using Tophat (RRID:SCR_013035; settings: --I 200000 g 1) unless otherwise stated. These settings allow each mappable read to be reported once, in case the read maps to multiple locations equally well, one match is randomly chosen. For differential transposon expression, mapped reads that overlap with TEs annotated in Repeatmasker (RRID:SCR_012954) were counted using BEDTools MultiCovBed (setting: -split). Reads mapping to multiple fragments that belong to the same TE insertion (as indicated by the repeat ID) were summed up. Only transposons with a total of at least 20 (for two biological replicates) or 30 (for three biological replicates) mapped reads across WT and KO samples were considered for differential expression analysis. Transposons within the deleted KRAB-ZFP cluster were excluded from the analysis. Read count tables were used for differential expression analysis with DESeq2 (RRID:SCR_015687). For differential gene expression analysis, reads overlapping with gene exons were counted using HTSeq-count and analyzed using DESeq2. To test if KRAB-ZFP peaks are significantly enriched near up- or down-regulated genes, a binomial test was performed. Briefly, the proportion of the peaks that are located within a certain distance up- or downstream to the TSS of genes was determined using the windowBed function of BED tools. The probability"
+      "orig": "Whole RNA was purified using RNeasy columns (Qiagen) with on column DNase treatment or the High Pure RNA Isolation Kit (Roche) (Supplementary file 4). Tissues were first lysed in TRIzol reagent (ThermoFisher) and RNA was purified after the isopropanol precipitation step using RNeasy columns (Qiagen) with on column DNase treatment. Libraries were generated using the SureSelect Strand-Specific RNA Library Prep kit (Agilent) or Illumina’s TruSeq RNA Library Prep Kit (with polyA selection) and sequenced as 50 or 100 bp paired-end reads on an Illumina HiSeq2500 (RRID:",
+      "text": "Whole RNA was purified using RNeasy columns (Qiagen) with on column DNase treatment or the High Pure RNA Isolation Kit (Roche) (Supplementary file 4). Tissues were first lysed in TRIzol reagent (ThermoFisher) and RNA was purified after the isopropanol precipitation step using RNeasy columns (Qiagen) with on column DNase treatment. Libraries were generated using the SureSelect Strand-Specific RNA Library Prep kit (Agilent) or Illumina’s TruSeq RNA Library Prep Kit (with polyA selection) and sequenced as 50 or 100 bp paired-end reads on an Illumina HiSeq2500 (RRID:"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/102",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_016383",
+      "text": "SCR_016383",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_016383"
+    },
+    {
+      "self_ref": "#/texts/103",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") or HiSeq3000 (RRID:",
+      "text": ") or HiSeq3000 (RRID:"
+    },
+    {
+      "self_ref": "#/texts/104",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_016386",
+      "text": "SCR_016386",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_016386"
+    },
+    {
+      "self_ref": "#/texts/105",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") machine (Supplementary file 4). RNA-seq reads were mapped to the mouse genome (mm9) using Tophat (RRID:",
+      "text": ") machine (Supplementary file 4). RNA-seq reads were mapped to the mouse genome (mm9) using Tophat (RRID:"
+    },
+    {
+      "self_ref": "#/texts/106",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_013035",
+      "text": "SCR_013035",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_013035"
+    },
+    {
+      "self_ref": "#/texts/107",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "; settings: --I 200000 g 1) unless otherwise stated. These settings allow each mappable read to be reported once, in case the read maps to multiple locations equally well, one match is randomly chosen. For differential transposon expression, mapped reads that overlap with TEs annotated in Repeatmasker (RRID:",
+      "text": "; settings: --I 200000 g 1) unless otherwise stated. These settings allow each mappable read to be reported once, in case the read maps to multiple locations equally well, one match is randomly chosen. For differential transposon expression, mapped reads that overlap with TEs annotated in Repeatmasker (RRID:"
+    },
+    {
+      "self_ref": "#/texts/108",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_012954",
+      "text": "SCR_012954",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_012954"
+    },
+    {
+      "self_ref": "#/texts/109",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") were counted using BEDTools MultiCovBed (setting: -split). Reads mapping to multiple fragments that belong to the same TE insertion (as indicated by the repeat ID) were summed up. Only transposons with a total of at least 20 (for two biological replicates) or 30 (for three biological replicates) mapped reads across WT and KO samples were considered for differential expression analysis. Transposons within the deleted KRAB-ZFP cluster were excluded from the analysis. Read count tables were used for differential expression analysis with DESeq2 (RRID:",
+      "text": ") were counted using BEDTools MultiCovBed (setting: -split). Reads mapping to multiple fragments that belong to the same TE insertion (as indicated by the repeat ID) were summed up. Only transposons with a total of at least 20 (for two biological replicates) or 30 (for three biological replicates) mapped reads across WT and KO samples were considered for differential expression analysis. Transposons within the deleted KRAB-ZFP cluster were excluded from the analysis. Read count tables were used for differential expression analysis with DESeq2 (RRID:"
+    },
+    {
+      "self_ref": "#/texts/110",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "SCR_015687",
+      "text": "SCR_015687",
+      "hyperlink": "https://scicrunch.org/resolver/SCR_015687"
+    },
+    {
+      "self_ref": "#/texts/111",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "). For differential gene expression analysis, reads overlapping with gene exons were counted using HTSeq-count and analyzed using DESeq2. To test if KRAB-ZFP peaks are significantly enriched near up- or down-regulated genes, a binomial test was performed. Briefly, the proportion of the peaks that are located within a certain distance up- or downstream to the TSS of genes was determined using the windowBed function of BED tools. The probability",
+      "text": "). For differential gene expression analysis, reads overlapping with gene exons were counted using HTSeq-count and analyzed using DESeq2. To test if KRAB-ZFP peaks are significantly enriched near up- or down-regulated genes, a binomial test was performed. Briefly, the proportion of the peaks that are located within a certain distance up- or downstream to the TSS of genes was determined using the windowBed function of BED tools. The probability"
+    },
+    {
+      "self_ref": "#/texts/112",
+      "parent": {
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -1992,9 +2564,9 @@
       }
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/113",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2004,9 +2576,9 @@
       "text": "in the binomial distribution was estimated as the fraction of all genes overlapped with KRAB-ZFP peaks. Then, given"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/114",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2023,9 +2595,9 @@
       }
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/115",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2035,9 +2607,9 @@
       "text": "which is the number of specific groups of genes, and"
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/116",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2054,9 +2626,9 @@
       }
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/117",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2066,13 +2638,13 @@
       "text": "which is the number of this group of genes overlapped with peaks, the R function binom.test() was used to estimate the p-value based on right-tailed Binomial test. Finally, the adjusted p-values were determined separately for LTR and LINE retrotransposon groups using the Benjamini-Hochberg approach implemented in the R function p.adjust()."
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/texts/51"
       },
       "children": [
         {
-          "$ref": "#/texts/83"
+          "$ref": "#/texts/119"
         }
       ],
       "content_layer": "body",
@@ -2083,9 +2655,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/119",
       "parent": {
-        "$ref": "#/texts/82"
+        "$ref": "#/texts/118"
       },
       "children": [],
       "content_layer": "body",
@@ -2095,13 +2667,13 @@
       "text": "For RRBS-seq analysis, Chr4-cl WT and KO ES cells were grown in either standard ES cell media containing FCS or for one week in 2i media containing vitamin C as described previously (Blaschke et al., 2013). Genomic DNA was purified from WT and Chr4-cl KO ES cells using the Quick-gDNA purification kit (Zymo Research) and bisulfite-converted with the NEXTflex Bisulfite-Seq Kit (Bio Scientific) using Msp1 digestion to fragment DNA. Libraries were sequenced as 50 bp paired-end reads on an Illumina HiSeq. The reads were processed using Trim Galore (--illumina --paired –rrbs) to trim poor quality bases and adaptors. Additionally, the first 5 nt of R2 and the last 3 nt of R1 and R2 were trimmed. Reads were then mapped to the reference genome (mm9) using Bismark (Krueger and Andrews, 2011) to extract methylation calling results. The CpG methylation pattern for each covered CpG dyads (two complementary CG dinucleotides) was calculated using a custom script (Source code 1: get_CpG_ML.pl). For comparison of CpG methylation between WT and Chr4-cl KO ES cells (in serum or 2i + Vitamin C conditions) only CpG sites with at least 10-fold coverage in each sample were considered for analysis."
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/texts/51"
       },
       "children": [
         {
-          "$ref": "#/groups/10"
+          "$ref": "#/groups/11"
         }
       ],
       "content_layer": "body",
@@ -2112,9 +2684,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/121",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2124,9 +2696,9 @@
       "text": "The retrotransposition vectors pCMV-MusD2, pCMV-MusD2-neoTNF and pCMV-ETnI1-neoTNF (Ribet et al., 2004) were a kind gift from Dixie Mager. To partially delete the Gm13051 binding site within pCMV-MusD2-neoTNF, the vector was cut with KpnI and re-ligated using a repair oligo, leaving a 24 bp deletion within the Gm13051 binding site. The Rex2 binding site in pCMV-ETnI1-neoTNF was deleted by cutting the vector with EcoRI and XbaI followed by re-ligation using two overlapping PCR products, leaving a 45 bp deletion while maintaining the rest of the vector unchanged (see Supplementary file 3 for primer sequences). For MusD retrotransposition assays, 5 × 10"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/122",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2143,9 +2715,9 @@
       }
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/123",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2155,13 +2727,13 @@
       "text": "HeLa cells (ATCC CCL-2) were transfected in a 24-well dish with 100 ng pCMV-MusD2-neoTNF or pCMV-MusD2-neoTNF (ΔGm13051-m) using Lipofectamine 2000. For ETn retrotransposition assays, 50 ng of pCMV-ETnI1-neoTNF or pCMV-ETnI1-neoTNF (ΔRex2) vectors were cotransfected with 50 ng pCMV-MusD2 to provide gag and pol proteins in trans. G418 (0.6 mg/ml) was added five days after transfection and cells were grown under selection until colonies were readily visible by eye. G418-resistant colonies were stained with Amido Black (Sigma)."
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/texts/51"
       },
       "children": [
         {
-          "$ref": "#/groups/11"
+          "$ref": "#/groups/12"
         }
       ],
       "content_layer": "body",
@@ -2172,9 +2744,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/125",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2184,9 +2756,9 @@
       "text": "To identify novel retrotransposon insertions, genomic DNA from various tissues (Supplementary file 4) was purified and used for library construction with target enrichment using the SureSelect"
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/126",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2203,9 +2775,9 @@
       }
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/127",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2215,16 +2787,16 @@
       "text": "Target Enrichment kit (Agilent). Custom RNA capture probes were designed to hybridize with the 120 bp 5’ ends of the 5’ LTRs and the 120 bp 3’ ends of the 3’ LTR of about 600 intact (internal region flanked by two LTRs) MMETn/RLTRETN retrotransposons or of 140 RLTR4_MM/RLTR4 retrotransposons that were upregulated in Chr4-cl KO ES cells (Figure 4—source data 2). Enriched libraries were sequenced on an Illumina HiSeq as paired-end 50 bp reads. R1 and R2 reads were mapped to the mm9 genome separately, using settings that only allow non-duplicated, uniquely mappable reads (Bowtie -m 1 --best --strata; samtools rmdup -s) and under settings that allow multimapping and duplicated reads (Bowtie --best). Of the latter, only reads that overlap (min. 50% of read) with RLTRETN, MMETn-int, ETnERV-int, ETnERV2-int or ETnERV3-int repeats (ETn) or RLTR4, RLTR4_MM-int or MuLV-int repeats (RLTR4) were kept. Only uniquely mappable reads whose paired reads were overlapping with the repeats mentioned above were used for further analysis. All ETn- and RLTR4-paired reads were then clustered (as bed files) using BEDTools (bedtools merge -i -n -d 1000) to receive a list of all potential annotated and non-annotated new ETn or RLTR4 insertion sites and all overlapping ETn- or RLTR4-paired reads were counted for each sample at each locus. Finally, all regions that were located within 1 kb of an annotated RLTRETN, MMETn-int, ETnERV-int, ETnERV2-int or ETnERV3-int repeat as well as regions overlapping with previously identified polymorphic ETn elements (Nellåker et al., 2012) were removed. Genomic loci with at least 10 reads per million unique ETn- or RLTR4-paired reads were considered as insertion sites. To qualify for a de-novo insertion, we allowed no called insertions in any of the other screened mice at the locus and not a single read at the locus in the ancestors of the mouse. Insertions at the same locus in at least two siblings from the same offspring were considered as germ line insertions, if the insertion was absent in the parents and mice who were not direct descendants from these siblings. Full-length sequencing of new ETn insertions was done by Sanger sequencing of short PCR products in combination with Illumina sequencing of a large PCR product (Supplementary file 3), followed by de-novo assembly using the Unicycler software."
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/93"
+          "$ref": "#/texts/129"
         },
         {
-          "$ref": "#/groups/12"
+          "$ref": "#/groups/13"
         }
       ],
       "content_layer": "body",
@@ -2235,9 +2807,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/129",
       "parent": {
-        "$ref": "#/texts/92"
+        "$ref": "#/texts/128"
       },
       "children": [],
       "content_layer": "body",
@@ -2247,9 +2819,9 @@
       "text": "This paper was supported by the following grants:"
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/130",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2261,9 +2833,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/131",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2275,9 +2847,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/132",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2289,9 +2861,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/133",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2303,9 +2875,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/134",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2317,13 +2889,13 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/100"
+          "$ref": "#/texts/136"
         }
       ],
       "content_layer": "body",
@@ -2334,9 +2906,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/136",
       "parent": {
-        "$ref": "#/texts/99"
+        "$ref": "#/texts/135"
       },
       "children": [],
       "content_layer": "body",
@@ -2346,19 +2918,19 @@
       "text": "We thank Alex Grinberg, Jeanne Yimdjo and Victoria Carter for generating and maintaining transgenic mice. We also thank members of the Macfarlan and Trono labs for useful discussion, Steven Coon, James Iben, Tianwei Li and Anna Malawska for NGS and computational support. This work was supported by NIH grant 1ZIAHD008933 and the NIH DDIR Innovation Award program (TSM), and by subsidies from the Swiss National Science Foundation (310030_152879 and 310030B_173337) and the European Research Council (KRABnKAP, No. 268721; Transpos-X, No. 694658) (DT)."
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/102"
+          "$ref": "#/texts/138"
         },
         {
-          "$ref": "#/texts/105"
+          "$ref": "#/texts/141"
         },
         {
-          "$ref": "#/texts/126"
+          "$ref": "#/texts/162"
         }
       ],
       "content_layer": "body",
@@ -2369,13 +2941,13 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/138",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/137"
       },
       "children": [
         {
-          "$ref": "#/groups/13"
+          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -2386,13 +2958,13 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/139",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [
         {
-          "$ref": "#/groups/14"
+          "$ref": "#/groups/15"
         }
       ],
       "content_layer": "body",
@@ -2404,9 +2976,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/140",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2416,13 +2988,13 @@
       "text": "No competing interests declared."
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/141",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/137"
       },
       "children": [
         {
-          "$ref": "#/groups/15"
+          "$ref": "#/groups/16"
         }
       ],
       "content_layer": "body",
@@ -2433,39 +3005,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/106",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/16"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
-      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft."
-    },
-    {
-      "self_ref": "#/texts/108",
-      "parent": {
-        "$ref": "#/groups/15"
       },
       "children": [
         {
@@ -2481,7 +3023,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/groups/17"
       },
@@ -2489,13 +3031,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
-      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing."
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft."
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/144",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2511,7 +3053,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/groups/18"
       },
@@ -2519,13 +3061,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
-      "text": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing."
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing."
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/146",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2541,7 +3083,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/groups/19"
       },
@@ -2549,13 +3091,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
-      "text": "Conceptualization, Formal analysis, Investigation, Writing - review and editing."
+      "orig": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing."
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/148",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2571,7 +3113,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/groups/20"
       },
@@ -2579,13 +3121,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Investigation.",
-      "text": "Investigation."
+      "orig": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Formal analysis, Investigation, Writing - review and editing."
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/150",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2601,7 +3143,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/groups/21"
       },
@@ -2613,9 +3155,9 @@
       "text": "Investigation."
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/152",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2631,7 +3173,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/groups/22"
       },
@@ -2639,13 +3181,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Data curation, Software, Formal analysis, Visualization.",
-      "text": "Data curation, Software, Formal analysis, Visualization."
+      "orig": "Investigation.",
+      "text": "Investigation."
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/154",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2661,7 +3203,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/groups/23"
       },
@@ -2669,13 +3211,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Investigation.",
-      "text": "Investigation."
+      "orig": "Data curation, Software, Formal analysis, Visualization.",
+      "text": "Data curation, Software, Formal analysis, Visualization."
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/156",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2691,7 +3233,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/groups/24"
       },
@@ -2699,13 +3241,13 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
-      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing."
+      "orig": "Investigation.",
+      "text": "Investigation."
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/158",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
@@ -2721,7 +3263,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/groups/25"
       },
@@ -2729,34 +3271,17 @@
       "content_layer": "body",
       "label": "footnote",
       "prov": [],
-      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
-      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing."
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing."
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/160",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/groups/16"
       },
       "children": [
         {
           "$ref": "#/groups/26"
-        }
-      ],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Ethics",
-      "text": "Ethics",
-      "level": 2
-    },
-    {
-      "self_ref": "#/texts/127",
-      "parent": {
-        "$ref": "#/groups/26"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/27"
         }
       ],
       "content_layer": "body",
@@ -2768,9 +3293,56 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/161",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/162",
+      "parent": {
+        "$ref": "#/texts/137"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/27"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Ethics",
+      "text": "Ethics",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/groups/27"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/28"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/164",
+      "parent": {
+        "$ref": "#/groups/28"
       },
       "children": [],
       "content_layer": "body",
@@ -2780,7 +3352,7 @@
       "text": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026."
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -2793,37 +3365,37 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/131"
+          "$ref": "#/texts/167"
         },
         {
-          "$ref": "#/texts/132"
+          "$ref": "#/texts/168"
         },
         {
-          "$ref": "#/texts/133"
+          "$ref": "#/texts/169"
         },
         {
-          "$ref": "#/texts/134"
+          "$ref": "#/texts/170"
         },
         {
-          "$ref": "#/texts/135"
+          "$ref": "#/texts/171"
         },
         {
-          "$ref": "#/texts/136"
+          "$ref": "#/texts/172"
         },
         {
-          "$ref": "#/texts/137"
+          "$ref": "#/texts/173"
         },
         {
-          "$ref": "#/texts/138"
+          "$ref": "#/texts/174"
         },
         {
-          "$ref": "#/texts/139"
+          "$ref": "#/texts/175"
         }
       ],
       "content_layer": "body",
@@ -2834,9 +3406,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/167",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2846,9 +3418,9 @@
       "text": "All NGS data has been deposited in GEO (GSE115291). Sequences of full-length de novo ETn insertions have been deposited in the GenBank database (MH449667- MH449669)."
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/168",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2858,9 +3430,9 @@
       "text": "The following datasets were generated:"
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/169",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2870,9 +3442,9 @@
       "text": "Wolf G. Retrotransposon reactivation and mobilization upon deletions of megabase scale KRAB zinc finger gene clusters in mice. NCBI Gene Expression Omnibus (2019). NCBI: GSE115291"
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/170",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2882,9 +3454,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449667"
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/171",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2894,9 +3466,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449668"
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/172",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2906,9 +3478,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449669"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/173",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2918,9 +3490,9 @@
       "text": "The following previously published datasets were used:"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/174",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2930,9 +3502,9 @@
       "text": "Castro-Diaz N, Ecco G, Coluccio A, Kapopoulou A, Duc J, Trono D. Evollutionally dynamic L1 regulation in embryonic stem cells. NCBI Gene Expression Omnibus (2014). NCBI: GSM1406445"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/175",
       "parent": {
-        "$ref": "#/texts/130"
+        "$ref": "#/texts/166"
       },
       "children": [],
       "content_layer": "body",
@@ -2942,13 +3514,13 @@
       "text": "Andrew ZX. H3K9me3_ChIPSeq (Ctrl). NCBI Gene Expression Omnibus (2014). NCBI: GSM1327148"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/groups/28"
+          "$ref": "#/groups/29"
         }
       ],
       "content_layer": "body",
@@ -2959,9 +3531,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/177",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -2973,9 +3545,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/178",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -2987,9 +3559,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/179",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3001,9 +3573,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/180",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3015,9 +3587,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/181",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3029,9 +3601,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/182",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3043,9 +3615,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/183",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3057,9 +3629,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/184",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3071,9 +3643,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/185",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3085,9 +3657,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/186",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3099,9 +3671,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/187",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3113,9 +3685,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/188",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3127,9 +3699,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/189",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3141,9 +3713,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/190",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3155,9 +3727,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/191",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3169,9 +3741,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/192",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3183,9 +3755,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/193",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3197,9 +3769,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/194",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3211,9 +3783,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/195",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3225,9 +3797,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/196",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3239,9 +3811,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/197",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3253,9 +3825,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/198",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3267,9 +3839,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/199",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3281,9 +3853,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/200",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3295,9 +3867,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/201",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3309,9 +3881,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/202",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3323,9 +3895,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/203",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3337,9 +3909,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/204",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3351,9 +3923,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/205",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3365,9 +3937,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/206",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3379,9 +3951,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/207",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3393,9 +3965,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/208",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3407,9 +3979,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/209",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3421,9 +3993,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/210",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3435,9 +4007,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/211",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3449,9 +4021,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/212",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3463,9 +4035,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/213",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3477,9 +4049,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/214",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3491,9 +4063,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/215",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3505,9 +4077,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/216",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3519,9 +4091,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/217",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3533,9 +4105,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/218",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3547,9 +4119,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/219",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3561,9 +4133,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/220",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3575,9 +4147,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/221",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3589,9 +4161,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/222",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3603,9 +4175,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/223",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3617,9 +4189,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/224",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3631,9 +4203,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/225",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3645,9 +4217,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/226",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3659,9 +4231,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/227",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3673,9 +4245,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/228",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3687,9 +4259,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/229",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3701,9 +4273,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/230",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3715,9 +4287,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/231",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
@@ -3729,9 +4301,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/232",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/29"
       },
       "children": [],
       "content_layer": "body",
