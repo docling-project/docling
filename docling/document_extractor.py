@@ -61,9 +61,13 @@ class ExtractionFormatOption(BaseFormatOption):
         - `pipeline_options` is typed as `PipelineOptions` which MUST inherit from
           `BaseOptions` (as used by `BaseExtractionPipeline`).
         - `backend` is the document-opening backend used by `_DocumentConversionInput`.
+          Optional in overrides: when omitted, `DocumentExtractor` fills the
+          canonical per-format default so callers overriding only
+          `pipeline_options` need not restate it.
     """
 
     pipeline_cls: Type[BaseExtractionPipeline]
+    backend: Optional[Type[AbstractDocumentBackend]] = None
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> Self:
@@ -120,12 +124,22 @@ class DocumentExtractor:
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        # Build per-format options with defaults, then apply any user overrides
+        # Build per-format options with defaults, then apply any user overrides.
+        # An override that omits `backend` inherits the canonical per-format one,
+        # so overriding only `pipeline_options` does not force restating it.
         overrides = extraction_format_options or {}
-        self.extraction_format_to_options: dict[InputFormat, ExtractionFormatOption] = {
-            fmt: overrides.get(fmt, _get_default_extraction_option(fmt))
-            for fmt in self.allowed_formats
-        }
+        self.extraction_format_to_options: dict[
+            InputFormat, ExtractionFormatOption
+        ] = {}
+        for fmt in self.allowed_formats:
+            fopt = overrides.get(fmt)
+            if fopt is None:
+                fopt = _get_default_extraction_option(fmt)
+            elif fopt.backend is None:
+                fopt = fopt.model_copy(
+                    update={"backend": _get_default_extraction_option(fmt).backend}
+                )
+            self.extraction_format_to_options[fmt] = fopt
 
         # Cache pipelines by (class, options-hash)
         self._initialized_pipelines: dict[

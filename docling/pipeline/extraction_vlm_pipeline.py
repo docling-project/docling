@@ -39,6 +39,7 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmExtractionPipelineOptions,
 )
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.models.base_model import BaseVlmModel, SupportsContentExtraction
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
 from docling.models.extraction.transformers_extraction_model import (
@@ -190,25 +191,43 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         ext_res.pages.append(self._prediction_to_page_data(1, predictions, ext_res))
 
     def _get_text_from_input(self, input_doc: InputDocument) -> str:
-        """Produce the whole-document text channel for a declarative source (dim 1)."""
+        """Produce the text channel for a declarative source, honoring page_range.
+
+        The image paths honor ``input_doc.limits.page_range``; the text path does
+        too, restricting serialization to the document pages within the range.
+        Markdown raw-passthrough is unpaginated, so the range does not apply there.
+        """
         backend = input_doc._backend
-        # Markdown passes through as-is: no DoclingDocument round-trip.
+        # Markdown passes through as-is: no DoclingDocument round-trip, no pages.
         if isinstance(backend, MarkdownDocumentBackend):
             return backend.markdown
 
         assert isinstance(backend, DeclarativeDocumentBackend)
-        return self._serialize_doc(backend.convert())
+        doc = backend.convert()
+
+        start_page, end_page = input_doc.limits.page_range
+        pages: Optional[set[int]] = None
+        if (start_page, end_page) != DEFAULT_PAGE_RANGE and doc.pages:
+            pages = {p for p in doc.pages if start_page <= p <= end_page}
+        return self._serialize_doc(doc, pages=pages)
 
     def _serialize_doc(
-        self, doc: DoclingDocument, page_no: Optional[int] = None
+        self, doc: DoclingDocument, pages: Optional[set[int]] = None
     ) -> str:
-        """Serialize a document (or one page of it) to the markdown text channel."""
+        """Serialize a document (or a subset of pages) to the markdown text channel.
+
+        ``pages=None`` serializes the whole document (byte-for-byte as before).
+        """
         params = self.pipeline_options.markdown_params
         if params is None:
-            return doc.export_to_markdown(page_no=page_no)
+            if pages is None:
+                return doc.export_to_markdown()
+            return "\n\n".join(
+                doc.export_to_markdown(page_no=page_no) for page_no in sorted(pages)
+            )
 
-        if page_no is not None:
-            params = params.model_copy(update={"pages": {page_no}})
+        if pages is not None:
+            params = params.model_copy(update={"pages": set(pages)})
 
         from docling_core.transforms.serializer.markdown import MarkdownDocSerializer
 
@@ -246,7 +265,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                         request: list[ContentItem] = [
                             ImageContentItem(image=image),
                             TextContentItem(
-                                text=self._serialize_doc(doc, page_no=page_number)
+                                text=self._serialize_doc(doc, pages={page_number})
                             ),
                         ]
                         predictions = list(self.vlm_model.process([request], prompt))
