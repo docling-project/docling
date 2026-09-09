@@ -626,12 +626,10 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract a page-aware native outline, with PDFium compatibility fallback."""
+        """Extract a page-aware native outline."""
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.seek(0)
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
         dp_doc = DoclingPdfParser(loglevel="fatal").load(
