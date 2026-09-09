@@ -387,7 +387,6 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         return self.page_count() > 0
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
         if self.dp_doc is None:
             return []
         return extract_outline_from_docling_parse(self.dp_doc)
@@ -661,11 +660,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
-
-        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
-        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
-        """
+        """Extract a page-aware native outline."""
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
