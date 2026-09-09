@@ -4,17 +4,11 @@ Order Receipt Details
 
 Receipt documentation for table service:
 
-<!-- missing-text -->
-
-<!-- missing-text -->
-
 1
 
 Restaurant
 
 Docling
-
-<!-- missing-text -->
 
 2
 
@@ -22,15 +16,11 @@ Telephone
 
 (123) 456-7890
 
-<!-- missing-text -->
-
 3
 
 Server
 
 Quack Quackling
-
-<!-- missing-text -->
 
 4
 
@@ -38,15 +28,11 @@ Order Number
 
 12345
 
-<!-- missing-text -->
-
 5
 
 Seating
 
 13
-
-<!-- missing-text -->
 
 6
 
@@ -54,15 +40,11 @@ Dining Type
 
 Celebration
 
-<!-- missing-text -->
-
 7
 
 Number of guests
 
 5
-
-<!-- missing-text -->
 
 8
 

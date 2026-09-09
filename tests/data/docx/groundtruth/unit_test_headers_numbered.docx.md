@@ -62,3 +62,5 @@ Paragraph 2.1.2
 This is the first reference.
 
 This is the second reference.
+
+### 2.3 Inherited numbering section

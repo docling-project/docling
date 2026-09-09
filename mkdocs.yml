@@ -92,6 +92,7 @@ nav:
     - Chunking: concepts/chunking.md
     - Plugins: concepts/plugins.md
     - OCR engines: concepts/OCR.md
+    - Native OCR engines: concepts/OCR_native.md
   - Examples:
     # NOTE: notebook (.ipynb) and jupytext percent-format (.py) sources under
     # docs/examples/ are pre-rendered to markdown by scripts/render_notebooks.py
@@ -176,6 +177,7 @@ nav:
       - "Apify": integrations/apify.md
       - "Data Prep Kit": integrations/data_prep_kit.md
       - "InstructLab": integrations/instructlab.md
+      - "Label Studio": integrations/labelstudio.md
       - "NVIDIA": integrations/nvidia.md
       - "Prodigy": integrations/prodigy.md
       - "RHEL AI": integrations/rhel_ai.md

@@ -99,6 +99,7 @@ class InputFormat(str, Enum):
 
     DOCX = "docx"
     DOC = "doc"
+    RTF = "rtf"
     PPTX = "pptx"
     PPT = "ppt"
     HTML = "html"
@@ -142,11 +143,13 @@ class OutputFormat(str, Enum):
     DOCLANG = "doclang"
     DCLX = "dclx"
     CHUNKS = "chunks"
+    LATEX = "latex"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.DOC: ["doc", "dot"],
+    InputFormat.RTF: ["rtf"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
@@ -159,7 +162,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
-    InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.XLSX: ["xlsx", "xlsm", "xltx", "xltm"],
     InputFormat.XLS: ["xls", "xlt"],
     InputFormat.ODT: ["odt", "ott"],
     InputFormat.ODS: ["ods", "ots"],
@@ -186,6 +189,11 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.DOC: [
         "application/msword",
         "application/x-msword",
+    ],
+    InputFormat.RTF: [
+        "application/rtf",
+        "text/rtf",
+        "application/x-rtf",
     ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",

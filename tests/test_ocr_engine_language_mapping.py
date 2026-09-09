@@ -1,0 +1,516 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+"""Per-engine translation from canonical tags to native codes, and the engine
+choice a tag can drive.
+
+Most of these run without any engine installed: each engine's table and mapping
+are module-level or reachable on an uninitialized instance, which is what makes
+the mapping reviewable at all. The exceptions are RapidOCR, whose PP-OCRv6
+vocabulary is read from the installed `rapidocr`, and the two sections at the
+end, where what an engine advertises -- and which engine `auto` settles on --
+depends on what is installed. Those carry `pytest.mark.ml_ocr` per test.
+
+The parsing rules that settle before any engine is consulted are in
+`test_ocr_language.py`.
+"""
+
+import logging
+import shutil
+import sys
+
+import pytest
+
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
+    KserveV2OcrOptions,
+    OcrAutoOptions,
+    OcrMacOptions,
+    RapidOcrOptions,
+    TesseractCliOcrOptions,
+    TesseractOcrOptions,
+)
+from docling.exceptions import OcrLanguageNotSupportedError
+from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
+from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
+from docling.models.stages.ocr.rapid_ocr_model import (
+    RapidOcrModel,
+    _ppocr_code,
+    _ppocr_supported_languages,
+    _rapidocr_vocabulary,
+)
+from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
+from docling.models.stages.ocr.tesseract_utils import language_to_tesseract_code
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+)
+
+pytestmark = pytest.mark.ml_ocr
+
+_ONNX_VOCABULARY = _rapidocr_vocabulary("onnxruntime")
+_TORCH_VOCABULARY = _rapidocr_vocabulary("torch")
+
+
+def _iso(value: str) -> OcrLanguage:
+    """Canonicalize `value` as a BCP-47 request, the way a user writes it."""
+    return OcrLanguageResolver.canonicalize_ocr_language(f"iso:{value}")
+
+
+def _iso_tags(values: list[str]) -> list[str]:
+    """`OcrOptions.lang` spellings for a list of BCP-47 tags."""
+    return [f"iso:{value}" for value in values]
+
+
+# --- PP-OCR (RapidOCR) ------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        ("zh-Hans", "ch"),
+        ("zh-Hant", "chinese_cht"),
+        ("ja", "japan"),
+        ("en", "en"),
+        ("de", "de"),
+        ("sr-Latn", "rs_latin"),
+        # East Slavic has its own, narrower recognizer.
+        ("ru", "eslav"),
+        ("uk", "eslav"),
+        ("be", "eslav"),
+        # Any other Cyrillic language falls back to the script family.
+        ("sr", "cyrillic"),
+        ("mn", "cyrillic"),
+        ("el", "el"),
+        ("th", "th"),
+        ("hi", "devanagari"),
+        # The other two script families. PP-OCR has no `zu` or `ar` recognizer,
+        # so both reach a model only through the script they are written in.
+        ("zu", "latin"),
+        ("ar", "arabic"),
+    ],
+)
+def test_ppocr_tokens(tag: str, expected: str) -> None:
+    assert _ppocr_code(_iso(tag), _ONNX_VOCABULARY) == expected
+
+
+@pytest.mark.parametrize("token", ["latin", "cyrillic", "arabic", "devanagari"])
+def test_ppocr_script_recognizers_are_named_by_their_own_token(token: str) -> None:
+    """These are real PP-OCR models with no language to canonicalize to, so they
+    are carried through to the engine exactly as the user wrote them, which is
+    what a token carrying no `iso:` prefix always is."""
+    language = OcrLanguageResolver.canonicalize_ocr_language(token)
+
+    assert language.is_passthrough()
+    assert _ppocr_code(language, _ONNX_VOCABULARY) == token
+
+
+def test_ppocr_kannada_georgian_collision() -> None:
+    """PP-OCR's `ka` is Kannada; BCP-47 `ka` is Georgian.
+
+    Kannada must reach the `ka` recognizer, and Georgian must *not* -- it has no
+    PP-OCR model at all, and silently serving it the Kannada one is the bug this
+    guards.
+    """
+    assert _ppocr_code(_iso("kn"), _TORCH_VOCABULARY) == "ka"
+    assert _ppocr_code(_iso("ka"), _TORCH_VOCABULARY) is None
+    assert _ppocr_code(_iso("ka"), _ONNX_VOCABULARY) is None
+
+
+def test_ppocr_non_default_script_uses_the_family() -> None:
+    """PP-OCR's `az` and `uz` are the Latin ones, so a Cyrillic request for the
+    same language must not silently pick the Latin recognizer."""
+    assert _ppocr_code(_iso("az"), _ONNX_VOCABULARY) == "az"
+    assert _ppocr_code(_iso("az-Cyrl"), _ONNX_VOCABULARY) == "cyrillic"
+    assert _ppocr_code(_iso("uz-Cyrl"), _ONNX_VOCABULARY) == "cyrillic"
+
+
+def test_ppocr_supported_languages_are_canonical() -> None:
+    """Every entry of the advertised list is a tag the user can ask for again.
+
+    It fills the "Supported:" line of `OcrLanguageNotSupportedError`, so it is a
+    list people copy from -- and it offers the shortest spelling that reaches
+    each recognizer, so the inferred script is not something users have to type.
+    """
+    tags = _ppocr_supported_languages(_ONNX_VOCABULARY).bcp47
+
+    assert "zh" in tags
+    assert "zh-Hans" not in tags
+    # The two PP-OCR recognizers a bare primary subtag cannot name keep theirs.
+    assert "zh-Hant" in tags
+    assert "sr-Latn" in tags
+    # Languages are rendered back as tags, never as PP-OCR's own tokens.
+    assert "ch" not in tags
+    for tag in tags:
+        assert _iso(tag).short_tag() == tag
+
+
+def test_ppocr_script_recognizers_are_advertised_natively() -> None:
+    """PP-OCR's script models are the reason the native half exists.
+
+    No `(language, script)` pair names them, so they used to be dropped from the
+    advertised list entirely and a coverage error never mentioned them -- even
+    though a bare `cyrillic` has always worked.
+    """
+    vocabulary = _ppocr_supported_languages(_ONNX_VOCABULARY)
+
+    assert vocabulary.native == ["arabic", "cyrillic", "devanagari", "latin"]
+    # `ka` is not among them: `kn-Knda` deviates onto it and maps back, so PP-OCR's
+    # Kannada recognizer is reachable as a tag.
+    assert "kn" in vocabulary.bcp47
+
+
+# --- RapidOCR backend routing ----------------------------------------------
+
+
+def _rapid_model(backend: str, lang: list[str]) -> RapidOcrModel:
+    model = RapidOcrModel.__new__(RapidOcrModel)
+    model.options = RapidOcrOptions(backend=backend, lang=lang)
+    model.languages = tuple(
+        OcrLanguageResolver.canonicalize_ocr_language(tag) for tag in model.options.lang
+    )
+    return model
+
+
+@pytest.mark.parametrize("backend", ["onnxruntime", "torch"])
+def test_rapidocr_georgian_is_a_coverage_error_on_every_backend(backend: str) -> None:
+    """Georgian has no PP-OCR recognizer on any backend.
+
+    It has to be asked for as `iso:ka-Geor`: a bare `ka` given to RapidOCR is
+    PP-OCR's own token for Kannada, which is the reading RapidOCR users expect.
+    """
+    model = _rapid_model(backend, ["iso:ka-Geor"])
+
+    with pytest.raises(OcrLanguageNotSupportedError) as excinfo:
+        model.resolve_ocr_languages()
+
+    message = str(excinfo.value)
+    assert "ka-Geor" in message
+    assert backend in message
+    # The message must name what the user *can* ask for.
+    assert "Supported:" in message
+
+
+def test_rapidocr_native_ka_is_ppocr_kannada() -> None:
+    """`ka` names PP-OCR's Kannada recognizer; `iso:ka` is BCP-47 Georgian."""
+    options = RapidOcrOptions(backend="torch", lang=["ka"])
+    assert options.lang == ["ka"]
+    assert _rapid_model("torch", ["ka"]).resolve_ocr_languages() == ["ka"]
+
+
+def test_another_engines_native_code_fails_at_the_engine() -> None:
+    """`chi_sim` is tesseract's token, and the resolver does not know which
+    engine was selected, so it is accepted as written.
+
+    PP-OCR is the one that has to reject it, and its error has to name both the
+    token as the user spelled it and the codes that would have worked.
+    """
+    assert RapidOcrOptions(lang=["chi_sim"]).lang == ["chi_sim"]
+
+    model = _rapid_model("onnxruntime", ["chi_sim"])
+
+    with pytest.raises(OcrLanguageNotSupportedError) as excinfo:
+        model.resolve_ocr_languages()
+
+    message = str(excinfo.value)
+    assert "chi_sim" in message
+    assert "Engine codes:" in message
+
+
+def test_rapidocr_warns_and_truncates_extra_languages(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    model = _rapid_model("onnxruntime", _iso_tags(["de", "fr", "en"]))
+
+    with caplog.at_level(logging.WARNING):
+        assert model.resolve_ocr_languages() == ["de"]
+
+    warning = caplog.text
+    assert "iso:de-Latn" in warning
+    assert "iso:fr-Latn" in warning and "iso:en-Latn" in warning
+    assert "preference" in warning
+
+
+# --- KServe v2 --------------------------------------------------------------
+
+# KServe canonicalizes nothing: the deployed model is the only authority on the
+# languages it serves, so `lang` is neither validated nor mapped, only truncated
+# to the one value the request carries.
+
+
+def test_kserve_sends_the_engines_own_code_untouched() -> None:
+    """`chi_sim` is another engine's code and `auto` is retired, yet both survive:
+    only the deployment knows what it serves."""
+    options = KserveV2OcrOptions(url="http://localhost:8000", lang=["chi_sim", "auto"])
+
+    assert options.lang == ["chi_sim", "auto"]
+
+
+def test_kserve_default_lang_is_not_canonicalized() -> None:
+    options = KserveV2OcrOptions(url="http://localhost:8000")
+
+    assert options.lang == ["english", "chinese"]
+
+
+def test_kserve_warns_and_sends_the_first_language(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """One language fits the request; the rest are dropped, but never silently."""
+    options = KserveV2OcrOptions(
+        url="http://localhost:8000", transport="http", lang=["japan", "korean"]
+    )
+    model = KserveV2OcrModel.__new__(KserveV2OcrModel)
+
+    with caplog.at_level(logging.WARNING):
+        KserveV2OcrModel.__init__(
+            model,
+            enabled=True,
+            artifacts_path=None,
+            options=options,
+            accelerator_options=AcceleratorOptions(),
+        )
+
+    assert model._lang == "japan"
+    assert "japan" in caplog.text and "korean" in caplog.text
+
+
+def test_the_opt_out_does_not_leak_to_other_engines() -> None:
+    """Only KServe skips canonicalization; a sibling still rewrites its tags."""
+    assert RapidOcrOptions(lang=["iso:deu"]).lang == ["iso:de-Latn"]
+
+
+# --- the base-class policy --------------------------------------------------
+#
+# `BaseOcrModel` decides two things on every engine's behalf: what an engine that
+# has not overridden `map_ocr_language` does with a request, and what
+# `resolve_ocr_languages` does with the codes it collects. Every engine in the
+# tree overrides the first, so the fallback is only reachable through the base.
+
+
+class _BareOcrModel(BaseOcrModel):
+    """An engine that adds nothing: no table, no overrides, no installation.
+
+    `multiple_languages` is left at the base default, which is the
+    conservative single-model, single-language engine.
+    """
+
+    def __init__(self, tags: list[str]) -> None:
+        self.languages = OcrLanguageResolver.canonicalize_ocr_languages(tags)
+
+    def __call__(self, conv_res, page_batch):  # pragma: no cover - never run
+        raise NotImplementedError
+
+    @classmethod
+    def get_options_type(cls):  # pragma: no cover - never run
+        raise NotImplementedError
+
+
+class _BareMultilingualOcrModel(_BareOcrModel):
+    multiple_languages = True
+
+
+def test_the_default_mapping_is_the_primary_subtag() -> None:
+    """Most ISO-639 engines want `de`, not `de-Latn`."""
+    model = _BareMultilingualOcrModel(_iso_tags(["de-DE", "zh-TW"]))
+
+    assert model.resolve_ocr_languages() == ["de", "zh"]
+
+
+@pytest.mark.parametrize("token", ["cyrillic", "multilingual"])
+def test_the_default_mapping_refuses_what_it_cannot_name(token: str) -> None:
+    """An engine code is only ever meaningful to the engine that owns it, and an
+    engine with no vocabulary of its own owns none."""
+    model = _BareOcrModel([token])
+
+    with pytest.raises(OcrLanguageNotSupportedError, match="iso:"):
+        model.resolve_ocr_languages()
+
+
+def test_two_languages_sharing_a_native_code_are_joined_once() -> None:
+    """Both written Norwegians are the one `nor` traineddata, and tesseract is
+    handed the result as `-l nor`, not `-l nor+nor`."""
+    model = TesseractOcrCliModel.__new__(TesseractOcrCliModel)
+    # Stand in for the `--list-langs` probe: the join is what is under test, not
+    # which files happen to be installed on the machine running this.
+    model._tesseract_vocabulary = ["nor", "deu"]
+    model.languages = OcrLanguageResolver.canonicalize_ocr_languages(
+        _iso_tags(["nb", "nn", "de"])
+    )
+
+    assert model.resolve_ocr_languages() == ["nor", "deu"]
+
+
+def test_a_single_language_engine_keeps_the_first_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """List order is preference order, and the drop is never silent."""
+    model = _BareOcrModel(_iso_tags(["de", "fr"]))
+
+    with caplog.at_level(logging.WARNING):
+        assert model.resolve_ocr_languages() == ["de"]
+
+    assert "iso:de-Latn" in caplog.text and "iso:fr-Latn" in caplog.text
+
+
+# --- Tesseract --------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        # The vocabulary *is* ISO 639-2/T, so most tags need no table entry.
+        ("de", "deu"),
+        ("fr", "fra"),
+        ("el", "ell"),
+        ("cs", "ces"),
+        ("en", "eng"),
+        ("kn", "kan"),
+        # Georgian is `kat` here -- no collision, unlike PP-OCR.
+        ("ka", "kat"),
+        # ...and the deviations that do.
+        ("zh-Hans", "chi_sim"),
+        ("zh-Hant", "chi_tra"),
+        ("sr", "srp"),
+        ("sr-Latn", "srp_latn"),
+        ("az-Cyrl", "aze_cyrl"),
+        ("az", "aze"),
+        ("uz-Cyrl", "uzb_cyrl"),
+        ("ku", "kmr"),
+        ("nb", "nor"),
+        ("nn", "nor"),
+    ],
+)
+def test_tesseract_language_names(tag: str, expected: str) -> None:
+    assert language_to_tesseract_code(_iso(tag)) == expected
+
+
+def test_tesseract_script_files_pass_through_verbatim() -> None:
+    """A script file names its traineddata directly, in the install's spelling."""
+    assert (
+        language_to_tesseract_code(OcrLanguage(native="script/Latin")) == "script/Latin"
+    )
+    assert language_to_tesseract_code(OcrLanguage(native="Cyrillic")) == "Cyrillic"
+
+
+# --- what an engine advertises must be requestable --------------------------
+#
+# `supported_ocr_languages()` fills the "Supported:" line of
+# `OcrLanguageNotSupportedError`, so it is a list users copy from. Every tag in
+# it therefore has to survive being asked for again -- which is exactly what
+# three engines got wrong: EasyOCR offered `av-Cyrl`/`ce-Cyrl` under codes it
+# does not have, Tesseract offered the `script/*_vert` files the resolver
+# refuses, and ocrmac offered Vision's own `vi-VT`, which is not a tag at all.
+
+
+def _assert_every_advertised_tag_is_requestable(model) -> None:
+    advertised = model.supported_ocr_languages()
+    assert advertised.bcp47 or advertised.native, (
+        "the engine reported no languages at all"
+    )
+    unusable = []
+    # A tag is requestable only behind the prefix, which is the spelling the
+    # error message renders and the user pastes back; a code is requestable bare.
+    for tag in (*_iso_tags(advertised.bcp47), *advertised.native):
+        try:
+            model.map_ocr_language(OcrLanguageResolver.canonicalize_ocr_language(tag))
+        except (ValueError, OcrLanguageNotSupportedError) as exc:
+            unusable.append((tag, str(exc)))
+    assert not unusable
+
+
+def test_easyocr_advertises_only_languages_it_serves() -> None:
+    pytest.importorskip("easyocr")
+    from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+
+    model = EasyOcrModel(
+        enabled=False,
+        artifacts_path=None,
+        options=EasyOcrOptions(),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    _assert_every_advertised_tag_is_requestable(model)
+
+
+def test_tesseract_advertises_only_languages_it_serves() -> None:
+    if shutil.which("tesseract") is None:
+        pytest.skip("tesseract binary not installed")
+
+    model = TesseractOcrCliModel(
+        enabled=True,
+        artifacts_path=None,
+        options=TesseractCliOcrOptions(lang=["iso:en"]),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    _assert_every_advertised_tag_is_requestable(model)
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
+def test_ocrmac_advertises_only_languages_it_serves() -> None:
+    pytest.importorskip("ocrmac")
+    from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
+
+    model = OcrMacModel(
+        enabled=True,
+        artifacts_path=None,
+        options=OcrMacOptions(),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    _assert_every_advertised_tag_is_requestable(model)
+
+
+# --- auto-engine selection, driven by the language --------------------------
+#
+# `OcrAutoOptions` is the one place where a language tag changes *which engine
+# runs*, not merely which recognizer it loads, and deciding that means probing
+# the installed engines for real.
+
+# Amharic: a valid tag written in a script none of docling's engines recognize.
+_UNSERVABLE_TAG = "iso:am"
+
+
+def _auto_model(lang: list[str]) -> OcrAutoModel:
+    return OcrAutoModel(
+        enabled=True,
+        artifacts_path=None,
+        options=OcrAutoOptions(lang=lang),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+
+def test_auto_gives_the_delegate_the_users_language() -> None:
+    model = _auto_model(["iso:zh-Hant"])
+
+    assert model._engine is not None
+    assert model._engine.options.lang == ["iso:zh-Hant"]
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
+def test_auto_falls_through_an_engine_that_cannot_serve_the_language(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Apple Vision ships no Devanagari recognizer, so auto must move on rather
+    than fail -- picking an *available* engine is the whole contract of `auto`."""
+    pytest.importorskip("ocrmac")
+
+    with caplog.at_level(logging.INFO):
+        model = _auto_model(["iso:hi"])
+
+    assert "skipping ocrmac" in caplog.text
+    assert model._engine is not None
+    assert not isinstance(model._engine, type(model))
+
+
+def test_auto_reports_every_candidate_when_none_can_serve_the_language() -> None:
+    """The aggregated error replaces a bare "No OCR engine found." warning."""
+    with pytest.raises(OcrLanguageNotSupportedError) as excinfo:
+        _auto_model([_UNSERVABLE_TAG])
+
+    message = str(excinfo.value)
+    assert "am-Ethi" in message
+    # Every candidate is named with the reason it was passed over.
+    assert "No installed engine can serve it" in message

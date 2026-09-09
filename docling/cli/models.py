@@ -29,12 +29,18 @@ except ImportError as e:
     sys.exit(1)
 
 from docling.datamodel.settings import settings
+from docling.exceptions import RapidOcrModelSizeNotSupportedError
 from docling.models.stages.ocr.easyocr_model import (
-    _resolve_easyocr_recognition_models,
+    resolve_easyocr_codes,
 )
-from docling.models.stages.ocr.rapid_ocr_model import _parse_rapidocr_model_spec
+from docling.models.stages.ocr.rapid_ocr_model import (
+    _RAPIDOCR_DEFAULT_LANGUAGE,
+    _parse_rapidocr_model_spec,
+    _resolve_rapidocr,
+    _validate_rapidocr_model_size,
+)
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.model_downloader import download_models
+from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -122,7 +128,12 @@ def download(
         typer.Option(
             ...,
             "--easyocr-lang",
-            help="EasyOCR language code to prefetch. Repeat for multiple languages.",
+            help=(
+                "OCR language to prefetch for EasyOCR, as a BCP-47 tag "
+                "(e.g. 'de', 'zh-Hant', 'ru'). EasyOCR's own codes are accepted "
+                "too and mean what EasyOCR means by them, so 'ch_sim' is "
+                "Simplified Chinese. Repeat for multiple."
+            ),
         ),
     ] = None,
     rapidocr_backend_lang: Annotated[
@@ -132,7 +143,11 @@ def download(
             "--rapidocr-backend-lang",
             help=(
                 "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
-                "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
+                "with a BCP-47 language (e.g. 'onnxruntime:el', 'torch:ko'). "
+                "PP-OCR's own codes are accepted too, including its script "
+                "recognizers, which no language tag can name: "
+                "'onnxruntime:cyrillic', 'torch:ch'. Repeat for multiple. "
+                "Replaces the default set."
             ),
         ),
     ] = None,
@@ -140,11 +155,15 @@ def download(
         Literal["tiny", "small", "medium"],
         typer.Option(
             ...,
-            "--model-size",
+            "--rapidocr-model-size",
             help=(
-                "RapidOCR PP-OCRv6 detection/recognition model size to prefetch. Only "
-                "affects entries in --rapidocr-backend-lang that resolve to PP-OCRv6; "
-                "has no effect on PP-OCRv5/PP-OCRv4 entries."
+                "Detection/recognition model size, applied to every selected "
+                "--rapidocr-backend-lang pair (or the default set) -- one scalar "
+                "for the whole command, unlike the repeatable "
+                "--rapidocr-backend-lang. Only affects pairs resolving to "
+                "PP-OCRv6; `tiny` is not available for every PP-OCRv6 language "
+                "(e.g. Japanese), and an unsupported combination is rejected "
+                "before any download starts."
             ),
         ),
     ] = "small",
@@ -168,7 +187,7 @@ def download(
                 param_hint="--easyocr-lang",
             )
         try:
-            _resolve_easyocr_recognition_models(easyocr_lang)
+            resolve_easyocr_codes(easyocr_lang)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     if rapidocr_backend_lang is not None:
@@ -184,11 +203,32 @@ def download(
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-backend-lang"
             ) from error
-    if rapidocr_model_size != "small" and _AvailableModels.RAPIDOCR not in to_download:
-        raise typer.BadParameter(
-            "--model-size requires the 'rapidocr' model",
-            param_hint="--model-size",
-        )
+    if rapidocr_model_size != "small":
+        if _AvailableModels.RAPIDOCR not in to_download:
+            raise typer.BadParameter(
+                "--rapidocr-model-size requires the 'rapidocr' model",
+                param_hint="--rapidocr-model-size",
+            )
+        # Checked against every pair that will actually be prefetched, so a bad
+        # combination (e.g. onnxruntime:japan + tiny) fails here, not mid-download.
+        try:
+            for value in rapidocr_backend_lang or _DEFAULT_RAPIDOCR_MODELS:
+                spec = _parse_rapidocr_model_spec(value)
+                lang = spec.user_lang or _RAPIDOCR_DEFAULT_LANGUAGE
+                resolved = _resolve_rapidocr(lang, spec.backend)
+                assert resolved.ppocr_version is not None
+                assert resolved.rapidocr_code is not None
+                _validate_rapidocr_model_size(
+                    backend=spec.backend,
+                    language=lang,
+                    ppocr_version=resolved.ppocr_version,
+                    rec_code=resolved.rapidocr_code,
+                    model_size=rapidocr_model_size,
+                )
+        except (ValueError, RapidOcrModelSizeNotSupportedError) as error:
+            raise typer.BadParameter(
+                str(error), param_hint="--rapidocr-model-size"
+            ) from error
     output_dir = download_models(
         output_dir=output_dir,
         force=force,

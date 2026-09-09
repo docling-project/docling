@@ -123,7 +123,7 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 while line := self.path_or_stream.readline().decode("utf-8"):
-                    if line.startswith("<!DOCTYPE") or line == "PATN\n":
+                    if line.startswith("<!DOCTYPE") or line.rstrip("\r\n") == "PATN":
                         self._set_parser(line)
                     self.patent_content += line
             elif isinstance(self.path_or_stream, Path):
@@ -138,8 +138,8 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
             ) from exc
 
     def _set_parser(self, doctype: str) -> None:
-        doctype_line = doctype.lower()
-        if doctype == "PATN\n":
+        doctype_line = doctype.rstrip("\r\n").lower()
+        if doctype_line == "patn":
             self.parser = PatentUsptoGrantAps()
         elif "us-patent-application-v4" in doctype_line:
             self.parser = PatentUsptoIce()

@@ -47,7 +47,47 @@ For a complete example see [gpu_standard_pipeline.py](../examples/gpu_standard_p
 
 The current Docling OCR engines rely on third-party libraries, hence GPU support depends on the availability in the respective engines.
 
-The only setup which is known to work at the moment is RapidOCR with the torch backend, which can be enabled via
+RapidOCR supports GPU acceleration through both its Torch and ONNX Runtime
+backends. The ONNX Runtime backend also supports PP-OCRv5 recognition models
+which are unavailable through the Torch backend, such as `eslav` and
+`cyrillic`.
+
+On Linux and Windows, install the GPU-enabled ONNX Runtime extra:
+
+```sh
+pip install "docling[onnxruntime]"
+```
+
+Before processing documents, verify that ONNX Runtime can load its CUDA
+execution provider:
+
+```python
+import onnxruntime as ort
+
+assert "CUDAExecutionProvider" in ort.get_available_providers()
+```
+
+Then select a CUDA device and configure RapidOCR with the ONNX Runtime backend:
+
+```python
+from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+)
+from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+
+pipeline_options = PdfPipelineOptions(
+    accelerator_options=AcceleratorOptions(
+        device=AcceleratorDevice.CUDA,  # or "cuda:N" for a specific GPU
+    ),
+    ocr_options=RapidOcrOptions(
+        backend="onnxruntime",
+        lang=["eslav"],
+    ),
+)
+```
+
+The Torch backend can be enabled instead with:
 
 ```py
 pipeline_options = PdfPipelineOptions()

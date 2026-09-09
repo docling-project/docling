@@ -21,7 +21,10 @@ import docling.cli.models as models_cli
 from docling.cli.models import _AvailableModels, _default_models
 from docling.cli.tools import app
 
-runner = CliRunner()
+# Under CI Rich thinks it has a terminal and styles the error panel, landing
+# escapes between the border and the wrapped halves of a sentence.
+# `TERM=dumb` turns that off, so the panel arrives as plain wrapped text.
+runner = CliRunner(env={"TERM": "dumb"})
 
 
 @pytest.fixture
@@ -55,7 +58,6 @@ def _enabled(recorded: dict[str, Any]) -> set[str]:
     return {key for key, value in recorded.items() if key.startswith("with_") and value}
 
 
-_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 _BOX_DRAWING = re.compile(r"[\u2500-\u257f]")
 
 
@@ -63,15 +65,9 @@ def _flat(output: str) -> str:
     """Reduce a Rich error panel to a single line of plain text.
 
     Typer renders ``BadParameter`` messages inside a bordered panel and hard
-    wraps them, so error text cannot be matched against the raw output. When
-    the output stream is a terminal -- as it is under CI -- Rich also emits
-    colour codes, including between the wrapped halves of a sentence, so the
-    escapes have to go before whitespace is collapsed or the message is still
-    split.
+    wraps them, so error text cannot be matched against the raw output.
     """
-    stripped = _ANSI_ESCAPE.sub("", output)
-    stripped = _BOX_DRAWING.sub(" ", stripped)
-    return re.sub(r"\s+", " ", stripped)
+    return re.sub(r"\s+", " ", _BOX_DRAWING.sub(" ", output))
 
 
 def test_tools_help_lists_models_subcommand():
@@ -291,7 +287,7 @@ def test_rapidocr_model_size_is_forwarded_when_rapidocr_is_selected(
             "download",
             "-o",
             str(tmp_path),
-            "--model-size",
+            "--rapidocr-model-size",
             model_size,
             "rapidocr",
         ],
@@ -318,7 +314,7 @@ def test_rapidocr_model_size_requires_the_rapidocr_model(tmp_path):
             "download",
             "-o",
             str(tmp_path),
-            "--model-size",
+            "--rapidocr-model-size",
             "tiny",
             "layout",
         ],
@@ -336,13 +332,80 @@ def test_rapidocr_model_size_rejects_an_invalid_value(tmp_path):
             "download",
             "-o",
             str(tmp_path),
-            "--model-size",
+            "--rapidocr-model-size",
             "large",
             "rapidocr",
         ],
     )
 
     assert result.exit_code != 0
+
+
+def test_rapidocr_model_size_rejects_unsupported_combination(tmp_path):
+    """The maintainer's reproduction case: tiny has no Japanese checkpoint."""
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-backend-lang",
+            "onnxruntime:japan",
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "japan" in _flat(result.output)
+    assert "tiny" in _flat(result.output)
+
+
+def test_rapidocr_model_size_validates_the_default_backend_lang_set(
+    tmp_path, recorded_download
+):
+    """No --rapidocr-backend-lang given -> the default pairs are still checked."""
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+
+def test_rapidocr_backend_lang_repeats_while_model_size_stays_scalar(
+    tmp_path, recorded_download
+):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-backend-lang",
+            "onnxruntime:en",
+            "--rapidocr-backend-lang",
+            "torch:ch",
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_models"] == ["onnxruntime:en", "torch:ch"]
+    assert recorded_download["rapidocr_model_size"] == "tiny"
 
 
 def test_download_hf_repo_maps_repo_ids_to_local_directories(

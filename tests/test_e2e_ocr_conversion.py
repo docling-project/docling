@@ -77,17 +77,13 @@ def test_e2e_conversions():
         (EasyOcrOptions(mode=OcrMode.LAYOUT_REGIONS), False),
         # Full page OCR
         (TesseractOcrOptions(mode=OcrMode.FULL_PAGE), True),
-        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=[]), True),
         (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE), True),
-        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=[]), True),
         (EasyOcrOptions(mode=OcrMode.FULL_PAGE), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
-        if sys.version_info >= (3, 14) and rapidocr_backend == "onnxruntime":
-            # skip onnxruntime backend on Python 3.14
-            continue
-
         configs.append((RapidOcrOptions(backend=rapidocr_backend), False))
         configs.append(
             (
