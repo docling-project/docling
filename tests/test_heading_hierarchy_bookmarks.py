@@ -3,7 +3,6 @@
 
 """Tests for PDF-bookmark / ToC heading inference and list-item promotion."""
 
-from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,7 +16,6 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 
-import docling.backend.docling_parse_backend as docling_parse_backend_module
 import docling.models.stages.heading_hierarchy.heading_hierarchy_model as hh_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
@@ -35,7 +33,6 @@ from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
     extract_outline_from_pdfium,
-    extract_outline_from_pdfium_path_or_stream,
 )
 
 SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
@@ -239,17 +236,6 @@ def test_extract_outline_from_generated_pdf(tmp_path):
     ]
 
 
-def test_extract_outline_from_pdfium_path_or_stream_preserves_stream_position():
-    stream = BytesIO(SAMPLE_PDF.read_bytes())
-    stream.seek(13)
-
-    outline = extract_outline_from_pdfium_path_or_stream(stream)
-
-    assert stream.tell() == 13
-    assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
-    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
-
-
 # ------------------------------------------------------------------------- wiring
 
 
@@ -336,9 +322,7 @@ def test_docling_parse_backends_outline_from_sample_pdf_have_page_targets(backen
 
 
 def test_docling_parse_native_outline_from_sample_pdf():
-    # Newer docling-parse supplies target pages; older wheels expose only titles and hierarchy.
-    # The backend compatibility test above verifies that older wheels still become page-aware
-    # through PDFium. Native extraction never exposes destination coordinates.
+    # docling-parse supplies target pages; native extraction never exposes destination coordinates.
     from docling_parse.pdf_parser import DoclingPdfParser
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
@@ -348,33 +332,8 @@ def test_docling_parse_native_outline_from_sample_pdf():
         dp_doc.unload()
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
-    page_numbers = [o.page_no for o in outline]
-    assert page_numbers in ([1, 1, 1, 2, 2, 2, 3, 3], [None] * len(EXPECTED_OUTLINE))
+    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
     assert all(o.y_top is None for o in outline)
-
-
-def test_docling_parse_backend_falls_back_when_native_pages_are_unavailable(
-    monkeypatch,
-):
-    """Older docling-parse wheels must still get page-local bookmark matching."""
-    native_outline = [_PdfOutlineItem(title="Chapter", level=0)]
-    pdfium_outline = [_PdfOutlineItem(title="Chapter", level=0, page_no=2, y_top=100.0)]
-    backend = object.__new__(DoclingParseDocumentBackend)
-    backend.dp_doc = object()
-    backend._pdoc = object()
-
-    monkeypatch.setattr(
-        docling_parse_backend_module,
-        "extract_outline_from_docling_parse",
-        lambda _document: native_outline,
-    )
-    monkeypatch.setattr(
-        docling_parse_backend_module,
-        "extract_outline_from_pdfium",
-        lambda _document: pdfium_outline,
-    )
-
-    assert backend.get_document_outline() == pdfium_outline
 
 
 def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
