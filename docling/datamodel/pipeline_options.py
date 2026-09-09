@@ -37,9 +37,10 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelOptions,
 )
 from docling.datamodel.extraction_options import (
-    ApiExtractionVlmOptions,
     ChannelSelection,
-    InlineExtractionVlmOptions,
+    ExtractionPromptStyle,
+    ExtractionVlmModelSpec,
+    ExtractionVlmOptions,
 )
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
@@ -1881,24 +1882,45 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
 
-    The prompt style travels with the spec (``extraction_prompt_style`` on
-    ``InlineExtractionVlmOptions`` / ``ApiExtractionVlmOptions``), so a preset
-    pairs the model with the only style it can honor:
-        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) — NuExtract style
-        - ``GRANITE_VISION_4_1_TRANSFORMERS`` / ``GRANITE_VISION_4_1_API`` — Granite schema-instruction style
+    The model spec, prompt style, and channel capability travel with
+    ``vlm_options`` (an ``ExtractionVlmOptions``); the engine type selects the
+    execution path. Use a preset for the common case::
+
+        ExtractionVlmOptions.from_preset("nuextract_2b")   # or "granite_vision_4_1"
+
+    Named specs: ``NU_EXTRACT_2B_TRANSFORMERS`` (default),
+    ``GRANITE_VISION_4_1_TRANSFORMERS``, ``GRANITE_VISION_4_1_API``,
+    ``NU_EXTRACT_API``.
+
+    Deprecated: passing a plain ``InlineVlmOptions`` as ``vlm_options`` together
+    with the pipeline-level ``extraction_prompt_style`` field (the released
+    ``main`` shape) still works but warns and will be unsupported in a future
+    release.
     """
 
     vlm_options: Annotated[
-        InlineExtractionVlmOptions | ApiExtractionVlmOptions,
+        ExtractionVlmOptions,
         Field(
             description=(
-                "Vision-Language Model (VLM) configuration for structured information extraction. Either a local "
-                "`InlineExtractionVlmOptions` (HuggingFace transformers) or a remote `ApiExtractionVlmOptions` "
-                "pointing at an OpenAI-conformant endpoint (requires `enable_remote_services=True`). Each spec "
-                "carries its own `extraction_prompt_style`."
+                "VLM configuration for structured extraction: an "
+                "`ExtractionVlmOptions` pairing a model spec (repo, prompt style, "
+                "channel capability) with an engine (local transformers or a "
+                "remote OpenAI-conformant endpoint; the latter requires "
+                "`enable_remote_services=True`)."
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
+
+    extraction_prompt_style: Annotated[
+        ExtractionPromptStyle | None,
+        Field(
+            description=(
+                "Deprecated. Only consulted when `vlm_options` is a legacy plain "
+                "`InlineVlmOptions`; the prompt style now lives on the model spec. "
+                "Will be removed in a future release."
+            )
+        ),
+    ] = None
 
     input_channels: Annotated[
         ChannelSelection,
@@ -1923,6 +1945,80 @@ class VlmExtractionPipelineOptions(PipelineOptions):
             )
         ),
     ] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_vlm_options(cls, data):
+        """Wrap a released-style flat ``vlm_options`` into ``ExtractionVlmOptions``.
+
+        Back-compat for the ``main`` surface (`vlm_options` a plain
+        ``InlineVlmOptions`` plus a pipeline-level ``extraction_prompt_style``).
+        Warns; will be removed in a future release.
+        """
+        if not isinstance(data, dict):
+            return data
+        vlm = data.get("vlm_options")
+        if vlm is None or isinstance(vlm, ExtractionVlmOptions):
+            return data
+
+        # pipeline_options_vlm_model is imported at module top for InlineVlmOptions.
+        from docling.datamodel.pipeline_options_vlm_model import (
+            ApiVlmOptions,
+            InlineVlmOptions,
+        )
+
+        style = data.get("extraction_prompt_style") or ExtractionPromptStyle.NUEXTRACT
+        if isinstance(vlm, InlineVlmOptions):
+            warnings.warn(
+                "Passing a plain InlineVlmOptions as `vlm_options` (with "
+                "`extraction_prompt_style`) is deprecated and will be unsupported "
+                "in a future release. Use ExtractionVlmOptions.from_preset(...) or "
+                "one of the named extraction specs.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            data = {
+                **data,
+                "vlm_options": ExtractionVlmOptions.from_legacy_inline_options(
+                    vlm, style
+                ),
+            }
+        elif isinstance(vlm, ApiVlmOptions):
+            warnings.warn(
+                "Passing a plain ApiVlmOptions as `vlm_options` is deprecated and "
+                "will be unsupported in a future release. Use ExtractionVlmOptions.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            data = {
+                **data,
+                "vlm_options": ExtractionVlmOptions.from_legacy_api_options(vlm, style),
+            }
+        return data
+
+    @model_validator(mode="after")
+    def _validate_channel_capability(self) -> "VlmExtractionPipelineOptions":
+        """Static (options-only) check: forced channel vs. model capability (R5).
+
+        Format-dependent checks stay per-document in the pipeline's
+        `_resolve_channel`; here we only reject contradictions decidable from the
+        options alone (e.g. `IMAGE_AND_TEXT` with an image-only model).
+        """
+        spec = self.vlm_options.model_spec
+        channel = self.input_channels
+        if channel in (ChannelSelection.IMAGE, ChannelSelection.IMAGE_AND_TEXT):
+            if not spec.accepts_image:
+                raise ValueError(
+                    f"input_channels={channel.value} but model '{spec.name}' does "
+                    f"not accept an image payload."
+                )
+        if channel in (ChannelSelection.TEXT, ChannelSelection.IMAGE_AND_TEXT):
+            if not spec.accepts_text:
+                raise ValueError(
+                    f"input_channels={channel.value} but model '{spec.name}' does "
+                    f"not accept a text payload."
+                )
+        return self
 
 
 class HeadingHierarchyOptions(BaseModel):

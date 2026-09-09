@@ -31,9 +31,9 @@ from docling.datamodel.extraction import (
     TextContentItem,
 )
 from docling.datamodel.extraction_options import (
-    ApiExtractionVlmOptions,
     ChannelSelection,
     ExtractionPromptStyle,
+    ExtractionVlmOptions,
 )
 from docling.datamodel.pipeline_options import (
     PipelineOptions,
@@ -45,6 +45,7 @@ from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 
@@ -56,31 +57,34 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         super().__init__(pipeline_options)
 
         self.pipeline_options: VlmExtractionPipelineOptions
-        vlm_options = pipeline_options.vlm_options
+        vlm_options: ExtractionVlmOptions = pipeline_options.vlm_options
         self.vlm_model: BaseVlmModel
 
-        if isinstance(vlm_options, ApiExtractionVlmOptions):
-            # Remote OpenAI-conformant endpoint. NuExtract carries its template
-            # out-of-band, so it routes to the content-array request path; other
-            # styles (Granite) stay on the plain image-request path.
+        # Dispatch on the engine type, not the options subclass. The prompt
+        # style still selects the remote request shape (NuExtract carries its
+        # template out-of-band; Granite uses the plain image-request path), but
+        # that is a transport detail internal to the API branch.
+        engine_type = vlm_options.engine_options.engine_type
+        if VlmEngineType.is_api_variant(engine_type):
+            api_input = vlm_options.to_api_input()
             if vlm_options.extraction_prompt_style == ExtractionPromptStyle.NUEXTRACT:
                 self.vlm_model = ApiExtractionVlmModel(
                     enabled=True,
                     enable_remote_services=pipeline_options.enable_remote_services,
-                    vlm_options=vlm_options,
+                    vlm_options=api_input,
                 )
             else:
                 self.vlm_model = ApiVlmModel(
                     enabled=True,
                     enable_remote_services=pipeline_options.enable_remote_services,
-                    vlm_options=vlm_options,
+                    vlm_options=api_input,
                 )
         else:
             self.vlm_model = TransformersExtractionModel(
                 enabled=True,
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                vlm_options=vlm_options,
+                vlm_options=vlm_options.to_inline_input(),
             )
 
     def _extract_data(
@@ -137,38 +141,60 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         offers_text = isinstance(backend, DeclarativeDocumentBackend)
 
         selection = self.pipeline_options.input_channels
-        style = self.pipeline_options.vlm_options.extraction_prompt_style
+        spec = self.pipeline_options.vlm_options.model_spec
+        accepts_image = spec.accepts_image
+        accepts_text = spec.accepts_text
 
         if selection == ChannelSelection.AUTO:
-            resolved = ChannelSelection.IMAGE if offers_image else ChannelSelection.TEXT
+            # (what the format offers) ∩ (what the model accepts), prefer image.
+            if offers_image and accepts_image:
+                resolved = ChannelSelection.IMAGE
+            elif offers_text and accepts_text:
+                resolved = ChannelSelection.TEXT
+            else:
+                raise ValueError(
+                    f"No channel works for format {input_doc.format} with model "
+                    f"'{spec.name}': format offers "
+                    f"{'image' if offers_image else ''}"
+                    f"{'+' if offers_image and offers_text else ''}"
+                    f"{'text' if offers_text else ''}, model accepts "
+                    f"{'image' if accepts_image else ''}"
+                    f"{'+' if accepts_image and accepts_text else ''}"
+                    f"{'text' if accepts_text else ''}."
+                )
         else:
             resolved = selection
 
-        if resolved == ChannelSelection.IMAGE and not offers_image:
+        # Validate the resolved channel against what the format offers (dynamic,
+        # per-document) and what the model accepts (capability; R3).
+        needs_image = resolved in (
+            ChannelSelection.IMAGE,
+            ChannelSelection.IMAGE_AND_TEXT,
+        )
+        needs_text = resolved in (
+            ChannelSelection.TEXT,
+            ChannelSelection.IMAGE_AND_TEXT,
+        )
+        if needs_image and not offers_image:
             raise ValueError(
-                f"IMAGE channel requested but format {input_doc.format} does not "
-                f"offer page images."
+                f"{resolved.value} channel requested but format {input_doc.format} "
+                f"does not offer page images."
             )
-        if resolved == ChannelSelection.IMAGE_AND_TEXT and not (
-            offers_image and offers_text
-        ):
+        if needs_text and not offers_text:
             raise ValueError(
-                f"IMAGE_AND_TEXT channel requested but format {input_doc.format} "
-                f"does not offer both page images and a text payload."
+                f"{resolved.value} channel requested but format {input_doc.format} "
+                f"does not offer a text payload."
             )
-        # Any channel carrying text needs a model that can take a text payload.
-        if resolved in (ChannelSelection.TEXT, ChannelSelection.IMAGE_AND_TEXT):
-            if resolved == ChannelSelection.TEXT and not offers_text:
-                raise ValueError(
-                    f"TEXT channel requested but format {input_doc.format} does "
-                    f"not offer a text payload."
-                )
-            if style != ExtractionPromptStyle.NUEXTRACT:
-                raise ValueError(
-                    f"{resolved.value} channel is only supported by the NuExtract "
-                    f"prompt style, not {style.value} (the model cannot take a "
-                    f"text payload)."
-                )
+        if needs_image and not accepts_image:
+            raise ValueError(
+                f"{resolved.value} channel requested but model '{spec.name}' does "
+                f"not accept an image payload."
+            )
+        if needs_text and not accepts_text:
+            raise ValueError(
+                f"{resolved.value} channel requested but model '{spec.name}' does "
+                f"not accept a text payload."
+            )
         return resolved
 
     # ---------------------------- dim 2: text path ----------------------------

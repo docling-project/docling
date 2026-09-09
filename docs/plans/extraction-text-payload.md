@@ -316,17 +316,40 @@ exists in `stage_model_specs.py`.
 on the options class. `vlm_options` as the field name stays — it is symmetric
 with convert; only the *type* changes.
 
-**Open decisions.**
-- Where do `extraction_prompt_style`, the `serialize_template` /
-  `build_extraction_prompt` logic, and channel capability (R3) live? Options:
-  (a) fields/methods on the extraction options subclass next to `model_spec`, or
-  (b) carried in `StageModelPreset.stage_options`. Convert excludes per-stage
-  prompt/response-format from the shared base spec because they vary per *stage*;
-  for extraction these vary per *model*, which argues for (a).
-- Do we keep the legacy `Inline/ApiExtractionVlmOptions` union accepted for
-  back-compat (mirroring convert), or hard-cut to the preset style since
-  extraction is new and has no external users yet?
-- Scope: this is its own PR. Confirm it lands *after* R2/R4.
+**Resolved decisions.**
+- **Prompt style + capability + prompt methods live on a new
+  `ExtractionVlmModelSpec(VlmModelSpec)`** (fields `prompt_style`,
+  `accepts_image` / `accepts_text`, plus `serialize_template` /
+  `build_extraction_prompt`). They are per-*model* traits, so they belong on the
+  per-model spec — not `StageModelPreset.stage_options` (which cannot hold
+  methods and loses typing). Capability is two bools, not a set.
+- **The shared engine layer is not reused.** `VlmEngineInput` is a single
+  required image + a prompt string; it cannot carry text-only, image+text
+  content arrays, or NuExtract's out-of-band template. So extraction keeps its
+  own execution models (`TransformersExtractionModel`, `ApiExtractionVlmModel`)
+  and does **not** gain MLX / local-vLLM engines from this change — each would
+  need its own extraction model. R1 modernizes the options/spec/preset surface
+  and the pipeline dispatch, nothing more. The migration is forward-compatible
+  with generalizing the engine layer later.
+- **Back-compat kept with deprecation shims.** The released `main` surface — a
+  plain `InlineVlmOptions` as `vlm_options` plus a pipeline-level
+  `extraction_prompt_style` field — still works: a `model_validator` wraps it
+  into `ExtractionVlmOptions` and warns. The branch-only
+  `Inline/ApiExtractionVlmOptions` are demoted to internal model-input DTOs
+  (derived from the spec via a lowering method), not part of the public surface.
+
+**Status.** Shipped. `ExtractionVlmModelSpec` + `ExtractionVlmOptions`
+(`StagePresetMixin` + `VlmEngineOptionsMixin`) added with presets `nuextract_2b`
+/ `granite_vision_4_1`; the four named specs (`NU_EXTRACT_2B_TRANSFORMERS`,
+`GRANITE_VISION_4_1_TRANSFORMERS`, `GRANITE_VISION_4_1_API`, `NU_EXTRACT_API`)
+are now `ExtractionVlmOptions`. `ExtractionVlmPipeline.__init__` dispatches on
+`engine_options.engine_type` (the remote NuExtract-vs-Granite request-shape
+branch moved into the API path). `_resolve_channel` is capability-based (R3);
+`AUTO` = (format offers) ∩ (spec accepts). A construction-time `model_validator`
+enforces channel vs. capability statically (R5-static); format-dependent checks
+stay per-document. The `extraction.md` skill doc and extraction tests are
+updated. The two execution models are untouched — the pipeline lowers the spec
+into the flat DTOs they already consume.
 
 ## R2 — Page range on the text channel (confirmed bug)
 
@@ -372,6 +395,13 @@ being a stand-in for "no text."
 - Folds into R1 (capability is a spec field). Confirm it does not ship
   standalone before R1.
 
+**Status.** Shipped (with R1). `ExtractionVlmModelSpec` carries
+`accepts_image` / `accepts_text` (two booleans). `_resolve_channel` computes
+`AUTO` as (what the format offers) ∩ (what the model accepts), preferring image;
+forced channels validate against both the format and the capability with
+capability-worded errors. `extraction_prompt_style != NUEXTRACT` is no longer a
+stand-in for "no text".
+
 ## R4 — Stop restating the backend when overriding options
 
 **Problem.** `ExtractionFormatOption.backend` is required (inherited from
@@ -413,6 +443,12 @@ yet only blows up mid-extraction.
 **Open decisions.**
 - The static half depends on R3; sequence it into the R1/R3 change. The reworded
   runtime messages can ship earlier if convenient.
+
+**Status.** Shipped (with R1/R3). Static half: a `model_validator(mode="after")`
+on `VlmExtractionPipelineOptions` rejects a forced channel that contradicts the
+model's capability (e.g. `TEXT` or `IMAGE_AND_TEXT` with an image-only model) at
+construction, no document needed. Dynamic half stays in `_resolve_channel`
+(format is per-document) with capability-worded messages.
 
 ## Suggested sequencing
 

@@ -17,9 +17,10 @@ from docling.models.extraction.prompt_utils import _build_extraction_prompt
 def test_granite_vision_spec_has_correct_repo_id() -> None:
     """Verify the Granite Vision 4.1 spec points to the correct model."""
     assert (
-        GRANITE_VISION_4_1_TRANSFORMERS.repo_id == "ibm-granite/granite-vision-4.1-4b"
+        GRANITE_VISION_4_1_TRANSFORMERS.model_spec.default_repo_id
+        == "ibm-granite/granite-vision-4.1-4b"
     )
-    assert GRANITE_VISION_4_1_TRANSFORMERS.trust_remote_code is True
+    assert GRANITE_VISION_4_1_TRANSFORMERS.model_spec.trust_remote_code is True
 
 
 def test_default_spec_uses_nuextract_style() -> None:
@@ -37,7 +38,10 @@ def test_granite_vision_preset_carries_schema_instruction_style() -> None:
         options.vlm_options.extraction_prompt_style
         == ExtractionPromptStyle.GRANITE_VISION
     )
-    assert options.vlm_options.repo_id == "ibm-granite/granite-vision-4.1-4b"
+    assert (
+        options.vlm_options.model_spec.default_repo_id
+        == "ibm-granite/granite-vision-4.1-4b"
+    )
 
 
 @patch(
