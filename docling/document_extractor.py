@@ -15,11 +15,7 @@ from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
-from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.md_backend import MarkdownDocumentBackend
-from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
@@ -51,20 +47,18 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
+_DEFAULT_EXTRACTION_FORMATS = [
+    InputFormat.IMAGE,
+    InputFormat.PDF,
+    InputFormat.DOCX,
+    InputFormat.HTML,
+    InputFormat.MD,
+    InputFormat.DCLX,
+]
 
 
 class ExtractionFormatOption(BaseFormatOption):
-    """Per-format configuration for extraction.
-
-    Notes:
-        - `pipeline_cls` must subclass `BaseExtractionPipeline`.
-        - `pipeline_options` is typed as `PipelineOptions` which MUST inherit from
-          `BaseOptions` (as used by `BaseExtractionPipeline`).
-        - `backend` is the document-opening backend used by `_DocumentConversionInput`.
-          Optional in overrides: when omitted, `DocumentExtractor` fills the
-          canonical per-format default so callers overriding only
-          `pipeline_options` need not restate it.
-    """
+    """Per-format extraction configuration."""
 
     pipeline_cls: Type[BaseExtractionPipeline]
     backend: Optional[Type[AbstractDocumentBackend]] = None
@@ -78,22 +72,32 @@ class ExtractionFormatOption(BaseFormatOption):
 
 
 def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
-    """Return the default extraction option for a given input format.
+    """Return the default extraction option for a supported format."""
+    if fmt == InputFormat.PDF:
+        from docling.backend.docling_parse_backend import (
+            ThreadedDoclingParseDocumentBackend,
+        )
 
-    Defaults mirror the converter's *backend* choices, while the pipeline is
-    the VLM extractor. This duplication will be removed when we deduplicate
-    the format registry between convert/extract.
-    """
-    format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
-        InputFormat.IMAGE: ImageDocumentBackend,
-        InputFormat.PDF: ThreadedDoclingParseDocumentBackend,
-        InputFormat.DOCX: MsWordDocumentBackend,
-        InputFormat.HTML: HTMLDocumentBackend,
-        InputFormat.MD: MarkdownDocumentBackend,
-        InputFormat.DCLX: DocLangArchiveBackend,
-    }
+        backend: Type[AbstractDocumentBackend] | None = (
+            ThreadedDoclingParseDocumentBackend
+        )
+    elif fmt == InputFormat.DOCX:
+        from docling.backend.msword_backend import MsWordDocumentBackend
 
-    backend = format_to_default_backend.get(fmt)
+        backend = MsWordDocumentBackend
+    elif fmt == InputFormat.HTML:
+        from docling.backend.html_backend import HTMLDocumentBackend
+
+        backend = HTMLDocumentBackend
+    elif fmt == InputFormat.MD:
+        from docling.backend.md_backend import MarkdownDocumentBackend
+
+        backend = MarkdownDocumentBackend
+    else:
+        backend = {
+            InputFormat.IMAGE: ImageDocumentBackend,
+            InputFormat.DCLX: DocLangArchiveBackend,
+        }.get(fmt)
     if backend is None:
         raise RuntimeError(f"No default extraction backend configured for {fmt}")
 
@@ -104,15 +108,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
 
 
 class DocumentExtractor:
-    """Standalone extractor class.
-
-    Public API:
-        - `extract(...) -> ExtractionResult`
-        - `extract_all(...) -> Iterator[ExtractionResult]`
-
-    Implementation intentionally reuses `_DocumentConversionInput` to build
-    `InputDocument` with the correct backend per format.
-    """
+    """Extract structured data from supported document formats."""
 
     def __init__(
         self,
@@ -122,11 +118,10 @@ class DocumentExtractor:
         ] = None,
     ) -> None:
         self.allowed_formats: list[InputFormat] = (
-            allowed_formats if allowed_formats is not None else list(InputFormat)
+            allowed_formats
+            if allowed_formats is not None
+            else list(_DEFAULT_EXTRACTION_FORMATS)
         )
-        # Build per-format options with defaults, then apply any user overrides.
-        # An override that omits `backend` inherits the canonical per-format one,
-        # so overriding only `pipeline_options` does not force restating it.
         overrides = extraction_format_options or {}
         self.extraction_format_to_options: dict[
             InputFormat, ExtractionFormatOption
@@ -141,12 +136,9 @@ class DocumentExtractor:
                 )
             self.extraction_format_to_options[fmt] = fopt
 
-        # Cache pipelines by (class, options-hash)
         self._initialized_pipelines: dict[
             tuple[Type[BaseExtractionPipeline], str], BaseExtractionPipeline
         ] = {}
-
-    # ---------------------------- Public API ---------------------------------
 
     @validate_call(config=ConfigDict(strict=True))
     def extract(
@@ -215,8 +207,6 @@ class DocumentExtractor:
             raise ConversionError(
                 "Extraction failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
-
-    # --------------------------- Internal engine ------------------------------
 
     def _extract(
         self,

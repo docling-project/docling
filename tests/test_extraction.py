@@ -274,33 +274,9 @@ def test_standard_pipeline_integrate_preserves_failed_page_category() -> None:
     assert conv_res.errors == [failure]
 
 
-def test_extraction_vlm_pipeline_runtime_failure_is_unknown() -> None:
-    from types import SimpleNamespace
-
-    from docling.datamodel.base_models import FailureCategory
-    from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
-
-    pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
-
-    def _raise(_input_doc):
-        raise RuntimeError("image extraction failed")
-
-    pipeline._get_images_from_input = _raise
-    ext_res = SimpleNamespace(
-        input=SimpleNamespace(_backend=object()),
-        pages=[],
-        errors=[],
-        status=None,
-    )
-
-    result = pipeline._extract_data(ext_res)
-
-    assert result.errors
-    assert result.errors[0].category == FailureCategory.UNKNOWN
-
-
 def test_extraction_pipeline_failure_is_categorized() -> None:
     """A failing extraction pipeline records a PIPELINE/UNKNOWN ErrorItem."""
+    from docling.backend.image_backend import ImageDocumentBackend
     from docling.datamodel.base_models import (
         ConversionStatus,
         DoclingComponentType,
@@ -321,15 +297,13 @@ def test_extraction_pipeline_failure_is_categorized() -> None:
         def get_default_options(cls):
             return PipelineOptions()
 
-    # Build a minimal valid InputDocument from the sample image.
     img = Path(__file__).parent / "data" / "ocr" / "sources" / "qr_bill_example.jpg"
-    from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
     from docling.datamodel.document import InputDocument
 
     input_doc = InputDocument(
         path_or_stream=img,
         format=InputFormat.IMAGE,
-        backend=DoclingParseV4DocumentBackend,
+        backend=ImageDocumentBackend,
         filename=img.name,
     )
 

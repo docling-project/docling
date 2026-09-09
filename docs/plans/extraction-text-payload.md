@@ -251,8 +251,8 @@ Pick the lowest-risk value on each axis, then widen:
    markdown serialization options (dim 1), backward-compatible defaults. No
    `page_grouping` option yet (dim 3 deferred).
 6. **`datamodel/vlm_model_specs.py`** — `NU_EXTRACT_API`
-   (`ApiExtractionVlmOptions`, `NUEXTRACT` style); route `NUEXTRACT`-style API
-   specs to the NuExtract request path, not plain `ApiVlmModel`. (dim 2)
+  (`ExtractionVlmOptions`, `NUEXTRACT` style); route `NUEXTRACT`-style API specs
+  to the NuExtract request path. (dim 2)
 
 ## Backward compatibility
 
@@ -292,10 +292,9 @@ Pick the lowest-risk value on each axis, then widen:
 
 ## R1 — Adopt the modern stage model-spec style (the root smell)
 
-**Problem.** Extraction uses the legacy `InlineVlmOptions` / `ApiVlmOptions`
-shape (subclassed into `InlineExtractionVlmOptions` / `ApiExtractionVlmOptions`).
-The modern style — `VlmModelSpec` + `StageModelPreset` + `StagePresetMixin`,
-already adopted by convert's `VlmConvertOptions` — is not used at all.
+**Problem.** Extraction used flat engine-specific options rather than the
+`VlmModelSpec` + `StageModelPreset` + `StagePresetMixin` shape already adopted
+by convert's `VlmConvertOptions`.
 
 Convert still *accepts* the legacy union for back-compat, but its presets are
 modern. Extraction never touched the modern path, so it shares only the legacy
@@ -335,8 +334,7 @@ with convert; only the *type* changes.
   plain `InlineVlmOptions` as `vlm_options` plus a pipeline-level
   `extraction_prompt_style` field — still works: a `model_validator` wraps it
   into `ExtractionVlmOptions` and warns. The branch-only
-  `Inline/ApiExtractionVlmOptions` are demoted to internal model-input DTOs
-  (derived from the spec via a lowering method), not part of the public surface.
+  no branch-only flat extraction options or lowering DTOs are retained.
 
 **Status.** Shipped. `ExtractionVlmModelSpec` + `ExtractionVlmOptions`
 (`StagePresetMixin` + `VlmEngineOptionsMixin`) added with presets `nuextract_2b`
@@ -348,8 +346,7 @@ branch moved into the API path). `_resolve_channel` is capability-based (R3);
 `AUTO` = (format offers) ∩ (spec accepts). A construction-time `model_validator`
 enforces channel vs. capability statically (R5-static); format-dependent checks
 stay per-document. The `extraction.md` skill doc and extraction tests are
-updated. The two execution models are untouched — the pipeline lowers the spec
-into the flat DTOs they already consume.
+  updated. The execution models consume `ExtractionVlmOptions` directly.
 
 ## R2 — Page range on the text channel (confirmed bug)
 

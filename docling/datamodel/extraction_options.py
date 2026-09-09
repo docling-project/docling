@@ -4,14 +4,12 @@
 import inspect
 import json
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, model_validator
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_vlm_model import (
-    ApiVlmOptions,
-    InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
     TransformersModelType,
@@ -40,7 +38,7 @@ class ExtractionPromptStyle(str, Enum):
 
 
 class ChannelSelection(str, Enum):
-    """Which payload channel(s) to send the model (dim 2).
+    """Which payload channel(s) to send the model.
 
     ``AUTO`` prefers the page image when the format has one, otherwise text.
     ``IMAGE_AND_TEXT`` is an explicit opt-in (never chosen by ``AUTO``).
@@ -52,12 +50,17 @@ class ChannelSelection(str, Enum):
     IMAGE_AND_TEXT = "image_and_text"
 
 
-def _build_extraction_prompt(template: str) -> str:
-    """Wrap a serialized template in the Granite schema-instruction prompt.
+_SUPPORTED_EXTRACTION_ENGINES = {
+    VlmEngineType.TRANSFORMERS,
+    VlmEngineType.API,
+    VlmEngineType.API_OLLAMA,
+    VlmEngineType.API_LMSTUDIO,
+    VlmEngineType.API_OPENAI,
+}
 
-    Kept as a module-level function (and re-exported from
-    ``models.extraction.prompt_utils``) so it can be reused and tested on its own.
-    """
+
+def _build_extraction_prompt(template: str) -> str:
+    """Wrap a serialized template in the Granite schema-instruction prompt."""
     return (
         "Extract structured data from this document image.\n"
         "Return a JSON object matching this schema:\n\n"
@@ -68,26 +71,14 @@ def _build_extraction_prompt(template: str) -> str:
 
 
 class ExtractionVlmModelSpec(VlmModelSpec):
-    """Model specification for the extraction stage (modern spec/preset style).
-
-    Extends the shared :class:`VlmModelSpec` with the per-*model* traits the
-    extraction pipeline needs: the prompt style, which payload channels the
-    model accepts, and the transformers load/generation settings the local
-    engine reads. Both the template *serialization* and the prompt *embedding*
-    are decided here (like ``build_prompt`` / ``decode_response`` on the convert
-    side), so the pipeline never interprets the style and an illegal
-    model/style/channel pairing cannot be constructed.
-    """
+    """Model specification for structured extraction."""
 
     prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT
 
-    # Channel capability (dim 2 / R3). ``AUTO`` = (what the format offers) ∩
-    # (what the model accepts). NuExtract accepts both; Granite is image-only.
     accepts_image: bool = True
     accepts_text: bool = False
 
-    # Local transformers settings not present on the shared VlmModelSpec.
-    torch_dtype: Optional[str] = None
+    torch_dtype: str | None = None
     transformers_model_type: TransformersModelType = (
         TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
     )
@@ -119,11 +110,11 @@ class ExtractionVlmModelSpec(VlmModelSpec):
                 from polyfactory.factories.pydantic_factory import ModelFactory
 
                 class ExtractionTemplateFactory(ModelFactory[template]):  # type: ignore
-                    __use_examples__ = True  # prefer Field(examples=...) when present
-                    __use_defaults__ = True  # use field defaults over random values
-                    __check_model__ = True  # avoid deprecation warnings
+                    __use_examples__ = True
+                    __use_defaults__ = True
+                    __check_model__ = True
 
-                return ExtractionTemplateFactory.build().model_dump_json(indent=2)  # type: ignore
+                return ExtractionTemplateFactory.build().model_dump_json(indent=2)
             return json.dumps(template.model_json_schema(), indent=2)
         raise ValueError(f"Unsupported template type: {type(template)}")
 
@@ -142,17 +133,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
 
 
 class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
-    """Configuration for the VLM extraction stage (modern preset style).
-
-    Symmetric with ``VlmConvertOptions``: pairs an :class:`ExtractionVlmModelSpec`
-    with a runtime ``engine_options``. Use a preset for the common case::
-
-        ExtractionVlmOptions.from_preset("nuextract_2b")
-
-    The pipeline selects the execution model from ``engine_options.engine_type``
-    (inline transformers vs. remote API); the prompt style and channel
-    capability travel with ``model_spec``.
-    """
+    """Pair an extraction model specification with its inference engine."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -160,55 +141,52 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         description="Model specification (repo, prompt style, capability, runtime)"
     )
     scale: float = Field(
-        default=2.0, description="Image scaling factor for the image channel"
+        default=2.0, gt=0, description="Image scaling factor for the image channel"
     )
-    max_size: Optional[int] = Field(
-        default=None, description="Maximum image dimension (width or height)"
+    max_size: int | None = Field(
+        default=None,
+        gt=0,
+        description="Maximum image dimension (width or height)",
     )
 
-    @property
-    def extraction_prompt_style(self) -> ExtractionPromptStyle:
-        """The model's prompt style (lives on the spec)."""
-        return self.model_spec.prompt_style
+    @model_validator(mode="after")
+    def _validate_engine(self) -> "ExtractionVlmOptions":
+        engine_type = self.engine_options.engine_type
+        if not self.model_spec.is_engine_supported(engine_type):
+            raise ValueError(
+                f"Model {self.model_spec.name!r} does not support the "
+                f"{engine_type.value} VLM engine"
+            )
+        if engine_type == VlmEngineType.TRANSFORMERS:
+            if not isinstance(self.engine_options, TransformersVlmEngineOptions):
+                raise ValueError(
+                    "Transformers extraction requires TransformersVlmEngineOptions"
+                )
+        elif VlmEngineType.is_api_variant(engine_type):
+            if not isinstance(self.engine_options, ApiVlmEngineOptions):
+                raise ValueError("API extraction requires ApiVlmEngineOptions")
+        else:
+            raise ValueError(
+                f"Extraction does not support the {engine_type.value} VLM engine"
+            )
+        return self
 
     def build_extraction_prompt(self, template: "ExtractionTemplateType") -> str:
-        """Delegate to the spec (kept here so pipeline call sites stay stable)."""
         return self.model_spec.build_extraction_prompt(template)
 
-    # -- lowering to the flat model-input types the execution models consume ---
-    # The spec is the single source of truth; these derive the DTOs the two
-    # extraction models already accept, so those models stay untouched.
-
-    def to_inline_input(self) -> "InlineExtractionVlmOptions":
-        spec = self.model_spec
-        return InlineExtractionVlmOptions(
-            extraction_prompt_style=spec.prompt_style,
-            repo_id=spec.default_repo_id,
-            revision=spec.revision,
-            prompt=spec.prompt,
-            torch_dtype=spec.torch_dtype,
-            inference_framework=InferenceFramework.TRANSFORMERS,
-            transformers_model_type=spec.transformers_model_type,
-            response_format=spec.response_format,
-            supported_devices=spec.supported_devices,
-            trust_remote_code=spec.trust_remote_code,
-            extra_processor_kwargs=spec.extra_processor_kwargs,
-            extra_generation_config=spec.extra_generation_config,
-            max_new_tokens=spec.max_new_tokens,
-            scale=self.scale,
-            max_size=self.max_size,
-            temperature=spec.temperature,
-        )
+    def get_api_params(self) -> dict[str, Any]:
+        engine = self.engine_options
+        assert isinstance(engine, ApiVlmEngineOptions)
+        return {
+            **self.model_spec.get_api_params(engine.engine_type),
+            **engine.params,
+        }
 
     @classmethod
     def from_legacy_inline_options(
         cls, inline: InlineVlmOptions, style: ExtractionPromptStyle
     ) -> "ExtractionVlmOptions":
-        """Wrap a released-style flat ``InlineVlmOptions`` into the preset shape.
-
-        Back-compat for the ``main`` surface, where ``vlm_options`` was a plain
-        ``InlineVlmOptions`` and the prompt style lived on the pipeline options.
-        """
+        """Adapt the deprecated flat extraction options."""
         return cls(
             model_spec=ExtractionVlmModelSpec(
                 name=inline.repo_id,
@@ -229,90 +207,17 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
                 temperature=inline.temperature,
             ),
             engine_options=TransformersVlmEngineOptions(
-                trust_remote_code=inline.trust_remote_code
+                load_in_8bit=inline.load_in_8bit,
+                llm_int8_threshold=inline.llm_int8_threshold,
+                quantized=inline.quantized,
+                torch_dtype=inline.torch_dtype,
+                trust_remote_code=inline.trust_remote_code,
+                use_kv_cache=inline.use_kv_cache,
             ),
             scale=inline.scale,
             max_size=inline.max_size,
         )
 
-    @classmethod
-    def from_legacy_api_options(
-        cls, api: ApiVlmOptions, style: ExtractionPromptStyle
-    ) -> "ExtractionVlmOptions":
-        """Wrap a flat ``ApiVlmOptions`` into the preset shape (branch back-compat)."""
-        return cls(
-            model_spec=ExtractionVlmModelSpec(
-                name=str(api.params.get("model", "api-model")),
-                prompt_style=style,
-                accepts_image=True,
-                accepts_text=style is ExtractionPromptStyle.NUEXTRACT,
-                default_repo_id=str(api.params.get("model", "api-model")),
-                prompt=api.prompt,
-                response_format=api.response_format,
-                temperature=api.temperature,
-            ),
-            engine_options=ApiVlmEngineOptions(
-                engine_type=VlmEngineType.API,
-                url=api.url,
-                headers=api.headers,
-                params=api.params,
-                timeout=api.timeout,
-                concurrency=api.concurrency,
-            ),
-            scale=api.scale,
-            max_size=api.max_size,
-        )
-
-    def to_api_input(self) -> "ApiExtractionVlmOptions":
-        spec = self.model_spec
-        engine = self.engine_options
-        assert isinstance(engine, ApiVlmEngineOptions), (
-            "API extraction requires ApiVlmEngineOptions"
-        )
-        return ApiExtractionVlmOptions(
-            extraction_prompt_style=spec.prompt_style,
-            url=engine.url,
-            headers=engine.headers,
-            params=engine.params,
-            timeout=engine.timeout,
-            concurrency=engine.concurrency,
-            prompt=spec.prompt,
-            scale=self.scale,
-            max_size=self.max_size,
-            response_format=spec.response_format,
-            temperature=spec.temperature,
-        )
-
-
-class ExtractionVlmOptionsMixin(BaseModel):
-    """Carries the prompt style on the flat model-input DTOs (data only).
-
-    The prompt behavior itself lives on :class:`ExtractionVlmModelSpec`; the
-    execution models only need the style enum to pick their processor inputs.
-    """
-
-    extraction_prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT
-
-
-class InlineExtractionVlmOptions(ExtractionVlmOptionsMixin, InlineVlmOptions):
-    """Internal local-transformers input for :class:`TransformersExtractionModel`.
-
-    Derived from :class:`ExtractionVlmOptions` via ``to_inline_input``; not part
-    of the user-facing surface.
-    """
-
-
-class ApiExtractionVlmOptions(ExtractionVlmOptionsMixin, ApiVlmOptions):
-    """Internal remote-endpoint input for the extraction API models.
-
-    Derived from :class:`ExtractionVlmOptions` via ``to_api_input``; not part of
-    the user-facing surface.
-    """
-
-
-# =============================================================================
-# PRESETS
-# =============================================================================
 
 NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     name="NuExtract 2.0 2B",
@@ -325,6 +230,7 @@ NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     torch_dtype="bfloat16",
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
     response_format=ResponseFormat.PLAINTEXT,
+    supported_engines=_SUPPORTED_EXTRACTION_ENGINES,
     temperature=0.0,
 )
 
@@ -339,6 +245,7 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     torch_dtype="bfloat16",
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
     response_format=ResponseFormat.PLAINTEXT,
+    supported_engines=_SUPPORTED_EXTRACTION_ENGINES,
     temperature=0.0,
     trust_remote_code=True,
 )
@@ -366,42 +273,20 @@ ExtractionVlmOptions.register_preset(
 )
 
 
-# =============================================================================
-# NAMED SPECS (re-exported from vlm_model_specs for back-compat imports)
-# =============================================================================
-
-# NuExtract (local transformers) — modern preset style.
 NU_EXTRACT_2B_TRANSFORMERS = ExtractionVlmOptions.from_preset("nuextract_2b")
 
-# Granite Vision 4.1 (local transformers) — modern preset style.
 GRANITE_VISION_4_1_TRANSFORMERS = ExtractionVlmOptions.from_preset("granite_vision_4_1")
 
-# Granite Vision 4.1 served over an OpenAI-conformant endpoint (e.g. vLLM).
-# Image-only; the spec carries GRANITE_VISION style, so it builds the
-# schema-instruction prompt from the template itself and `prompt` is empty.
 GRANITE_VISION_4_1_API = ExtractionVlmOptions(
-    model_spec=ExtractionVlmModelSpec(
-        name="Granite Vision 4.1 (API)",
-        prompt_style=ExtractionPromptStyle.GRANITE_VISION,
-        accepts_image=True,
-        accepts_text=False,
-        default_repo_id="ibm-granite/granite-vision-4.1-4b",
-        prompt="",
-        response_format=ResponseFormat.PLAINTEXT,
-        temperature=0.0,
-    ),
+    model_spec=GRANITE_VISION_4_1_SPEC,
     engine_options=ApiVlmEngineOptions(
         engine_type=VlmEngineType.API,
         url=AnyUrl("http://localhost:8000/v1/chat/completions"),
-        params={"model": "ibm-granite/granite-vision-4.1-4b"},
         timeout=120,
     ),
     scale=2.0,
 )
 
-# NuExtract served over an OpenAI-conformant endpoint (e.g. vLLM). NuExtract
-# carries the template out-of-band, so this routes to `api_nuextract_request`
-# (not the plain image-request path). Supports the text channel; `prompt` unused.
 NU_EXTRACT_API = ExtractionVlmOptions(
     model_spec=ExtractionVlmModelSpec(
         name="NuExtract 2.0 8B (API)",
@@ -411,12 +296,12 @@ NU_EXTRACT_API = ExtractionVlmOptions(
         default_repo_id="numind/NuExtract-2.0-8B",
         prompt="",
         response_format=ResponseFormat.PLAINTEXT,
+        supported_engines=_SUPPORTED_EXTRACTION_ENGINES,
         temperature=0.0,
     ),
     engine_options=ApiVlmEngineOptions(
         engine_type=VlmEngineType.API,
         url=AnyUrl("http://localhost:8000/v1/chat/completions"),
-        params={"model": "numind/NuExtract-2.0-8B"},
         timeout=120,
     ),
     scale=2.0,
