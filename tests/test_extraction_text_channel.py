@@ -1,20 +1,25 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Text-channel extraction: dim 1 (formats) + dim 2 (channels), first cut."""
-
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import (
+    ApiImageRequestResult,
+    ConversionStatus,
+    InputFormat,
+    VlmStopReason,
+)
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import TextContentItem
 from docling.datamodel.extraction_options import ChannelSelection, ExtractionPromptStyle
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_API,
     GRANITE_VISION_4_1_TRANSFORMERS,
@@ -22,6 +27,7 @@ from docling.datamodel.vlm_model_specs import (
     NU_EXTRACT_API,
 )
 from docling.exceptions import OperationNotAllowed
+from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
@@ -34,19 +40,19 @@ def _pipeline_shell(
 ) -> ExtractionVlmPipeline:
     """A pipeline whose channel/text logic can run without loading a model."""
     pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
-    pipeline.pipeline_options = SimpleNamespace(  # type: ignore[assignment]
-        vlm_options=spec,
-        input_channels=channel,
-        markdown_params=markdown_params,
+    pipeline.pipeline_options = cast(
+        VlmExtractionPipelineOptions,
+        SimpleNamespace(
+            vlm_options=spec,
+            input_channels=channel,
+            markdown_params=markdown_params,
+        ),
     )
     return pipeline
 
 
 def _input(path: Path, fmt: InputFormat, backend) -> InputDocument:
     return InputDocument(path_or_stream=path, format=fmt, backend=backend)
-
-
-# --------------------------- dim 2: model dispatch ----------------------------
 
 
 def test_nuextract_api_dispatches_to_extraction_model() -> None:
@@ -65,9 +71,6 @@ def test_nuextract_api_requires_enable_remote_services() -> None:
                 vlm_options=NU_EXTRACT_API, enable_remote_services=False
             )
         )
-
-
-# --------------------------- dim 2: channel resolution ------------------------
 
 
 def test_auto_resolves_to_text_for_markdown() -> None:
@@ -99,12 +102,7 @@ def test_image_and_text_on_text_only_format_is_loud_error() -> None:
         pipeline._resolve_channel(in_doc)
 
 
-# --------------------------- R5: static validation ----------------------------
-
-
 def test_static_channel_capability_rejected_at_construction() -> None:
-    # TEXT with an image-only (Granite) model is a contradiction decidable from
-    # the options alone — it must raise at construction, no document involved.
     with pytest.raises(ValueError, match="does not accept a text payload"):
         VlmExtractionPipelineOptions(
             vlm_options=GRANITE_VISION_4_1_TRANSFORMERS,
@@ -112,16 +110,12 @@ def test_static_channel_capability_rejected_at_construction() -> None:
         )
 
 
-# --------------------------- dim 1: text extraction ---------------------------
-
-
-def test_markdown_passes_through_as_is() -> None:
+def test_markdown_uses_normalized_source_text() -> None:
     pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
-    text = pipeline._get_text_from_input(in_doc)
-    # Passthrough: exactly the backend's stored source, not a serialized round-trip.
-    assert text == in_doc._backend.markdown
-    assert text.strip()
+    assert pipeline._get_text_from_input(in_doc) == _MD_FIXTURE.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_docx_serialized_to_markdown() -> None:
@@ -131,43 +125,21 @@ def test_docx_serialized_to_markdown() -> None:
     assert text.strip()
 
 
-# --------------------------- dim 2: remote payload shape ----------------------
-
-
 def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
-    """The template rides `chat_template_kwargs`, not the message content; a
-    text-only request carries no image."""
     from docling.utils import api_nuextract_request as mod
 
     captured: dict = {}
 
-    class _Resp:
-        ok = True
-        status_code = 200
-        text = "{}"
-        headers = {"content-type": "application/json"}
+    def _post(**kwargs):
+        captured.update(kwargs)
+        return ApiImageRequestResult("{}", 0, VlmStopReason.END_OF_SEQUENCE)
 
-        def json(self):
-            return {}
-
-    class _Session:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-        def post(self, url, headers=None, json=None, timeout=None):
-            captured["url"] = url
-            captured["payload"] = json
-            return _Resp()
-
-    monkeypatch.setattr(mod, "_make_retry_session", lambda: _Session())
+    monkeypatch.setattr(mod, "_post_openai_chat_completion", _post)
 
     mod.api_nuextract_request(
         content_items=[TextContentItem(text="hello doc")],
         template='{"title": "string"}',
-        url=NU_EXTRACT_API.engine_options.url,
+        url=cast(ApiVlmEngineOptions, NU_EXTRACT_API.engine_options).url,
         model="numind/NuExtract-2.0-8B",
     )
 
@@ -179,11 +151,7 @@ def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
     assert payload["model"] == "numind/NuExtract-2.0-8B"
 
 
-# --------------------------- dim 3 (first cut): mapping -----------------------
-
-
-def test_text_extraction_maps_to_single_page(monkeypatch) -> None:
-    """A non-paginable doc yields a single-element `pages` list; JSON is parsed."""
+def test_text_extraction_maps_to_single_page() -> None:
     from docling.datamodel.base_models import VlmPrediction, VlmStopReason
     from docling.datamodel.extraction import ExtractionResult
 
@@ -201,7 +169,7 @@ def test_text_extraction_maps_to_single_page(monkeypatch) -> None:
                 )
             ]
 
-    pipeline.vlm_model = _StubModel()  # type: ignore[assignment]
+    pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
     ext_res = ExtractionResult(input=in_doc)
 
@@ -212,6 +180,31 @@ def test_text_extraction_maps_to_single_page(monkeypatch) -> None:
     assert page.page_no == 1
     assert page.extracted_data == {"title": "Duck"}
     assert page.raw_text == '{"title": "Duck"}'
-    # The request is a single text content item carrying the document.
     assert len(seen["requests"][0]) == 1
     assert isinstance(seen["requests"][0][0], TextContentItem)
+
+
+def test_api_failure_makes_text_extraction_fail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from docling.datamodel.extraction import ExtractionResult
+    from docling.models.extraction import api_extraction_model as mod
+
+    def _fail(**_kwargs):
+        raise RuntimeError("service unavailable")
+
+    monkeypatch.setattr(mod, "api_nuextract_request", _fail)
+    pipeline = ExtractionVlmPipeline(
+        VlmExtractionPipelineOptions(
+            vlm_options=NU_EXTRACT_API,
+            enable_remote_services=True,
+        )
+    )
+    result = ExtractionResult(
+        input=_input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
+    )
+
+    pipeline._extract_via_text(result, prompt="{}")
+
+    assert result.pages[0].errors == ["service unavailable"]
+    assert pipeline._determine_status(result) == ConversionStatus.FAILURE

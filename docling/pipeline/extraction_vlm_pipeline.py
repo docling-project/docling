@@ -5,13 +5,11 @@ import json
 import logging
 import time
 from collections.abc import Generator
-from typing import Optional
 
 from docling_core.types.doc import DoclingDocument
 from PIL.Image import Image
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.datamodel.base_models import (
@@ -19,6 +17,8 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     ErrorItem,
     FailureCategory,
+    InputFormat,
+    VlmPrediction,
     VlmStopReason,
 )
 from docling.datamodel.document import InputDocument
@@ -32,7 +32,6 @@ from docling.datamodel.extraction import (
 )
 from docling.datamodel.extraction_options import (
     ChannelSelection,
-    ExtractionPromptStyle,
     ExtractionVlmOptions,
 )
 from docling.datamodel.pipeline_options import (
@@ -42,11 +41,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.models.base_model import BaseVlmModel, SupportsContentExtraction
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
-from docling.models.extraction.transformers_extraction_model import (
-    TransformersExtractionModel,
-)
 from docling.models.inference_engines.vlm.base import VlmEngineType
-from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 
 _log = logging.getLogger(__name__)
@@ -60,85 +55,62 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         vlm_options: ExtractionVlmOptions = pipeline_options.vlm_options
         self.vlm_model: BaseVlmModel
 
-        # Dispatch on the engine type, not the options subclass. The prompt
-        # style still selects the remote request shape (NuExtract carries its
-        # template out-of-band; Granite uses the plain image-request path), but
-        # that is a transport detail internal to the API branch.
         engine_type = vlm_options.engine_options.engine_type
         if VlmEngineType.is_api_variant(engine_type):
-            api_input = vlm_options.to_api_input()
-            if vlm_options.extraction_prompt_style == ExtractionPromptStyle.NUEXTRACT:
-                self.vlm_model = ApiExtractionVlmModel(
-                    enabled=True,
-                    enable_remote_services=pipeline_options.enable_remote_services,
-                    vlm_options=api_input,
-                )
-            else:
-                self.vlm_model = ApiVlmModel(
-                    enabled=True,
-                    enable_remote_services=pipeline_options.enable_remote_services,
-                    vlm_options=api_input,
-                )
+            self.vlm_model = ApiExtractionVlmModel(
+                enabled=True,
+                enable_remote_services=pipeline_options.enable_remote_services,
+                vlm_options=vlm_options,
+            )
         else:
+            from docling.models.extraction.transformers_extraction_model import (
+                TransformersExtractionModel,
+            )
+
             self.vlm_model = TransformersExtractionModel(
                 enabled=True,
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                vlm_options=vlm_options.to_inline_input(),
+                vlm_options=vlm_options,
             )
 
     def _extract_data(
         self,
         ext_res: ExtractionResult,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType | None = None,
     ) -> ExtractionResult:
-        """Extract data via the open -> select -> run -> map assembly.
+        prompt = self._build_prompt(template)
+        channel = self._resolve_channel(ext_res.input)
 
-        PDF/IMAGE with the default ``AUTO`` channel resolves to the page-image
-        path and reproduces today's output byte-for-byte. Text-only formats
-        (DOCX/HTML/MD) resolve to the text channel.
-        """
-        try:
-            prompt = self._build_prompt(template)
-            channel = self._resolve_channel(ext_res.input)
-
-            if channel == ChannelSelection.TEXT:
-                self._extract_via_text(ext_res, prompt)
-            else:
-                self._extract_per_page(
-                    ext_res,
-                    prompt,
-                    include_text=channel == ChannelSelection.IMAGE_AND_TEXT,
-                )
-
-            ext_res.pages.sort(key=lambda page: page.page_no)
-
-        except Exception as e:
-            _log.error(f"Error during extraction: {e}")
-            ext_res.errors.append(
-                ErrorItem(
-                    component_type=DoclingComponentType.PIPELINE,
-                    module_name=self.__class__.__name__,
-                    error_message=str(e),
-                    category=FailureCategory.UNKNOWN,
-                )
+        if channel == ChannelSelection.TEXT:
+            self._extract_via_text(ext_res, prompt)
+        else:
+            self._extract_per_page(
+                ext_res,
+                prompt,
+                include_text=channel == ChannelSelection.IMAGE_AND_TEXT,
             )
 
+        ext_res.pages.sort(key=lambda page: page.page_no)
         return ext_res
 
-    # ---------------------------- dim 2: channel ------------------------------
-
     def _resolve_channel(self, input_doc: InputDocument) -> ChannelSelection:
-        """Resolve the effective channel, validated against what the source offers.
-
-        Requesting a channel a format cannot provide is a loud error, not a
-        silent drop (house rule: no attribute-probing / silent fallbacks).
-        """
+        """Resolve a channel supported by both the source and model."""
         backend = input_doc._backend
-        # DCLX is a declarative backend that *also* carries page images restored
-        # from the archive, so it offers both channels.
-        offers_image = isinstance(backend, (PdfDocumentBackend, DocLangArchiveBackend))
+        offers_image = isinstance(backend, PdfDocumentBackend)
         offers_text = isinstance(backend, DeclarativeDocumentBackend)
+        if isinstance(backend, DocLangArchiveBackend):
+            doc = backend.convert()
+            start_page, end_page = input_doc.limits.page_range
+            pages = [
+                doc.pages[page_no]
+                for page_no in sorted(doc.pages)
+                if start_page <= page_no <= end_page
+            ]
+            offers_image = bool(pages) and all(
+                page.image is not None and page.image.pil_image is not None
+                for page in pages
+            )
 
         selection = self.pipeline_options.input_channels
         spec = self.pipeline_options.vlm_options.model_spec
@@ -146,7 +118,6 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         accepts_text = spec.accepts_text
 
         if selection == ChannelSelection.AUTO:
-            # (what the format offers) ∩ (what the model accepts), prefer image.
             if offers_image and accepts_image:
                 resolved = ChannelSelection.IMAGE
             elif offers_text and accepts_text:
@@ -165,8 +136,6 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         else:
             resolved = selection
 
-        # Validate the resolved channel against what the format offers (dynamic,
-        # per-document) and what the model accepts (capability; R3).
         needs_image = resolved in (
             ChannelSelection.IMAGE,
             ChannelSelection.IMAGE_AND_TEXT,
@@ -197,12 +166,8 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             )
         return resolved
 
-    # ---------------------------- dim 2: text path ----------------------------
-
     def _extract_via_text(self, ext_res: ExtractionResult, prompt: str) -> None:
         text = self._get_text_from_input(ext_res.input)
-        # ponytail: whole-document text -> single-element result at page_no=1.
-        # Grouping / page_no semantics for non-paginable docs are dim 3 (deferred).
         request: list[ContentItem] = [TextContentItem(text=text)]
         assert isinstance(self.vlm_model, SupportsContentExtraction)
         try:
@@ -217,33 +182,27 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         ext_res.pages.append(self._prediction_to_page_data(1, predictions, ext_res))
 
     def _get_text_from_input(self, input_doc: InputDocument) -> str:
-        """Produce the text channel for a declarative source, honoring page_range.
-
-        The image paths honor ``input_doc.limits.page_range``; the text path does
-        too, restricting serialization to the document pages within the range.
-        Markdown raw-passthrough is unpaginated, so the range does not apply there.
-        """
+        """Serialize the selected source text and page range as Markdown."""
         backend = input_doc._backend
-        # Markdown passes through as-is: no DoclingDocument round-trip, no pages.
-        if isinstance(backend, MarkdownDocumentBackend):
+        if input_doc.format == InputFormat.MD:
+            from docling.backend.md_backend import MarkdownDocumentBackend
+
+            assert isinstance(backend, MarkdownDocumentBackend)
             return backend.markdown
 
         assert isinstance(backend, DeclarativeDocumentBackend)
         doc = backend.convert()
 
         start_page, end_page = input_doc.limits.page_range
-        pages: Optional[set[int]] = None
+        pages: set[int] | None = None
         if (start_page, end_page) != DEFAULT_PAGE_RANGE and doc.pages:
             pages = {p for p in doc.pages if start_page <= p <= end_page}
         return self._serialize_doc(doc, pages=pages)
 
     def _serialize_doc(
-        self, doc: DoclingDocument, pages: Optional[set[int]] = None
+        self, doc: DoclingDocument, pages: set[int] | None = None
     ) -> str:
-        """Serialize a document (or a subset of pages) to the markdown text channel.
-
-        ``pages=None`` serializes the whole document (byte-for-byte as before).
-        """
+        """Serialize a document or page subset to Markdown."""
         params = self.pipeline_options.markdown_params
         if params is None:
             if pages is None:
@@ -259,20 +218,11 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
 
         return MarkdownDocSerializer(doc=doc, params=params).serialize().text
 
-    # ---------------------------- dim 2: per-page path ------------------------
-
     def _extract_per_page(
         self, ext_res: ExtractionResult, prompt: str, *, include_text: bool
     ) -> None:
-        """One request per page (no multi-page batching; dim 3 deferred).
-
-        ``IMAGE`` sends the page image only (either engine, via ``process_images``).
-        ``IMAGE_AND_TEXT`` sends the page image plus that page's serialized text
-        as a content array (NuExtract only, via ``process``).
-        """
-        # For IMAGE_AND_TEXT the per-page text is drawn from the same document
-        # the images come from (DCLX); convert() is cached, so this is cheap.
-        doc: Optional[DoclingDocument] = None
+        """Extract one result per page image."""
+        doc: DoclingDocument | None = None
         if include_text:
             backend = ext_res.input._backend
             assert isinstance(backend, DeclarativeDocumentBackend)
@@ -344,9 +294,11 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             )
 
     def _prediction_to_page_data(
-        self, page_no: int, predictions: list, ext_res: ExtractionResult
+        self,
+        page_no: int,
+        predictions: list[VlmPrediction],
+        ext_res: ExtractionResult,
     ) -> ExtractedPageData:
-        """Map a model prediction to an ExtractedPageData (shared by every channel)."""
         if not predictions:
             return ExtractedPageData(
                 page_no=page_no,
@@ -361,28 +313,35 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         }:
             ext_res.status = ConversionStatus.PARTIAL_SUCCESS
 
+        errors: list[str] = []
         extracted_data = None
         try:
             extracted_data = json.loads(prediction.text)
-        except (json.JSONDecodeError, ValueError):
-            pass
+        except json.JSONDecodeError as exc:
+            errors.append(f"Model returned invalid JSON: {exc.msg}")
+        if extracted_data is not None and not isinstance(extracted_data, dict):
+            errors.append("Model returned JSON that is not an object")
+            extracted_data = None
+        if prediction.stop_reason == VlmStopReason.CONTENT_FILTERED:
+            errors.append("Model output was filtered by the API provider")
 
         return ExtractedPageData(
             page_no=page_no,
             extracted_data=extracted_data,
             raw_text=prediction.text,
+            errors=errors,
         )
 
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
-        """Determine the status based on extraction results."""
-        if ext_res.pages and not any(page.errors for page in ext_res.pages):
-            return (
-                ConversionStatus.PARTIAL_SUCCESS
-                if ext_res.status == ConversionStatus.PARTIAL_SUCCESS
-                else ConversionStatus.SUCCESS
-            )
-        else:
+        if not any(page.extracted_data is not None for page in ext_res.pages):
             return ConversionStatus.FAILURE
+        if (
+            ext_res.status == ConversionStatus.PARTIAL_SUCCESS
+            or ext_res.errors
+            or any(page.errors for page in ext_res.pages)
+        ):
+            return ConversionStatus.PARTIAL_SUCCESS
+        return ConversionStatus.SUCCESS
 
     def _get_images_from_input(
         self, input_doc: InputDocument
@@ -415,9 +374,15 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                             f"Page {page_backend.page_no} backend is not valid"
                         )
                         continue
-                    page_image = page_backend.get_page_image(
-                        scale=self.pipeline_options.vlm_options.scale
-                    )
+                    render_scale = self.pipeline_options.vlm_options.scale
+                    max_size = self.pipeline_options.vlm_options.max_size
+                    if max_size is not None:
+                        page_size = page_backend.get_size()
+                        render_scale = min(
+                            render_scale,
+                            max_size / max(page_size.width, page_size.height),
+                        )
+                    page_image = page_backend.get_page_image(scale=render_scale)
                     yield page_backend.page_no, page_image
                 except Exception as e:
                     _log.error(f"Error loading page {page_backend.page_no}: {e}")
@@ -442,18 +407,21 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             if not (start_page <= page_no <= end_page):
                 continue
             page = doc.pages[page_no]
-            if page.image is None:
-                _log.warning(f"DCLX page {page_no} has no restored image; skipping")
+            if page.image is None or page.image.pil_image is None:
+                raise RuntimeError(f"DCLX page {page_no} has no restored image")
+            image = page.image.pil_image
+            max_size = self.pipeline_options.vlm_options.max_size
+            if max_size is None or max(image.size) <= max_size:
+                yield page_no, image
                 continue
-            yield page_no, page.image.pil_image
+            resized = image.copy()
+            try:
+                resized.thumbnail((max_size, max_size))
+                yield page_no, resized
+            finally:
+                resized.close()
 
-    def _build_prompt(self, template: Optional[ExtractionTemplateType]) -> str:
-        """Turn the template into the final prompt text.
-
-        Both serialization and embedding live on the model spec, keyed on its
-        ``extraction_prompt_style``, so every engine shares one path and the
-        pipeline never has to know which style is in play.
-        """
+    def _build_prompt(self, template: ExtractionTemplateType | None) -> str:
         if template is None:
             return "Extract all text and structured information from this document. Return as JSON."
 

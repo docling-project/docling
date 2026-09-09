@@ -1,39 +1,43 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Remote NuExtract extraction model (dim 2).
-
-Routes NuExtract-style API specs to :func:`api_nuextract_request` (content
-array + out-of-band template), rather than the plain image-request shape used
-by :class:`ApiVlmModel`.
-"""
+"""OpenAI-compatible extraction model."""
 
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Union
+from typing import Any
 
 import numpy as np
+from PIL import Image as PILImage
 from PIL.Image import Image
 
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.extraction import ContentItem, ImageContentItem
-from docling.datamodel.extraction_options import ApiExtractionVlmOptions
+from docling.datamodel.extraction_options import (
+    ExtractionPromptStyle,
+    ExtractionVlmOptions,
+)
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmModel
+from docling.utils.api_image_request import api_image_request
 from docling.utils.api_nuextract_request import api_nuextract_request
 
 
 class ApiExtractionVlmModel(BaseVlmModel):
-    """Remote extraction model for the NuExtract prompt style."""
+    """Run structured extraction through an OpenAI-compatible API."""
 
     def __init__(
         self,
         enabled: bool,
         enable_remote_services: bool,
-        vlm_options: ApiExtractionVlmOptions,
+        vlm_options: ExtractionVlmOptions,
     ):
         self.enabled = enabled
-        self.vlm_options = vlm_options
+        self.model_spec = vlm_options.model_spec
+        engine_options = vlm_options.engine_options
+        assert isinstance(engine_options, ApiVlmEngineOptions)
+        self.engine_options = engine_options
         if self.enabled:
             if not enable_remote_services:
                 raise OperationNotAllowed(
@@ -41,11 +45,12 @@ class ApiExtractionVlmModel(BaseVlmModel):
                     "explicitly. pipeline_options.enable_remote_services=True, or "
                     "using the CLI --enable-remote-services."
                 )
-            self.timeout = vlm_options.timeout
-            self.concurrency = vlm_options.concurrency
-            self.params = {
-                **vlm_options.params,
-                "temperature": vlm_options.temperature,
+            self.timeout = engine_options.timeout
+            self.concurrency = engine_options.concurrency
+            self.params: dict[str, Any] = {
+                "temperature": self.model_spec.temperature,
+                "max_tokens": self.model_spec.max_new_tokens,
+                **vlm_options.get_api_params(),
             }
 
     def process(
@@ -53,20 +58,23 @@ class ApiExtractionVlmModel(BaseVlmModel):
         requests: Iterable[list[ContentItem]],
         template: str,
     ) -> Iterable[VlmPrediction]:
+        if self.model_spec.prompt_style != ExtractionPromptStyle.NUEXTRACT:
+            raise ValueError("Content extraction is supported only by NuExtract")
         request_list = [list(req) for req in requests]
 
         def _run(content_items: list[ContentItem]) -> VlmPrediction:
             resp = api_nuextract_request(
                 content_items=content_items,
                 template=template,
-                url=self.vlm_options.url,
+                url=self.engine_options.url,
                 timeout=self.timeout,
-                headers=self.vlm_options.headers,
+                headers=self.engine_options.headers,
                 **self.params,
             )
-            text = self.vlm_options.decode_response(resp.text)
+            if not resp.text.strip():
+                raise RuntimeError("Extraction API returned no content")
             return VlmPrediction(
-                text=text,
+                text=resp.text,
                 num_tokens=resp.num_tokens,
                 usage=resp.usage,
                 stop_reason=resp.stop_reason,
@@ -79,10 +87,9 @@ class ApiExtractionVlmModel(BaseVlmModel):
 
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
-        prompt: Union[str, list[str]],
+        image_batch: Iterable[Image | np.ndarray],
+        prompt: str | list[str],
     ) -> Iterable[VlmPrediction]:
-        """Image-only adapter over :meth:`process` (prompt is the template)."""
         images = list(image_batch)
         if isinstance(prompt, list):
             if len(prompt) != len(images):
@@ -90,21 +97,54 @@ class ApiExtractionVlmModel(BaseVlmModel):
                     f"Number of prompts ({len(prompt)}) must match number of "
                     f"images ({len(images)})"
                 )
-            # Per-image templates are not supported by the out-of-band template
-            # channel; require a single shared template.
-            if len(set(prompt)) > 1:
+            if (
+                self.model_spec.prompt_style == ExtractionPromptStyle.NUEXTRACT
+                and len(set(prompt)) > 1
+            ):
                 raise ValueError(
                     "Remote NuExtract requires a single shared template per batch."
                 )
-            template = prompt[0] if prompt else ""
+            prompts = prompt
         else:
-            template = prompt
+            prompts = [prompt] * len(images)
 
-        from PIL import Image as PILImage
-
-        requests: list[list[ContentItem]] = []
-        for img in images:
+        pil_images: list[Image] = []
+        for image in images:
+            img = image
             if isinstance(img, np.ndarray):
-                img = PILImage.fromarray(img.astype(np.uint8))
-            requests.append([ImageContentItem(image=img)])
-        yield from self.process(requests, template)
+                if img.ndim == 3 and img.shape[2] in (3, 4):
+                    img = PILImage.fromarray(img.astype(np.uint8))
+                elif img.ndim == 2:
+                    img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                else:
+                    raise ValueError(f"Unsupported numpy array shape: {img.shape}")
+            pil_images.append(img)
+
+        if self.model_spec.prompt_style == ExtractionPromptStyle.NUEXTRACT:
+            requests: list[list[ContentItem]] = [
+                [ImageContentItem(image=img)] for img in pil_images
+            ]
+            yield from self.process(requests, prompts[0] if prompts else "")
+            return
+
+        def _run(image_prompt: tuple[Image, str]) -> VlmPrediction:
+            image, prompt_text = image_prompt
+            resp = api_image_request(
+                image=image,
+                prompt=prompt_text,
+                url=self.engine_options.url,
+                timeout=self.timeout,
+                headers=self.engine_options.headers,
+                **self.params,
+            )
+            if not resp.text.strip():
+                raise RuntimeError("Extraction API returned no content")
+            return VlmPrediction(
+                text=resp.text,
+                num_tokens=resp.num_tokens,
+                usage=resp.usage,
+                stop_reason=resp.stop_reason,
+            )
+
+        with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
+            yield from executor.map(_run, zip(pil_images, prompts))

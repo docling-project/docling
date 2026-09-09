@@ -44,7 +44,7 @@ def build_nuextract_content_inputs(
     device: str,
     extra_processor_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build NuExtract inputs from ordered content-item requests (dim 2).
+    """Build NuExtract inputs from ordered content-item requests.
 
     Each request is a ``list[ContentItem]`` (image and/or text). The template
     rides the model's own ``template=`` chat kwarg, not the content. Requires

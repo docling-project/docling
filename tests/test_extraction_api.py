@@ -1,22 +1,29 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Extraction pipeline with an OpenAI-conformant API engine."""
-
 import json
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field
 
-from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.extraction_options import (
+    ExtractionPromptStyle,
+    ExtractionVlmOptions,
+)
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    MlxVlmEngineOptions,
+)
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_API,
     NU_EXTRACT_2B_TRANSFORMERS,
 )
 from docling.exceptions import OperationNotAllowed
-from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
+from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
 
@@ -25,19 +32,21 @@ class _Invoice(BaseModel):
     total: float = Field(description="The invoice total")
 
 
-def test_api_options_dispatch_to_api_model() -> None:
-    """An API spec selects the remote engine, no local model is built."""
+def test_api_options_dispatch_to_extraction_model() -> None:
     pipeline = ExtractionVlmPipeline(
         VlmExtractionPipelineOptions(
             vlm_options=GRANITE_VISION_4_1_API,
             enable_remote_services=True,
         )
     )
-    assert isinstance(pipeline.vlm_model, ApiVlmModel)
+    assert isinstance(pipeline.vlm_model, ApiExtractionVlmModel)
+    assert pipeline.vlm_model.params["model"] == ("ibm-granite/granite-vision-4.1-4b")
+    assert pipeline.vlm_model.params["max_tokens"] == (
+        GRANITE_VISION_4_1_API.model_spec.max_new_tokens
+    )
 
 
 def test_api_engine_requires_enable_remote_services() -> None:
-    """The remote engine must be opted into explicitly."""
     with pytest.raises(OperationNotAllowed):
         ExtractionVlmPipeline(
             VlmExtractionPipelineOptions(
@@ -47,29 +56,43 @@ def test_api_engine_requires_enable_remote_services() -> None:
         )
 
 
-def _prompt_only_pipeline(style: ExtractionPromptStyle) -> ExtractionVlmPipeline:
-    """Pipeline whose prompt builder can be exercised without loading a model.
+def test_api_engine_uses_model_spec_defaults() -> None:
+    options = ExtractionVlmOptions.from_preset(
+        "nuextract_2b",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API,
+            url=AnyUrl("https://example.test/v1/chat/completions"),
+        ),
+    )
 
-    The style lives on the spec, so we pick a preset that carries it.
-    """
+    assert options.get_api_params() == {"model": "numind/NuExtract-2.0-2B"}
+
+
+def test_unsupported_local_engine_is_rejected() -> None:
+    with pytest.raises(ValueError, match="does not support the mlx VLM engine"):
+        ExtractionVlmOptions.from_preset(
+            "nuextract_2b", engine_options=MlxVlmEngineOptions()
+        )
+
+
+def _prompt_only_pipeline(style: ExtractionPromptStyle) -> ExtractionVlmPipeline:
     spec = {
         ExtractionPromptStyle.NUEXTRACT: NU_EXTRACT_2B_TRANSFORMERS,
         ExtractionPromptStyle.GRANITE_VISION: GRANITE_VISION_4_1_API,
     }[style]
     pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
-    pipeline.pipeline_options = SimpleNamespace(vlm_options=spec)  # type: ignore[assignment]
+    pipeline.pipeline_options = cast(
+        VlmExtractionPipelineOptions, SimpleNamespace(vlm_options=spec)
+    )
     return pipeline
 
 
 def test_granite_prompt_is_schema_plus_instruction() -> None:
-    """Granite schema-instruction style wraps a JSON Schema in the instruction."""
     pipeline = _prompt_only_pipeline(ExtractionPromptStyle.GRANITE_VISION)
     prompt = pipeline._build_prompt(_Invoice)
 
     assert "Extract structured data" in prompt
     assert "Return ONLY valid JSON" in prompt
-    # GRANITE_VISION serializes a Pydantic class to a real JSON Schema: fields nest under
-    # "properties" and carry their Field(description=...) text.
     body_start = prompt.index("{")
     body = json.loads(prompt[body_start : prompt.rindex("}") + 1])
     assert set(body["properties"]) == {"invoice_date", "total"}
@@ -79,7 +102,6 @@ def test_granite_prompt_is_schema_plus_instruction() -> None:
 
 
 def test_nuextract_prompt_is_passthrough_instance() -> None:
-    """NuExtract style passes a sample instance through, no schema-instruction wrapper."""
     pipeline = _prompt_only_pipeline(ExtractionPromptStyle.NUEXTRACT)
     prompt = pipeline._build_prompt('{"invoice_date": "string"}')
 

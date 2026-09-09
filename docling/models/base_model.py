@@ -82,10 +82,7 @@ class BaseVlmModel(ABC):
 
 @runtime_checkable
 class SupportsContentExtraction(Protocol):
-    """Extraction models that accept multi-channel content-item requests (dim 2).
-
-    Kept narrow and separate from convert-side VLM models, which never get it.
-    """
+    """Extraction models that accept multi-channel content-item requests."""
 
     def process(
         self,

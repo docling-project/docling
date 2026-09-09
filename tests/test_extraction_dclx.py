@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""DCLX extraction: structure + page images (dim 1), IMAGE and IMAGE_AND_TEXT (dim 2)."""
-
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from docling_core.types.doc import BoundingBox, DoclingDocument, ProvenanceItem
@@ -28,6 +28,7 @@ from docling.datamodel.extraction import (
 from docling.datamodel.extraction_options import ChannelSelection
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.datamodel.vlm_model_specs import NU_EXTRACT_2B_TRANSFORMERS
+from docling.models.base_model import BaseVlmModel
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
 
@@ -77,8 +78,6 @@ def _input(path: Path) -> InputDocument:
 
 
 class _StubModel:
-    """Records requests and returns one prediction per request."""
-
     def __init__(self) -> None:
         self.image_calls: list = []
         self.content_requests: list = []
@@ -112,30 +111,29 @@ def test_dclx_accepts_image_and_text(dclx_two_pages: Path) -> None:
 def test_dclx_image_extraction_yields_page_per_image(dclx_two_pages: Path) -> None:
     pipeline = _pipeline_shell(ChannelSelection.IMAGE)
     model = _StubModel()
-    pipeline.vlm_model = model  # type: ignore[assignment]
+    pipeline.vlm_model = cast(BaseVlmModel, model)
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
 
     pipeline._extract_per_page(ext_res, prompt="{}", include_text=False)
 
     assert [p.page_no for p in ext_res.pages] == [1, 2]
-    assert len(model.image_calls) == 2  # one request per page, no batching
+    assert len(model.image_calls) == 2
     assert not model.content_requests
 
 
 def test_dclx_image_and_text_builds_content_array(dclx_two_pages: Path) -> None:
     pipeline = _pipeline_shell(ChannelSelection.IMAGE_AND_TEXT)
     model = _StubModel()
-    pipeline.vlm_model = model  # type: ignore[assignment]
+    pipeline.vlm_model = cast(BaseVlmModel, model)
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
 
     pipeline._extract_per_page(ext_res, prompt="{}", include_text=True)
 
     assert [p.page_no for p in ext_res.pages] == [1, 2]
-    assert len(model.content_requests) == 2  # one request per page
+    assert len(model.content_requests) == 2
     first = model.content_requests[0]
-    # image-then-text ordering, one page's payload per request
     assert isinstance(first[0], ImageContentItem)
     assert isinstance(first[1], TextContentItem)
     assert first[1].text == "Invoice total 42"
@@ -143,8 +141,50 @@ def test_dclx_image_and_text_builds_content_array(dclx_two_pages: Path) -> None:
 
 def test_dclx_status_success(dclx_two_pages: Path) -> None:
     pipeline = _pipeline_shell(ChannelSelection.IMAGE)
-    pipeline.vlm_model = _StubModel()  # type: ignore[assignment]
+    pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
     pipeline._extract_per_page(ext_res, prompt="{}", include_text=False)
     assert pipeline._determine_status(ext_res) == ConversionStatus.SUCCESS
+
+
+def test_dclx_without_page_images_uses_text(tmp_path: Path) -> None:
+    doc = DoclingDocument(name="text_only")
+    doc.pages[1] = PageItem(page_no=1, size=Size(width=64, height=48))
+    doc.add_text(
+        label=DocItemLabel.TEXT,
+        text="Invoice total 42",
+        prov=ProvenanceItem(
+            page_no=1,
+            bbox=BoundingBox(l=0, t=0, r=64, b=48),
+            charspan=(0, 16),
+        ),
+    )
+    path = tmp_path / "text-only.dclx"
+    doc.save_as_doclang_archive(path)
+
+    assert (
+        _pipeline_shell(ChannelSelection.AUTO)._resolve_channel(_input(path))
+        == ChannelSelection.TEXT
+    )
+    with pytest.raises(ValueError, match="does not offer page images"):
+        _pipeline_shell(ChannelSelection.IMAGE)._resolve_channel(_input(path))
+
+
+def test_pipeline_unloads_streamed_dclx_backend(dclx_two_pages: Path) -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(dclx_two_pages.read_bytes()),
+        format=InputFormat.DCLX,
+        backend=DocLangArchiveBackend,
+        filename="fixture.dclx",
+    )
+    backend = in_doc._backend
+    assert isinstance(backend, DocLangArchiveBackend)
+    assert backend._temp_dir is not None
+
+    pipeline = _pipeline_shell(ChannelSelection.IMAGE)
+    pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
+    result = pipeline.execute(in_doc, raises_on_error=False, template="{}")
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert backend._temp_dir is None

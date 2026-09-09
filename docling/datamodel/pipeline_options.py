@@ -1926,7 +1926,7 @@ class VlmExtractionPipelineOptions(PipelineOptions):
         ChannelSelection,
         Field(
             description=(
-                "Which payload channel(s) to send the model (dim 2). `AUTO` uses "
+                "Which payload channel(s) to send the model. `AUTO` uses "
                 "the page image if the format has one, otherwise the document text. "
                 "`IMAGE` / `TEXT` force a single channel (requesting one a format "
                 "cannot provide is a loud error). `IMAGE_AND_TEXT` is an explicit "
@@ -1949,23 +1949,15 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     @model_validator(mode="before")
     @classmethod
     def _coerce_legacy_vlm_options(cls, data):
-        """Wrap a released-style flat ``vlm_options`` into ``ExtractionVlmOptions``.
-
-        Back-compat for the ``main`` surface (`vlm_options` a plain
-        ``InlineVlmOptions`` plus a pipeline-level ``extraction_prompt_style``).
-        Warns; will be removed in a future release.
-        """
+        """Adapt deprecated flat extraction options."""
         if not isinstance(data, dict):
             return data
         vlm = data.get("vlm_options")
         if vlm is None or isinstance(vlm, ExtractionVlmOptions):
             return data
 
-        # pipeline_options_vlm_model is imported at module top for InlineVlmOptions.
-        from docling.datamodel.pipeline_options_vlm_model import (
-            ApiVlmOptions,
-            InlineVlmOptions,
-        )
+        if isinstance(vlm, dict) and vlm.get("kind") == "inline_model_options":
+            vlm = InlineVlmOptions.model_validate(vlm)
 
         style = data.get("extraction_prompt_style") or ExtractionPromptStyle.NUEXTRACT
         if isinstance(vlm, InlineVlmOptions):
@@ -1983,27 +1975,11 @@ class VlmExtractionPipelineOptions(PipelineOptions):
                     vlm, style
                 ),
             }
-        elif isinstance(vlm, ApiVlmOptions):
-            warnings.warn(
-                "Passing a plain ApiVlmOptions as `vlm_options` is deprecated and "
-                "will be unsupported in a future release. Use ExtractionVlmOptions.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            data = {
-                **data,
-                "vlm_options": ExtractionVlmOptions.from_legacy_api_options(vlm, style),
-            }
         return data
 
     @model_validator(mode="after")
     def _validate_channel_capability(self) -> "VlmExtractionPipelineOptions":
-        """Static (options-only) check: forced channel vs. model capability (R5).
-
-        Format-dependent checks stay per-document in the pipeline's
-        `_resolve_channel`; here we only reject contradictions decidable from the
-        options alone (e.g. `IMAGE_AND_TEXT` with an image-only model).
-        """
+        """Reject channel choices unsupported by the model."""
         spec = self.vlm_options.model_spec
         channel = self.input_channels
         if channel in (ChannelSelection.IMAGE, ChannelSelection.IMAGE_AND_TEXT):
