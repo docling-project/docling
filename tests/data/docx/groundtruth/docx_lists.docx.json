@@ -4,7 +4,7 @@
   "name": "docx_lists",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 15825203933257214145,
+    "binary_hash": 3929171338294676296,
     "filename": "docx_lists.docx"
   },
   "furniture": {
@@ -2383,8 +2383,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "List starting above indent level 0",
-      "text": "List starting above indent level 0",
+      "orig": "Test 11: List starting above indent level 0",
+      "text": "Test 11: List starting above indent level 0",
       "level": 3
     },
     {
@@ -2475,8 +2475,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "List starting at indent level 0",
-      "text": "List starting at indent level 0",
+      "orig": "Test 12: List starting at indent level 0",
+      "text": "Test 12: List starting at indent level 0",
       "level": 3
     },
     {
