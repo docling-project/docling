@@ -104,6 +104,25 @@ def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None
     assert _parse_marker("ABSTRACT") is None
+    assert _parse_marker("2024 Annual Financial Report") is None
+
+
+def test_numbering_delimiter_variants():
+    # Supports colon, dash, brackets, and parenthesized Arabic numerals.
+    assert _parse_marker("1 - Scope").family == "arabic"
+    assert _parse_marker("1: Scope").family == "arabic"
+    assert _parse_marker("1] Scope").family == "arabic"
+    assert _parse_marker("(1) Scope").family == "arabic"
+    assert _parse_marker("1.1: Details").family == "dotted"
+    assert _parse_marker("1.1: Details").depth == 2
+    assert _parse_marker("1.1 - Details").family == "dotted"
+    assert _parse_marker("(1.1) Details").family == "dotted"
+    assert _parse_marker("A - Appendix").family == "alpha_u"
+    assert _parse_marker("A: Appendix").family == "alpha_u"
+
+    # Preserves correct hierarchical depth when dotted headings use colons
+    levels = _levels(["1. Introduction", "1.1: Background", "1.1.1: Details"])
+    assert levels == {0: 1, 1: 2, 2: 3}
 
 
 def test_custom_numbering_scheme_order():
