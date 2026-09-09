@@ -6,7 +6,6 @@
 The service client is faked so these run without a live docling-serve instance.
 """
 
-import re
 from pathlib import Path, PurePath
 
 import pytest
@@ -16,13 +15,10 @@ from docling.cli.main import app
 from docling.cli.remote import _parse_page_range
 from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
 
-runner = CliRunner()
+# Under CI Rich thinks it has a terminal and colours the help screen.
+# `TERM=dumb` turns that off, so the text can be matched as it is written.
+runner = CliRunner(env={"TERM": "dumb"})
 pytestmark = pytest.mark.external_service
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _strip_ansi(text: str) -> str:
-    return _ANSI_RE.sub("", text)
 
 
 class _FakeDoc:
@@ -97,7 +93,7 @@ def _patch_client(monkeypatch):
 def test_remote_help_is_self_sufficient():
     result = runner.invoke(app, ["convert-remote", "--help"])
     assert result.exit_code == 0
-    help_text = _strip_ansi(result.output)
+    help_text = result.output
     for marker in (
         "Authentication",
         "Exit codes",
@@ -182,7 +178,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
             "--no-ocr",
             "--no-tables",
             "--ocr-lang",
-            "en,de",
+            "iso:en,iso:de",
             "--page-range",
             "2-5",
             "--output",
@@ -196,11 +192,40 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
-    assert opts.ocr_lang == ["en", "de"]
+    # A tag is canonicalized locally, so the service receives the resolved pair.
+    assert opts.ocr_lang == ["iso:en-Latn", "iso:de-Latn"]
     assert opts.page_range == (2, 5)
     # Both requested formats are written locally.
     assert (output / "report.md").exists()
     assert (output / "report.json").exists()
+
+
+def test_remote_empty_ocr_lang_asks_the_engine_to_choose(tmp_path, _patch_client):
+    """`--ocr-lang ""` is not the same request as omitting the option.
+
+    Omitting it leaves the service on its default languages; the empty value is
+    how `convert-remote` asks the engine to choose, the way local `convert` does.
+    """
+    source = tmp_path / "report.pdf"
+    source.write_bytes(b"%PDF-1.4")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            "convert-remote",
+            str(source),
+            "--service-url",
+            "https://docling.example.com",
+            "--ocr-lang",
+            "",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert _FakeClient.instances[-1].captured_options.ocr_lang == []
 
 
 def test_remote_credentials_from_env(tmp_path, monkeypatch, _patch_client):

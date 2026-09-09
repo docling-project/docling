@@ -58,12 +58,6 @@ class AsciiDocBackendOptions(BaseBackendOptions):
             ),
         ),
     ] = None
-    max_image_data_base64_bytes: Annotated[
-        PositiveInt,
-        Field(
-            description="The maximum number of base64 data bytes that the backend will accept.",
-        ),
-    ] = 20 * 1024 * 1024  # 20 MB
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -182,6 +176,26 @@ class MarkdownBackendOptions(BaseBackendOptions):
     max_image_data_base64_bytes: PositiveInt = Field(
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+
+
+class JatsBackendOptions(BaseBackendOptions):
+    """Options specific to the JATS XML backend."""
+
+    kind: Literal["xml_jats"] = Field("xml_jats", exclude=True, repr=False)
+    fetch_images: bool = Field(
+        False,
+        description=(
+            "Whether the backend should access local resources to parse figure "
+            "images in a JATS document."
+        ),
+    )
+    source_uri: Optional[Union[AnyUrl, PurePath]] = Field(
+        None,
+        description=(
+            "The URI that originates the JATS document. If provided, the backend "
+            "will use it to resolve relative figure paths."
+        ),
     )
 
 
@@ -700,6 +714,7 @@ BackendOptions = Annotated[
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,
+        JatsBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,
