@@ -1,6 +1,6 @@
 <doctag><page_header><loc_45><loc_38><loc_154><loc_42>aaaaaa aaaaaaaaaaa aaaaaa</page_header>
-<page_header><loc_392><loc_28><loc_484><loc_36>aaaaaaaaas$</page_header>
-<picture><loc_464><loc_17><loc_491><loc_59></picture>
+<text><loc_67><loc_466><loc_127><loc_472>K Medical Corp.</text>
+<section_header_level_1><loc_392><loc_28><loc_484><loc_36>aaaaaaaaas$</section_header_level_1>
 <text><loc_45><loc_45><loc_371><loc_50>aaaa aaaaaaa aaaaaa aaaaaaaaa aaa aaaaa aAaaaAaAAaaaaaaa AAAAAAAaAaaAa aaaaaaaa</text>
 <text><loc_347><loc_53><loc_480><loc_58>aaaa. aaa. # aaa-aa-0000000000  \.</text>
 <unordered_list><list_item><loc_45><loc_60><loc_352><loc_88>22  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:</list_item>
@@ -51,21 +51,15 @@
 <text><loc_374><loc_332><loc_383><loc_343>/</text>
 <text><loc_378><loc_403><loc_426><loc_416>aaa-aa-000</text>
 <text><loc_70><loc_418><loc_129><loc_422>aaaaaa:  aaaaa</text>
-<text><loc_43><loc_447><loc_83><loc_459>Tested By:</text>
-<text><loc_97><loc_447><loc_120><loc_459>id  /M</text>
-<text><loc_153><loc_447><loc_173><loc_459>Date:</text>
-<text><loc_181><loc_447><loc_223><loc_459>If  -7-25</text>
-<text><loc_231><loc_447><loc_281><loc_459>Approved By:</text>
-<text><loc_293><loc_447><loc_318><loc_459><loc_337><loc_447><loc_358><loc_459>D ke Date:</text>
-<picture><loc_96><loc_443><loc_118><loc_456></picture>
-<picture><loc_292><loc_443><loc_316><loc_455></picture>
-<picture><loc_363><loc_445><loc_420><loc_457></picture>
+<picture><loc_97><loc_443><loc_118><loc_456></picture>
+<text><loc_43><loc_447><loc_419><loc_459>Tested By: id  /M Date: If  -7-25 Approved By: D ke Date: WA  OSS 2S</text>
+<picture><loc_440><loc_398><loc_453><loc_415></picture>
+<picture><loc_364><loc_445><loc_420><loc_457></picture>
+<text><loc_425><loc_466><loc_466><loc_470>Page 3 of 8</text>
 <text><loc_364><loc_245><loc_374><loc_251>VV</text>
 <text><loc_365><loc_279><loc_374><loc_285>V</text>
 <text><loc_364><loc_345><loc_374><loc_350>iv,</text>
-<picture><loc_440><loc_398><loc_454><loc_415></picture>
-<text><loc_67><loc_466><loc_127><loc_472>K Medical Corp.</text>
 <text><loc_214><loc_465><loc_273><loc_471>CONFIDENTIAL</text>
-<page_footer><loc_425><loc_466><loc_466><loc_470>Page 3 of 8</page_footer>
+<picture><loc_465><loc_17><loc_491><loc_59></picture>
 <page_footer><loc_44><loc_484><loc_454><loc_491>Document No.: 2152167.9.55  -  Version:  5.0  - Document ID:  ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10  14:50/CET)</page_footer>
 </doctag>

@@ -18,13 +18,19 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 """
 
 import logging
+import zipfile
 from pathlib import Path
 
 import pytest
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.datamodel.document import (
+    ConversionResult,
+    ConversionStatus,
+    DoclingDocument,
+    InputDocument,
+)
 from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -171,6 +177,81 @@ def test_epub_content_combination():
     # Check that the document has a reasonable amount of text
     total_text = "".join(item.text for item in doc.texts)
     assert len(total_text) > 100, "Combined content should have substantial text"
+
+
+def _build_epub_with_hrefs(path: Path, hrefs: list[str], names: list[str]) -> Path:
+    """Build a minimal EPUB whose manifest hrefs and ZIP entry names differ.
+
+    ``hrefs`` are written into the package document, ``names`` are the file
+    names actually stored in the archive, both relative to ``OEBPS/``.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/content.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    items = "".join(
+        f'<item id="c{i}" href="{href}" media-type="application/xhtml+xml"/>'
+        for i, href in enumerate(hrefs)
+    )
+    itemrefs = "".join(f'<itemref idref="c{i}"/>' for i in range(len(hrefs)))
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Percent Encoded</dc:title></metadata>"
+        f"<manifest>{items}</manifest>"
+        f"<spine>{itemrefs}</spine>"
+        "</package>"
+    )
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/content.opf", opf)
+        for i, name in enumerate(names):
+            z.writestr(
+                f"OEBPS/{name}",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+                f"<p>Chapter {i} body.</p>"
+                "</body></html>",
+            )
+    return path
+
+
+def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
+    """A manifest href is a URL, so its percent-escapes must be decoded.
+
+    The ZIP entry carries the literal file name, so a spine document whose
+    href escapes a space or a non-ASCII character is not found and its text
+    is dropped from the converted document while the conversion still
+    reports success.
+    """
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "percent.epub",
+        hrefs=["chapter%201.xhtml", "%C3%A9pilogue.xhtml", "plain.xhtml"],
+        names=["chapter 1.xhtml", "épilogue.xhtml", "plain.xhtml"],
+    )
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
+    text = "\n".join(item.text for item in doc.texts)
+
+    assert "Chapter 0 body." in text
+    assert "Chapter 1 body." in text
+    assert "Chapter 2 body." in text
 
 
 def test_epub_link_fixing():
