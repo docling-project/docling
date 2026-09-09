@@ -1,0 +1,6 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: RTF support fixture
+  item-2 at level 1: text: This document verifies RTF conversion through the existing Word backend.
+  item-3 at level 1: text: Unicode text: café
+  item-4 at level 1: table with [1x2]
+  item-5 at level 1: text: 
