@@ -11,57 +11,62 @@ from typing import Any
 
 from PIL.Image import Image
 
+from docling.datamodel.extraction import (
+    ContentItem,
+    ImageContentItem,
+    TextContentItem,
+)
+
 # Re-exported: the schema-instruction wrapper now lives with the model spec in datamodel.
 from docling.datamodel.extraction_options import _build_extraction_prompt
 
 __all__ = [
     "_build_extraction_prompt",
     "build_granite_vision_inputs",
+    "build_nuextract_content_inputs",
     "build_nuextract_inputs",
 ]
 
 
-def build_nuextract_inputs(
+def _content_item_to_nuextract(item: ContentItem) -> dict[str, Any]:
+    """Map a ContentItem to NuExtract's native content dict."""
+    if isinstance(item, TextContentItem):
+        return {"type": "text", "text": item.text}
+    if isinstance(item, ImageContentItem):
+        return {"type": "image", "image": item.image}
+    raise ValueError(f"Unsupported content item: {type(item)}")
+
+
+def build_nuextract_content_inputs(
     processor: Any,
-    images: list[Image],
+    requests: list[list[ContentItem]],
     templates: list[str],
     device: str,
     extra_processor_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build inputs using the NuExtract-specific template format.
+    """Build NuExtract inputs from ordered content-item requests (dim 2).
 
-    Requires qwen-vl-utils for vision processing.
+    Each request is a ``list[ContentItem]`` (image and/or text). The template
+    rides the model's own ``template=`` chat kwarg, not the content. Requires
+    qwen-vl-utils only when an image is present.
     """
-    try:
-        from qwen_vl_utils import process_vision_info
-    except ImportError:
-        raise ImportError(
-            "qwen-vl-utils is required for NuExtract extraction. "
-            "Please install it with: pip install qwen-vl-utils"
-        )
-
-    inputs = []
-    for pil_img, template in zip(images, templates):
-        inputs.append(
-            {
-                "document": {"type": "image", "image": pil_img},
-                "template": template,
-            }
-        )
-
-    messages = [[{"role": "user", "content": [x["document"]]}] for x in inputs]
+    messages = [
+        [{"role": "user", "content": [_content_item_to_nuextract(i) for i in req]}]
+        for req in requests
+    ]
 
     texts = [
         processor.tokenizer.apply_chat_template(
-            messages[i],
-            template=x["template"],
+            messages[idx],
+            template=template,
             tokenize=False,
             add_generation_prompt=True,
         )
-        for i, x in enumerate(inputs)
+        for idx, template in enumerate(templates)
     ]
 
-    image_inputs = _process_all_vision_info(messages)
+    has_image = any(isinstance(i, ImageContentItem) for req in requests for i in req)
+    image_inputs = _process_all_vision_info(messages) if has_image else None
 
     processor_inputs = processor(
         text=texts,
@@ -71,6 +76,26 @@ def build_nuextract_inputs(
         **extra_processor_kwargs,
     )
     return {k: v.to(device) for k, v in processor_inputs.items()}
+
+
+def build_nuextract_inputs(
+    processor: Any,
+    images: list[Image],
+    templates: list[str],
+    device: str,
+    extra_processor_kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    """Image-only adapter over :func:`build_nuextract_content_inputs`."""
+    requests: list[list[ContentItem]] = [
+        [ImageContentItem(image=img)] for img in images
+    ]
+    return build_nuextract_content_inputs(
+        processor=processor,
+        requests=requests,
+        templates=templates,
+        device=device,
+        extra_processor_kwargs=extra_processor_kwargs,
+    )
 
 
 def build_granite_vision_inputs(

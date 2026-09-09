@@ -16,7 +16,11 @@ from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
@@ -79,6 +83,10 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: ImageDocumentBackend,
         InputFormat.PDF: ThreadedDoclingParseDocumentBackend,
+        InputFormat.DOCX: MsWordDocumentBackend,
+        InputFormat.HTML: HTMLDocumentBackend,
+        InputFormat.MD: MarkdownDocumentBackend,
+        InputFormat.DCLX: DocLangArchiveBackend,
     }
 
     backend = format_to_default_backend.get(fmt)

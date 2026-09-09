@@ -12,6 +12,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     VlmStopReason,
 )
+from docling.datamodel.extraction_options import ChannelSelection
 from docling.datamodel.settings import DocumentLimits
 from docling.datamodel.vlm_model_specs import NU_EXTRACT_2B_TRANSFORMERS
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
@@ -152,6 +153,7 @@ def _run_pipeline(
     pipeline.pipeline_options = SimpleNamespace(
         document_timeout=document_timeout,
         vlm_options=NU_EXTRACT_2B_TRANSFORMERS.model_copy(update={"scale": 1.0}),
+        input_channels=ChannelSelection.AUTO,
     )
     pipeline.vlm_model = _Model(
         failed_page_nos=failed_page_nos,

@@ -9,6 +9,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal
 
+from docling_core.transforms.serializer.markdown import MarkdownParams
 from docling_core.types.doc import PictureClassificationLabel
 from docling_core.types.doc.page import TextCellUnit
 from pydantic import (
@@ -37,6 +38,7 @@ from docling.datamodel.chart_extraction_options import (
 )
 from docling.datamodel.extraction_options import (
     ApiExtractionVlmOptions,
+    ChannelSelection,
     InlineExtractionVlmOptions,
 )
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
@@ -1897,6 +1899,30 @@ class VlmExtractionPipelineOptions(PipelineOptions):
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
+
+    input_channels: Annotated[
+        ChannelSelection,
+        Field(
+            description=(
+                "Which payload channel(s) to send the model (dim 2). `AUTO` uses "
+                "the page image if the format has one, otherwise the document text. "
+                "`IMAGE` / `TEXT` force a single channel (requesting one a format "
+                "cannot provide is a loud error). `IMAGE_AND_TEXT` is an explicit "
+                "opt-in and never chosen by `AUTO`."
+            )
+        ),
+    ] = ChannelSelection.AUTO
+
+    markdown_params: Annotated[
+        MarkdownParams | None,
+        Field(
+            description=(
+                "docling-core markdown serialization options for the text channel "
+                "of serialized formats (DOCX, HTML). `None` uses convert's defaults. "
+                "Ignored for Markdown input, which passes through as-is."
+            )
+        ),
+    ] = None
 
 
 class HeadingHierarchyOptions(BaseModel):

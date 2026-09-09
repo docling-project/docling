@@ -590,6 +590,20 @@ GRANITE_VISION_4_1_API = ApiExtractionVlmOptions(
     temperature=0.0,
 )
 
+# NuExtract served over an OpenAI-conformant endpoint (e.g. vLLM). NuExtract
+# carries the template out-of-band, so this routes to `api_nuextract_request`
+# (not the plain image-request path). Supports the text channel; `prompt` unused.
+NU_EXTRACT_API = ApiExtractionVlmOptions(
+    extraction_prompt_style=ExtractionPromptStyle.NUEXTRACT,
+    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
+    params={"model": "numind/NuExtract-2.0-8B"},
+    prompt="",
+    scale=2.0,
+    timeout=120,
+    response_format=ResponseFormat.PLAINTEXT,
+    temperature=0.0,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"

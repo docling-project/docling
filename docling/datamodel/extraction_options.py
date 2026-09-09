@@ -22,6 +22,19 @@ class ExtractionPromptStyle(str, Enum):
     GRANITE_VISION = "granite_vision"
 
 
+class ChannelSelection(str, Enum):
+    """Which payload channel(s) to send the model (dim 2).
+
+    ``AUTO`` prefers the page image when the format has one, otherwise text.
+    ``IMAGE_AND_TEXT`` is an explicit opt-in (never chosen by ``AUTO``).
+    """
+
+    AUTO = "auto"
+    IMAGE = "image"
+    TEXT = "text"
+    IMAGE_AND_TEXT = "image_and_text"
+
+
 def _build_extraction_prompt(template: str) -> str:
     """Wrap a serialized template in the Granite schema-instruction prompt.
 

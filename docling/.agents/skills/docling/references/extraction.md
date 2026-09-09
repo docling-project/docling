@@ -64,9 +64,11 @@ Extraction runs a vision model, configured through
 spec** (`extraction_prompt_style` on the options object), so picking a preset
 picks its style — you never set them separately:
 
-- **NuExtract** (default, `NU_EXTRACT_2B_TRANSFORMERS`): local
-  `numind/NuExtract-2.0-2B`. The template is consumed via the model's own chat
-  template; this style is local-only.
+- **NuExtract** (default, `NU_EXTRACT_2B_TRANSFORMERS`; remote `NU_EXTRACT_API`):
+  `numind/NuExtract-2.0`. The template is consumed via the model's own chat
+  template (carried out-of-band, not in the message content). NuExtract is the
+  only style that can take a **text** payload, so it drives the text-only formats
+  below.
 - **Granite schema-instruction** (`GRANITE_VISION_4_1_TRANSFORMERS`,
   `GRANITE_VISION_4_1_API`): the serialized JSON Schema wrapped in a plain-text
   instruction prompt (the key-value extraction format from the Granite Vision
@@ -96,6 +98,60 @@ pipeline_options = VlmExtractionPipelineOptions(
 Pass `pipeline_options` to `ExtractionFormatOption(pipeline_cls=ExtractionVlmPipeline, ...)`
 as usual; `extract(...)` / `extract_all(...)` then run inference on the remote
 endpoint instead of locally.
+
+## Formats and channels
+
+Extraction accepts more than paginable images. The **format** decides which
+payload **channels** are available; you provide only the file, the backend is
+chosen automatically (as in convert):
+
+| Formats | Channels offered | Default (`AUTO`) |
+|---------|------------------|------------------|
+| PDF, IMAGE | page image | image |
+| DOCX, HTML, MD | document text | text |
+| DCLX | page image **and** text | image |
+
+DCLX (a saved `DoclingDocument` archive) is the structure-plus-images format: it
+restores both the page images and the structured text from the archive, so it is
+the one format that can drive the combined channel.
+
+`input_channels` (`ChannelSelection`, default `AUTO`) picks the channel:
+
+- `AUTO` — page image if the format has one, else text (reproduces today's
+  PDF/IMAGE behavior; DCLX defaults to image).
+- `IMAGE` / `TEXT` — force one channel. Requesting a channel a format cannot
+  provide is a loud error (e.g. `IMAGE` on DOCX, or `TEXT` with a Granite spec,
+  which cannot take text).
+- `IMAGE_AND_TEXT` — explicit opt-in, sends each page's image **and** that page's
+  text (image first). Only formats offering both channels support it (DCLX);
+  NuExtract only.
+
+The text channel is markdown. Markdown input passes through as-is; DOCX/HTML/DCLX
+are serialized from their `DoclingDocument` with convert's defaults, overridable
+via `markdown_params` (a docling-core `MarkdownParams`).
+
+Text extraction over a remote NuExtract endpoint:
+
+```python
+from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_model_specs import NU_EXTRACT_API
+
+api_options = NU_EXTRACT_API.model_copy(update={
+    "url": "https://my-endpoint/v1/chat/completions",
+    "headers": {"Authorization": "Bearer <TOKEN>"},
+    "params": {"model": "numind/NuExtract-2.0-8B"},
+})
+pipeline_options = VlmExtractionPipelineOptions(
+    vlm_options=api_options,
+    enable_remote_services=True,
+)
+# A DOCX/HTML/MD source now resolves to the text channel automatically.
+```
+
+Image-bearing channels (`IMAGE`, `IMAGE_AND_TEXT`) run one model request per
+page and yield one `ExtractedPageData` per page. A text-only document yields a
+single `ExtractedPageData` (`page_no=1`) for the whole document. Batching
+multiple pages into a single request is a later addition.
 
 ## Reading the result
 

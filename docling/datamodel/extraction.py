@@ -3,12 +3,35 @@
 
 """Data models for document extraction functionality."""
 
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Type, Union
 
-from pydantic import BaseModel, Field
+from PIL.Image import Image
+from pydantic import BaseModel, ConfigDict, Field
 
 from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
 from docling.datamodel.document import InputDocument
+
+
+class TextContentItem(BaseModel):
+    """A text payload item in a model request (dim 2)."""
+
+    type: Literal["text"] = "text"
+    text: str
+
+
+class ImageContentItem(BaseModel):
+    """An image payload item in a model request (dim 2)."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    type: Literal["image"] = "image"
+    image: Image
+
+
+# One entry of an ordered model-request payload. A request is a
+# ``list[ContentItem]`` (image and/or text); the schema/template rides a
+# separate channel, not the content (see the extraction plan, dim 2).
+ContentItem = Union[TextContentItem, ImageContentItem]
 
 
 class ExtractedPageData(BaseModel):
