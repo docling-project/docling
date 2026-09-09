@@ -94,3 +94,26 @@ def test_transformers_reports_generation_stop_reason(
 
     assert prediction.num_tokens == 3
     assert prediction.stop_reason == expected_reason
+
+
+def test_transformers_rejects_input_over_context_limit() -> None:
+    model = TransformersExtractionModel.__new__(TransformersExtractionModel)
+    model.model_spec = NU_EXTRACT_2B_TRANSFORMERS.model_spec.model_copy(
+        update={"max_input_tokens": 4}
+    )
+    model.engine_options = TransformersVlmEngineOptions(use_kv_cache=False)
+    model.max_new_tokens = 3
+    model.temperature = 0.0
+    model.generation_config = GenerationConfig(eos_token_id=99, pad_token_id=0)
+
+    def _fail_generate(**_kwargs):
+        raise AssertionError("generate must not run when input exceeds the limit")
+
+    model.processor = SimpleNamespace(
+        tokenizer=SimpleNamespace(eos_token_id=99, pad_token_id=0),
+        batch_decode=lambda *_args, **_kwargs: ["{}"],
+    )
+    model.vlm_model = SimpleNamespace(generate=_fail_generate)
+
+    with pytest.raises(ValueError, match="exceeding the configured context limit"):
+        list(model._generate_and_decode({"input_ids": torch.tensor([[1, 2, 3, 4, 5]])}))
