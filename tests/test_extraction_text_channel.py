@@ -17,6 +17,7 @@ from docling.datamodel.extraction_options import ChannelSelection, ExtractionPro
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_API,
+    GRANITE_VISION_4_1_TRANSFORMERS,
     NU_EXTRACT_2B_TRANSFORMERS,
     NU_EXTRACT_API,
 )
@@ -85,7 +86,7 @@ def test_image_channel_on_text_format_is_loud_error() -> None:
 def test_text_channel_on_granite_style_is_loud_error() -> None:
     pipeline = _pipeline_shell(GRANITE_VISION_4_1_API, ChannelSelection.TEXT)
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
-    with pytest.raises(ValueError, match="only supported by the NuExtract"):
+    with pytest.raises(ValueError, match="does not accept a text payload"):
         pipeline._resolve_channel(in_doc)
 
 
@@ -94,8 +95,21 @@ def test_image_and_text_on_text_only_format_is_loud_error() -> None:
         NU_EXTRACT_2B_TRANSFORMERS, ChannelSelection.IMAGE_AND_TEXT
     )
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
-    with pytest.raises(ValueError, match="does not offer both"):
+    with pytest.raises(ValueError, match="does not offer page images"):
         pipeline._resolve_channel(in_doc)
+
+
+# --------------------------- R5: static validation ----------------------------
+
+
+def test_static_channel_capability_rejected_at_construction() -> None:
+    # TEXT with an image-only (Granite) model is a contradiction decidable from
+    # the options alone — it must raise at construction, no document involved.
+    with pytest.raises(ValueError, match="does not accept a text payload"):
+        VlmExtractionPipelineOptions(
+            vlm_options=GRANITE_VISION_4_1_TRANSFORMERS,
+            input_channels=ChannelSelection.TEXT,
+        )
 
 
 # --------------------------- dim 1: text extraction ---------------------------
@@ -153,7 +167,7 @@ def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
     mod.api_nuextract_request(
         content_items=[TextContentItem(text="hello doc")],
         template='{"title": "string"}',
-        url=NU_EXTRACT_API.url,
+        url=NU_EXTRACT_API.engine_options.url,
         model="numind/NuExtract-2.0-8B",
     )
 

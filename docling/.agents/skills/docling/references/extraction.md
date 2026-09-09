@@ -60,9 +60,11 @@ gives you validation on the way out.
 ## Choosing the engine
 
 Extraction runs a vision model, configured through
-`VlmExtractionPipelineOptions.vlm_options`. The prompt style travels **with the
-spec** (`extraction_prompt_style` on the options object), so picking a preset
-picks its style — you never set them separately:
+`VlmExtractionPipelineOptions.vlm_options` — an `ExtractionVlmOptions` pairing a
+model spec with an engine (`ExtractionVlmOptions.from_preset("nuextract_2b")`
+for the common case). The prompt style and channel capability travel **with the
+model spec** (`vlm_options.model_spec.prompt_style`), so picking a preset picks
+its style — you never set them separately:
 
 - **NuExtract** (default, `NU_EXTRACT_2B_TRANSFORMERS`; remote `NU_EXTRACT_API`):
   `numind/NuExtract-2.0`. The template is consumed via the model's own chat
@@ -75,19 +77,25 @@ picks its style — you never set them separately:
   model card). Works with local Granite Vision **and** any OpenAI-conformant
   endpoint serving it.
 
-To run remotely, build the options from an `ApiExtractionVlmOptions` preset with
-`enable_remote_services=True`, then wire them into the `DocumentExtractor` the
-usual way. Only these two objects differ from a local setup:
+To run remotely, start from an API preset (`GRANITE_VISION_4_1_API` or
+`NU_EXTRACT_API`) with `enable_remote_services=True`, then wire it into the
+`DocumentExtractor` the usual way. The endpoint lives on `engine_options`:
 
 ```python
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.datamodel.vlm_model_specs import GRANITE_VISION_4_1_API
 
-# The preset already carries the Granite schema-instruction style; just point it at your endpoint.
+# The preset already carries the Granite schema-instruction style; point its
+# engine at your endpoint.
 api_options = GRANITE_VISION_4_1_API.model_copy(update={
-    "url": "https://my-endpoint/v1/chat/completions",
-    "headers": {"Authorization": "Bearer <TOKEN>"},
-    "params": {"model": "ibm-granite/granite-vision-4.1-4b"},
+    "engine_options": ApiVlmEngineOptions(
+        engine_type=VlmEngineType.API,
+        url="https://my-endpoint/v1/chat/completions",
+        headers={"Authorization": "Bearer <TOKEN>"},
+        params={"model": "ibm-granite/granite-vision-4.1-4b"},
+    ),
 })
 pipeline_options = VlmExtractionPipelineOptions(
     vlm_options=api_options,

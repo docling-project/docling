@@ -10,9 +10,10 @@ from pydantic import (
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.extraction_options import (
-    ApiExtractionVlmOptions,
-    ExtractionPromptStyle,
-    InlineExtractionVlmOptions,
+    GRANITE_VISION_4_1_API,
+    GRANITE_VISION_4_1_TRANSFORMERS,
+    NU_EXTRACT_2B_TRANSFORMERS,
+    NU_EXTRACT_API,
 )
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
@@ -535,74 +536,10 @@ DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     response_format=ResponseFormat.DEEPSEEKOCR_MARKDOWN,
 )
 
-# NuExtract
-NU_EXTRACT_2B_TRANSFORMERS = InlineExtractionVlmOptions(
-    extraction_prompt_style=ExtractionPromptStyle.NUEXTRACT,
-    repo_id="numind/NuExtract-2.0-2B",
-    revision="fe5b2f0b63b81150721435a3ca1129a75c59c74e",  # 489efed leads to MPS issues
-    prompt="",  # This won't be used, template is passed separately
-    torch_dtype="bfloat16",
-    inference_framework=InferenceFramework.TRANSFORMERS,
-    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-    response_format=ResponseFormat.PLAINTEXT,
-    supported_devices=[
-        AcceleratorDevice.CPU,
-        AcceleratorDevice.CUDA,
-        AcceleratorDevice.MPS,
-        AcceleratorDevice.XPU,
-    ],
-    scale=2.0,
-    temperature=0.0,
-)
-
-# Granite Vision 4.1
-GRANITE_VISION_4_1_TRANSFORMERS = InlineExtractionVlmOptions(
-    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
-    repo_id="ibm-granite/granite-vision-4.1-4b",
-    revision="dd48e97503de471803850df70843cf9eb5da8712",
-    prompt="",  # Template is passed separately via extract()
-    torch_dtype="bfloat16",
-    inference_framework=InferenceFramework.TRANSFORMERS,
-    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-    response_format=ResponseFormat.PLAINTEXT,
-    supported_devices=[
-        AcceleratorDevice.CPU,
-        AcceleratorDevice.CUDA,
-        AcceleratorDevice.MPS,
-        AcceleratorDevice.XPU,
-    ],
-    scale=2.0,
-    temperature=0.0,
-    trust_remote_code=True,
-)
-
-# Granite Vision 4.1 served over an OpenAI-conformant endpoint (e.g. vLLM).
-# The spec carries GRANITE_VISION style, so it builds the schema-instruction prompt
-# from the template itself and `prompt` is left empty here.
-GRANITE_VISION_4_1_API = ApiExtractionVlmOptions(
-    extraction_prompt_style=ExtractionPromptStyle.GRANITE_VISION,
-    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
-    params={"model": "ibm-granite/granite-vision-4.1-4b"},
-    prompt="",
-    scale=2.0,
-    timeout=120,
-    response_format=ResponseFormat.PLAINTEXT,
-    temperature=0.0,
-)
-
-# NuExtract served over an OpenAI-conformant endpoint (e.g. vLLM). NuExtract
-# carries the template out-of-band, so this routes to `api_nuextract_request`
-# (not the plain image-request path). Supports the text channel; `prompt` unused.
-NU_EXTRACT_API = ApiExtractionVlmOptions(
-    extraction_prompt_style=ExtractionPromptStyle.NUEXTRACT,
-    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
-    params={"model": "numind/NuExtract-2.0-8B"},
-    prompt="",
-    scale=2.0,
-    timeout=120,
-    response_format=ResponseFormat.PLAINTEXT,
-    temperature=0.0,
-)
+# Extraction named specs (NU_EXTRACT_2B_TRANSFORMERS, GRANITE_VISION_4_1_TRANSFORMERS,
+# GRANITE_VISION_4_1_API, NU_EXTRACT_API) are defined in extraction_options — which
+# is permitted to depend on the engine-options modules — and re-exported here via
+# the import above for back-compat.
 
 
 class VlmModelType(str, Enum):
