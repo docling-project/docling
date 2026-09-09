@@ -243,8 +243,6 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
 
     result = get_converter().convert(epub_path)
 
-    # The unfixed backend swallowed the lookup failure, so the dropped chapters
-    # were reported as a clean success rather than as an error.
     assert result.status == ConversionStatus.SUCCESS
     assert result.errors == []
 
