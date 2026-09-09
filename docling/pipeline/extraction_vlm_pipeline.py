@@ -7,9 +7,13 @@ import time
 from collections.abc import Generator
 from typing import Optional
 
+from docling_core.types.doc import DoclingDocument
 from PIL.Image import Image
 
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
+from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -19,17 +23,24 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
+    ContentItem,
     ExtractedPageData,
     ExtractionResult,
     ExtractionTemplateType,
+    ImageContentItem,
+    TextContentItem,
 )
-from docling.datamodel.extraction_options import ApiExtractionVlmOptions
+from docling.datamodel.extraction_options import (
+    ApiExtractionVlmOptions,
+    ChannelSelection,
+    ExtractionPromptStyle,
+)
 from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmExtractionPipelineOptions,
 )
-from docling.datamodel.settings import settings
-from docling.models.base_model import BaseVlmModel
+from docling.models.base_model import BaseVlmModel, SupportsContentExtraction
+from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
@@ -48,15 +59,21 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         self.vlm_model: BaseVlmModel
 
         if isinstance(vlm_options, ApiExtractionVlmOptions):
-            # Remote OpenAI-conformant endpoint. Prompt construction happens on
-            # the spec (`build_extraction_prompt`), so this shares the same code
-            # path as the local engines and only differs in how the image +
-            # prompt are executed.
-            self.vlm_model = ApiVlmModel(
-                enabled=True,
-                enable_remote_services=pipeline_options.enable_remote_services,
-                vlm_options=vlm_options,
-            )
+            # Remote OpenAI-conformant endpoint. NuExtract carries its template
+            # out-of-band, so it routes to the content-array request path; other
+            # styles (Granite) stay on the plain image-request path.
+            if vlm_options.extraction_prompt_style == ExtractionPromptStyle.NUEXTRACT:
+                self.vlm_model = ApiExtractionVlmModel(
+                    enabled=True,
+                    enable_remote_services=pipeline_options.enable_remote_services,
+                    vlm_options=vlm_options,
+                )
+            else:
+                self.vlm_model = ApiVlmModel(
+                    enabled=True,
+                    enable_remote_services=pipeline_options.enable_remote_services,
+                    vlm_options=vlm_options,
+                )
         else:
             self.vlm_model = TransformersExtractionModel(
                 enabled=True,
@@ -70,85 +87,23 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         ext_res: ExtractionResult,
         template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
-        """Extract data using the VLM model."""
+        """Extract data via the open -> select -> run -> map assembly.
+
+        PDF/IMAGE with the default ``AUTO`` channel resolves to the page-image
+        path and reproduces today's output byte-for-byte. Text-only formats
+        (DOCX/HTML/MD) resolve to the text channel.
+        """
         try:
-            images = self._get_images_from_input(ext_res.input)
             prompt = self._build_prompt(template)
+            channel = self._resolve_channel(ext_res.input)
 
-            processed_image = False
-            started_at = time.monotonic()
-            try:
-                for page_number, image in images:
-                    processed_image = True
-                    try:
-                        predictions = list(
-                            self.vlm_model.process_images([image], prompt)
-                        )
-                        if predictions:
-                            extracted_text = predictions[0].text
-                            extracted_data = None
-                            vlm_stop_reason: VlmStopReason = predictions[0].stop_reason
-                            if vlm_stop_reason in {
-                                VlmStopReason.LENGTH,
-                                VlmStopReason.STOP_SEQUENCE,
-                            }:
-                                ext_res.status = ConversionStatus.PARTIAL_SUCCESS
-
-                            try:
-                                extracted_data = json.loads(extracted_text)
-                            except (json.JSONDecodeError, ValueError):
-                                pass
-
-                            page_data = ExtractedPageData(
-                                page_no=page_number,
-                                extracted_data=extracted_data,
-                                raw_text=extracted_text,
-                            )
-                        else:
-                            page_data = ExtractedPageData(
-                                page_no=page_number,
-                                extracted_data=None,
-                                errors=["No extraction result from VLM model"],
-                            )
-                    except Exception as e:
-                        _log.error(f"Error processing page {page_number}: {e}")
-                        page_data = ExtractedPageData(
-                            page_no=page_number,
-                            extracted_data=None,
-                            errors=[str(e)],
-                        )
-                    ext_res.pages.append(page_data)
-
-                    timeout = self.pipeline_options.document_timeout
-                    elapsed = time.monotonic() - started_at
-                    if timeout is not None and elapsed > timeout:
-                        message = (
-                            "Document processing timeout: exceeded "
-                            f"{timeout:.3f}s limit after {elapsed:.3f}s."
-                        )
-                        _log.warning(message)
-                        ext_res.errors.append(
-                            ErrorItem(
-                                component_type=DoclingComponentType.PIPELINE,
-                                module_name=self.__class__.__name__,
-                                error_message=message,
-                                category=FailureCategory.TIMEOUT,
-                            )
-                        )
-                        ext_res.status = ConversionStatus.PARTIAL_SUCCESS
-                        break
-            finally:
-                images.close()
-
-            if not processed_image:
-                ext_res.status = ConversionStatus.FAILURE
-                ext_res.errors.append(
-                    ErrorItem(
-                        component_type=DoclingComponentType.PIPELINE,
-                        module_name=self.__class__.__name__,
-                        error_message="No images found in document",
-                        category=FailureCategory.BACKEND_FAILURE,
-                    )
+            if channel == ChannelSelection.TEXT:
+                self._extract_via_text(ext_res, prompt)
+            else:
+                self._extract_per_page(
+                    ext_res,
+                    prompt,
+                    include_text=channel == ChannelSelection.IMAGE_AND_TEXT,
                 )
 
             ext_res.pages.sort(key=lambda page: page.page_no)
@@ -166,6 +121,213 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
 
         return ext_res
 
+    # ---------------------------- dim 2: channel ------------------------------
+
+    def _resolve_channel(self, input_doc: InputDocument) -> ChannelSelection:
+        """Resolve the effective channel, validated against what the source offers.
+
+        Requesting a channel a format cannot provide is a loud error, not a
+        silent drop (house rule: no attribute-probing / silent fallbacks).
+        """
+        backend = input_doc._backend
+        # DCLX is a declarative backend that *also* carries page images restored
+        # from the archive, so it offers both channels.
+        offers_image = isinstance(backend, (PdfDocumentBackend, DocLangArchiveBackend))
+        offers_text = isinstance(backend, DeclarativeDocumentBackend)
+
+        selection = self.pipeline_options.input_channels
+        style = self.pipeline_options.vlm_options.extraction_prompt_style
+
+        if selection == ChannelSelection.AUTO:
+            resolved = ChannelSelection.IMAGE if offers_image else ChannelSelection.TEXT
+        else:
+            resolved = selection
+
+        if resolved == ChannelSelection.IMAGE and not offers_image:
+            raise ValueError(
+                f"IMAGE channel requested but format {input_doc.format} does not "
+                f"offer page images."
+            )
+        if resolved == ChannelSelection.IMAGE_AND_TEXT and not (
+            offers_image and offers_text
+        ):
+            raise ValueError(
+                f"IMAGE_AND_TEXT channel requested but format {input_doc.format} "
+                f"does not offer both page images and a text payload."
+            )
+        # Any channel carrying text needs a model that can take a text payload.
+        if resolved in (ChannelSelection.TEXT, ChannelSelection.IMAGE_AND_TEXT):
+            if resolved == ChannelSelection.TEXT and not offers_text:
+                raise ValueError(
+                    f"TEXT channel requested but format {input_doc.format} does "
+                    f"not offer a text payload."
+                )
+            if style != ExtractionPromptStyle.NUEXTRACT:
+                raise ValueError(
+                    f"{resolved.value} channel is only supported by the NuExtract "
+                    f"prompt style, not {style.value} (the model cannot take a "
+                    f"text payload)."
+                )
+        return resolved
+
+    # ---------------------------- dim 2: text path ----------------------------
+
+    def _extract_via_text(self, ext_res: ExtractionResult, prompt: str) -> None:
+        text = self._get_text_from_input(ext_res.input)
+        # ponytail: whole-document text -> single-element result at page_no=1.
+        # Grouping / page_no semantics for non-paginable docs are dim 3 (deferred).
+        request: list[ContentItem] = [TextContentItem(text=text)]
+        assert isinstance(self.vlm_model, SupportsContentExtraction)
+        try:
+            predictions = list(self.vlm_model.process([request], prompt))
+        except Exception as e:
+            _log.error(f"Error processing text document: {e}")
+            ext_res.pages.append(
+                ExtractedPageData(page_no=1, extracted_data=None, errors=[str(e)])
+            )
+            return
+
+        ext_res.pages.append(self._prediction_to_page_data(1, predictions, ext_res))
+
+    def _get_text_from_input(self, input_doc: InputDocument) -> str:
+        """Produce the whole-document text channel for a declarative source (dim 1)."""
+        backend = input_doc._backend
+        # Markdown passes through as-is: no DoclingDocument round-trip.
+        if isinstance(backend, MarkdownDocumentBackend):
+            return backend.markdown
+
+        assert isinstance(backend, DeclarativeDocumentBackend)
+        return self._serialize_doc(backend.convert())
+
+    def _serialize_doc(
+        self, doc: DoclingDocument, page_no: Optional[int] = None
+    ) -> str:
+        """Serialize a document (or one page of it) to the markdown text channel."""
+        params = self.pipeline_options.markdown_params
+        if params is None:
+            return doc.export_to_markdown(page_no=page_no)
+
+        if page_no is not None:
+            params = params.model_copy(update={"pages": {page_no}})
+
+        from docling_core.transforms.serializer.markdown import MarkdownDocSerializer
+
+        return MarkdownDocSerializer(doc=doc, params=params).serialize().text
+
+    # ---------------------------- dim 2: per-page path ------------------------
+
+    def _extract_per_page(
+        self, ext_res: ExtractionResult, prompt: str, *, include_text: bool
+    ) -> None:
+        """One request per page (no multi-page batching; dim 3 deferred).
+
+        ``IMAGE`` sends the page image only (either engine, via ``process_images``).
+        ``IMAGE_AND_TEXT`` sends the page image plus that page's serialized text
+        as a content array (NuExtract only, via ``process``).
+        """
+        # For IMAGE_AND_TEXT the per-page text is drawn from the same document
+        # the images come from (DCLX); convert() is cached, so this is cheap.
+        doc: Optional[DoclingDocument] = None
+        if include_text:
+            backend = ext_res.input._backend
+            assert isinstance(backend, DeclarativeDocumentBackend)
+            doc = backend.convert()
+
+        images = self._get_images_from_input(ext_res.input)
+        processed_image = False
+        started_at = time.monotonic()
+        try:
+            for page_number, image in images:
+                processed_image = True
+                try:
+                    if include_text:
+                        assert doc is not None
+                        assert isinstance(self.vlm_model, SupportsContentExtraction)
+                        request: list[ContentItem] = [
+                            ImageContentItem(image=image),
+                            TextContentItem(
+                                text=self._serialize_doc(doc, page_no=page_number)
+                            ),
+                        ]
+                        predictions = list(self.vlm_model.process([request], prompt))
+                    else:
+                        predictions = list(
+                            self.vlm_model.process_images([image], prompt)
+                        )
+                    page_data = self._prediction_to_page_data(
+                        page_number, predictions, ext_res
+                    )
+                except Exception as e:
+                    _log.error(f"Error processing page {page_number}: {e}")
+                    page_data = ExtractedPageData(
+                        page_no=page_number,
+                        extracted_data=None,
+                        errors=[str(e)],
+                    )
+                ext_res.pages.append(page_data)
+
+                timeout = self.pipeline_options.document_timeout
+                elapsed = time.monotonic() - started_at
+                if timeout is not None and elapsed > timeout:
+                    message = (
+                        "Document processing timeout: exceeded "
+                        f"{timeout:.3f}s limit after {elapsed:.3f}s."
+                    )
+                    _log.warning(message)
+                    ext_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.__class__.__name__,
+                            error_message=message,
+                            category=FailureCategory.TIMEOUT,
+                        )
+                    )
+                    ext_res.status = ConversionStatus.PARTIAL_SUCCESS
+                    break
+        finally:
+            images.close()
+
+        if not processed_image:
+            ext_res.status = ConversionStatus.FAILURE
+            ext_res.errors.append(
+                ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name=self.__class__.__name__,
+                    error_message="No images found in document",
+                    category=FailureCategory.BACKEND_FAILURE,
+                )
+            )
+
+    def _prediction_to_page_data(
+        self, page_no: int, predictions: list, ext_res: ExtractionResult
+    ) -> ExtractedPageData:
+        """Map a model prediction to an ExtractedPageData (shared by every channel)."""
+        if not predictions:
+            return ExtractedPageData(
+                page_no=page_no,
+                extracted_data=None,
+                errors=["No extraction result from VLM model"],
+            )
+
+        prediction = predictions[0]
+        if prediction.stop_reason in {
+            VlmStopReason.LENGTH,
+            VlmStopReason.STOP_SEQUENCE,
+        }:
+            ext_res.status = ConversionStatus.PARTIAL_SUCCESS
+
+        extracted_data = None
+        try:
+            extracted_data = json.loads(prediction.text)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        return ExtractedPageData(
+            page_no=page_no,
+            extracted_data=extracted_data,
+            raw_text=prediction.text,
+        )
+
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
         """Determine the status based on extraction results."""
         if ext_res.pages and not any(page.errors for page in ext_res.pages):
@@ -180,10 +342,18 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
     def _get_images_from_input(
         self, input_doc: InputDocument
     ) -> Generator[tuple[int, Image], None, None]:
-        """Yield one rendered page at a time and release it before advancing."""
+        """Yield ``(page_no, image)`` for each page the source offers.
+
+        PDF/IMAGE pages are rendered on the fly and released before advancing;
+        DCLX pages carry images restored from the archive on the DoclingDocument.
+        """
+        backend = input_doc._backend
+        if isinstance(backend, DocLangArchiveBackend):
+            yield from self._iter_dclx_page_images(input_doc, backend)
+            return
+
         page_iterator = None
         try:
-            backend = input_doc._backend
             assert isinstance(backend, PdfDocumentBackend)
             page_count = backend.page_count()
             start_page, end_page = input_doc.limits.page_range
@@ -216,6 +386,21 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         finally:
             if isinstance(page_iterator, Generator):
                 page_iterator.close()
+
+    def _iter_dclx_page_images(
+        self, input_doc: InputDocument, backend: DocLangArchiveBackend
+    ) -> Generator[tuple[int, Image], None, None]:
+        """Yield page images restored from a DCLX archive, within the page range."""
+        doc = backend.convert()
+        start_page, end_page = input_doc.limits.page_range
+        for page_no in sorted(doc.pages):
+            if not (start_page <= page_no <= end_page):
+                continue
+            page = doc.pages[page_no]
+            if page.image is None:
+                _log.warning(f"DCLX page {page_no} has no restored image; skipping")
+                continue
+            yield page_no, page.image.pil_image
 
     def _build_prompt(self, template: Optional[ExtractionTemplateType]) -> str:
         """Turn the template into the final prompt text.

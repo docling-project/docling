@@ -79,3 +79,8 @@ Extras compose — combine them with commas:
   non-PDF formats or use a remote service.
 - To convert with zero local models, use `service-client` and point at a
   `docling-serve` endpoint — see [service-client.md](service-client.md).
+- `extract-core` pulls no torch and no qwen-vl-utils, so **remote** NuExtract
+  text extraction (`NU_EXTRACT_API` over DOCX/HTML/MD) runs on
+  `extract-core` + the relevant format extra (`format-office`, `format-web`) —
+  no `models-vlm-inline`. Local extraction still needs `models-vlm-inline`
+  (and qwen-vl-utils for the NuExtract image path).

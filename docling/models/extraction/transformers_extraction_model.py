@@ -16,6 +16,7 @@ from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationC
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
+from docling.datamodel.extraction import ContentItem
 from docling.datamodel.extraction_options import (
     ExtractionPromptStyle,
     InlineExtractionVlmOptions,
@@ -23,6 +24,7 @@ from docling.datamodel.extraction_options import (
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
     build_granite_vision_inputs,
+    build_nuextract_content_inputs,
     build_nuextract_inputs,
 )
 from docling.models.utils.generation_utils import build_generation_config
@@ -172,7 +174,40 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 device=self.device,
             )
 
-        # Generate
+        yield from self._generate_and_decode(processor_inputs)
+
+    def process(
+        self,
+        requests: Iterable[list[ContentItem]],
+        template: str,
+    ) -> Iterable[VlmPrediction]:
+        """Run inference over content-item requests (image and/or text; dim 2).
+
+        Only the NuExtract style carries a text channel; Granite is image-only
+        and rejects this path (validated upstream, guarded here too).
+        """
+        if self.prompt_style != ExtractionPromptStyle.NUEXTRACT:
+            raise ValueError(
+                f"process() with content items is only supported for the "
+                f"NuExtract prompt style, not {self.prompt_style.value}."
+            )
+
+        request_list = [list(req) for req in requests]
+        if not request_list:
+            return
+
+        processor_inputs = build_nuextract_content_inputs(
+            processor=self.processor,
+            requests=request_list,
+            templates=[template] * len(request_list),
+            device=self.device,
+            extra_processor_kwargs=self.vlm_options.extra_processor_kwargs,
+        )
+        yield from self._generate_and_decode(processor_inputs)
+
+    def _generate_and_decode(
+        self, processor_inputs: dict[str, Any]
+    ) -> Iterable[VlmPrediction]:
         tokenizer = getattr(self.processor, "tokenizer", None)
         generation_config = build_generation_config(
             self.generation_config,
@@ -194,7 +229,6 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
-        # Decode
         input_len = processor_inputs["input_ids"].shape[1]
         trimmed_sequences = generated_ids[:, input_len:]
 
