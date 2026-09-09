@@ -233,6 +233,12 @@ class ReadingOrderPredictor:
                         and (
                             elem.page_no != sorted_elements[ind_p1].page_no
                             or elem.is_strictly_left_of(sorted_elements[ind_p1])
+                            or (
+                                elem.is_strictly_above(sorted_elements[ind_p1])
+                                and elem.overlaps_horizontally(sorted_elements[ind_p1])
+                                and _shortest_box_gap(elem, sorted_elements[ind_p1])
+                                <= max(elem.height, sorted_elements[ind_p1].height)
+                            )
                         )
                     ):
                         m1 = re.fullmatch(
