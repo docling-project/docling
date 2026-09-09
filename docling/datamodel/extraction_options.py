@@ -91,6 +91,16 @@ class ExtractionVlmModelSpec(VlmModelSpec):
         ]
     )
     extra_processor_kwargs: dict = Field(default_factory=dict)
+    max_input_tokens: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Reject the request when the tokenized input exceeds this many "
+            "tokens, instead of letting the local model overrun its context. "
+            "None disables the check. Only enforced for the Transformers "
+            "engine; API providers report their own context-length errors."
+        ),
+    )
 
     def serialize_template(self, template: "ExtractionTemplateType") -> str:
         """Serialize any of the four template forms to a schema string.
@@ -232,6 +242,8 @@ NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     response_format=ResponseFormat.PLAINTEXT,
     supported_engines=_SUPPORTED_EXTRACTION_ENGINES,
     temperature=0.0,
+    # Qwen2-VL-2B base: 32768-token context minus the 4096 generation budget.
+    max_input_tokens=28672,
 )
 
 GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
@@ -248,6 +260,8 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     supported_engines=_SUPPORTED_EXTRACTION_ENGINES,
     temperature=0.0,
     trust_remote_code=True,
+    # Granite-4.1-3B base: 131072-token context minus the 4096 generation budget.
+    max_input_tokens=126976,
 )
 
 ExtractionVlmOptions.register_preset(

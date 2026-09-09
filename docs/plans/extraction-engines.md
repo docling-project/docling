@@ -1,7 +1,7 @@
 # Extraction engines
 
-> Status: shipped with the post-implementation review decisions below. Three
-> possible extensions remain open for product feedback.
+> Status: shipped with the post-implementation review decisions below. The three
+> possible extensions are now resolved.
 
 ## Goal
 
@@ -111,40 +111,36 @@ The review found and resolved the following issues:
 | Tests restated presets or validated their own fakes. | Trivial checks were removed or replaced with behavioral coverage of dispatch, loading options, payloads, failures, status, page ranges, sizing, streaming, fallback, cleanup, compatibility, and slim imports. |
 | Implementation comments and the plan described obsolete development stages. | Decision-history comments were removed from production code and this plan now describes the resulting architecture. |
 
-## Open decisions requiring feedback
+## Resolved extension decisions
 
 ### Local MLX, vLLM, and auto-inline
 
-The current conversion engine input requires one image and one prompt. Full
-extraction support would require a content-capable shared engine contract or
-separate extraction adapters for text-only, image-and-text, and NuExtract's
-out-of-band template. Until that design is chosen, these engines remain
-explicitly unsupported rather than partially emulated.
-
-Decision needed: whether complete local-engine parity is a product requirement,
-and whether to generalize the shared engine contract or keep extraction-specific
-adapters.
+Decided: complete local-engine parity is not a product requirement now. These
+engines stay explicitly unsupported rather than partially emulated. Local
+extraction is served by the Transformers engine, and vLLM is reached through the
+OpenAI-compatible API path. Adapters or a generalized engine contract will be
+designed only if a concrete local MLX/vLLM extraction need appears.
 
 ### API page concurrency
 
-The per-page pipeline keeps one rendered page image live at a time. Consequently
-API `concurrency` only applies when the API model receives a batch directly.
-Making document extraction issue concurrent page requests requires an explicit
-memory-versus-throughput decision because it must retain multiple rendered
-images or introduce a bounded producer/consumer path.
-
-Decision needed: preserve the one-live-page bound, or permit a configurable
-bounded queue of page images for API throughput.
+Decided: keep the one-live-page memory bound. Document extraction still issues
+one page request at a time, so API `concurrency` applies only when the model
+receives a batch directly. A bounded producer/consumer path will be added only
+if a real many-page API workload shows that per-page latency dominates.
 
 ### Text grouping and result numbering
 
-Text-only extraction currently sends the selected document text as one request
-and returns one `ExtractedPageData` with `page_no=1`. Per-page or multi-page
-grouping would change request size, context budgeting, and the output mapping
-contract.
+Decided: keep whole-document text extraction — one request, one
+`ExtractedPageData` with `page_no=1`. No page grouping or multi-page result
+numbering is introduced.
 
-Decision needed: retain whole-document text extraction or define page grouping,
-context limits, and result numbering.
+Oversized input is rejected rather than allowed to overrun the model. The
+Transformers engine enforces `ExtractionVlmModelSpec.max_input_tokens`: when the
+tokenized input exceeds the configured limit, the request fails before
+generation with a clear error, which the pipeline records as a page error and a
+document failure. The limit is disabled by default (`None`). The API engine is
+not guarded here; OpenAI-compatible providers report their own context-length
+errors, which already propagate as page errors or failures.
 
 ## Verification boundary
 

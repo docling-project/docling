@@ -251,6 +251,17 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             "generation_config": generation_config,
         }
 
+        max_input_tokens = self.model_spec.max_input_tokens
+        if max_input_tokens is not None:
+            input_tokens = processor_inputs["input_ids"].shape[1]
+            if input_tokens > max_input_tokens:
+                raise ValueError(
+                    f"Input is {input_tokens} tokens, exceeding the configured "
+                    f"context limit of {max_input_tokens} for model "
+                    f"'{self.model_spec.name}'. Reduce the page range or input "
+                    f"size, or raise max_input_tokens."
+                )
+
         start_time = time.time()
         with torch.inference_mode():
             generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)
