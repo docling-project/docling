@@ -8,6 +8,7 @@ repository's per-file line limit.
 """
 
 from io import BytesIO
+from pathlib import Path
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, ListGroup, ListItem
 from docx import Document
@@ -17,6 +18,9 @@ from docx.oxml.ns import qn
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.document_converter import DocumentConverter
+
+_DOCX_ROOT = Path("./tests/data/docx/sources")
 
 
 def test_ordered_list_resumes_numbering_after_intervening_list(tmp_path):
@@ -318,6 +322,100 @@ def test_list_markers_follow_num_fmt_end_to_end(tmp_path):
         ("upper roman", "I."),
         ("zero pad", "01."),
     ]
+
+
+def _docx_list_items(name: str):
+    """Return the converted document and its list items."""
+    docx_path = _DOCX_ROOT / f"{name}.docx"
+    assert docx_path.exists()
+    converted = (
+        DocumentConverter(allowed_formats=[InputFormat.DOCX])
+        .convert(docx_path)
+        .document
+    )
+    return converted, [
+        item for item, _ in converted.iterate_items() if isinstance(item, ListItem)
+    ]
+
+
+def _scenario_items(converted, list_items):
+    """Group the fixture's "Item *" list items by their top-level list.
+
+    The two #4185 scenarios append to the shared ``docx_lists.docx`` fixture,
+    so the "Item *" items span two separate top-level lists. Group them by the
+    root ListGroup each item belongs to and return the groups in document order.
+    """
+    groups: list = []
+    for item in list_items:
+        if not item.text.startswith("Item "):
+            continue
+        root = item
+        while isinstance(root.parent.resolve(converted), ListGroup):
+            root = root.parent.resolve(converted)
+        root_ref = root.get_ref()
+        for idx, (ref, _items) in enumerate(groups):
+            if ref == root_ref:
+                groups[idx][1].append(item)
+                break
+        else:
+            groups.append((root_ref, [item]))
+    return [items for _, items in groups]
+
+
+def test_list_returning_to_starting_level_above_zero_keeps_items():
+    """A list at levels 1, 2, 1 must not drop the item returning to level 1.
+
+    Regression for #4185: a numbered list that starts at ``w:ilvl`` 1 (never
+    touching level 0) used to lose the third item, because the level-1 slot
+    between the list base and the level-2 sub-list group was left empty. The
+    scenario lives in the ``docx_lists.docx`` fixture under the heading
+    "List starting above indent level 0".
+    """
+
+    converted, list_items = _docx_list_items("docx_lists")
+    groups = _scenario_items(converted, list_items)
+
+    # First top-level list: the above-zero scenario, levels 1, 2, 1.
+    above_zero = groups[0]
+    assert [item.text for item in above_zero] == ["Item A", "Item B", "Item C"]
+
+    # The item that returns to the starting level must rejoin the starting
+    # level's ListGroup (the same one Item A lives in) -- not be dropped.
+    group_of_a = above_zero[0].parent.resolve(converted)
+    group_of_c = above_zero[2].parent.resolve(converted)
+    assert isinstance(group_of_a, ListGroup)
+    assert group_of_c.get_ref() == group_of_a.get_ref()
+
+    # The deeper item must nest inside the same list (as a sub-group of the
+    # outer ListGroup), not become a sibling top-level list.
+    group_of_b = above_zero[1].parent.resolve(converted)
+    assert isinstance(group_of_b, ListGroup)
+    assert group_of_b.parent == group_of_a.get_ref()
+
+
+def test_list_returning_to_starting_level_zero_still_works():
+    """Control case: levels 0, 1, 2, 1 must keep working unchanged.
+
+    Lives in the ``docx_lists.docx`` fixture under the heading
+    "List starting at indent level 0".
+    """
+
+    converted, list_items = _docx_list_items("docx_lists")
+    groups = _scenario_items(converted, list_items)
+
+    # Second top-level list: the level-0 control scenario, levels 0, 1, 2, 1.
+    level_zero = groups[1]
+    assert [item.text for item in level_zero] == [
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item D",
+    ]
+
+    # Item D (level 1) rejoins Item B's (level 1) group.
+    group_of_b = level_zero[1].parent.resolve(converted)
+    group_of_d = level_zero[3].parent.resolve(converted)
+    assert group_of_d.get_ref() == group_of_b.get_ref()
 
 
 def _make_empty_docx():

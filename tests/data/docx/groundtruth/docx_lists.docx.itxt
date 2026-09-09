@@ -114,3 +114,19 @@ item-0 at level 0: unspecified: group _root_
                 item-113 at level 8: list_item: Child lettered first
                 item-114 at level 8: list_item: Child lettered second
               item-115 at level 7: list_item: Parent decimal two
+            item-116 at level 6: text: 
+        item-117 at level 4: section_header: List starting above indent level 0
+          item-118 at level 5: list: group list
+            item-119 at level 6: list_item: Item A
+            item-120 at level 6: list: group list
+              item-121 at level 7: list_item: Item B
+            item-122 at level 6: list_item: Item C
+          item-123 at level 5: text: 
+        item-124 at level 4: section_header: List starting at indent level 0
+          item-125 at level 5: list: group list
+            item-126 at level 6: list_item: Item A
+            item-127 at level 6: list: group list
+              item-128 at level 7: list_item: Item B
+              item-129 at level 7: list: group list
+                item-130 at level 8: list_item: Item C
+              item-131 at level 7: list_item: Item D

@@ -1,6 +1,0 @@
-item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: list: group list
-    item-2 at level 2: list_item: Item A
-    item-3 at level 2: list: group list
-      item-4 at level 3: list_item: Item B
-    item-5 at level 2: list_item: Item C

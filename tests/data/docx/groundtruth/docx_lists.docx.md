@@ -99,3 +99,16 @@ The spare clamps were sorted into labeled tins along the lower shelf.
     - a) Child lettered first
     - b) Child lettered second
 2. Parent decimal two
+
+#### List starting above indent level 0
+
+- 1.1. Item A
+    - 1.1.1. Item B
+- 1.2. Item C
+
+#### List starting at indent level 0
+
+1. Item A
+    - 1.1. Item B
+        - 1.1.1. Item C
+    - 1.2. Item D
