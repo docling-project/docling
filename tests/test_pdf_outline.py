@@ -14,15 +14,16 @@ from docling.utils.pdf_outline import (
 class _MockTocNode:
     """Duck-typed stand-in for docling_parse's PdfTableOfContents node.
 
-    extract_outline_from_docling_parse only accesses .children, .text, and
-    .orig on each node, so a lightweight mock is sufficient and avoids a
-    dependency on constructing a real PDF with an outline.
+    extract_outline_from_docling_parse accesses .children, .text, .orig, and
+    .destination on each node, so a lightweight mock is sufficient and avoids
+    a dependency on constructing a real PDF with an outline.
     """
 
     def __init__(self, text="", children=None):
         self.text = text
         self.orig = text
         self.children = children or []
+        self.destination = None
 
 
 class _MockPdfDocument:

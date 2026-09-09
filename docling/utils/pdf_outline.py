@@ -10,7 +10,7 @@ extractors are provided:
   title, depth, target page and vertical position.
 * :func:`extract_outline_from_docling_parse` -- for the docling-parse backends, using their native
   ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries titles,
-  hierarchy, and target pages; position is left unset.
+  hierarchy, target pages, and optional target positions.
 
 ``pypdfium2`` is imported lazily, inside the functions that use it, never at module level:
 ``datamodel.document`` imports this module for the ``_PdfOutlineItem`` model, which places it on
@@ -48,9 +48,9 @@ class _PdfOutlineItem(BaseModel):
     title: str
     # 0-based depth as reported by the PDF outline; compressed to contiguous levels downstream.
     level: int
-    # 1-based target page; None when the entry has no resolvable page (e.g. docling-parse ToC).
+    # 1-based target page; None when the entry has no resolvable destination.
     page_no: int | None = None
-    # Top-left-origin vertical position of the target, when derivable from the destination view.
+    # Top-left-origin vertical position of the target, when derivable from the destination.
     y_top: float | None = None
 
 
@@ -163,8 +163,9 @@ def extract_outline_from_docling_parse(
     Walks the ``PdfTableOfContents`` tree returned by ``PdfDocument.get_table_of_contents()``,
     depth-first, assigning each node a 0-based ``level`` from its depth (top-level entries at
     level 0, matching the pypdfium2 extractor). Target pages are read from docling-parse's
-    ``PdfDestination.page_no``, which is already 1-based like Docling's page numbering. Vertical
-    position is left unset.
+    ``PdfDestination.page_no``, which is already 1-based like Docling's page numbering. When the
+    destination includes a point, its bottom-left-origin y-coordinate is converted to Docling's
+    top-left-origin ``y_top`` using the destination page height.
 
     ``get_table_of_contents()`` returns ``None`` for PDFs without an embedded outline, in which
     case an empty list is returned. The docling-parse dependency is required to expose each
@@ -185,13 +186,21 @@ def extract_outline_from_docling_parse(
         node, level = stack.pop()
         title = (node.text or node.orig or "").strip()
         if title:
-            try:
-                destination = node.destination
-            except AttributeError:
-                # Keep the flattener usable with lightweight ToC-compatible objects in callers.
-                destination = None
+            destination = node.destination
             page_no = destination.page_no if destination is not None else None
-            items.append(_PdfOutlineItem(title=title, level=level, page_no=page_no))
+            y_top = (
+                destination.page_size.height - destination.point.y
+                if destination is not None and destination.point is not None
+                else None
+            )
+            items.append(
+                _PdfOutlineItem(
+                    title=title,
+                    level=level,
+                    page_no=page_no,
+                    y_top=y_top,
+                )
+            )
         stack.extend((child, level + 1) for child in reversed(node.children or []))
 
     return items

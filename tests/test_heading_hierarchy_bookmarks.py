@@ -317,12 +317,20 @@ def test_docling_parse_backends_outline_from_sample_pdf_have_page_targets(backen
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
     assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
-    # Native docling-parse supplies target pages but not destination coordinates.
-    assert all(o.y_top is None or o.y_top > 0 for o in outline)
+    assert [o.y_top for o in outline] == [
+        66.0,
+        126.0,
+        316.0,
+        66.0,
+        126.0,
+        316.0,
+        66.0,
+        316.0,
+    ]
 
 
 def test_docling_parse_native_outline_from_sample_pdf():
-    # docling-parse supplies target pages; native extraction never exposes destination coordinates.
+    # Native docling-parse destinations provide both target pages and coordinates.
     from docling_parse.pdf_parser import DoclingPdfParser
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
@@ -333,7 +341,16 @@ def test_docling_parse_native_outline_from_sample_pdf():
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
     assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
-    assert all(o.y_top is None for o in outline)
+    assert [o.y_top for o in outline] == [
+        66.0,
+        126.0,
+        316.0,
+        66.0,
+        126.0,
+        316.0,
+        66.0,
+        316.0,
+    ]
 
 
 def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
