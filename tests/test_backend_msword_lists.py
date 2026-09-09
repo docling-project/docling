@@ -320,6 +320,80 @@ def test_list_markers_follow_num_fmt_end_to_end(tmp_path):
     ]
 
 
+def test_list_starting_above_indent_level_zero_retains_all_items(tmp_path):
+    """A list starting at ilevel > 0 must not drop items returning to the start level.
+
+    See issue #4185: when a list has items at ilevels 1 -> 2 -> 1, Docling used to
+    drop the third item with 'Parent element of the list item is not a ListGroup'
+    because _manage_list_structure() assumed the list started at ilevel 0.
+    """
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(abstract_id: str, num_id: str):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        for ilvl in range(3):
+            lvl = OxmlElement("w:lvl")
+            lvl.set(qn("w:ilvl"), str(ilvl))
+            start = OxmlElement("w:start")
+            start.set(qn("w:val"), "1")
+            lvl.append(start)
+            fmt = OxmlElement("w:numFmt")
+            fmt.set(qn("w:val"), "bullet")
+            lvl.append(fmt)
+            text_el = OxmlElement("w:lvlText")
+            text_el.set(qn("w:val"), "•")
+            lvl.append(text_el)
+            abstract_num.append(lvl)
+        numbering.append(abstract_num)
+
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    add_numbering("1100", "1101")
+
+    def add_item(text: str, num_id: str, ilvl_val: int):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), num_id)
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("Item A at indent level 1", "1101", 1)
+    add_item("Item B at indent level 2", "1101", 2)
+    add_item("Item C at indent level 1", "1101", 1)
+
+    docx_path = tmp_path / "list_indent_repro.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    items = [
+        item.text for item, _ in converted.iterate_items() if isinstance(item, ListItem)
+    ]
+
+    assert items == [
+        "Item A at indent level 1",
+        "Item B at indent level 2",
+        "Item C at indent level 1",
+    ]
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
