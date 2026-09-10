@@ -99,6 +99,7 @@ class InputFormat(str, Enum):
 
     DOCX = "docx"
     DOC = "doc"
+    RTF = "rtf"
     PPTX = "pptx"
     PPT = "ppt"
     HTML = "html"
@@ -148,6 +149,7 @@ class OutputFormat(str, Enum):
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.DOC: ["doc", "dot"],
+    InputFormat.RTF: ["rtf"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
@@ -187,6 +189,11 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.DOC: [
         "application/msword",
         "application/x-msword",
+    ],
+    InputFormat.RTF: [
+        "application/rtf",
+        "text/rtf",
+        "application/x-rtf",
     ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",

@@ -448,8 +448,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         if options is None:
             options = MsWordBackendOptions()
-        if in_doc.format == InputFormat.DOC:
-            path_or_stream = convert_to_modern_format(path_or_stream, "doc", "docx")
+        if in_doc.format in {InputFormat.DOC, InputFormat.RTF}:
+            path_or_stream = convert_to_modern_format(
+                path_or_stream, in_doc.format.value, "docx"
+            )
         super().__init__(in_doc, path_or_stream, options)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
@@ -552,7 +554,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.DOCX, InputFormat.DOC}
+        return {InputFormat.DOCX, InputFormat.DOC, InputFormat.RTF}
 
     @override
     def convert(self) -> DoclingDocument:

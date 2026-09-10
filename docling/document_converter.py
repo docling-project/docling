@@ -350,6 +350,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLS: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.DOC: WordFormatOption(),
+        InputFormat.RTF: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
         InputFormat.PPT: PowerpointFormatOption(),
         InputFormat.ODT: OdtFormatOption(),
