@@ -128,9 +128,8 @@ Sensitivity analyses were conducted using the same model with different subsets 
 
 Table 2 Adjusted risk ratios for pre-TAS failure from log-binomial model sensitivity analysis.
 
-|  |  | (1) | (2) | (3) | (4) |
+|  | Full Model | (1) - Without Cameroon districts | (2) - Only districts in Africa | (3) - Only W. bancrofti parasite districts | (4) - Only Anopheles vector districts |
 | - | - | - | - | - | - |
-|  | Full Model | Without Cameroon districts | Only districts in Africa | Only W. bancrofti parasite districts | Only Anopheles vector districts |
 | Number of Failures | 74 | 74 | 44 | 72 | 46 |
 | Number of total districts | (N = 554) | (N = 420) | (N = 407) | (N = 518) | (N = 414) |
 | Covariate | RR (95% CI) | RR (95% CI) | RR (95% CI) | RR (95% CI) | RR (95% CI) |
