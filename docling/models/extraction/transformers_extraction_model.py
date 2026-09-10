@@ -22,7 +22,7 @@ from transformers import (
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
-from docling.datamodel.extraction import ContentItem
+from docling.datamodel.extraction import ContentItem, ImageContentItem
 from docling.datamodel.extraction_options import (
     ExtractionPromptStyle,
     ExtractionVlmOptions,
@@ -33,7 +33,6 @@ from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
     build_granite_vision_inputs,
     build_nuextract_content_inputs,
-    build_nuextract_inputs,
 )
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
@@ -190,9 +189,12 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             templates = prompt
 
         if self.prompt_style == ExtractionPromptStyle.NUEXTRACT:
-            processor_inputs = build_nuextract_inputs(
+            requests: list[list[ContentItem]] = [
+                [ImageContentItem(image=img)] for img in pil_images
+            ]
+            processor_inputs = build_nuextract_content_inputs(
                 processor=self.processor,
-                images=pil_images,
+                requests=requests,
                 templates=templates,
                 device=self.device,
                 extra_processor_kwargs=self.model_spec.extra_processor_kwargs,

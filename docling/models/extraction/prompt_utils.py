@@ -24,7 +24,6 @@ __all__ = [
     "_build_extraction_prompt",
     "build_granite_vision_inputs",
     "build_nuextract_content_inputs",
-    "build_nuextract_inputs",
 ]
 
 
@@ -76,26 +75,6 @@ def build_nuextract_content_inputs(
         **extra_processor_kwargs,
     )
     return {k: v.to(device) for k, v in processor_inputs.items()}
-
-
-def build_nuextract_inputs(
-    processor: Any,
-    images: list[Image],
-    templates: list[str],
-    device: str,
-    extra_processor_kwargs: dict[str, Any],
-) -> dict[str, Any]:
-    """Image-only adapter over :func:`build_nuextract_content_inputs`."""
-    requests: list[list[ContentItem]] = [
-        [ImageContentItem(image=img)] for img in images
-    ]
-    return build_nuextract_content_inputs(
-        processor=processor,
-        requests=requests,
-        templates=templates,
-        device=device,
-        extra_processor_kwargs=extra_processor_kwargs,
-    )
 
 
 def build_granite_vision_inputs(
