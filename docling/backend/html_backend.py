@@ -600,6 +600,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _decode_mhtml_html(cls, part: Message) -> bytes:
+        """Decode the transfer encoding and re-encode the HTML payload as UTF-8.
+
+        Note:
+            Re-encoding to UTF-8 does not strip or update any ``<meta charset>``
+            or ``Content-Type`` meta tags inside the HTML. If the document declares
+            a non-UTF-8 charset internally, BeautifulSoup may attempt to re-decode
+            the already-UTF-8 bytes using that charset, which can produce corrupted
+            text. Stripping the meta charset declaration before passing the bytes to
+            the parser would fix this but is left as a future improvement.
+        """
         payload = cls._decode_mime_payload(part)
         charset = part.get_content_charset()
         if not charset:
