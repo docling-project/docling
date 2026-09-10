@@ -51,6 +51,12 @@ The currently supported connectors are:
 - Google Drive
 - Google Cloud Storage
 
+### S3
+
+For S3-compatible services, provide `access_key` and `secret_key` together. On
+AWS, omit both to use the default credential provider chain (for example, an
+ECS task role, EKS workload identity, or EC2 instance profile).
+
 ### Google Drive
 
 To use Google Drive as a source or target, you need to enable the API and set up credentials.
