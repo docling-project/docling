@@ -527,6 +527,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _normalize_content_id(value: str) -> str:
+        """Normalize a Content-ID value to a canonical ``cid:<id>`` string."""
         content_id = value.strip()
         if content_id.lower().startswith("cid:"):
             content_id = content_id[4:]
@@ -534,6 +535,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _mime_children(message: Message) -> list[Message]:
+        """Return the direct child parts of a multipart MIME message."""
         payload = message.get_payload()
         if not isinstance(payload, list):
             return []
@@ -541,6 +543,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _find_html_root(cls, root_entity: Message) -> Message | None:
+        """Return the HTML part from a root entity, descending into multipart/alternative."""
         if root_entity.get_content_type().lower() == "text/html":
             return root_entity
         if root_entity.get_content_type().lower() != "multipart/alternative":
@@ -553,6 +556,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _find_mhtml_root(cls, message: Message) -> tuple[Message, Message]:
+        """Locate the multipart/related scope and its HTML root part.
+
+        Returns:
+            A tuple of ``(related_scope, html_root_part)``. For bare HTML
+            input (no multipart/related wrapper) both elements are the same
+            message object.
+
+        Raises:
+            ValueError: If no valid HTML root can be identified.
+        """
         related_scope = next(
             (
                 part
@@ -595,6 +608,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _decode_mime_payload(part: Message) -> bytes:
+        """Decode the transfer encoding of a MIME part and return raw bytes."""
         payload = part.get_payload(decode=True)
         return payload if isinstance(payload, bytes) else b""
 
@@ -637,6 +651,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _is_windows_absolute_path(value: str) -> bool:
+        """Return True if the path string is a Windows absolute path."""
         return PureWindowsPath(value).is_absolute()
 
     @classmethod
@@ -682,6 +697,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _join_mhtml_location(base: str, location: str) -> str:
+        """Resolve a location relative to base, handling all MHTML URI schemes."""
         location = location.strip()
         location_is_local = HTMLDocumentBackend._mhtml_local_path(location) is not None
         if (not location_is_local and urlparse(location).scheme) or location.startswith(
@@ -713,6 +729,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _resolve_mhtml_base(
         cls, root_location: str | None, configured_base: str | None
     ) -> str:
+        """Derive the effective base URL for resolving MHTML resource references.
+
+        Prefers the root part's Content-Location, falling back to the caller-supplied
+        base or the synthetic ``thismessage:/`` origin for archives with no real URL.
+        Local roots that would escape the source document's directory are remapped to
+        the synthetic base to prevent filesystem traversal.
+        """
         if not root_location:
             return configured_base or _MHTML_SYNTHETIC_BASE
 
@@ -743,6 +766,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _collect_mhtml_resources(
         cls, related_scope: Message, effective_base: str
     ) -> dict[str, bytes]:
+        """Build a lookup map of embedded image resources keyed by location and cid.
+
+        Only image parts are collected; non-image resources (CSS, fonts, scripts)
+        are intentionally ignored since the HTML backend strips those tags.
+        """
         resources: dict[str, bytes] = {}
         for part in related_scope.walk():
             if part.is_multipart() or part.get_content_maintype().lower() != "image":
@@ -770,6 +798,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _parse_mhtml(
         cls, raw: bytes, configured_base: str | None
     ) -> tuple[bytes, dict[str, bytes], str]:
+        """Parse an MHTML archive and extract the HTML root, image resources, and base URL.
+
+        Args:
+            raw: Raw bytes of the MHTML archive.
+            configured_base: Caller-supplied base path or URL (e.g. from
+                ``HTMLBackendOptions.source_uri``), used to resolve local roots.
+
+        Returns:
+            A tuple of ``(html_bytes, resources, effective_base)`` where
+            ``resources`` maps location keys to raw image bytes and
+            ``effective_base`` is the resolved base URL for further reference
+            resolution.
+
+        Raises:
+            ValueError: If the input cannot be parsed as a valid MHTML document.
+        """
         message = BytesParser(policy=policy.default).parsebytes(raw)
         if message.get("Content-Type") is None:
             raise ValueError("MHTML input has no MIME Content-Type header.")
