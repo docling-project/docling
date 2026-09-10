@@ -618,7 +618,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             path = unquote(parsed.path)
             if parsed.netloc and parsed.netloc.lower() != "localhost":
                 path = f"//{parsed.netloc}{path}"
-            if re.match(r"^/[A-Za-z]:[/\\\\]", path):
+            if re.match(r"^/[A-Za-z]:[/\\]", path):
                 path = path[1:]
             return path
         if ImageResourceLoader.is_local_path(value):
