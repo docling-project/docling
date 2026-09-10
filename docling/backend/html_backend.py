@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import math
-import mimetypes
 import ntpath
 import posixpath
 import re
@@ -93,11 +92,8 @@ _BR_SENTINEL = "\ue000"
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
-
-_MHTML_MIMETYPE = FormatToMimeType[InputFormat.MHTML][0]
 _MHTML_SYNTHETIC_BASE = "thismessage:/"
-mimetypes.add_type(_MHTML_MIMETYPE, ".mhtml")
-mimetypes.add_type(_MHTML_MIMETYPE, ".mht")
+
 
 # Tags that initiate distinct Docling items
 _BLOCK_TAGS: Final = {

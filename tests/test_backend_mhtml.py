@@ -86,7 +86,7 @@ def test_mhtml_extension_detection(tmp_path: Path, extension: str):
     assert conversion_input._guess_format(path) == InputFormat.MHTML
     stream = DocumentStream(name=path.name, stream=BytesIO(path.read_bytes()))
     assert conversion_input._guess_format(stream) == InputFormat.MHTML
-    assert mimetypes.guess_type(path.name)[0] == "application/x-mimearchive"
+    assert mimetypes.guess_type(path.name)[0] == "message/rfc822"
 
 
 def test_root_html_preserves_standard_html_semantics():
