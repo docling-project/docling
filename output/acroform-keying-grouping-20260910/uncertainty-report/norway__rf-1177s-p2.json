@@ -1,0 +1,1910 @@
+{
+  "schema_version": "1.0",
+  "fixture": "norway__rf-1177s",
+  "page": 2,
+  "solver_status": "optimal",
+  "seconds": 0.009771249955520034,
+  "null_cost": 3.0,
+  "objective": 0.0,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 393.6,
+          "r_y0": 779.04,
+          "r_x1": 478.92,
+          "r_y1": 779.04,
+          "r_x2": 478.92,
+          "r_y2": 793.92,
+          "r_x3": 393.6,
+          "r_y3": 793.92,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2019Njuovvaneallit",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.6,
+        "t": 47.83000000000004,
+        "r": 478.92,
+        "b": 62.710000000000036,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 480.48,
+          "r_y0": 779.04,
+          "r_x1": 566.52,
+          "r_y1": 779.04,
+          "r_x2": 566.52,
+          "r_y2": 793.92,
+          "r_x3": 480.48,
+          "r_y3": 793.92,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018Njuovvaneallit",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.48,
+        "t": 47.83000000000004,
+        "r": 566.52,
+        "b": 62.710000000000036,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 393.48,
+          "r_y0": 763.2,
+          "r_x1": 479.04,
+          "r_y1": 763.2,
+          "r_x2": 479.04,
+          "r_y2": 777.96,
+          "r_x3": 393.48,
+          "r_y3": 777.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2019Reidejuvvon ja ráhkadahtton buktagat boazodoalus",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.48,
+        "t": 63.789999999999964,
+        "r": 479.04,
+        "b": 78.54999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 480.36,
+          "r_y0": 763.2,
+          "r_x1": 566.64,
+          "r_y1": 763.2,
+          "r_x2": 566.64,
+          "r_y2": 777.96,
+          "r_x3": 480.36,
+          "r_y3": 777.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018Reidejuvvon ja ráhkadahtton buktagat boazodoalus",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.36,
+        "t": 63.789999999999964,
+        "r": 566.64,
+        "b": 78.54999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 393.48,
+          "r_y0": 747.6,
+          "r_x1": 479.04,
+          "r_y1": 747.6,
+          "r_x2": 479.04,
+          "r_y2": 762.12,
+          "r_x3": 393.48,
+          "r_y3": 762.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2019Ealihaneallit",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.48,
+        "t": 79.63,
+        "r": 479.04,
+        "b": 94.14999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 480.36,
+          "r_y0": 747.6,
+          "r_x1": 566.64,
+          "r_y1": 747.6,
+          "r_x2": 566.64,
+          "r_y2": 762.12,
+          "r_x3": 480.36,
+          "r_y3": 762.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018Ealihaneallit",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.36,
+        "t": 79.63,
+        "r": 566.64,
+        "b": 94.14999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 393.48,
+          "r_y0": 731.76,
+          "r_x1": 479.04,
+          "r_y1": 731.76,
+          "r_x2": 479.04,
+          "r_y2": 746.52,
+          "r_x3": 393.48,
+          "r_y3": 746.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2019Almmolaš doarjagat",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.48,
+        "t": 95.23000000000002,
+        "r": 479.04,
+        "b": 109.99000000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 480.36,
+          "r_y0": 731.76,
+          "r_x1": 566.64,
+          "r_y1": 731.76,
+          "r_x2": 566.64,
+          "r_y2": 746.52,
+          "r_x3": 480.36,
+          "r_y3": 746.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018Almmolaš doarjagat",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.36,
+        "t": 95.23000000000002,
+        "r": 566.64,
+        "b": 109.99000000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 393.6,
+          "r_y0": 715.68,
+          "r_x1": 478.92,
+          "r_y1": 715.68,
+          "r_x2": 478.92,
+          "r_y2": 730.56,
+          "r_x3": 393.6,
+          "r_y3": 730.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2019Eará sisaboahtopoasttat",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.6,
+        "t": 111.19000000000005,
+        "r": 478.92,
+        "b": 126.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 480.48,
+          "r_y0": 715.68,
+          "r_x1": 566.52,
+          "r_y1": 715.68,
+          "r_x2": 566.52,
+          "r_y2": 730.56,
+          "r_x3": 480.48,
+          "r_y3": 730.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018Eará sisaboahtopoasttat",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.48,
+        "t": 111.19000000000005,
+        "r": 566.52,
+        "b": 126.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 393.72,
+          "r_y0": 692.88,
+          "r_x1": 478.8,
+          "r_y1": 692.88,
+          "r_x2": 478.8,
+          "r_y2": 712.68,
+          "r_x3": 393.72,
+          "r_y3": 712.68,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_11",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.72,
+        "t": 129.07000000000005,
+        "r": 478.8,
+        "b": 148.87,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 11,
+        "rect": {
+          "r_x0": 480.6,
+          "r_y0": 692.88,
+          "r_x1": 566.4,
+          "r_y1": 692.88,
+          "r_x2": 566.4,
+          "r_y2": 712.68,
+          "r_x3": 480.6,
+          "r_y3": 712.68,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_12_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.6,
+        "t": 129.07000000000005,
+        "r": 566.4,
+        "b": 148.87,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 393.545,
+          "r_y0": 669.36,
+          "r_x1": 478.369,
+          "r_y1": 669.36,
+          "r_x2": 478.369,
+          "r_y2": 691.353,
+          "r_x3": 393.545,
+          "r_y3": 691.353,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "DOAIBMAGOLUID SUBMI",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.545,
+        "t": 150.39700000000005,
+        "r": 478.369,
+        "b": 172.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 480.6,
+          "r_y0": 669.36,
+          "r_x1": 566.4,
+          "r_y1": 669.36,
+          "r_x2": 566.4,
+          "r_y2": 691.56,
+          "r_x3": 480.6,
+          "r_y3": 691.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018_7",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.6,
+        "t": 150.19000000000005,
+        "r": 566.4,
+        "b": 172.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 393.898,
+          "r_y0": 647.381,
+          "r_x1": 478.723,
+          "r_y1": 647.381,
+          "r_x2": 478.723,
+          "r_y2": 665.799,
+          "r_x3": 393.898,
+          "r_y3": 665.799,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_70_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.898,
+        "t": 175.95100000000002,
+        "r": 478.723,
+        "b": 194.36900000000003,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 480.6,
+          "r_y0": 646.32,
+          "r_x1": 566.4,
+          "r_y1": 646.32,
+          "r_x2": 566.4,
+          "r_y2": 666.36,
+          "r_x3": 480.6,
+          "r_y3": 666.36,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018_8",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.6,
+        "t": 175.39,
+        "r": 566.4,
+        "b": 195.42999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 394.012,
+          "r_y0": 631.85,
+          "r_x1": 478.609,
+          "r_y1": 631.85,
+          "r_x2": 478.609,
+          "r_y2": 644.407,
+          "r_x3": 394.012,
+          "r_y3": 644.407,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Divvun vuoitoja massinkonttu supmiin",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 394.012,
+        "t": 197.34299999999996,
+        "r": 478.609,
+        "b": 209.89999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 480.36,
+          "r_y0": 630.48,
+          "r_x1": 566.64,
+          "r_y1": 630.48,
+          "r_x2": 566.64,
+          "r_y2": 645.24,
+          "r_x3": 480.36,
+          "r_y3": 645.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018_9",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.36,
+        "t": 196.51,
+        "r": 566.64,
+        "b": 211.26999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 393.071,
+          "r_y0": 614.676,
+          "r_x1": 478.843,
+          "r_y1": 614.676,
+          "r_x2": 478.843,
+          "r_y2": 629.501,
+          "r_x3": 393.071,
+          "r_y3": 629.501,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "a RF1167 9000 poastta oassi mii guoská boazodollui",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.071,
+        "t": 212.24900000000002,
+        "r": 478.843,
+        "b": 227.07399999999996,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 19,
+        "rect": {
+          "r_x0": 480.48,
+          "r_y0": 614.16,
+          "r_x1": 566.52,
+          "r_y1": 614.16,
+          "r_x2": 566.52,
+          "r_y2": 629.28,
+          "r_x3": 480.48,
+          "r_y3": 629.28,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "2018_10",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.48,
+        "t": 212.47000000000003,
+        "r": 566.52,
+        "b": 227.59000000000003,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 20,
+        "rect": {
+          "r_x0": 393.48,
+          "r_y0": 600.48,
+          "r_x1": 479.04,
+          "r_y1": 600.48,
+          "r_x2": 479.04,
+          "r_y2": 613.08,
+          "r_x3": 393.48,
+          "r_y3": 613.08,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_19",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.48,
+        "t": 228.66999999999996,
+        "r": 479.04,
+        "b": 241.26999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 21,
+        "rect": {
+          "r_x0": 480.36,
+          "r_y0": 600.48,
+          "r_x1": 566.64,
+          "r_y1": 600.48,
+          "r_x2": 566.64,
+          "r_y2": 613.08,
+          "r_x3": 480.36,
+          "r_y3": 613.08,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_20",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.36,
+        "t": 228.66999999999996,
+        "r": 566.64,
+        "b": 241.26999999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 22,
+        "rect": {
+          "r_x0": 393.36,
+          "r_y0": 582.48,
+          "r_x1": 479.16,
+          "r_y1": 582.48,
+          "r_x2": 479.16,
+          "r_y2": 598.79,
+          "r_x3": 393.36,
+          "r_y3": 598.79,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_73",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.36,
+        "t": 242.96000000000004,
+        "r": 479.16,
+        "b": 259.27,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 23,
+        "rect": {
+          "r_x0": 480.24,
+          "r_y0": 582.48,
+          "r_x1": 566.76,
+          "r_y1": 582.48,
+          "r_x2": 566.76,
+          "r_y2": 598.436,
+          "r_x3": 480.24,
+          "r_y3": 598.436,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_74_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.24,
+        "t": 243.31399999999996,
+        "r": 566.76,
+        "b": 259.27,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 24,
+        "rect": {
+          "r_x0": 394.132,
+          "r_y0": 564.594,
+          "r_x1": 478.843,
+          "r_y1": 564.594,
+          "r_x2": 478.843,
+          "r_y2": 580.719,
+          "r_x3": 394.132,
+          "r_y3": 580.719,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "b RF1167 0910 poastta oassi mii guoská boazodollui",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 394.132,
+        "t": 261.03099999999995,
+        "r": 478.843,
+        "b": 277.15599999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 25,
+        "rect": {
+          "r_x0": 480.394,
+          "r_y0": 564.867,
+          "r_x1": 566.166,
+          "r_y1": 564.867,
+          "r_x2": 566.166,
+          "r_y2": 580.993,
+          "r_x3": 480.394,
+          "r_y3": 580.993,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A RF1167 0910 poastta oassi mii guoská boazodolluiB",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.394,
+        "t": 260.75699999999995,
+        "r": 566.166,
+        "b": 276.88300000000004,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 26,
+        "rect": {
+          "r_x0": 393.96,
+          "r_y0": 529.32,
+          "r_x1": 478.56,
+          "r_y1": 529.32,
+          "r_x2": 478.56,
+          "r_y2": 559.32,
+          "r_x3": 393.96,
+          "r_y3": 559.32,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_22_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 393.96,
+        "t": 282.42999999999995,
+        "r": 478.56,
+        "b": 312.42999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 27,
+        "rect": {
+          "r_x0": 480.84,
+          "r_y0": 529.32,
+          "r_x1": 566.16,
+          "r_y1": 529.32,
+          "r_x2": 566.16,
+          "r_y2": 559.32,
+          "r_x3": 480.84,
+          "r_y3": 559.32,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_23_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.84,
+        "t": 282.42999999999995,
+        "r": 566.16,
+        "b": 312.42999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 28,
+        "rect": {
+          "r_x0": 266.76,
+          "r_y0": 494.4,
+          "r_x1": 350.88,
+          "r_y1": 494.4,
+          "r_x2": 350.88,
+          "r_y2": 508.2,
+          "r_x3": 266.76,
+          "r_y3": 508.2,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Ruhtaváldin 2019",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.76,
+        "t": 333.55,
+        "r": 350.88,
+        "b": 347.35,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 29,
+        "rect": {
+          "r_x0": 369.24,
+          "r_y0": 494.4,
+          "r_x1": 455.76,
+          "r_y1": 494.4,
+          "r_x2": 455.76,
+          "r_y2": 508.2,
+          "r_x3": 369.24,
+          "r_y3": 508.2,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Ruhtabidjan 2019",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 369.24,
+        "t": 333.55,
+        "r": 455.76,
+        "b": 347.35,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 30,
+        "rect": {
+          "r_x0": 480.6,
+          "r_y0": 494.4,
+          "r_x1": 566.4,
+          "r_y1": 494.4,
+          "r_x2": 566.4,
+          "r_y2": 507.933,
+          "r_x3": 480.6,
+          "r_y3": 507.933,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_44_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.6,
+        "t": 333.817,
+        "r": 566.4,
+        "b": 347.35,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 31,
+        "rect": {
+          "r_x0": 163.08,
+          "r_y0": 465.6,
+          "r_x1": 247.44,
+          "r_y1": 465.6,
+          "r_x2": 247.44,
+          "r_y2": 477.72,
+          "r_x3": 163.08,
+          "r_y3": 477.72,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "347 poasttas",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 163.08,
+        "t": 364.03,
+        "r": 247.44,
+        "b": 376.15,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 32,
+        "rect": {
+          "r_x0": 267.48,
+          "r_y0": 465.6,
+          "r_x1": 350.88,
+          "r_y1": 465.6,
+          "r_x2": 350.88,
+          "r_y2": 477.72,
+          "r_x3": 267.48,
+          "r_y3": 477.72,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Buohcanruhta",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 267.48,
+        "t": 364.03,
+        "r": 350.88,
+        "b": 376.15,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 33,
+        "rect": {
+          "r_x0": 369.48,
+          "r_y0": 465.6,
+          "r_x1": 455.04,
+          "r_y1": 465.6,
+          "r_x2": 455.04,
+          "r_y2": 477.72,
+          "r_x3": 369.48,
+          "r_y3": 477.72,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "bidjanváldin 333 poasttas",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 369.48,
+        "t": 364.03,
+        "r": 455.04,
+        "b": 376.15,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 34,
+        "rect": {
+          "r_x0": 480.48,
+          "r_y0": 465.6,
+          "r_x1": 566.52,
+          "r_y1": 465.6,
+          "r_x2": 566.52,
+          "r_y2": 477.105,
+          "r_x3": 480.48,
+          "r_y3": 477.105,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_45_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.48,
+        "t": 364.645,
+        "r": 566.52,
+        "b": 376.15,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 35,
+        "rect": {
+          "r_x0": 480.48,
+          "r_y0": 447.84,
+          "r_x1": 566.52,
+          "r_y1": 447.84,
+          "r_x2": 566.52,
+          "r_y2": 464.4,
+          "r_x3": 480.48,
+          "r_y3": 464.4,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_46_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 480.48,
+        "t": 377.35,
+        "r": 566.52,
+        "b": 393.91,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 36,
+        "rect": {
+          "r_x0": 472.557,
+          "r_y0": 393.189,
+          "r_x1": 566.16,
+          "r_y1": 393.189,
+          "r_x2": 566.16,
+          "r_y2": 407.52,
+          "r_x3": 472.557,
+          "r_y3": 407.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "BoazodoalluRow1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.557,
+        "t": 434.23,
+        "r": 566.16,
+        "b": 448.561,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 37,
+        "rect": {
+          "r_x0": 472.077,
+          "r_y0": 362.16,
+          "r_x1": 566.64,
+          "r_y1": 362.16,
+          "r_x2": 566.64,
+          "r_y2": 376.68,
+          "r_x3": 472.077,
+          "r_y3": 376.68,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boazodoallu2017",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.077,
+        "t": 465.07,
+        "r": 566.64,
+        "b": 479.59,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 38,
+        "rect": {
+          "r_x0": 472.279,
+          "r_y0": 346.32,
+          "r_x1": 566.64,
+          "r_y1": 346.32,
+          "r_x2": 566.64,
+          "r_y2": 361.08,
+          "r_x3": 472.279,
+          "r_y3": 361.08,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boazodoallu2018",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.279,
+        "t": 480.67,
+        "r": 566.64,
+        "b": 495.43,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 39,
+        "rect": {
+          "r_x0": 472.601,
+          "r_y0": 330.24,
+          "r_x1": 566.52,
+          "r_y1": 330.24,
+          "r_x2": 566.52,
+          "r_y2": 345.12,
+          "r_x3": 472.601,
+          "r_y3": 345.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boazodoallu2019",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.601,
+        "t": 496.63,
+        "r": 566.52,
+        "b": 511.51,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 40,
+        "rect": {
+          "r_x0": 472.238,
+          "r_y0": 314.643,
+          "r_x1": 566.64,
+          "r_y1": 314.643,
+          "r_x2": 566.64,
+          "r_y2": 328.674,
+          "r_x3": 472.238,
+          "r_y3": 328.674,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "BoazodoalluSubmi",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.238,
+        "t": 513.076,
+        "r": 566.64,
+        "b": 527.107,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 41,
+        "rect": {
+          "r_x0": 472.597,
+          "r_y0": 293.068,
+          "r_x1": 566.281,
+          "r_y1": 293.068,
+          "r_x2": 566.281,
+          "r_y2": 311.054,
+          "r_x3": 472.597,
+          "r_y3": 311.054,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "BoazodoalluGaskamearresisaboahtu boazodoallu",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.597,
+        "t": 530.696,
+        "r": 566.281,
+        "b": 548.682,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 42,
+        "rect": {
+          "r_x0": 472.197,
+          "r_y0": 377.635,
+          "r_x1": 565.878,
+          "r_y1": 377.635,
+          "r_x2": 565.878,
+          "r_y2": 392.515,
+          "r_x3": 472.197,
+          "r_y3": 392.515,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "VuovdiDivvojuvvonB",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 472.197,
+        "t": 449.235,
+        "r": 565.878,
+        "b": 464.115,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 0,
+      "cell": null,
+      "field_refs": []
+    }
+  ],
+  "fields": [],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 1,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 2,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 3,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 4,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 5,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 6,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 7,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 8,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 9,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 10,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 11,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 12,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 13,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 14,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 15,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 16,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 17,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 18,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 19,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 20,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 21,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 22,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 23,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 24,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 25,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 26,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 27,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 28,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 29,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 30,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 31,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 32,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 33,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 34,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 35,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 36,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 37,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 38,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 39,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 40,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 41,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 42,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "excluded by table rule": 43
+  },
+  "groups": {}
+}

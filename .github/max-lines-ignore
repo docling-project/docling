@@ -17,6 +17,8 @@ output/acroform-keying-prototype/*.json
 output/acroform-keying-coverage-20260910/*.json
 output/acroform-keying-failure-audit/*.json
 
+output/acroform-keying-grouping-20260910/*.json
+
 [warn]
 .plans/active/docling-slim.md
 CHANGELOG.md

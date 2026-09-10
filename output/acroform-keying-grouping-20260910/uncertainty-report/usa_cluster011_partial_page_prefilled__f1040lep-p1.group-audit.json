@@ -1,0 +1,132 @@
+{
+  "raw_objective": 10.150193693592064,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "prompt": "اﻟﻌﺮﺑﻴﺔ",
+        "prompt_bbox": {
+          "l": 128.129,
+          "t": 229.01999999999998,
+          "r": 144.32899999999998,
+          "b": 240.3926160000001,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "006 Haitian Creole (Kreyòl Ayisyen)",
+          "007 Tagalog (Tagalog)",
+          "008 Portuguese (Português)",
+          "009 Polish (Polski)",
+          "010 Farsi ( ﻓﺎرﺳﯽ )"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.17909603454380374,
+      "uncertain": true,
+      "alternative_groups": [
+        {
+          "widgets": [
+            18,
+            19,
+            20
+          ],
+          "prompt": "اﻟﻌﺮﺑﻴﺔ",
+          "prompt_bbox": {
+            "l": 128.129,
+            "t": 229.01999999999998,
+            "r": 144.32899999999998,
+            "b": 240.3926160000001,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "016 Urdu ( اردو )",
+            "017 Bengali ( বাংলা )",
+            "018 Italian ( Italiano)"
+          ]
+        },
+        {
+          "widgets": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "prompt": ")",
+          "prompt_bbox": {
+            "l": 144.841,
+            "t": 229.94499999999994,
+            "r": 146.913,
+            "b": 238.23437815126044,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "006 Haitian Creole (Kreyòl Ayisyen)",
+            "007 Tagalog (Tagalog)",
+            "008 Portuguese (Português)",
+            "009 Polish (Polski)",
+            "010 Farsi ( ﻓﺎرﺳﯽ )"
+          ]
+        }
+      ]
+    },
+    {
+      "selected": {
+        "widgets": [
+          18,
+          19,
+          20,
+          21
+        ],
+        "prompt": ")",
+        "prompt_bbox": {
+          "l": 144.841,
+          "t": 229.94499999999994,
+          "r": 146.913,
+          "b": 238.23437815126044,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "016 Urdu ( اردو )",
+          "017 Bengali ( বাংলা )",
+          "018 Italian ( Italiano)",
+          "019 Chinese (Traditional) 中文 ( 繁體 )"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.003990830044056537,
+      "uncertain": true,
+      "alternative_groups": [
+        {
+          "widgets": [
+            18,
+            19,
+            20
+          ],
+          "prompt": ")",
+          "prompt_bbox": {
+            "l": 144.841,
+            "t": 229.94499999999994,
+            "r": 146.913,
+            "b": 238.23437815126044,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "016 Urdu ( اردو )",
+            "017 Bengali ( বাংলা )",
+            "018 Italian ( Italiano)"
+          ]
+        }
+      ]
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 2
+}

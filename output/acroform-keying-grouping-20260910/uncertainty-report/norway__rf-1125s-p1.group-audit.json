@@ -1,0 +1,53 @@
+{
+  "raw_objective": 43.478035968938826,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          10,
+          11,
+          12
+        ],
+        "prompt": "Vearrodieđáhusa",
+        "prompt_bbox": {
+          "l": 212.85,
+          "t": 247.92600000000004,
+          "r": 262.1590000000001,
+          "b": 253.67021878453045,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "(bálkkolaččat guđet gáibidit ges sosa fidnobiilla ovddas rehketdoalu mielde geavahit skovi vearrodieđáhusa mielddusin)",
+          "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+          "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.044004743833262694,
+      "uncertain": true,
+      "alternative_groups": [
+        {
+          "widgets": [
+            11,
+            12
+          ],
+          "prompt": "Vierrodieđáhusa mas luvvejuvvo ealáhus- dieđáhusas",
+          "prompt_bbox": {
+            "l": 212.85,
+            "t": 258.92600000000004,
+            "r": 275.83500000000004,
+            "b": 279.67021878453045,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+            "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)"
+          ]
+        }
+      ]
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 1
+}

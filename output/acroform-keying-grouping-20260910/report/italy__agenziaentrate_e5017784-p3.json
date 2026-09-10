@@ -1,0 +1,721 @@
+{
+  "schema_version": "1.0",
+  "fixture": "italy__agenziaentrate_e5017784",
+  "page": 3,
+  "solver_status": "optimal",
+  "seconds": 0.029730624984949827,
+  "null_cost": 3.0,
+  "objective": 5.726862299286456,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 85.5035,
+          "r_y0": 802.025,
+          "r_x1": 315.736,
+          "r_y1": 802.025,
+          "r_x2": 315.736,
+          "r_y2": 820.779,
+          "r_x3": 85.5035,
+          "r_y3": 820.779,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale p6",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 85.5035,
+        "t": 21.11099999999999,
+        "r": 315.736,
+        "b": 39.86500000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        536
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 121.63,
+          "r_y0": 682.237,
+          "r_x1": 280.156,
+          "r_y1": 682.237,
+          "r_x2": 280.156,
+          "r_y2": 700.99,
+          "r_x3": 121.63,
+          "r_y3": 700.99,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale sostegno",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 121.63,
+        "t": 140.89999999999998,
+        "r": 280.156,
+        "b": 159.65300000000002,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        249
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 384.508,
+          "r_y0": 682.152,
+          "r_x1": 543.034,
+          "r_y1": 682.152,
+          "r_x2": 543.034,
+          "r_y2": 700.905,
+          "r_x3": 384.508,
+          "r_y3": 700.905,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale scietifica",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 384.508,
+        "t": 140.985,
+        "r": 543.034,
+        "b": 159.73799999999994,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        82
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 121.63,
+          "r_y0": 586.248,
+          "r_x1": 280.156,
+          "r_y1": 586.248,
+          "r_x2": 280.156,
+          "r_y2": 605.001,
+          "r_x3": 121.63,
+          "r_y3": 605.001,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale sanitaria",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 121.63,
+        "t": 236.889,
+        "r": 280.156,
+        "b": 255.64199999999994,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        187
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 384.508,
+          "r_y0": 586.114,
+          "r_x1": 543.034,
+          "r_y1": 586.114,
+          "r_x2": 543.034,
+          "r_y2": 604.867,
+          "r_x3": 384.508,
+          "r_y3": 604.867,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale culturali",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 384.508,
+        "t": 237.02300000000002,
+        "r": 543.034,
+        "b": 255.77599999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        276
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 384.117,
+          "r_y0": 490.301,
+          "r_x1": 542.643,
+          "r_y1": 490.301,
+          "r_x2": 542.643,
+          "r_y2": 509.054,
+          "r_x3": 384.117,
+          "r_y3": 509.054,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale coni",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 384.117,
+        "t": 332.836,
+        "r": 542.643,
+        "b": 351.589,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        109
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 121.63,
+          "r_y0": 394.343,
+          "r_x1": 280.156,
+          "r_y1": 394.343,
+          "r_x2": 280.156,
+          "r_y2": 413.096,
+          "r_x3": 121.63,
+          "r_y3": 413.096,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "codice fiscale aree protette",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 121.63,
+        "t": 428.794,
+        "r": 280.156,
+        "b": 447.54699999999997,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        326
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 81.323,
+          "r_y0": 261.464,
+          "r_x1": 131.13,
+          "r_y1": 261.464,
+          "r_x2": 131.13,
+          "r_y2": 279.076,
+          "r_x3": 81.323,
+          "r_y3": 279.076,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": " ",
+        "widget_description": null,
+        "widget_field_name": "2x1000 codice",
+        "widget_field_type": "/Ch",
+        "widget_field_flags": 131072,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 81.323,
+        "t": 562.814,
+        "r": 131.13,
+        "b": 580.4259999999999,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        551
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 82,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 314.1493,
+        "t": 146.79579999999999,
+        "r": 377.9468,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7045400299509194,
+        "alignment": 0.017611708034284967,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 109,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 314.1493,
+        "t": 338.7958,
+        "r": 377.9468,
+        "b": 352.2105119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6739427531944099,
+        "alignment": 0.02316531217445561,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 187,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 51.1493,
+        "t": 242.79579999999999,
+        "r": 114.94679999999998,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.021189869091038094,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 249,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 51.1493,
+        "t": 146.79579999999999,
+        "r": 114.94679999999998,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.020779871469948807,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 276,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 314.2003,
+        "t": 242.79579999999999,
+        "r": 377.99780000000004,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7006017741550867,
+        "alignment": 0.01619535261598648,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 326,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "Codice fiscale del beneficiario (eventuale)",
+      "bbox": {
+        "l": 51.1493,
+        "t": 434.7962,
+        "r": 114.94679999999998,
+        "b": 448.2109119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.024745666641189823,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 536,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "CODICE FISCALE",
+      "bbox": {
+        "l": 27.648,
+        "t": 33.19259999999997,
+        "r": 79.23800000000001,
+        "b": 40.10021290322584,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6814870838154792,
+        "alignment": 0.017025628572497453,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 551,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "CODICE",
+      "bbox": {
+        "l": 50.6566,
+        "t": 570.1117999999999,
+        "r": 75.0271,
+        "b": 577.0194129032258,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6838817451231979,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "CODICE FISCALE",
+      "predicted": "CODICE FISCALE",
+      "expected_bbox": {
+        "l": 27.648,
+        "t": 33.19259999999997,
+        "r": 79.23800000000001,
+        "b": 40.10021290322584,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 27.648,
+        "t": 33.19259999999997,
+        "r": 79.23800000000001,
+        "b": 40.10021290322584,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6814870838154792,
+        "alignment": 0.017025628572497453,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 51.1493,
+        "t": 146.79579999999999,
+        "r": 114.94679999999998,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 51.1493,
+        "t": 146.79579999999999,
+        "r": 114.94679999999998,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.020779871469948807,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 314.1493,
+        "t": 146.79579999999999,
+        "r": 377.9468,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 314.1493,
+        "t": 146.79579999999999,
+        "r": 377.9468,
+        "b": 160.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7045400299509194,
+        "alignment": 0.017611708034284967,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 51.1493,
+        "t": 242.79579999999999,
+        "r": 114.94679999999998,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 51.1493,
+        "t": 242.79579999999999,
+        "r": 114.94679999999998,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.021189869091038094,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 314.2003,
+        "t": 242.79579999999999,
+        "r": 377.99780000000004,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 314.2003,
+        "t": 242.79579999999999,
+        "r": 377.99780000000004,
+        "b": 256.2105119815667,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7006017741550867,
+        "alignment": 0.01619535261598648,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 314.1493,
+        "t": 338.7958,
+        "r": 377.9468,
+        "b": 352.2105119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 314.1493,
+        "t": 338.7958,
+        "r": 377.9468,
+        "b": 352.2105119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6739427531944099,
+        "alignment": 0.02316531217445561,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "Codice fiscale del beneficiario (eventuale)",
+      "predicted": "Codice fiscale del beneficiario (eventuale)",
+      "expected_bbox": {
+        "l": 51.1493,
+        "t": 434.7962,
+        "r": 114.94679999999998,
+        "b": 448.2109119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 51.1493,
+        "t": 434.7962,
+        "r": 114.94679999999998,
+        "b": 448.2109119815668,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.7138985014826539,
+        "alignment": 0.024745666641189823,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "CODICE",
+      "predicted": "CODICE",
+      "expected_bbox": {
+        "l": 50.6566,
+        "t": 570.1117999999999,
+        "r": 75.0271,
+        "b": 577.0194129032258,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 50.6566,
+        "t": 570.1117999999999,
+        "r": 75.0271,
+        "b": 577.0194129032258,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6838817451231979,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        22
+      ]
+    }
+  ],
+  "counts": {
+    "correct": 8
+  },
+  "groups": {}
+}

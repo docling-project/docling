@@ -28,3 +28,10 @@ coverage sweeps, baseline/coverage reports and failure audit. The change uses
 intersection divided by widget area for inline clauses while keeping table/cell
 ownership strict. The accepted result is 276 correct local labels; fragmented
 captions and missed/truncated tables remain upstream defects.
+## Checkpoint 3: first grouping experiment
+
+Save conditional question/caption configurations, full-assignment alternatives,
+tests, raw and filtered reports, the linear scoring control, and the subsequent
+role investigation. This version was rejected: it creates caption-fragment
+questions and loses correct local associations. Its README records the evidence
+and scope of rejection. Baseline source and references remain frozen.

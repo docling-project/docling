@@ -1,0 +1,2104 @@
+{
+  "schema_version": "1.0",
+  "fixture": "usa_cluster011_partial_page_prefilled__f1040lep",
+  "page": 1,
+  "solver_status": "optimal",
+  "seconds": 0.9143147920258343,
+  "null_cost": 3.0,
+  "objective": -7.0390808049680285,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 671.998,
+          "r_x1": 395.25,
+          "r_y1": 671.998,
+          "r_x2": 395.25,
+          "r_y2": 685.999,
+          "r_x3": 36.0,
+          "r_y3": 685.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].f1_1[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 106.00099999999998,
+        "r": 395.25,
+        "b": 120.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        736
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 396.0,
+          "r_y0": 671.998,
+          "r_x1": 576.0,
+          "r_y1": 671.998,
+          "r_x2": 576.0,
+          "r_y2": 685.999,
+          "r_x3": 396.0,
+          "r_y3": 685.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].f1_2[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 396.0,
+        "t": 106.00099999999998,
+        "r": 576.0,
+        "b": 120.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1059
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 614.0,
+          "r_x1": 72.8,
+          "r_y1": 614.0,
+          "r_x2": 72.8,
+          "r_y2": 622.0,
+          "r_x3": 64.8,
+          "r_y3": 622.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 170.0,
+        "r": 72.8,
+        "b": 178.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        232,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 601.998,
+          "r_x1": 72.8,
+          "r_y1": 601.998,
+          "r_x2": 72.8,
+          "r_y2": 609.998,
+          "r_x3": 64.8,
+          "r_y3": 609.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Spanish[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 182.00199999999995,
+        "r": 72.8,
+        "b": 190.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        946,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 589.999,
+          "r_x1": 72.8,
+          "r_y1": 589.999,
+          "r_x2": 72.8,
+          "r_y2": 597.999,
+          "r_x3": 64.8,
+          "r_y3": 597.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Korean[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 194.00099999999998,
+        "r": 72.8,
+        "b": 202.00099999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        395,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 578.0,
+          "r_x1": 72.8,
+          "r_y1": 578.0,
+          "r_x2": 72.8,
+          "r_y2": 586.0,
+          "r_x3": 64.8,
+          "r_y3": 586.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Vietnamese[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 206.0,
+        "r": 72.8,
+        "b": 214.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        488,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 565.998,
+          "r_x1": 72.8,
+          "r_y1": 565.998,
+          "r_x2": 72.8,
+          "r_y2": 573.998,
+          "r_x3": 64.8,
+          "r_y3": 573.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Russian[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 218.00199999999995,
+        "r": 72.8,
+        "b": 226.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        857,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 553.999,
+          "r_x1": 72.8,
+          "r_y1": 553.999,
+          "r_x2": 72.8,
+          "r_y2": 561.999,
+          "r_x3": 64.8,
+          "r_y3": 561.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Arabic[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 230.00099999999998,
+        "r": 72.8,
+        "b": 238.00099999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1802,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 542.0,
+          "r_x1": 72.8,
+          "r_y1": 542.0,
+          "r_x2": 72.8,
+          "r_y2": 550.0,
+          "r_x3": 64.8,
+          "r_y3": 550.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].HaitianCreole[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 242.0,
+        "r": 72.8,
+        "b": 250.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        376,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 529.998,
+          "r_x1": 72.8,
+          "r_y1": 529.998,
+          "r_x2": 72.8,
+          "r_y2": 537.998,
+          "r_x3": 64.8,
+          "r_y3": 537.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Tagalog[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 254.00199999999995,
+        "r": 72.8,
+        "b": 262.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        630,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 517.999,
+          "r_x1": 72.8,
+          "r_y1": 517.999,
+          "r_x2": 72.8,
+          "r_y2": 525.999,
+          "r_x3": 64.8,
+          "r_y3": 525.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Portuguese[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 266.001,
+        "r": 72.8,
+        "b": 274.001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        355,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 11,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 506.0,
+          "r_x1": 72.8,
+          "r_y1": 506.0,
+          "r_x2": 72.8,
+          "r_y2": 514.0,
+          "r_x3": 64.8,
+          "r_y3": 514.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Polish[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 278.0,
+        "r": 72.8,
+        "b": 286.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1093,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 64.8,
+          "r_y0": 493.998,
+          "r_x1": 72.8,
+          "r_y1": 493.998,
+          "r_x2": 72.8,
+          "r_y2": 501.998,
+          "r_x3": 64.8,
+          "r_y3": 501.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Line1_ReadOrder[0].Farsi[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 64.8,
+        "t": 290.002,
+        "r": 72.8,
+        "b": 298.002,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1416,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 614.0,
+          "r_x1": 281.6,
+          "r_y1": 614.0,
+          "r_x2": 281.6,
+          "r_y2": 622.0,
+          "r_x3": 273.6,
+          "r_y3": 622.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].French[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 170.0,
+        "r": 281.6,
+        "b": 178.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        82,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 601.998,
+          "r_x1": 281.6,
+          "r_y1": 601.998,
+          "r_x2": 281.6,
+          "r_y2": 609.998,
+          "r_x3": 273.6,
+          "r_y3": 609.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Japanese[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 182.00199999999995,
+        "r": 281.6,
+        "b": 190.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1211,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 589.999,
+          "r_x1": 281.6,
+          "r_y1": 589.999,
+          "r_x2": 281.6,
+          "r_y2": 597.999,
+          "r_x3": 273.6,
+          "r_y3": 597.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Gujarati[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 194.00099999999998,
+        "r": 281.6,
+        "b": 202.00099999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        659,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 578.0,
+          "r_x1": 281.6,
+          "r_y1": 578.0,
+          "r_x2": 281.6,
+          "r_y2": 586.0,
+          "r_x3": 273.6,
+          "r_y3": 586.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Punjabi[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 206.0,
+        "r": 281.6,
+        "b": 214.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        775,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 565.998,
+          "r_x1": 281.6,
+          "r_y1": 565.998,
+          "r_x2": 281.6,
+          "r_y2": 573.998,
+          "r_x3": 273.6,
+          "r_y3": 573.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Khmer[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 218.00199999999995,
+        "r": 281.6,
+        "b": 226.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1122,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 553.999,
+          "r_x1": 281.6,
+          "r_y1": 553.999,
+          "r_x2": 281.6,
+          "r_y2": 561.999,
+          "r_x3": 273.6,
+          "r_y3": 561.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Urdu[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 230.00099999999998,
+        "r": 281.6,
+        "b": 238.00099999999998,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1721,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 19,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 542.0,
+          "r_x1": 281.6,
+          "r_y1": 542.0,
+          "r_x2": 281.6,
+          "r_y2": 550.0,
+          "r_x3": 273.6,
+          "r_y3": 550.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Bengali[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 242.0,
+        "r": 281.6,
+        "b": 250.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1331,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 20,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 529.998,
+          "r_x1": 281.6,
+          "r_y1": 529.998,
+          "r_x2": 281.6,
+          "r_y2": 537.998,
+          "r_x3": 273.6,
+          "r_y3": 537.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].Italian[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 254.00199999999995,
+        "r": 281.6,
+        "b": 262.00199999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1309,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 21,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 517.999,
+          "r_x1": 281.6,
+          "r_y1": 517.999,
+          "r_x2": 281.6,
+          "r_y2": 525.999,
+          "r_x3": 273.6,
+          "r_y3": 525.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].ChineseTraditional[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 266.001,
+        "r": 281.6,
+        "b": 274.001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1517,
+        2117
+      ]
+    },
+    {
+      "native": {
+        "index": 22,
+        "rect": {
+          "r_x0": 273.6,
+          "r_y0": 506.0,
+          "r_x1": 281.6,
+          "r_y1": 506.0,
+          "r_x2": 281.6,
+          "r_y2": 514.0,
+          "r_x3": 273.6,
+          "r_y3": 514.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "topmostSubform[0].Page1[0].ChineseSimplified[0].c1_1[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 273.6,
+        "t": 278.0,
+        "r": 281.6,
+        "b": 286.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        114,
+        2117
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 82,
+      "kind": "option_caption",
+      "widget_indices": [
+        13
+      ],
+      "text": "011 French (Français)",
+      "bbox": {
+        "l": 288.0,
+        "t": 169.812,
+        "r": 375.335,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 114,
+      "kind": "option_caption",
+      "widget_indices": [
+        22
+      ],
+      "text": "020 Chinese (Simplified) 中文 ( 简体 )",
+      "bbox": {
+        "l": 288.0,
+        "t": 277.812,
+        "r": 429.572,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 232,
+      "kind": "option_caption",
+      "widget_indices": [
+        2
+      ],
+      "text": "000 Cancel previous election",
+      "bbox": {
+        "l": 79.2,
+        "t": 169.812,
+        "r": 195.552,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 355,
+      "kind": "option_caption",
+      "widget_indices": [
+        10
+      ],
+      "text": "008 Portuguese (Português)",
+      "bbox": {
+        "l": 79.2,
+        "t": 265.813,
+        "r": 192.278,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 376,
+      "kind": "option_caption",
+      "widget_indices": [
+        8
+      ],
+      "text": "006 Haitian Creole (Kreyòl Ayisyen)",
+      "bbox": {
+        "l": 79.2,
+        "t": 241.812,
+        "r": 220.24,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 395,
+      "kind": "option_caption",
+      "widget_indices": [
+        4
+      ],
+      "text": "002 Korean ( 한국어 )",
+      "bbox": {
+        "l": 79.2,
+        "t": 193.813,
+        "r": 160.371,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 488,
+      "kind": "option_caption",
+      "widget_indices": [
+        5
+      ],
+      "text": "003 Vietnamese (Ti ế ng Vi ệ t )",
+      "bbox": {
+        "l": 79.2,
+        "t": 205.812,
+        "r": 189.758,
+        "b": 215.42547478991605,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 630,
+      "kind": "option_caption",
+      "widget_indices": [
+        9
+      ],
+      "text": "007 Tagalog (Tagalog)",
+      "bbox": {
+        "l": 79.2,
+        "t": 253.81399999999996,
+        "r": 169.776,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 659,
+      "kind": "option_caption",
+      "widget_indices": [
+        15
+      ],
+      "text": "013 Gujarati ( ગુજરાતી )",
+      "bbox": {
+        "l": 288.0,
+        "t": 193.813,
+        "r": 375.17900000000003,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 736,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "Name of person making request (as shown on tax return)",
+      "bbox": {
+        "l": 36.0,
+        "t": 98.077,
+        "r": 213.62499999999994,
+        "b": 105.33020588235297,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.07615589926830381,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 775,
+      "kind": "option_caption",
+      "widget_indices": [
+        16
+      ],
+      "text": "014 Punjabi ( ਪੰਜਾਬੀ )",
+      "bbox": {
+        "l": 288.0,
+        "t": 205.812,
+        "r": 366.133,
+        "b": 215.5715236329935,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 857,
+      "kind": "option_caption",
+      "widget_indices": [
+        6
+      ],
+      "text": "004 Russian (P усский )",
+      "bbox": {
+        "l": 79.2,
+        "t": 217.81399999999996,
+        "r": 168.59,
+        "b": 227.427474789916,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 946,
+      "kind": "option_caption",
+      "widget_indices": [
+        3
+      ],
+      "text": "001 Spanish (Español)",
+      "bbox": {
+        "l": 79.2,
+        "t": 181.81399999999996,
+        "r": 168.50900000000001,
+        "b": 191.13955042016812,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1059,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "Social security number of person making request",
+      "bbox": {
+        "l": 400.0,
+        "t": 97.93700000000001,
+        "r": 564.2130000000001,
+        "b": 105.3544010256411,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.07350748833047724,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1093,
+      "kind": "option_caption",
+      "widget_indices": [
+        11
+      ],
+      "text": "009 Polish (Polski)",
+      "bbox": {
+        "l": 79.2,
+        "t": 277.812,
+        "r": 152.613,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1122,
+      "kind": "option_caption",
+      "widget_indices": [
+        17
+      ],
+      "text": "015 Khmer ( ែខ�រ )",
+      "bbox": {
+        "l": 288.0,
+        "t": 217.81399999999996,
+        "r": 355.174,
+        "b": 227.57352363299344,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1211,
+      "kind": "option_caption",
+      "widget_indices": [
+        14
+      ],
+      "text": "012 Japanese ( 日本語 )",
+      "bbox": {
+        "l": 288.0,
+        "t": 181.81399999999996,
+        "r": 378.577,
+        "b": 191.5482632066729,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1309,
+      "kind": "option_caption",
+      "widget_indices": [
+        20
+      ],
+      "text": "018 Italian ( Italiano)",
+      "bbox": {
+        "l": 288.0,
+        "t": 253.81399999999996,
+        "r": 366.169,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1331,
+      "kind": "option_caption",
+      "widget_indices": [
+        19
+      ],
+      "text": "017 Bengali ( বাংলা )",
+      "bbox": {
+        "l": 288.0,
+        "t": 241.812,
+        "r": 364.85,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1416,
+      "kind": "option_caption",
+      "widget_indices": [
+        12
+      ],
+      "text": "010 Farsi ( ﻓﺎرﺳﯽ )",
+      "bbox": {
+        "l": 79.2,
+        "t": 289.021,
+        "r": 138.887,
+        "b": 300.393616,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1517,
+      "kind": "option_caption",
+      "widget_indices": [
+        21
+      ],
+      "text": "019 Chinese (Traditional) 中文 ( 繁體 )",
+      "bbox": {
+        "l": 288.0,
+        "t": 265.813,
+        "r": 432.171,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1721,
+      "kind": "option_caption",
+      "widget_indices": [
+        18
+      ],
+      "text": "016 Urdu ( اردو )",
+      "bbox": {
+        "l": 288.0,
+        "t": 229.01999999999998,
+        "r": 344.447,
+        "b": 240.3926160000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1802,
+      "kind": "option_caption",
+      "widget_indices": [
+        7
+      ],
+      "text": "005 Arabic (",
+      "bbox": {
+        "l": 79.2,
+        "t": 229.813,
+        "r": 127.665,
+        "b": 239.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2117,
+      "kind": "choice_group",
+      "widget_indices": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "text": "1 I would prefer to receive written communications (see instructions) from the IRS in the following language. Check only one.",
+      "bbox": {
+        "l": 45.396,
+        "t": 135.43399999999997,
+        "r": 491.8320000000004,
+        "b": 155.44255042016812,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "question_gap": 0.9996320720570634,
+        "caption_consistency": 1.5860328923216523e-15,
+        "supported_repetition": -20.0,
+        "intervening_blocks": 0.0,
+        "prompt_fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "Name of person making request (as shown on tax return)",
+      "predicted": "Name of person making request (as shown on tax return)",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 98.077,
+        "r": 213.62499999999994,
+        "b": 105.33020588235297,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 98.077,
+        "r": 213.62499999999994,
+        "b": 105.33020588235297,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.07615589926830381,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "Social security number of person making request",
+      "predicted": "Social security number of person making request",
+      "expected_bbox": {
+        "l": 400.0,
+        "t": 97.93700000000001,
+        "r": 564.2130000000001,
+        "b": 105.3544010256411,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 400.0,
+        "t": 97.93700000000001,
+        "r": 564.2130000000001,
+        "b": 105.3544010256411,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.07350748833047724,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 2,
+      "status": "correct",
+      "expected": "000 Cancel previous election",
+      "predicted": "000 Cancel previous election",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 169.812,
+        "r": 195.552,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 169.812,
+        "r": 195.552,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "001 Spanish (Español)",
+      "predicted": "001 Spanish (Español)",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 181.81399999999996,
+        "r": 168.50900000000001,
+        "b": 191.13955042016812,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 181.81399999999996,
+        "r": 168.50900000000001,
+        "b": 191.13955042016812,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "002 Korean ( 한국어 )",
+      "predicted": "002 Korean ( 한국어 )",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 193.813,
+        "r": 160.371,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 193.813,
+        "r": 160.371,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "003 Vietnamese (Ti ế ng Vi ệ t )",
+      "predicted": "003 Vietnamese (Ti ế ng Vi ệ t )",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 205.812,
+        "r": 189.758,
+        "b": 215.42547478991605,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 205.812,
+        "r": 189.758,
+        "b": 215.42547478991605,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "004 Russian (P усский )",
+      "predicted": "004 Russian (P усский )",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 217.81399999999996,
+        "r": 168.59,
+        "b": 227.427474789916,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 217.81399999999996,
+        "r": 168.59,
+        "b": 227.427474789916,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "005 Arabic ( اﻟﻌﺮﺑﻴﺔ )",
+      "predicted": "005 Arabic (",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 229.01999999999998,
+        "r": 146.913,
+        "b": 240.3926160000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 229.813,
+        "r": 127.665,
+        "b": 239.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "006 Haitian Creole (Kreyòl Ayisyen)",
+      "predicted": "006 Haitian Creole (Kreyòl Ayisyen)",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 241.812,
+        "r": 220.24,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 241.812,
+        "r": 220.24,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "007 Tagalog (Tagalog)",
+      "predicted": "007 Tagalog (Tagalog)",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 253.81399999999996,
+        "r": 169.776,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 253.81399999999996,
+        "r": 169.776,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "008 Portuguese (Português)",
+      "predicted": "008 Portuguese (Português)",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 265.813,
+        "r": 192.278,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 265.813,
+        "r": 192.278,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 11,
+      "status": "correct",
+      "expected": "009 Polish (Polski)",
+      "predicted": "009 Polish (Polski)",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 277.812,
+        "r": 152.613,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 277.812,
+        "r": 152.613,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 12,
+      "status": "correct",
+      "expected": "010 Farsi ( ﻓﺎرﺳﯽ )",
+      "predicted": "010 Farsi ( ﻓﺎرﺳﯽ )",
+      "expected_bbox": {
+        "l": 79.2,
+        "t": 289.021,
+        "r": 138.887,
+        "b": 300.393616,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 79.2,
+        "t": 289.021,
+        "r": 138.887,
+        "b": 300.393616,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131498,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 13,
+      "status": "correct",
+      "expected": "011 French (Français)",
+      "predicted": "011 French (Français)",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 169.812,
+        "r": 375.335,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 169.812,
+        "r": 375.335,
+        "b": 179.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 14,
+      "status": "correct",
+      "expected": "012 Japanese ( 日本語 )",
+      "predicted": "012 Japanese ( 日本語 )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 181.81399999999996,
+        "r": 378.577,
+        "b": 191.5482632066729,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 181.81399999999996,
+        "r": 378.577,
+        "b": 191.5482632066729,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 15,
+      "status": "correct",
+      "expected": "013 Gujarati ( ગુજરાતી )",
+      "predicted": "013 Gujarati ( ગુજરાતી )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 193.813,
+        "r": 375.17900000000003,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 193.813,
+        "r": 375.17900000000003,
+        "b": 203.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 16,
+      "status": "correct",
+      "expected": "014 Punjabi ( ਪੰਜਾਬੀ )",
+      "predicted": "014 Punjabi ( ਪੰਜਾਬੀ )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 205.812,
+        "r": 366.133,
+        "b": 215.5715236329935,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 205.812,
+        "r": 366.133,
+        "b": 215.5715236329935,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 17,
+      "status": "correct",
+      "expected": "015 Khmer ( ែខ�រ )",
+      "predicted": "015 Khmer ( ែខ�រ )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 217.81399999999996,
+        "r": 355.174,
+        "b": 227.57352363299344,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 217.81399999999996,
+        "r": 355.174,
+        "b": 227.57352363299344,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 18,
+      "status": "correct",
+      "expected": "016 Urdu ( اردو )",
+      "predicted": "016 Urdu ( اردو )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 229.01999999999998,
+        "r": 344.447,
+        "b": 240.3926160000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 229.01999999999998,
+        "r": 344.447,
+        "b": 240.3926160000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 19,
+      "status": "correct",
+      "expected": "017 Bengali ( বাংলা )",
+      "predicted": "017 Bengali ( বাংলা )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 241.812,
+        "r": 364.85,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 241.812,
+        "r": 364.85,
+        "b": 251.13755042016817,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 20,
+      "status": "correct",
+      "expected": "018 Italian ( Italiano)",
+      "predicted": "018 Italian ( Italiano)",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 253.81399999999996,
+        "r": 366.169,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 253.81399999999996,
+        "r": 366.169,
+        "b": 263.1395504201681,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 21,
+      "status": "correct",
+      "expected": "019 Chinese (Traditional) 中文 ( 繁體 )",
+      "predicted": "019 Chinese (Traditional) 中文 ( 繁體 )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 265.813,
+        "r": 432.171,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 265.813,
+        "r": 432.171,
+        "b": 275.13855042016814,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    },
+    {
+      "widget_index": 22,
+      "status": "correct",
+      "expected": "020 Chinese (Simplified) 中文 ( 简体 )",
+      "predicted": "020 Chinese (Simplified) 中文 ( 简体 )",
+      "expected_bbox": {
+        "l": 288.0,
+        "t": 277.812,
+        "r": 429.572,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 288.0,
+        "t": 277.812,
+        "r": 429.572,
+        "b": 287.13755042016805,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5624582731131479,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        16
+      ]
+    }
+  ],
+  "counts": {
+    "correct": 23
+  },
+  "groups": {
+    "correct": 1
+  }
+}

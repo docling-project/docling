@@ -1,0 +1,35 @@
+{
+  "raw_objective": 10.442054440967711,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          16,
+          17
+        ],
+        "prompt": "Listed financial institution (other than selected listed financial institution)",
+        "prompt_bbox": {
+          "l": 25.2,
+          "t": 578.8620000000001,
+          "r": 172.41300000000004,
+          "b": 598.1591834254143,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "Selected listed financial institution",
+          "De minimis financial institution"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.0667707076601669,
+      "uncertain": true,
+      "alternative_groups": []
+    }
+  ],
+  "withheld_widgets": [
+    13,
+    15
+  ],
+  "withheld_group_count": 1
+}

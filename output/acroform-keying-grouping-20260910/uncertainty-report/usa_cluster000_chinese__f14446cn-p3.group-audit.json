@@ -1,0 +1,75 @@
+{
+  "raw_objective": 0.6872415956566522,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          0,
+          1
+        ],
+        "prompt": "為確保您在志願服務處獲得優質服務且正確填報納稅申報單，國稅局員工會隨機抽查免費報稅服務處，以進行審查。如果發現錯誤，服務 處將做出必要更正。國稅局不會保存您被抽查到的納稅申報單上的個人資料；並且，這個做法能讓國稅局評估我們 VITA/TCE 報稅服務在 納稅申報單填報的準確性。如果您不希望您的納稅申報單被納入審查程序，也不會影響本服務處向您提供的各項服務。若填報本納稅申報 單的服務處被選為審查對象，您是否同意讓您的納稅申報單接受國稅局員工審查，以審查其正確性？",
+        "prompt_bbox": {
+          "l": 36.0,
+          "t": 100.34499999999991,
+          "r": 576.0,
+          "b": 143.84092477876084,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "是",
+          "否"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_groups": []
+    },
+    {
+      "selected": {
+        "widgets": [
+          3,
+          4
+        ],
+        "prompt": "complaints@tigta.treas.gov。雖然國稅局負責對義工所得稅援助 (VITA) 計畫和老年人稅務諮詢 (TCE) 計畫提供監管要求, 但是, 這些服 務處均由國稅局簽約的合作夥伴進行營運; 這些合作夥伴管理著國稅局服務處的營運要求和義工道德標準。此外, 這些服務處的位置可能 不在聯邦政府的資產設施內。",
+        "prompt_bbox": {
+          "l": 36.0,
+          "t": 260.33399999999983,
+          "r": 567.8189999999998,
+          "b": 292.80492477876106,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "是",
+          "否"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.0318440579431849,
+      "uncertain": true,
+      "alternative_groups": [
+        {
+          "widgets": [
+            3,
+            4
+          ],
+          "prompt": "本人同意使用此服務處的虛擬 VITA/TCE 流程",
+          "prompt_bbox": {
+            "l": 36.0,
+            "t": 298.57,
+            "r": 213.65099999999995,
+            "b": 308.99092477876104,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "是",
+            "否"
+          ]
+        }
+      ]
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 1
+}

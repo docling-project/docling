@@ -1,0 +1,954 @@
+{
+  "schema_version": "1.0",
+  "fixture": "usa_cluster000_chinese__f14446cn",
+  "page": 1,
+  "solver_status": "optimal",
+  "seconds": 0.16583104099845514,
+  "null_cost": 3.0,
+  "objective": 2.2156089345958137,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 622.8,
+          "r_x1": 576.0,
+          "r_y1": 622.8,
+          "r_x2": 576.0,
+          "r_y2": 642.24,
+          "r_x3": 36.0,
+          "r_y3": 642.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "页 1. 若納稅人的納稅申報單的填寫及/或品質審查不是以面對面方式進行，則需填寫本表格。服務處必須向納稅人說明該服務處將採用何種程序來填報納稅人的納稅申報單。如果納稅人的資料將從某個服務地點傳送至另一個服務地點（如適用），也必須將所有程序及相關風險告知納稅人。第 I 部分 - 由 VITA/TCE 服務處填寫: 服務處名稱",
+        "widget_field_name": "form1[0].page1[0].main_intake[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 149.76,
+        "r": 576.0,
+        "b": 169.20000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        441
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 550.8,
+          "r_x1": 576.0,
+          "r_y1": 550.8,
+          "r_x2": 576.0,
+          "r_y2": 609.84,
+          "r_x3": 36.0,
+          "r_y3": 609.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "服務處地址（街道、城市、州、郵遞區號）",
+        "widget_field_name": "form1[0].page1[0].site_address[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 182.15999999999997,
+        "r": 576.0,
+        "b": 241.20000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        409
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 518.4,
+          "r_x1": 302.4,
+          "r_y1": 518.4,
+          "r_x2": 302.4,
+          "r_y2": 537.84,
+          "r_x3": 36.0,
+          "r_y3": 537.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "服務處識別號碼（SIDN）",
+        "widget_field_name": "form1[0].page1[0].sidn[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 254.15999999999997,
+        "r": 302.4,
+        "b": 273.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        332
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 309.597,
+          "r_y0": 518.4,
+          "r_x1": 575.997,
+          "r_y1": 518.4,
+          "r_x2": 575.997,
+          "r_y2": 537.84,
+          "r_x3": 309.597,
+          "r_y3": 537.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "服務處協調員姓名",
+        "widget_field_name": "form1[0].page1[0].site_coordinator[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.597,
+        "t": 254.15999999999997,
+        "r": 575.997,
+        "b": 273.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        388
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 486.0,
+          "r_x1": 302.4,
+          "r_y1": 486.0,
+          "r_x2": 302.4,
+          "r_y2": 505.44,
+          "r_x3": 36.0,
+          "r_y3": 505.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "服務處聯絡人姓名",
+        "widget_field_name": "form1[0].page1[0].site_contact[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 286.56,
+        "r": 302.4,
+        "b": 306.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        423
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 309.594,
+          "r_y0": 486.0,
+          "r_x1": 575.994,
+          "r_y1": 486.0,
+          "r_x2": 575.994,
+          "r_y2": 505.44,
+          "r_x3": 309.594,
+          "r_y3": 505.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "服務處聯絡人電話號碼",
+        "widget_field_name": "form1[0].page1[0].site_telephone[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.594,
+        "t": 286.56,
+        "r": 575.994,
+        "b": 306.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        402
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 36.08,
+          "r_y0": 454.0,
+          "r_x1": 46.08,
+          "r_y1": 454.0,
+          "r_x2": 46.08,
+          "r_y2": 464.0,
+          "r_x3": 36.08,
+          "r_y3": 464.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "社會安全號碼",
+        "widget_field_name": "form1[0].page1[0].a[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 36.08,
+        "t": 328.0,
+        "r": 46.08,
+        "b": 338.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 36.08,
+          "r_y0": 378.4,
+          "r_x1": 46.08,
+          "r_y1": 378.4,
+          "r_x2": 46.08,
+          "r_y2": 388.4,
+          "r_x3": 36.08,
+          "r_y3": 388.4,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "文件",
+        "widget_field_name": "form1[0].page1[0].b[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 36.08,
+        "t": 403.6,
+        "r": 46.08,
+        "b": 413.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        172
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 36.08,
+          "r_y0": 328.0,
+          "r_x1": 46.08,
+          "r_y1": 328.0,
+          "r_x2": 46.08,
+          "r_y2": 338.0,
+          "r_x3": 36.08,
+          "r_y3": 338.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "C.  納稅申報單填報及/或品質審查服務處：此服務處可能會從一個或多個受理服務處接收納稅申報單，以填報納稅申報單並/或進行品質審查。此服務處通常不會接受其所在位置其他納稅人不請自來的造訪或預約。",
+        "widget_field_name": "form1[0].page1[0].c[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 36.08,
+        "t": 454.0,
+        "r": 46.08,
+        "b": 464.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        239
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 36.086,
+          "r_y0": 295.6,
+          "r_x1": 46.086,
+          "r_y1": 295.6,
+          "r_x2": 46.086,
+          "r_y2": 305.6,
+          "r_x3": 36.086,
+          "r_y3": 305.6,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "D.  綜合服務處：此服務處填報來自其他永久或臨時受理服務處的納稅申報單，並針對其所在位置他納稅人不請自來的造訪或預約提供幫助。",
+        "widget_field_name": "form1[0].page1[0].d[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 36.086,
+        "t": 486.4,
+        "r": 46.086,
+        "b": 496.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        284
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 36.08,
+          "r_y0": 263.2,
+          "r_x1": 46.08,
+          "r_y1": 263.2,
+          "r_x2": 46.08,
+          "r_y2": 273.2,
+          "r_x3": 36.08,
+          "r_y3": 273.2,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "E.  100% 虛擬 VITA/TCE 流程：此方法包括在受理、面談、納稅申報單填報、品質審查和簽署納稅申報單過程中與納稅人及任何 VITA/TCE 義工進行的非面對面互動。服務處將為納稅人詳細說明全部流程，並要求納稅人同意該服務處所使用的逐步流程。其中包括多個虛擬程序，以透過安全的文件共用系統向指定的義工發送必要的文件（社會安全號碼、《表格 W-2》和其他文件），以進行審查。",
+        "widget_field_name": "form1[0].page1[0].e[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 36.08,
+        "t": 518.8,
+        "r": 46.08,
+        "b": 528.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        54
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 54,
+      "kind": "option_caption",
+      "widget_indices": [
+        10
+      ],
+      "text": "E.  100% 虛擬 VITA/TCE 流程： 此方法包括在受理、面談、納稅申報單填報、品質審查和簽署納稅申報單過程中與納稅人及任何 VITA/TCE 義工進行的非面對面互動。服務處將為納稅人詳細說明全部流程，並要求納稅人同意該服務處所使用的逐步流程。其中 包括多個虛擬程序，以透過安全的文件共用系統向指定的義工發送必要的文件（社會安全號碼、《表格 W-2》和其他文件），以 進行審查。",
+      "bbox": {
+        "l": 54.0,
+        "t": 520.9110000000001,
+        "r": 574.875,
+        "b": 564.4069247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565319106950805,
+        "alignment": 0.1055500000000052,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 172,
+      "kind": "option_caption",
+      "widget_indices": [
+        7
+      ],
+      "text": "B.  受理服務處： 這個方式包括納稅人將他們可識別的個人資料（社會安全號碼、《表格 W-2》和其他文件）留在服務處，以便在另 一個服務地點進行納稅申報單的填報及/或品質審查。在這過程中，納稅人的納稅申報單資料可能會因為下列原因而被送到另一個 服務地點：面談納稅人、填報納稅申報單或進行品質審查。納稅人可能需回到受理服務處接受品質審查或簽署已填妥的納稅申報 單。",
+      "bbox": {
+        "l": 53.997,
+        "t": 405.747,
+        "r": 575.205,
+        "b": 449.24292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565155524938671,
+        "alignment": 0.10734999999999956,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 239,
+      "kind": "option_caption",
+      "widget_indices": [
+        8
+      ],
+      "text": "C.  納稅申報單填報及/或品質審查服務處： 此服務處可能會從一個或多個受理服務處接收納稅申報單，以填報納稅申報單並/或進行 品質審查。此服務處通常不會接受其所在位置其他納稅人不請自來的造訪或預約。",
+      "bbox": {
+        "l": 54.0,
+        "t": 456.14700000000005,
+        "r": 568.944,
+        "b": 477.5929247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565319106950805,
+        "alignment": 0.10735000000000239,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 284,
+      "kind": "option_caption",
+      "widget_indices": [
+        9
+      ],
+      "text": "D.  綜合服務處： 此服務處填報來自其他永久或臨時受理服務處的納稅申報單，並針對其所在位置他納稅人不請自來的造訪或預約提 供幫助。",
+      "bbox": {
+        "l": 54.0,
+        "t": 488.52000000000004,
+        "r": 571.437,
+        "b": 509.96592477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5649919161630842,
+        "alignment": 0.10600000000000309,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 332,
+      "kind": "field_key",
+      "widget_indices": [
+        2
+      ],
+      "text": "服務處識別號碼（SIDN）",
+      "bbox": {
+        "l": 36.0,
+        "t": 244.98400000000004,
+        "r": 137.691,
+        "b": 255.40492477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 388,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "服務處協調員姓名",
+      "bbox": {
+        "l": 309.597,
+        "t": 244.91200000000003,
+        "r": 381.597,
+        "b": 255.33292477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 402,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "服務處聯絡人電話號碼",
+      "bbox": {
+        "l": 309.594,
+        "t": 277.312,
+        "r": 399.594,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 409,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "服務處地址（街道、城市、州、郵遞區號）",
+      "bbox": {
+        "l": 36.0,
+        "t": 172.46699999999998,
+        "r": 207.0,
+        "b": 182.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 423,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "服務處聯絡人姓名",
+      "bbox": {
+        "l": 36.0,
+        "t": 277.312,
+        "r": 108.0,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 441,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "服務處名稱",
+      "bbox": {
+        "l": 36.0,
+        "t": 140.51200000000006,
+        "r": 81.0,
+        "b": 150.93292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "服務處名稱",
+      "predicted": "服務處名稱",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 140.51200000000006,
+        "r": 81.0,
+        "b": 150.93292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 140.51200000000006,
+        "r": 81.0,
+        "b": 150.93292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "服務處地址（街道、城市、州、郵遞區號）",
+      "predicted": "服務處地址（街道、城市、州、郵遞區號）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 172.46699999999998,
+        "r": 207.0,
+        "b": 182.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 172.46699999999998,
+        "r": 207.0,
+        "b": 182.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 2,
+      "status": "correct",
+      "expected": "服務處識別號碼（SIDN）",
+      "predicted": "服務處識別號碼（SIDN）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 244.98400000000004,
+        "r": 137.691,
+        "b": 255.40492477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 244.98400000000004,
+        "r": 137.691,
+        "b": 255.40492477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "服務處協調員姓名",
+      "predicted": "服務處協調員姓名",
+      "expected_bbox": {
+        "l": 309.597,
+        "t": 244.91200000000003,
+        "r": 381.597,
+        "b": 255.33292477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.597,
+        "t": 244.91200000000003,
+        "r": 381.597,
+        "b": 255.33292477876103,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "服務處聯絡人姓名",
+      "predicted": "服務處聯絡人姓名",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 277.312,
+        "r": 108.0,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 277.312,
+        "r": 108.0,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "服務處聯絡人電話號碼",
+      "predicted": "服務處聯絡人電話號碼",
+      "expected_bbox": {
+        "l": 309.594,
+        "t": 277.312,
+        "r": 399.594,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.594,
+        "t": 277.312,
+        "r": 399.594,
+        "b": 287.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "unassigned",
+      "expected": "A.  收件服務處： 此服務處採用收件流程，其中包含：由服務處保管可識別的個人資料（社會安全號碼、《表格 W-2》等），以便稍 後在同一服務處填報納稅申報單。在這流程中，您將回到同一個服務處進行品質審查，並/或簽署已填妥的納稅申報單。如果填報 納稅申報單及/或對納稅申報單進行品質審查時需要額外資訊，服務處將說明會採用何種方式與您聯絡。",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 54.0,
+        "t": 330.14700000000005,
+        "r": 575.2080000000001,
+        "b": 362.61792477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "B.  受理服務處： 這個方式包括納稅人將他們可識別的個人資料（社會安全號碼、《表格 W-2》和其他文件）留在服務處，以便在另 一個服務地點進行納稅申報單的填報及/或品質審查。在這過程中，納稅人的納稅申報單資料可能會因為下列原因而被送到另一個 服務地點：面談納稅人、填報納稅申報單或進行品質審查。納稅人可能需回到受理服務處接受品質審查或簽署已填妥的納稅申報 單。",
+      "predicted": "B.  受理服務處： 這個方式包括納稅人將他們可識別的個人資料（社會安全號碼、《表格 W-2》和其他文件）留在服務處，以便在另 一個服務地點進行納稅申報單的填報及/或品質審查。在這過程中，納稅人的納稅申報單資料可能會因為下列原因而被送到另一個 服務地點：面談納稅人、填報納稅申報單或進行品質審查。納稅人可能需回到受理服務處接受品質審查或簽署已填妥的納稅申報 單。",
+      "expected_bbox": {
+        "l": 53.997,
+        "t": 405.747,
+        "r": 575.205,
+        "b": 449.24292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 53.997,
+        "t": 405.747,
+        "r": 575.205,
+        "b": 449.24292477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565155524938671,
+        "alignment": 0.10734999999999956,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "C.  納稅申報單填報及/或品質審查服務處： 此服務處可能會從一個或多個受理服務處接收納稅申報單，以填報納稅申報單並/或進行 品質審查。此服務處通常不會接受其所在位置其他納稅人不請自來的造訪或預約。",
+      "predicted": "C.  納稅申報單填報及/或品質審查服務處： 此服務處可能會從一個或多個受理服務處接收納稅申報單，以填報納稅申報單並/或進行 品質審查。此服務處通常不會接受其所在位置其他納稅人不請自來的造訪或預約。",
+      "expected_bbox": {
+        "l": 54.0,
+        "t": 456.14700000000005,
+        "r": 568.944,
+        "b": 477.5929247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 54.0,
+        "t": 456.14700000000005,
+        "r": 568.944,
+        "b": 477.5929247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565319106950805,
+        "alignment": 0.10735000000000239,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "D.  綜合服務處： 此服務處填報來自其他永久或臨時受理服務處的納稅申報單，並針對其所在位置他納稅人不請自來的造訪或預約提 供幫助。",
+      "predicted": "D.  綜合服務處： 此服務處填報來自其他永久或臨時受理服務處的納稅申報單，並針對其所在位置他納稅人不請自來的造訪或預約提 供幫助。",
+      "expected_bbox": {
+        "l": 54.0,
+        "t": 488.52000000000004,
+        "r": 571.437,
+        "b": 509.96592477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 54.0,
+        "t": 488.52000000000004,
+        "r": 571.437,
+        "b": 509.96592477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5649919161630842,
+        "alignment": 0.10600000000000309,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "E.  100% 虛擬 VITA/TCE 流程： 此方法包括在受理、面談、納稅申報單填報、品質審查和簽署納稅申報單過程中與納稅人及任何 VITA/TCE 義工進行的非面對面互動。服務處將為納稅人詳細說明全部流程，並要求納稅人同意該服務處所使用的逐步流程。其中 包括多個虛擬程序，以透過安全的文件共用系統向指定的義工發送必要的文件（社會安全號碼、《表格 W-2》和其他文件），以 進行審查。",
+      "predicted": "E.  100% 虛擬 VITA/TCE 流程： 此方法包括在受理、面談、納稅申報單填報、品質審查和簽署納稅申報單過程中與納稅人及任何 VITA/TCE 義工進行的非面對面互動。服務處將為納稅人詳細說明全部流程，並要求納稅人同意該服務處所使用的逐步流程。其中 包括多個虛擬程序，以透過安全的文件共用系統向指定的義工發送必要的文件（社會安全號碼、《表格 W-2》和其他文件），以 進行審查。",
+      "expected_bbox": {
+        "l": 54.0,
+        "t": 520.9110000000001,
+        "r": 574.875,
+        "b": 564.4069247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 54.0,
+        "t": 520.9110000000001,
+        "r": 574.875,
+        "b": 564.4069247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.565319106950805,
+        "alignment": 0.1055500000000052,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    }
+  ],
+  "counts": {
+    "correct": 10,
+    "unassigned": 1
+  },
+  "groups": {
+    "not recovered": 1
+  }
+}

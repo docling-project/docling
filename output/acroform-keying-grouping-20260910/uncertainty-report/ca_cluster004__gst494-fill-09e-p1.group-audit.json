@@ -1,0 +1,55 @@
+{
+  "raw_objective": 6.541641134952674,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          15,
+          16,
+          17
+        ],
+        "prompt": "Enter your reporting period:",
+        "prompt_bbox": {
+          "l": 53.136,
+          "t": 373.1562,
+          "r": 162.684,
+          "b": 382.39799162191196,
+          "coord_origin": "TOPLEFT"
+        },
+        "captions": [
+          "Monthly",
+          "Quarterly",
+          "Annual"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.0005455963043177192,
+      "uncertain": true,
+      "alternative_groups": [
+        {
+          "widgets": [
+            15,
+            16,
+            17
+          ],
+          "prompt": "L50480",
+          "prompt_bbox": {
+            "l": 180.0,
+            "t": 374.2835,
+            "r": 192.0,
+            "b": 385.3166513647643,
+            "coord_origin": "TOPLEFT"
+          },
+          "captions": [
+            "Monthly",
+            "Quarterly",
+            "Annual"
+          ]
+        }
+      ]
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 1
+}
