@@ -1,0 +1,121 @@
+ELIGIBLE WIDGETS (native indices, geometry; no prediction or tooltip)
+0: /Tx [477.4, 88.3, 573.0, 100.5]
+1: /Tx [477.2, 112.9, 572.8, 125.1]
+2: /Tx [477.3, 136.6, 572.9, 148.8]
+3: /Tx [477.1, 161.2, 572.7, 173.4]
+4: /Tx [477.3, 184.6, 572.9, 196.8]
+5: /Tx [477.1, 206.2, 572.7, 218.4]
+6: /Tx [477.3, 230.1, 572.9, 242.3]
+7: /Tx [477.1, 250.7, 572.7, 262.9]
+40: /Btn [138.1, 663.9, 146.6, 677.6]
+41: /Tx [149.2, 664.7, 236.3, 677.6]
+42: /Btn [256.4, 663.7, 265.3, 677.4]
+43: /Tx [266.9, 664.5, 354.8, 677.5]
+44: /Btn [375.6, 662.9, 384.5, 677.4]
+45: /Tx [386.1, 664.2, 473.6, 677.4]
+46: /Tx [505.1, 665.0, 593.4, 677.5]
+47: /Btn [137.6, 690.6, 146.1, 704.3]
+48: /Tx [149.0, 691.5, 236.0, 704.4]
+49: /Btn [255.9, 690.4, 264.8, 704.1]
+50: /Tx [267.4, 692.0, 354.9, 704.5]
+51: /Btn [375.1, 690.7, 384.0, 704.2]
+52: /Tx [386.6, 690.9, 474.1, 704.5]
+53: /Tx [504.6, 691.7, 592.9, 704.6]
+54: /Btn [137.6, 717.6, 146.1, 731.3]
+55: /Tx [149.0, 718.5, 235.3, 731.4]
+56: /Btn [255.9, 717.4, 264.8, 731.1]
+57: /Tx [266.7, 718.6, 354.5, 731.5]
+58: /Btn [375.1, 717.7, 384.0, 731.2]
+59: /Tx [386.6, 717.9, 473.7, 731.5]
+60: /Tx [504.6, 718.7, 592.5, 731.6]
+61: /Tx [149.0, 746.2, 235.4, 758.7]
+62: /Tx [267.6, 745.5, 354.4, 758.7]
+63: /Tx [386.9, 746.7, 474.0, 758.2]
+64: /Tx [505.4, 745.7, 593.3, 758.5]
+SOURCE TEXT REGIONS (coordinate anchors only)
+R0 [23.0, 297.8, 584.5, 339.7] Enter the total value of property and services that you imported into Canada during the fiscal year. Include the value of imports subject to tax under sections 212, 212.1, 218, and 220.07. Do not include GST, HST, or provincial sales tax. Also include the value of qualifying consideration that is greater than zero in respect of an outlay made or an expense incurred outside Canada subject to tax under proposed sections 218.01 and 218.1.
+R1 [23.0, 354.2, 566.9, 373.5] Note:  If you are a qualifying taxpayer, the column "From head office or branches" also includes other internal outlays made or expenses incurred outside Canada. 
+R2 [23.0, 61.5, 566.4, 80.8] Enter the total amount of GST/HST payable or paid without becoming payable by you on importations or the provincial part of HST to be self-assessed during the fiscal year.
+R3 [23.0, 280.1, 101.1, 289.0] Value of imports
+R4 [23.0, 49.1, 94.6, 58.0] Tax on imports
+R5 [19.4, 572.3, 165.0, 581.2]  Section E - Exported supplies
+R6 [21.6, 613.5, 452.5, 621.6] Note:  Tick the grey box next to the line number if the amount you enter on this line is an estimated amount. 
+R7 [21.6, 591.0, 400.9, 599.0] Enter the total value of zero-rated exports of property and services made during the fiscal year.
+R8 [564.0, 767.1, 583.1, 772.5] Page 4
+R9 [23.0, 388.1, 453.9, 396.1] Note:  Tick the grey box next to the line number if the amount you enter on this line is an estimated amount. 
+R12 [19.4, 23.3, 115.7, 32.2]  Section D - Imports
+R17 [21.6, 234.7, 423.2, 242.7] Total provincial part of HST on "qualifying consideration" under proposed subsection 218.1(1.2) .......
+R18 [21.6, 211.2, 425.8, 219.2] Total provincial part of HST on "imported taxable supplies" under subsection 218.1(1) ........................
+R19 [21.6, 255.3, 426.4, 263.4] Other amounts of the provincial part of HST you had to self-assess ..................................................... 
+R20 [21.6, 97.1, 427.4, 105.1] Total GST on imported goods under section 212 ....................................................................................
+R21 [21.6, 118.2, 426.6, 126.2] Total GST on "imported taxable supplies" under section 218 .................................................................
+R22 [21.6, 142.1, 426.6, 150.1] Total GST on "qualifying consideration" under proposed section 218.01 ...............................................
+R23 [21.6, 190.1, 425.7, 198.1] Total provincial part of HST on certain imported goods under section 220.07 .......................................
+R24 [21.6, 166.2, 425.7, 174.2] Total provincial part of HST on certain imported goods under section 212.1 .........................................
+R25 [21.6, 742.1, 41.6, 750.1] Total
+R26 [21.6, 661.2, 93.5, 669.2] Financial services
+R27 [442.4, 92.9, 457.5, 100.9] 240
+R28 [21.6, 682.4, 93.3, 701.7] Tangible personal property
+R29 [442.4, 140.9, 457.5, 148.9] 242
+R30 [442.4, 116.9, 457.5, 124.9] 241
+R90 [18.7, 706.8, 118.3, 713.9] Intangible personal property
+R91 [18.7, 714.8, 104.9, 722.0] and services (other than
+R92 [18.7, 722.8, 82.7, 730.0] financial services)
+R93 [120.2, 696.0, 135.3, 704.0] 360
+R94 [120.2, 723.0, 135.3, 731.0] 370
+R95 [125.6, 750.0, 140.7, 758.0] 380
+R96 [482.0, 696.0, 497.1, 704.0] 363
+R97 [482.0, 722.9, 497.1, 730.9] 373
+R98 [482.0, 750.0, 497.1, 758.0] 383
+R99 [239.0, 696.0, 254.1, 704.0] 361
+R100 [239.0, 723.0, 254.1, 731.0] 371
+R101 [244.4, 750.0, 259.5, 758.0] 381
+R102 [357.8, 696.0, 372.9, 704.0] 362
+R103 [357.8, 723.0, 372.9, 731.0] 372
+R104 [363.2, 750.0, 378.3, 758.0] 382
+R105 [241.4, 635.6, 352.3, 643.6] Exported to related persons
+R106 [367.8, 635.6, 463.6, 643.6] Exported to third parties
+R107 [524.5, 635.6, 544.5, 643.6] Total
+R108 [130.4, 630.1, 225.7, 638.1] Exported to head office 
+R109 [154.2, 641.4, 201.8, 649.4] or branches
+R110 [120.2, 669.0, 135.3, 677.0] 350
+R111 [482.0, 669.0, 497.1, 677.0] 353
+R112 [239.0, 669.0, 254.1, 677.0] 351
+R113 [357.8, 669.0, 372.9, 677.0] 352
+R114 [21.6, 480.1, 112.4, 488.1] Taxable supplies other
+R115 [21.6, 490.1, 66.3, 498.1] than goods
+R116 [253.9, 413.6, 339.8, 421.6] From related persons
+R117 [380.3, 413.6, 451.1, 421.6] From third parties
+R118 [524.5, 413.6, 544.5, 421.6] Total
+R119 [21.6, 437.6, 93.5, 445.6] Financial services
+R120 [21.6, 461.5, 80.6, 469.5] Taxable goods
+R121 [142.9, 408.8, 213.2, 416.8] From head office 
+R122 [154.2, 420.1, 201.8, 428.1] or branches
+R123 [120.2, 444.0, 135.3, 452.0] 250
+R124 [120.2, 467.9, 135.3, 475.9] 260
+R125 [120.2, 492.0, 135.3, 500.0] 270
+R126 [482.0, 444.0, 497.1, 452.0] 253
+R127 [482.0, 467.9, 497.1, 475.9] 263
+R128 [482.0, 492.0, 497.1, 500.0] 273
+R129 [239.0, 444.0, 254.1, 452.0] 251
+R130 [239.0, 467.9, 254.1, 475.9] 261
+R131 [239.0, 492.0, 254.1, 500.0] 271
+R132 [357.8, 444.0, 372.9, 452.0] 252
+R133 [357.8, 467.9, 372.9, 475.9] 262
+R134 [357.8, 492.0, 372.9, 500.0] 272
+R135 [21.6, 504.8, 81.4, 512.8] Other inputs or
+R136 [21.6, 516.0, 135.3, 524.1] qualifying consideration 280
+R137 [482.0, 516.0, 497.1, 524.0] 283
+R138 [239.0, 516.0, 254.1, 524.0] 281
+R139 [357.8, 516.0, 372.9, 524.0] 282
+R140 [21.6, 533.6, 41.6, 541.6] Total
+R141 [125.6, 540.0, 140.7, 548.0] 290
+R142 [482.0, 540.0, 497.1, 548.0] 293
+R143 [244.4, 540.0, 259.5, 548.0] 291
+R144 [363.2, 540.0, 378.3, 548.0] 292
+R145 [442.4, 164.9, 457.5, 172.9] 243
+R146 [442.4, 254.9, 457.5, 262.9] 247
+R147 [442.4, 233.9, 457.5, 241.9] 246
+R148 [442.4, 188.9, 457.5, 196.9] 244
+R149 [442.4, 210.0, 457.5, 218.0] 245
+R150 [256.7, 441.9, 264.3, 449.8] ✔

@@ -1,0 +1,62 @@
+ELIGIBLE WIDGETS (native indices, geometry; no prediction or tooltip)
+0: /Tx [36.0, 106.0, 395.2, 120.0]
+1: /Tx [396.0, 106.0, 576.0, 120.0]
+2: /Btn [64.8, 170.0, 72.8, 178.0]
+3: /Btn [64.8, 182.0, 72.8, 190.0]
+4: /Btn [64.8, 194.0, 72.8, 202.0]
+5: /Btn [64.8, 206.0, 72.8, 214.0]
+6: /Btn [64.8, 218.0, 72.8, 226.0]
+7: /Btn [64.8, 230.0, 72.8, 238.0]
+8: /Btn [64.8, 242.0, 72.8, 250.0]
+9: /Btn [64.8, 254.0, 72.8, 262.0]
+10: /Btn [64.8, 266.0, 72.8, 274.0]
+11: /Btn [64.8, 278.0, 72.8, 286.0]
+12: /Btn [64.8, 290.0, 72.8, 298.0]
+13: /Btn [273.6, 170.0, 281.6, 178.0]
+14: /Btn [273.6, 182.0, 281.6, 190.0]
+15: /Btn [273.6, 194.0, 281.6, 202.0]
+16: /Btn [273.6, 206.0, 281.6, 214.0]
+17: /Btn [273.6, 218.0, 281.6, 226.0]
+18: /Btn [273.6, 230.0, 281.6, 238.0]
+19: /Btn [273.6, 242.0, 281.6, 250.0]
+20: /Btn [273.6, 254.0, 281.6, 262.0]
+21: /Btn [273.6, 266.0, 281.6, 274.0]
+22: /Btn [273.6, 278.0, 281.6, 286.0]
+SOURCE TEXT REGIONS (coordinate anchors only)
+R0 [36.0, 76.7, 121.2, 92.3] Department of the Treasury   Internal Revenue Service  
+R1 [288.0, 169.8, 375.3, 179.1] 011 French (Français)
+R2 [288.0, 277.8, 429.6, 287.1] 020 Chinese (Simplified) 中文 ( 简体 )
+R3 [79.2, 169.8, 195.6, 179.1] 000 Cancel previous election
+R4 [45.4, 135.4, 491.8, 155.4] 1  I would prefer to receive written communications (see instructions) from the IRS in the following language.  Check only one.
+R5 [79.2, 265.8, 192.3, 275.1] 008 Portuguese (Português)
+R6 [79.2, 241.8, 220.2, 251.1] 006 Haitian Creole (Kreyòl Ayisyen)
+R7 [79.2, 193.8, 160.4, 203.1] 002 Korean ( 한국어 )
+R8 [79.2, 205.8, 189.8, 215.4] 003 Vietnamese (Ti ế ng Vi ệ t )
+R9 [79.2, 253.8, 169.8, 263.1] 007 Tagalog (Tagalog)
+R10 [288.0, 193.8, 375.2, 203.1] 013 Gujarati ( ગુજરાતી )
+R11 [36.0, 98.1, 213.6, 105.3] Name of person making request (as shown on tax return)
+R12 [288.0, 205.8, 366.1, 215.6] 014 Punjabi ( ਪੰਜਾਬੀ )
+R13 [79.2, 217.8, 168.6, 227.4] 004 Russian (P усский )
+R14 [79.2, 181.8, 168.5, 191.1] 001 Spanish (Español)
+R15 [194.5, 84.4, 417.6, 92.8] Go to  www.irs.gov/ScheduleLEP  for the latest information.
+R17 [400.0, 97.9, 564.2, 105.4] Social security number of person making request
+R18 [79.2, 277.8, 152.6, 287.1] 009 Polish (Polski)
+R19 [288.0, 217.8, 355.2, 227.6] 015 Khmer ( ែខ�រ )
+R20 [288.0, 181.8, 378.6, 191.5] 012 Japanese ( 日本語 )
+R21 [288.0, 253.8, 366.2, 263.1] 018 Italian ( Italiano)
+R22 [288.0, 241.8, 364.9, 251.1] 017 Bengali ( বাংলা )
+R23 [79.2, 289.0, 138.9, 300.4] 010 Farsi ( ﻓﺎرﺳﯽ )
+R24 [288.0, 265.8, 432.2, 275.1] 019 Chinese (Traditional) 中文 ( 繁體 )
+R25 [36.0, 64.1, 107.4, 71.3] (Rev. December 2024) 
+R26 [206.4, 73.4, 407.8, 81.8] Attach to Form 1040, 1040-SR, 1040-NR, or 1040-SS. 
+R27 [500.3, 47.6, 565.3, 54.9] OMB No. 1545-0074
+R28 [288.0, 229.0, 344.4, 240.4] 016 Urdu ( اردو )
+R29 [79.2, 229.8, 127.7, 239.1] 005 Arabic (
+R30 [36.0, 35.6, 115.7, 58.2] SCHEDULE LEP  (Form 1040) 
+R31 [168.0, 38.0, 444.0, 52.7] Request for Change in Language Preference
+R32 [501.6, 75.1, 566.0, 91.1] Attachment  Sequence No.  77A
+R33 [439.7, 315.4, 576.0, 322.9] Schedule LEP (Form 1040) (Rev. 12-2024)
+R34 [36.0, 314.8, 304.3, 323.3] For Paperwork Reduction Act Notice, see your tax return instructions. 
+R35 [341.1, 315.6, 393.3, 322.8] Cat. No. 74174D
+R57 [128.1, 229.0, 144.3, 240.4] اﻟﻌﺮﺑﻴﺔ
+R58 [144.8, 229.9, 146.9, 238.2] )
