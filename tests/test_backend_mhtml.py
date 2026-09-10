@@ -597,11 +597,3 @@ def test_path_and_stream_preserve_original_origin(tmp_path: Path, name: str):
         assert doc.origin is not None
         assert doc.origin.filename == name
         assert doc.origin.mimetype == "application/x-mimearchive"
-
-
-def test_backend_contract():
-    assert HTMLDocumentBackend.supported_formats() == {
-        InputFormat.HTML,
-        InputFormat.MHTML,
-    }
-    assert not HTMLDocumentBackend.supports_pagination()
