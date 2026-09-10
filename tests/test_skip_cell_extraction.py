@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from PIL import Image
 
 from docling.datamodel.base_models import (
     BoundingBox,
@@ -32,6 +33,16 @@ from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
+
+
+class _StubBackend:
+    def is_valid(self) -> bool:
+        return True
+
+    def get_page_image(
+        self, scale: float = 1.0, cropbox: BoundingBox | None = None
+    ) -> Image.Image:
+        return Image.new("RGB", (round(600 * scale), round(800 * scale)), "white")
 
 
 def _page() -> Page:
@@ -76,7 +87,7 @@ def test_layout_write_back_guarded_without_parsed_page() -> None:
     # With cell assignment ENABLED and parsed_page None (skipped extraction),
     # the postprocessor previously asserted; it must now pass through.
     page = _page()
-    page._backend = SimpleNamespace(is_valid=lambda: True)  # type: ignore[assignment]
+    page._backend = _StubBackend()  # type: ignore[assignment]
     page.predictions.layout = LayoutPrediction(
         clusters=[
             Cluster(

@@ -4,6 +4,7 @@
 import pytest
 from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from PIL import Image
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import LayoutOptions, LayoutPostprocessorOptions
@@ -70,9 +71,14 @@ def _reference_assignments(
     return assignments
 
 
-def _postprocessor(*clusters: Cluster) -> LayoutPostprocessor:
+def _postprocessor(
+    *clusters: Cluster, page_image: Image.Image | None = None
+) -> LayoutPostprocessor:
+    page = Page(page_no=1, size=Size(width=1000, height=1000))
+    if page_image is not None:
+        page._image_cache = {1.0: page_image}
     return LayoutPostprocessor(
-        page=Page(page_no=1, size=Size(width=1000, height=1000)),
+        page=page,
         clusters=list(clusters),
         options=LayoutOptions(skip_cell_assignment=True),
     )
@@ -433,13 +439,58 @@ def test_container_does_not_wrap_nearly_identical_child(
     assert [cluster.id for cluster in result] == [2]
 
 
-def test_filtered_full_page_picture_does_not_remove_container() -> None:
-    container = _cluster(1, _bbox(0, 0, 1000, 1000), DocItemLabel.FORM, confidence=0.8)
+def test_empty_full_page_picture_is_preserved() -> None:
     picture = _cluster(2, _bbox(0, 0, 1000, 1000), DocItemLabel.PICTURE, confidence=0.8)
 
-    result = _process_special_clusters(container, picture)
+    result = _process_special_clusters(picture)
 
-    assert [cluster.id for cluster in result] == [1]
+    assert [cluster.id for cluster in result] == [picture.id]
+
+
+def test_uniform_wrapper_picture_is_removed_for_detected_text() -> None:
+    picture = _cluster(1, _bbox(100, 100, 900, 900), DocItemLabel.PICTURE)
+    text = _cluster(2, _bbox(200, 200, 800, 300), DocItemLabel.TEXT)
+
+    result = _postprocessor(
+        picture, text, page_image=Image.new("RGB", (1000, 1000), "white")
+    ).postprocess()
+
+    assert [cluster.id for cluster in result] == [text.id]
+
+
+def test_wrapper_picture_is_kept_for_nonuniform_surrounding() -> None:
+    page_image = Image.new("RGB", (1000, 1000), "white")
+    page_image.putpixel((10, 10), (0, 0, 0))
+    picture = _cluster(1, _bbox(100, 100, 900, 900), DocItemLabel.PICTURE)
+    text = _cluster(2, _bbox(200, 200, 800, 300), DocItemLabel.TEXT)
+
+    result = _postprocessor(picture, text, page_image=page_image).postprocess()
+
+    assert [cluster.id for cluster in result] == [picture.id]
+
+
+def test_wrapper_picture_is_kept_for_detected_content_outside() -> None:
+    picture = _cluster(1, _bbox(100, 100, 900, 900), DocItemLabel.PICTURE)
+    text = _cluster(2, _bbox(10, 10, 90, 50), DocItemLabel.TEXT)
+
+    result = _postprocessor(
+        picture, text, page_image=Image.new("RGB", (1000, 1000), "white")
+    ).postprocess()
+
+    assert {cluster.id for cluster in result} == {picture.id, text.id}
+
+
+def test_wrapper_picture_is_kept_for_synthesized_orphan_only() -> None:
+    picture = _cluster(1, _bbox(100, 100, 900, 900), DocItemLabel.PICTURE)
+    orphan = _cluster(2, _bbox(200, 200, 800, 300), DocItemLabel.TEXT)
+    processor = _postprocessor(
+        picture, page_image=Image.new("RGB", (1000, 1000), "white")
+    )
+    processor.regular_clusters = [orphan]
+
+    result = processor._process_special_clusters()
+
+    assert [cluster.id for cluster in result] == [picture.id]
 
 
 def test_removed_picture_does_not_remove_container() -> None:
