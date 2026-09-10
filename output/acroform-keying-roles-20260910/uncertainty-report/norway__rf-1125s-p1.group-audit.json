@@ -1,0 +1,67 @@
+{
+  "raw_objective": 43.08947752525485,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          10,
+          11,
+          12
+        ],
+        "prompt": "Russes jus skovvi lea vearrodieđáhusa dahje ealáhusdieđáhusa mielddus.",
+        "prompt_bbox": {
+          "l": 49.275,
+          "t": 247.67600000000004,
+          "r": 180.9390000000001,
+          "b": 260.91021878453046,
+          "coord_origin": "TOPLEFT"
+        },
+        "parent_widget": null,
+        "captions": [
+          "(bálkkolaččat guđet gáibidit ges sosa fidnobiilla ovddas rehketdoalu mielde geavahit skovi vearrodieđáhusa mielddusin)",
+          "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+          "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.333485711441881,
+      "uncertain": false,
+      "alternative_groups": []
+    }
+  ],
+  "caption_checks": [
+    {
+      "widgets": [
+        10
+      ],
+      "selected_caption": "(bálkkolaččat guđet gáibidit ges sosa fidnobiilla ovddas rehketdoalu mielde geavahit skovi vearrodieđáhusa mielddusin)",
+      "alternative_solved": true,
+      "objective_gap": 0.5807768675611058,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        12
+      ],
+      "selected_caption": "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)",
+      "alternative_solved": true,
+      "objective_gap": 0.7783357070102213,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        11
+      ],
+      "selected_caption": "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 0
+}

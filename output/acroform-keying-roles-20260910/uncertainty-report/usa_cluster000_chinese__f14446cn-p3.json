@@ -1,0 +1,1621 @@
+{
+  "schema_version": "1.0",
+  "fixture": "usa_cluster000_chinese__f14446cn",
+  "page": 3,
+  "solver_status": "optimal",
+  "seconds": 0.35153870802605525,
+  "null_cost": 3.0,
+  "objective": 0.6872415956566462,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 39.6,
+          "r_y0": 632.7,
+          "r_x1": 48.6,
+          "r_y1": 632.7,
+          "r_x2": 48.6,
+          "r_y2": 641.7,
+          "r_x3": 39.6,
+          "r_y3": 641.7,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "此表格的第 3 頁將由服務處與其他必要文檔一起保管。 第 III 部分：納稅人同意：請求審查您的納稅申報單以確保正確性：為確保您在志願服務處獲得優質服務且正確填報納稅申報單，國稅局員工會隨機抽查免費報稅服務處，以進行審查。如果發現錯誤，服務處將做出必要更正。國稅局不會保存您被抽查到的納稅申報單上的個人資料；並且，這個做法能讓國稅局評估我們 VITA/TCE 報稅服務在納稅申報單填報的準確性。如果您不希望您的納稅申報單被納入審查程序，也不會影響本服務處向您提供的各項服務。若填報本納稅申報單的服務處被選為審查對象，您是否同意讓您的納稅申報單接受國稅局員工審查，以審查其正確性？  是",
+        "widget_field_name": "form1[0].page3[0].yes[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 39.6,
+        "t": 150.29999999999995,
+        "r": 48.6,
+        "b": 159.29999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        180,
+        885
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 86.4,
+          "r_y0": 632.7,
+          "r_x1": 95.4,
+          "r_y1": 632.7,
+          "r_x2": 95.4,
+          "r_y2": 641.7,
+          "r_x3": 86.4,
+          "r_y3": 641.7,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "否",
+        "widget_field_name": "form1[0].page3[0].no[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 86.4,
+        "t": 150.29999999999995,
+        "r": 95.4,
+        "b": 159.29999999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        109,
+        885
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 500.4,
+          "r_y0": 485.1,
+          "r_x1": 509.4,
+          "r_y1": 485.1,
+          "r_x2": 509.4,
+          "r_y2": 494.1,
+          "r_x3": 500.4,
+          "r_y3": 494.1,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "本人同意使用此服務處的虛擬 VITA/TCE 流  是",
+        "widget_field_name": "form1[0].page3[0].I_am[0].yes[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 500.4,
+        "t": 297.9,
+        "r": 509.4,
+        "b": 306.9,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        164
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 547.2,
+          "r_y0": 485.1,
+          "r_x1": 556.2,
+          "r_y1": 485.1,
+          "r_x2": 556.2,
+          "r_y2": 494.1,
+          "r_x3": 547.2,
+          "r_y3": 494.1,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": "否",
+        "widget_field_name": "form1[0].page3[0].I_am[0].no[0]",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 547.2,
+        "t": 297.9,
+        "r": 556.2,
+        "b": 306.9,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        219
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 450.0,
+          "r_x1": 302.4,
+          "r_y1": 450.0,
+          "r_x2": 302.4,
+          "r_y2": 469.44,
+          "r_x3": 36.0,
+          "r_y3": 469.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "正楷姓名",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].printedName[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 322.56,
+        "r": 302.4,
+        "b": 342.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        490
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 417.6,
+          "r_x1": 165.6,
+          "r_y1": 417.6,
+          "r_x2": 165.6,
+          "r_y2": 437.04,
+          "r_x3": 36.0,
+          "r_y3": 437.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "出生日期",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].DOB[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 354.96,
+        "r": 165.6,
+        "b": 374.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        347
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 172.8,
+          "r_y0": 417.6,
+          "r_x1": 302.4,
+          "r_y1": 417.6,
+          "r_x2": 302.4,
+          "r_y2": 437.04,
+          "r_x3": 172.8,
+          "r_y3": 437.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "日期",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].date[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 172.8,
+        "t": 354.96,
+        "r": 302.4,
+        "b": 374.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        474
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 385.2,
+          "r_x1": 302.4,
+          "r_y1": 385.2,
+          "r_x2": 302.4,
+          "r_y2": 404.64,
+          "r_x3": 36.0,
+          "r_y3": 404.64,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "電話號碼",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].phone[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 387.36,
+        "r": 302.4,
+        "b": 406.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        331
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 352.8,
+          "r_x1": 302.4,
+          "r_y1": 352.8,
+          "r_x2": 302.4,
+          "r_y2": 372.24,
+          "r_x3": 36.0,
+          "r_y3": 372.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "電子郵件地址",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].email[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 419.76,
+        "r": 302.4,
+        "b": 439.2,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        152
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 320.4,
+          "r_x1": 302.4,
+          "r_y1": 320.4,
+          "r_x2": 302.4,
+          "r_y2": 339.84,
+          "r_x3": 36.0,
+          "r_y3": 339.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "簽名（電子簽名）",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].Signature[0]",
+        "widget_field_type": "/Sig",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 452.16,
+        "r": 302.4,
+        "b": 471.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        658
+      ]
+    },
+    {
+      "native": {
+        "index": 11,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 273.6,
+          "r_x1": 302.4,
+          "r_y1": 273.6,
+          "r_x2": 302.4,
+          "r_y2": 293.04,
+          "r_x3": 36.0,
+          "r_y3": 293.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "簽名",
+        "widget_field_name": "form1[0].page3[0].signature_1[0].signature[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 498.96,
+        "r": 302.4,
+        "b": 518.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        732
+      ]
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 450.0,
+          "r_x1": 576.0,
+          "r_y1": 450.0,
+          "r_x2": 576.0,
+          "r_y2": 469.44,
+          "r_x3": 309.6,
+          "r_y3": 469.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "正楷姓名（已婚合併報稅者此處為配偶姓名） ",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].printedName[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 322.56,
+        "r": 576.0,
+        "b": 342.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        678
+      ]
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 417.6,
+          "r_x1": 439.2,
+          "r_y1": 417.6,
+          "r_x2": 439.2,
+          "r_y2": 437.04,
+          "r_x3": 309.6,
+          "r_y3": 437.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "出生日期",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].DOB[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 354.96,
+        "r": 439.2,
+        "b": 374.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        210
+      ]
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 446.4,
+          "r_y0": 417.6,
+          "r_x1": 572.4,
+          "r_y1": 417.6,
+          "r_x2": 572.4,
+          "r_y2": 437.04,
+          "r_x3": 446.4,
+          "r_y3": 437.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "日期",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].date[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 446.4,
+        "t": 354.96,
+        "r": 572.4,
+        "b": 374.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        445
+      ]
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 385.2,
+          "r_x1": 576.0,
+          "r_y1": 385.2,
+          "r_x2": 576.0,
+          "r_y2": 404.64,
+          "r_x3": 309.6,
+          "r_y3": 404.64,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "電話號碼",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].phone[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 387.36,
+        "r": 576.0,
+        "b": 406.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        248
+      ]
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 352.8,
+          "r_x1": 576.0,
+          "r_y1": 352.8,
+          "r_x2": 576.0,
+          "r_y2": 372.24,
+          "r_x3": 309.6,
+          "r_y3": 372.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "電子郵件地址",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].email[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 419.76,
+        "r": 576.0,
+        "b": 439.2,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        141
+      ]
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 320.4,
+          "r_x1": 576.0,
+          "r_y1": 320.4,
+          "r_x2": 576.0,
+          "r_y2": 339.84,
+          "r_x3": 309.6,
+          "r_y3": 339.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "簽名（電子簽名）",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].Signature[0]",
+        "widget_field_type": "/Sig",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 452.16,
+        "r": 576.0,
+        "b": 471.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        430
+      ]
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 309.6,
+          "r_y0": 273.6,
+          "r_x1": 576.0,
+          "r_y1": 273.6,
+          "r_x2": 576.0,
+          "r_y2": 293.04,
+          "r_x3": 309.6,
+          "r_y3": 293.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "簽名",
+        "widget_field_name": "form1[0].page3[0].signature_2[0].signature[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 309.6,
+        "t": 498.96,
+        "r": 576.0,
+        "b": 518.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        775
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 109,
+      "kind": "option_caption",
+      "widget_indices": [
+        1
+      ],
+      "text": "否",
+      "bbox": {
+        "l": 100.08,
+        "t": 151.75400000000002,
+        "r": 109.08,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240376,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 141,
+      "kind": "field_key",
+      "widget_indices": [
+        16
+      ],
+      "text": "電子郵件地址",
+      "bbox": {
+        "l": 309.6,
+        "t": 410.499,
+        "r": 363.6,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 152,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "電子郵件地址",
+      "bbox": {
+        "l": 36.0,
+        "t": 410.499,
+        "r": 90.0,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 164,
+      "kind": "option_caption",
+      "widget_indices": [
+        3
+      ],
+      "text": "是",
+      "bbox": {
+        "l": 514.08,
+        "t": 299.35400000000004,
+        "r": 523.08,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.37094020282404233,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 180,
+      "kind": "option_caption",
+      "widget_indices": [
+        0
+      ],
+      "text": "是",
+      "bbox": {
+        "l": 53.28,
+        "t": 151.75400000000002,
+        "r": 62.28,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240381,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 210,
+      "kind": "field_key",
+      "widget_indices": [
+        13
+      ],
+      "text": "出生日期",
+      "bbox": {
+        "l": 309.6,
+        "t": 345.694,
+        "r": 345.6,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 219,
+      "kind": "option_caption",
+      "widget_indices": [
+        4
+      ],
+      "text": "否",
+      "bbox": {
+        "l": 560.88,
+        "t": 299.35400000000004,
+        "r": 569.88,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240348,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 248,
+      "kind": "field_key",
+      "widget_indices": [
+        15
+      ],
+      "text": "電話號碼",
+      "bbox": {
+        "l": 309.6,
+        "t": 378.112,
+        "r": 345.6,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 331,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "電話號碼",
+      "bbox": {
+        "l": 36.0,
+        "t": 378.112,
+        "r": 72.0,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 347,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "出生日期",
+      "bbox": {
+        "l": 36.0,
+        "t": 345.694,
+        "r": 72.0,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 430,
+      "kind": "field_key",
+      "widget_indices": [
+        17
+      ],
+      "text": "簽名（電子簽名）",
+      "bbox": {
+        "l": 309.6,
+        "t": 442.98,
+        "r": 381.6,
+        "b": 453.40092477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 445,
+      "kind": "field_key",
+      "widget_indices": [
+        14
+      ],
+      "text": "日期",
+      "bbox": {
+        "l": 446.4,
+        "t": 345.649,
+        "r": 464.4,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 474,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "日期",
+      "bbox": {
+        "l": 172.8,
+        "t": 345.649,
+        "r": 190.8,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 490,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "正楷姓名",
+      "bbox": {
+        "l": 36.0,
+        "t": 313.312,
+        "r": 72.0,
+        "b": 323.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 658,
+      "kind": "field_key",
+      "widget_indices": [
+        10
+      ],
+      "text": "簽名（電子簽名）",
+      "bbox": {
+        "l": 36.0,
+        "t": 442.98400000000004,
+        "r": 108.0,
+        "b": 453.4049247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 678,
+      "kind": "field_key",
+      "widget_indices": [
+        12
+      ],
+      "text": "正楷姓名（已婚合併報稅者此處為配偶姓名）",
+      "bbox": {
+        "l": 309.6,
+        "t": 313.384,
+        "r": 491.61600000000004,
+        "b": 323.80492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 732,
+      "kind": "field_key",
+      "widget_indices": [
+        11
+      ],
+      "text": "簽名（正楷簽名）",
+      "bbox": {
+        "l": 36.0,
+        "t": 489.784,
+        "r": 110.016,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 775,
+      "kind": "field_key",
+      "widget_indices": [
+        18
+      ],
+      "text": "簽名（正楷簽名）",
+      "bbox": {
+        "l": 309.6,
+        "t": 489.784,
+        "r": 383.61600000000004,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 885,
+      "kind": "choice_group",
+      "widget_indices": [
+        0,
+        1
+      ],
+      "text": "為確保您在志願服務處獲得優質服務且正確填報納稅申報單，國稅局員工會隨機抽查免費報稅服務處，以進行審查。如果發現錯誤，服務 處將做出必要更正。國稅局不會保存您被抽查到的納稅申報單上的個人資料；並且，這個做法能讓國稅局評估我們 VITA/TCE 報稅服務在 納稅申報單填報的準確性。如果您不希望您的納稅申報單被納入審查程序，也不會影響本服務處向您提供的各項服務。若填報本納稅申報 單的服務處被選為審查對象，您是否同意讓您的納稅申報單接受國稅局員工審查，以審查其正確性？",
+      "bbox": {
+        "l": 36.0,
+        "t": 100.34499999999991,
+        "r": 576.0,
+        "b": 143.84092477876084,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "question_gap": 0.4823137064197352,
+        "supported_repetition": -1.0,
+        "intervening_blocks": 0.0,
+        "prompt_fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "是",
+      "predicted": "是",
+      "expected_bbox": {
+        "l": 53.28,
+        "t": 151.75400000000002,
+        "r": 62.28,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 53.28,
+        "t": 151.75400000000002,
+        "r": 62.28,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240381,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "否",
+      "predicted": "否",
+      "expected_bbox": {
+        "l": 100.08,
+        "t": 151.75400000000002,
+        "r": 109.08,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 100.08,
+        "t": 151.75400000000002,
+        "r": 109.08,
+        "b": 162.174924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240376,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "是",
+      "predicted": "是",
+      "expected_bbox": {
+        "l": 514.08,
+        "t": 299.35400000000004,
+        "r": 523.08,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 514.08,
+        "t": 299.35400000000004,
+        "r": 523.08,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.37094020282404233,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "否",
+      "predicted": "否",
+      "expected_bbox": {
+        "l": 560.88,
+        "t": 299.35400000000004,
+        "r": 569.88,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 560.88,
+        "t": 299.35400000000004,
+        "r": 569.88,
+        "b": 309.7749247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3709402028240348,
+        "alignment": 0.08077777777778139,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "正楷姓名",
+      "predicted": "正楷姓名",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 313.312,
+        "r": 72.0,
+        "b": 323.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 313.312,
+        "r": 72.0,
+        "b": 323.73292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "出生日期",
+      "predicted": "出生日期",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 345.694,
+        "r": 72.0,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 345.694,
+        "r": 72.0,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "日期",
+      "predicted": "日期",
+      "expected_bbox": {
+        "l": 172.8,
+        "t": 345.649,
+        "r": 190.8,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 172.8,
+        "t": 345.649,
+        "r": 190.8,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "電話號碼",
+      "predicted": "電話號碼",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 378.112,
+        "r": 72.0,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 378.112,
+        "r": 72.0,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "電子郵件地址",
+      "predicted": "電子郵件地址",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 410.499,
+        "r": 90.0,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 410.499,
+        "r": 90.0,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "簽名（電子簽名）",
+      "predicted": "簽名（電子簽名）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 442.98400000000004,
+        "r": 108.0,
+        "b": 453.4049247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 442.98400000000004,
+        "r": 108.0,
+        "b": 453.4049247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 11,
+      "status": "correct",
+      "expected": "簽名（正楷簽名）",
+      "predicted": "簽名（正楷簽名）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 489.784,
+        "r": 110.016,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 489.784,
+        "r": 110.016,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 12,
+      "status": "correct",
+      "expected": "正楷姓名（已婚合併報稅者此處為配偶姓名）",
+      "predicted": "正楷姓名（已婚合併報稅者此處為配偶姓名）",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 313.384,
+        "r": 491.61600000000004,
+        "b": 323.80492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 313.384,
+        "r": 491.61600000000004,
+        "b": 323.80492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 13,
+      "status": "correct",
+      "expected": "出生日期",
+      "predicted": "出生日期",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 345.694,
+        "r": 345.6,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 345.694,
+        "r": 345.6,
+        "b": 356.11492477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 14,
+      "status": "correct",
+      "expected": "日期",
+      "predicted": "日期",
+      "expected_bbox": {
+        "l": 446.4,
+        "t": 345.649,
+        "r": 464.4,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 446.4,
+        "t": 345.649,
+        "r": 464.4,
+        "b": 356.06992477876105,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 15,
+      "status": "correct",
+      "expected": "電話號碼",
+      "predicted": "電話號碼",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 378.112,
+        "r": 345.6,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 378.112,
+        "r": 345.6,
+        "b": 388.53292477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 16,
+      "status": "correct",
+      "expected": "電子郵件地址",
+      "predicted": "電子郵件地址",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 410.499,
+        "r": 363.6,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 410.499,
+        "r": 363.6,
+        "b": 420.9199247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 17,
+      "status": "correct",
+      "expected": "簽名（電子簽名）",
+      "predicted": "簽名（電子簽名）",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 442.98,
+        "r": 381.6,
+        "b": 453.40092477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 442.98,
+        "r": 381.6,
+        "b": 453.40092477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        30
+      ]
+    },
+    {
+      "widget_index": 18,
+      "status": "correct",
+      "expected": "簽名（正楷簽名）",
+      "predicted": "簽名（正楷簽名）",
+      "expected_bbox": {
+        "l": 309.6,
+        "t": 489.784,
+        "r": 383.61600000000004,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 309.6,
+        "t": 489.784,
+        "r": 383.61600000000004,
+        "b": 500.20492477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "correct": 18
+  },
+  "groups": {
+    "not recovered": 2
+  }
+}

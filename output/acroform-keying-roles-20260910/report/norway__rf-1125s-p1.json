@@ -1,0 +1,6800 @@
+{
+  "schema_version": "1.0",
+  "fixture": "norway__rf-1125s",
+  "page": 1,
+  "solver_status": "optimal",
+  "seconds": 0.7887354579870589,
+  "null_cost": 3.0,
+  "objective": 43.08947752525485,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 49.2,
+          "r_y0": 643.8,
+          "r_x1": 368.64,
+          "r_y1": 643.8,
+          "r_x2": 368.64,
+          "r_y2": 660.96,
+          "r_x3": 49.2,
+          "r_y3": 660.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Namma",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 49.2,
+        "t": 180.78999999999996,
+        "r": 368.64,
+        "b": 197.95000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4339
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 370.2,
+          "r_y0": 643.8,
+          "r_x1": 469.92,
+          "r_y1": 643.8,
+          "r_x2": 469.92,
+          "r_y2": 660.96,
+          "r_x3": 370.2,
+          "r_y3": 660.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Organisašunnummar",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 370.2,
+        "t": 180.78999999999996,
+        "r": 469.92,
+        "b": 197.95000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3193
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 471.6,
+          "r_y0": 643.8,
+          "r_x1": 566.04,
+          "r_y1": 643.8,
+          "r_x2": 566.04,
+          "r_y2": 660.96,
+          "r_x3": 471.6,
+          "r_y3": 660.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Riegádannummar",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 471.6,
+        "t": 180.78999999999996,
+        "r": 566.04,
+        "b": 197.95000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3055
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 49.2,
+          "r_y0": 619.68,
+          "r_x1": 397.92,
+          "r_y1": 619.68,
+          "r_x2": 397.92,
+          "r_y2": 637.56,
+          "r_x3": 49.2,
+          "r_y3": 637.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_39",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 49.2,
+        "t": 204.19000000000005,
+        "r": 397.92,
+        "b": 222.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        201
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 399.48,
+          "r_y0": 619.68,
+          "r_x1": 442.2,
+          "r_y1": 619.68,
+          "r_x2": 442.2,
+          "r_y2": 637.56,
+          "r_x3": 399.48,
+          "r_y3": 637.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastanr",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 399.48,
+        "t": 204.19000000000005,
+        "r": 442.2,
+        "b": 222.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3125
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 619.68,
+          "r_x1": 566.04,
+          "r_y1": 619.68,
+          "r_x2": 566.04,
+          "r_y2": 637.56,
+          "r_x3": 443.76,
+          "r_y3": 637.56,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastabáiki",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 204.19000000000005,
+        "r": 566.04,
+        "b": 222.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2593
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 49.2,
+          "r_y0": 595.68,
+          "r_x1": 242.64,
+          "r_y1": 595.68,
+          "r_x2": 242.64,
+          "r_y2": 613.44,
+          "r_x3": 49.2,
+          "r_y3": 613.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Rehketdoalli namma",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 49.2,
+        "t": 228.30999999999995,
+        "r": 242.64,
+        "b": 246.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2528
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 244.2,
+          "r_y0": 595.68,
+          "r_x1": 397.92,
+          "r_y1": 595.68,
+          "r_x2": 397.92,
+          "r_y2": 613.44,
+          "r_x3": 244.2,
+          "r_y3": 613.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_44",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 244.2,
+        "t": 228.30999999999995,
+        "r": 397.92,
+        "b": 246.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1462
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 399.48,
+          "r_y0": 595.68,
+          "r_x1": 442.2,
+          "r_y1": 595.68,
+          "r_x2": 442.2,
+          "r_y2": 613.44,
+          "r_x3": 399.48,
+          "r_y3": 613.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastanr_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 399.48,
+        "t": 228.30999999999995,
+        "r": 442.2,
+        "b": 246.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3540
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 595.68,
+          "r_x1": 566.04,
+          "r_y1": 595.68,
+          "r_x2": 566.04,
+          "r_y2": 613.44,
+          "r_x3": 443.76,
+          "r_y3": 613.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastabáiki_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 228.30999999999995,
+        "r": 566.04,
+        "b": 246.07000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2996
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 295.02,
+          "r_y0": 584.026,
+          "r_x1": 304.14,
+          "r_y1": 584.026,
+          "r_x2": 304.14,
+          "r_y2": 593.146,
+          "r_x3": 295.02,
+          "r_y3": 593.146,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 295.02,
+        "t": 248.60400000000004,
+        "r": 304.14,
+        "b": 257.72400000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4624,
+        8261
+      ]
+    },
+    {
+      "native": {
+        "index": 11,
+        "rect": {
+          "r_x0": 295.02,
+          "r_y0": 568.606,
+          "r_x1": 304.14,
+          "r_y1": 568.606,
+          "r_x2": 304.14,
+          "r_y2": 577.726,
+          "r_x3": 295.02,
+          "r_y3": 577.726,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Box2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 295.02,
+        "t": 264.024,
+        "r": 304.14,
+        "b": 273.144,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        6542,
+        8261
+      ]
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 294.657,
+          "r_y0": 553.55,
+          "r_x1": 304.067,
+          "r_y1": 553.55,
+          "r_x2": 304.067,
+          "r_y2": 562.67,
+          "r_x3": 294.657,
+          "r_y3": 562.67,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Box3",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 294.657,
+        "t": 279.08000000000004,
+        "r": 304.067,
+        "b": 288.20000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        5682,
+        8261
+      ]
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 512.76,
+          "r_x1": 318.36,
+          "r_y1": 512.76,
+          "r_x2": 318.36,
+          "r_y2": 529.44,
+          "r_x3": 196.92,
+          "r_y3": 529.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A1 Biilla registrerennummar",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 312.30999999999995,
+        "r": 318.36,
+        "b": 328.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 512.76,
+          "r_x1": 442.2,
+          "r_y1": 512.76,
+          "r_x2": 442.2,
+          "r_y2": 529.44,
+          "r_x3": 319.92,
+          "r_y3": 529.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B1 Biilla registrerennummar",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 312.30999999999995,
+        "r": 442.2,
+        "b": 328.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 512.76,
+          "r_x1": 566.04,
+          "r_y1": 512.76,
+          "r_x2": 566.04,
+          "r_y2": 529.44,
+          "r_x3": 443.76,
+          "r_y3": 529.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C1 Biilla registrerennummar",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 312.30999999999995,
+        "r": 566.04,
+        "b": 328.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 494.76,
+          "r_x1": 318.36,
+          "r_y1": 494.76,
+          "r_x2": 318.36,
+          "r_y2": 511.44,
+          "r_x3": 196.92,
+          "r_y3": 511.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A2 Biilakategoriija personbiila maiddai stašunbiila gálvobiila kombibiila guorbmebiila je",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 330.31,
+        "r": 318.36,
+        "b": 346.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 494.76,
+          "r_x1": 442.2,
+          "r_y1": 494.76,
+          "r_x2": 442.2,
+          "r_y2": 511.44,
+          "r_x3": 319.92,
+          "r_y3": 511.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B2 Biilakategoriija personbiila maiddai stašunbiila gálvobiila kombibiila guorbmebiila je",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 330.31,
+        "r": 442.2,
+        "b": 346.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 494.76,
+          "r_x1": 566.04,
+          "r_y1": 494.76,
+          "r_x2": 566.04,
+          "r_y2": 511.44,
+          "r_x3": 443.76,
+          "r_y3": 511.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C2 Biilakategoriija personbiila maiddai stašunbiila gálvobiila kombibiila guorbmebiila je",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 330.31,
+        "r": 566.04,
+        "b": 346.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 19,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 476.76,
+          "r_x1": 318.36,
+          "r_y1": 476.76,
+          "r_x2": 318.36,
+          "r_y2": 493.44,
+          "r_x3": 196.92,
+          "r_y3": 493.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A3 Biilamearkaja tiipa",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 348.31,
+        "r": 318.36,
+        "b": 364.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 20,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 476.76,
+          "r_x1": 442.2,
+          "r_y1": 476.76,
+          "r_x2": 442.2,
+          "r_y2": 493.44,
+          "r_x3": 319.92,
+          "r_y3": 493.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B3 Biilamearkaja tiipa",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 348.31,
+        "r": 442.2,
+        "b": 364.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 21,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 476.76,
+          "r_x1": 566.04,
+          "r_y1": 476.76,
+          "r_x2": 566.04,
+          "r_y2": 493.44,
+          "r_x3": 443.76,
+          "r_y3": 493.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C3 Biilamearkaja tiipa",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 348.31,
+        "r": 566.04,
+        "b": 364.99,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 22,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 458.64,
+          "r_x1": 318.36,
+          "r_y1": 458.64,
+          "r_x2": 318.36,
+          "r_y2": 475.44,
+          "r_x3": 196.92,
+          "r_y3": 475.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A4 Jahkemálle",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 366.31,
+        "r": 318.36,
+        "b": 383.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 23,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 458.64,
+          "r_x1": 442.2,
+          "r_y1": 458.64,
+          "r_x2": 442.2,
+          "r_y2": 475.44,
+          "r_x3": 319.92,
+          "r_y3": 475.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B4 Jahkemálle",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 366.31,
+        "r": 442.2,
+        "b": 383.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 24,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 458.64,
+          "r_x1": 566.04,
+          "r_y1": 458.64,
+          "r_x2": 566.04,
+          "r_y2": 475.44,
+          "r_x3": 443.76,
+          "r_y3": 475.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C4 Jahkemálle",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 366.31,
+        "r": 566.04,
+        "b": 383.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 25,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 440.64,
+          "r_x1": 318.36,
+          "r_y1": 440.64,
+          "r_x2": 318.36,
+          "r_y2": 457.44,
+          "r_x3": 196.92,
+          "r_y3": 457.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_15",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 384.31,
+        "r": 318.36,
+        "b": 401.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 26,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 440.64,
+          "r_x1": 442.2,
+          "r_y1": 440.64,
+          "r_x2": 442.2,
+          "r_y2": 457.44,
+          "r_x3": 319.92,
+          "r_y3": 457.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_16",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 384.31,
+        "r": 442.2,
+        "b": 401.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 27,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 440.64,
+          "r_x1": 566.04,
+          "r_y1": 440.64,
+          "r_x2": 566.04,
+          "r_y2": 457.44,
+          "r_x3": 443.76,
+          "r_y3": 457.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_17",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 384.31,
+        "r": 566.04,
+        "b": 401.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 28,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 422.64,
+          "r_x1": 318.36,
+          "r_y1": 422.64,
+          "r_x2": 318.36,
+          "r_y2": 439.44,
+          "r_x3": 196.92,
+          "r_y3": 439.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_18",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 402.31,
+        "r": 318.36,
+        "b": 419.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 29,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 422.64,
+          "r_x1": 442.2,
+          "r_y1": 422.64,
+          "r_x2": 442.2,
+          "r_y2": 439.44,
+          "r_x3": 319.92,
+          "r_y3": 439.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_19",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 402.31,
+        "r": 442.2,
+        "b": 419.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 30,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 422.64,
+          "r_x1": 566.04,
+          "r_y1": 422.64,
+          "r_x2": 566.04,
+          "r_y2": 439.44,
+          "r_x3": 443.76,
+          "r_y3": 439.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_20",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 402.31,
+        "r": 566.04,
+        "b": 419.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 31,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 404.64,
+          "r_x1": 318.36,
+          "r_y1": 404.64,
+          "r_x2": 318.36,
+          "r_y2": 421.44,
+          "r_x3": 196.92,
+          "r_y3": 421.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A7 Boahtojagi 3112 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 420.31,
+        "r": 318.36,
+        "b": 437.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 32,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 404.64,
+          "r_x1": 442.2,
+          "r_y1": 404.64,
+          "r_x2": 442.2,
+          "r_y2": 421.44,
+          "r_x3": 319.92,
+          "r_y3": 421.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B7 Boahtojagi 3112 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 420.31,
+        "r": 442.2,
+        "b": 437.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 33,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 404.64,
+          "r_x1": 566.04,
+          "r_y1": 404.64,
+          "r_x2": 566.04,
+          "r_y2": 421.44,
+          "r_x3": 443.76,
+          "r_y3": 421.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C7 Boahtojagi 3112 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 420.31,
+        "r": 566.04,
+        "b": 437.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 34,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 386.64,
+          "r_x1": 318.36,
+          "r_y1": 386.64,
+          "r_x2": 318.36,
+          "r_y2": 403.44,
+          "r_x3": 196.92,
+          "r_y3": 403.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A8 Boahtojagi 11 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 438.31,
+        "r": 318.36,
+        "b": 455.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 35,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 386.64,
+          "r_x1": 442.2,
+          "r_y1": 386.64,
+          "r_x2": 442.2,
+          "r_y2": 403.44,
+          "r_x3": 319.92,
+          "r_y3": 403.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B8 Boahtojagi 11 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 438.31,
+        "r": 442.2,
+        "b": 455.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 36,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 386.64,
+          "r_x1": 566.04,
+          "r_y1": 386.64,
+          "r_x2": 566.04,
+          "r_y2": 403.44,
+          "r_x3": 443.76,
+          "r_y3": 403.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C8 Boahtojagi 11 kilomehterlohku",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 438.31,
+        "r": 566.04,
+        "b": 455.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 37,
+        "rect": {
+          "r_x0": 196.92,
+          "r_y0": 368.64,
+          "r_x1": 318.36,
+          "r_y1": 368.64,
+          "r_x2": 318.36,
+          "r_y2": 385.44,
+          "r_x3": 196.92,
+          "r_y3": 385.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "A9 Galle kilomehtera fidnovuodjin boahtojagis",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.92,
+        "t": 456.31,
+        "r": 318.36,
+        "b": 473.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 38,
+        "rect": {
+          "r_x0": 319.92,
+          "r_y0": 368.64,
+          "r_x1": 442.2,
+          "r_y1": 368.64,
+          "r_x2": 442.2,
+          "r_y2": 385.44,
+          "r_x3": 319.92,
+          "r_y3": 385.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "B9 Galle kilomehtera fidnovuodjin boahtojagis",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.92,
+        "t": 456.31,
+        "r": 442.2,
+        "b": 473.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 39,
+        "rect": {
+          "r_x0": 443.76,
+          "r_y0": 368.64,
+          "r_x1": 566.04,
+          "r_y1": 368.64,
+          "r_x2": 566.04,
+          "r_y2": 385.44,
+          "r_x3": 443.76,
+          "r_y3": 385.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "C9 Galle kilomehtera fidnovuodjin boahtojagis",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.76,
+        "t": 456.31,
+        "r": 566.04,
+        "b": 473.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 40,
+        "rect": {
+          "r_x0": 197.52,
+          "r_y0": 309.36,
+          "r_x1": 317.76,
+          "r_y1": 309.36,
+          "r_x2": 317.76,
+          "r_y2": 366.84,
+          "r_x3": 197.52,
+          "r_y3": 366.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_30",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 4096,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 197.52,
+        "t": 474.91,
+        "r": 317.76,
+        "b": 532.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 41,
+        "rect": {
+          "r_x0": 320.52,
+          "r_y0": 309.36,
+          "r_x1": 441.6,
+          "r_y1": 309.36,
+          "r_x2": 441.6,
+          "r_y2": 366.84,
+          "r_x3": 320.52,
+          "r_y3": 366.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_31",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 4096,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 320.52,
+        "t": 474.91,
+        "r": 441.6,
+        "b": 532.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 42,
+        "rect": {
+          "r_x0": 444.36,
+          "r_y0": 309.36,
+          "r_x1": 565.44,
+          "r_y1": 309.36,
+          "r_x2": 565.44,
+          "r_y2": 366.84,
+          "r_x3": 444.36,
+          "r_y3": 366.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_32",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 4096,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 444.36,
+        "t": 474.91,
+        "r": 565.44,
+        "b": 532.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 71,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 43,
+        "rect": {
+          "r_x0": 196.8,
+          "r_y0": 291.36,
+          "r_x1": 296.996,
+          "r_y1": 291.36,
+          "r_x2": 296.996,
+          "r_y2": 303.0,
+          "r_x3": 196.8,
+          "r_y3": 303.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_47",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.8,
+        "t": 538.75,
+        "r": 296.996,
+        "b": 550.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        5617
+      ]
+    },
+    {
+      "native": {
+        "index": 44,
+        "rect": {
+          "r_x0": 301.836,
+          "r_y0": 295.34,
+          "r_x1": 310.956,
+          "r_y1": 295.34,
+          "r_x2": 310.956,
+          "r_y2": 304.46,
+          "r_x3": 301.836,
+          "r_y3": 304.46,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 301.836,
+        "t": 537.29,
+        "r": 310.956,
+        "b": 546.4100000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 45,
+        "rect": {
+          "r_x0": 320.046,
+          "r_y0": 291.36,
+          "r_x1": 420.589,
+          "r_y1": 291.36,
+          "r_x2": 420.589,
+          "r_y2": 303.0,
+          "r_x3": 320.046,
+          "r_y3": 303.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_48",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 320.046,
+        "t": 538.75,
+        "r": 420.589,
+        "b": 550.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        6282
+      ]
+    },
+    {
+      "native": {
+        "index": 46,
+        "rect": {
+          "r_x0": 424.846,
+          "r_y0": 295.27,
+          "r_x1": 433.966,
+          "r_y1": 295.27,
+          "r_x2": 433.966,
+          "r_y2": 304.39,
+          "r_x3": 424.846,
+          "r_y3": 304.39,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 424.846,
+        "t": 537.36,
+        "r": 433.966,
+        "b": 546.48,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 47,
+        "rect": {
+          "r_x0": 443.64,
+          "r_y0": 291.36,
+          "r_x1": 548.687,
+          "r_y1": 291.36,
+          "r_x2": 548.687,
+          "r_y2": 303.0,
+          "r_x3": 443.64,
+          "r_y3": 303.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_49",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.64,
+        "t": 538.75,
+        "r": 548.687,
+        "b": 550.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        6017
+      ]
+    },
+    {
+      "native": {
+        "index": 48,
+        "rect": {
+          "r_x0": 551.944,
+          "r_y0": 295.284,
+          "r_x1": 561.064,
+          "r_y1": 295.284,
+          "r_x2": 561.064,
+          "r_y2": 304.404,
+          "r_x3": 551.944,
+          "r_y3": 304.404,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 551.944,
+        "t": 537.346,
+        "r": 561.064,
+        "b": 546.466,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 49,
+        "rect": {
+          "r_x0": 302.062,
+          "r_y0": 277.735,
+          "r_x1": 311.182,
+          "r_y1": 277.735,
+          "r_x2": 311.182,
+          "r_y2": 286.855,
+          "r_x3": 302.062,
+          "r_y3": 286.855,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 302.062,
+        "t": 554.895,
+        "r": 311.182,
+        "b": 564.015,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 50,
+        "rect": {
+          "r_x0": 196.8,
+          "r_y0": 273.36,
+          "r_x1": 296.303,
+          "r_y1": 273.36,
+          "r_x2": 296.303,
+          "r_y2": 285.0,
+          "r_x3": 196.8,
+          "r_y3": 285.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_50",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.8,
+        "t": 556.75,
+        "r": 296.303,
+        "b": 568.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7283
+      ]
+    },
+    {
+      "native": {
+        "index": 51,
+        "rect": {
+          "r_x0": 319.8,
+          "r_y0": 273.36,
+          "r_x1": 419.996,
+          "r_y1": 273.36,
+          "r_x2": 419.996,
+          "r_y2": 285.0,
+          "r_x3": 319.8,
+          "r_y3": 285.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_51",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.8,
+        "t": 556.75,
+        "r": 419.996,
+        "b": 568.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        6750
+      ]
+    },
+    {
+      "native": {
+        "index": 52,
+        "rect": {
+          "r_x0": 424.996,
+          "r_y0": 277.514,
+          "r_x1": 434.116,
+          "r_y1": 277.514,
+          "r_x2": 434.116,
+          "r_y2": 286.634,
+          "r_x3": 424.996,
+          "r_y3": 286.634,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 424.996,
+        "t": 555.116,
+        "r": 434.116,
+        "b": 564.236,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 53,
+        "rect": {
+          "r_x0": 443.64,
+          "r_y0": 273.36,
+          "r_x1": 548.341,
+          "r_y1": 273.36,
+          "r_x2": 548.341,
+          "r_y2": 285.0,
+          "r_x3": 443.64,
+          "r_y3": 285.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_52",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.64,
+        "t": 556.75,
+        "r": 548.341,
+        "b": 568.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7883
+      ]
+    },
+    {
+      "native": {
+        "index": 54,
+        "rect": {
+          "r_x0": 551.996,
+          "r_y0": 277.486,
+          "r_x1": 561.116,
+          "r_y1": 277.486,
+          "r_x2": 561.116,
+          "r_y2": 286.605,
+          "r_x3": 551.996,
+          "r_y3": 286.605,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 551.996,
+        "t": 555.145,
+        "r": 561.116,
+        "b": 564.264,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 55,
+        "rect": {
+          "r_x0": 196.8,
+          "r_y0": 255.36,
+          "r_x1": 295.957,
+          "r_y1": 255.36,
+          "r_x2": 295.957,
+          "r_y2": 267.0,
+          "r_x3": 196.8,
+          "r_y3": 267.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Dahje eará báiki",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.8,
+        "t": 574.75,
+        "r": 295.957,
+        "b": 586.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        8086
+      ]
+    },
+    {
+      "native": {
+        "index": 56,
+        "rect": {
+          "r_x0": 301.811,
+          "r_y0": 259.668,
+          "r_x1": 310.931,
+          "r_y1": 259.668,
+          "r_x2": 310.931,
+          "r_y2": 268.788,
+          "r_x3": 301.811,
+          "r_y3": 268.788,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 301.811,
+        "t": 572.962,
+        "r": 310.931,
+        "b": 582.082,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 57,
+        "rect": {
+          "r_x0": 319.8,
+          "r_y0": 255.36,
+          "r_x1": 419.65,
+          "r_y1": 255.36,
+          "r_x2": 419.65,
+          "r_y2": 267.0,
+          "r_x3": 319.8,
+          "r_y3": 267.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Dahje eará báiki_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.8,
+        "t": 574.75,
+        "r": 419.65,
+        "b": 586.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        6225
+      ]
+    },
+    {
+      "native": {
+        "index": 58,
+        "rect": {
+          "r_x0": 425.292,
+          "r_y0": 259.935,
+          "r_x1": 434.221,
+          "r_y1": 259.935,
+          "r_x2": 434.221,
+          "r_y2": 268.864,
+          "r_x3": 425.292,
+          "r_y3": 268.864,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 425.292,
+        "t": 572.886,
+        "r": 434.221,
+        "b": 581.815,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 59,
+        "rect": {
+          "r_x0": 444.331,
+          "r_y0": 255.36,
+          "r_x1": 549.032,
+          "r_y1": 255.36,
+          "r_x2": 549.032,
+          "r_y2": 267.0,
+          "r_x3": 444.331,
+          "r_y3": 267.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Dahje eará báiki_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 444.331,
+        "t": 574.75,
+        "r": 549.032,
+        "b": 586.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7156
+      ]
+    },
+    {
+      "native": {
+        "index": 60,
+        "rect": {
+          "r_x0": 551.966,
+          "r_y0": 259.768,
+          "r_x1": 561.086,
+          "r_y1": 259.768,
+          "r_x2": 561.086,
+          "r_y2": 268.888,
+          "r_x3": 551.966,
+          "r_y3": 268.888,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 551.966,
+        "t": 572.8620000000001,
+        "r": 561.086,
+        "b": 581.982,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 61,
+        "rect": {
+          "r_x0": 197.28,
+          "r_y0": 220.44,
+          "r_x1": 318.0,
+          "r_y1": 220.44,
+          "r_x2": 318.0,
+          "r_y2": 249.24,
+          "r_x3": 197.28,
+          "r_y3": 249.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Almmut gos",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 197.28,
+        "t": 592.51,
+        "r": 318.0,
+        "b": 621.31,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4106
+      ]
+    },
+    {
+      "native": {
+        "index": 62,
+        "rect": {
+          "r_x0": 320.28,
+          "r_y0": 220.44,
+          "r_x1": 441.84,
+          "r_y1": 220.44,
+          "r_x2": 441.84,
+          "r_y2": 249.24,
+          "r_x3": 320.28,
+          "r_y3": 249.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Almmut gos_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 320.28,
+        "t": 592.51,
+        "r": 441.84,
+        "b": 621.31,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4305
+      ]
+    },
+    {
+      "native": {
+        "index": 63,
+        "rect": {
+          "r_x0": 444.12,
+          "r_y0": 220.44,
+          "r_x1": 565.68,
+          "r_y1": 220.44,
+          "r_x2": 565.68,
+          "r_y2": 249.24,
+          "r_x3": 444.12,
+          "r_y3": 249.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Almmut gos_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 444.12,
+        "t": 592.51,
+        "r": 565.68,
+        "b": 621.31,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4240
+      ]
+    },
+    {
+      "native": {
+        "index": 64,
+        "rect": {
+          "r_x0": 196.8,
+          "r_y0": 202.32,
+          "r_x1": 294.224,
+          "r_y1": 202.32,
+          "r_x2": 294.224,
+          "r_y2": 213.96,
+          "r_x3": 196.8,
+          "r_y3": 213.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_59",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.8,
+        "t": 627.79,
+        "r": 294.224,
+        "b": 639.4300000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7093
+      ]
+    },
+    {
+      "native": {
+        "index": 65,
+        "rect": {
+          "r_x0": 301.786,
+          "r_y0": 207.069,
+          "r_x1": 310.906,
+          "r_y1": 207.069,
+          "r_x2": 310.906,
+          "r_y2": 216.189,
+          "r_x3": 301.786,
+          "r_y3": 216.189,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 301.786,
+        "t": 625.561,
+        "r": 310.906,
+        "b": 634.681,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 66,
+        "rect": {
+          "r_x0": 319.8,
+          "r_y0": 202.32,
+          "r_x1": 420.836,
+          "r_y1": 202.32,
+          "r_x2": 420.836,
+          "r_y2": 213.96,
+          "r_x3": 319.8,
+          "r_y3": 213.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_60",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.8,
+        "t": 627.79,
+        "r": 420.836,
+        "b": 639.4300000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7962
+      ]
+    },
+    {
+      "native": {
+        "index": 67,
+        "rect": {
+          "r_x0": 424.946,
+          "r_y0": 206.693,
+          "r_x1": 434.066,
+          "r_y1": 206.693,
+          "r_x2": 434.066,
+          "r_y2": 215.813,
+          "r_x3": 424.946,
+          "r_y3": 215.813,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 424.946,
+        "t": 625.937,
+        "r": 434.066,
+        "b": 635.057,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 68,
+        "rect": {
+          "r_x0": 443.64,
+          "r_y0": 202.32,
+          "r_x1": 547.448,
+          "r_y1": 202.32,
+          "r_x2": 547.448,
+          "r_y2": 213.96,
+          "r_x3": 443.64,
+          "r_y3": 213.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_61",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.64,
+        "t": 627.79,
+        "r": 547.448,
+        "b": 639.4300000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7233
+      ]
+    },
+    {
+      "native": {
+        "index": 69,
+        "rect": {
+          "r_x0": 551.689,
+          "r_y0": 206.613,
+          "r_x1": 560.809,
+          "r_y1": 206.613,
+          "r_x2": 560.809,
+          "r_y2": 215.733,
+          "r_x3": 551.689,
+          "r_y3": 215.733,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/",
+        "widget_description": null,
+        "widget_field_name": "Box1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 551.689,
+        "t": 626.017,
+        "r": 560.809,
+        "b": 635.137,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 70,
+        "rect": {
+          "r_x0": 197.28,
+          "r_y0": 167.16,
+          "r_x1": 318.0,
+          "r_y1": 167.16,
+          "r_x2": 318.0,
+          "r_y2": 195.96,
+          "r_x3": 197.28,
+          "r_y3": 195.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_62",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 197.28,
+        "t": 645.79,
+        "r": 318.0,
+        "b": 674.59,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        8035
+      ]
+    },
+    {
+      "native": {
+        "index": 71,
+        "rect": {
+          "r_x0": 320.28,
+          "r_y0": 167.16,
+          "r_x1": 441.84,
+          "r_y1": 167.16,
+          "r_x2": 441.84,
+          "r_y2": 195.96,
+          "r_x3": 320.28,
+          "r_y3": 195.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_63",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 320.28,
+        "t": 645.79,
+        "r": 441.84,
+        "b": 674.59,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3300
+      ]
+    },
+    {
+      "native": {
+        "index": 72,
+        "rect": {
+          "r_x0": 444.12,
+          "r_y0": 167.16,
+          "r_x1": 565.68,
+          "r_y1": 167.16,
+          "r_x2": 565.68,
+          "r_y2": 195.96,
+          "r_x3": 444.12,
+          "r_y3": 195.96,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_64",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 444.12,
+        "t": 645.79,
+        "r": 565.68,
+        "b": 674.59,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3508
+      ]
+    },
+    {
+      "native": {
+        "index": 73,
+        "rect": {
+          "r_x0": 196.91,
+          "r_y0": 149.64,
+          "r_x1": 318.83,
+          "r_y1": 149.64,
+          "r_x2": 318.83,
+          "r_y2": 160.8,
+          "r_x3": 196.91,
+          "r_y3": 160.8,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Namma_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.91,
+        "t": 680.95,
+        "r": 318.83,
+        "b": 692.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4589
+      ]
+    },
+    {
+      "native": {
+        "index": 74,
+        "rect": {
+          "r_x0": 319.68,
+          "r_y0": 149.64,
+          "r_x1": 442.44,
+          "r_y1": 149.64,
+          "r_x2": 442.44,
+          "r_y2": 160.8,
+          "r_x3": 319.68,
+          "r_y3": 160.8,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Namma_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.68,
+        "t": 680.95,
+        "r": 442.44,
+        "b": 692.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4521
+      ]
+    },
+    {
+      "native": {
+        "index": 75,
+        "rect": {
+          "r_x0": 443.52,
+          "r_y0": 149.64,
+          "r_x1": 566.28,
+          "r_y1": 149.64,
+          "r_x2": 566.28,
+          "r_y2": 160.8,
+          "r_x3": 443.52,
+          "r_y3": 160.8,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Namma_4",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.52,
+        "t": 680.95,
+        "r": 566.28,
+        "b": 692.11,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3777
+      ]
+    },
+    {
+      "native": {
+        "index": 76,
+        "rect": {
+          "r_x0": 196.8,
+          "r_y0": 132.36,
+          "r_x1": 318.48,
+          "r_y1": 132.36,
+          "r_x2": 318.48,
+          "r_y2": 143.52,
+          "r_x3": 196.8,
+          "r_y3": 143.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Riegádannr",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.8,
+        "t": 698.23,
+        "r": 318.48,
+        "b": 709.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3710
+      ]
+    },
+    {
+      "native": {
+        "index": 77,
+        "rect": {
+          "r_x0": 319.8,
+          "r_y0": 132.36,
+          "r_x1": 442.32,
+          "r_y1": 132.36,
+          "r_x2": 442.32,
+          "r_y2": 143.52,
+          "r_x3": 319.8,
+          "r_y3": 143.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Riegádannr_2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.8,
+        "t": 698.23,
+        "r": 442.32,
+        "b": 709.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7376
+      ]
+    },
+    {
+      "native": {
+        "index": 78,
+        "rect": {
+          "r_x0": 443.64,
+          "r_y0": 132.36,
+          "r_x1": 566.16,
+          "r_y1": 132.36,
+          "r_x2": 566.16,
+          "r_y2": 143.52,
+          "r_x3": 443.64,
+          "r_y3": 143.52,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Riegádannr_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.64,
+        "t": 698.23,
+        "r": 566.16,
+        "b": 709.39,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2502
+      ]
+    },
+    {
+      "native": {
+        "index": 79,
+        "rect": {
+          "r_x0": 196.68,
+          "r_y0": 115.08,
+          "r_x1": 318.6,
+          "r_y1": 115.08,
+          "r_x2": 318.6,
+          "r_y2": 126.12,
+          "r_x3": 196.68,
+          "r_y3": 126.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_71",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.68,
+        "t": 715.63,
+        "r": 318.6,
+        "b": 726.67,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4455
+      ]
+    },
+    {
+      "native": {
+        "index": 80,
+        "rect": {
+          "r_x0": 319.68,
+          "r_y0": 115.08,
+          "r_x1": 442.44,
+          "r_y1": 115.08,
+          "r_x2": 442.44,
+          "r_y2": 126.12,
+          "r_x3": 319.68,
+          "r_y3": 126.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_72",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 319.68,
+        "t": 715.63,
+        "r": 442.44,
+        "b": 726.67,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4048
+      ]
+    },
+    {
+      "native": {
+        "index": 81,
+        "rect": {
+          "r_x0": 443.52,
+          "r_y0": 115.08,
+          "r_x1": 566.28,
+          "r_y1": 115.08,
+          "r_x2": 566.28,
+          "r_y2": 126.12,
+          "r_x3": 443.52,
+          "r_y3": 126.12,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_73",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.52,
+        "t": 715.63,
+        "r": 566.28,
+        "b": 726.67,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3442
+      ]
+    },
+    {
+      "native": {
+        "index": 82,
+        "rect": {
+          "r_x0": 196.489,
+          "r_y0": 97.2685,
+          "r_x1": 223.129,
+          "r_y1": 97.2685,
+          "r_x2": 223.129,
+          "r_y2": 108.308,
+          "r_x3": 196.489,
+          "r_y3": 108.308,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastanr_1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 196.489,
+        "t": 733.442,
+        "r": 223.129,
+        "b": 744.4815,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        5128
+      ]
+    },
+    {
+      "native": {
+        "index": 83,
+        "rect": {
+          "r_x0": 224.329,
+          "r_y0": 97.2685,
+          "r_x1": 319.249,
+          "r_y1": 97.2685,
+          "r_x2": 319.249,
+          "r_y2": 108.308,
+          "r_x3": 224.329,
+          "r_y3": 108.308,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastabáiki_1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 224.329,
+        "t": 733.442,
+        "r": 319.249,
+        "b": 744.4815,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        5063
+      ]
+    },
+    {
+      "native": {
+        "index": 84,
+        "rect": {
+          "r_x0": 320.151,
+          "r_y0": 96.8421,
+          "r_x1": 346.791,
+          "r_y1": 96.8421,
+          "r_x2": 346.791,
+          "r_y2": 107.882,
+          "r_x3": 320.151,
+          "r_y3": 107.882,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastanr_2A",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 320.151,
+        "t": 733.8679999999999,
+        "r": 346.791,
+        "b": 744.9079,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2103
+      ]
+    },
+    {
+      "native": {
+        "index": 85,
+        "rect": {
+          "r_x0": 347.991,
+          "r_y0": 96.8421,
+          "r_x1": 442.911,
+          "r_y1": 96.8421,
+          "r_x2": 442.911,
+          "r_y2": 107.882,
+          "r_x3": 347.991,
+          "r_y3": 107.882,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastabáiki_2B",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 347.991,
+        "t": 733.8679999999999,
+        "r": 442.911,
+        "b": 744.9079,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2170
+      ]
+    },
+    {
+      "native": {
+        "index": 86,
+        "rect": {
+          "r_x0": 443.52,
+          "r_y0": 97.8,
+          "r_x1": 470.16,
+          "r_y1": 97.8,
+          "r_x2": 470.16,
+          "r_y2": 108.84,
+          "r_x3": 443.52,
+          "r_y3": 108.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastanr_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 443.52,
+        "t": 732.91,
+        "r": 470.16,
+        "b": 743.95,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3922
+      ]
+    },
+    {
+      "native": {
+        "index": 87,
+        "rect": {
+          "r_x0": 471.36,
+          "r_y0": 97.8,
+          "r_x1": 566.28,
+          "r_y1": 97.8,
+          "r_x2": 566.28,
+          "r_y2": 108.84,
+          "r_x3": 471.36,
+          "r_y3": 108.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Boastabáiki_3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 471.36,
+        "t": 732.91,
+        "r": 566.28,
+        "b": 743.95,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3989
+      ]
+    },
+    {
+      "native": {
+        "index": 88,
+        "rect": {
+          "r_x0": 249.96,
+          "r_y0": 85.32,
+          "r_x1": 259.08,
+          "r_y1": 85.32,
+          "r_x2": 259.08,
+          "r_y2": 94.44,
+          "r_x3": 249.96,
+          "r_y3": 94.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Jua",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 249.96,
+        "t": 747.31,
+        "r": 259.08,
+        "b": 756.4300000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4199
+      ]
+    },
+    {
+      "native": {
+        "index": 89,
+        "rect": {
+          "r_x0": 283.2,
+          "r_y0": 86.04,
+          "r_x1": 292.2,
+          "r_y1": 86.04,
+          "r_x2": 292.2,
+          "r_y2": 95.04,
+          "r_x3": 283.2,
+          "r_y3": 95.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Ii",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 283.2,
+        "t": 746.71,
+        "r": 292.2,
+        "b": 755.71,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        5003
+      ]
+    },
+    {
+      "native": {
+        "index": 90,
+        "rect": {
+          "r_x0": 363.36,
+          "r_y0": 85.2,
+          "r_x1": 372.36,
+          "r_y1": 85.2,
+          "r_x2": 372.36,
+          "r_y2": 94.32,
+          "r_x3": 363.36,
+          "r_y3": 94.32,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "undefined",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 363.36,
+        "t": 747.4300000000001,
+        "r": 372.36,
+        "b": 756.55,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2241
+      ]
+    },
+    {
+      "native": {
+        "index": 91,
+        "rect": {
+          "r_x0": 395.76,
+          "r_y0": 85.44,
+          "r_x1": 404.76,
+          "r_y1": 85.44,
+          "r_x2": 404.76,
+          "r_y2": 94.44,
+          "r_x3": 395.76,
+          "r_y3": 94.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "undefined_2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 395.76,
+        "t": 747.31,
+        "r": 404.76,
+        "b": 756.31,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        2982
+      ]
+    },
+    {
+      "native": {
+        "index": 92,
+        "rect": {
+          "r_x0": 497.16,
+          "r_y0": 85.32,
+          "r_x1": 506.28,
+          "r_y1": 85.32,
+          "r_x2": 506.28,
+          "r_y2": 94.44,
+          "r_x3": 497.16,
+          "r_y3": 94.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Jua_2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 497.16,
+        "t": 747.31,
+        "r": 506.28,
+        "b": 756.4300000000001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1583
+      ]
+    },
+    {
+      "native": {
+        "index": 93,
+        "rect": {
+          "r_x0": 530.4,
+          "r_y0": 86.04,
+          "r_x1": 539.4,
+          "r_y1": 86.04,
+          "r_x2": 539.4,
+          "r_y2": 95.04,
+          "r_x3": 530.4,
+          "r_y3": 95.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "Ii_2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 530.4,
+        "t": 746.71,
+        "r": 539.4,
+        "b": 755.71,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3388
+      ]
+    },
+    {
+      "native": {
+        "index": 94,
+        "rect": {
+          "r_x0": 48.6,
+          "r_y0": 44.28,
+          "r_x1": 143.16,
+          "r_y1": 44.28,
+          "r_x2": 143.16,
+          "r_y2": 71.3003,
+          "r_x3": 48.6,
+          "r_y3": 71.3003,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "Beaivi",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 48.6,
+        "t": 770.4497,
+        "r": 143.16,
+        "b": 797.47,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        4942
+      ]
+    },
+    {
+      "native": {
+        "index": 95,
+        "rect": {
+          "r_x0": 144.274,
+          "r_y0": 44.966,
+          "r_x1": 565.234,
+          "r_y1": 44.966,
+          "r_x2": 565.234,
+          "r_y2": 71.9863,
+          "r_x3": 144.274,
+          "r_y3": 71.9863,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "fill_79",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 0,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 144.274,
+        "t": 769.7637,
+        "r": 565.234,
+        "b": 796.784,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        3663
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 201,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "Geaidnočujuhus",
+      "bbox": {
+        "l": 49.275,
+        "t": 199.64599999999996,
+        "r": 95.97100000000009,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1462,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "Gávpečujuhus",
+      "bbox": {
+        "l": 243.6,
+        "t": 223.67600000000004,
+        "r": 284.8164999999998,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.007278638409374871,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1583,
+      "kind": "option_caption",
+      "widget_indices": [
+        92
+      ],
+      "text": "Jua",
+      "bbox": {
+        "l": 485.95,
+        "t": 749.071,
+        "r": 499.74949999999995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2103,
+      "kind": "field_key",
+      "widget_indices": [
+        84
+      ],
+      "text": "Boastanr.",
+      "bbox": {
+        "l": 319.63,
+        "t": 728.566,
+        "r": 349.1594999999998,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      }
+    },
+    {
+      "id": 2170,
+      "kind": "field_key",
+      "widget_indices": [
+        85
+      ],
+      "text": "Boastabáiki",
+      "bbox": {
+        "l": 319.63,
+        "t": 736.076,
+        "r": 354.957,
+        "b": 741.8202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      }
+    },
+    {
+      "id": 2241,
+      "kind": "option_caption",
+      "widget_indices": [
+        90
+      ],
+      "text": "Jua",
+      "bbox": {
+        "l": 351.65,
+        "t": 749.071,
+        "r": 365.44949999999994,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2502,
+      "kind": "field_key",
+      "widget_indices": [
+        78
+      ],
+      "text": "Riegádannr.",
+      "bbox": {
+        "l": 443.45,
+        "t": 693.796,
+        "r": 480.757,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0025464390060846442,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2528,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "Rehketdoalli namma",
+      "bbox": {
+        "l": 49.275,
+        "t": 223.67600000000004,
+        "r": 110.357,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2593,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "Boastabáiki",
+      "bbox": {
+        "l": 443.45,
+        "t": 199.64599999999996,
+        "r": 478.757,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004390064293199658,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2982,
+      "kind": "option_caption",
+      "widget_indices": [
+        91
+      ],
+      "text": "Ii",
+      "bbox": {
+        "l": 381.8684999999999,
+        "t": 749.071,
+        "r": 390.737,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6283123002932727,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 2996,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "Boastabáiki",
+      "bbox": {
+        "l": 443.45,
+        "t": 223.67600000000004,
+        "r": 478.757,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004390064293199658,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3055,
+      "kind": "field_key",
+      "widget_indices": [
+        2
+      ],
+      "text": "Riegádannummar",
+      "bbox": {
+        "l": 471.2,
+        "t": 176.14599999999996,
+        "r": 524.777,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.003732945107042529,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3125,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "Boastanr.",
+      "bbox": {
+        "l": 399.18,
+        "t": 199.64599999999996,
+        "r": 428.7094999999998,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.005079666096615476,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3193,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "Organisašunnummar",
+      "bbox": {
+        "l": 369.65,
+        "t": 176.14599999999996,
+        "r": 429.99599999999947,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004557054320087628,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3300,
+      "kind": "field_key",
+      "widget_indices": [
+        71
+      ],
+      "text": "Čilges eambbo:",
+      "bbox": {
+        "l": 319.63,
+        "t": 641.296,
+        "r": 364.64249999999976,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0072202166064979645,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3388,
+      "kind": "option_caption",
+      "widget_indices": [
+        93
+      ],
+      "text": "Ii",
+      "bbox": {
+        "l": 516.1685,
+        "t": 749.071,
+        "r": 525.037,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6594013176375572,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3442,
+      "kind": "field_key",
+      "widget_indices": [
+        81
+      ],
+      "text": "Čujuhus",
+      "bbox": {
+        "l": 443.45,
+        "t": 711.296,
+        "r": 466.92800000000005,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0014907573047106548,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3508,
+      "kind": "field_key",
+      "widget_indices": [
+        72
+      ],
+      "text": "Čilges eambbo:",
+      "bbox": {
+        "l": 443.45,
+        "t": 641.296,
+        "r": 488.46249999999975,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.007442377117467591,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3540,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "Boastanr.",
+      "bbox": {
+        "l": 399.18,
+        "t": 223.67600000000004,
+        "r": 428.72700000000003,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.005076657528683304,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3663,
+      "kind": "field_key",
+      "widget_indices": [
+        95
+      ],
+      "text": "Vuolláičála",
+      "bbox": {
+        "l": 144.55,
+        "t": 772.571,
+        "r": 175.8735000000002,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3710,
+      "kind": "field_key",
+      "widget_indices": [
+        76
+      ],
+      "text": "Riegádannr.",
+      "bbox": {
+        "l": 196.08,
+        "t": 693.796,
+        "r": 233.40699999999998,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.009644493262249865,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3777,
+      "kind": "field_key",
+      "widget_indices": [
+        75
+      ],
+      "text": "Namma",
+      "bbox": {
+        "l": 443.45,
+        "t": 676.546,
+        "r": 468.007,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0014252555279552492,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 3922,
+      "kind": "field_key",
+      "widget_indices": [
+        86
+      ],
+      "text": "Boastanr",
+      "bbox": {
+        "l": 443.45,
+        "t": 728.566,
+        "r": 469.0989999999998,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0013645756169829992,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      }
+    },
+    {
+      "id": 3989,
+      "kind": "field_key",
+      "widget_indices": [
+        87
+      ],
+      "text": "Boastabáiki",
+      "bbox": {
+        "l": 471.2,
+        "t": 728.566,
+        "r": 506.53700000000003,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002263916008716449,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      }
+    },
+    {
+      "id": 4048,
+      "kind": "field_key",
+      "widget_indices": [
+        80
+      ],
+      "text": "Čujuhus",
+      "bbox": {
+        "l": 319.63,
+        "t": 711.296,
+        "r": 343.10800000000006,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.001064826646222261,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4106,
+      "kind": "field_key",
+      "widget_indices": [
+        61
+      ],
+      "text": "Almmut gos:",
+      "bbox": {
+        "l": 196.08,
+        "t": 588.266,
+        "r": 233.90699999999998,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.015861686097231986,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4199,
+      "kind": "option_caption",
+      "widget_indices": [
+        88
+      ],
+      "text": "Jua",
+      "bbox": {
+        "l": 238.6,
+        "t": 749.071,
+        "r": 252.3995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4240,
+      "kind": "field_key",
+      "widget_indices": [
+        63
+      ],
+      "text": "Almmut gos:",
+      "bbox": {
+        "l": 443.45,
+        "t": 588.266,
+        "r": 481.257,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.008860792974846154,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4305,
+      "kind": "field_key",
+      "widget_indices": [
+        62
+      ],
+      "text": "Almmut gos:",
+      "bbox": {
+        "l": 319.63,
+        "t": 588.266,
+        "r": 357.457,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.00859174663600043,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4339,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "Namma",
+      "bbox": {
+        "l": 49.275,
+        "t": 176.14599999999996,
+        "r": 73.83200000000001,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4455,
+      "kind": "field_key",
+      "widget_indices": [
+        79
+      ],
+      "text": "Čujuhus",
+      "bbox": {
+        "l": 196.08,
+        "t": 711.296,
+        "r": 219.55799999999996,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.012777919754663858,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4521,
+      "kind": "field_key",
+      "widget_indices": [
+        74
+      ],
+      "text": "Namma",
+      "bbox": {
+        "l": 319.63,
+        "t": 676.546,
+        "r": 344.207,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0010172112137366573,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4589,
+      "kind": "field_key",
+      "widget_indices": [
+        73
+      ],
+      "text": "Namma",
+      "bbox": {
+        "l": 196.08,
+        "t": 676.546,
+        "r": 220.65699999999998,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.01688570614802426,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4624,
+      "kind": "option_caption",
+      "widget_indices": [
+        10
+      ],
+      "text": "(bálkkolaččat guđet gáibidit ges sosa fidnobiilla ovddas rehketdoalu mielde geavahit skovi vearrodieđáhusa mielddusin)",
+      "bbox": {
+        "l": 319.63,
+        "t": 247.67600000000004,
+        "r": 513.1924999999995,
+        "b": 260.91021878453046,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3074200537894607,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 4942,
+      "kind": "field_key",
+      "widget_indices": [
+        94
+      ],
+      "text": "Beaivi",
+      "bbox": {
+        "l": 49.275,
+        "t": 772.571,
+        "r": 68.83200000000001,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 5003,
+      "kind": "option_caption",
+      "widget_indices": [
+        89
+      ],
+      "text": "Ii",
+      "bbox": {
+        "l": 268.8185,
+        "t": 749.071,
+        "r": 277.687,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6728156723550851,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 5063,
+      "kind": "field_key",
+      "widget_indices": [
+        83
+      ],
+      "text": "báiki",
+      "bbox": {
+        "l": 243.6,
+        "t": 728.566,
+        "r": 258.65700000000004,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 5128,
+      "kind": "field_key",
+      "widget_indices": [
+        82
+      ],
+      "text": "Boastanr. Boasta",
+      "bbox": {
+        "l": 196.08,
+        "t": 728.566,
+        "r": 225.60950000000005,
+        "b": 741.8202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 5617,
+      "kind": "field_key",
+      "widget_indices": [
+        43
+      ],
+      "text": "Ruovttučujuhus",
+      "bbox": {
+        "l": 196.08,
+        "t": 534.246,
+        "r": 240.54000000000008,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0080971659919028,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 5682,
+      "kind": "option_caption",
+      "widget_indices": [
+        12
+      ],
+      "text": "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)",
+      "bbox": {
+        "l": 319.63,
+        "t": 280.92600000000004,
+        "r": 460.257,
+        "b": 286.67021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3108520051208052,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 6017,
+      "kind": "field_key",
+      "widget_indices": [
+        47
+      ],
+      "text": "Ruovttučujuhus",
+      "bbox": {
+        "l": 443.45,
+        "t": 534.246,
+        "r": 487.90999999999974,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002136752136752129,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 6225,
+      "kind": "field_key",
+      "widget_indices": [
+        57
+      ],
+      "text": "Dahje eará báiki",
+      "bbox": {
+        "l": 319.63,
+        "t": 570.2660000000001,
+        "r": 368.457,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0017408401089562542,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 6282,
+      "kind": "field_key",
+      "widget_indices": [
+        45
+      ],
+      "text": "Ruovttučujuhus",
+      "bbox": {
+        "l": 319.63,
+        "t": 534.246,
+        "r": 364.08999999999975,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004678362573099393,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 6542,
+      "kind": "option_caption",
+      "widget_indices": [
+        11
+      ],
+      "text": "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+      "bbox": {
+        "l": 319.63,
+        "t": 262.67600000000004,
+        "r": 516.4775000000002,
+        "b": 268.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3074200537894607,
+        "alignment": 0.1173353636555608,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 6750,
+      "kind": "field_key",
+      "widget_indices": [
+        51
+      ],
+      "text": "Doaimma čujuhus",
+      "bbox": {
+        "l": 319.63,
+        "t": 552.2660000000001,
+        "r": 371.32449999999966,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.001644275503196846,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7093,
+      "kind": "field_key",
+      "widget_indices": [
+        64
+      ],
+      "text": "Máŋgga bisánansajis",
+      "bbox": {
+        "l": 196.08,
+        "t": 623.2760000000001,
+        "r": 257.0045000000001,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0059089528843075945,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7156,
+      "kind": "field_key",
+      "widget_indices": [
+        59
+      ],
+      "text": "Dahje eará báiki",
+      "bbox": {
+        "l": 443.45,
+        "t": 570.2660000000001,
+        "r": 492.257,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.00902534472514216,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7233,
+      "kind": "field_key",
+      "widget_indices": [
+        68
+      ],
+      "text": "Máŋgga bisánansajis",
+      "bbox": {
+        "l": 443.45,
+        "t": 623.2760000000001,
+        "r": 504.3744999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0015593070111367124,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7283,
+      "kind": "field_key",
+      "widget_indices": [
+        50
+      ],
+      "text": "Doaimma čujuhus",
+      "bbox": {
+        "l": 196.08,
+        "t": 552.2660000000001,
+        "r": 247.7745000000001,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0069639903664799885,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7376,
+      "kind": "field_key",
+      "widget_indices": [
+        77
+      ],
+      "text": "Riegádannr.",
+      "bbox": {
+        "l": 319.63,
+        "t": 693.796,
+        "r": 356.957,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002277172020253626,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7883,
+      "kind": "field_key",
+      "widget_indices": [
+        53
+      ],
+      "text": "Doaimma čujuhus",
+      "bbox": {
+        "l": 443.45,
+        "t": 552.2660000000001,
+        "r": 495.14449999999965,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0018377196800433149,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 7962,
+      "kind": "field_key",
+      "widget_indices": [
+        66
+      ],
+      "text": "Máŋgga bisánansajis",
+      "bbox": {
+        "l": 319.63,
+        "t": 623.2760000000001,
+        "r": 380.5544999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0013951694310171958,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 8035,
+      "kind": "field_key",
+      "widget_indices": [
+        70
+      ],
+      "text": "Čilges eambbo:",
+      "bbox": {
+        "l": 196.08,
+        "t": 641.296,
+        "r": 241.0925000000001,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.013329630658150349,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 8086,
+      "kind": "field_key",
+      "widget_indices": [
+        55
+      ],
+      "text": "Dahje eará báiki",
+      "bbox": {
+        "l": 196.08,
+        "t": 570.2660000000001,
+        "r": 244.90699999999998,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0073729698732258875,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 8261,
+      "kind": "choice_group",
+      "widget_indices": [
+        10,
+        11,
+        12
+      ],
+      "text": "Russes jus skovvi lea vearrodieđáhusa dahje ealáhusdieđáhusa mielddus.",
+      "bbox": {
+        "l": 49.275,
+        "t": 247.67600000000004,
+        "r": 180.9390000000001,
+        "b": 260.91021878453046,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "question_gap": 0.21832342901372528,
+        "supported_repetition": -1.3333333333333333,
+        "intervening_blocks": 0.0,
+        "prompt_fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "Namma",
+      "predicted": "Namma",
+      "expected_bbox": {
+        "l": 49.275,
+        "t": 176.14599999999996,
+        "r": 73.83200000000001,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 49.275,
+        "t": 176.14599999999996,
+        "r": 73.83200000000001,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "Organisašunnummar",
+      "predicted": "Organisašunnummar",
+      "expected_bbox": {
+        "l": 369.65,
+        "t": 176.14599999999996,
+        "r": 429.99599999999947,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 369.65,
+        "t": 176.14599999999996,
+        "r": 429.99599999999947,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004557054320087628,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 2,
+      "status": "correct",
+      "expected": "Riegádannummar",
+      "predicted": "Riegádannummar",
+      "expected_bbox": {
+        "l": 471.2,
+        "t": 176.14599999999996,
+        "r": 524.777,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 471.2,
+        "t": 176.14599999999996,
+        "r": 524.777,
+        "b": 181.89021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.003732945107042529,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "Geaidnočujuhus",
+      "predicted": "Geaidnočujuhus",
+      "expected_bbox": {
+        "l": 49.275,
+        "t": 199.64599999999996,
+        "r": 95.97100000000009,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 49.275,
+        "t": 199.64599999999996,
+        "r": 95.97100000000009,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "Boastanr.",
+      "predicted": "Boastanr.",
+      "expected_bbox": {
+        "l": 399.18,
+        "t": 199.64599999999996,
+        "r": 428.7094999999998,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 399.18,
+        "t": 199.64599999999996,
+        "r": 428.7094999999998,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.005079666096615476,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "Boastabáiki",
+      "predicted": "Boastabáiki",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 199.64599999999996,
+        "r": 478.757,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 199.64599999999996,
+        "r": 478.757,
+        "b": 205.39021878453036,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004390064293199658,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "Rehketdoalli namma",
+      "predicted": "Rehketdoalli namma",
+      "expected_bbox": {
+        "l": 49.275,
+        "t": 223.67600000000004,
+        "r": 110.357,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 49.275,
+        "t": 223.67600000000004,
+        "r": 110.357,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "Gávpečujuhus",
+      "predicted": "Gávpečujuhus",
+      "expected_bbox": {
+        "l": 243.6,
+        "t": 223.67600000000004,
+        "r": 284.8164999999998,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 243.6,
+        "t": 223.67600000000004,
+        "r": 284.8164999999998,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.007278638409374871,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "Boastanr.",
+      "predicted": "Boastanr.",
+      "expected_bbox": {
+        "l": 399.18,
+        "t": 223.67600000000004,
+        "r": 428.72700000000003,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 399.18,
+        "t": 223.67600000000004,
+        "r": 428.72700000000003,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.005076657528683304,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "Boastabáiki",
+      "predicted": "Boastabáiki",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 223.67600000000004,
+        "r": 478.757,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 223.67600000000004,
+        "r": 478.757,
+        "b": 229.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004390064293199658,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "wrong",
+      "expected": "Vearrodieđáhusa",
+      "predicted": "(bálkkolaččat guđet gáibidit ges sosa fidnobiilla ovddas rehketdoalu mielde geavahit skovi vearrodieđáhusa mielddusin)",
+      "expected_bbox": {
+        "l": 212.85,
+        "t": 247.92600000000004,
+        "r": 262.1590000000001,
+        "b": 253.67021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 247.67600000000004,
+        "r": 513.1924999999995,
+        "b": 260.91021878453046,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3074200537894607,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 11,
+      "status": "wrong",
+      "expected": "Vierrodieđáhusa mas luvvejuvvo ealáhus- dieđáhusas",
+      "predicted": "(ealáhusdoallit guđiide gusket njuolggadusat ahte luvvejuvvoj it addit",
+      "expected_bbox": {
+        "l": 212.85,
+        "t": 258.92600000000004,
+        "r": 275.83500000000004,
+        "b": 279.67021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 262.67600000000004,
+        "r": 516.4775000000002,
+        "b": 268.42021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3074200537894607,
+        "alignment": 0.1173353636555608,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 12,
+      "status": "wrong",
+      "expected": "Ealáhusdieđáhusa",
+      "predicted": "(Ealáhusdoallit atnet skovi ealáhusa mielddusin)",
+      "expected_bbox": {
+        "l": 213.85,
+        "t": 281.42600000000004,
+        "r": 267.1565,
+        "b": 287.17021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 280.92600000000004,
+        "r": 460.257,
+        "b": 286.67021878453045,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.3108520051208052,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 13,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 14,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 15,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 16,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 17,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 18,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 19,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 20,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 21,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 22,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 23,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 24,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 25,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 26,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 27,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 28,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 29,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 30,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 31,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 32,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 33,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 34,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 35,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 36,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 37,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 38,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 39,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 40,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 41,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 42,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 43,
+      "status": "correct",
+      "expected": "Ruovttučujuhus",
+      "predicted": "Ruovttučujuhus",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 534.246,
+        "r": 240.54000000000008,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 534.246,
+        "r": 240.54000000000008,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0080971659919028,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 44,
+      "status": "unassigned",
+      "expected": "Ruovttučujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 534.246,
+        "r": 240.54000000000008,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 45,
+      "status": "correct",
+      "expected": "Ruovttučujuhus",
+      "predicted": "Ruovttučujuhus",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 534.246,
+        "r": 364.08999999999975,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 534.246,
+        "r": 364.08999999999975,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.004678362573099393,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 46,
+      "status": "unassigned",
+      "expected": "Ruovttučujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 534.246,
+        "r": 364.08999999999975,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 47,
+      "status": "correct",
+      "expected": "Ruovttučujuhus",
+      "predicted": "Ruovttučujuhus",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 534.246,
+        "r": 487.90999999999974,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 534.246,
+        "r": 487.90999999999974,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002136752136752129,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 48,
+      "status": "unassigned",
+      "expected": "Ruovttučujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 534.246,
+        "r": 487.90999999999974,
+        "b": 539.9902187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 49,
+      "status": "unassigned",
+      "expected": "Doaimma čujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 552.2660000000001,
+        "r": 247.7745000000001,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 50,
+      "status": "correct",
+      "expected": "Doaimma čujuhus",
+      "predicted": "Doaimma čujuhus",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 552.2660000000001,
+        "r": 247.7745000000001,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 552.2660000000001,
+        "r": 247.7745000000001,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0069639903664799885,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 51,
+      "status": "correct",
+      "expected": "Doaimma čujuhus",
+      "predicted": "Doaimma čujuhus",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 552.2660000000001,
+        "r": 371.32449999999966,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 552.2660000000001,
+        "r": 371.32449999999966,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.001644275503196846,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 52,
+      "status": "unassigned",
+      "expected": "Doaimma čujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 552.2660000000001,
+        "r": 371.32449999999966,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 53,
+      "status": "correct",
+      "expected": "Doaimma čujuhus",
+      "predicted": "Doaimma čujuhus",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 552.2660000000001,
+        "r": 495.14449999999965,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 552.2660000000001,
+        "r": 495.14449999999965,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0018377196800433149,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 54,
+      "status": "unassigned",
+      "expected": "Doaimma čujuhus",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 552.2660000000001,
+        "r": 495.14449999999965,
+        "b": 558.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 55,
+      "status": "correct",
+      "expected": "Dahje eará báiki",
+      "predicted": "Dahje eará báiki",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 570.2660000000001,
+        "r": 244.90699999999998,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 570.2660000000001,
+        "r": 244.90699999999998,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0073729698732258875,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 56,
+      "status": "unassigned",
+      "expected": "Dahje eará báiki",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 570.2660000000001,
+        "r": 244.90699999999998,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 57,
+      "status": "correct",
+      "expected": "Dahje eará báiki",
+      "predicted": "Dahje eará báiki",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 570.2660000000001,
+        "r": 368.457,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 570.2660000000001,
+        "r": 368.457,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0017408401089562542,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 58,
+      "status": "unassigned",
+      "expected": "Dahje eará báiki",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 570.2660000000001,
+        "r": 368.457,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 59,
+      "status": "correct",
+      "expected": "Dahje eará báiki",
+      "predicted": "Dahje eará báiki",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 570.2660000000001,
+        "r": 492.257,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 570.2660000000001,
+        "r": 492.257,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.00902534472514216,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 60,
+      "status": "unassigned",
+      "expected": "Dahje eará báiki",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 570.2660000000001,
+        "r": 492.257,
+        "b": 576.0102187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 61,
+      "status": "correct",
+      "expected": "Almmut gos:",
+      "predicted": "Almmut gos:",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 588.266,
+        "r": 233.90699999999998,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 588.266,
+        "r": 233.90699999999998,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.015861686097231986,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 62,
+      "status": "correct",
+      "expected": "Almmut gos:",
+      "predicted": "Almmut gos:",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 588.266,
+        "r": 357.457,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 588.266,
+        "r": 357.457,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.00859174663600043,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 63,
+      "status": "correct",
+      "expected": "Almmut gos:",
+      "predicted": "Almmut gos:",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 588.266,
+        "r": 481.257,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 588.266,
+        "r": 481.257,
+        "b": 594.0102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.008860792974846154,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 64,
+      "status": "correct",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "Máŋgga bisánansajis",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 623.2760000000001,
+        "r": 257.0045000000001,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 623.2760000000001,
+        "r": 257.0045000000001,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0059089528843075945,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 65,
+      "status": "unassigned",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 623.2760000000001,
+        "r": 257.0045000000001,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 66,
+      "status": "correct",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "Máŋgga bisánansajis",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 623.2760000000001,
+        "r": 380.5544999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 623.2760000000001,
+        "r": 380.5544999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0013951694310171958,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 67,
+      "status": "unassigned",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 623.2760000000001,
+        "r": 380.5544999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 68,
+      "status": "correct",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "Máŋgga bisánansajis",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 623.2760000000001,
+        "r": 504.3744999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 623.2760000000001,
+        "r": 504.3744999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0015593070111367124,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 69,
+      "status": "unassigned",
+      "expected": "Máŋgga bisánansajis",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 623.2760000000001,
+        "r": 504.3744999999995,
+        "b": 629.0202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 70,
+      "status": "correct",
+      "expected": "Čilges eambbo:",
+      "predicted": "Čilges eambbo:",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 641.296,
+        "r": 241.0925000000001,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 641.296,
+        "r": 241.0925000000001,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.013329630658150349,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 71,
+      "status": "correct",
+      "expected": "Čilges eambbo:",
+      "predicted": "Čilges eambbo:",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 641.296,
+        "r": 364.64249999999976,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 641.296,
+        "r": 364.64249999999976,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0072202166064979645,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 72,
+      "status": "correct",
+      "expected": "Čilges eambbo:",
+      "predicted": "Čilges eambbo:",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 641.296,
+        "r": 488.46249999999975,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 641.296,
+        "r": 488.46249999999975,
+        "b": 647.0402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.007442377117467591,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 73,
+      "status": "correct",
+      "expected": "Namma",
+      "predicted": "Namma",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 676.546,
+        "r": 220.65699999999998,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 676.546,
+        "r": 220.65699999999998,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.01688570614802426,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 74,
+      "status": "correct",
+      "expected": "Namma",
+      "predicted": "Namma",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 676.546,
+        "r": 344.207,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 676.546,
+        "r": 344.207,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0010172112137366573,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 75,
+      "status": "correct",
+      "expected": "Namma",
+      "predicted": "Namma",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 676.546,
+        "r": 468.007,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 676.546,
+        "r": 468.007,
+        "b": 682.2902187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0014252555279552492,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 76,
+      "status": "correct",
+      "expected": "Riegádannr.",
+      "predicted": "Riegádannr.",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 693.796,
+        "r": 233.40699999999998,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 693.796,
+        "r": 233.40699999999998,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.009644493262249865,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 77,
+      "status": "correct",
+      "expected": "Riegádannr.",
+      "predicted": "Riegádannr.",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 693.796,
+        "r": 356.957,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 693.796,
+        "r": 356.957,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002277172020253626,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 78,
+      "status": "correct",
+      "expected": "Riegádannr.",
+      "predicted": "Riegádannr.",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 693.796,
+        "r": 480.757,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 693.796,
+        "r": 480.757,
+        "b": 699.5402187845303,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0025464390060846442,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 79,
+      "status": "correct",
+      "expected": "Čujuhus",
+      "predicted": "Čujuhus",
+      "expected_bbox": {
+        "l": 196.08,
+        "t": 711.296,
+        "r": 219.55799999999996,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 711.296,
+        "r": 219.55799999999996,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.012777919754663858,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 80,
+      "status": "correct",
+      "expected": "Čujuhus",
+      "predicted": "Čujuhus",
+      "expected_bbox": {
+        "l": 319.63,
+        "t": 711.296,
+        "r": 343.10800000000006,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 711.296,
+        "r": 343.10800000000006,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.001064826646222261,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 81,
+      "status": "correct",
+      "expected": "Čujuhus",
+      "predicted": "Čujuhus",
+      "expected_bbox": {
+        "l": 443.45,
+        "t": 711.296,
+        "r": 466.92800000000005,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 711.296,
+        "r": 466.92800000000005,
+        "b": 717.0402187845305,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0014907573047106548,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 82,
+      "status": "correct",
+      "expected": "Boastanr.",
+      "predicted": "Boastanr. Boasta",
+      "expected_bbox": {
+        "l": 196.1,
+        "t": 728.6,
+        "r": 225.6,
+        "b": 734.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 196.08,
+        "t": 728.566,
+        "r": 225.60950000000005,
+        "b": 741.8202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 83,
+      "status": "correct",
+      "expected": "báiki",
+      "predicted": "báiki",
+      "expected_bbox": {
+        "l": 243.6,
+        "t": 728.566,
+        "r": 258.65700000000004,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 243.6,
+        "t": 728.566,
+        "r": 258.65700000000004,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Boastabáiki is printed in two separated fragments. This anchor uses the unambiguous báiki fragment above the postal-place field; Boastanr. labels the adjacent postal-code field.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 84,
+      "status": "correct",
+      "expected": "Boastanr.",
+      "predicted": "Boastanr.",
+      "expected_bbox": {
+        "l": 319.6,
+        "t": 728.6,
+        "r": 349.2,
+        "b": 734.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 728.566,
+        "r": 349.1594999999998,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 85,
+      "status": "correct",
+      "expected": "Boastabáiki",
+      "predicted": "Boastabáiki",
+      "expected_bbox": {
+        "l": 319.6,
+        "t": 736.1,
+        "r": 355.0,
+        "b": 741.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 319.63,
+        "t": 736.076,
+        "r": 354.957,
+        "b": 741.8202187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 86,
+      "status": "correct",
+      "expected": "Boastanr.",
+      "predicted": "Boastanr",
+      "expected_bbox": {
+        "l": 443.4,
+        "t": 728.6,
+        "r": 472.5,
+        "b": 734.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 443.45,
+        "t": 728.566,
+        "r": 469.0989999999998,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0013645756169829992,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 87,
+      "status": "correct",
+      "expected": "Boastabáiki",
+      "predicted": "Boastabáiki",
+      "expected_bbox": {
+        "l": 468.5,
+        "t": 728.6,
+        "r": 506.5,
+        "b": 734.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 471.2,
+        "t": 728.566,
+        "r": 506.53700000000003,
+        "b": 734.3102187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.002263916008716449,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.5
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 88,
+      "status": "correct",
+      "expected": "Jua",
+      "predicted": "Jua",
+      "expected_bbox": {
+        "l": 238.6,
+        "t": 749.071,
+        "r": 252.3995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 238.6,
+        "t": 749.071,
+        "r": 252.3995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 89,
+      "status": "correct",
+      "expected": "Ii",
+      "predicted": "Ii",
+      "expected_bbox": {
+        "l": 268.8185,
+        "t": 749.071,
+        "r": 277.687,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 268.8185,
+        "t": 749.071,
+        "r": 277.687,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6728156723550851,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 90,
+      "status": "correct",
+      "expected": "Jua",
+      "predicted": "Jua",
+      "expected_bbox": {
+        "l": 351.65,
+        "t": 749.071,
+        "r": 365.44949999999994,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 351.65,
+        "t": 749.071,
+        "r": 365.44949999999994,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 91,
+      "status": "correct",
+      "expected": "Ii",
+      "predicted": "Ii",
+      "expected_bbox": {
+        "l": 381.8684999999999,
+        "t": 749.071,
+        "r": 390.737,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 381.8684999999999,
+        "t": 749.071,
+        "r": 390.737,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6283123002932727,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 92,
+      "status": "correct",
+      "expected": "Jua",
+      "predicted": "Jua",
+      "expected_bbox": {
+        "l": 485.95,
+        "t": 749.071,
+        "r": 499.74949999999995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 485.95,
+        "t": 749.071,
+        "r": 499.74949999999995,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 93,
+      "status": "correct",
+      "expected": "Ii",
+      "predicted": "Ii",
+      "expected_bbox": {
+        "l": 516.1685,
+        "t": 749.071,
+        "r": 525.037,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 516.1685,
+        "t": 749.071,
+        "r": 525.037,
+        "b": 754.8152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6594013176375572,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        0
+      ]
+    },
+    {
+      "widget_index": 94,
+      "status": "correct",
+      "expected": "Beaivi",
+      "predicted": "Beaivi",
+      "expected_bbox": {
+        "l": 49.275,
+        "t": 772.571,
+        "r": 68.83200000000001,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 49.275,
+        "t": 772.571,
+        "r": 68.83200000000001,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 95,
+      "status": "correct",
+      "expected": "Vuolláičála",
+      "predicted": "Vuolláičála",
+      "expected_bbox": {
+        "l": 144.55,
+        "t": 772.571,
+        "r": 175.8735000000002,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 144.55,
+        "t": 772.571,
+        "r": 175.8735000000002,
+        "b": 778.3152187845304,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "correct": 51,
+    "wrong": 3,
+    "excluded by table rule": 30,
+    "unassigned": 12
+  },
+  "groups": {}
+}

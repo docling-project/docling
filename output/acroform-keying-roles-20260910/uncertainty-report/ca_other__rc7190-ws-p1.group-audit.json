@@ -1,0 +1,148 @@
+{
+  "raw_objective": 2.148788895719642,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "prompt": "Application type ( tick one box ). The application type is the same as you entered on Form GST190.",
+        "prompt_bbox": {
+          "l": 34.97,
+          "t": 236.24399999999991,
+          "r": 259.52000000000004,
+          "b": 256.5856883116883,
+          "coord_origin": "TOPLEFT"
+        },
+        "parent_widget": null,
+        "captions": [
+          "Type 1A",
+          "Type 1B",
+          "Type 2",
+          "Type 3",
+          "Type 5"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_groups": []
+    },
+    {
+      "selected": {
+        "widgets": [
+          6,
+          7,
+          8
+        ],
+        "prompt": "Type of rebate ( tick one box ) and the proper calculation to complete.",
+        "prompt_bbox": {
+          "l": 34.97,
+          "t": 368.245,
+          "r": 240.62000000000006,
+          "b": 388.5866883116883,
+          "coord_origin": "TOPLEFT"
+        },
+        "parent_widget": null,
+        "captions": [
+          "For a Type 1A or Type 2 rebate, fill out Section 1.",
+          "For a Type 1B or Type 5 rebate, fill out Section 2.",
+          "For a Type 3 rebate, fill out Section 3."
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.6881058905972575,
+      "uncertain": false,
+      "alternative_groups": []
+    }
+  ],
+  "caption_checks": [
+    {
+      "widgets": [
+        8
+      ],
+      "selected_caption": "For a Type 3 rebate, fill out Section 3.",
+      "alternative_solved": true,
+      "objective_gap": 1.937845660967585,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        2
+      ],
+      "selected_caption": "Type 1B",
+      "alternative_solved": true,
+      "objective_gap": 2.594959400895201,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        3
+      ],
+      "selected_caption": "Type 2",
+      "alternative_solved": true,
+      "objective_gap": 3.7122793609539038,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        4
+      ],
+      "selected_caption": "Type 3",
+      "alternative_solved": true,
+      "objective_gap": 3.9801224042969396,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        7
+      ],
+      "selected_caption": "For a Type 1B or Type 5 rebate, fill out Section 2.",
+      "alternative_solved": true,
+      "objective_gap": 2.6686486697027396,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        5
+      ],
+      "selected_caption": "Type 5",
+      "alternative_solved": true,
+      "objective_gap": 3.9801224042969396,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        1
+      ],
+      "selected_caption": "Type 1A",
+      "alternative_solved": true,
+      "objective_gap": 1.477533771686506,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        6
+      ],
+      "selected_caption": "For a Type 1A or Type 2 rebate, fill out Section 1.",
+      "alternative_solved": true,
+      "objective_gap": 2.0418473257489564,
+      "uncertain": false,
+      "alternative_captions": []
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 0
+}

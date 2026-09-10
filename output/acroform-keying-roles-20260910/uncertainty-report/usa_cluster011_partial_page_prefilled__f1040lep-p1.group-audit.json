@@ -1,0 +1,283 @@
+{
+  "raw_objective": 11.056157290270066,
+  "margin": 0.25,
+  "groups": [
+    {
+      "selected": {
+        "widgets": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ],
+        "prompt": "1 I would prefer to receive written communications (see instructions) from the IRS in the following language. Check only one.",
+        "prompt_bbox": {
+          "l": 45.396,
+          "t": 135.43399999999997,
+          "r": 491.8320000000004,
+          "b": 155.44255042016812,
+          "coord_origin": "TOPLEFT"
+        },
+        "parent_widget": null,
+        "captions": [
+          "000 Cancel previous election",
+          "001 Spanish (Español)",
+          "002 Korean ( 한국어 )",
+          "003 Vietnamese (Ti ế ng Vi ệ t )",
+          "004 Russian (P усский )",
+          "005 Arabic (",
+          "006 Haitian Creole (Kreyòl Ayisyen)",
+          "007 Tagalog (Tagalog)",
+          "008 Portuguese (Português)",
+          "009 Polish (Polski)",
+          "010 Farsi ( ﻓﺎرﺳﯽ )",
+          "011 French (Français)",
+          "012 Japanese ( 日本語 )",
+          "013 Gujarati ( ગુજરાતી )",
+          "014 Punjabi ( ਪੰਜਾਬੀ )",
+          "015 Khmer ( ែខ�រ )",
+          "016 Urdu ( اردو )",
+          "017 Bengali ( বাংলা )",
+          "018 Italian ( Italiano)",
+          "019 Chinese (Traditional) 中文 ( 繁體 )",
+          "020 Chinese (Simplified) 中文 ( 简体 )"
+        ]
+      },
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_groups": []
+    }
+  ],
+  "caption_checks": [
+    {
+      "widgets": [
+        13
+      ],
+      "selected_caption": "011 French (Français)",
+      "alternative_solved": true,
+      "objective_gap": 1.3423036316487558,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        22
+      ],
+      "selected_caption": "020 Chinese (Simplified) 中文 ( 简体 )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        2
+      ],
+      "selected_caption": "000 Cancel previous election",
+      "alternative_solved": true,
+      "objective_gap": 1.342303631648754,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        10
+      ],
+      "selected_caption": "008 Portuguese (Português)",
+      "alternative_solved": true,
+      "objective_gap": 3.008970298315422,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        8
+      ],
+      "selected_caption": "006 Haitian Creole (Kreyòl Ayisyen)",
+      "alternative_solved": true,
+      "objective_gap": 2.552337516500595,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        4
+      ],
+      "selected_caption": "002 Korean ( 한국어 )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        5
+      ],
+      "selected_caption": "003 Vietnamese (Ti ế ng Vi ệ t )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        9
+      ],
+      "selected_caption": "007 Tagalog (Tagalog)",
+      "alternative_solved": true,
+      "objective_gap": 3.008970298315422,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        15
+      ],
+      "selected_caption": "013 Gujarati ( ગુજરાતી )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        16
+      ],
+      "selected_caption": "014 Punjabi ( ਪੰਜਾਬੀ )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        6
+      ],
+      "selected_caption": "004 Russian (P усский )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        3
+      ],
+      "selected_caption": "001 Spanish (Español)",
+      "alternative_solved": true,
+      "objective_gap": 2.0183905987245456,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        11
+      ],
+      "selected_caption": "009 Polish (Polski)",
+      "alternative_solved": true,
+      "objective_gap": 3.008970298315422,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        17
+      ],
+      "selected_caption": "015 Khmer ( ែខ�រ )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        14
+      ],
+      "selected_caption": "012 Japanese ( 日本語 )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        20
+      ],
+      "selected_caption": "018 Italian ( Italiano)",
+      "alternative_solved": true,
+      "objective_gap": 3.0089702983154236,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        19
+      ],
+      "selected_caption": "017 Bengali ( বাংলা )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        12
+      ],
+      "selected_caption": "010 Farsi ( ﻓﺎرﺳﯽ )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        21
+      ],
+      "selected_caption": "019 Chinese (Traditional) 中文 ( 繁體 )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        18
+      ],
+      "selected_caption": "016 Urdu ( اردو )",
+      "alternative_solved": true,
+      "objective_gap": 0.5,
+      "uncertain": false,
+      "alternative_captions": []
+    },
+    {
+      "widgets": [
+        7
+      ],
+      "selected_caption": "005 Arabic (",
+      "alternative_solved": true,
+      "objective_gap": 2.027457871927778,
+      "uncertain": false,
+      "alternative_captions": []
+    }
+  ],
+  "withheld_widgets": [],
+  "withheld_group_count": 0
+}

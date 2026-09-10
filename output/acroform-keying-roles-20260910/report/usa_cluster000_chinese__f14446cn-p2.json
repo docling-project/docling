@@ -1,0 +1,985 @@
+{
+  "schema_version": "1.0",
+  "fixture": "usa_cluster000_chinese__f14446cn",
+  "page": 2,
+  "solver_status": "optimal",
+  "seconds": 0.009070875006727874,
+  "null_cost": 3.0,
+  "objective": 0.0,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 648.0,
+          "r_x1": 576.0,
+          "r_y1": 648.0,
+          "r_x2": 576.0,
+          "r_y2": 696.24,
+          "r_x3": 36.0,
+          "r_y3": 696.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "第 II 部分：服務處流程：\r下面括弧中的問題為每個程式的解釋提供了指導。服務處將如何管理以下事項：\r1. 安排預約（預約方式：電話、線上門戶、電子郵件或其他方式）",
+        "widget_field_name": "form1[0].page2[0]._1[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 95.75999999999999,
+        "r": 576.0,
+        "b": 144.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        264
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 586.8,
+          "r_x1": 576.0,
+          "r_y1": 586.8,
+          "r_x2": 576.0,
+          "r_y2": 635.04,
+          "r_x3": 36.0,
+          "r_y3": 635.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "2. 獲取納稅人同意書（如何簽署、接收和儲存 14446）",
+        "widget_field_name": "form1[0].page2[0]._2[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 156.96000000000004,
+        "r": 576.0,
+        "b": 205.20000000000005,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        254
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 525.6,
+          "r_x1": 576.0,
+          "r_y1": 525.6,
+          "r_x2": 576.0,
+          "r_y2": 573.84,
+          "r_x3": 36.0,
+          "r_y3": 573.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "3. 執行受理程式 - 獲取所有文件（如何接收、儲存和追蹤納稅人的證明文件）",
+        "widget_field_name": "form1[0].page2[0]._3[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 218.15999999999997,
+        "r": 576.0,
+        "b": 266.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        222
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 464.4,
+          "r_x1": 576.0,
+          "r_y1": 464.4,
+          "r_x2": 576.0,
+          "r_y2": 501.84,
+          "r_x3": 36.0,
+          "r_y3": 501.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "4. 驗證納稅人身份 - 審查含照片的身份證明和社會保障卡/個人納稅識別號碼（採用何種溝通管道（面對面或虛擬方式）核實納稅人身份，以及審查哪些文件）",
+        "widget_field_name": "form1[0].page2[0]._4[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 290.16,
+        "r": 576.0,
+        "b": 327.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        47
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 403.2,
+          "r_x1": 576.0,
+          "r_y1": 403.2,
+          "r_x2": 576.0,
+          "r_y2": 451.44,
+          "r_x3": 36.0,
+          "r_y3": 451.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "5. 與納稅人進行面談（採用何種溝通管道進行面談，例如面對面或虛擬方式）",
+        "widget_field_name": "form1[0].page2[0]._5[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 340.56,
+        "r": 576.0,
+        "b": 388.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        158
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 342.0,
+          "r_x1": 576.0,
+          "r_y1": 342.0,
+          "r_x2": 576.0,
+          "r_y2": 390.24,
+          "r_x3": 36.0,
+          "r_y3": 390.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "6.  填報報稅表（報稅表在何處準備，以及報稅人如何查閱文件）",
+        "widget_field_name": "form1[0].page2[0]._6[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 401.76,
+        "r": 576.0,
+        "b": 450.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        137
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 280.8,
+          "r_x1": 576.0,
+          "r_y1": 280.8,
+          "r_x2": 576.0,
+          "r_y2": 329.04,
+          "r_x3": 36.0,
+          "r_y3": 329.04,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "7. 與納稅人進行溝通（如果需要額外資訊，網站必須說明與納稅人聯絡的方式）",
+        "widget_field_name": "form1[0].page2[0]._7[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 462.96,
+        "r": 576.0,
+        "b": 511.2,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        149
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 219.6,
+          "r_x1": 576.0,
+          "r_y1": 219.6,
+          "r_x2": 576.0,
+          "r_y2": 267.84,
+          "r_x3": 36.0,
+          "r_y3": 267.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "8. 執行品質審查（在哪裡審查了報稅表，以及審查人員如何查閱文件）",
+        "widget_field_name": "form1[0].page2[0]._8[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 524.1600000000001,
+        "r": 576.0,
+        "b": 572.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        216
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 158.4,
+          "r_x1": 576.0,
+          "r_y1": 158.4,
+          "r_x2": 576.0,
+          "r_y2": 195.84,
+          "r_x3": 36.0,
+          "r_y3": 195.84,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "9. 分享已填妥的報稅表（使用何種溝通管道（面對面或虛擬方式）來分享已填妥的報稅表，以及志願者和/或納稅人如何查閱已填妥的報稅表）",
+        "widget_field_name": "form1[0].page2[0]._9[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 596.16,
+        "r": 576.0,
+        "b": 633.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        8
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 97.2,
+          "r_x1": 576.0,
+          "r_y1": 97.2,
+          "r_x2": 576.0,
+          "r_y2": 145.44,
+          "r_x3": 36.0,
+          "r_y3": 145.44,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "10. 簽署報稅表（納稅人到現場或以電子方式簽署報稅表，例如以電子方式簽署，使用哪種軟體簽署報稅表）",
+        "widget_field_name": "form1[0].page2[0]._10[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 646.56,
+        "r": 576.0,
+        "b": 694.8,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        240
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 36.0,
+          "r_y0": 36.0,
+          "r_x1": 576.0,
+          "r_y1": 36.0,
+          "r_x2": 576.0,
+          "r_y2": 84.24,
+          "r_x3": 36.0,
+          "r_y3": 84.24,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "11. 電子報稅表（何時進行電子報稅：立即或者在當天結束時）",
+        "widget_field_name": "form1[0].page2[0]._11[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8392704,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 36.0,
+        "t": 707.76,
+        "r": 576.0,
+        "b": 756.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        252
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 8,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "9.  分享已填妥的報稅表（使用何種溝通管道（面對面或虛擬方式）來分享已填妥的報稅表，以及志願者和/或納稅人如何查閱已填妥的報 稅表）",
+      "bbox": {
+        "l": 36.0,
+        "t": 575.667,
+        "r": 573.057,
+        "b": 597.1129247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 47,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "4.  驗證納稅人身份 - 審查含照片的身份證明和社會保障卡/個人納稅識別號碼（採用何種溝通管道（面對面或虛擬方式）核實納稅人身 份，以及審查哪些文件）",
+      "bbox": {
+        "l": 36.0,
+        "t": 269.66700000000003,
+        "r": 562.212,
+        "b": 291.11292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 137,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "6.  填報報稅表（報稅表在何處準備，以及報稅人如何查閱文件）",
+      "bbox": {
+        "l": 36.0,
+        "t": 392.067,
+        "r": 290.529,
+        "b": 402.48792477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 149,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "7.  與納稅人進行溝通（如果需要額外資訊，網站必須說明與納稅人聯絡的方式）",
+      "bbox": {
+        "l": 36.0,
+        "t": 453.267,
+        "r": 353.529,
+        "b": 463.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 158,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "5.  與納稅人進行面談（採用何種溝通管道進行面談，例如面對面或虛擬方式）",
+      "bbox": {
+        "l": 36.0,
+        "t": 330.867,
+        "r": 344.529,
+        "b": 341.28792477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 216,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "8.  執行品質審查（在哪裡審查了報稅表，以及審查人員如何查閱文件）",
+      "bbox": {
+        "l": 36.0,
+        "t": 514.4670000000001,
+        "r": 317.529,
+        "b": 524.8879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 222,
+      "kind": "field_key",
+      "widget_indices": [
+        2
+      ],
+      "text": "3.  執行受理程式 - 獲取所有文件（如何接收、儲存和追蹤納稅人的證明文件）",
+      "bbox": {
+        "l": 36.0,
+        "t": 208.46699999999998,
+        "r": 342.684,
+        "b": 218.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 240,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "10. 簽署報稅表（納稅人到現場或以電子方式簽署報稅表，例如以電子方式簽署，使用哪種軟體簽署報稅表）",
+      "bbox": {
+        "l": 36.0,
+        "t": 636.867,
+        "r": 464.508,
+        "b": 647.2879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 252,
+      "kind": "field_key",
+      "widget_indices": [
+        10
+      ],
+      "text": "11. 電子報稅表（何時進行電子報稅：立即或者在當天結束時）",
+      "bbox": {
+        "l": 36.0,
+        "t": 698.067,
+        "r": 284.508,
+        "b": 708.4879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 254,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "2.  獲取納稅人同意書（如何簽署、接收和儲存 14446）",
+      "bbox": {
+        "l": 36.0,
+        "t": 147.26700000000005,
+        "r": 254.52,
+        "b": 157.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 264,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "1.  安排預約（預約方式：電話、線上門戶、電子郵件或其他方式）",
+      "bbox": {
+        "l": 36.0,
+        "t": 86.06700000000001,
+        "r": 299.529,
+        "b": 96.487924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "1.  安排預約（預約方式：電話、線上門戶、電子郵件或其他方式）",
+      "predicted": "1.  安排預約（預約方式：電話、線上門戶、電子郵件或其他方式）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 86.06700000000001,
+        "r": 299.529,
+        "b": 96.487924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 86.06700000000001,
+        "r": 299.529,
+        "b": 96.487924778761,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "2.  獲取納稅人同意書（如何簽署、接收和儲存 14446）",
+      "predicted": "2.  獲取納稅人同意書（如何簽署、接收和儲存 14446）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 147.26700000000005,
+        "r": 254.52,
+        "b": 157.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 147.26700000000005,
+        "r": 254.52,
+        "b": 157.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 2,
+      "status": "correct",
+      "expected": "3.  執行受理程式 - 獲取所有文件（如何接收、儲存和追蹤納稅人的證明文件）",
+      "predicted": "3.  執行受理程式 - 獲取所有文件（如何接收、儲存和追蹤納稅人的證明文件）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 208.46699999999998,
+        "r": 342.684,
+        "b": 218.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 208.46699999999998,
+        "r": 342.684,
+        "b": 218.88792477876098,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "4.  驗證納稅人身份 - 審查含照片的身份證明和社會保障卡/個人納稅識別號碼（採用何種溝通管道（面對面或虛擬方式）核實納稅人身 份，以及審查哪些文件）",
+      "predicted": "4.  驗證納稅人身份 - 審查含照片的身份證明和社會保障卡/個人納稅識別號碼（採用何種溝通管道（面對面或虛擬方式）核實納稅人身 份，以及審查哪些文件）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 269.66700000000003,
+        "r": 562.212,
+        "b": 291.11292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 269.66700000000003,
+        "r": 562.212,
+        "b": 291.11292477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "5.  與納稅人進行面談（採用何種溝通管道進行面談，例如面對面或虛擬方式）",
+      "predicted": "5.  與納稅人進行面談（採用何種溝通管道進行面談，例如面對面或虛擬方式）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 330.867,
+        "r": 344.529,
+        "b": 341.28792477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 330.867,
+        "r": 344.529,
+        "b": 341.28792477876107,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "6.  填報報稅表（報稅表在何處準備，以及報稅人如何查閱文件）",
+      "predicted": "6.  填報報稅表（報稅表在何處準備，以及報稅人如何查閱文件）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 392.067,
+        "r": 290.529,
+        "b": 402.48792477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 392.067,
+        "r": 290.529,
+        "b": 402.48792477876106,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "7.  與納稅人進行溝通（如果需要額外資訊，網站必須說明與納稅人聯絡的方式）",
+      "predicted": "7.  與納稅人進行溝通（如果需要額外資訊，網站必須說明與納稅人聯絡的方式）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 453.267,
+        "r": 353.529,
+        "b": 463.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 453.267,
+        "r": 353.529,
+        "b": 463.68792477876104,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "correct",
+      "expected": "8.  執行品質審查（在哪裡審查了報稅表，以及審查人員如何查閱文件）",
+      "predicted": "8.  執行品質審查（在哪裡審查了報稅表，以及審查人員如何查閱文件）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 514.4670000000001,
+        "r": 317.529,
+        "b": 524.8879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 514.4670000000001,
+        "r": 317.529,
+        "b": 524.8879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "correct",
+      "expected": "9.  分享已填妥的報稅表（使用何種溝通管道（面對面或虛擬方式）來分享已填妥的報稅表，以及志願者和/或納稅人如何查閱已填妥的報 稅表）",
+      "predicted": "9.  分享已填妥的報稅表（使用何種溝通管道（面對面或虛擬方式）來分享已填妥的報稅表，以及志願者和/或納稅人如何查閱已填妥的報 稅表）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 575.667,
+        "r": 573.057,
+        "b": 597.1129247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 575.667,
+        "r": 573.057,
+        "b": 597.1129247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "10. 簽署報稅表（納稅人到現場或以電子方式簽署報稅表，例如以電子方式簽署，使用哪種軟體簽署報稅表）",
+      "predicted": "10. 簽署報稅表（納稅人到現場或以電子方式簽署報稅表，例如以電子方式簽署，使用哪種軟體簽署報稅表）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 636.867,
+        "r": 464.508,
+        "b": 647.2879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 636.867,
+        "r": 464.508,
+        "b": 647.2879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        17
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "11. 電子報稅表（何時進行電子報稅：立即或者在當天結束時）",
+      "predicted": "11. 電子報稅表（何時進行電子報稅：立即或者在當天結束時）",
+      "expected_bbox": {
+        "l": 36.0,
+        "t": 698.067,
+        "r": 284.508,
+        "b": 708.4879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 36.0,
+        "t": 698.067,
+        "r": 284.508,
+        "b": 708.4879247787611,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "correct": 11
+  },
+  "groups": {}
+}

@@ -28,6 +28,7 @@ coverage sweeps, baseline/coverage reports and failure audit. The change uses
 intersection divided by widget area for inline clauses while keeping table/cell
 ownership strict. The accepted result is 276 correct local labels; fragmented
 captions and missed/truncated tables remain upstream defects.
+
 ## Checkpoint 3: first grouping experiment
 
 Save conditional question/caption configurations, full-assignment alternatives,
@@ -35,3 +36,23 @@ tests, raw and filtered reports, the linear scoring control, and the subsequent
 role investigation. This version was rejected: it creates caption-fragment
 questions and loses correct local associations. Its README records the evidence
 and scope of rejection. Baseline source and references remain frozen.
+
+## Checkpoint 4: caption alternatives and nested references
+
+Save the follow-up algorithm, tests, geometry checks, source fingerprints,
+comparison, and raw/filtered reports. It retains alternative captions and makes
+nested groups reference the parent option's caption. Across all 19 pages it
+fixes one wrong local association without losing previous correct local labels.
+Sami caption selection and the outer Yes/No boundary remain unresolved; this
+version is experimental, not production integration.
+
+Thirty focused tests pass, and every replay preserves native values/order and
+all 503 table exclusions. Per-checkpoint commit messages record validation.
+See each experiment README for commands and limitations. Run the two experiment
+test modules separately: their historical helper module names overlap.
+
+Historical hash manifests retain their original capture paths. When checking
+a relocated worktree, resolve their repository-relative suffix under that
+worktree. The file bytes and hashes remain unchanged. Replay/check scripts
+may regenerate reports or path-bearing manifests; use `--out` for temporary
+replay destinations when preserving these committed checkpoints.

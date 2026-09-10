@@ -1,0 +1,900 @@
+{
+  "schema_version": "1.0",
+  "fixture": "ca_other__rc7190-ws",
+  "page": 2,
+  "solver_status": "optimal",
+  "seconds": 0.043512457981705666,
+  "null_cost": 3.0,
+  "objective": 9.576729022982319,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 465.97,
+          "r_y0": 712.0,
+          "r_x1": 568.971,
+          "r_y1": 712.0,
+          "r_x2": 568.971,
+          "r_y2": 728.0,
+          "r_x3": 465.97,
+          "r_y3": 728.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Line 2. Enter the purchase price of the house, do not include the GST/HST.",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line2[0].Line2Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 465.97,
+        "t": 64.0,
+        "r": 568.971,
+        "b": 80.0,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        290
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 180.969,
+          "r_y0": 498.999,
+          "r_x1": 283.97,
+          "r_y1": 498.999,
+          "r_x2": 283.97,
+          "r_y2": 514.999,
+          "r_x3": 180.969,
+          "r_y3": 514.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Calculation 1. Amount from line 1. ",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line3[0].Line3_Text[0].Calcul1[0].Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 180.969,
+        "t": 277.001,
+        "r": 283.97,
+        "b": 293.001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        591
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 180.969,
+          "r_y0": 417.999,
+          "r_x1": 283.97,
+          "r_y1": 417.999,
+          "r_x2": 283.97,
+          "r_y2": 433.999,
+          "r_x3": 180.969,
+          "r_y3": 433.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Calculation 2. Amount from line 1. ",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line3[0].Line3_Text[0].Calcul2[0].Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 180.969,
+        "t": 358.001,
+        "r": 283.97,
+        "b": 374.001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        712
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 177.97,
+          "r_y0": 336.999,
+          "r_x1": 280.971,
+          "r_y1": 336.999,
+          "r_x2": 280.971,
+          "r_y2": 352.999,
+          "r_x3": 177.97,
+          "r_y3": 352.999,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Calculation 3. Amount from line 1. ",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line3[0].Line3_Text[0].Calcul3[0].Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 177.97,
+        "t": 439.001,
+        "r": 280.971,
+        "b": 455.001,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        653
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 465.97,
+          "r_y0": 312.998,
+          "r_x1": 568.971,
+          "r_y1": 312.998,
+          "r_x2": 568.971,
+          "r_y2": 328.998,
+          "r_x3": 465.97,
+          "r_y3": 328.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Line 3. Enter the result of your calculation, whichever applies.",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line3[0].Line3Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 465.97,
+        "t": 463.002,
+        "r": 568.971,
+        "b": 479.002,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        94
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 157.002,
+          "r_y0": 162.997,
+          "r_x1": 260.003,
+          "r_y1": 162.997,
+          "r_x2": 260.003,
+          "r_y2": 178.997,
+          "r_x3": 157.002,
+          "r_y3": 178.997,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. $450,000 minus line 2 divided by $100,000.",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line4[0].Line4_Text[0].Calcul3[0].Amount1[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 157.002,
+        "t": 613.0029999999999,
+        "r": 260.003,
+        "b": 629.0029999999999,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        415
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 334.003,
+          "r_y0": 162.997,
+          "r_x1": 437.004,
+          "r_y1": 162.997,
+          "r_x2": 437.004,
+          "r_y2": 178.997,
+          "r_x3": 334.003,
+          "r_y3": 178.997,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Amount from line 3.",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line4[0].Line4_Text[0].Calcul3[0].Amount2[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 334.003,
+        "t": 613.0029999999999,
+        "r": 437.004,
+        "b": 629.0029999999999,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        226
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 465.97,
+          "r_y0": 162.997,
+          "r_x1": 568.971,
+          "r_y1": 162.997,
+          "r_x2": 568.971,
+          "r_y2": 178.997,
+          "r_x3": 465.97,
+          "r_y3": 178.997,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 1. Line 4. If line 2 is $350,000 or less, enter the amount from line 3 on line 4. If line 2 is $450,000 or more, enter \"0\" on line 4, since you are not eligible to claim a GST/HST new housing rebate. However, if you paid HST, you may still be able to claim a provincial new housing rebate. If line 2 is more than $350,000 but less than $450,000, enter the result of the following calculation on line 4. $450,000 minus line 2, divided by $100,000 multiplied by line 3.",
+        "widget_field_name": "form1[0].Page2[0].Section1_Continued[0].Line4[0].Line4Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 465.97,
+        "t": 613.0029999999999,
+        "r": 568.971,
+        "b": 629.0029999999999,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 466.001,
+          "r_y0": 87.998,
+          "r_x1": 569.002,
+          "r_y1": 87.998,
+          "r_x2": 569.002,
+          "r_y2": 103.998,
+          "r_x3": 466.001,
+          "r_y3": 103.998,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 2. Line 5. Total purchase price for the house. Do not include amounts for the lease of the land or the option to purchase the land.",
+        "widget_field_name": "form1[0].Page2[0].Section2[0].Line5[0].Line5Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 466.001,
+        "t": 688.002,
+        "r": 569.002,
+        "b": 704.002,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        338
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 466.001,
+          "r_y0": 54.997,
+          "r_x1": 569.002,
+          "r_y1": 54.997,
+          "r_x2": 569.002,
+          "r_y2": 70.997,
+          "r_x3": 466.001,
+          "r_y3": 70.997,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": "Section 2. Line 6. Fair market value of the house, including the land and the building, when possession was transferred to you.",
+        "widget_field_name": "form1[0].Page2[0].Section2[0].Line6[0].Line6Amount[0].Amount[0]",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 466.001,
+        "t": 721.003,
+        "r": 569.002,
+        "b": 737.003,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        269
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 7,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "If line 2 is $450,000 or more, enter \"0\" on line 4, since you are not eligible to claim a GST/HST new housing rebate.",
+      "bbox": {
+        "l": 34.97,
+        "t": 534.081,
+        "r": 455.02,
+        "b": 554.4226883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.1361754310504106,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 94,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "If you paid 7% GST or 15% HST under an agreement entered into before May 3, 2006, do the following calculation:",
+      "bbox": {
+        "l": 34.968,
+        "t": 407.58099999999996,
+        "r": 435.7379999999997,
+        "b": 427.8926883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.0815802919736304,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 226,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "If line 2 is more than $350,000 but less than $450,000, enter the result of the following calculation on line 4:",
+      "bbox": {
+        "l": 34.97,
+        "t": 579.111,
+        "r": 417.9699999999998,
+        "b": 599.4226883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.8995170858009173,
+        "alignment": 0.09239716119261082,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 269,
+      "kind": "field_key",
+      "widget_indices": [
+        10
+      ],
+      "text": "Fair market value of the house (including the land and the building) when possession was transferred to you...................................................................................................................",
+      "bbox": {
+        "l": 35.0,
+        "t": 719.113,
+        "r": 458.78,
+        "b": 739.4246883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5740691121498435,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 290,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "Enter the purchase price of the house (do not include the GST/HST)........................................",
+      "bbox": {
+        "l": 34.999,
+        "t": 73.07999999999993,
+        "r": 458.779,
+        "b": 82.43064935064933,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5722528768703873,
+        "alignment": 0.1299722222222205,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 338,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "Total purchase price for the house (do not include amounts for the lease of the land or the option to purchase the land)..............................................................................................",
+      "bbox": {
+        "l": 35.0,
+        "t": 686.082,
+        "r": 458.78,
+        "b": 706.4236883116884,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5740691121498435,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 415,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "Section 2 - Rebate calculation for Application Type 1B or 5",
+      "bbox": {
+        "l": 22.999,
+        "t": 662.126,
+        "r": 359.09500000000014,
+        "b": 673.3467792207792,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.5166957295724541,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 591,
+      "kind": "field_key",
+      "widget_indices": [
+        2
+      ],
+      "text": "Amount from line 1: $ × 36% (maximum $6,300)",
+      "bbox": {
+        "l": 62.619,
+        "t": 280.197,
+        "r": 413.45799999999986,
+        "b": 291.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 653,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "Amount from line 1: $ × 36% (maximum $8,750)",
+      "bbox": {
+        "l": 61.118,
+        "t": 442.197,
+        "r": 410.4589999999999,
+        "b": 453.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 712,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "$ × 36% (maximum $7,560)",
+      "bbox": {
+        "l": 169.688,
+        "t": 361.197,
+        "r": 413.45799999999986,
+        "b": 372.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "Enter the purchase price of the house (do not include the GST/HST)........................................",
+      "predicted": "Enter the purchase price of the house (do not include the GST/HST)........................................",
+      "expected_bbox": {
+        "l": 34.999,
+        "t": 73.07999999999993,
+        "r": 458.779,
+        "b": 82.43064935064933,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 34.999,
+        "t": 73.07999999999993,
+        "r": 458.779,
+        "b": 82.43064935064933,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5722528768703873,
+        "alignment": 0.1299722222222205,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 2,
+      "status": "wrong",
+      "expected": "Amount from line 1:",
+      "predicted": "Amount from line 1: $ × 36% (maximum $6,300)",
+      "expected_bbox": {
+        "l": 62.6,
+        "t": 280.2,
+        "r": 149.5,
+        "b": 291.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 62.619,
+        "t": 280.197,
+        "r": 413.45799999999986,
+        "b": 291.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "wrong",
+      "expected": "Amount from line 1:",
+      "predicted": "$ × 36% (maximum $7,560)",
+      "expected_bbox": {
+        "l": 62.618,
+        "t": 362.08099999999996,
+        "r": 149.318,
+        "b": 371.3926883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 169.688,
+        "t": 361.197,
+        "r": 413.45799999999986,
+        "b": 372.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "wrong",
+      "expected": "Amount from line 1:",
+      "predicted": "Amount from line 1: $ × 36% (maximum $8,750)",
+      "expected_bbox": {
+        "l": 61.1,
+        "t": 442.2,
+        "r": 149.0,
+        "b": 453.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 61.118,
+        "t": 442.197,
+        "r": 410.4589999999999,
+        "b": 453.37102597402594,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "wrong",
+      "expected": "Enter the result of your calculation, whichever applies, on line 3",
+      "predicted": "If you paid 7% GST or 15% HST under an agreement entered into before May 3, 2006, do the following calculation:",
+      "expected_bbox": {
+        "l": 34.969,
+        "t": 472.081,
+        "r": 337.8489999999999,
+        "b": 481.43164935064937,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 34.968,
+        "t": 407.58099999999996,
+        "r": 435.7379999999997,
+        "b": 427.8926883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.0815802919736304,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "wrong",
+      "expected": "line 2:",
+      "predicted": "Section 2 - Rebate calculation for Application Type 1B or 5",
+      "expected_bbox": {
+        "l": 107.0,
+        "t": 617.0,
+        "r": 135.0,
+        "b": 627.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 22.999,
+        "t": 662.126,
+        "r": 359.09500000000014,
+        "b": 673.3467792207792,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.5166957295724541,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "wrong",
+      "expected": "line 3:",
+      "predicted": "If line 2 is more than $350,000 but less than $450,000, enter the result of the following calculation on line 4:",
+      "expected_bbox": {
+        "l": 282.0,
+        "t": 617.0,
+        "r": 309.0,
+        "b": 627.4,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 34.97,
+        "t": 579.111,
+        "r": 417.9699999999998,
+        "b": 599.4226883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.8995170858009173,
+        "alignment": 0.09239716119261082,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "wrong",
+      "expected": "GST/HST new housing rebate amount",
+      "predicted": "If line 2 is $450,000 or more, enter \"0\" on line 4, since you are not eligible to claim a GST/HST new housing rebate.",
+      "expected_bbox": {
+        "l": 34.97,
+        "t": 495.521,
+        "r": 213.89000000000007,
+        "b": 504.87164935064936,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 34.97,
+        "t": 534.081,
+        "r": 455.02,
+        "b": 554.4226883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.1361754310504106,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "Total purchase price for the house (do not include amounts for the lease of the land or the option to purchase the land)..............................................................................................",
+      "predicted": "Total purchase price for the house (do not include amounts for the lease of the land or the option to purchase the land)..............................................................................................",
+      "expected_bbox": {
+        "l": 35.0,
+        "t": 686.082,
+        "r": 458.78,
+        "b": 706.4236883116884,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 35.0,
+        "t": 686.082,
+        "r": 458.78,
+        "b": 706.4236883116884,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5740691121498435,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "Fair market value of the house (including the land and the building) when possession was transferred to you...................................................................................................................",
+      "predicted": "Fair market value of the house (including the land and the building) when possession was transferred to you...................................................................................................................",
+      "expected_bbox": {
+        "l": 35.0,
+        "t": 719.113,
+        "r": 458.78,
+        "b": 739.4246883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 35.0,
+        "t": 719.113,
+        "r": 458.78,
+        "b": 739.4246883116883,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5740691121498435,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        25
+      ]
+    }
+  ],
+  "counts": {
+    "correct": 3,
+    "wrong": 7
+  },
+  "groups": {}
+}
