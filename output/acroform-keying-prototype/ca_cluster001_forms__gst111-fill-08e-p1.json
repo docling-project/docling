@@ -1,0 +1,1677 @@
+{
+  "schema_version": "1.0",
+  "fixture": "ca_cluster001_forms__gst111-fill-08e",
+  "page": 1,
+  "solver_status": "optimal",
+  "seconds": 0.05910399998538196,
+  "null_cost": 3.0,
+  "objective": 9.622870788967024,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 22.4599,
+          "r_y0": 475.454,
+          "r_x1": 350.741,
+          "r_y1": 475.454,
+          "r_x2": 350.741,
+          "r_y2": 486.946,
+          "r_x3": 22.4599,
+          "r_y3": 486.946,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582914,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 22.4599,
+        "t": 305.054,
+        "r": 350.741,
+        "b": 316.546,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        799
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 353.744,
+          "r_y0": 474.697,
+          "r_x1": 505.893,
+          "r_y1": 474.697,
+          "r_x2": 505.893,
+          "r_y2": 487.644,
+          "r_x3": 353.744,
+          "r_y3": 487.644,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "BNN1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 353.744,
+        "t": 304.356,
+        "r": 505.893,
+        "b": 317.303,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1202
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 526.567,
+          "r_y0": 474.697,
+          "r_x1": 592.598,
+          "r_y1": 474.697,
+          "r_x2": 592.598,
+          "r_y2": 487.644,
+          "r_x3": 526.567,
+          "r_y3": 487.644,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "BNN2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360128,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 526.567,
+        "t": 304.356,
+        "r": 592.598,
+        "b": 317.303,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 22.4229,
+          "r_y0": 451.354,
+          "r_x1": 591.976,
+          "r_y1": 451.354,
+          "r_x2": 591.976,
+          "r_y2": 463.375,
+          "r_x3": 22.4229,
+          "r_y3": 463.375,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582912,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 22.4229,
+        "t": 328.625,
+        "r": 591.976,
+        "b": 340.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        745
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 22.1233,
+          "r_y0": 427.354,
+          "r_x1": 592.277,
+          "r_y1": 427.354,
+          "r_x2": 592.277,
+          "r_y2": 439.375,
+          "r_x3": 22.1233,
+          "r_y3": 439.375,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582914,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 22.1233,
+        "t": 352.625,
+        "r": 592.277,
+        "b": 364.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        726
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 22.997,
+          "r_y0": 403.354,
+          "r_x1": 350.602,
+          "r_y1": 403.354,
+          "r_x2": 350.602,
+          "r_y2": 416.646,
+          "r_x3": 22.997,
+          "r_y3": 416.646,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.5",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582914,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 22.997,
+        "t": 375.354,
+        "r": 350.602,
+        "b": 388.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1226
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 353.536,
+          "r_y0": 402.824,
+          "r_x1": 466.473,
+          "r_y1": 402.824,
+          "r_x2": 466.473,
+          "r_y2": 416.176,
+          "r_x3": 353.536,
+          "r_y3": 416.176,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": " ",
+        "widget_description": null,
+        "widget_field_name": "SectA.6",
+        "widget_field_type": "/Ch",
+        "widget_field_flags": 71434240,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 353.536,
+        "t": 375.824,
+        "r": 466.473,
+        "b": 389.176,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1149
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 447.107,
+          "r_y0": 412.824,
+          "r_x1": 465.54,
+          "r_y1": 412.824,
+          "r_x2": 465.54,
+          "r_y2": 427.176,
+          "r_x3": 447.107,
+          "r_y3": 427.176,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": " ",
+        "widget_description": null,
+        "widget_field_name": "ProvCodeEng",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 1,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 447.107,
+        "t": 364.824,
+        "r": 465.54,
+        "b": 379.176,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        939
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 468.964,
+          "r_y0": 402.884,
+          "r_x1": 591.663,
+          "r_y1": 402.884,
+          "r_x2": 591.663,
+          "r_y2": 416.176,
+          "r_x3": 468.964,
+          "r_y3": 416.176,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.7",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582912,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 468.964,
+        "t": 375.824,
+        "r": 591.663,
+        "b": 389.116,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        921
+      ]
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 23.1973,
+          "r_y0": 379.354,
+          "r_x1": 350.803,
+          "r_y1": 379.354,
+          "r_x2": 350.803,
+          "r_y2": 391.375,
+          "r_x3": 23.1973,
+          "r_y3": 391.375,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.8",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582914,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 23.1973,
+        "t": 400.625,
+        "r": 350.803,
+        "b": 412.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        770
+      ]
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 353.197,
+          "r_y0": 379.354,
+          "r_x1": 465.403,
+          "r_y1": 379.354,
+          "r_x2": 465.403,
+          "r_y2": 392.646,
+          "r_x3": 353.197,
+          "r_y3": 392.646,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.9",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582914,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 353.197,
+        "t": 399.354,
+        "r": 465.403,
+        "b": 412.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1250
+      ]
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 469.917,
+          "r_y0": 379.576,
+          "r_x1": 592.684,
+          "r_y1": 379.576,
+          "r_x2": 592.684,
+          "r_y2": 392.232,
+          "r_x3": 469.917,
+          "r_y3": 392.232,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "PartA.10",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582912,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 469.917,
+        "t": 399.768,
+        "r": 592.684,
+        "b": 412.424,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1384
+      ]
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 198.708,
+          "r_y0": 342.125,
+          "r_x1": 310.792,
+          "r_y1": 342.125,
+          "r_x2": 310.792,
+          "r_y2": 357.217,
+          "r_x3": 198.708,
+          "r_y3": 357.217,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectB.3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360130,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 198.708,
+        "t": 434.783,
+        "r": 310.792,
+        "b": 449.875,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1290
+      ]
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 367.808,
+          "r_y0": 342.383,
+          "r_x1": 480.292,
+          "r_y1": 342.383,
+          "r_x2": 480.292,
+          "r_y2": 357.476,
+          "r_x3": 367.808,
+          "r_y3": 357.476,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectB.4",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 29360130,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 367.808,
+        "t": 434.524,
+        "r": 480.292,
+        "b": 449.617,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1348
+      ]
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 184.5,
+          "r_y0": 196.938,
+          "r_x1": 193.625,
+          "r_y1": 196.938,
+          "r_x2": 193.625,
+          "r_y2": 206.937,
+          "r_x3": 184.5,
+          "r_y3": 206.937,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.11",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 184.5,
+        "t": 585.063,
+        "r": 193.625,
+        "b": 595.062,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        967,
+        1507
+      ]
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 374.875,
+          "r_y0": 196.562,
+          "r_x1": 384.625,
+          "r_y1": 196.562,
+          "r_x2": 384.625,
+          "r_y2": 206.812,
+          "r_x3": 374.875,
+          "r_y3": 206.812,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.11",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 374.875,
+        "t": 585.188,
+        "r": 384.625,
+        "b": 595.438,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        680,
+        1507
+      ]
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 558.875,
+          "r_y0": 196.938,
+          "r_x1": 568.125,
+          "r_y1": 196.938,
+          "r_x2": 568.125,
+          "r_y2": 206.312,
+          "r_x3": 558.875,
+          "r_y3": 206.312,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.11",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 558.875,
+        "t": 585.688,
+        "r": 568.125,
+        "b": 595.062,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        624,
+        1507
+      ]
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 355.197,
+          "r_y0": 166.354,
+          "r_x1": 570.303,
+          "r_y1": 166.354,
+          "r_x2": 570.303,
+          "r_y2": 179.646,
+          "r_x3": 355.197,
+          "r_y3": 179.646,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.12",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12582912,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 355.197,
+        "t": 612.354,
+        "r": 570.303,
+        "b": 625.646,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        701
+      ]
+    },
+    {
+      "native": {
+        "index": 19,
+        "rect": {
+          "r_x0": 42.7974,
+          "r_y0": 60.1039,
+          "r_x1": 570.203,
+          "r_y1": 60.1039,
+          "r_x2": 570.203,
+          "r_y2": 105.896,
+          "r_x3": 42.7974,
+          "r_y3": 105.896,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectA.13",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 12587008,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 42.7974,
+        "t": 686.104,
+        "r": 570.203,
+        "b": 731.8961,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        569
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 569,
+      "kind": "field_key",
+      "widget_indices": [
+        19
+      ],
+      "text": "Indicate your major business activities (include enough details to allow an exact industrial classification, for example under the North American Industry Classification System):",
+      "bbox": {
+        "l": 25.2,
+        "t": 649.4189,
+        "r": 554.0849999999999,
+        "b": 668.7160834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2012971321990424,
+        "alignment": 0.015280459668990998,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 624,
+      "kind": "option_caption",
+      "widget_indices": [
+        17
+      ],
+      "text": "De minimis financial institution",
+      "bbox": {
+        "l": 424.8,
+        "t": 586.422,
+        "r": 545.8878000000001,
+        "b": 594.4421834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.006546746736028,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 680,
+      "kind": "option_caption",
+      "widget_indices": [
+        16
+      ],
+      "text": "Selected listed financial institution",
+      "bbox": {
+        "l": 226.8,
+        "t": 586.431,
+        "r": 362.2437000000003,
+        "b": 594.4511834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.989005437255343,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 701,
+      "kind": "field_key",
+      "widget_indices": [
+        18
+      ],
+      "text": "Indicate your business type (for example, bank, insurance company, credit union): ___________________________________________",
+      "bbox": {
+        "l": 25.2,
+        "t": 617.9819,
+        "r": 571.167900000001,
+        "b": 626.0020834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 726,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "Mailing address (number, street, and apartment, or R.R. No.)",
+      "bbox": {
+        "l": 25.2,
+        "t": 344.83511999999996,
+        "r": 242.09668799999977,
+        "b": 351.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.08026556122204587,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 745,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "Trading name (if different from the legal name)",
+      "bbox": {
+        "l": 25.2,
+        "t": 320.71511999999996,
+        "r": 191.24288399999983,
+        "b": 327.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.09496143862002654,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 770,
+      "kind": "field_key",
+      "widget_indices": [
+        9
+      ],
+      "text": "Contact person",
+      "bbox": {
+        "l": 25.2,
+        "t": 392.71511999999996,
+        "r": 79.77712799999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.09496143862002654,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 799,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "Legal name",
+      "bbox": {
+        "l": 25.2,
+        "t": 296.71511999999996,
+        "r": 69.37819199999998,
+        "b": 303.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.14580055140685946,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 921,
+      "kind": "field_key",
+      "widget_indices": [
+        8
+      ],
+      "text": "Telephone number",
+      "bbox": {
+        "l": 471.6,
+        "t": 392.71511999999996,
+        "r": 538.9285679999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3928069040883095,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 939,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "Postal code",
+      "bbox": {
+        "l": 471.6,
+        "t": 368.71511999999996,
+        "r": 513.7497,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5933843942663297,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 967,
+      "kind": "option_caption",
+      "widget_indices": [
+        15
+      ],
+      "text": "Listed financial institution (other than selected listed financial institution)",
+      "bbox": {
+        "l": 25.2,
+        "t": 578.8620000000001,
+        "r": 172.41300000000004,
+        "b": 598.1591834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.9615687834090026,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1149,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "Province",
+      "bbox": {
+        "l": 356.4,
+        "t": 368.71511999999996,
+        "r": 387.6755999999999,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1202,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "Business Number",
+      "bbox": {
+        "l": 356.4,
+        "t": 296.83511999999996,
+        "r": 420.0269519999999,
+        "b": 303.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.04651588039278994,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1226,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "City",
+      "bbox": {
+        "l": 25.2,
+        "t": 368.71511999999996,
+        "r": 39.044880000000006,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1250,
+      "kind": "field_key",
+      "widget_indices": [
+        10
+      ],
+      "text": "Title",
+      "bbox": {
+        "l": 356.4,
+        "t": 392.71511999999996,
+        "r": 371.58755999999994,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1290,
+      "kind": "field_key",
+      "widget_indices": [
+        13
+      ],
+      "text": "Year",
+      "bbox": {
+        "l": 219.48,
+        "t": 426.25487999999996,
+        "r": 234.17952000000002,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.2707293542371611,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1348,
+      "kind": "field_key",
+      "widget_indices": [
+        14
+      ],
+      "text": "Year",
+      "bbox": {
+        "l": 388.68,
+        "t": 426.25487999999996,
+        "r": 403.37951999999996,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.24396288784088466,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1384,
+      "kind": "field_key",
+      "widget_indices": [
+        12
+      ],
+      "text": "Day",
+      "bbox": {
+        "l": 461.87832,
+        "t": 426.25487999999996,
+        "r": 474.2532,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.046939877590603,
+        "alignment": 0.32479830107443414,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1507,
+      "kind": "choice_group",
+      "widget_indices": [
+        15,
+        16,
+        17
+      ],
+      "text": "Tick the box \" De minimis financial institution\" if you are a financial institution within the meaning of paragraph 149(1)(b) or (c).",
+      "bbox": {
+        "l": 25.2,
+        "t": 546.948,
+        "r": 528.4512000000004,
+        "b": 554.9681834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "question_distance": 1.614045640339146,
+        "question_prior": -2.5,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "correct",
+      "expected": "Legal name",
+      "predicted": "Legal name",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 296.71511999999996,
+        "r": 69.37819199999998,
+        "b": 303.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 296.71511999999996,
+        "r": 69.37819199999998,
+        "b": 303.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.14580055140685946,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "Business Number",
+      "predicted": "Business Number",
+      "expected_bbox": {
+        "l": 356.4,
+        "t": 296.83511999999996,
+        "r": 420.0269519999999,
+        "b": 303.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 356.4,
+        "t": 296.83511999999996,
+        "r": 420.0269519999999,
+        "b": 303.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.04651588039278994,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 2,
+      "status": "unassigned",
+      "expected": "Business Number",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 356.4,
+        "t": 296.83511999999996,
+        "r": 420.0269519999999,
+        "b": 303.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "Trading name (if different from the legal name)",
+      "predicted": "Trading name (if different from the legal name)",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 320.71511999999996,
+        "r": 191.24288399999983,
+        "b": 327.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 320.71511999999996,
+        "r": 191.24288399999983,
+        "b": 327.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.09496143862002654,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "Mailing address (number, street, and apartment, or R.R. No.)",
+      "predicted": "Mailing address (number, street, and apartment, or R.R. No.)",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 344.83511999999996,
+        "r": 242.09668799999977,
+        "b": 351.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 344.83511999999996,
+        "r": 242.09668799999977,
+        "b": 351.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.08026556122204587,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "City",
+      "predicted": "City",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 368.71511999999996,
+        "r": 39.044880000000006,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 368.71511999999996,
+        "r": 39.044880000000006,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "Province",
+      "predicted": "Province",
+      "expected_bbox": {
+        "l": 356.4,
+        "t": 368.71511999999996,
+        "r": 387.6755999999999,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 356.4,
+        "t": 368.71511999999996,
+        "r": 387.6755999999999,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 7,
+      "status": "ambiguous",
+      "expected": "Ambiguous — no unique reference pairing",
+      "predicted": "Postal code",
+      "expected_bbox": null,
+      "predicted_bbox": {
+        "l": 471.6,
+        "t": 368.71511999999996,
+        "r": 513.7497,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.5933843942663297,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "ambiguous",
+      "reason": "Small additional text widget overlaps the Province control/label area. Province is visible, but the page does not establish an independent role or distinguish this widget from the province selector.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 8,
+      "status": "wrong",
+      "expected": "Postal code",
+      "predicted": "Telephone number",
+      "expected_bbox": {
+        "l": 471.6,
+        "t": 368.71511999999996,
+        "r": 513.7497,
+        "b": 375.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 471.6,
+        "t": 392.71511999999996,
+        "r": 538.9285679999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.3928069040883095,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 9,
+      "status": "correct",
+      "expected": "Contact person",
+      "predicted": "Contact person",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 392.71511999999996,
+        "r": 79.77712799999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 392.71511999999996,
+        "r": 79.77712799999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.09496143862002654,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 10,
+      "status": "correct",
+      "expected": "Title",
+      "predicted": "Title",
+      "expected_bbox": {
+        "l": 356.4,
+        "t": 392.71511999999996,
+        "r": 371.58755999999994,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 356.4,
+        "t": 392.71511999999996,
+        "r": 371.58755999999994,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 12,
+      "status": "wrong",
+      "expected": "Telephone number",
+      "predicted": "Day",
+      "expected_bbox": {
+        "l": 471.6,
+        "t": 392.71511999999996,
+        "r": 538.9285679999999,
+        "b": 399.8798171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 461.87832,
+        "t": 426.25487999999996,
+        "r": 474.2532,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.046939877590603,
+        "alignment": 0.32479830107443414,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 13,
+      "status": "wrong",
+      "expected": "From:",
+      "predicted": "Year",
+      "expected_bbox": {
+        "l": 167.6366,
+        "t": 440.11652,
+        "r": 188.62903999999997,
+        "b": 447.2812171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 219.48,
+        "t": 426.25487999999996,
+        "r": 234.17952000000002,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.2707293542371611,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 14,
+      "status": "wrong",
+      "expected": "To:",
+      "predicted": "Year",
+      "expected_bbox": {
+        "l": 345.11959999999993,
+        "t": 440.11652,
+        "r": 356.7373999999999,
+        "b": 447.2812171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 388.68,
+        "t": 426.25487999999996,
+        "r": 403.37951999999996,
+        "b": 432.45715518232043,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.24396288784088466,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 15,
+      "status": "correct",
+      "expected": "Listed financial institution (other than selected listed financial institution)",
+      "predicted": "Listed financial institution (other than selected listed financial institution)",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 578.8620000000001,
+        "r": 172.41300000000004,
+        "b": 598.1591834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 578.8620000000001,
+        "r": 172.41300000000004,
+        "b": 598.1591834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.9615687834090026,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 16,
+      "status": "correct",
+      "expected": "Selected listed financial institution",
+      "predicted": "Selected listed financial institution",
+      "expected_bbox": {
+        "l": 226.8,
+        "t": 586.431,
+        "r": 362.2437000000003,
+        "b": 594.4511834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 226.8,
+        "t": 586.431,
+        "r": 362.2437000000003,
+        "b": 594.4511834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.989005437255343,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 17,
+      "status": "correct",
+      "expected": "De minimis financial institution",
+      "predicted": "De minimis financial institution",
+      "expected_bbox": {
+        "l": 424.8,
+        "t": 586.422,
+        "r": 545.8878000000001,
+        "b": 594.4421834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 424.8,
+        "t": 586.422,
+        "r": 545.8878000000001,
+        "b": 594.4421834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.006546746736028,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 18,
+      "status": "correct",
+      "expected": "Indicate your business type (for example, bank, insurance company, credit union):",
+      "predicted": "Indicate your business type (for example, bank, insurance company, credit union): ___________________________________________",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 618.0,
+        "r": 353.5,
+        "b": 626.1,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 617.9819,
+        "r": 571.167900000001,
+        "b": 626.0020834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.0,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": [
+        6
+      ]
+    },
+    {
+      "widget_index": 19,
+      "status": "correct",
+      "expected": "Indicate your major business activities (include enough details to allow an exact industrial classification, for example under the North American Industry Classification System):",
+      "predicted": "Indicate your major business activities (include enough details to allow an exact industrial classification, for example under the North American Industry Classification System):",
+      "expected_bbox": {
+        "l": 25.2,
+        "t": 649.4189,
+        "r": 554.0849999999999,
+        "b": 668.7160834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 25.2,
+        "t": 649.4189,
+        "r": 554.0849999999999,
+        "b": 668.7160834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2012971321990424,
+        "alignment": 0.015280459668990998,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "correct": 13,
+    "unassigned": 1,
+    "ambiguous": 1,
+    "wrong": 4
+  },
+  "groups": {
+    "not recovered": 4
+  }
+}

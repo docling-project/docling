@@ -1,0 +1,340 @@
+[
+  {
+    "page": "ca_cluster001_forms__gst111-fill-08e-p1",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          15,
+          16,
+          17
+        ],
+        "text": "Tick the box \" De minimis financial institution\" if you are a financial institution within the meaning of paragraph 149(1)(b) or (c).",
+        "cost": -0.8859543596608539
+      }
+    ]
+  },
+  {
+    "page": "ca_cluster001_forms__gst111-fill-08e-p2",
+    "selected": []
+  },
+  {
+    "page": "ca_cluster004__gst494-fill-09e-p1",
+    "selected": [
+      {
+        "kind": "composite_field",
+        "members": [
+          4,
+          5
+        ],
+        "text": "Business Number (BN)",
+        "cost": 3.054800922510912
+      }
+    ]
+  },
+  {
+    "page": "ca_cluster009__t3mb-fill-15e-p1",
+    "selected": []
+  },
+  {
+    "page": "ca_cluster009__t3mb-fill-15e-p2",
+    "selected": []
+  },
+  {
+    "page": "ca_other__rc7190-ws-p1",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "text": "Fill out Section 1, 2, or 3 only (whichever applies)",
+        "cost": -1.3469849374689646
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          6,
+          7,
+          8
+        ],
+        "text": "Type of rebate ( tick one box ) and the proper calculation to complete.",
+        "cost": -1.2451288746757219
+      }
+    ]
+  },
+  {
+    "page": "ca_other__rc7190-ws-p2",
+    "selected": []
+  },
+  {
+    "page": "italy__agenziaentrate_e5017784-p1",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "text": "MODELLO 730/2025",
+        "cost": -0.4099766504505351
+      }
+    ]
+  },
+  {
+    "page": "italy__agenziaentrate_e5017784-p2",
+    "selected": [
+      {
+        "kind": "composite_field",
+        "members": [
+          94,
+          95
+        ],
+        "text": "BENEFIT",
+        "cost": 1.4768458332756187
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          96,
+          97,
+          98
+        ],
+        "text": "A TASSAZIONE ORDINARIA",
+        "cost": -0.9590239282343151
+      }
+    ]
+  },
+  {
+    "page": "italy__agenziaentrate_e5017784-p3",
+    "selected": []
+  },
+  {
+    "page": "norway__rf-1084s-p1",
+    "selected": []
+  },
+  {
+    "page": "norway__rf-1125s-p1",
+    "selected": []
+  },
+  {
+    "page": "norway__rf-1177s-p1",
+    "selected": [
+      {
+        "kind": "composite_field",
+        "members": [
+          3,
+          4
+        ],
+        "text": "Org.nr. (fitnodagaide)",
+        "cost": 0.5524996535379956
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          6,
+          73,
+          74,
+          75
+        ],
+        "text": "Makkár ealáhusa birra attát dieđuid dán dieđáhusas?",
+        "cost": -1.786965645908299
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          7,
+          76
+        ],
+        "text": "Leago jagis ollásit dahje muhtun mdduii oston dahje realiserejuvvon eanadoallu/vuovdi?",
+        "cost": -1.5067089430609306
+      }
+    ]
+  },
+  {
+    "page": "norway__rf-1177s-p2",
+    "selected": []
+  },
+  {
+    "page": "usa_cluster000_chinese__f14446cn-p1",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          7,
+          8,
+          9,
+          10
+        ],
+        "text": "注意： 對於納稅人留在服務處設施的另一個房間或在車中等候的情形下，該服務處不被視為收件服務處。 由於納稅人會留現場，他們無 需填寫《表格 14446》。如果納稅人將稅務文件留在現場並出於任何原因離開該設施的範圍，納稅人必須填寫《表格 14446》。",
+        "cost": -1.8888534217373025
+      }
+    ]
+  },
+  {
+    "page": "usa_cluster000_chinese__f14446cn-p2",
+    "selected": []
+  },
+  {
+    "page": "usa_cluster000_chinese__f14446cn-p3",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          0,
+          1
+        ],
+        "text": "為確保您在志願服務處獲得優質服務且正確填報納稅申報單，國稅局員工會隨機抽查免費報稅服務處，以進行審查。如果發現錯誤，服務 處將做出必要更正。國稅局不會保存您被抽查到的納稅申報單上的個人資料；並且，這個做法能讓國稅局評估我們 VITA/TCE 報稅服務在 納稅申報單填報的準確性。如果您不希望您的納稅申報單被納入審查程序，也不會影響本服務處向您提供的各項服務。若填報本納稅申報 單的服務處被選為審查對象，您是否同意讓您的納稅申報單接受國稅局員工審查，以審查其正確性？",
+        "cost": -2.017686293580265
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          3,
+          4
+        ],
+        "text": "complaints@tigta.treas.gov。雖然國稅局負責對義工所得稅援助 (VITA) 計畫和老年人稅務諮詢 (TCE) 計畫提供監管要求, 但是, 這些服 務處均由國稅局簽約的合作夥伴進行營運; 這些合作夥伴管理著國稅局服務處的營運要求和義工道德標準。此外, 這些服務處的位置可能 不在聯邦政府的資產設施內。",
+        "cost": -2.1019440331703674
+      }
+    ]
+  },
+  {
+    "page": "usa_cluster011_partial_page_prefilled__f1040lep-p1",
+    "selected": [
+      {
+        "kind": "choice_group",
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ],
+        "text": "1 I would prefer to receive written communications (see instructions) from the IRS in the following language. Check only one.",
+        "cost": -1.5003679279429365
+      }
+    ]
+  },
+  {
+    "page": "usa_cluster019_singlecolumn__f1120so-p1",
+    "selected": [
+      {
+        "kind": "inline_clause",
+        "members": [
+          19,
+          20,
+          21
+        ],
+        "text": "d Terminate the current apportionment plan and adopt a new plan. All the other members of this group are adopting an apportionment plan effective for the current tax year which ends on , 20 , and for all succeeding tax years.",
+        "cost": 0.0
+      },
+      {
+        "kind": "composite_field",
+        "members": [
+          8,
+          9
+        ],
+        "text": "a For the entire year.",
+        "cost": 0.6707889913747689
+      },
+      {
+        "kind": "composite_field",
+        "members": [
+          35,
+          36
+        ],
+        "text": ", this corporation entered into an agreement with the Internal Revenue Service to",
+        "cost": 1.677690217500864
+      },
+      {
+        "kind": "composite_field",
+        "members": [
+          33,
+          34
+        ],
+        "text": "The statute of limitations for this year will expire on",
+        "cost": 1.6763161191987748
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "text": "1 Type of controlled group:",
+        "cost": -2.2346972395164246
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          18,
+          19
+        ],
+        "text": "plan, which was in effect for the tax year ending",
+        "cost": -1.273326696251725
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          22,
+          23
+        ],
+        "text": "4 If you checked box 3c or 3d above, check the applicable box below to indicate if the termination of the current apportionment plan was:",
+        "cost": -2.1917861163584336
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          24,
+          25
+        ],
+        "text": "5 If you did not check a box on line 3 above, check the applicable box below concerning the status of the group's apportionment plan (see instructions).",
+        "cost": -2.1922589668676746
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          28,
+          29
+        ],
+        "text": "See instructions.",
+        "cost": -1.7318139625937665
+      },
+      {
+        "kind": "choice_group",
+        "members": [
+          37,
+          38
+        ],
+        "text": "extend the statute of limitations for purposes of assessment until",
+        "cost": -0.98304263006021
+      }
+    ]
+  }
+]

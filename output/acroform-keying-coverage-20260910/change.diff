@@ -1,0 +1,124 @@
+--- before/scripts/acroform_keying.py
++++ after/scripts/acroform_keying.py
+@@ -22,6 +22,11 @@
+ from pydantic import BaseModel, Field
+ from scipy.optimize import Bounds, LinearConstraint, milp
+ from scipy.sparse import coo_matrix
++
++# Match the existing form stage's text-container coverage threshold. This
++# tolerates imperfect text bounds only for inline-clause proposals; detected
++# table/cell ownership still requires complete containment in scope_of().
++INLINE_WIDGET_COVERAGE = 0.8
+ 
+ 
+ class NativeWidget(BaseModel):
+@@ -347,7 +352,12 @@
+             for i, v in enumerate(values)
+             if v.scope.eligible and v.scope == label.scope
+         ]
+-        contained = tuple(i for i in eligible if contains(label.bbox, values[i].bbox))
++        contained = tuple(
++            i
++            for i in eligible
++            if values[i].bbox.intersection_over_self(label.bbox)
++            >= INLINE_WIDGET_COVERAGE
++        )
+         for i in eligible:
+             kind = "option_caption" if values[i].checkbox else "field_key"
+             candidates.append(
+--- before/tests/test_acroform_keying_prototype.py
++++ after/tests/test_acroform_keying_prototype.py
+@@ -128,6 +128,8 @@
+     assert ("field_key", [0], "Local name") in fields
+     assert all(text != "Outside table" for _, _, text in fields)
+     assert scope_of(box(95, 80, 105, 90), page) == Scope(100)
++    # Even near-total coverage must not move a cross-cell widget into one cell.
++    assert scope_of(box(82, 80, 100.1, 95), page) == Scope(100)
+     assert scope_of(box(82, 80, 98, 95), page) == Scope(100, 0)
+ 
+     # A detected table with no usable cells stays excluded, even with an
+@@ -198,16 +200,28 @@
+     )
+ 
+ 
+-def test_inline_checkbox_and_date_share_clause_without_duplicate_ownership():
+-    page = snapshot(
+-        [
+-            widget(0, box(10, 60, 20, 70), checkbox=True),
+-            widget(1, box(160, 60, 230, 70)),
+-        ],
+-        [label(1, "Extension requested until", box(5, 55, 250, 75))],
+-    )
+-    _, fields = chosen(page)
+-    assert fields == [("inline_clause", [0, 1], "Extension requested until")]
++@pytest.mark.parametrize("scale, offset", [(1, 0), (3.5, 23)])
++@pytest.mark.parametrize("text", ["Extension requested until", "期限延長"])
++def test_inline_checkbox_and_date_share_clause_without_duplicate_ownership(
++    scale: float, offset: float, text: str
++) -> None:
++    def positioned(left: float, top: float, right: float, bottom: float) -> BoundingBox:
++        return box(*(v * scale + offset for v in (left, top, right, bottom)))
++
++    page = snapshot(
++        [
++            widget(7, positioned(10, 60, 20, 70), checkbox=True),
++            widget(2, positioned(160, 60, 230, 70)),
++            widget(9, positioned(160, 67, 230, 77)),
++        ],
++        # Both clause controls have 80% coverage despite protruding below the
++        # text bounds. The neighboring control has only 10% and must not join.
++        [label(1, text, positioned(5, 55, 250, 68))],
++    )
++    page.size = Size(width=400 * scale + offset, height=400 * scale + offset)
++    order, fields = chosen(page)
++    assert order == [7, 2, 9]
++    assert fields == [("inline_clause", [7, 2], text)]
+ 
+ 
+ def test_shared_business_number_is_not_split_at_printed_component():
+--- before/docs/acroform-keying-prototype.md
++++ after/docs/acroform-keying-prototype.md
+@@ -61,6 +61,14 @@
+ checkbox runs or shared native names as evidence; native names are never emitted
+ as visible labels. Candidate construction remains heuristic and needs more work.
+ 
++Inline-clause proposals require at least 80% of each member widget's area inside
++the existing caption's text envelope, using
++`widget_bbox.intersection_over_self(caption_bbox)`. This mirrors the form stage's
++text-container coverage threshold and tolerates small protrusions beyond text
++bounds. It does not change detected table/cell ownership or reconstruct captions.
++The coverage test only proposes a shared clause; the assignment still evaluates
++competing uses of its text and widgets.
++
+ The solver minimizes the objective over the generated candidates. An optimal
+ solver status does not mean the associations are semantically correct. On a
+ solver failure or timeout, the page preserves all values without assignments;
+@@ -91,10 +99,26 @@
+ per-page JSON. Form scopes and table row/column annotations are not pairing
+ targets. A correct option caption does not imply a correct common question.
+ 
+-Known limits: cross-cluster text joining, reliable local label-side conventions,
+-an independent alternation objective, broader choice-group construction, and
++Fragmented captions and missed/truncated tables are upstream layout defects;
++caption reconstruction and missing-grid recovery are out of scope here.
++Known association limits: reliable local label-side conventions, an independent
++alternation objective, broader choice-group construction, and
+ integration with Core traversal/serializers remain future work. The saved tables
+ come from the baseline run, whose form stage preceded table inference; a future
+ pipeline integration must validate fresh table inputs after the stage reorder.
+ The development forms have already influenced this experiment; this is not a
+ held-out accuracy estimate.
++
++The September 10 widget-coverage replay corrected 20 local-label failures across
++the 19 development pages, with no previously correct local labels lost. Thresholds
++of 80% and 90% gave the same local results; 80% follows the existing text-container
++convention rather than selecting a threshold specific to these forms. Native
++widget order and all 503 table exclusions stayed unchanged. This does not certify
++group membership or resolve separate From/until components inside one clause.
++
++Question stealing occurs both beside and above the checkbox column: RC7190 page 1
++uses the left-hand Application type prompt as the first option caption; Chinese
++F14446 page 1 uses the prompt above option A. A left-only guard cannot fix the
++general failure. Existing alphabetic/length/whitespace-word checks are experimental
++language-sensitive assumptions requiring separate review; this containment change
++introduces no language-dependent signal.

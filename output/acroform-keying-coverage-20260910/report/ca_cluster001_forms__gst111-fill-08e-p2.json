@@ -1,0 +1,3806 @@
+{
+  "schema_version": "1.0",
+  "fixture": "ca_cluster001_forms__gst111-fill-08e",
+  "page": 2,
+  "solver_status": "optimal",
+  "seconds": 0.13614620798034593,
+  "null_cost": 3.0,
+  "objective": 76.65954868773863,
+  "ordered_values": [
+    {
+      "native": {
+        "index": 0,
+        "rect": {
+          "r_x0": 477.361,
+          "r_y0": 691.518,
+          "r_x1": 573.037,
+          "r_y1": 691.518,
+          "r_x2": 573.037,
+          "r_y2": 703.68,
+          "r_x3": 477.361,
+          "r_y3": 703.68,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.361,
+        "t": 88.32000000000005,
+        "r": 573.037,
+        "b": 100.48199999999997,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        297
+      ]
+    },
+    {
+      "native": {
+        "index": 1,
+        "rect": {
+          "r_x0": 477.162,
+          "r_y0": 666.919,
+          "r_x1": 572.838,
+          "r_y1": 666.919,
+          "r_x2": 572.838,
+          "r_y2": 679.081,
+          "r_x3": 477.162,
+          "r_y3": 679.081,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.162,
+        "t": 112.91899999999998,
+        "r": 572.838,
+        "b": 125.08100000000002,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        925
+      ]
+    },
+    {
+      "native": {
+        "index": 2,
+        "rect": {
+          "r_x0": 477.262,
+          "r_y0": 643.219,
+          "r_x1": 572.938,
+          "r_y1": 643.219,
+          "r_x2": 572.938,
+          "r_y2": 655.381,
+          "r_x3": 477.262,
+          "r_y3": 655.381,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.262,
+        "t": 136.61900000000003,
+        "r": 572.938,
+        "b": 148.78099999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        959
+      ]
+    },
+    {
+      "native": {
+        "index": 3,
+        "rect": {
+          "r_x0": 477.062,
+          "r_y0": 618.619,
+          "r_x1": 572.738,
+          "r_y1": 618.619,
+          "r_x2": 572.738,
+          "r_y2": 630.781,
+          "r_x3": 477.062,
+          "r_y3": 630.781,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.4",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.062,
+        "t": 161.21900000000005,
+        "r": 572.738,
+        "b": 173.38099999999997,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1026
+      ]
+    },
+    {
+      "native": {
+        "index": 4,
+        "rect": {
+          "r_x0": 477.262,
+          "r_y0": 595.219,
+          "r_x1": 572.938,
+          "r_y1": 595.219,
+          "r_x2": 572.938,
+          "r_y2": 607.381,
+          "r_x3": 477.262,
+          "r_y3": 607.381,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.5",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.262,
+        "t": 184.61900000000003,
+        "r": 572.938,
+        "b": 196.78099999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        994
+      ]
+    },
+    {
+      "native": {
+        "index": 5,
+        "rect": {
+          "r_x0": 477.062,
+          "r_y0": 573.619,
+          "r_x1": 572.738,
+          "r_y1": 573.619,
+          "r_x2": 572.738,
+          "r_y2": 585.781,
+          "r_x3": 477.062,
+          "r_y3": 585.781,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.6",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.062,
+        "t": 206.21900000000005,
+        "r": 572.738,
+        "b": 218.38099999999997,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        830
+      ]
+    },
+    {
+      "native": {
+        "index": 6,
+        "rect": {
+          "r_x0": 477.262,
+          "r_y0": 549.719,
+          "r_x1": 572.938,
+          "r_y1": 549.719,
+          "r_x2": 572.938,
+          "r_y2": 561.881,
+          "r_x3": 477.262,
+          "r_y3": 561.881,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.7",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.262,
+        "t": 230.11900000000003,
+        "r": 572.938,
+        "b": 242.28099999999995,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        798
+      ]
+    },
+    {
+      "native": {
+        "index": 7,
+        "rect": {
+          "r_x0": 477.062,
+          "r_y0": 529.119,
+          "r_x1": 572.738,
+          "r_y1": 529.119,
+          "r_x2": 572.738,
+          "r_y2": 541.281,
+          "r_x3": 477.062,
+          "r_y3": 541.281,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.8",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 477.062,
+        "t": 250.71900000000005,
+        "r": 572.738,
+        "b": 262.881,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        7
+      ]
+    },
+    {
+      "native": {
+        "index": 8,
+        "rect": {
+          "r_x0": 137.75,
+          "r_y0": 339.937,
+          "r_x1": 146.25,
+          "r_y1": 339.937,
+          "r_x2": 146.25,
+          "r_y2": 353.688,
+          "r_x3": 137.75,
+          "r_y3": 353.688,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 137.75,
+        "t": 438.312,
+        "r": 146.25,
+        "b": 452.063,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 9,
+        "rect": {
+          "r_x0": 148.187,
+          "r_y0": 339.419,
+          "r_x1": 233.738,
+          "r_y1": 339.419,
+          "r_x2": 233.738,
+          "r_y2": 353.581,
+          "r_x3": 148.187,
+          "r_y3": 353.581,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.9",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.187,
+        "t": 438.419,
+        "r": 233.738,
+        "b": 452.581,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 10,
+        "rect": {
+          "r_x0": 256.081,
+          "r_y0": 339.759,
+          "r_x1": 264.956,
+          "r_y1": 339.759,
+          "r_x2": 264.956,
+          "r_y2": 353.509,
+          "r_x3": 256.081,
+          "r_y3": 353.509,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/1",
+        "widget_description": null,
+        "widget_field_name": "checkD.2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/1"
+      },
+      "bbox": {
+        "l": 256.081,
+        "t": 438.491,
+        "r": 264.956,
+        "b": 452.241,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 11,
+        "rect": {
+          "r_x0": 266.889,
+          "r_y0": 339.366,
+          "r_x1": 354.544,
+          "r_y1": 339.366,
+          "r_x2": 354.544,
+          "r_y2": 352.278,
+          "r_x3": 266.889,
+          "r_y3": 352.278,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.10",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.889,
+        "t": 439.722,
+        "r": 354.544,
+        "b": 452.634,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 12,
+        "rect": {
+          "r_x0": 375.268,
+          "r_y0": 340.125,
+          "r_x1": 384.143,
+          "r_y1": 340.125,
+          "r_x2": 384.143,
+          "r_y2": 353.875,
+          "r_x3": 375.268,
+          "r_y3": 353.875,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.3",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.268,
+        "t": 438.125,
+        "r": 384.143,
+        "b": 451.875,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 13,
+        "rect": {
+          "r_x0": 385.805,
+          "r_y0": 340.107,
+          "r_x1": 473.607,
+          "r_y1": 340.107,
+          "r_x2": 473.607,
+          "r_y2": 352.643,
+          "r_x3": 385.805,
+          "r_y3": 352.643,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.11",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 385.805,
+        "t": 439.357,
+        "r": 473.607,
+        "b": 451.893,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 14,
+        "rect": {
+          "r_x0": 504.662,
+          "r_y0": 339.337,
+          "r_x1": 592.587,
+          "r_y1": 339.337,
+          "r_x2": 592.587,
+          "r_y2": 351.789,
+          "r_x3": 504.662,
+          "r_y3": 351.789,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.12",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.662,
+        "t": 440.211,
+        "r": 592.587,
+        "b": 452.663,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 15,
+        "rect": {
+          "r_x0": 138.082,
+          "r_y0": 315.893,
+          "r_x1": 146.582,
+          "r_y1": 315.893,
+          "r_x2": 146.582,
+          "r_y2": 328.894,
+          "r_x3": 138.082,
+          "r_y3": 328.894,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.4",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 138.082,
+        "t": 463.106,
+        "r": 146.582,
+        "b": 476.107,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 16,
+        "rect": {
+          "r_x0": 148.912,
+          "r_y0": 315.375,
+          "r_x1": 235.213,
+          "r_y1": 315.375,
+          "r_x2": 235.213,
+          "r_y2": 328.287,
+          "r_x3": 148.912,
+          "r_y3": 328.287,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.13",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.912,
+        "t": 463.713,
+        "r": 235.213,
+        "b": 476.625,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 17,
+        "rect": {
+          "r_x0": 256.413,
+          "r_y0": 315.341,
+          "r_x1": 265.288,
+          "r_y1": 315.341,
+          "r_x2": 265.288,
+          "r_y2": 328.716,
+          "r_x3": 256.413,
+          "r_y3": 328.716,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.5",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 256.413,
+        "t": 463.284,
+        "r": 265.288,
+        "b": 476.659,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 18,
+        "rect": {
+          "r_x0": 266.889,
+          "r_y0": 315.798,
+          "r_x1": 354.544,
+          "r_y1": 315.798,
+          "r_x2": 354.544,
+          "r_y2": 328.484,
+          "r_x3": 266.889,
+          "r_y3": 328.484,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.14",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.889,
+        "t": 463.516,
+        "r": 354.544,
+        "b": 476.202,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 19,
+        "rect": {
+          "r_x0": 375.6,
+          "r_y0": 315.706,
+          "r_x1": 384.475,
+          "r_y1": 315.706,
+          "r_x2": 384.475,
+          "r_y2": 329.081,
+          "r_x3": 375.6,
+          "r_y3": 329.081,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.6",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.6,
+        "t": 462.919,
+        "r": 384.475,
+        "b": 476.294,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 20,
+        "rect": {
+          "r_x0": 386.555,
+          "r_y0": 316.038,
+          "r_x1": 473.232,
+          "r_y1": 316.038,
+          "r_x2": 473.232,
+          "r_y2": 327.849,
+          "r_x3": 386.555,
+          "r_y3": 327.849,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.15",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 386.555,
+        "t": 464.151,
+        "r": 473.232,
+        "b": 475.962,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 21,
+        "rect": {
+          "r_x0": 504.662,
+          "r_y0": 315.519,
+          "r_x1": 592.587,
+          "r_y1": 315.519,
+          "r_x2": 592.587,
+          "r_y2": 327.995,
+          "r_x3": 504.662,
+          "r_y3": 327.995,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.16",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.662,
+        "t": 464.005,
+        "r": 592.587,
+        "b": 476.481,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 22,
+        "rect": {
+          "r_x0": 138.082,
+          "r_y0": 291.893,
+          "r_x1": 146.582,
+          "r_y1": 291.893,
+          "r_x2": 146.582,
+          "r_y2": 304.894,
+          "r_x3": 138.082,
+          "r_y3": 304.894,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.7",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 138.082,
+        "t": 487.106,
+        "r": 146.582,
+        "b": 500.107,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 23,
+        "rect": {
+          "r_x0": 148.912,
+          "r_y0": 291.375,
+          "r_x1": 235.213,
+          "r_y1": 291.375,
+          "r_x2": 235.213,
+          "r_y2": 304.287,
+          "r_x3": 148.912,
+          "r_y3": 304.287,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.17",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.912,
+        "t": 487.713,
+        "r": 235.213,
+        "b": 500.625,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 24,
+        "rect": {
+          "r_x0": 256.413,
+          "r_y0": 291.716,
+          "r_x1": 265.288,
+          "r_y1": 291.716,
+          "r_x2": 265.288,
+          "r_y2": 304.716,
+          "r_x3": 256.413,
+          "r_y3": 304.716,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.8",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 256.413,
+        "t": 487.284,
+        "r": 265.288,
+        "b": 500.284,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 25,
+        "rect": {
+          "r_x0": 266.889,
+          "r_y0": 291.798,
+          "r_x1": 354.544,
+          "r_y1": 291.798,
+          "r_x2": 354.544,
+          "r_y2": 304.484,
+          "r_x3": 266.889,
+          "r_y3": 304.484,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.18",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.889,
+        "t": 487.516,
+        "r": 354.544,
+        "b": 500.202,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 26,
+        "rect": {
+          "r_x0": 375.6,
+          "r_y0": 291.706,
+          "r_x1": 384.475,
+          "r_y1": 291.706,
+          "r_x2": 384.475,
+          "r_y2": 305.081,
+          "r_x3": 375.6,
+          "r_y3": 305.081,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.9",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.6,
+        "t": 486.919,
+        "r": 384.475,
+        "b": 500.294,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 27,
+        "rect": {
+          "r_x0": 385.805,
+          "r_y0": 292.063,
+          "r_x1": 473.232,
+          "r_y1": 292.063,
+          "r_x2": 473.232,
+          "r_y2": 303.849,
+          "r_x3": 385.805,
+          "r_y3": 303.849,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.19",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 385.805,
+        "t": 488.151,
+        "r": 473.232,
+        "b": 499.937,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 28,
+        "rect": {
+          "r_x0": 505.037,
+          "r_y0": 291.519,
+          "r_x1": 592.212,
+          "r_y1": 291.519,
+          "r_x2": 592.212,
+          "r_y2": 304.995,
+          "r_x3": 505.037,
+          "r_y3": 304.995,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.20",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 505.037,
+        "t": 487.005,
+        "r": 592.212,
+        "b": 500.481,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 29,
+        "rect": {
+          "r_x0": 137.457,
+          "r_y0": 267.393,
+          "r_x1": 146.707,
+          "r_y1": 267.393,
+          "r_x2": 146.707,
+          "r_y2": 281.519,
+          "r_x3": 137.457,
+          "r_y3": 281.519,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.10",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 137.457,
+        "t": 510.481,
+        "r": 146.707,
+        "b": 524.607,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 30,
+        "rect": {
+          "r_x0": 148.912,
+          "r_y0": 267.375,
+          "r_x1": 235.213,
+          "r_y1": 267.375,
+          "r_x2": 235.213,
+          "r_y2": 280.287,
+          "r_x3": 148.912,
+          "r_y3": 280.287,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.21",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.912,
+        "t": 511.713,
+        "r": 235.213,
+        "b": 524.625,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 31,
+        "rect": {
+          "r_x0": 256.163,
+          "r_y0": 267.966,
+          "r_x1": 265.413,
+          "r_y1": 267.966,
+          "r_x2": 265.413,
+          "r_y2": 281.341,
+          "r_x3": 256.163,
+          "r_y3": 281.341,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.11",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 256.163,
+        "t": 510.659,
+        "r": 265.413,
+        "b": 524.034,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 32,
+        "rect": {
+          "r_x0": 266.889,
+          "r_y0": 267.523,
+          "r_x1": 354.544,
+          "r_y1": 267.523,
+          "r_x2": 354.544,
+          "r_y2": 279.684,
+          "r_x3": 266.889,
+          "r_y3": 279.684,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.22",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.889,
+        "t": 512.316,
+        "r": 354.544,
+        "b": 524.477,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 33,
+        "rect": {
+          "r_x0": 375.6,
+          "r_y0": 267.581,
+          "r_x1": 384.475,
+          "r_y1": 267.581,
+          "r_x2": 384.475,
+          "r_y2": 281.706,
+          "r_x3": 375.6,
+          "r_y3": 281.706,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkD.12",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.6,
+        "t": 510.294,
+        "r": 384.475,
+        "b": 524.419,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 34,
+        "rect": {
+          "r_x0": 385.805,
+          "r_y0": 268.063,
+          "r_x1": 473.607,
+          "r_y1": 268.063,
+          "r_x2": 473.607,
+          "r_y2": 279.849,
+          "r_x3": 385.805,
+          "r_y3": 279.849,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.23",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 385.805,
+        "t": 512.1510000000001,
+        "r": 473.607,
+        "b": 523.937,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 35,
+        "rect": {
+          "r_x0": 504.662,
+          "r_y0": 267.544,
+          "r_x1": 591.837,
+          "r_y1": 267.544,
+          "r_x2": 591.837,
+          "r_y2": 279.995,
+          "r_x3": 504.662,
+          "r_y3": 279.995,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.24",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.662,
+        "t": 512.005,
+        "r": 591.837,
+        "b": 524.456,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 36,
+        "rect": {
+          "r_x0": 148.912,
+          "r_y0": 243.212,
+          "r_x1": 234.838,
+          "r_y1": 243.212,
+          "r_x2": 234.838,
+          "r_y2": 256.038,
+          "r_x3": 148.912,
+          "r_y3": 256.038,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.25",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.912,
+        "t": 535.962,
+        "r": 234.838,
+        "b": 548.788,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 37,
+        "rect": {
+          "r_x0": 266.889,
+          "r_y0": 243.337,
+          "r_x1": 354.919,
+          "r_y1": 243.337,
+          "r_x2": 354.919,
+          "r_y2": 256.539,
+          "r_x3": 266.889,
+          "r_y3": 256.539,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.26",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.889,
+        "t": 535.461,
+        "r": 354.919,
+        "b": 548.663,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 38,
+        "rect": {
+          "r_x0": 385.805,
+          "r_y0": 243.336,
+          "r_x1": 473.607,
+          "r_y1": 243.336,
+          "r_x2": 473.607,
+          "r_y2": 255.788,
+          "r_x3": 385.805,
+          "r_y3": 255.788,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.27",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 385.805,
+        "t": 536.212,
+        "r": 473.607,
+        "b": 548.664,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 39,
+        "rect": {
+          "r_x0": 504.662,
+          "r_y0": 243.462,
+          "r_x1": 592.587,
+          "r_y1": 243.462,
+          "r_x2": 592.587,
+          "r_y2": 256.289,
+          "r_x3": 504.662,
+          "r_y3": 256.289,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectD.28",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.662,
+        "t": 535.711,
+        "r": 592.587,
+        "b": 548.538,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": 14,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 40,
+        "rect": {
+          "r_x0": 138.082,
+          "r_y0": 114.393,
+          "r_x1": 146.582,
+          "r_y1": 114.393,
+          "r_x2": 146.582,
+          "r_y2": 128.144,
+          "r_x3": 138.082,
+          "r_y3": 128.144,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.1",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 138.082,
+        "t": 663.856,
+        "r": 146.582,
+        "b": 677.607,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1922
+      ]
+    },
+    {
+      "native": {
+        "index": 41,
+        "rect": {
+          "r_x0": 149.244,
+          "r_y0": 114.375,
+          "r_x1": 236.295,
+          "r_y1": 114.375,
+          "r_x2": 236.295,
+          "r_y2": 127.287,
+          "r_x3": 149.244,
+          "r_y3": 127.287,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.1",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 149.244,
+        "t": 664.713,
+        "r": 236.295,
+        "b": 677.625,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1956
+      ]
+    },
+    {
+      "native": {
+        "index": 42,
+        "rect": {
+          "r_x0": 256.413,
+          "r_y0": 114.591,
+          "r_x1": 265.288,
+          "r_y1": 114.591,
+          "r_x2": 265.288,
+          "r_y2": 128.341,
+          "r_x3": 256.413,
+          "r_y3": 128.341,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.2",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 256.413,
+        "t": 663.659,
+        "r": 265.288,
+        "b": 677.409,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1825
+      ]
+    },
+    {
+      "native": {
+        "index": 43,
+        "rect": {
+          "r_x0": 266.95,
+          "r_y0": 114.548,
+          "r_x1": 354.751,
+          "r_y1": 114.548,
+          "r_x2": 354.751,
+          "r_y2": 127.484,
+          "r_x3": 266.95,
+          "r_y3": 127.484,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.2",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.95,
+        "t": 664.516,
+        "r": 354.751,
+        "b": 677.452,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 44,
+        "rect": {
+          "r_x0": 375.6,
+          "r_y0": 114.581,
+          "r_x1": 384.475,
+          "r_y1": 114.581,
+          "r_x2": 384.475,
+          "r_y2": 129.081,
+          "r_x3": 375.6,
+          "r_y3": 129.081,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.3",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.6,
+        "t": 662.919,
+        "r": 384.475,
+        "b": 677.419,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        507
+      ]
+    },
+    {
+      "native": {
+        "index": 45,
+        "rect": {
+          "r_x0": 386.137,
+          "r_y0": 114.563,
+          "r_x1": 473.564,
+          "r_y1": 114.563,
+          "r_x2": 473.564,
+          "r_y2": 127.849,
+          "r_x3": 386.137,
+          "r_y3": 127.849,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.3",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 386.137,
+        "t": 664.151,
+        "r": 473.564,
+        "b": 677.437,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1861
+      ]
+    },
+    {
+      "native": {
+        "index": 46,
+        "rect": {
+          "r_x0": 505.119,
+          "r_y0": 114.544,
+          "r_x1": 593.418,
+          "r_y1": 114.544,
+          "r_x2": 593.418,
+          "r_y2": 126.995,
+          "r_x3": 505.119,
+          "r_y3": 126.995,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.4",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 505.119,
+        "t": 665.005,
+        "r": 593.418,
+        "b": 677.456,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1895
+      ]
+    },
+    {
+      "native": {
+        "index": 47,
+        "rect": {
+          "r_x0": 137.582,
+          "r_y0": 87.656,
+          "r_x1": 146.082,
+          "r_y1": 87.656,
+          "r_x2": 146.082,
+          "r_y2": 101.407,
+          "r_x3": 137.582,
+          "r_y3": 101.407,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.4",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 137.582,
+        "t": 690.593,
+        "r": 146.082,
+        "b": 704.344,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1170
+      ]
+    },
+    {
+      "native": {
+        "index": 48,
+        "rect": {
+          "r_x0": 148.994,
+          "r_y0": 87.613,
+          "r_x1": 236.045,
+          "r_y1": 87.613,
+          "r_x2": 236.045,
+          "r_y2": 100.55,
+          "r_x3": 148.994,
+          "r_y3": 100.55,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.5",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.994,
+        "t": 691.45,
+        "r": 236.045,
+        "b": 704.387,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1369
+      ]
+    },
+    {
+      "native": {
+        "index": 49,
+        "rect": {
+          "r_x0": 255.913,
+          "r_y0": 87.853,
+          "r_x1": 264.788,
+          "r_y1": 87.853,
+          "r_x2": 264.788,
+          "r_y2": 101.603,
+          "r_x3": 255.913,
+          "r_y3": 101.603,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.5",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 255.913,
+        "t": 690.397,
+        "r": 264.788,
+        "b": 704.147,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 50,
+        "rect": {
+          "r_x0": 267.45,
+          "r_y0": 87.46,
+          "r_x1": 354.876,
+          "r_y1": 87.46,
+          "r_x2": 354.876,
+          "r_y2": 99.997,
+          "r_x3": 267.45,
+          "r_y3": 99.997,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.6",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 267.45,
+        "t": 692.003,
+        "r": 354.876,
+        "b": 704.54,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 51,
+        "rect": {
+          "r_x0": 375.1,
+          "r_y0": 87.844,
+          "r_x1": 383.975,
+          "r_y1": 87.844,
+          "r_x2": 383.975,
+          "r_y2": 101.344,
+          "r_x3": 375.1,
+          "r_y3": 101.344,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.6",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.1,
+        "t": 690.656,
+        "r": 383.975,
+        "b": 704.156,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 52,
+        "rect": {
+          "r_x0": 386.637,
+          "r_y0": 87.451,
+          "r_x1": 474.064,
+          "r_y1": 87.451,
+          "r_x2": 474.064,
+          "r_y2": 101.112,
+          "r_x3": 386.637,
+          "r_y3": 101.112,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.7",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 386.637,
+        "t": 690.888,
+        "r": 474.064,
+        "b": 704.549,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 53,
+        "rect": {
+          "r_x0": 504.619,
+          "r_y0": 87.431,
+          "r_x1": 592.918,
+          "r_y1": 87.431,
+          "r_x2": 592.918,
+          "r_y2": 100.258,
+          "r_x3": 504.619,
+          "r_y3": 100.258,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.8",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.619,
+        "t": 691.742,
+        "r": 592.918,
+        "b": 704.569,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 54,
+        "rect": {
+          "r_x0": 137.582,
+          "r_y0": 60.656,
+          "r_x1": 146.082,
+          "r_y1": 60.656,
+          "r_x2": 146.082,
+          "r_y2": 74.407,
+          "r_x3": 137.582,
+          "r_y3": 74.407,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.7",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 137.582,
+        "t": 717.593,
+        "r": 146.082,
+        "b": 731.344,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1408
+      ]
+    },
+    {
+      "native": {
+        "index": 55,
+        "rect": {
+          "r_x0": 148.994,
+          "r_y0": 60.613,
+          "r_x1": 235.295,
+          "r_y1": 60.613,
+          "r_x2": 235.295,
+          "r_y2": 73.55,
+          "r_x3": 148.994,
+          "r_y3": 73.55,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.9",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.994,
+        "t": 718.45,
+        "r": 235.295,
+        "b": 731.387,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1343
+      ]
+    },
+    {
+      "native": {
+        "index": 56,
+        "rect": {
+          "r_x0": 255.913,
+          "r_y0": 60.853,
+          "r_x1": 264.788,
+          "r_y1": 60.853,
+          "r_x2": 264.788,
+          "r_y2": 74.603,
+          "r_x3": 255.913,
+          "r_y3": 74.603,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.8",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 255.913,
+        "t": 717.397,
+        "r": 264.788,
+        "b": 731.147,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 57,
+        "rect": {
+          "r_x0": 266.7,
+          "r_y0": 60.46,
+          "r_x1": 354.501,
+          "r_y1": 60.46,
+          "r_x2": 354.501,
+          "r_y2": 73.372,
+          "r_x3": 266.7,
+          "r_y3": 73.372,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.10",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 266.7,
+        "t": 718.628,
+        "r": 354.501,
+        "b": 731.54,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 58,
+        "rect": {
+          "r_x0": 375.1,
+          "r_y0": 60.844,
+          "r_x1": 383.975,
+          "r_y1": 60.844,
+          "r_x2": 383.975,
+          "r_y2": 74.344,
+          "r_x3": 375.1,
+          "r_y3": 74.344,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": "/Off",
+        "widget_description": null,
+        "widget_field_name": "checkE.9",
+        "widget_field_type": "/Btn",
+        "widget_field_flags": 0,
+        "widget_appearance_state": "/Off"
+      },
+      "bbox": {
+        "l": 375.1,
+        "t": 717.656,
+        "r": 383.975,
+        "b": 731.156,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 59,
+        "rect": {
+          "r_x0": 386.637,
+          "r_y0": 60.451,
+          "r_x1": 473.689,
+          "r_y1": 60.451,
+          "r_x2": 473.689,
+          "r_y2": 74.112,
+          "r_x3": 386.637,
+          "r_y3": 74.112,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.11",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388608,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 386.637,
+        "t": 717.888,
+        "r": 473.689,
+        "b": 731.549,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 60,
+        "rect": {
+          "r_x0": 504.619,
+          "r_y0": 60.431,
+          "r_x1": 592.543,
+          "r_y1": 60.431,
+          "r_x2": 592.543,
+          "r_y2": 73.258,
+          "r_x3": 504.619,
+          "r_y3": 73.258,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.12",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 504.619,
+        "t": 718.742,
+        "r": 592.543,
+        "b": 731.569,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 61,
+        "rect": {
+          "r_x0": 148.975,
+          "r_y0": 33.3372,
+          "r_x1": 235.4,
+          "r_y1": 33.3372,
+          "r_x2": 235.4,
+          "r_y2": 45.7892,
+          "r_x3": 148.975,
+          "r_y3": 45.7892,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.13",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 148.975,
+        "t": 746.2108,
+        "r": 235.4,
+        "b": 758.6628,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": [
+        1085
+      ]
+    },
+    {
+      "native": {
+        "index": 62,
+        "rect": {
+          "r_x0": 267.6,
+          "r_y0": 33.3351,
+          "r_x1": 354.4,
+          "r_y1": 33.3351,
+          "r_x2": 354.4,
+          "r_y2": 46.5371,
+          "r_x3": 267.6,
+          "r_y3": 46.5371,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.14",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 267.6,
+        "t": 745.4629,
+        "r": 354.4,
+        "b": 758.6649,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 63,
+        "rect": {
+          "r_x0": 386.85,
+          "r_y0": 33.8102,
+          "r_x1": 474.025,
+          "r_y1": 33.8102,
+          "r_x2": 474.025,
+          "r_y2": 45.2872,
+          "r_x3": 386.85,
+          "r_y3": 45.2872,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.15",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 386.85,
+        "t": 746.7128,
+        "r": 474.025,
+        "b": 758.1898,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    },
+    {
+      "native": {
+        "index": 64,
+        "rect": {
+          "r_x0": 505.351,
+          "r_y0": 33.4603,
+          "r_x1": 593.276,
+          "r_y1": 33.4603,
+          "r_x2": 593.276,
+          "r_y2": 46.2873,
+          "r_x3": 505.351,
+          "r_y3": 46.2873,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "widget_text": null,
+        "widget_description": null,
+        "widget_field_name": "SectE.16",
+        "widget_field_type": "/Tx",
+        "widget_field_flags": 8388609,
+        "widget_appearance_state": null
+      },
+      "bbox": {
+        "l": 505.351,
+        "t": 745.7127,
+        "r": 593.276,
+        "b": 758.5397,
+        "coord_origin": "TOPLEFT"
+      },
+      "table": null,
+      "cell": null,
+      "field_refs": []
+    }
+  ],
+  "fields": [
+    {
+      "id": 7,
+      "kind": "field_key",
+      "widget_indices": [
+        7
+      ],
+      "text": "Enter the total value of property and services that you imported into Canada during the fiscal year. Include the value of imports subject to tax under sections 212, 212.1, 218, and 220.07. Do not include GST, HST, or provincial sales tax. Also include the value of qualifying consideration that is greater than zero in respect of an outlay made or an expense incurred outside Canada subject to tax under proposed sections 218.01 and 218.1.",
+      "bbox": {
+        "l": 23.04,
+        "t": 297.822,
+        "r": 584.5256999999998,
+        "b": 339.6731834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.6783357043515228,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 297,
+      "kind": "field_key",
+      "widget_indices": [
+        0
+      ],
+      "text": "Enter the total amount of GST/HST payable or paid without becoming payable by you on importations or the provincial part of HST to be self-assessed during the fiscal year.",
+      "bbox": {
+        "l": 23.04,
+        "t": 61.541999999999916,
+        "r": 566.4473999999999,
+        "b": 80.83918342541438,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6589432453569736,
+        "alignment": 0.034437058405452414,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 507,
+      "kind": "option_caption",
+      "widget_indices": [
+        44
+      ],
+      "text": "Note: Tick the grey box next to the line number if the amount you enter on this line is an estimated amount.",
+      "bbox": {
+        "l": 21.6,
+        "t": 613.5449,
+        "r": 452.4840000000005,
+        "b": 621.5650834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.817464702590866,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 798,
+      "kind": "field_key",
+      "widget_indices": [
+        6
+      ],
+      "text": "Total provincial part of HST on \"qualifying consideration\" under proposed subsection 218.1(1.2) .......",
+      "bbox": {
+        "l": 21.6,
+        "t": 234.70489999999995,
+        "r": 423.16920000000044,
+        "b": 242.72508342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.046993747343567,
+        "alignment": 0.027685365898690306,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 830,
+      "kind": "field_key",
+      "widget_indices": [
+        5
+      ],
+      "text": "Total provincial part of HST on \"imported taxable supplies\" under subsection 218.1(1) ........................",
+      "bbox": {
+        "l": 21.6,
+        "t": 211.1789,
+        "r": 425.77200000000045,
+        "b": 219.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.000819725885438,
+        "alignment": 0.051001540863896855,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 925,
+      "kind": "field_key",
+      "widget_indices": [
+        1
+      ],
+      "text": "Total GST on \"imported taxable supplies\" under section 218 .................................................................",
+      "bbox": {
+        "l": 21.6,
+        "t": 118.18189999999993,
+        "r": 426.6036000000006,
+        "b": 126.20208342541434,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.9884078666100589,
+        "alignment": 0.06989138314853433,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 959,
+      "kind": "field_key",
+      "widget_indices": [
+        2
+      ],
+      "text": "Total GST on \"qualifying consideration\" under proposed section 218.01 ...............................................",
+      "bbox": {
+        "l": 21.6,
+        "t": 142.0589,
+        "r": 426.56580000000054,
+        "b": 150.0790834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.990757499626661,
+        "alignment": 0.08092604349303811,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 994,
+      "kind": "field_key",
+      "widget_indices": [
+        4
+      ],
+      "text": "Total provincial part of HST on certain imported goods under section 220.07 .......................................",
+      "bbox": {
+        "l": 21.6,
+        "t": 190.05589999999995,
+        "r": 425.7324000000005,
+        "b": 198.07608342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.004851366325675,
+        "alignment": 0.08073901535160333,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1026,
+      "kind": "field_key",
+      "widget_indices": [
+        3
+      ],
+      "text": "Total provincial part of HST on certain imported goods under section 212.1 .........................................",
+      "bbox": {
+        "l": 21.6,
+        "t": 166.1789,
+        "r": 425.6964000000005,
+        "b": 174.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.002093568834421,
+        "alignment": 0.051001540863896855,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1085,
+      "kind": "field_key",
+      "widget_indices": [
+        61
+      ],
+      "text": "Total",
+      "bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.6663406595547268,
+        "alignment": 0.25864745105786785,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1170,
+      "kind": "option_caption",
+      "widget_indices": [
+        47
+      ],
+      "text": "Tangible personal property",
+      "bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.8749162076310244,
+        "alignment": 0.09544093428062184,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1343,
+      "kind": "field_key",
+      "widget_indices": [
+        55
+      ],
+      "text": "Intangible personal property",
+      "bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 713.9198171933701,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.6854952625877813,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1369,
+      "kind": "field_key",
+      "widget_indices": [
+        48
+      ],
+      "text": "and services (other than",
+      "bbox": {
+        "l": 18.72,
+        "t": 714.79512,
+        "r": 104.92407599999999,
+        "b": 721.9598171933701,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.0531769025306117,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1408,
+      "kind": "option_caption",
+      "widget_indices": [
+        54
+      ],
+      "text": "financial services)",
+      "bbox": {
+        "l": 18.72,
+        "t": 722.83512,
+        "r": 82.68302399999999,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.05988942606657,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1825,
+      "kind": "option_caption",
+      "widget_indices": [
+        42
+      ],
+      "text": "Exported to related persons",
+      "bbox": {
+        "l": 241.44,
+        "t": 635.6219,
+        "r": 352.28490000000033,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.251567340521146,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1861,
+      "kind": "field_key",
+      "widget_indices": [
+        45
+      ],
+      "text": "Exported to third parties",
+      "bbox": {
+        "l": 367.8,
+        "t": 635.6219,
+        "r": 463.5609000000003,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2689633263703157,
+        "alignment": 0.05720829949557765,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1895,
+      "kind": "field_key",
+      "widget_indices": [
+        46
+      ],
+      "text": "Total",
+      "bbox": {
+        "l": 524.52,
+        "t": 635.6219,
+        "r": 544.527,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2984583865184078,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1922,
+      "kind": "option_caption",
+      "widget_indices": [
+        40
+      ],
+      "text": "Exported to head office",
+      "bbox": {
+        "l": 130.44,
+        "t": 630.1019,
+        "r": 225.72389999999996,
+        "b": 638.1220834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.4371405988055563,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    },
+    {
+      "id": 1956,
+      "kind": "field_key",
+      "widget_indices": [
+        41
+      ],
+      "text": "or branches",
+      "bbox": {
+        "l": 154.2,
+        "t": 641.3789,
+        "r": 201.77669999999998,
+        "b": 649.3990834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.0679545173681342,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "widget_index": 0,
+      "status": "wrong",
+      "expected": "Total GST on imported goods under section 212 ....................................................................................",
+      "predicted": "Enter the total amount of GST/HST payable or paid without becoming payable by you on importations or the provincial part of HST to be self-assessed during the fiscal year.",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 97.0589,
+        "r": 427.365,
+        "b": 105.07908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 23.04,
+        "t": 61.541999999999916,
+        "r": 566.4473999999999,
+        "b": 80.83918342541438,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 0.6589432453569736,
+        "alignment": 0.034437058405452414,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 1,
+      "status": "correct",
+      "expected": "Total GST on \"imported taxable supplies\" under section 218 .................................................................",
+      "predicted": "Total GST on \"imported taxable supplies\" under section 218 .................................................................",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 118.18189999999993,
+        "r": 426.6036000000006,
+        "b": 126.20208342541434,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 118.18189999999993,
+        "r": 426.6036000000006,
+        "b": 126.20208342541434,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.9884078666100589,
+        "alignment": 0.06989138314853433,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 2,
+      "status": "correct",
+      "expected": "Total GST on \"qualifying consideration\" under proposed section 218.01 ...............................................",
+      "predicted": "Total GST on \"qualifying consideration\" under proposed section 218.01 ...............................................",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 142.0589,
+        "r": 426.56580000000054,
+        "b": 150.0790834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 142.0589,
+        "r": 426.56580000000054,
+        "b": 150.0790834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.990757499626661,
+        "alignment": 0.08092604349303811,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 3,
+      "status": "correct",
+      "expected": "Total provincial part of HST on certain imported goods under section 212.1 .........................................",
+      "predicted": "Total provincial part of HST on certain imported goods under section 212.1 .........................................",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 166.1789,
+        "r": 425.6964000000005,
+        "b": 174.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 166.1789,
+        "r": 425.6964000000005,
+        "b": 174.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.002093568834421,
+        "alignment": 0.051001540863896855,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 4,
+      "status": "correct",
+      "expected": "Total provincial part of HST on certain imported goods under section 220.07 .......................................",
+      "predicted": "Total provincial part of HST on certain imported goods under section 220.07 .......................................",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 190.05589999999995,
+        "r": 425.7324000000005,
+        "b": 198.07608342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 190.05589999999995,
+        "r": 425.7324000000005,
+        "b": 198.07608342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.004851366325675,
+        "alignment": 0.08073901535160333,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 5,
+      "status": "correct",
+      "expected": "Total provincial part of HST on \"imported taxable supplies\" under subsection 218.1(1) ........................",
+      "predicted": "Total provincial part of HST on \"imported taxable supplies\" under subsection 218.1(1) ........................",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 211.1789,
+        "r": 425.77200000000045,
+        "b": 219.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 211.1789,
+        "r": 425.77200000000045,
+        "b": 219.19908342541441,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.000819725885438,
+        "alignment": 0.051001540863896855,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 6,
+      "status": "correct",
+      "expected": "Total provincial part of HST on \"qualifying consideration\" under proposed subsection 218.1(1.2) .......",
+      "predicted": "Total provincial part of HST on \"qualifying consideration\" under proposed subsection 218.1(1.2) .......",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 234.70489999999995,
+        "r": 423.16920000000044,
+        "b": 242.72508342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 234.70489999999995,
+        "r": 423.16920000000044,
+        "b": 242.72508342541437,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.046993747343567,
+        "alignment": 0.027685365898690306,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 7,
+      "status": "wrong",
+      "expected": "Other amounts of the provincial part of HST you had to self-assess .....................................................",
+      "predicted": "Enter the total value of property and services that you imported into Canada during the fiscal year. Include the value of imports subject to tax under sections 212, 212.1, 218, and 220.07. Do not include GST, HST, or provincial sales tax. Also include the value of qualifying consideration that is greater than zero in respect of an outlay made or an expense incurred outside Canada subject to tax under proposed sections 218.01 and 218.1.",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 255.3418999999999,
+        "r": 426.44700000000057,
+        "b": 263.3620834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 23.04,
+        "t": 297.822,
+        "r": 584.5256999999998,
+        "b": 339.6731834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.6783357043515228,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Visible label/caption confirmed against the source page and native widget rectangle.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 8,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 9,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 10,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 11,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 12,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 13,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 14,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 15,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 16,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 17,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 18,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 19,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 20,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 21,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 22,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 23,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 24,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 25,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 26,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 27,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 28,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 29,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 30,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 31,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 32,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 33,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 34,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 35,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 36,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 37,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 38,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 39,
+      "status": "excluded by table rule",
+      "expected": "Excluded: detected table",
+      "predicted": "No pairing",
+      "expected_bbox": null,
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "excluded_table",
+      "reason": "Intersects a detected table and is not wholly contained in one unambiguous detected cell. Excluded from pairing.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 40,
+      "status": "wrong",
+      "expected": "is an estimated amount",
+      "predicted": "Exported to head office",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 130.44,
+        "t": 630.1019,
+        "r": 225.72389999999996,
+        "b": 638.1220834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.4371405988055563,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 41,
+      "status": "wrong",
+      "expected": "Financial services",
+      "predicted": "or branches",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 661.182,
+        "r": 93.4758,
+        "b": 669.2021834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 154.2,
+        "t": 641.3789,
+        "r": 201.77669999999998,
+        "b": 649.3990834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.0679545173681342,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 42,
+      "status": "wrong",
+      "expected": "is an estimated amount",
+      "predicted": "Exported to related persons",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 241.44,
+        "t": 635.6219,
+        "r": 352.28490000000033,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.251567340521146,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 43,
+      "status": "unassigned",
+      "expected": "Financial services",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 661.182,
+        "r": 93.4758,
+        "b": 669.2021834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 44,
+      "status": "wrong",
+      "expected": "is an estimated amount",
+      "predicted": "Note: Tick the grey box next to the line number if the amount you enter on this line is an estimated amount.",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 613.5449,
+        "r": 452.4840000000005,
+        "b": 621.5650834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.817464702590866,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 45,
+      "status": "wrong",
+      "expected": "Financial services",
+      "predicted": "Exported to third parties",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 661.182,
+        "r": 93.4758,
+        "b": 669.2021834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 367.8,
+        "t": 635.6219,
+        "r": 463.5609000000003,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2689633263703157,
+        "alignment": 0.05720829949557765,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 46,
+      "status": "wrong",
+      "expected": "Financial services",
+      "predicted": "Total",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 661.182,
+        "r": 93.4758,
+        "b": 669.2021834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 524.52,
+        "t": 635.6219,
+        "r": 544.527,
+        "b": 643.6420834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.2984583865184078,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 47,
+      "status": "wrong",
+      "expected": "is an estimated amount",
+      "predicted": "Tangible personal property",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.8749162076310244,
+        "alignment": 0.09544093428062184,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 48,
+      "status": "wrong",
+      "expected": "Tangible personal property",
+      "predicted": "and services (other than",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 18.72,
+        "t": 714.79512,
+        "r": 104.92407599999999,
+        "b": 721.9598171933701,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.0531769025306117,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 49,
+      "status": "unassigned",
+      "expected": "is an estimated amount",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 50,
+      "status": "unassigned",
+      "expected": "Tangible personal property",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 51,
+      "status": "unassigned",
+      "expected": "is an estimated amount",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 52,
+      "status": "unassigned",
+      "expected": "Tangible personal property",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 53,
+      "status": "unassigned",
+      "expected": "Tangible personal property",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 682.422,
+        "r": 93.3084,
+        "b": 701.7191834254144,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 54,
+      "status": "wrong",
+      "expected": "is an estimated amount",
+      "predicted": "financial services)",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 18.72,
+        "t": 722.83512,
+        "r": 82.68302399999999,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.05988942606657,
+        "alignment": 0.0,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 55,
+      "status": "wrong",
+      "expected": "Intangible personal property and services (other than financial services)",
+      "predicted": "Intangible personal property",
+      "expected_bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 713.9198171933701,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 1.6854952625877813,
+        "alignment": 0.5,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 56,
+      "status": "unassigned",
+      "expected": "is an estimated amount",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 57,
+      "status": "unassigned",
+      "expected": "Intangible personal property and services (other than financial services)",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 58,
+      "status": "unassigned",
+      "expected": "is an estimated amount",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 352.0,
+        "t": 613.5,
+        "r": 452.5,
+        "b": 621.6,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "The printed instruction above the grid explicitly defines these grey checkboxes as estimated-amount flags; each belongs to its adjacent amount field. No individual option caption is printed.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 59,
+      "status": "unassigned",
+      "expected": "Intangible personal property and services (other than financial services)",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 60,
+      "status": "unassigned",
+      "expected": "Intangible personal property and services (other than financial services)",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 18.72,
+        "t": 706.75512,
+        "r": 118.27449599999997,
+        "b": 729.9998171933702,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": []
+    },
+    {
+      "widget_index": 61,
+      "status": "correct",
+      "expected": "Total",
+      "predicted": "Total",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "features": {
+        "distance": 2.6663406595547268,
+        "alignment": 0.25864745105786785,
+        "obstruction": 0.0,
+        "role": 0.0,
+        "fragment": 0.0
+      },
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 62,
+      "status": "unassigned",
+      "expected": "Total",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 63,
+      "status": "unassigned",
+      "expected": "Total",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": [
+        10
+      ]
+    },
+    {
+      "widget_index": 64,
+      "status": "unassigned",
+      "expected": "Total",
+      "predicted": "No pairing",
+      "expected_bbox": {
+        "l": 21.6,
+        "t": 742.062,
+        "r": 41.607,
+        "b": 750.0821834254143,
+        "coord_origin": "TOPLEFT"
+      },
+      "predicted_bbox": null,
+      "features": {},
+      "reference_disposition": "label",
+      "reason": "Shared row caption. The column heading supplies additional context; this is a local-label target, not a complete row/column key. This region is not detected as TABLE.",
+      "detected_form_ids": []
+    }
+  ],
+  "counts": {
+    "wrong": 12,
+    "correct": 7,
+    "excluded by table rule": 32,
+    "unassigned": 14
+  },
+  "groups": {}
+}

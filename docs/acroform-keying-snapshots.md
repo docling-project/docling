@@ -20,3 +20,11 @@ The original PDFs remain external. Their hashes and source directory are in
 The 19 saved page images and snapshots are included in Git. Generated reports
 are preserved byte-for-byte in later checkpoints so the original decisions can
 be inspected without rerunning anything.
+
+## Checkpoint 2: baseline and widget coverage
+
+Save the accepted offline optimizer, focused tests, pre-coverage source copy,
+coverage sweeps, baseline/coverage reports and failure audit. The change uses
+intersection divided by widget area for inline clauses while keeping table/cell
+ownership strict. The accepted result is 276 correct local labels; fragmented
+captions and missed/truncated tables remain upstream defects.
