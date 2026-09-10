@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import torch
@@ -10,6 +10,7 @@ from transformers import GenerationConfig
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import VlmStopReason
+from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_TRANSFORMERS,
@@ -19,11 +20,38 @@ from docling.models.extraction import transformers_extraction_model as module
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
+from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+
+# These tests exercise the local Transformers extraction path and need torch and
+# transformers importable, so CI runs them in the dedicated `vlm` suite.
+pytestmark = pytest.mark.ml_vlm
 
 
 class _LoadedModel:
     def eval(self) -> None:
         pass
+
+
+@patch(
+    "docling.models.extraction.transformers_extraction_model.TransformersExtractionModel",
+)
+def test_pipeline_routes_local_spec_to_transformers_model(mock_model_cls: Mock) -> None:
+    """The local branch must build a TransformersExtractionModel from the spec
+    without loading weights; the API branch is covered in test_extraction_api.py."""
+    vlm_options = GRANITE_VISION_4_1_TRANSFORMERS.model_copy(
+        update={
+            "engine_options": TransformersVlmEngineOptions(
+                device=AcceleratorDevice.CPU,
+                torch_dtype="float16",
+                trust_remote_code=False,
+                compile_model=False,
+            )
+        }
+    )
+    ExtractionVlmPipeline(VlmExtractionPipelineOptions(vlm_options=vlm_options))
+
+    mock_model_cls.assert_called_once()
+    assert mock_model_cls.call_args.kwargs["vlm_options"] is vlm_options
 
 
 def test_transformers_engine_options_control_model_loading(

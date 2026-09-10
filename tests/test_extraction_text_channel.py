@@ -3,10 +3,11 @@
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import (
@@ -19,6 +20,7 @@ from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import TextContentItem
 from docling.datamodel.extraction_options import ChannelSelection, ExtractionPromptStyle
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, DocumentLimits
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_API,
@@ -53,6 +55,54 @@ def _pipeline_shell(
 
 def _input(path: Path, fmt: InputFormat, backend) -> InputDocument:
     return InputDocument(path_or_stream=path, format=fmt, backend=backend)
+
+
+class _Doc:
+    def __init__(self, page_nos: list[int]) -> None:
+        self.pages = {p: object() for p in page_nos}
+
+    def export_to_markdown(self, page_no: int | None = None) -> str:
+        return "<all>" if page_no is None else f"<p{page_no}>"
+
+
+class _DeclBackend(DeclarativeDocumentBackend):
+    def __init__(self, doc: _Doc) -> None:
+        self._doc = doc
+
+    def convert(self) -> Any:
+        return self._doc
+
+    def is_valid(self) -> bool:
+        return True
+
+    @classmethod
+    def supports_pagination(cls) -> bool:
+        return True
+
+    def unload(self) -> None:
+        pass
+
+    @classmethod
+    def supported_formats(cls) -> set[InputFormat]:
+        return set()
+
+
+def _get_text_for_range(doc: _Doc, page_range: tuple[int, int]) -> str:
+    pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
+    input_doc = SimpleNamespace(
+        _backend=_DeclBackend(doc),
+        format=InputFormat.DCLX,
+        limits=DocumentLimits(page_range=page_range),
+    )
+    return pipeline._get_text_from_input(cast(InputDocument, input_doc))
+
+
+def test_text_channel_default_range_serializes_whole_document() -> None:
+    assert _get_text_for_range(_Doc([1, 2, 3]), DEFAULT_PAGE_RANGE) == "<all>"
+
+
+def test_text_channel_restricts_to_page_range() -> None:
+    assert _get_text_for_range(_Doc([1, 2, 3, 4]), (2, 3)) == "<p2>\n\n<p3>"
 
 
 def test_nuextract_api_dispatches_to_extraction_model() -> None:

@@ -3,7 +3,7 @@
 
 import json
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from pydantic import AnyUrl, BaseModel, Field
@@ -13,9 +13,15 @@ from docling.datamodel.extraction_options import (
     ExtractionVlmOptions,
 )
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.pipeline_options_vlm_model import (
+    InferenceFramework,
+    InlineVlmOptions,
+    ResponseFormat,
+)
 from docling.datamodel.vlm_engine_options import (
     ApiVlmEngineOptions,
     MlxVlmEngineOptions,
+    TransformersVlmEngineOptions,
 )
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_API,
@@ -107,3 +113,28 @@ def test_nuextract_prompt_is_passthrough_instance() -> None:
 
     assert prompt == '{"invoice_date": "string"}'
     assert "Extract structured data" not in prompt
+
+
+@pytest.mark.parametrize("serialized", [False, True])
+def test_legacy_inline_options_are_adapted(serialized: bool) -> None:
+    legacy = InlineVlmOptions(
+        repo_id="numind/NuExtract-2.0-2B",
+        prompt="",
+        inference_framework=InferenceFramework.TRANSFORMERS,
+        response_format=ResponseFormat.PLAINTEXT,
+        quantized=True,
+        torch_dtype="float16",
+        trust_remote_code=True,
+        use_kv_cache=False,
+    )
+    value: Any = legacy.model_dump(mode="json") if serialized else legacy
+
+    with pytest.warns(DeprecationWarning):
+        options = VlmExtractionPipelineOptions(vlm_options=value)
+
+    engine = options.vlm_options.engine_options
+    assert isinstance(engine, TransformersVlmEngineOptions)
+    assert engine.quantized is True
+    assert engine.torch_dtype == "float16"
+    assert engine.trust_remote_code is True
+    assert engine.use_kv_cache is False

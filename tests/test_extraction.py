@@ -315,3 +315,57 @@ def test_extraction_pipeline_failure_is_categorized() -> None:
     err = result.errors[0]
     assert err.component_type == DoclingComponentType.PIPELINE
     assert err.category == FailureCategory.UNKNOWN
+
+
+def test_override_without_backend_inherits_default() -> None:
+    from docling.document_extractor import (
+        ExtractionFormatOption,
+        _get_default_extraction_option,
+    )
+    from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+
+    opts = ExtractionFormatOption(pipeline_cls=ExtractionVlmPipeline)
+    extractor = DocumentExtractor(
+        allowed_formats=[InputFormat.DOCX],
+        extraction_format_options={InputFormat.DOCX: opts},
+    )
+    resolved = extractor.extraction_format_to_options[InputFormat.DOCX]
+    assert resolved.backend is _get_default_extraction_option(InputFormat.DOCX).backend
+
+
+def test_default_extractor_enables_only_supported_formats() -> None:
+    extractor = DocumentExtractor()
+
+    assert set(extractor.allowed_formats) == {
+        InputFormat.IMAGE,
+        InputFormat.PDF,
+        InputFormat.DOCX,
+        InputFormat.HTML,
+        InputFormat.MD,
+        InputFormat.DCLX,
+    }
+
+
+def test_document_extractor_imports_without_local_model_dependencies() -> None:
+    import subprocess
+    import sys
+
+    # A meta_path finder that raises ModuleNotFoundError blocks the optional deps
+    # cleanly. Planting `sys.modules[name] = None` would leave a None behind that
+    # other libraries' `getattr(sys.modules[name], ...)` probes choke on.
+    code = """
+import sys
+from importlib.abc import MetaPathFinder
+
+_BLOCKED = {'torch', 'transformers', 'docling_parse', 'pypdfium2', 'qwen_vl_utils'}
+
+class _Blocker(MetaPathFinder):
+    def find_spec(self, name, path, target=None):
+        if name.split('.')[0] in _BLOCKED:
+            raise ModuleNotFoundError(name)
+        return None
+
+sys.meta_path.insert(0, _Blocker())
+import docling.document_extractor
+"""
+    subprocess.run([sys.executable, "-c", code], check=True)
