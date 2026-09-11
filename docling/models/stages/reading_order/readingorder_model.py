@@ -721,14 +721,37 @@ class ReadingOrderModel:
                     element
                 )
 
-            ordered_siblings = {
-                parent_ref: (
-                    self.ro_model.predict_reading_order(page_elements=siblings)
-                    if len(siblings) > 1
-                    else siblings
-                )
-                for parent_ref, siblings in siblings_by_parent.items()
-            }
+            ordered_siblings = {}
+
+            for parent_ref, siblings in siblings_by_parent.items():
+                if len(siblings) <= 1:
+                    ordered_siblings[parent_ref] = siblings
+                    continue
+
+                parent_element = assembled_by_ref.get(parent_ref)
+
+                if (
+                    isinstance(parent_element, ContainerElement)
+                    and parent_element.cluster.reading_order
+                ):
+                    order = {
+                        cluster_id: index
+                        for index, cluster_id in enumerate(
+                            parent_element.cluster.reading_order
+                        )
+                    }
+
+                    ordered_siblings[parent_ref] = sorted(
+                        siblings,
+                        key=lambda element: order.get(
+                            element.cid,
+                            len(order),
+                        ),
+                    )
+                else:
+                    ordered_siblings[parent_ref] = self.ro_model.predict_reading_order(
+                        page_elements=siblings
+                    )
 
             def iterate_leaves(
                 parent_ref: str | None,
