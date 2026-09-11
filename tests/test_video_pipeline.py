@@ -441,3 +441,44 @@ def test_process_video_runs_diarization_when_enabled(
     assert conv_res.document is not None
     assert conv_res.document.texts[0].text == "hello"
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
+
+
+# --- Hardening: audio extraction protocol whitelist + timeout (A8 / B11) -----
+
+
+def test_extract_audio_cmd_whitelists_protocols_before_input():
+    from docling.pipeline.video_pipeline import _extract_audio_cmd
+
+    argv = _extract_audio_cmd(Path("/tmp/in.mp4"), Path("/tmp/out.wav"))
+    assert "-protocol_whitelist" in argv
+    wl = argv.index("-protocol_whitelist")
+    assert argv[wl + 1] == "file,pipe"
+    assert wl < argv.index("-i"), f"-protocol_whitelist must precede -i: {argv}"
+    assert "-nostdin" in argv
+
+
+def test_extract_audio_passes_timeout():
+    from docling.pipeline import video_pipeline as vp
+
+    captured: dict = {}
+
+    def _fake_run(*args, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0, stderr=b"")
+
+    with patch.object(vp.subprocess, "run", side_effect=_fake_run):
+        assert vp._extract_audio(Path("/tmp/in.mp4"), Path("/tmp/out.wav")) is True
+    assert captured.get("timeout") == vp.FFMPEG_TIMEOUT_SECONDS
+
+
+def test_extract_audio_handles_timeout():
+    import subprocess
+
+    from docling.pipeline import video_pipeline as vp
+
+    with patch.object(
+        vp.subprocess,
+        "run",
+        side_effect=subprocess.TimeoutExpired(cmd="ffmpeg", timeout=1),
+    ):
+        assert vp._extract_audio(Path("/tmp/in.mp4"), Path("/tmp/out.wav")) is False

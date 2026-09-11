@@ -205,3 +205,87 @@ def test_scene_change_respects_min_duration(three_scene_video: Path):
     )
     scenes = sampler.detect_scenes(three_scene_video)
     assert len(scenes) == 1
+
+
+# --- Hardening: ffmpeg/ffprobe protocol whitelist + timeout (A8 / B11) -------
+
+
+def _assert_whitelist_before_input(argv: list[str]) -> None:
+    """The protocol whitelist must be present and precede ``-i``."""
+    assert "-protocol_whitelist" in argv
+    wl = argv.index("-protocol_whitelist")
+    assert argv[wl + 1] == "file,pipe"
+    assert "-i" in argv
+    assert wl < argv.index("-i"), f"-protocol_whitelist must precede -i: {argv}"
+
+
+def test_ffprobe_duration_cmd_whitelists_protocols():
+    from docling.utils.video_frame_sampling import _ffprobe_duration_cmd
+
+    _assert_whitelist_before_input(_ffprobe_duration_cmd(Path("/tmp/in.mp4")))
+
+
+def test_ffmpeg_argv_builders_whitelist_protocols():
+    from docling.utils.video_frame_sampling import (
+        _ffmpeg_extract_frame_cmd,
+        _ffmpeg_extract_grid_cmd,
+        _ffmpeg_extract_range_cmd,
+    )
+
+    p = Path("/tmp/in.mp4")
+    _assert_whitelist_before_input(_ffmpeg_extract_frame_cmd(p, 1.0))
+    _assert_whitelist_before_input(_ffmpeg_extract_range_cmd(p, 0.0, 2.0, 5.0))
+    _assert_whitelist_before_input(_ffmpeg_extract_grid_cmd(p, 1.0, 64))
+
+
+def test_ffmpeg_builders_keep_nostdin():
+    from docling.utils.video_frame_sampling import (
+        _ffmpeg_extract_frame_cmd,
+        _ffmpeg_extract_grid_cmd,
+        _ffmpeg_extract_range_cmd,
+    )
+
+    p = Path("/tmp/in.mp4")
+    for argv in (
+        _ffmpeg_extract_frame_cmd(p, 1.0),
+        _ffmpeg_extract_range_cmd(p, 0.0, 2.0, 5.0),
+        _ffmpeg_extract_grid_cmd(p, 1.0, 64),
+    ):
+        assert "-nostdin" in argv
+
+
+def test_probe_duration_passes_timeout():
+    """_probe_duration must pass a timeout= to subprocess.run."""
+    from unittest.mock import patch
+
+    from docling.utils import video_frame_sampling as vfs
+
+    captured: dict = {}
+
+    class _Out:
+        stdout = "3.0"
+
+    def _fake_run(*args, **kwargs):
+        captured.update(kwargs)
+        return _Out()
+
+    with (
+        patch.object(vfs.shutil, "which", return_value="/usr/bin/ffprobe"),
+        patch.object(vfs.subprocess, "run", side_effect=_fake_run),
+    ):
+        assert vfs._probe_duration(Path("/tmp/in.mp4")) == 3.0
+    assert captured.get("timeout") == vfs.FFMPEG_TIMEOUT_SECONDS
+
+
+def test_extract_frame_handles_timeout():
+    """A TimeoutExpired during frame extraction returns None, not a raise."""
+    from unittest.mock import patch
+
+    from docling.utils import video_frame_sampling as vfs
+
+    with patch.object(
+        vfs.subprocess,
+        "run",
+        side_effect=subprocess.TimeoutExpired(cmd="ffmpeg", timeout=1),
+    ):
+        assert vfs._extract_frame(Path("/tmp/in.mp4"), 1.0) is None

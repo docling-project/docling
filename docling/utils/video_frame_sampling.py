@@ -44,6 +44,96 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
     "Windows)."
 )
 
+# ffmpeg/ffprobe decide the demuxer by inspecting the file's *content*, not its
+# extension. A crafted "video" that is actually an HLS/M3U8 playlist or a
+# concat/subfile script can therefore make ffmpeg follow arbitrary URLs (SSRF)
+# or read arbitrary local files. Restricting the allowed protocols to local
+# ``file`` and ``pipe`` refuses every remote/playlist protocol. These flags MUST
+# appear BEFORE ``-i`` so they apply to the input demuxer.
+_PROTOCOL_WHITELIST: Final[tuple[str, ...]] = ("-protocol_whitelist", "file,pipe")
+
+# Hard wall-clock cap on any single ffmpeg/ffprobe invocation. Bounds the damage
+# a pathological or hostile input can do by hanging a decode indefinitely (DoS).
+FFMPEG_TIMEOUT_SECONDS: Final[float] = 300.0
+
+
+def _ffprobe_duration_cmd(video_path: Path) -> list[str]:
+    """Build the ffprobe argv for reading a file's duration (whitelist before -i)."""
+    return [
+        "ffprobe",
+        "-v",
+        "error",
+        *_PROTOCOL_WHITELIST,
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        "-i",
+        str(video_path),
+    ]
+
+
+def _ffmpeg_extract_frame_cmd(video_path: Path, timestamp: float) -> list[str]:
+    """Build the ffmpeg argv for a single-frame extraction (whitelist before -i)."""
+    return [
+        "ffmpeg",
+        "-nostdin",
+        *_PROTOCOL_WHITELIST,
+        "-ss",
+        f"{timestamp:.3f}",
+        "-i",
+        str(video_path),
+        "-frames:v",
+        "1",
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-",
+    ]
+
+
+def _ffmpeg_extract_range_cmd(
+    video_path: Path, start: float, duration: float, fps: float
+) -> list[str]:
+    """Build the ffmpeg argv for a windowed range decode (whitelist before -i)."""
+    return [
+        "ffmpeg",
+        "-nostdin",
+        *_PROTOCOL_WHITELIST,
+        "-ss",
+        f"{start:.3f}",
+        "-i",
+        str(video_path),
+        "-t",
+        f"{duration:.3f}",
+        "-vf",
+        f"fps={fps}",
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-",
+    ]
+
+
+def _ffmpeg_extract_grid_cmd(video_path: Path, fps: float, size: int) -> list[str]:
+    """Build the ffmpeg argv for a full downscaled grid decode (whitelist before -i)."""
+    return [
+        "ffmpeg",
+        "-nostdin",
+        *_PROTOCOL_WHITELIST,
+        "-i",
+        str(video_path),
+        "-vf",
+        f"fps={fps},scale={size}:{size}",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgb24",
+        "-",
+    ]
+
 
 class VideoFrame(BaseModel):
     """A single sampled video frame with its timestamp."""
@@ -112,22 +202,19 @@ def _probe_duration(video_path: Path) -> float:
         return 0.0
     try:
         out = subprocess.run(
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-show_entries",
-                "format=duration",
-                "-of",
-                "default=noprint_wrappers=1:nokey=1",
-                str(video_path),
-            ],
+            _ffprobe_duration_cmd(video_path),
             capture_output=True,
             text=True,
             check=True,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
         )
         return float(out.stdout.strip())
     except (subprocess.CalledProcessError, ValueError):
+        return 0.0
+    except subprocess.TimeoutExpired:
+        _log.warning(
+            "ffprobe timed out after %ss for %s", FFMPEG_TIMEOUT_SECONDS, video_path
+        )
         return 0.0
 
 
@@ -136,25 +223,20 @@ def _extract_frame(video_path: Path, timestamp: float) -> Image.Image | None:
 
     Returns None if ffmpeg produced no output (e.g. timestamp past end).
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-ss",
-            f"{timestamp:.3f}",
-            "-i",
-            str(video_path),
-            "-frames:v",
-            "1",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "png",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            _ffmpeg_extract_frame_cmd(video_path, timestamp),
+            capture_output=True,
+            check=False,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning(
+            "Frame extraction at %.3fs timed out after %ss",
+            timestamp,
+            FFMPEG_TIMEOUT_SECONDS,
+        )
+        return None
     if proc.returncode != 0 or not proc.stdout:
         _log.debug(
             "Frame extraction at %.3fs produced no output (rc=%s): %s",
@@ -178,27 +260,20 @@ def _extract_frames_range(
     Single ffmpeg spawn per call, seeking to ``start`` before decoding
     (fast input seek) rather than spawning one process per timestamp.
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-ss",
-            f"{start:.3f}",
-            "-i",
-            str(video_path),
-            "-t",
-            f"{duration:.3f}",
-            "-vf",
-            f"fps={fps}",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "png",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            _ffmpeg_extract_range_cmd(video_path, start, duration, fps),
+            capture_output=True,
+            check=False,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning(
+            "Range frame probe at %.3fs timed out after %ss",
+            start,
+            FFMPEG_TIMEOUT_SECONDS,
+        )
+        return []
     if proc.returncode != 0 or not proc.stdout:
         _log.debug(
             "Range frame probe at %.3fs produced no output (rc=%s): %s",
@@ -242,23 +317,16 @@ def _extract_frames_grid(
     Returns:
         ``(timestamp, image)`` pairs in chronological order.
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-i",
-            str(video_path),
-            "-vf",
-            f"fps={fps},scale={size}:{size}",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "rgb24",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            _ffmpeg_extract_grid_cmd(video_path, fps, size),
+            capture_output=True,
+            check=False,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning("Batch frame probe timed out after %ss", FFMPEG_TIMEOUT_SECONDS)
+        return []
     if proc.returncode != 0 or not proc.stdout:
         _log.debug(
             "Batch frame probe produced no output (rc=%s): %s",

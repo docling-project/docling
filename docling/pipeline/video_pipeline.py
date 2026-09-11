@@ -48,6 +48,7 @@ from docling.utils.speaker_diarization import (
     diarize,
 )
 from docling.utils.video_frame_sampling import (
+    FFMPEG_TIMEOUT_SECONDS,
     FixedIntervalFrameSampler,
     SimpleSceneChangeFrameSampler,
     VideoFrame,
@@ -77,27 +78,48 @@ def _video_mimetype(filename: str) -> str:
     return _VIDEO_SUFFIX_TO_MIMETYPE.get(suffix, "video/mp4")
 
 
+def _extract_audio_cmd(video_path: Path, wav_path: Path) -> list[str]:
+    """Build the ffmpeg argv for audio extraction.
+
+    ``-protocol_whitelist file,pipe`` precedes ``-i`` so a crafted "video" that
+    is actually a playlist/concat script cannot make ffmpeg follow remote URLs
+    (SSRF) or read arbitrary local files.
+    """
+    return [
+        "ffmpeg",
+        "-nostdin",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-i",
+        str(video_path),
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
+        "-y",
+        str(wav_path),
+    ]
+
+
 def _extract_audio(video_path: Path, wav_path: Path) -> bool:
     """Extract audio track from video to a 16kHz mono WAV. Returns True on success."""
-    result = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-i",
-            str(video_path),
-            "-vn",
-            "-acodec",
-            "pcm_s16le",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            "-y",
-            str(wav_path),
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            _extract_audio_cmd(video_path, wav_path),
+            capture_output=True,
+            check=False,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning(
+            "Audio extraction timed out after %ss for %s",
+            FFMPEG_TIMEOUT_SECONDS,
+            video_path,
+        )
+        return False
     if result.returncode != 0:
         _log.debug(
             "Audio extraction failed (rc=%s): %s",
