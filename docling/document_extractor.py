@@ -47,7 +47,7 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
-_DEFAULT_EXTRACTION_FORMATS = [
+DEFAULT_EXTRACTION_FORMATS = [
     InputFormat.IMAGE,
     InputFormat.PDF,
     InputFormat.DOCX,
@@ -120,7 +120,7 @@ class DocumentExtractor:
         self.allowed_formats: list[InputFormat] = (
             allowed_formats
             if allowed_formats is not None
-            else list(_DEFAULT_EXTRACTION_FORMATS)
+            else list(DEFAULT_EXTRACTION_FORMATS)
         )
         overrides = extraction_format_options or {}
         self.extraction_format_to_options: dict[

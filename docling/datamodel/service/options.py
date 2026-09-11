@@ -20,6 +20,10 @@ from typing_extensions import Self
 
 from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat, OutputFormat
+from docling.datamodel.extraction_options import (
+    ChannelSelection,
+    ExtractionVlmOptions,
+)
 
 # Import new engine system (available in docling>=2.73.0)
 from docling.datamodel.pipeline_options import (
@@ -1143,4 +1147,79 @@ class ConvertDocumentsOptions(BaseModel):
                 "Cannot specify both chunking_preset and chunking_options."
             )
 
+        return self
+
+
+class ExtractDocumentsOptions(BaseModel):
+    """Options for the template-driven ``/extract`` endpoint.
+
+    A distinct, growing options bag — not a reuse of ``ConvertDocumentsOptions``
+    (whose layout/OCR/table/chunking knobs are all irrelevant to extraction).
+    The extraction model is selected server-side and operator-gated (see
+    ``DocumentExtractionManager``): on the default path a client sends only a
+    ``template``. Template serialization and prompt-building live on the docling
+    model spec, so this carries the raw template through unchanged.
+    """
+
+    template: Annotated[
+        Union[str, dict[str, Any]],
+        Field(
+            description=(
+                "Extraction schema template — the wire-safe subset of docling's "
+                "ExtractionTemplateType: a NuExtract-style example string or a "
+                "JSON-schema-like dict."
+            ),
+        ),
+    ]
+
+    extraction_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Preset ID naming a registered extraction model. Validated "
+                "against the operator's allow-list; the operator default is used "
+                "when unset."
+            ),
+            examples=["nuextract_2b", "granite_vision_4_1"],
+        ),
+    ] = None
+
+    extraction_custom_config: Annotated[
+        Optional[Union[ExtractionVlmOptions, dict]],
+        Field(
+            default=None,
+            description=(
+                "Custom extraction model configuration (model spec + engine "
+                "options). Only honored when the operator enables custom config; "
+                "rejected otherwise."
+            ),
+        ),
+    ] = None
+
+    input_channels: Annotated[
+        Optional[ChannelSelection],
+        Field(
+            default=None,
+            description=(
+                "Which payload channel(s) to send the model. Defaults to AUTO "
+                "server-side (image for PDF/IMAGE, text for DOCX/HTML/MD/DCLX)."
+            ),
+        ),
+    ] = None
+
+    page_range: Annotated[
+        PageRange,
+        Field(
+            description="Only extract a range of pages. The page number starts at 1.",
+            examples=[DEFAULT_PAGE_RANGE, (1, 4)],
+        ),
+    ] = DEFAULT_PAGE_RANGE
+
+    @model_validator(mode="after")
+    def validate_model_selection(self) -> Self:
+        if self.extraction_preset and self.extraction_custom_config is not None:
+            raise ValueError(
+                "Cannot specify both extraction_preset and extraction_custom_config."
+            )
         return self

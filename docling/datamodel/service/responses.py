@@ -5,7 +5,7 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
@@ -16,6 +16,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     QualityGrade,
 )
+from docling.datamodel.extraction import ExtractedPageData
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
 
@@ -209,6 +210,22 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
+class ExtractionResultItem(BaseModel):
+    """Per-document extraction result (one entry per source document)."""
+
+    filename: str
+    status: ConversionStatus
+    errors: list[ErrorItem] = []
+    pages: list[ExtractedPageData] = []
+
+
+class ExtractionTaskResult(BaseModel):
+    """In-body extraction result envelope; mirrors PresignedArtifactResult."""
+
+    kind: Literal["ExtractionResult"] = "ExtractionResult"
+    documents: list[ExtractionResultItem]
+
+
 class ConvertedOutcomeCountsMixin(BaseModel):
     num_converted: int
     num_succeeded: int
@@ -244,7 +261,8 @@ ResultType = Annotated[
     | ZipArchiveResult
     | RemoteTargetResult
     | ChunkedDocumentResult
-    | PresignedArtifactResult,
+    | PresignedArtifactResult
+    | ExtractionTaskResult,
     Field(discriminator="kind"),
 ]
 
@@ -298,6 +316,13 @@ class PresignedUrlConvertDocumentResponse(ConvertedOutcomeCountsMixin):
 
 class PresignedUrlConvertResponse(PresignedUrlConvertDocumentResponse):
     documents: list[DocumentArtifactItem]
+
+
+class ExtractDocumentResponse(ConvertedOutcomeCountsMixin):
+    """In-body extraction response with task-level counts and timing."""
+
+    documents: list[ExtractionResultItem]
+    processing_time: float
 
 
 class ConvertDocumentErrorResponse(BaseModel):

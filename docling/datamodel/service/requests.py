@@ -18,7 +18,10 @@ from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
-from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions,
+    ExtractDocumentsOptions,
+)
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
     FileSource,
@@ -215,6 +218,37 @@ class ConvertSourcesRequest(BaseModel):
 
 ## Deprecated aliases — will be removed in a future release
 ConvertDocumentsRequest = ConvertSourcesRequest
+
+
+## Extraction requests
+# KnownBatchTargetRequest with InBodyTarget added back: ad-hoc extraction needs
+# the in-body result, unlike convert's batch union. Database targets are excluded
+# (rejected at enqueue in v1 — their contract is chunk-shaped, extraction emits pages).
+ExtractTargetRequest = Annotated[
+    InBodyTarget
+    | S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PresignedUrlTarget,
+    Field(discriminator="kind"),
+]
+
+
+class ExtractSourcesRequest(BaseModel):
+    """Batch-capable request for asynchronous source extraction.
+
+    ``sources`` accepts both individual and expandable connector sources.
+    Extraction v1 writes to one in-body or storage target.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    options: ExtractDocumentsOptions
+    sources: list[BatchSourceRequestItem] = Field(min_length=1)
+    target: ExtractTargetRequest = InBodyTarget()
+    callbacks: list[CallbackSpec] = []
+
 
 ## Source chunking requests
 
