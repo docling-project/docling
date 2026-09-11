@@ -24,6 +24,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OperationNotAllowed
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.utils.profiling import TimeRecorder
@@ -52,6 +53,7 @@ class KserveV2OcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
         default_language: str = "en",
     ):
         """Initialize the KServe v2 OCR model.
@@ -61,6 +63,9 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path: Path to model artifacts (not used for remote inference).
             options: KServe v2 OCR configuration options.
             accelerator_options: Accelerator configuration (not used for remote inference).
+            enable_remote_services: Whether connections to remote services are
+                allowed. This engine ships page crops to a remote inference
+                server, so it refuses to run unless this is set explicitly.
             default_language: Language sent when `options.lang` is empty.
         """
         super().__init__(
@@ -68,11 +73,21 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path=artifacts_path,
             options=options,
             accelerator_options=accelerator_options,
+            enable_remote_services=enable_remote_services,
         )
         self.options: KserveV2OcrOptions
         self._kserve_client: Optional[KserveV2Client] = None
 
         if self.enabled:
+            # This engine sends page crops to a remote inference server. Refuse
+            # to run -- before creating any client or opening any connection --
+            # unless remote services have been explicitly allowed.
+            if not enable_remote_services:
+                raise OperationNotAllowed(
+                    "Connections to remote services is only allowed when set explicitly. "
+                    "pipeline_options.enable_remote_services=True."
+                )
+
             self._initialize_client()
 
             # Keep only the first language and warn

@@ -51,12 +51,14 @@ class OcrAutoModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: OcrAutoOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
     ):
         super().__init__(
             enabled=enabled,
             artifacts_path=artifacts_path,
             options=options,
             accelerator_options=accelerator_options,
+            enable_remote_services=enable_remote_services,
         )
         self.options: OcrAutoOptions
 
@@ -76,6 +78,7 @@ class OcrAutoModel(BaseOcrModel):
                             lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
+                        enable_remote_services=enable_remote_services,
                     )
                     _log.info("Auto OCR model selected ocrmac.")
                 except ImportError:
@@ -101,6 +104,7 @@ class OcrAutoModel(BaseOcrModel):
                             lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
+                        enable_remote_services=enable_remote_services,
                     )
                     _log.info("Auto OCR model selected nemotron.")
                 except ImportError:
@@ -132,6 +136,7 @@ class OcrAutoModel(BaseOcrModel):
                             lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
+                        enable_remote_services=enable_remote_services,
                     )
                     _log.info("Auto OCR model selected rapidocr with onnxruntime.")
                 except ImportError:
@@ -161,6 +166,7 @@ class OcrAutoModel(BaseOcrModel):
                             lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
+                        enable_remote_services=enable_remote_services,
                     )
                     _log.info("Auto OCR model selected easyocr.")
                 except ImportError:
@@ -186,6 +192,7 @@ class OcrAutoModel(BaseOcrModel):
                             lang=self.options.lang,
                         ),
                         accelerator_options=accelerator_options,
+                        enable_remote_services=enable_remote_services,
                     )
                     _log.info("Auto OCR model selected rapidocr with torch.")
                 except ImportError:

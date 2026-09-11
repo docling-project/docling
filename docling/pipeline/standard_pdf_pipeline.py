@@ -692,6 +692,7 @@ class StandardPdfPipeline(ConvertPipeline):
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )

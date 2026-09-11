@@ -46,12 +46,14 @@ class TesseractOcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: TesseractOcrOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
     ):
         super().__init__(
             enabled=enabled,
             artifacts_path=artifacts_path,
             options=options,
             accelerator_options=accelerator_options,
+            enable_remote_services=enable_remote_services,
         )
         self.options: TesseractOcrOptions
         # No languages requested: Tesseract runs orientation and script
