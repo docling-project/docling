@@ -1497,7 +1497,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
-            # Check if cell is in a column header or row header
+            # Check if cell is in a column header or row header.
+            # A <tr> holding only <th> cells that span several rows is a *row
+            # header* row: it does not occupy a grid row of its own, and its
+            # cells label the rows beneath them (a pivot table). Such cells are
+            # flagged row_header, not column_header, so that the markdown and
+            # dataframe exports do not fold the first data row into the column
+            # header block.
             col_header = True
             row_header = True
             for html_cell in cells:
@@ -1578,8 +1584,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header,
-                        row_header=((not col_header) and html_cell.name == "th"),
+                        column_header=col_header and not row_header,
+                        row_header=row_header
+                        or ((not col_header) and html_cell.name == "th"),
                         row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -1594,8 +1601,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header,
-                        row_header=((not col_header) and html_cell.name == "th"),
+                        column_header=col_header and not row_header,
+                        row_header=row_header
+                        or ((not col_header) and html_cell.name == "th"),
                         row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
