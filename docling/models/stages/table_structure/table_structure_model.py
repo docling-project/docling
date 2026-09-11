@@ -28,6 +28,7 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_arabic_presentation_forms
 
 _log = logging.getLogger(__name__)
 
@@ -278,6 +279,7 @@ class TableStructureModel(BaseTableStructureModel):
                         tc = TableCell.model_validate(element)
                         if tc.bbox is not None:
                             tc.bbox = tc.bbox.scaled(1 / self.scale)
+                        tc.text = normalize_arabic_presentation_forms(tc.text)
                         table_cells.append(tc)
 
                     assert "predict_details" in table_out
