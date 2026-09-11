@@ -183,6 +183,26 @@ def test_chandra_form_table_parsing():
     assert len(doc.tables) == 4
 
 
+def test_chandra_form_text_parsing():
+    """Test a saved Chandra prediction containing text labeled as Form."""
+    path = Path("./tests/data/html_chandra/sources/chandra_form_text.html")
+    content = path.read_text()
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename=path.name,
+    )
+
+    assert len(doc.texts) == 2
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
+    assert "section_header" in labels
+    assert "text" in labels
+
+
 def test_chandra_list_group_prediction_sample():
     """Test a saved chandra prediction containing list groups."""
     path = Path("./tests/data/html_chandra/sources/chandra_list_group.html")

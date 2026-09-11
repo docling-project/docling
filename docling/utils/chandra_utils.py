@@ -310,9 +310,16 @@ def parse_chandra_html(
         if label_str == "Table":
             table_data = _parse_table_html(inner_html)
             doc.add_table(data=table_data, prov=prov)
-        elif label_str == "Form" and "<table" in inner_html.lower():
-            table_data = _parse_table_html(inner_html)
-            doc.add_table(data=table_data, prov=prov)
+        elif label_str == "Form":
+            if "<table" in inner_html.lower():
+                table_data = _parse_table_html(inner_html)
+                doc.add_table(data=table_data, prov=prov)
+            else:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=_strip_tags(inner_html),
+                    prov=prov,
+                )
         elif label_str == "List-Group":
             list_group = doc.add_list_group()
             list_items = _parse_list_html(inner_html) or [_strip_tags(inner_html)]
