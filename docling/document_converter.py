@@ -55,7 +55,6 @@ from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
-    AfpBackendOptions,
     AsciiDocBackendOptions,
     BackendOptions,
     EbcdicBackendOptions,
@@ -345,7 +344,6 @@ class EbcdicFormatOption(FormatOption):
 class AfpFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = AfpDocumentBackend
-    backend_options: AfpBackendOptions | None = None
 
 
 def _get_default_option(format: InputFormat) -> FormatOption:

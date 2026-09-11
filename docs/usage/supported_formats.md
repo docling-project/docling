@@ -44,22 +44,14 @@ Schema-specific support:
 AFP support is a dependency-free MVP for text-oriented ingestion. `DocumentConverter`
 detects `.afp` files and MO:DCA structured-field streams, preserves Begin Page / End
 Page boundaries, and extracts character data carried by PTOCA Transparent Data (TRN)
-control sequences. The default character codec is `cp500`; choose the document's
-EBCDIC code page when needed:
+control sequences. Until code-page resources are resolved automatically, PTOCA text
+is decoded as `cp500` with replacement for undecodable bytes and a log warning:
 
 ```python
-from docling.datamodel.backend_options import AfpBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import AfpFormatOption, DocumentConverter
+from docling.document_converter import DocumentConverter
 
-converter = DocumentConverter(
-    allowed_formats=[InputFormat.AFP],
-    format_options={
-        InputFormat.AFP: AfpFormatOption(
-            backend_options=AfpBackendOptions(encoding="cp037")
-        )
-    },
-)
+converter = DocumentConverter(allowed_formats=[InputFormat.AFP])
 result = converter.convert("statement.afp")
 ```
 

@@ -190,6 +190,21 @@ def test_guess_format_sniffs_afp_from_octet_stream(tmp_path, monkeypatch):
     assert dci._guess_format(afp_path) is InputFormat.AFP
 
 
+def test_guess_format_preserves_confident_mime_for_afp_like_content(
+    tmp_path, monkeypatch
+):
+    content = b"\x5a\x00\x08\xd3\xa8\xa8\x00\x00\x00"
+    binary_path = tmp_path / "already-detected.bin"
+    binary_path.write_bytes(content)
+    monkeypatch.setattr(
+        "docling.datamodel.document.filetype.guess_mime",
+        lambda _: "application/pdf",
+    )
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(binary_path) is InputFormat.PDF
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])

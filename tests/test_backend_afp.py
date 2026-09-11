@@ -7,8 +7,9 @@ The fixture contains no third-party document content and can be distributed
 under the repository license.
 """
 
-import warnings
+import logging
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 
@@ -18,12 +19,14 @@ from docling.backend.afp_backend import (
     _extract_ptoca_text,
     _iter_structured_fields,
 )
-from docling.datamodel.backend_options import AfpBackendOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
-from docling.document_converter import AfpFormatOption, DocumentConverter
+from docling.document_converter import DocumentConverter
 from docling.exceptions import DocumentLoadError
+
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
 
 BDT = b"\xd3\xa8\xa8"
 EDT = b"\xd3\xa9\xa8"
@@ -36,6 +39,8 @@ IPD = b"\xd3\xee\xfb"
 GAD = b"\xd3\xee\xbb"
 BPS = b"\xd3\xa8\x5f"
 EPS = b"\xd3\xa9\x5f"
+
+AFP_SOURCE = Path("./tests/data/afp/sources/synthetic.afp")
 
 
 def _structured_field(
@@ -84,37 +89,37 @@ def _page(*ptoca_parts: bytes, include_image: bool = False) -> bytes:
 
 @pytest.fixture
 def synthetic_afp() -> bytes:
-    first_control = _trn("Hello AFP")
-    first_page = _page(
-        first_control[:6],
-        first_control[6:] + b"\x2b\xd3\x02\xd8" + _trn("Second line", chained=True),
-    )
-    second_page = _page(_trn("Page two"))
-    return b"".join(
-        (
-            _structured_field(BDT, "SYNTHAFP".encode("cp500")),
-            first_page,
-            second_page,
-            _structured_field(EDT),
-        )
-    )
+    return AFP_SOURCE.read_bytes()
 
 
 def _backend(
     data: bytes,
-    options: AfpBackendOptions | None = None,
     limits: DocumentLimits | None = None,
 ) -> AfpDocumentBackend:
-    options = options or AfpBackendOptions()
     in_doc = InputDocument(
         path_or_stream=BytesIO(data),
         format=InputFormat.AFP,
         filename="synthetic.afp",
         backend=AfpDocumentBackend,
-        backend_options=options,
         limits=limits,
     )
-    return AfpDocumentBackend(in_doc, BytesIO(data), options)
+    return AfpDocumentBackend(in_doc, BytesIO(data))
+
+
+def test_e2e_afp_conversion_matches_groundtruth():
+    result = DocumentConverter(allowed_formats=[InputFormat.AFP]).convert(AFP_SOURCE)
+    groundtruth = AFP_SOURCE.parent.parent / "groundtruth" / AFP_SOURCE.name
+
+    assert verify_document(
+        result.document,
+        str(groundtruth) + ".json",
+        generate=GEN_TEST_DATA,
+    ), "export to JSON"
+    assert verify_export(
+        result.document.export_to_markdown(),
+        str(groundtruth) + ".md",
+        generate=GEN_TEST_DATA,
+    ), "export to Markdown"
 
 
 def test_afp_conversion_preserves_pages_and_extracts_ptoca_text(synthetic_afp: bytes):
@@ -163,24 +168,23 @@ def test_afp_page_count_limit_is_enforced(synthetic_afp: bytes):
     assert "exceeding the max_num_pages limit of 1" in result.errors[0].error_message
 
 
-def test_afp_encoding_is_configurable():
-    data = b"".join(
-        (
-            _structured_field(BDT),
-            _page(_trn("Olá", encoding="cp037")),
-            _structured_field(EDT),
-        )
+def test_afp_logs_cp500_fallback_once(synthetic_afp: bytes, caplog):
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(synthetic_afp),
+        format=InputFormat.AFP,
+        filename="synthetic.afp",
+        backend=AfpDocumentBackend,
     )
-    result = DocumentConverter(
-        allowed_formats=[InputFormat.AFP],
-        format_options={
-            InputFormat.AFP: AfpFormatOption(
-                backend_options=AfpBackendOptions(encoding="cp037")
-            )
-        },
-    ).convert(DocumentStream(name="localized.afp", stream=BytesIO(data)))
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="docling.backend.afp_backend"):
+        AfpDocumentBackend(in_doc, BytesIO(synthetic_afp))
 
-    assert [item.text for item in result.document.texts] == ["Olá"]
+    messages = [
+        record.message
+        for record in caplog.records
+        if "decoding PTOCA text as cp500" in record.message
+    ]
+    assert len(messages) == 1
 
 
 def test_afp_structured_field_extension_and_padding_are_removed():
@@ -344,18 +348,6 @@ def test_presentation_text_outside_page_is_ignored():
     assert backend.convert().texts == []
 
 
-def test_unsupported_warnings_can_be_disabled():
-    data = _structured_field(BDT) + _page(_trn("Text"), include_image=True)
-    options = AfpBackendOptions(warn_on_unsupported_content=False)
-
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always")
-        doc = _backend(data, options).convert()
-
-    assert recorded == []
-    assert [item.text for item in doc.texts] == ["Text"]
-
-
 def test_unsupported_warnings_are_aggregated_by_content_type():
     data = b"".join(
         (
@@ -395,6 +387,13 @@ def test_convert_rejects_content_that_is_no_longer_valid(synthetic_afp: bytes):
         backend.convert()
 
 
-def test_unknown_afp_codec_is_reported(synthetic_afp: bytes):
-    with pytest.raises(DocumentLoadError, match=r"check AfpBackendOptions\.encoding"):
-        _backend(synthetic_afp, AfpBackendOptions(encoding="not-a-codec"))
+def test_afp_backend_reports_read_failure(synthetic_afp: bytes, tmp_path: Path):
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(synthetic_afp),
+        format=InputFormat.AFP,
+        filename="synthetic.afp",
+        backend=AfpDocumentBackend,
+    )
+
+    with pytest.raises(DocumentLoadError, match="Could not initialize the AFP backend"):
+        AfpDocumentBackend(in_doc, tmp_path / "missing.afp")

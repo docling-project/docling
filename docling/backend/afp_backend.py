@@ -9,9 +9,7 @@ format; rendering its IOCA, GOCA, BCOCA, and object-container resources is
 deliberately outside this first, dependency-free implementation.
 """
 
-import codecs
 import logging
-import mimetypes
 import unicodedata
 import warnings
 from collections import Counter
@@ -35,7 +33,6 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.backend_options import AfpBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -43,11 +40,7 @@ from docling.exceptions import DocumentLoadError
 _log = logging.getLogger(__name__)
 
 _MIME_TYPE = "application/vnd.ibm.modcap"
-
-# DocumentOrigin validates MIME types against the stdlib registry. Register AFP
-# explicitly because the platform MIME database is not loaded consistently
-# across Python versions and test execution orders.
-mimetypes.add_type(_MIME_TYPE, ".afp")
+_ENCODING = "cp500"
 
 _INTRODUCER = 0x5A
 _BASE_INTRODUCER_LENGTH = 8
@@ -95,6 +88,7 @@ class _AfpPage:
 
 
 def _iter_structured_fields(content: bytes) -> Iterator[_StructuredField]:
+    """Yield parsed structured fields from an AFP MO:DCA byte stream."""
     offset = 0
     while offset < len(content):
         remaining = len(content) - offset
@@ -216,31 +210,26 @@ def _extract_ptoca_text(data: bytes, encoding: str) -> str:
 class AfpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     """Convert AFP MO:DCA pages and basic PTOCA text to a DoclingDocument."""
 
-    options: AfpBackendOptions
-
     @override
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: AfpBackendOptions | None = None,
     ) -> None:
-        if options is None:
-            options = AfpBackendOptions()
-        super().__init__(in_doc, path_or_stream, options)
+        super().__init__(in_doc, path_or_stream)
         self.page_range = in_doc.limits.page_range
         try:
-            codecs.lookup(options.encoding)
             self.content = (
                 path_or_stream.getvalue()
                 if isinstance(path_or_stream, BytesIO)
                 else path_or_stream.read_bytes()
             )
-        except (LookupError, OSError, ValueError) as exc:
+        except (OSError, ValueError) as exc:
             raise DocumentLoadError(
                 "Could not initialize the AFP backend for file with hash "
-                f"{self.document_hash}; check AfpBackendOptions.encoding."
+                f"{self.document_hash}."
             ) from exc
+        self._warned_default_encoding = False
         self._pages, self._unsupported = self._parse()
 
     @override
@@ -271,7 +260,13 @@ class AfpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     def _flush_text_object(self, page: _AfpPage) -> None:
         if not page.ptoca:
             return
-        text = _extract_ptoca_text(bytes(page.ptoca), self.options.encoding).strip()
+        if not self._warned_default_encoding:
+            _log.warning(
+                "AFP code-page resources are not resolved; decoding PTOCA text as %s.",
+                _ENCODING,
+            )
+            self._warned_default_encoding = True
+        text = _extract_ptoca_text(bytes(page.ptoca), _ENCODING).strip()
         if text:
             page.text_blocks.append(text)
         page.ptoca.clear()
@@ -318,8 +313,6 @@ class AfpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
         return pages, unsupported
 
     def _warn_unsupported(self, unsupported: Counter[str]) -> None:
-        if not self.options.warn_on_unsupported_content:
-            return
         for content_type, count in sorted(unsupported.items()):
             warnings.warn(
                 f"Skipped {count} AFP {content_type} structured field(s): this "

@@ -844,8 +844,9 @@ class _DocumentConversionInput(BaseModel):
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
                 mime = detected_mime
 
-        if detected_afp := _DocumentConversionInput._detect_afp(content):
-            mime = detected_afp
+        if not mime or mime.lower() == "application/octet-stream":
+            if detected_afp := _DocumentConversionInput._detect_afp(content):
+                mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
