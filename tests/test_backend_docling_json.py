@@ -7,9 +7,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import ImageRef, ImageRefMode, Size
+from PIL import Image
 from pydantic import ValidationError
 
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
+from docling.datamodel.backend_options import DeclarativeBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument, InputDocument
 
@@ -86,3 +89,61 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
 
         assert backend.is_valid()
         assert backend.convert().export_to_dict() == exp_data
+
+
+def _doc_with_picture_uri(uri) -> bytes:
+    doc = DoclingDocument(name="pic")
+    doc.add_picture(
+        image=ImageRef(
+            mimetype="image/png", dpi=72, size=Size(width=1, height=1), uri=uri
+        )
+    )
+    return doc.model_dump_json().encode()
+
+
+def _load(json_bytes: bytes, options=None) -> DoclingDocument:
+    stream = BytesIO(json_bytes)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.JSON_DOCLING,
+        backend=DoclingJSONBackend,
+        filename="pic.json",
+    )
+    backend = DoclingJSONBackend(in_doc=in_doc, path_or_stream=stream, options=options)
+    assert backend.is_valid()
+    return backend.convert()
+
+
+def test_local_image_refs_are_dropped_by_default(tmp_path):
+    """A JSON document must not be able to make docling read a host file.
+
+    ``ImageRef.uri`` accepts a bare path, and an embedded-image export or the
+    picture enrichment stages would open it. Without ``enable_local_fetch``
+    the backend strips such references; ``data:`` URIs are untouched.
+    """
+    secret = tmp_path / "secret.png"
+    Image.new("RGB", (4, 4), (255, 0, 0)).save(secret)
+
+    for uri in (secret, secret.as_uri()):
+        doc = _load(_doc_with_picture_uri(uri))
+        assert doc.pictures[0].image is None
+        md = doc.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
+        assert "base64" not in md
+
+    embedded = ImageRef.from_pil(Image.new("RGB", (4, 4)), dpi=72)
+    doc = _load(_doc_with_picture_uri(embedded.uri))
+    assert doc.pictures[0].image is not None
+    assert str(doc.pictures[0].image.uri).startswith("data:")
+
+
+def test_local_image_refs_kept_with_enable_local_fetch(tmp_path):
+    """Opting in keeps the reference for trusted round-trips."""
+    img = tmp_path / "img.png"
+    Image.new("RGB", (4, 4)).save(img)
+
+    doc = _load(
+        _doc_with_picture_uri(img),
+        options=DeclarativeBackendOptions(enable_local_fetch=True),
+    )
+    assert doc.pictures[0].image is not None
+    assert doc.pictures[0].image.uri == img
