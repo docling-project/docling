@@ -16,6 +16,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     QualityGrade,
 )
+from docling.datamodel.extraction import ExtractedPageData
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
 
@@ -209,20 +210,6 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
-class ExtractedPageData(BaseModel):
-    """Wire copy of docling's ExtractedPageData.
-
-    Duplicated (not imported) to keep service/ free of extraction.py's
-    PIL/InputDocument imports; fields match 1:1 so a facade page bridges via
-    ``model_validate(page.model_dump())``.
-    """
-
-    page_no: int = Field(..., description="1-indexed page number")
-    extracted_data: dict[str, Any] | None = None
-    raw_text: str | None = None
-    errors: list[str] = []
-
-
 class ExtractionResultItem(BaseModel):
     """Per-document extraction result (one entry per source document)."""
 
@@ -232,7 +219,7 @@ class ExtractionResultItem(BaseModel):
     pages: list[ExtractedPageData] = []
 
 
-class ExtractionResult(BaseModel):
+class ExtractionTaskResult(BaseModel):
     """In-body extraction result envelope; mirrors PresignedArtifactResult."""
 
     kind: Literal["ExtractionResult"] = "ExtractionResult"
@@ -275,7 +262,7 @@ ResultType = Annotated[
     | RemoteTargetResult
     | ChunkedDocumentResult
     | PresignedArtifactResult
-    | ExtractionResult,
+    | ExtractionTaskResult,
     Field(discriminator="kind"),
 ]
 
@@ -329,6 +316,13 @@ class PresignedUrlConvertDocumentResponse(ConvertedOutcomeCountsMixin):
 
 class PresignedUrlConvertResponse(PresignedUrlConvertDocumentResponse):
     documents: list[DocumentArtifactItem]
+
+
+class ExtractDocumentResponse(ConvertedOutcomeCountsMixin):
+    """In-body extraction response with task-level counts and timing."""
+
+    documents: list[ExtractionResultItem]
+    processing_time: float
 
 
 class ConvertDocumentErrorResponse(BaseModel):

@@ -236,20 +236,17 @@ ExtractTargetRequest = Annotated[
 
 
 class ExtractSourcesRequest(BaseModel):
-    """Single, batch-capable request for the ``/extract`` endpoint family.
+    """Batch-capable request for asynchronous source extraction.
 
-    One shape serves single ad-hoc extraction and multi-document connector
-    expansion alike — no batch/non-batch split (convert splits only for legacy
-    reasons). ``sources`` accepts the full connector union (file/http/S3/Azure/
-    GCS/Drive); ``target``/``targets`` accept in-body plus storage targets.
+    ``sources`` accepts both individual and expandable connector sources.
+    Extraction v1 writes to one in-body or storage target.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     options: ExtractDocumentsOptions
     sources: list[BatchSourceRequestItem] = Field(min_length=1)
-    # Singular convenience alias — normalised to targets=[target] downstream.
-    # Mutually exclusive with targets; neither is deprecated.
-    target: ExtractTargetRequest | None = None
-    targets: list[ExtractTargetRequest] | None = None
+    target: ExtractTargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 
 
