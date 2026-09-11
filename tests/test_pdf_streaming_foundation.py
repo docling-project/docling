@@ -157,6 +157,7 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
     pipeline.keep_backend = False
     pipeline.pipeline_options = SimpleNamespace(
         heading_hierarchy_options=SimpleNamespace(enabled=False, use_bookmarks=False),
+        do_native_formula_extraction=False,
         document_timeout=None,
         stage_shutdown_timeout_seconds=1.0,
         generate_parsed_pages=False,

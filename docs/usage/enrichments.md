@@ -8,6 +8,7 @@ The following table provides an overview of the default enrichment models availa
 | ------- | --------- | ---------------| ----------- |
 | Code understanding | `do_code_enrichment` | `CodeItem` | See [docs below](#code-understanding). |
 | Formula understanding | `do_formula_enrichment` | `TextItem` with label `FORMULA` | See [docs below](#formula-understanding). |
+| Native formula MathML | `do_native_formula_extraction` | `FormulaItem` | See [docs below](#using-the-mathml-embedded-in-a-tagged-pdf). |
 | Picture classification | `do_picture_classification` | `PictureItem` | See [docs below](#picture-classification). |
 | Picture description | `do_picture_description` | `PictureItem` | See [docs below](#picture-description). |
 
@@ -75,6 +76,46 @@ converter = DocumentConverter(format_options={
 result = converter.convert("https://arxiv.org/pdf/2501.17887")
 doc = result.document
 ```
+
+#### Using the MathML embedded in a tagged PDF
+
+A tagged (accessible / PDF-UA) PDF marks each equation with a `Formula` structure element, and
+some producers attach the author's own MathML to it — Microsoft Word's PDF/UA export writes it
+into an `MSFT_MathML` attribute. That representation is more faithful than one reconstructed
+from the rendered glyphs, so `do_native_formula_extraction` prefers it:
+
+```py
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_native_formula_extraction = True
+```
+
+or on the command line:
+
+```sh
+docling --native-formula FILE
+```
+
+When a `Formula` structure element is matched to a detected formula, its MathML is recorded on
+`FormulaItem.meta.formula.mathml` (with `created_by="pdf_struct_tree"`), the formula understanding
+model is skipped for that item, and the HTML export emits the embedded MathML verbatim instead of
+converting the predicted LaTeX. Formulas with no embedded MathML are untouched and still go to the
+model, so the two options combine:
+
+```py
+pipeline_options.do_formula_enrichment = True
+pipeline_options.do_native_formula_extraction = True
+```
+
+Both are off by default, and untagged PDFs are unaffected.
+
+Two limitations worth knowing:
+
+- Only formulas the layout model already detected are enriched. A `Formula` structure element that
+  matches no detected formula is ignored — recovering equations the layout model missed is a
+  separate problem.
+- MathML delivered as an *associated file* (`/AF` on the structure element, the PDF 2.0 / PDF-UA-2
+  route) is not read. PDFium exposes only document-level embedded files, with no way to tie one back
+  to a structure element.
 
 ### Picture classification
 

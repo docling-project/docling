@@ -1,0 +1,53 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 6 0 R /MarkInfo << /Marked true >> /Lang (en-US) >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> /StructParents 0 >>
+endobj
+4 0 obj
+<< /Length 127 >>
+stream
+/Formula <</MCID 0>> BDC BT /F1 12 Tf 20 150 Td (x/y) Tj ET EMC
+/Formula <</MCID 1>> BDC BT /F1 12 Tf 20 100 Td (a+b) Tj ET EMC
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /StructTreeRoot /K [7 0 R] /ParentTree 9 0 R >>
+endobj
+7 0 obj
+<< /Type /StructElem /S /Document /P 6 0 R /K [8 0 R 10 0 R] >>
+endobj
+8 0 obj
+<< /Type /StructElem /S /Formula /P 7 0 R /Pg 3 0 R /K [0] /Alt (x over y) /A [ << /O /MSFT_MathML /MSFT_MathML (<math xmlns="http://www.w3.org/1998/Math/MathML"><mfrac><mi>x</mi><mi>y</mi></mfrac></math>) >> << /O /Layout /BBox [15 140 85 170] /Placement /Block >> ] >>
+endobj
+9 0 obj
+<< /Nums [0 [8 0 R 10 0 R]] >>
+endobj
+10 0 obj
+<< /Type /StructElem /S /Formula /P 7 0 R /Pg 3 0 R /K [1] /ActualText (a plus b) /A << /O /MSFT_MathML /MSFT_MathML (<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow></math>) >> >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000123 00000 n 
+0000000180 00000 n 
+0000000323 00000 n 
+0000000501 00000 n 
+0000000571 00000 n 
+0000000643 00000 n 
+0000000722 00000 n 
+0000001008 00000 n 
+0000001054 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+1295
+%%EOF

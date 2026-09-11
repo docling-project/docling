@@ -33,6 +33,7 @@ from docling.models.inference_engines.vlm import (
     VlmEngineInput,
     create_vlm_engine,
 )
+from docling.utils.formula_meta import has_native_mathml
 
 _log = logging.getLogger(__name__)
 
@@ -126,6 +127,10 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         Returns:
             True if the element is a code block or formula that should be processed
         """
+        # A formula whose MathML was read from the source document is already resolved more
+        # faithfully than this model could reconstruct it.
+        if has_native_mathml(element):
+            return False
         return self.enabled and (
             (isinstance(element, CodeItem) and self.options.extract_code)
             or (
