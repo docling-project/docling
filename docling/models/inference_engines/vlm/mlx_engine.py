@@ -154,7 +154,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Download or locate model artifacts
         repo_cache_folder = repo_id.replace("/", "--")
         if self.artifacts_path is None:
-            artifacts_path = self.download_models(repo_id, revision=revision)
+            artifacts_path = self.download_models(
+                repo_id,
+                revision=revision,
+                trust_remote_code=self.options.trust_remote_code,
+            )
         elif (self.artifacts_path / repo_cache_folder).exists():
             artifacts_path = self.artifacts_path / repo_cache_folder
         else:

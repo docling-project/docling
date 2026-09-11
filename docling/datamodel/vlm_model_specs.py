@@ -253,6 +253,15 @@ PIXTRAL_12B_MLX = InlineVlmOptions(
     temperature=0.0,
 )
 
+# SUPPLY-CHAIN SECURITY: the specs below set trust_remote_code=True, so custom
+# Python from the referenced third-party Hub repo is executed on model load.
+# Whenever such a spec is pinned to a moving ref (revision=None/"main", a branch,
+# or a tag) rather than a full 40-char commit SHA, a force-push or account
+# compromise on that repo becomes arbitrary code execution in docling. These
+# should be commit-pinned to a reviewed revision. docling emits a runtime
+# SECURITY warning for any unpinned trust_remote_code download (see
+# docling.models.utils.hf_model_download.warn_on_unpinned_trust_remote_code);
+# set DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1 to refuse instead.
 # Phi4
 PHI4_TRANSFORMERS = InlineVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",

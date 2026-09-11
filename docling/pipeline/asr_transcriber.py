@@ -7,7 +7,7 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Protocol
+from typing import Final, Optional, Protocol
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -38,6 +38,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrOptions,
     InlineAsrWhisperS2TOptions,
 )
+from docling.models.utils.hf_model_download import is_pinned_revision
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -260,8 +261,30 @@ class _NativeWhisperModel:
                             f'--cache-dir "{artifacts_path}"'
                         ) from err
                 else:
+                    # SUPPLY-CHAIN: this fetches directly from the Hub at the
+                    # mutable default ref ("main"), so the bytes can change under
+                    # us. There is no trust_remote_code here (whisper loads a
+                    # weights file, not custom code), so the risk is integrity of
+                    # the checkpoint rather than code execution. We surface a
+                    # warning via the shared moving-ref detector; a maintainer
+                    # should pin `revision=` to a reviewed commit SHA once known.
+                    # TODO(security): pin revision for the distil-whisper OpenAI
+                    #   checkpoints in _DISTIL_WHISPER_OPENAI_CHECKPOINTS
+                    #   (e.g. repo_id=%r) -- do not invent a SHA; look it up on
+                    #   the Hugging Face Hub.
+                    revision: Optional[str] = None  # TODO: pin to a commit SHA
+                    if not is_pinned_revision(revision):
+                        _log.warning(
+                            "SECURITY: ASR checkpoint '%s/%s' is fetched at the "
+                            "moving ref '%s'; its contents can change on the Hub. "
+                            "Pin 'revision' to a commit SHA for reproducible, "
+                            "tamper-evident downloads.",
+                            repo_id,
+                            filename,
+                            revision or "main",
+                        )
                     checkpoint_path = hf_hub_download(
-                        repo_id=repo_id, filename=filename
+                        repo_id=repo_id, filename=filename, revision=revision
                     )
                 self.model = whisper.load_model(
                     name=checkpoint_path, device=self.device
