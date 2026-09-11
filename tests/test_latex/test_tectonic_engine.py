@@ -151,6 +151,39 @@ def test_tectonic_render_can_disable_shell_escape(monkeypatch):
     assert "shell-escape" not in captured_cmd["cmd"]
 
 
+def test_tectonic_default_command_is_hardened(monkeypatch):
+    # A directly constructed TectonicEngine must default to the hardened setting:
+    # no shell escape (no RCE) and run Tectonic in untrusted / cache-only mode.
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
+
+    engine = TectonicEngine()
+
+    assert engine.allow_shell_escape is False
+
+    cmd = engine._build_command(Path("/tmp/diagram.tex"))
+
+    assert "--untrusted" in cmd
+    assert "--only-cached" in cmd
+    assert "-Z" not in cmd
+    assert "shell-escape" not in cmd
+    # Hardening flags must precede the input path.
+    assert cmd.index("--untrusted") < cmd.index("/tmp/diagram.tex")
+
+
+def test_tectonic_shell_escape_optin_command_is_trusted(monkeypatch):
+    # Opting into shell escape means the caller trusts the input: allow the
+    # dangerous feature and omit the incompatible --untrusted lockdown.
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
+
+    engine = TectonicEngine(allow_shell_escape=True)
+
+    cmd = engine._build_command(Path("/tmp/diagram.tex"))
+
+    assert "-Z" in cmd
+    assert "shell-escape" in cmd
+    assert "--untrusted" not in cmd
+
+
 def test_tectonic_render_stages_explicit_local_dependencies(monkeypatch, tmp_path):
     engine = TectonicEngine.__new__(TectonicEngine)
     engine.binary_path = Path("/usr/bin/tectonic")

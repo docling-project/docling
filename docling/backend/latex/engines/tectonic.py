@@ -57,8 +57,30 @@ class TectonicEngine(RenderEngine):
     def __init__(
         self,
         timeout: float = 60.0,
-        allow_shell_escape: bool = True,
+        allow_shell_escape: bool = False,
     ):
+        """Create a Tectonic-backed render engine.
+
+        Security rationale:
+            ``allow_shell_escape`` defaults to ``False``. Enabling shell escape
+            adds ``-Z shell-escape`` to the Tectonic command line, which lets
+            LaTeX ``\\write18`` run arbitrary shell commands (remote code
+            execution) on any input passed to :meth:`render`. Because
+            :meth:`render` is fed LaTeX/TikZ extracted from arbitrary input
+            documents, it must default to the hardened setting so that code
+            constructing ``TectonicEngine()`` directly is safe, not only the
+            ``DocumentConverter`` path (whose ``tikz_engine_allow_shell_escape``
+            pipeline option already defaults to ``False``).
+
+            When shell escape is disabled (the default) the engine additionally
+            runs Tectonic with ``--untrusted`` and ``--only-cached`` so that
+            attacker-controlled LaTeX cannot read arbitrary files (e.g. via
+            ``\\input`` of absolute/outside paths) or reach the network to fetch
+            packages on demand. Opting into ``allow_shell_escape=True`` is an
+            explicit statement that the caller trusts the input, so those
+            lockdown flags are omitted in that case (``--untrusted`` is in fact
+            incompatible with shell escape).
+        """
         self.cache_dir = Path.home() / ".cache" / "docling" / "tectonic"
         self.binary_path = self.cache_dir / "tectonic"
         self.timeout = timeout
@@ -211,6 +233,31 @@ class TectonicEngine(RenderEngine):
             staged_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source_path, staged_path)
 
+    def _build_command(self, tex_file: Path) -> list[str]:
+        """Build the Tectonic argv for compiling ``tex_file``.
+
+        Split out from :meth:`render` so the command construction (in
+        particular the security-relevant flags) is unit-testable without the
+        Tectonic binary being installed.
+        """
+        cmd = [str(self.binary_path)]
+        if self.allow_shell_escape:
+            # Explicit opt-in: the caller trusts this input, so allow the full
+            # (dangerous) feature set. --untrusted is incompatible with shell
+            # escape, so it is deliberately omitted here.
+            cmd.extend(["-Z", "shell-escape"])
+        else:
+            # Hardened default: refuse shell escape and all other
+            # known-dangerous features (e.g. reading files outside the working
+            # directory), and forbid on-demand network fetches, so untrusted
+            # LaTeX cannot execute commands, exfiltrate files, or reach the
+            # network. Flags go before the input path.
+            cmd.append("--untrusted")
+            cmd.append("--only-cached")
+        cmd.append("--print")
+        cmd.append(str(tex_file))
+        return cmd
+
     def render(
         self, tikz_code: str, preamble: str = "", source_root: Path | None = None
     ) -> ImageRef | None:
@@ -243,11 +290,7 @@ class TectonicEngine(RenderEngine):
             tex_file = temp_path / "diagram.tex"
             tex_file.write_text(latex_doc, encoding="utf-8")
 
-            cmd = [str(self.binary_path)]
-            if self.allow_shell_escape:
-                cmd.extend(["-Z", "shell-escape"])
-            cmd.append("--print")
-            cmd.append(str(tex_file))
+            cmd = self._build_command(tex_file)
 
             try:
                 subprocess.run(
