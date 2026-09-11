@@ -7,15 +7,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc import BoundingBox, DocItemLabel, Size, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfHyperlink,
     SegmentedPdfPage,
+    TextCell,
 )
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import Cluster, Page, Table
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -308,3 +309,51 @@ class TestMatchHyperlink:
         page.parsed_page = pp
         bbox = BoundingBox(l=10, t=10, r=90, b=20)
         assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+
+def _text_cell(text: str, bbox: BoundingBox, index: int) -> TextCell:
+    return TextCell(
+        index=index,
+        rect=BoundingRectangle.from_bounding_box(bbox),
+        text=text,
+        orig=text,
+        from_ocr=False,
+    )
+
+
+def test_unmatched_table_text_is_preserved(model):
+    matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
+    orphan = _text_cell("outside", BoundingBox(l=100, t=100, r=130, b=110), 2)
+    earlier_orphan = _text_cell("earlier", BoundingBox(l=100, t=60, r=130, b=70), 3)
+    table = Table(
+        label=DocItemLabel.TABLE,
+        id=5,
+        page_no=0,
+        cluster=Cluster(
+            id=5,
+            label=DocItemLabel.TABLE,
+            bbox=BoundingBox(l=0, t=0, r=150, b=150),
+            cells=[matched, orphan, earlier_orphan],
+        ),
+        otsl_seq=[],
+        num_rows=1,
+        num_cols=1,
+        table_cells=[
+            TableCell(
+                bbox=BoundingBox(l=0, t=0, r=50, b=50),
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                text="inside",
+            )
+        ],
+    )
+
+    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == [
+        earlier_orphan,
+        orphan,
+    ]
+    fallback = model._make_unmatched_table_text(table, 150, 6)
+    assert fallback is not None
+    assert fallback.text == "earlier outside"
