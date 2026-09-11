@@ -64,6 +64,20 @@ class S3Coordinates(BaseModel):
         ),
     ] = True
 
+    region: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "AWS region of the S3 bucket, e.g. 'us-east-2'. Required for "
+                "correctly signed requests (including presigned URLs) against "
+                "real AWS S3 buckets outside the default 'us-east-1' region. "
+                "Optional, defaults to unset for S3-compatible services "
+                "(e.g. IBM COS, MinIO) that don't require it."
+            ),
+            examples=["us-east-2", "eu-de"],
+        ),
+    ] = None
+
     access_key: Annotated[
         StrictStr,
         Field(
