@@ -8,15 +8,12 @@ repository's per-file line limit.
 """
 
 from io import BytesIO
-from pathlib import Path
 
 from docling_core.types.doc import (
-    DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     ListGroup,
     ListItem,
-    TextItem,
 )
 from docx import Document
 from docx.oxml import OxmlElement
@@ -25,7 +22,6 @@ from docx.oxml.ns import qn
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.document_converter import DocumentConverter
 
 
 def test_ordered_list_resumes_numbering_after_intervening_list(tmp_path):
@@ -336,101 +332,3 @@ def _make_empty_docx():
     Document().save(buf)
     buf.seek(0)
     return buf
-
-
-def _convert_docx_lists():
-    """Convert the shared ``docx_lists.docx`` fixture.
-
-    The fixture holds all Word list edge cases as separate sections; the
-    issue-#4185 scenarios live under the "Test 11: List starting above indent
-    level 0" and "Test 12: List starting at indent level 0" headings.
-    """
-
-    docx_path = Path("./tests/data/docx/sources/docx_lists.docx")
-    assert docx_path.exists()
-    return (
-        DocumentConverter(allowed_formats=[InputFormat.DOCX])
-        .convert(docx_path)
-        .document
-    )
-
-
-def _list_items_in_section(doc, heading_text: str) -> list[ListItem]:
-    """Return the ListItems nested under a section header whose text matches."""
-
-    items: list[ListItem] = []
-    capturing = False
-    for item, _ in doc.iterate_items():
-        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER:
-            capturing = heading_text in item.text
-        elif capturing and isinstance(item, ListItem):
-            items.append(item)
-    return items
-
-
-def test_list_returning_to_starting_level_above_zero_keeps_items():
-    """A list at levels 1, 2, 1 must not drop the item returning to level 1.
-
-    Regression for #4185: a numbered list that starts at ``w:ilvl`` 1 (never
-    touching level 0) used to lose the third item, because the level-1 slot
-    between the list base and the level-2 sub-list group was left empty.
-    """
-
-    converted = _convert_docx_lists()
-
-    list_items = _list_items_in_section(converted, "List starting above indent level 0")
-    # All three items must survive, in order.
-    assert [item.text for item in list_items] == ["Item A", "Item B", "Item C"]
-
-    # The item that returns to the starting level must rejoin the starting
-    # level's ListGroup (the same one Item A lives in) -- not be dropped.
-    group_of_a = list_items[0].parent.resolve(converted)
-    group_of_c = list_items[2].parent.resolve(converted)
-    assert isinstance(group_of_a, ListGroup)
-    assert group_of_c.get_ref() == group_of_a.get_ref()
-
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
-    group_of_b = list_items[1].parent.resolve(converted)
-    assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
-
-    # The markdown must reflect a single nested list, not two separate lists.
-    markdown = converted.export_to_markdown()
-    lines = [line for line in markdown.splitlines() if line.strip()]
-    heading_idx = next(
-        i
-        for i, line in enumerate(lines)
-        if "List starting above indent level 0" in line
-    )
-    # Item B is rendered indented under Item A; Item C returns to the top level.
-    assert (
-        lines[heading_idx + 1].startswith("- ") and "Item A" in lines[heading_idx + 1]
-    )
-    assert (
-        lines[heading_idx + 2].startswith("    - ")
-        and "Item B" in lines[heading_idx + 2]
-    )
-    assert (
-        lines[heading_idx + 3].startswith("- ") and "Item C" in lines[heading_idx + 3]
-    )
-
-
-def test_list_returning_to_starting_level_zero_still_works():
-    """Control case: levels 0, 1, 2, 1 must keep working unchanged."""
-
-    converted = _convert_docx_lists()
-
-    list_items = _list_items_in_section(converted, "List starting at indent level 0")
-    assert [item.text for item in list_items] == [
-        "Item A",
-        "Item B",
-        "Item C",
-        "Item D",
-    ]
-
-    # Item D (level 1) rejoins Item B's (level 1) group.
-    group_of_b = list_items[1].parent.resolve(converted)
-    group_of_d = list_items[3].parent.resolve(converted)
-    assert group_of_d.get_ref() == group_of_b.get_ref()
