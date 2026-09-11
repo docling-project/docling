@@ -1464,6 +1464,31 @@ def test_browser_request_block_reason_policy():
     )
 
 
+def test_browser_request_block_reason_rejects_private_remote_ip():
+    """With remote fetch on, a remote URL resolving to a private/metadata IP is
+    still blocked so the render cannot pull e.g. cloud metadata into a page."""
+    backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=True))
+
+    # Link-local cloud metadata address (IP literal, so no DNS is needed).
+    reason = backend._get_browser_request_block_reason(
+        "http://169.254.169.254/latest/meta-data"
+    )
+    assert reason is not None and "restricted IP address" in reason
+
+    # Loopback and an IPv4-mapped-in-IPv6 loopback are likewise refused.
+    assert backend._get_browser_request_block_reason("http://127.0.0.1/x") is not None
+    assert (
+        backend._get_browser_request_block_reason("http://[::ffff:127.0.0.1]/x")
+        is not None
+    )
+
+    # A public IP literal remains allowed.
+    assert (
+        backend._get_browser_request_block_reason("http://93.184.216.34/img.png")
+        is None
+    )
+
+
 def test_browser_request_block_reason_local_fetch_confined_to_source_directory():
     html_path = Path("./tests/data/html/sources/example_01.html").resolve()
     backend = _make_html_backend(
