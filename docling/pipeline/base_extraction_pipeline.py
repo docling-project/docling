@@ -57,7 +57,9 @@ class BaseExtractionPipeline(ABC):
             )
             ext_res.errors.append(error_item)
             if raises_on_error:
-                raise e
+                raise
+        finally:
+            in_doc._backend.unload()
 
         return ext_res
 
