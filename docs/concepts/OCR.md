@@ -186,6 +186,49 @@ They still resolve, onto `ch` and `en`, so older configurations keep working -- 
 a warning naming the PP-OCR code to write instead, and neither is reported by
 `supported_ocr_languages()`.
 
+### RapidOCR model size
+
+For languages that resolve to PP-OCRv6 (see the table above), the detection and recognition
+checkpoints are available in three sizes:
+
+| Size     | Notes                                                    |
+| -------- | --------------------------------------------------------- |
+| `tiny`   | Not available for every PP-OCRv6 language (e.g. Japanese). |
+| `small`  | Default.                                                   |
+| `medium` |                                                             |
+
+`tiny`, `small`, and `medium` are three separate checkpoints for the same detection/recognition
+task. Docling does not benchmark or recommend one over another -- if the choice matters for your
+documents, measure it on your own workload and hardware.
+
+<u>Notices</u>:
+
+- `model_size` only affects the PP-OCRv6 detection and recognition checkpoints. It has no effect on
+  languages served by PP-OCRv5 or PP-OCRv4 (see the language table above) -- those always use their
+  normal model assets, and a non-default `model_size` in that case logs a warning rather than
+  silently doing nothing or raising an error.
+- The classification checkpoint is unaffected by `model_size` in every case: it is always the
+  PP-OCRv4 `mobile` model.
+- A `model_size` unsupported for the resolved language and PP-OCR version -- `tiny` with Japanese,
+  for instance -- raises `RapidOcrModelSizeNotSupportedError` immediately, rather than failing
+  later during download or inference.
+
+Python configuration:
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(lang=["en"], model_size="tiny")
+```
+
+CLI prefetch (for offline/`artifacts_path` use). `--rapidocr-model-size` is a single value applied
+to every `--rapidocr-backend-lang` pair given (or to the default pair, if none are given) -- unlike
+`--rapidocr-backend-lang`, which is repeatable:
+
+```sh
+docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --rapidocr-model-size tiny
+```
+
 
 ## EasyOCR
 
