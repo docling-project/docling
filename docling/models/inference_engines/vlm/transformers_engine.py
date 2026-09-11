@@ -203,7 +203,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         # Download or locate model artifacts using shared utility
         def download_wrapper(repo_id: str, revision: str) -> Path:
-            return self.download_models(repo_id, revision=revision)
+            return self.download_models(
+                repo_id,
+                revision=revision,
+                trust_remote_code=self.options.trust_remote_code,
+            )
 
         artifacts_path = resolve_model_artifacts_path(
             repo_id=repo_id,

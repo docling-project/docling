@@ -58,6 +58,15 @@ class InferenceSettings(BaseModel):
     compile_torch_models: bool = False
 
 
+class SecuritySettings(BaseModel):
+    # When a model spec enables ``trust_remote_code`` (custom code from the Hub
+    # runs on load) but its revision is a moving ref rather than a pinned commit
+    # SHA, docling warns by default. Set this to True (env var
+    # ``DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1``) to refuse the download
+    # and raise instead of merely warning.
+    refuse_unpinned_remote_code: bool = False
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="DOCLING_", env_nested_delimiter="_", env_nested_max_split=1
@@ -66,6 +75,7 @@ class AppSettings(BaseSettings):
     perf: BatchConcurrencySettings = BatchConcurrencySettings()
     debug: DebugSettings = DebugSettings()
     inference: InferenceSettings = InferenceSettings()
+    security: SecuritySettings = SecuritySettings()
 
     cache_dir: Path = Path.home() / ".cache" / "docling"
     artifacts_path: Optional[Path] = None
