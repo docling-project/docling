@@ -133,3 +133,64 @@ def test_heading_style_with_the_body_text_sentinel_falls_back_to_its_name(tmp_pa
     pinned = build(pinned=True)
     assert pinned == build(pinned=False)
     assert pinned.strip().startswith("#")
+
+
+def test_outline_level_style_on_consecutive_paragraphs_is_body_text(tmp_path):
+    """A style used on adjacent paragraphs is body text, not a heading.
+
+    ``w:outlineLvl`` only says a paragraph takes part in Word's outline. Legal
+    templates put the level on the style carrying the clause text itself, so
+    the name-independent path used to turn whole paragraphs of prose into
+    section headers. Two adjacent paragraphs in the same style settle it.
+    """
+    doc = Document()
+    style = _add_style_with_outline_level(doc, "Level3", "Level 3", 2)
+    doc.add_paragraph("1.1 Definitions").style = style
+    doc.add_paragraph(
+        '"Work" means any result of the Supplier\'s activity created in the '
+        "performance of the Modifications under this Agreement."
+    ).style = style
+    doc.add_paragraph("Plain body paragraph.")
+
+    markdown = _markdown(doc, tmp_path, "clause_body")
+
+    assert "#" not in markdown
+    assert "1.1 Definitions" in markdown
+    assert '"Work" means any result' in markdown
+
+
+def test_outline_level_survives_when_the_style_never_repeats(tmp_path):
+    """The guard may not undo the localized-heading fix.
+
+    The same style separated by body text is being used as a heading, so the
+    outline level still has to classify it.
+    """
+    doc = Document()
+    style = _add_style_with_outline_level(doc, "Level3", "Level 3", 2)
+    doc.add_paragraph("1.1 Definitions").style = style
+    doc.add_paragraph("Body under the first clause.")
+    doc.add_paragraph("1.2 Scope").style = style
+
+    markdown = _markdown(doc, tmp_path, "clause_head")
+    lines = [line for line in markdown.splitlines() if line.strip()]
+
+    assert lines == [
+        "#### 1.1 Definitions",
+        "Body under the first clause.",
+        "#### 1.2 Scope",
+    ]
+
+
+def test_adjacency_guard_leaves_name_detected_headings_alone(tmp_path):
+    """Styles recognized by name keep their level however they are used.
+
+    The heading is not in doubt there, so consecutive use must not demote it.
+    """
+    doc = Document()
+    doc.add_paragraph("First section").style = doc.styles["Heading 2"]
+    doc.add_paragraph("Second section").style = doc.styles["Heading 2"]
+
+    markdown = _markdown(doc, tmp_path, "named")
+    lines = [line for line in markdown.splitlines() if line.strip()]
+
+    assert lines == ["### First section", "### Second section"]
