@@ -18,7 +18,10 @@ from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
-from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions,
+    ExtractDocumentsOptions,
+)
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
     FileSource,
@@ -215,6 +218,40 @@ class ConvertSourcesRequest(BaseModel):
 
 ## Deprecated aliases — will be removed in a future release
 ConvertDocumentsRequest = ConvertSourcesRequest
+
+
+## Extraction requests
+# KnownBatchTargetRequest with InBodyTarget added back: ad-hoc extraction needs
+# the in-body result, unlike convert's batch union. Database targets are excluded
+# (rejected at enqueue in v1 — their contract is chunk-shaped, extraction emits pages).
+ExtractTargetRequest = Annotated[
+    InBodyTarget
+    | S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PresignedUrlTarget,
+    Field(discriminator="kind"),
+]
+
+
+class ExtractSourcesRequest(BaseModel):
+    """Single, batch-capable request for the ``/extract`` endpoint family.
+
+    One shape serves single ad-hoc extraction and multi-document connector
+    expansion alike — no batch/non-batch split (convert splits only for legacy
+    reasons). ``sources`` accepts the full connector union (file/http/S3/Azure/
+    GCS/Drive); ``target``/``targets`` accept in-body plus storage targets.
+    """
+
+    options: ExtractDocumentsOptions
+    sources: list[BatchSourceRequestItem] = Field(min_length=1)
+    # Singular convenience alias — normalised to targets=[target] downstream.
+    # Mutually exclusive with targets; neither is deprecated.
+    target: ExtractTargetRequest | None = None
+    targets: list[ExtractTargetRequest] | None = None
+    callbacks: list[CallbackSpec] = []
+
 
 ## Source chunking requests
 

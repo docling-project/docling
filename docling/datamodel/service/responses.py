@@ -5,7 +5,7 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
@@ -209,6 +209,36 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
+class ExtractedPageData(BaseModel):
+    """Wire copy of docling's ExtractedPageData.
+
+    Duplicated (not imported) to keep service/ free of extraction.py's
+    PIL/InputDocument imports; fields match 1:1 so a facade page bridges via
+    ``model_validate(page.model_dump())``.
+    """
+
+    page_no: int = Field(..., description="1-indexed page number")
+    extracted_data: dict[str, Any] | None = None
+    raw_text: str | None = None
+    errors: list[str] = []
+
+
+class ExtractionResultItem(BaseModel):
+    """Per-document extraction result (one entry per source document)."""
+
+    filename: str
+    status: ConversionStatus
+    errors: list[ErrorItem] = []
+    pages: list[ExtractedPageData] = []
+
+
+class ExtractionResult(BaseModel):
+    """In-body extraction result envelope; mirrors PresignedArtifactResult."""
+
+    kind: Literal["ExtractionResult"] = "ExtractionResult"
+    documents: list[ExtractionResultItem]
+
+
 class ConvertedOutcomeCountsMixin(BaseModel):
     num_converted: int
     num_succeeded: int
@@ -244,7 +274,8 @@ ResultType = Annotated[
     | ZipArchiveResult
     | RemoteTargetResult
     | ChunkedDocumentResult
-    | PresignedArtifactResult,
+    | PresignedArtifactResult
+    | ExtractionResult,
     Field(discriminator="kind"),
 ]
 
