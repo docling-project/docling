@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -10,60 +9,124 @@ import pytest
 from typer.testing import CliRunner
 
 from docling.cli.tools import app
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.pipeline_options import EasyOcrOptions
 from docling.models.stages.ocr import easyocr_model
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.utils.model_downloader import download_models
 
 pytestmark = pytest.mark.ml_ocr
 
-runner = CliRunner()
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+# Under CI Rich thinks it has a terminal and styles the error panel, landing
+# escapes between the border and the wrapped halves of a sentence.
+# `TERM=dumb` turns that off, so the panel arrives as plain wrapped text.
+runner = CliRunner(env={"TERM": "dumb"})
 
 
 def _single_line_cli_output(output: str) -> str:
-    return " ".join(_ANSI_RE.sub("", output).replace("│", "").split())
-
-
-def test_single_line_cli_output_strips_ansi_styles() -> None:
-    output = "\x1b[1;33m--easyocr-lang\x1b[0m requires the 'easyocr'\n│ model"
-
-    assert _single_line_cli_output(output) == (
-        "--easyocr-lang requires the 'easyocr' model"
-    )
+    """The error panel still wraps and draws borders: flatten it to one line."""
+    return " ".join(output.replace("│", "").split())
 
 
 @pytest.mark.parametrize(
-    ("language", "model_name"),
+    ("tag", "model_name"),
     [
-        ("en", "english_g2"),
-        ("de", "latin_g2"),
-        ("ar", "arabic_g1"),
-        ("bn", "bengali_g1"),
-        ("hi", "devanagari_g1"),
-        ("ru", "cyrillic_g2"),
-        ("th", "thai_g1"),
-        ("ch_tra", "zh_tra_g1"),
-        ("ch_sim", "zh_sim_g2"),
-        ("ja", "japanese_g2"),
-        ("ko", "korean_g2"),
-        ("ta", "tamil_g1"),
-        ("te", "telugu_g2"),
-        ("kn", "kannada_g2"),
+        ("iso:en", "english_g2"),
+        ("iso:de", "latin_g2"),
+        ("iso:ar", "arabic_g1"),
+        ("iso:bn", "bengali_g1"),
+        ("iso:hi", "devanagari_g1"),
+        ("iso:ru", "cyrillic_g2"),
+        ("iso:th", "thai_g1"),
+        ("iso:zh-Hant", "zh_tra_g1"),
+        ("iso:zh-Hans", "zh_sim_g2"),
+        ("iso:ja", "japanese_g2"),
+        ("iso:ko", "korean_g2"),
+        ("iso:ta", "tamil_g1"),
+        ("iso:te", "telugu_g2"),
+        ("iso:kn", "kannada_g2"),
     ],
 )
-def test_resolve_easyocr_language(language: str, model_name: str) -> None:
-    assert easyocr_model._resolve_easyocr_recognition_models([language]) == [model_name]
+def test_prefetch_resolves_bcp47_to_a_checkpoint(tag: str, model_name: str) -> None:
+    codes = easyocr_model.resolve_easyocr_codes([tag])
+
+    assert easyocr_model._resolve_easyocr_recognition_models(codes) == [model_name]
+
+
+def test_resolve_easyocr_languages_maps_to_native_codes() -> None:
+    """EasyOCR keeps its own vocabulary internally; only the input changed."""
+    assert easyocr_model.resolve_easyocr_codes(
+        ["iso:zh-Hant", "iso:sr-Latn", "iso:tg"]
+    ) == [
+        "ch_tra",
+        "rs_latin",
+        "tjk",
+    ]
+
+
+def test_resolve_easyocr_languages_routes_to_the_script_model() -> None:
+    """Each language reaches the recognition network of its own script, so the
+    caller names languages and never a script."""
+    codes = easyocr_model.resolve_easyocr_codes(["iso:ru", "iso:sr-Cyrl"])
+
+    assert codes == ["ru", "rs_cyrillic"]
+    assert easyocr_model._resolve_easyocr_recognition_models(codes) == ["cyrillic_g2"]
 
 
 def test_resolve_easyocr_languages_deduplicates_models() -> None:
-    assert easyocr_model._resolve_easyocr_recognition_models(
-        ["de", "fr", "ch_sim", "de", "ch_sim"]
-    ) == ["latin_g2", "zh_sim_g2"]
+    codes = easyocr_model.resolve_easyocr_codes(
+        ["iso:de", "iso:fr", "iso:zh-Hans", "iso:de-AT"]
+    )
+
+    assert easyocr_model._resolve_easyocr_recognition_models(codes) == [
+        "latin_g2",
+        "zh_sim_g2",
+    ]
 
 
-def test_resolve_easyocr_languages_rejects_unsupported_code() -> None:
+def test_resolve_easyocr_languages_rejects_malformed_tag() -> None:
+    with pytest.raises(ValueError, match="BCP-47"):
+        easyocr_model.resolve_easyocr_codes(["iso:xx"])
+
+
+def test_resolve_easyocr_languages_rejects_uncovered_language() -> None:
+    """`haw` is a valid tag EasyOCR simply has no recognizer for."""
+    with pytest.raises(ValueError, match="Unsupported EasyOCR language: iso:haw"):
+        easyocr_model.resolve_easyocr_codes(["iso:haw"])
+
+
+def test_resolve_easyocr_recognition_models_rejects_unsupported_code() -> None:
     with pytest.raises(ValueError, match="Unsupported EasyOCR language code: xx"):
         easyocr_model._resolve_easyocr_recognition_models(["xx"])
+
+
+@pytest.mark.parametrize(("lang", "expected"), [([], ["en"]), (["de"], ["de"])])
+def test_empty_lang_reaches_the_reader_as_english(
+    monkeypatch, lang: list[str], expected: list[str]
+) -> None:
+    """EasyOCR has no engine default, and an empty `lang_list` is not one.
+
+    `easyocr.Reader([])` falls back to the `latin_g2` checkpoint with only that
+    model's symbols as its character set, so every letter is dropped from the
+    recognized text -- silently. Docling names a language instead.
+    """
+    import easyocr
+
+    captured: list[list[str]] = []
+    monkeypatch.setattr(
+        easyocr,
+        "Reader",
+        lambda lang_list, **kwargs: captured.append(lang_list),
+    )
+
+    EasyOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=EasyOcrOptions(lang=lang),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert captured == [expected]
 
 
 def test_easyocr_downloader_supports_gen1_and_gen2_models(
@@ -141,13 +204,13 @@ def test_model_downloader_resolves_requested_easyocr_languages(
         with_picture_classifier=False,
         with_rapidocr=False,
         with_easyocr=True,
-        easyocr_languages=["ch_sim", "ja", "ch_sim"],
+        easyocr_languages=["iso:zh-Hans", "ja", "iso:zh-CN"],
     )
 
     assert len(captured_calls) == 1
     assert captured_calls[0]["recognition_models"] == [
-        "zh_sim_g2",
         "japanese_g2",
+        "zh_sim_g2",
     ]
 
 
@@ -183,7 +246,7 @@ def test_model_downloader_validates_easyocr_languages_before_io(
 ) -> None:
     output_dir = tmp_path / "models"
 
-    with pytest.raises(ValueError, match="Unsupported EasyOCR language code: xx"):
+    with pytest.raises(ValueError, match="BCP-47"):
         download_models(
             output_dir=output_dir,
             with_layout=False,
@@ -192,7 +255,7 @@ def test_model_downloader_validates_easyocr_languages_before_io(
             with_picture_classifier=False,
             with_rapidocr=False,
             with_easyocr=True,
-            easyocr_languages=["xx"],
+            easyocr_languages=["iso:xx"],
         )
 
     assert not output_dir.exists()
@@ -234,7 +297,7 @@ def test_models_cli_accepts_repeated_easyocr_languages(
             "download",
             *model_args,
             "--easyocr-lang",
-            "ch_sim",
+            "iso:zh-Hans",
             "--easyocr-lang",
             "ja",
             "--output-dir",
@@ -245,7 +308,8 @@ def test_models_cli_accepts_repeated_easyocr_languages(
 
     assert result.exit_code == 0, result.output
     assert len(captured_calls) == 1
-    assert captured_calls[0]["easyocr_languages"] == ["ch_sim", "ja"]
+    # The CLI hands the downloader the user's tags; they are resolved there.
+    assert captured_calls[0]["easyocr_languages"] == ["iso:zh-Hans", "ja"]
 
 
 def test_models_cli_rejects_easyocr_languages_without_easyocr(
@@ -299,7 +363,7 @@ def test_models_cli_rejects_unsupported_easyocr_language(
             "download",
             "easyocr",
             "--easyocr-lang",
-            "xx",
+            "iso:xx",
             "--output-dir",
             str(tmp_path),
             "--quiet",
@@ -307,7 +371,5 @@ def test_models_cli_rejects_unsupported_easyocr_language(
     )
 
     assert result.exit_code == 2
-    assert "Unsupported EasyOCR language code: xx" in _single_line_cli_output(
-        result.output
-    )
+    assert "BCP-47" in _single_line_cli_output(result.output)
     assert not called

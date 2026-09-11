@@ -99,9 +99,11 @@ class InputFormat(str, Enum):
 
     DOCX = "docx"
     DOC = "doc"
+    RTF = "rtf"
     PPTX = "pptx"
     PPT = "ppt"
     HTML = "html"
+    MHTML = "mhtml"
     IMAGE = "image"
     PDF = "pdf"
     ASCIIDOC = "asciidoc"
@@ -149,11 +151,13 @@ class OutputFormat(str, Enum):
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.DOC: ["doc", "dot"],
+    InputFormat.RTF: ["rtf"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
     InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
+    InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
@@ -161,7 +165,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
-    InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.XLSX: ["xlsx", "xlsm", "xltx", "xltm"],
     InputFormat.XLS: ["xls", "xlt"],
     InputFormat.ODT: ["odt", "ott"],
     InputFormat.ODS: ["ods", "ots"],
@@ -190,6 +194,11 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/msword",
         "application/x-msword",
     ],
+    InputFormat.RTF: [
+        "application/rtf",
+        "text/rtf",
+        "application/x-rtf",
+    ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",
         "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
@@ -199,6 +208,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.ms-powerpoint",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
+    InputFormat.MHTML: ["application/x-mimearchive", "multipart/related"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
     InputFormat.XML_DOCLANG: ["application/xml"],

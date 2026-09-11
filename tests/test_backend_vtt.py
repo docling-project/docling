@@ -332,3 +332,28 @@ def test_utf8_bom_does_not_invalidate_the_signature(converter, tmp_path):
 
     for doc in (stream_doc, file_doc):
         assert _process_vtt_doc(doc) == "Hello there"
+
+
+@pytest.mark.parametrize("terminator", ["\r\n", "\r"])
+def test_crlf_and_cr_line_terminators(converter, terminator, tmp_path):
+    """WebVTT counts CRLF, LF and a lone CR as line terminators.
+
+    WebVTTFile.parse() normalizes them, but is_valid() calls verify_signature()
+    on the content as decoded, and that rejects a CR after "WEBVTT". Only the
+    stream arrives with the CR still in it, since a path is read in text mode.
+    """
+    vtt_bytes = (
+        "WEBVTT\n\n00:00:01.000 --> 00:00:05.000\nHello there\n".replace(
+            "\n", terminator
+        )
+    ).encode()
+
+    stream = DocumentStream(name="eol.vtt", stream=BytesIO(vtt_bytes))
+    stream_doc = converter.convert(stream, raises_on_error=True).document
+
+    vtt_file = tmp_path / "eol.vtt"
+    vtt_file.write_bytes(vtt_bytes)
+    file_doc = converter.convert(vtt_file, raises_on_error=True).document
+
+    for doc in (stream_doc, file_doc):
+        assert _process_vtt_doc(doc) == "Hello there"

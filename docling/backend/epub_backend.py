@@ -7,6 +7,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import unquote
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -131,7 +132,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 item_id = item.get("id")
                 href = item.get("href")
                 if item_id and href:
-                    manifest_map[item_id] = href
+                    # A manifest href is a URL, while the archive stores the
+                    # literal file name, so percent-escapes are decoded here.
+                    manifest_map[item_id] = unquote(href)
 
             # Get content files in reading order
             for itemref in spine.findall("opf:itemref", ns_opf):
