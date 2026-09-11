@@ -661,14 +661,6 @@ class ReadingOrderModel:
         assert merged_elem.label == new_item.label, (
             "Labels of merged elements must match."
         )
-        prov = ProvenanceItem(
-            page_no=merged_elem.page_no,
-            charspan=(
-                len(new_item.text) + 1,
-                len(new_item.text) + 1 + len(merged_elem.text),
-            ),
-            bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
-        )
         continuation_text = merged_elem.text.lstrip()
         if new_item.text.endswith("\u00ad") or (
             new_item.text.endswith("-")
@@ -676,6 +668,12 @@ class ReadingOrderModel:
             and continuation_text[0].islower()
         ):
             # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
+            if new_item.prov:
+                previous = new_item.prov[-1]
+                previous.charspan = (
+                    previous.charspan[0],
+                    min(previous.charspan[1], len(new_item.text) - 1),
+                )
             new_item.text = new_item.text[:-1] + merged_elem.text
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
@@ -683,7 +681,16 @@ class ReadingOrderModel:
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
-        new_item.prov.append(prov)
+        new_item.prov.append(
+            ProvenanceItem(
+                page_no=merged_elem.page_no,
+                charspan=(
+                    len(new_item.text) - len(merged_elem.text),
+                    len(new_item.text),
+                ),
+                bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
+            )
+        )
 
         if new_item.hyperlink != merged_elem.hyperlink:
             new_item.hyperlink = None
