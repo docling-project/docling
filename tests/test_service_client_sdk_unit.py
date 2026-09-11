@@ -37,6 +37,7 @@ from docling.datamodel.base_models import (
     InputFormat,
     OutputFormat,
 )
+from docling.datamodel.service.chunking import HybridChunkerOptions
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -1648,6 +1649,46 @@ def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
     assert isinstance(files, dict)
     assert files["files"][0] == "sample.pdf"
     assert files["files"][2] == "application/pdf"
+
+
+def test_submit_file_serializes_chunk_export_options(tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def fake_request_with_retry(**kwargs: object) -> httpx.Response:
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            json=_status_response("task-convert-chunks", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        job = client.submit(
+            source=sample,
+            options=ConvertDocumentsRequestOptions(
+                to_formats=[OutputFormat.CHUNKS],
+                chunking_options=HybridChunkerOptions(
+                    max_tokens=512,
+                    use_markdown_tables=True,
+                ),
+            ),
+            target=ZipTarget(),
+        )
+
+    assert job.task_id == "task-convert-chunks"
+    assert captured["path"] == "/v1/convert/file/async"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["to_formats"] == ["chunks"]
+    assert json.loads(data["chunking_options"]) == {
+        "use_markdown_tables": True,
+        "max_tokens": 512,
+    }
+    assert data["target_type"] == "zip"
 
 
 def test_submit_file_serializes_convert_options_without_defaults(
@@ -3816,6 +3857,50 @@ async def test_async_submit_batch_returns_counts_result_for_azure_target() -> No
 
 
 # --- submit_chunk ---
+
+
+@pytest.mark.anyio
+async def test_async_submit_file_serializes_chunk_export_options(
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def handler(method: str, url: str, **kwargs: object) -> httpx.Response:
+        captured["method"] = method
+        captured["url"] = url
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            json=_status_response("task-async-convert-chunks", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit(
+            source=sample,
+            options=ConvertDocumentsRequestOptions(
+                to_formats=[OutputFormat.CHUNKS],
+                chunking_options=HybridChunkerOptions(
+                    max_tokens=512,
+                    use_markdown_tables=True,
+                ),
+            ),
+            target=ZipTarget(),
+        )
+
+    assert job.task_id == "task-async-convert-chunks"
+    assert "/v1/convert/file/async" in str(captured["url"])
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["to_formats"] == ["chunks"]
+    assert json.loads(data["chunking_options"]) == {
+        "use_markdown_tables": True,
+        "max_tokens": 512,
+    }
+    assert data["target_type"] == "zip"
 
 
 @pytest.mark.anyio
