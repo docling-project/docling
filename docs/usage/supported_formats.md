@@ -27,6 +27,7 @@ Below you can find a listing of all supported input and output formats.
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
+| AFP | IBM Advanced Function Presentation / MO:DCA (`.afp`); preserves pages and extracts basic PTOCA text (see limitations below) |
 
 Schema-specific support:
 
@@ -39,6 +40,28 @@ Schema-specific support:
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md) |
+
+### AFP
+
+AFP support is a dependency-free MVP for text-oriented ingestion. `DocumentConverter`
+detects `.afp` files and MO:DCA structured-field streams, preserves Begin Page / End
+Page boundaries, and extracts character data carried by PTOCA Transparent Data (TRN)
+control sequences. Until code-page resources are resolved automatically, PTOCA text
+is decoded as `cp500` with replacement for undecodable bytes and a log warning:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter(allowed_formats=[InputFormat.AFP])
+result = converter.convert("statement.afp")
+```
+
+Current limitations: font/code-page resources are not resolved automatically, page
+geometry and text coordinates are not reconstructed, and IOCA/IM images, GOCA
+graphics, BCOCA barcodes, overlays, page segments, and object containers are not
+rendered. When data-bearing fields from these content architectures are present, the
+backend emits an aggregated warning while returning any PTOCA text it could extract.
 
 ## Supported output formats
 
