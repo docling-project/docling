@@ -470,6 +470,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
         self.level_at_new_list: int | None = None
+        self.level_start_ilevel: int = 0
         self.parents: dict[int, NodeItem | None] = {}
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
@@ -730,6 +731,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "indents": self.history["indents"].copy(),
         }
         saved_level_at_new_list = self.level_at_new_list
+        saved_level_start_ilevel = self.level_start_ilevel
         saved_parents = self.parents.copy()
         # Save and clear list group cache to prevent reuse across table cells
         saved_last_list_group = self.last_list_group
@@ -742,6 +744,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         finally:
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
+            self.level_start_ilevel = saved_level_start_ilevel
             self.parents = saved_parents
             self.last_list_group = saved_last_list_group
             self.last_list_group_numid = saved_last_list_group_numid
@@ -2592,6 +2595,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if elem_ref is not None:
                 elem_ref.append(e3.get_ref())
 
+    def _slot_for(self, word_ilevel: int) -> int:
+        """Map a Word ``w:ilvl`` value to the internal parents-slot index.
+
+        When a list starts at ``w:ilvl`` 0, the mapping is simply
+        ``level_at_new_list + word_ilevel``.  When it starts at a higher
+        level we must subtract the starting level so that the first item
+        always lands at ``level_at_new_list``.
+
+        Items shallower than the starting level (``word_ilevel <
+        level_start_ilevel``, e.g. a resumed list whose first post-gap item
+        sits at level 1 and later returns to level 0) are clamped to the list
+        base so they stay inside the current list instead of mapping below it.
+        """
+        return self.level_at_new_list + max(0, word_ilevel - self.level_start_ilevel)
+
     def _manage_list_structure(
         self,
         *,
@@ -2632,6 +2650,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
+            self.level_start_ilevel = ilevel
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
             # the same Word list resuming, and must keep its numbering.
@@ -2657,8 +2676,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and prev_indent < ilevel
         ):  # Open indented list
             for i in range(
-                self.level_at_new_list + prev_indent + 1,
-                self.level_at_new_list + ilevel + 1,
+                self._slot_for(prev_indent) + 1,
+                self._slot_for(ilevel) + 1,
             ):
                 list_gr1 = doc.add_list_group(
                     name="list",
@@ -2667,7 +2686,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
-            use_level = self.level_at_new_list + ilevel
+            use_level = self._slot_for(ilevel)
 
         elif (
             self._prev_numid() == numid
@@ -2676,9 +2695,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and ilevel < prev_indent
         ):  # Close list
             for k in self.parents:
-                if k > self.level_at_new_list + ilevel:
+                if k > self._slot_for(ilevel):
                     self.parents[k] = None
-            use_level = self.level_at_new_list + ilevel
+            use_level = self._slot_for(ilevel)
 
         elif self._prev_numid() == numid and isinstance(
             self.parents.get(level - 1), ListGroup
@@ -2691,13 +2710,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ):
             # New list sequence
             if self.level_at_new_list is not None:
-                use_level = self.level_at_new_list + ilevel
+                use_level = self._slot_for(ilevel)
                 for k in list(self.parents.keys()):
                     if k > use_level:
                         self.parents[k] = None
             else:
                 use_level = level
                 self.level_at_new_list = use_level
+                self.level_start_ilevel = ilevel
 
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
