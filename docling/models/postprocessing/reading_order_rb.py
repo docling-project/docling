@@ -215,7 +215,11 @@ class ReadingOrderPredictor:
             if ind <= curr_ind:
                 continue
 
-            if elem.label in [DocItemLabel.TEXT]:
+            if elem.label in [
+                DocItemLabel.TEXT,
+                DocItemLabel.LIST_ITEM,
+                DocItemLabel.SECTION_HEADER,
+            ]:
                 merge_list: List[int] = []
                 check_ind = ind
 

@@ -627,3 +627,26 @@ def test_reading_order_near_boundary_clusters(monkeypatch):
     state = _ReadingOrderPredictorState()
     # Must not raise; before the fix this built y_min > y_max.
     ReadingOrderPredictor()._init_ud_maps(page_elems, state)
+
+
+def test_section_header_wrap_across_columns_is_merged() -> None:
+    first = _box(
+        0,
+        DocItemLabel.SECTION_HEADER,
+        b=500.0,
+        t=520.0,
+        l=60.0,
+        r=250.0,
+    ).model_copy(update={"text": "Gen-"})
+    continuation = _box(
+        1,
+        DocItemLabel.SECTION_HEADER,
+        b=470.0,
+        t=490.0,
+        l=300.0,
+        r=540.0,
+    ).model_copy(update={"text": "eral Manager"})
+
+    result = ReadingOrderPredictor().predict_merges([first, continuation])
+
+    assert result == {0: [1]}
