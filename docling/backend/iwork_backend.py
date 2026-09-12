@@ -81,6 +81,8 @@ _log = logging.getLogger(__name__)
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
 
+_NUMBERS_MIMETYPE = "application/vnd.apple.numbers"
+
 _MODERN_INDEX_PREFIX = "Index/"
 
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
