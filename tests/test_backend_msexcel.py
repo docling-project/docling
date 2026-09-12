@@ -1023,3 +1023,59 @@ def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
 
     assert len(caption.prov) == 1
     assert caption.prov[0].charspan == (0, len(caption.text))
+
+
+def _convert_workbook(workbook: Workbook, file_path: Path) -> DoclingDocument:
+    workbook.save(file_path)
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    return backend.convert()
+
+
+def test_sparse_column_does_not_emit_a_duplicate_fragment_table(tmp_path):
+    """A value the flood fill cannot reach must not start a second table.
+
+    `Note` has an empty cell beneath it, so at the default gap tolerance the fill
+    stops before `foo`/`bar`. They are still inside the table's bounding box and
+    are emitted with it, so if they are left unvisited they go on to open a table
+    of their own out of content the first table already carries.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"], sheet["B1"], sheet["C1"] = "ID", "Name", "Note"
+    sheet["A2"], sheet["B2"] = 1, "alpha"
+    sheet["A3"], sheet["C3"] = 2, "foo"
+    sheet["A4"], sheet["C4"] = 3, "bar"
+
+    doc = _convert_workbook(workbook, tmp_path / "sparse.xlsx")
+
+    tables = doc.tables
+    assert [(t.data.num_rows, t.data.num_cols) for t in tables] == [(4, 3)]
+
+    texts = [cell.text for cell in tables[0].data.table_cells]
+    assert texts.count("foo") == 1
+    assert texts.count("bar") == 1
+
+
+def test_tables_separated_by_a_blank_column_stay_separate(tmp_path):
+    """The widened visited region is the table's own bounding box, nothing more.
+
+    Marking the whole bounding box visited must not swallow a neighbouring table
+    that sits outside it.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"], sheet["B1"] = "ID", "Name"
+    sheet["A2"], sheet["B2"] = 1, "alpha"
+    # Column C is blank, so this is a table of its own.
+    sheet["D1"], sheet["E1"] = "Code", "Value"
+    sheet["D2"], sheet["E2"] = "x", 10
+
+    doc = _convert_workbook(workbook, tmp_path / "two_tables.xlsx")
+
+    assert [(t.data.num_rows, t.data.num_cols) for t in doc.tables] == [(2, 2), (2, 2)]
