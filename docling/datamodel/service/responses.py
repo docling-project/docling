@@ -47,11 +47,13 @@ class ConfidenceScores(BaseModel):
     low_score: Optional[float] = None
     mean_grade: QualityGrade = QualityGrade.UNSPECIFIED
     low_grade: QualityGrade = QualityGrade.UNSPECIFIED
+    pages: Optional[dict[int, "ConfidenceScores"]] = None
 
     @classmethod
     def from_scores(
         cls, scores: "PageConfidenceScores | ConfidenceReport"
     ) -> "ConfidenceScores":
+        pages = getattr(scores, "pages", None)
         return cls(
             parse_score=_nan_to_none(scores.parse_score),
             layout_score=_nan_to_none(scores.layout_score),
@@ -61,6 +63,14 @@ class ConfidenceScores(BaseModel):
             low_score=_nan_to_none(scores.low_score),
             mean_grade=scores.mean_grade,
             low_grade=scores.low_grade,
+            pages=(
+                {
+                    page_no: cls.from_scores(page_scores)
+                    for page_no, page_scores in pages.items()
+                }
+                if pages
+                else None
+            ),
         )
 
 
