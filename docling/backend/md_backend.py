@@ -87,6 +87,7 @@ class _HeadingCreationPayload(BaseModel):
 class _ListItemCreationPayload(BaseModel):
     kind: Literal["list_item"] = "list_item"
     enumerated: bool
+    marker: str = ""
 
 
 _CreationPayload = Annotated[
@@ -378,12 +379,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         parent_item: Optional[NodeItem],
         text: str,
         enumerated: bool,
+        marker: str = "",
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
         item = doc.add_list_item(
             text=text,
             enumerated=enumerated,
+            marker=marker,
             parent=parent_item,
             formatting=formatting,
             hyperlink=hyperlink,
@@ -424,12 +427,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         snippet_text: str,
         parent_item: Optional[NodeItem],
         list_ordered_flag_by_ref: dict[str, bool],
+        list_start_by_ref: dict[str, int],
+        list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
         formatting: Optional[Formatting],
         hyperlink: Optional[Union[AnyUrl, Path]],
     ) -> Optional[NodeItem]:
-        """
-        Lazily create list items / headings when we first see their inline content.
+        """Lazily create list items / headings when we first see their inline content.
 
         Important: Marko list items/headings can contain inline nodes that are NOT RawText
         (e.g. CodeSpan, Link). If we only flush on RawText, pending payloads can leak to
@@ -438,22 +442,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         while len(creation_stack) > 0:
             to_create = creation_stack.pop()
             if isinstance(to_create, _ListItemCreationPayload):
-                enumerated = (
-                    list_ordered_flag_by_ref.get(parent_item.self_ref, False)
-                    if parent_item
-                    else False
-                )
                 parent_ref = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
                     text=snippet_text,
-                    enumerated=enumerated,
+                    enumerated=to_create.enumerated,
+                    marker=to_create.marker,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
                     list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_item_counter_by_ref[parent_ref] = (
+                        list_item_counter_by_ref.get(parent_ref, 0) + 1
+                    )
 
             elif isinstance(to_create, _HeadingCreationPayload):
                 # Not keeping as parent_item as logic for correctly tracking
@@ -481,6 +484,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _CreationPayload
         ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
         list_ordered_flag_by_ref: dict[str, bool],
+        list_start_by_ref: dict[str, int],
+        list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
@@ -526,6 +531,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if has_non_empty_list_items:
                 parent_item = doc.add_list_group(name="list", parent=parent_item)
                 list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
+                if element.ordered:
+                    list_start_by_ref[parent_item.self_ref] = element.start
 
         elif (
             isinstance(element, marko.block.ListItem)
@@ -541,6 +548,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if parent_item
                 else False
             )
+            parent_ref: Optional[str] = parent_item.self_ref if parent_item else None
+            marker = ""
+            if enumerated and parent_ref is not None:
+                start = list_start_by_ref.get(parent_ref, 1)
+                count = list_item_counter_by_ref.get(parent_ref, 0)
+                marker = f"{start + count}."
             non_list_children: list[marko.element.Element] = [
                 item
                 for item in child.children
@@ -560,13 +573,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     parent_item=parent_item,
                     text="",
                     enumerated=enumerated,
+                    marker=marker,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
                     list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_item_counter_by_ref[parent_ref] = (
+                        list_item_counter_by_ref.get(parent_ref, 0) + 1
+                    )
             else:
-                creation_stack.append(_ListItemCreationPayload(enumerated=enumerated))
+                creation_stack.append(
+                    _ListItemCreationPayload(enumerated=enumerated, marker=marker)
+                )
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
@@ -637,6 +656,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         snippet_text=snippet_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
                         list_last_item_by_ref=list_last_item_by_ref,
                         formatting=formatting,
                         hyperlink=hyperlink,
@@ -685,6 +706,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     snippet_text=snippet_text,
                     parent_item=parent_item,
                     list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
                     list_last_item_by_ref=list_last_item_by_ref,
                     formatting=formatting,
                     hyperlink=hyperlink,
@@ -792,6 +815,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     visited=visited,
                     creation_stack=creation_stack,
                     list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
                     list_last_item_by_ref=list_last_item_by_ref,
                     parent_item=parent_item,
                     formatting=formatting,
@@ -869,6 +894,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 visited=set(),
                 creation_stack=[],
                 list_ordered_flag_by_ref={},
+                list_start_by_ref={},
+                list_item_counter_by_ref={},
                 list_last_item_by_ref={},
             )
             self._close_table(doc=doc)  # handle any last hanging table

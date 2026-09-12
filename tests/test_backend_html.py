@@ -760,9 +760,12 @@ def test_fetch_remote_images(monkeypatch):
             enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
         )
     )
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
+    with (
+        patch(
+            "docling.backend.utils.image_resource_loader.requests.Session.get"
+        ) as mocked_session_get,
+        pytest.warns(UserWarning, match="Could not process an image"),
+    ):
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
         mocked_session_get.assert_called_once()
@@ -802,9 +805,12 @@ def test_fetch_remote_images_with_custom_headers():
     )
 
     converter = _create_html_converter(backend_options)
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
+    with (
+        patch(
+            "docling.backend.utils.image_resource_loader.requests.Session.get"
+        ) as mocked_session_get,
+        pytest.warns(UserWarning, match="Could not process an image"),
+    ):
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert("./tests/data/html/sources/example_01.html")
         headers_arg = mocked_session_get.call_args[1].get("headers", {})

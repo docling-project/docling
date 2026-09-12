@@ -64,6 +64,7 @@ from docling.datamodel.backend_options import (
     EpubBackendOptions,
     HTMLBackendOptions,
     IWorkBackendOptions,
+    JatsBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
@@ -228,6 +229,7 @@ class PatentUsptoFormatOption(FormatOption):
 class XMLJatsFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
+    backend_options: Optional[JatsBackendOptions] = None
 
 
 class XMLDocLangFormatOption(FormatOption):
@@ -359,6 +361,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLS: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.DOC: WordFormatOption(),
+        InputFormat.RTF: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
         InputFormat.PPT: PowerpointFormatOption(),
         InputFormat.ODT: OdtFormatOption(),
@@ -367,6 +370,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),
+        InputFormat.MHTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),

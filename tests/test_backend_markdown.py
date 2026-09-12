@@ -81,51 +81,10 @@ def test_convert_valid():
                 verify_docitems(doc_true=act_doc, doc_pred=exp_doc, fuzzy=False)
 
 
-def get_md_paths():
-    # Define the directory you want to search
-    directory = Path("./tests/data/md/groundtruth")
-
-    # List all MD files in the directory and its subdirectories
-    md_files = sorted(directory.rglob("*.md"))
-    return md_files
-
-
 def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.MD])
 
     return converter
-
-
-@pytest.mark.skip(
-    reason="Previously a silent no-op (globbed a non-existent ./tests/groundtruth "
-    "path). Roundtrip of the markdown groundtruth does not hold (trailing-newline "
-    "drift); re-enable once that is fixed."
-)
-def test_e2e_md_conversions():
-    md_paths = get_md_paths()
-    converter = get_converter()
-
-    for md_path in md_paths:
-        # print(f"converting {md_path}")
-
-        with open(md_path) as fr:
-            true_md = fr.read()
-
-        conv_result: ConversionResult = converter.convert(md_path)
-
-        doc: DoclingDocument = conv_result.document
-
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md
-
-        conv_result_: ConversionResult = converter.convert_string(
-            true_md, format=InputFormat.MD
-        )
-
-        doc_: DoclingDocument = conv_result_.document
-
-        pred_md_: str = doc_.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md_
 
 
 def test_convert_leading_dash_sequences():
@@ -139,9 +98,10 @@ Here is some content...
 <!-- image -->
 """
 
-    conv_result: ConversionResult = converter.convert_string(
-        markdown, format=InputFormat.MD
-    )
+    with pytest.warns(UserWarning, match="Detected potentially incorrect Markdown"):
+        conv_result: ConversionResult = converter.convert_string(
+            markdown, format=InputFormat.MD
+        )
 
     pred_md = conv_result.document.export_to_markdown()
 
@@ -587,3 +547,66 @@ def test_convert_line_breaks():
     assert len(list_items) == 2
     assert list_items[0].text == "First Second"
     assert list_items[1].text == "Item 2"
+
+
+def test_ordered_list_preserves_start_number():
+    """Ordered lists that start at a number other than 1 must preserve that number.
+
+    A list written as `5. foo\\n6. bar` must export as `5. foo\\n6. bar`,
+    not `1. foo\\n2. bar`.
+    """
+    markdown = "5. foo\n6. bar\n7. baz\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    items = list(conv_result.document.texts)
+    assert len(items) == 3
+    assert [item.marker for item in items] == ["5.", "6.", "7."]
+
+    exported = conv_result.document.export_to_markdown()
+    assert exported == "5. foo\n6. bar\n7. baz"
+
+
+def test_ordered_list_split_by_prose_preserves_numbers():
+    """A procedure interrupted by prose must keep sequence numbers across the break.
+
+    Steps 1-2, a prose paragraph, then steps 3-4 in the source must come back
+    with exactly those numbers: the second list must NOT restart at 1.
+    """
+    markdown = (
+        "1. Install the package.\n"
+        "2. Set the API key.\n"
+        "\n"
+        "Restart the shell before continuing.\n"
+        "\n"
+        "3. Run the import.\n"
+        "4. Check the output.\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    exported = conv_result.document.export_to_markdown()
+    assert "1. Install the package." in exported
+    assert "2. Set the API key." in exported
+    assert "3. Run the import." in exported
+    assert "4. Check the output." in exported
+    # Guard against the "two step 1s" regression explicitly.
+    lines = [
+        ln for ln in exported.splitlines() if ln.startswith(("1.", "2.", "3.", "4."))
+    ]
+    assert lines == [
+        "1. Install the package.",
+        "2. Set the API key.",
+        "3. Run the import.",
+        "4. Check the output.",
+    ]
+
+
+def test_standard_ordered_list_still_starts_at_one():
+    """Ordinary 1-based ordered lists must continue to export as 1-based."""
+    markdown = "1. alpha\n2. beta\n3. gamma\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    exported = conv_result.document.export_to_markdown()
+    assert exported == "1. alpha\n2. beta\n3. gamma"

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.125.0"  # DO NOT EDIT, updated automatically
+version = "2.126.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -55,6 +55,7 @@ dependencies = [
   'certifi>=2024.7.4',
   'pluggy>=1.0.0,<2.0.0',
   'tqdm>=4.65.0,<5.0.0',
+  "langcodes>=3.5.0,<4.0.0",
 ]
 
 [project.urls]
@@ -284,7 +285,7 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
-  'typer>=0.12.5,<0.27.0',
+  'typer>=0.19.0,<0.27.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -292,7 +293,7 @@ service-client = [
 ]
 
 cli = [
-  'typer>=0.12.5,<0.27.0',
+  'typer>=0.19.0,<0.27.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.

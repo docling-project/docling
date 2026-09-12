@@ -58,9 +58,18 @@ SF_NAMESPACE = "http://developer.apple.com/namespaces/sf"
 
 SF_PARAGRAPH = f"{{{SF_NAMESPACE}}}p"
 
-# iWork '09 placeholder text. It is what the template shows before the author
-# types anything, so it must never be emitted as document content.
 SF_GHOST_TEXT = f"{{{SF_NAMESPACE}}}ghost-text"
+SF_GHOST_TEXT_REF = f"{{{SF_NAMESPACE}}}ghost-text-ref"
+
+SF_PLACEHOLDER_TEXT = frozenset({SF_GHOST_TEXT, SF_GHOST_TEXT_REF})
+"""Elements holding iWork '09 placeholder text.
+
+It is what the template shows before the author types anything, so it must never
+be emitted as document content. A template defines each placeholder once as an
+``sf:ghost-text`` and every later paragraph that reuses it holds an
+``sf:ghost-text-ref``, which names the original by ``sfa:IDREF`` but carries its
+own inline copy of the text — so both have to be pruned, not just the first.
+"""
 
 SF_PARAGRAPH_STYLE = f"{{{SF_NAMESPACE}}}paragraphstyle"
 
@@ -478,7 +487,7 @@ def legacy_runs(
         # outside it, so it keeps the parent's formatting.
         for child in reversed(list(element)):
             stack.append((child, formatting, link, True))
-            if child.tag == SF_GHOST_TEXT:
+            if child.tag in SF_PLACEHOLDER_TEXT:
                 continue
             inherited = formatting
             if child.tag == SF_SPAN:

@@ -3,6 +3,7 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -29,7 +30,7 @@ import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.backend_options import MsWordBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -318,6 +319,80 @@ def test_chart_image_opt_out_keeps_no_image():
 
     assert chart.get_image(doc=doc) is None
     assert chart.meta.tabular_chart is not None
+
+
+def _docx_with_titled_chart_under_a_heading(title: str):
+    """Build a copy of CHART_DOCX whose chart has a title and sits under a heading.
+
+    The chart in drawingml.docx carries an empty ``c:title`` placeholder with no
+    ``a:t`` runs, so no caption is produced, and it sits at the top level, where
+    its parent is the body. Both are needed to observe the caption's parent: a
+    title so that a caption exists at all, and a heading so that the expected
+    parent is something other than the body.
+    """
+    import zipfile
+    from io import BytesIO
+
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    insert_at = chart.index("</a:p>", chart.index("<c:title>"))
+    entries["word/charts/chart1.xml"] = (
+        chart[:insert_at] + f"<a:r><a:t>{title}</a:t></a:r>" + chart[insert_at:]
+    ).encode("utf-8")
+
+    document = entries["word/document.xml"].decode("utf-8")
+    drawing_at = document.index("<w:drawing>", document.index("<w:body>"))
+    while "chart" not in document[drawing_at : drawing_at + 600]:
+        drawing_at = document.index("<w:drawing>", drawing_at + 1)
+    paragraph_at = max(
+        m.start() for m in re.finditer(r"<w:p[ >]", document) if m.start() < drawing_at
+    )
+    heading = (
+        '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>'
+        "<w:r><w:t>Revenue section</w:t></w:r></w:p>"
+    )
+    entries["word/document.xml"] = (
+        document[:paragraph_at] + heading + document[paragraph_at:]
+    ).encode("utf-8")
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def test_chart_caption_is_parented_to_the_chart_container():
+    """A chart caption belongs to whatever holds the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so a chart nested under a
+    heading had its caption surface outside that heading.
+    """
+    title = "Quarterly Revenue"
+    stream = DocumentStream(
+        name="chart_with_title.docx",
+        stream=_docx_with_titled_chart_under_a_heading(title),
+    )
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    picture = _single_chart_picture(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.text == title
+    assert picture.parent.cref != "#/body", (
+        "fixture should nest the chart under a heading"
+    )
+    assert caption.parent.cref == picture.parent.cref, (
+        f"caption is parented to {caption.parent.cref}, expected {picture.parent.cref}"
+    )
+    container = picture.parent.resolve(doc)
+    assert caption.self_ref in [child.cref for child in container.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
 
 
 def test_is_rich_table_cell(docx_paths):
@@ -911,6 +986,97 @@ def test_vertical_merge_survives_grid_before_row(tmp_path):
     assert merged.text.startswith("X")
     assert merged.row_span == 2
     assert merged.end_row_offset_idx == 2
+
+
+def _wrap_cell_in_content_control(table, row: int, col: int) -> None:
+    """Move a ``docx.table.Table`` cell under ``w:sdt``/``w:sdtContent``.
+
+    Word produces this shape for date pickers and for cells bound to document
+    properties: the ``w:tc`` is no longer a direct child of the ``w:tr``.
+    """
+    tc = table.cell(row, col)._tc
+    tr = tc.getparent()
+    position = list(tr).index(tc)
+    sdt = tr.makeelement(qn("w:sdt"), {})
+    sdt_content = tr.makeelement(qn("w:sdtContent"), {})
+    tr.remove(tc)
+    sdt_content.append(tc)
+    sdt.append(sdt_content)
+    tr.insert(position, sdt)
+
+
+def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
+    """A content-control cell must be parsed, and must not shift the row left.
+
+    Only direct ``w:tc`` children of a ``w:tr`` used to be visited, so a cell
+    Word had wrapped in a content control was dropped -- and because the grid
+    column advances once per emitted cell, every later cell in the row moved
+    into the vacated column and lined up under the wrong header.
+    """
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    header = ["Date", "Version", "Author", "Note"]
+    row = ["1.2.2015", "1", "Acme s.r.o.", "Created"]
+
+    def build(wrapped_columns: tuple[int, ...]) -> list[str]:
+        doc = Document()
+        table = doc.add_table(rows=2, cols=len(header))
+        for col, value in enumerate(header):
+            table.cell(0, col).text = value
+        for col, value in enumerate(row):
+            table.cell(1, col).text = value
+        for col in wrapped_columns:
+            _wrap_cell_in_content_control(table, 1, col)
+
+        path = tmp_path / f"content_control_{'_'.join(map(str, wrapped_columns))}.docx"
+        doc.save(str(path))
+
+        data = converter.convert(path).document.tables[0].data
+        grid = [""] * data.num_cols
+        for cell in data.table_cells or []:
+            if cell.start_row_offset_idx == 1:
+                grid[cell.start_col_offset_idx] = cell.text or ""
+        return grid
+
+    assert build(()) == row
+    # A single wrapped cell in the first column: previously dropped, shifting
+    # the rest one column left.
+    assert build((0,)) == row
+    # Only a middle column wrapped: the grid-shift must be caught independently
+    # of the first cell being wrapped.
+    assert build((2,)) == row
+    # Two wrapped cells in the same row, one of them not the first.
+    assert build((0, 2)) == row
+
+
+def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
+    """A one-cell layout table whose only cell is content-control wrapped.
+
+    A ``1x1`` table is treated as furniture and its cell is walked as body
+    content. That shortcut used ``table.rows[0].cells[0]``, which walks only
+    direct ``w:tc`` children, so when the lone cell is wrapped in a ``w:sdt``
+    (the shape Word emits for cover-page and document-property controls) the
+    row had no cells, ``cells[0]`` raised ``IndexError``, and the caller's
+    ``except`` silently dropped the cell's content.
+    """
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = Document()
+    doc.add_paragraph("before")
+    table = doc.add_table(rows=1, cols=1)
+    table.cell(0, 0).text = "Cover value"
+    _wrap_cell_in_content_control(table, 0, 0)
+    doc.add_paragraph("after")
+
+    path = tmp_path / "single_cell_content_control.docx"
+    doc.save(str(path))
+
+    texts = [
+        item.text
+        for item, _ in converter.convert(path).document.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+    assert "Cover value" in texts
 
 
 def test_list_counter_and_enum_marker(docx_paths):

@@ -81,16 +81,6 @@ _log = logging.getLogger(__name__)
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
 
-# DocumentOrigin only accepts a mimetype that the stdlib knows or that
-# docling-core allow-lists, and Python ships no mapping for ".pages". Teaching
-# the stdlib the real Apple type keeps the origin honest without waiting on a
-# docling-core release; it also makes mimetypes.guess_type() correct for callers.
-mimetypes.add_type(_PAGES_MIMETYPE, ".pages")
-
-_NUMBERS_MIMETYPE = "application/vnd.apple.numbers"
-
-mimetypes.add_type(_NUMBERS_MIMETYPE, ".numbers")
-
 _MODERN_INDEX_PREFIX = "Index/"
 
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")

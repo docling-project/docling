@@ -129,13 +129,13 @@ class InputDocument(BaseModel):
     """A document as an input of a Docling conversion."""
 
     file: Annotated[
-        PurePath, Field(description="A path representation the input document.")
+        PurePath, Field(description="A path representation of the input document.")
     ]
     document_hash: Annotated[
         str,
         Field(description="A stable hash of the path or stream of the input document."),
     ]
-    valid: bool = Field(True, description="Whether this is is a valid input document.")
+    valid: bool = Field(True, description="Whether this is a valid input document.")
     backend_options: Optional[BackendOptions] = Field(
         None, description="Custom options for backends."
     )
@@ -984,6 +984,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
+        elif ext in FormatToExtensions[InputFormat.MHTML]:
+            mime = FormatToMimeType[InputFormat.MHTML][0]
         elif ext in FormatToExtensions[InputFormat.XML_USPTO]:
             # USPTO text files share the "txt" extension with Markdown. Leave mime=None
             # so content probing can distinguish PATN text from plain Markdown text.
@@ -1004,6 +1006,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.DOCX][0]
         elif ext in FormatToExtensions[InputFormat.DOC]:
             mime = FormatToMimeType[InputFormat.DOC][0]
+        elif ext in FormatToExtensions[InputFormat.RTF]:
+            mime = FormatToMimeType[InputFormat.RTF][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.PPT]:
