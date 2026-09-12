@@ -670,11 +670,18 @@ class ReadingOrderModel:
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
         continuation_text = merged_elem.text.lstrip()
-        if new_item.text.endswith("\u00ad") or (
+        # A hard hyphen only splits a word when it is attached to that word
+        # ("algo-" / "rithms"). A hyphen following whitespace is a literal
+        # character -- a dangling dash, a wrapped flag or a minus sign -- and
+        # must not be swallowed. A soft hyphen (U+00AD) is always a split marker.
+        hard_hyphen_split = (
             new_item.text.endswith("-")
+            and len(new_item.text) > 1
+            and new_item.text[-2].isalnum()
             and continuation_text
             and continuation_text[0].islower()
-        ):
+        )
+        if new_item.text.endswith("\u00ad") or hard_hyphen_split:
             # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
             new_item.text = new_item.text[:-1] + merged_elem.text
             new_item.orig = (
