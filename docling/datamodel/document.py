@@ -76,6 +76,7 @@ from docling.datamodel.base_models import (
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import _PdfOutlineItem
+from docling.utils.pdf_struct_tree import _PdfFormulaStruct
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 
@@ -595,6 +596,10 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+
+    # Formula structure elements read from a tagged PDF, surfaced from the backend for the
+    # native-formula stage. Same transient plumbing as _pdf_outline above.
+    _pdf_formula_structs: Optional[list[_PdfFormulaStruct]] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):

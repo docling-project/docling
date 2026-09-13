@@ -23,6 +23,7 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.formula_meta import has_native_mathml
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -152,6 +153,10 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         bool
             True if the element can be processed, False otherwise.
         """
+        # A formula whose MathML was read from the source document is already resolved more
+        # faithfully than this model could reconstruct it.
+        if has_native_mathml(element):
+            return False
         return self.enabled and (
             (isinstance(element, CodeItem) and self.options.do_code_enrichment)
             or (
