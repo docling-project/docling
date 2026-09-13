@@ -1092,10 +1092,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # The 'visited_cells' returned to the caller MUST strictly be the ones
-        # that contain data/merges, so the main loop doesn't re-scan them.
-        # However, to avoid overlapping tables, we should mark the whole bbox?
-        # Standard behavior: Mark the specific connected cells we found.
+        # Mark all cells within the table bounding box as visited so sparse cells
+        # inside the table (which were already extracted into data) are not re-scanned
+        # as separate duplicate tables.
+        visited_cells = {
+            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
+        }
         return (
             ExcelTable(
                 anchor=(min_c, min_r),
@@ -1103,7 +1105,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 num_cols=max_c + 1 - min_c,
                 data=data,
             ),
-            table_cells,
+            visited_cells,
         )
 
     @staticmethod

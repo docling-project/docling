@@ -1023,3 +1023,22 @@ def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
 
     assert len(caption.prov) == 1
     assert caption.prov[0].charspan == (0, len(caption.text))
+
+
+def test_sparse_table_cells_not_duplicated_as_extra_tables(tmp_path: Path) -> None:
+    """Sparse cells inside a table's bounding box should not create duplicate tables."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sheet1"
+    sheet.append(["ID", "Name", "Note"])
+    sheet.append([1, "alpha", None])
+    sheet.append([2, None, "foo"])
+    sheet.append([3, None, "bar"])
+    file_path = tmp_path / "sparse-table.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    shapes = [(t.data.num_rows, t.data.num_cols) for t in doc.tables]
+    assert shapes == [(4, 3)]
