@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from docling_core.types.doc import DocItem, DoclingDocument, NodeItem
+from docling_core.types.doc import ContentLayer, DocItem, DoclingDocument, NodeItem
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -133,7 +133,9 @@ class BasePipeline(ABC):
         }
         for page_no, page_item in document.pages.items():
             page_item.page_no = page_no
-        for item, _level in document.iterate_items():
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
             if isinstance(item, DocItem):
                 for provenance in item.prov:
                     provenance.page_no = page_no_map[provenance.page_no]

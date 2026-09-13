@@ -131,3 +131,38 @@ Many remote inference services are provided, the key requirement is to offer an 
 More examples on how to connect with the remote inference services can be found in the following examples:
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
+
+## Chandra HTML output
+
+Use `ResponseFormat.CHANDRA_HTML` with `CHANDRA_OCR_LAYOUT_PROMPT` for Chandra's
+HTML layout blocks. Docling scales each block's `data-bbox` coordinates from
+0–1000 to the source page size. Items inside a block inherit that block's box;
+the model does not provide separate coordinates for each word or table cell.
+
+The converter preserves paragraphs, heading levels, nested lists, table spans,
+inline formatting, links, math, and code whitespace. Tables are recognized by
+their markup even inside blocks labeled `Text`, `Form`, or `Figure`. Cells with
+structured content use `RichTableCell` references. Form regions retain checkbox
+and radio states and fillable text values without inferring key–value links
+from visual proximity.
+
+Picture descriptions from `img alt` are stored in `PictureItem.meta.description`.
+Chart tables, diagram code, and other picture content remain children of the
+picture. Explicit `<chem>` content is stored as SMILES molecule metadata.
+Captions and footnotes are linked when nested under their picture or table;
+separate layout blocks remain unlinked. Separate table fragments remain separate
+tables. CSS layout and styling without corresponding document primitives are
+not reconstructed.
+
+To retain picture pixels, enable `generate_picture_images` or
+`generate_page_images` on `VlmPipelineOptions`. With page images retained,
+`picture.get_image(document)` can crop the picture using its provenance.
+When exporting Markdown, use `traverse_pictures=True` to include picture children.
+Use JSON to inspect all metadata and rich document structure; individual export
+formats may omit some of these details.
+
+Recognizable HTML without layout blocks is recovered with a warning and without
+invented coordinates. Invalid bounding boxes also produce a warning while their
+content is retained. Nonempty prose or JSON responses without HTML transcription
+produce a page-specific inference error and `PARTIAL_SUCCESS`, rather than an
+unreported empty result. An explicitly labeled `Blank-Page` may be empty.
