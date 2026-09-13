@@ -2,27 +2,24 @@
 # SPDX-License-Identifier: MIT
 
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_validator
 from typing_extensions import deprecated
-
-try:
-    from transformers import StoppingCriteria
-except ImportError:
-    # `transformers` is optional for slim installs (e.g. `service-client`
-    # extra). The placeholder keeps the `custom_stopping_criteria` field
-    # annotation valid; pydantic accepts it via `arbitrary_types_allowed`.
-    class StoppingCriteria:  # type: ignore[no-redef]
-        pass
-
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
 
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
+
+    # transformers.StoppingCriteria is only needed for static type checking
+    # and for validating actual custom_stopping_criteria values at runtime
+    # (see _validate_custom_stopping_criteria below) — never imported merely
+    # by loading this module, so a `models-onnxruntime`-only install never
+    # pulls in torch/transformers just to define these option classes.
+    from transformers import StoppingCriteria
 
     from docling.datamodel.base_models import Page
 
@@ -276,15 +273,64 @@ class InlineVlmOptions(BaseVlmOptions):
         ),
     ] = []
     custom_stopping_criteria: Annotated[
-        list[Union[StoppingCriteria, GenerationStopper]],
+        list[Any],
         Field(
             description=(
                 "Custom stopping criteria objects for fine-grained control "
                 "over generation termination. Allows implementing complex "
-                "stopping logic beyond simple string matching."
+                "stopping logic beyond simple string matching. Each item "
+                "must be a `GenerationStopper` instance, or — only if the "
+                "`transformers` package is installed — a "
+                "`transformers.StoppingCriteria` instance or subclass."
             )
         ),
     ] = []
+
+    @field_validator("custom_stopping_criteria")
+    @classmethod
+    def _validate_custom_stopping_criteria(cls, value: list[Any]) -> list[Any]:
+        """Validate stopping-criteria items without importing transformers
+        unless an item actually needs it (deferred, not at module load —
+        see the TYPE_CHECKING import above for the rationale). A pure
+        `GenerationStopper` list — the common case for ONNX-only pipelines
+        that never touch transformers-backed VLMs — never triggers the
+        import at all."""
+        if not value:
+            return value
+
+        def _is_generation_stopper(item: Any) -> bool:
+            return isinstance(item, GenerationStopper) or (
+                isinstance(item, type) and issubclass(item, GenerationStopper)
+            )
+
+        _stopping_criteria_type: type | None = None
+        for item in value:
+            if _is_generation_stopper(item):
+                continue
+            if _stopping_criteria_type is None:
+                try:
+                    from transformers import (
+                        StoppingCriteria as _stopping_criteria_type,  # type: ignore[assignment]
+                    )
+                except ImportError:
+                    raise ValueError(
+                        f"custom_stopping_criteria item {item!r} is not a "
+                        f"GenerationStopper instance, and the `transformers` "
+                        f"package (required for transformers.StoppingCriteria "
+                        f"items) is not installed."
+                    ) from None
+            is_valid_instance = isinstance(item, _stopping_criteria_type)
+            is_valid_subclass = isinstance(item, type) and issubclass(
+                item, _stopping_criteria_type
+            )
+            if not (is_valid_instance or is_valid_subclass):
+                raise ValueError(
+                    f"custom_stopping_criteria item {item!r} must be a "
+                    f"GenerationStopper instance, or a "
+                    f"transformers.StoppingCriteria instance/subclass."
+                )
+        return value
+
     extra_generation_config: Annotated[
         dict[str, Any],
         Field(
