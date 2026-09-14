@@ -75,12 +75,12 @@ _KW_ARTICLE = re.compile(
     r"^(article|section|clause|schedule|annex|appendix|rule)\b", re.IGNORECASE
 )
 _SECTION_SYMBOL = re.compile(r"^§+\s*\d")  # § 1 / §§ 1.2
-# Dotted decimal outline (1.1, 1.1.1, ...), terminated by space/end/punctuation.
-_DOTTED = re.compile(r"^(\d+(?:\.\d+)+)(?:[.)\]\s]|$)")
-# Single Arabic index (1. / 2)).
-_ARABIC = re.compile(r"^(\d+)[.)]")
-# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV.
-_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*[).]")
+# Dotted decimal outline (1.1, 1.1.1, ...), terminated by punctuation/space/end.
+_DOTTED = re.compile(r"^\(?\s*(\d+(?:\.\d+)+)(?:[.:)\]\-\u2013\u2014\s]|$)")
+# Single Arabic index (1. / 1) / (1) / 1: / 1 -).
+_ARABIC = re.compile(r"^\(?\s*(\d+)\s*[.:)\]\-\u2013\u2014]")
+# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV. / A: / A -
+_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*[.:)\]\-\u2013\u2014]")
 
 
 @dataclass
