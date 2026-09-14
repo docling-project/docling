@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import math
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -340,9 +339,7 @@ class _ChandraDocumentBuilder:
                 raw,
             )
             return None
-        if not all(math.isfinite(c) for c in (x0, y0, x1, y1)) or not (
-            0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000
-        ):
+        if not (0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000):
             _log.warning(
                 "Invalid Chandra bbox %r; preserving content without coordinates", raw
             )
@@ -637,20 +634,17 @@ class _ChandraDocumentBuilder:
 
         # The layout bbox describes the whole picture. Its img tags provide
         # descriptions, not separately located images. Keep structured children.
-        def without_images(children: list[_Element | str]) -> list[_Element | str]:
-            return [
+        for element in (node, *node.elements()):
+            element.children[:] = [
                 child
-                if isinstance(child, str)
-                else _Element(child.tag, child.attrs, without_images(child.children))
-                for child in children
+                for child in element.children
                 if isinstance(child, str)
                 or (
                     child.tag != "img"
                     and not (child.tag == "chem" and len(chemicals) == 1)
                 )
             ]
-
-        self.walk(without_images(node.children), picture, prov)
+        self.walk(node.children, picture, prov)
 
 
 def parse_chandra_html(
