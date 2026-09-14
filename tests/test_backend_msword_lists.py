@@ -9,7 +9,12 @@ repository's per-file line limit.
 
 from io import BytesIO
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin, ListGroup, ListItem
+from docling_core.types.doc import (
+    DoclingDocument,
+    DocumentOrigin,
+    ListGroup,
+    ListItem,
+)
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
