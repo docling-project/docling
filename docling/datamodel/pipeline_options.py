@@ -2104,10 +2104,9 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             description=(
                 "Recover text inside TABLE regions that TableFormer V1 cell matching did not bind to a cell, "
                 "re-emitting it as body text immediately after the table instead of silently dropping it. Requires "
-                "`do_table_structure=True` and `TableStructureOptions(do_cell_matching=True)`. To avoid duplicate "
-                "output, any positive overlap with a populated table cell is treated as bound, and recovery is skipped "
-                "if any populated table cell has no spatial bounds. Disabled by default, which preserves the existing "
-                "table/body output exactly."
+                "`do_table_structure=True` and `TableStructureOptions(do_cell_matching=True)`. TableFormer's exact "
+                "input-cell match results determine which text is recovered. Disabled by default, which preserves "
+                "the existing table/body output exactly."
             )
         ),
     ] = False

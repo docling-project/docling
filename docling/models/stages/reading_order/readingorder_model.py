@@ -6,8 +6,8 @@ from pathlib import Path
 from statistics import median
 
 from docling_core.types.doc import (
-    CodeItem,
     BoundingBox,
+    CodeItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -35,6 +35,7 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 from docling.models.postprocessing.list_marker_processor import (
     ListItemMarkerProcessor,
 )
@@ -42,7 +43,6 @@ from docling.models.postprocessing.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
     ReadingOrderPredictor,
 )
-from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
@@ -74,7 +74,6 @@ class ReadingOrderOptions(BaseModel):
 
 class ReadingOrderModel:
     _RICH_CELL_PICTURE_COVERAGE_THRESHOLD = 0.8
-    _TABLEFORMER_V1_MATCHED_OVERLAP_THRESHOLD = 0.0
 
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
@@ -183,6 +182,7 @@ class ReadingOrderModel:
         out_doc: DoclingDocument,
         table_item: TableItem,
         pictures_by_cell: dict[int, list[FigureElement]] | None = None,
+        parent: NodeItem | None = None,
     ) -> None:
         if pictures_by_cell:
             self._add_rich_table_pictures(
@@ -206,8 +206,8 @@ class ReadingOrderModel:
                 ref=rich_cell_ref,
             )
             out_doc.add_table_cell(table_item=table_item, cell=rich_cell)
-        elif element.cluster.children:
-            self._add_unmatched_table_text(element, out_doc)
+        elif element.unmatched_table_cells:
+            self._add_unmatched_table_text(element, out_doc, parent)
 
     def _add_picture_element(
         self,
@@ -279,53 +279,32 @@ class ReadingOrderModel:
 
         return group_element.get_ref()
 
-    @classmethod
-    def _unmatched_table_children(cls, element: Table) -> list[Cluster]:
-        populated_cells = [tc for tc in element.table_cells if tc.text.strip()]
-        if any(tc.bbox is None for tc in populated_cells):
-            return []
-
-        matched_bboxes = [tc.bbox for tc in populated_cells if tc.bbox is not None]
-        unmatched_children: list[Cluster] = []
-        for child in element.cluster.children:
-            unmatched_cells = []
-            unmatched_bboxes = []
-            for cell in child.cells:
-                cell_bbox = cell.to_bounding_box()
-                if any(
-                    cell_bbox.intersection_over_self(bbox)
-                    > cls._TABLEFORMER_V1_MATCHED_OVERLAP_THRESHOLD
-                    for bbox in matched_bboxes
-                ):
-                    continue
-                unmatched_cells.append(cell)
-                unmatched_bboxes.append(cell_bbox)
-
-            if not unmatched_cells:
-                continue
-            unmatched_children.append(
-                child.model_copy(
-                    update={
-                        "cells": unmatched_cells,
-                        "bbox": BoundingBox.enclosing_bbox(unmatched_bboxes),
-                    }
-                )
-            )
-        return unmatched_children
-
-    def _add_unmatched_table_text(self, element: Table, doc: DoclingDocument) -> None:
-        if not self.options.recover_orphaned_table_text:
-            return
-
-        unmatched = self._unmatched_table_children(element)
-        if not unmatched:
+    def _add_unmatched_table_text(
+        self,
+        element: Table,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+    ) -> None:
+        if (
+            not self.options.recover_orphaned_table_text
+            or not element.unmatched_table_cells
+        ):
             return
 
         group = doc.add_group(
             label=GroupLabel.UNSPECIFIED,
             name=f"orphaned_table_text_{element.cluster.id}",
+            parent=parent,
         )
-        self._add_child_elements(element, group, doc, children=unmatched)
+        unmatched_cluster = Cluster(
+            id=element.cluster.id,
+            label=DocItemLabel.TEXT,
+            bbox=BoundingBox.enclosing_bbox(
+                [cell.to_bounding_box() for cell in element.unmatched_table_cells]
+            ),
+            cells=element.unmatched_table_cells,
+        )
+        self._add_child_elements(element, group, doc, children=[unmatched_cluster])
 
     @staticmethod
     def _table_data_from_table(element: Table) -> TableData:
@@ -617,6 +596,7 @@ class ReadingOrderModel:
                         out_doc,
                         table_item,
                         rich_table_pictures.get(rel.ref.cref),
+                        parent,
                     )
 
                 elif isinstance(element, FigureElement):
