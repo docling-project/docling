@@ -56,6 +56,10 @@ def test_chandra_simple_parsing():
     assert len(doc.tables) > 0, "Should have table elements"
 
     for item in doc.texts:
+        # Empty wrappers (a labeled block split into inline runs) carry no prov
+        # of their own; their geometry lives on the inline children.
+        if not item.text:
+            continue
         assert len(item.prov) > 0, "Text item should have provenance"
         bbox = item.prov[0].bbox
         assert bbox is not None, "Should have bbox"
@@ -344,6 +348,18 @@ def test_chandra_checkbox_export_has_one_marker(kind, checked, in_table):
     assert markdown.count("[x]" if checked else "[ ]") == 2
     assert "Choice" in markdown
     assert "☑" not in markdown and "☐" not in markdown
+
+
+def test_chandra_labeled_multirun_block_emits_location_once():
+    # A labeled block whose inline content splits into several runs used to
+    # write the block bbox onto both the wrapper item and each inner run, so
+    # doclang serialized the coordinate twice (8 <location> values).
+    doc = _parse_fragment("<p><sup>1</sup> Footnote body text.</p>", "Footnote")
+    footnote = next(t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE)
+    # The wrapper carries no prov of its own; the inline runs keep theirs.
+    assert not footnote.prov
+    assert all(t.prov for t in doc.texts if t.text)
+    assert doc.export_to_doclang().count("<location") == 4
 
 
 def test_chandra_inline_math_formatting_and_code_whitespace():

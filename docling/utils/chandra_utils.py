@@ -403,8 +403,10 @@ class _ChandraDocumentBuilder:
         )
         if len(merged) > 1:
             if label != DocItemLabel.TEXT:
+                # The wrapper's location is derived from its inline runs; giving
+                # it its own prov too makes the serializer emit the bbox twice.
                 parent = self.doc.add_text(
-                    label=label, text="", parent=parent, prov=prov, content_layer=layer
+                    label=label, text="", parent=parent, prov=None, content_layer=layer
                 )
             parent = self.doc.add_inline_group(parent=parent, content_layer=layer)
         for run in merged:
