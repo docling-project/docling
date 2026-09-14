@@ -313,7 +313,8 @@ def _inline_runs(
             if kind in {"checkbox", "radio"}
             else DocItemLabel.FIELD_VALUE
         )
-        yield _Run(node.text(), label, formatting, hyperlink)
+        text = "" if kind in {"checkbox", "radio"} else node.text()
+        yield _Run(text, label, formatting, hyperlink)
     elif label is not None:
         yield _Run(node.text().strip(), label, formatting, hyperlink)
     elif node.tag == "br":
@@ -385,7 +386,13 @@ class _ChandraDocumentBuilder:
         merged = [
             run
             for run in merged
-            if run.text.strip() or run.label == DocItemLabel.FIELD_VALUE
+            if run.text.strip()
+            or run.label
+            in {
+                DocItemLabel.FIELD_VALUE,
+                DocItemLabel.CHECKBOX_SELECTED,
+                DocItemLabel.CHECKBOX_UNSELECTED,
+            }
         ]
         if not merged:
             return

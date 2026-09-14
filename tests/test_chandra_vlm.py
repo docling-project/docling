@@ -324,6 +324,28 @@ def test_chandra_paragraph_list_and_form_controls():
     ]
 
 
+@pytest.mark.parametrize("kind", ["checkbox", "radio"])
+@pytest.mark.parametrize("checked", [False, True])
+@pytest.mark.parametrize("in_table", [False, True])
+def test_chandra_checkbox_export_has_one_marker(kind, checked, in_table):
+    control = f"<input type='{kind}' {'checked' if checked else ''} value='on'>"
+    content = f"<p>{control}Choice</p><p>{control}</p>"
+    if in_table:
+        content = f"<table><tr><td>{content}</td></tr></table>"
+    doc = _parse_fragment(content)
+    label = (
+        DocItemLabel.CHECKBOX_SELECTED if checked else DocItemLabel.CHECKBOX_UNSELECTED
+    )
+    controls = [t for t in doc.texts if t.label == label]
+    assert len(controls) == 2
+    assert all(t.text == "" for t in controls)
+    restored = DoclingDocument.model_validate_json(doc.model_dump_json())
+    markdown = restored.export_to_markdown()
+    assert markdown.count("[x]" if checked else "[ ]") == 2
+    assert "Choice" in markdown
+    assert "☑" not in markdown and "☐" not in markdown
+
+
 def test_chandra_inline_math_formatting_and_code_whitespace():
     doc = _parse_fragment(
         "<p>A <b>bold <i>word</i></b> x<sup>2</sup> H<sub>2</sub> "
