@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import importlib.metadata
 import logging
 import re
 import warnings
@@ -24,6 +25,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from docling_core.types.doc.document import CodeMetaField
+from packaging import version
 from PIL import Image
 from pydantic import BaseModel
 
@@ -38,6 +40,25 @@ from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
+
+# transformers ships granite-vision-4.1-4b natively (model_type
+# ``granite4_vision``) from this version on; see the model card's "Setup" section.
+_GRANITE_VISION_4_NATIVE_TRANSFORMERS = "5.8.0"
+
+
+def _granite_vision_4_trust_remote_code(installed_transformers: str) -> bool:
+    """Whether granite-vision-4.1-4b must be loaded via its bundled remote code.
+
+    Why: the ``modeling.py`` bundled with the pinned checkpoint targets older
+    transformers and stopped working on >=5.9 (``create_causal_mask`` dropped
+    ``cache_position`` in huggingface/transformers#45884). Passing
+    ``trust_remote_code=True`` makes transformers prefer that stale code over
+    its native ``granite4_vision`` implementation, so only fall back to it on
+    versions where the native implementation does not exist yet.
+    """
+    return version.parse(installed_transformers) < version.parse(
+        _GRANITE_VISION_4_NATIVE_TRANSFORMERS
+    )
 
 
 class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
@@ -352,6 +373,10 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
         import torch
         from transformers import AutoModelForImageTextToText, AutoProcessor
 
+        trust_remote_code = _granite_vision_4_trust_remote_code(
+            importlib.metadata.version("transformers")
+        )
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -366,7 +391,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
-                trust_remote_code=True,
+                trust_remote_code=trust_remote_code,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
             self._model = AutoModelForImageTextToText.from_pretrained(
@@ -379,7 +404,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                     and self.accelerator_options.cuda_use_flash_attention2
                     else "sdpa"
                 ),
-                trust_remote_code=True,
+                trust_remote_code=trust_remote_code,
             )
         if hasattr(self._model, "merge_lora_adapters"):
             cast(Any, self._model).merge_lora_adapters()
