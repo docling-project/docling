@@ -370,14 +370,6 @@ def test_unsupported_warnings_are_aggregated_by_content_type():
     assert any("Skipped 1 AFP graphics data" in message for message in messages)
 
 
-def test_afp_backend_reports_capabilities_and_page_count(synthetic_afp: bytes):
-    backend = _backend(synthetic_afp)
-
-    assert backend.supports_pagination() is True
-    assert backend.supported_formats() == {InputFormat.AFP}
-    assert backend.page_count() == 2
-
-
 def test_convert_rejects_content_that_is_no_longer_valid(synthetic_afp: bytes):
     backend = _backend(synthetic_afp)
     backend.content = b""

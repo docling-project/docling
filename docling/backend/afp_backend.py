@@ -4,9 +4,9 @@
 """Minimal AFP MO:DCA backend.
 
 The backend preserves MO:DCA page boundaries and extracts character strings
-from PTOCA Transparent Data (TRN) control sequences. AFP is a compound print
-format; rendering its IOCA, GOCA, BCOCA, and object-container resources is
-deliberately outside this first, dependency-free implementation.
+from PTOCA Transparent Data (TRN) control sequences, using cp500 when code-page
+resources cannot be resolved. It does not reconstruct page geometry or render
+non-text resources such as images, graphics, barcodes, and object containers.
 """
 
 import logging
