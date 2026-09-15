@@ -109,7 +109,7 @@ pipeline_options = VlmPipelineOptions(
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
         inference_framework=InferenceFramework.TRANSFORMERS,
-        transformers_model_type=TransformersModelType.AUTOMODEL_VISION2SEQ,
+        transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
         supported_devices=[
             AcceleratorDevice.CPU,
             AcceleratorDevice.CUDA,
