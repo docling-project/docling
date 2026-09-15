@@ -13,6 +13,7 @@ import pytest
 import typer
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from docling.cli.export_utils import (
@@ -33,6 +34,21 @@ runner = CliRunner()
 PNG_BYTES = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
 )
+
+
+def test_convert_help_only_advertises_supported_pdf_backends() -> None:
+    result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
+
+    assert result.exit_code == 0
+    convert_command = get_command(app).commands["convert"]
+    pdf_backend_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "pdf_backend"
+    )
+    assert pdf_backend_option.metavar == "[pypdfium2|threaded_docling_parse]"
+    assert "docling_parse|threaded_docling_parse" not in result.stdout
+    assert "dlparse_v1" not in result.stdout
 
 
 def _png_bytes(color: tuple[int, int, int]) -> bytes:

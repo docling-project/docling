@@ -950,7 +950,12 @@ def convert(  # noqa: C901
         ),
     ] = None,
     pdf_backend: Annotated[
-        PdfBackend, typer.Option(..., help="The PDF backend to use.")
+        PdfBackend,
+        typer.Option(
+            ...,
+            help="The PDF backend to use.",
+            metavar="[pypdfium2|threaded_docling_parse]",
+        ),
     ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
