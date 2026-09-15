@@ -191,3 +191,81 @@ def test_pdfium_intersects_ignores_invisible_text():
         }
     finally:
         doc_backend.unload()
+
+
+def _build_multi_object_pdf(n_paths: int = 40) -> bytes:
+    """A minimal single-page PDF whose content stream draws ``n_paths`` stroked
+    rectangles, i.e. ``n_paths`` separate PATH page objects, laid out in a grid
+    inside the region (10, 10)-(250, 250) of a 300x300 MediaBox."""
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R >>",
+    ]
+    parts = [b"1 0 0 RG 2 w"]
+    for i in range(n_paths):
+        x = 10 + (i % 8) * 30
+        y = 10 + (i // 8) * 30
+        parts.append(f"{x} {y} 20 20 re S".encode())
+    stream = b"\n".join(parts)
+    objs.append(b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream))
+
+    out = b"%PDF-1.7\n"
+    offsets = []
+    for i, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n%s\nendobj\n" % (i, o)
+    xref_off = len(out)
+    out += b"xref\n0 %d\n" % (len(objs) + 1)
+    out += b"0000000000 65535 f \n"
+    for off in offsets:
+        out += b"%010d 00000 n \n" % off
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF" % (
+        len(objs) + 1,
+        xref_off,
+    )
+    return out
+
+
+def test_pdfium_object_index_built_once(tmp_path, monkeypatch):
+    """The page-object walk must run once per page even when ``has_content_in`` is
+    called repeatedly (once per layout cluster) -- otherwise the backend is
+    O(clusters x objects). Count the underlying pypdfium2 object enumeration."""
+    import pypdfium2 as pdfium
+
+    pdf_path = tmp_path / "multi_object.pdf"
+    pdf_path.write_bytes(_build_multi_object_pdf(40))
+
+    original_get_objects = pdfium.PdfPage.get_objects
+    calls = {"n": 0}
+
+    def counting_get_objects(self, *args, **kwargs):
+        calls["n"] += 1
+        return original_get_objects(self, *args, **kwargs)
+
+    monkeypatch.setattr(pdfium.PdfPage, "get_objects", counting_get_objects)
+
+    doc_backend = _get_backend(pdf_path)
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+        content = BoundingBox(
+            l=10, t=50, r=250, b=250, coord_origin=CoordOrigin.TOPLEFT
+        )
+        blank = BoundingBox(
+            l=260, t=260, r=299, b=299, coord_origin=CoordOrigin.TOPLEFT
+        )
+
+        # Emulate the per-cluster query pattern (2-3 calls per cluster, many clusters).
+        for _ in range(5):
+            assert page_backend.has_content_in(bbox=content) is True
+            assert page_backend.has_content_in(bbox=blank) is False
+        # These reuse the same index too.
+        list(page_backend.get_bitmap_rects())
+        page_backend.get_connected_shape_bounding_boxes()
+
+        assert calls["n"] == 1, (
+            f"page objects were enumerated {calls['n']} times; expected exactly 1"
+        )
+    finally:
+        doc_backend.unload()
