@@ -1208,6 +1208,15 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.TRANSFORMERS,
 )
 
+# SUPPLY-CHAIN SECURITY: several presets below (Phi-4, Falcon-OCR, Chandra-OCR,
+# dots.ocr / dots.mocr, ...) set trust_remote_code=True on THIRD-PARTY Hub repos.
+# Custom Python from those repos runs on model load. Unless the resolved revision
+# is a full 40-char commit SHA, the repo is a moving ref that a force-push or
+# account compromise could turn into arbitrary code execution. These should be
+# commit-pinned to a reviewed revision. docling emits a runtime SECURITY warning
+# for any unpinned trust_remote_code download (see
+# docling.models.utils.hf_model_download.warn_on_unpinned_trust_remote_code); set
+# DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1 to refuse instead of warn.
 VLM_CONVERT_PHI4 = StageModelPreset(
     preset_id="phi4",
     name="Phi-4",
