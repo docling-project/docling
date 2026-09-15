@@ -23,7 +23,11 @@ from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import PdfBackend, normalize_pdf_backend
-from docling.datamodel.settings import DocumentLimits
+from docling.datamodel.settings import (
+    DEFAULT_PAGE_RANGE,
+    DocumentLimits,
+    PageRange,
+)
 
 
 @pytest.fixture
@@ -36,11 +40,18 @@ def ruled_table_path():
     return Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
 
-def _get_backend(pdf_doc):
+def _get_backend(pdf_doc, page_range: PageRange = DEFAULT_PAGE_RANGE):
+    """Open a document with the threaded backend, optionally narrowed to a page range.
+
+    The threaded parser yields results in completion order, not page order, so
+    ``next(iter_pages())`` is whichever page finished first. Tests that assert on the
+    content of a specific page must narrow the range to that page.
+    """
     in_doc = InputDocument(
         path_or_stream=pdf_doc,
         format=InputFormat.PDF,
         backend=ThreadedDoclingParseDocumentBackend,
+        limits=DocumentLimits(page_range=page_range),
     )
 
     doc_backend = in_doc._backend
@@ -62,8 +73,9 @@ def test_text_cell_counts():
 
 
 def test_get_text_from_rect(test_doc_path):
-    doc_backend = _get_backend(test_doc_path)
+    doc_backend = _get_backend(test_doc_path, page_range=(1, 1))
     page_backend = next(doc_backend.iter_pages())
+    assert page_backend.page_no == 1
 
     # Get the title text of the DocLayNet paper
     textpiece = page_backend.get_text_in_rect(
@@ -79,8 +91,9 @@ def test_get_text_from_rect(test_doc_path):
 
 
 def test_crop_page_image(test_doc_path):
-    doc_backend = _get_backend(test_doc_path)
+    doc_backend = _get_backend(test_doc_path, page_range=(1, 1))
     page_backend = next(doc_backend.iter_pages())
+    assert page_backend.page_no == 1
 
     # Crop out "Figure 1" from the DocLayNet paper
     page_backend.get_page_image(
@@ -101,23 +114,28 @@ def test_num_pages(test_doc_path):
     doc_backend.unload()
 
 
-def test_iter_pages_default_contract(test_doc_path):
-    doc_backend = _get_backend(test_doc_path)
+def test_iter_pages_yields_each_requested_page_once(test_doc_path):
+    """The threaded backend yields every requested page exactly once.
+
+    Order is deliberately not asserted: the threaded parser yields each page as its
+    worker finishes, which is the point of parsing in threads. Production does not
+    depend on the order either -- ``iter_pdf_page_backends`` matches results against a
+    set of page numbers. Narrow the range instead when a test needs a specific page.
+    """
+    doc_backend = _get_backend(test_doc_path, page_range=(1, 3))
 
     page_numbers = []
     page_backends = []
     try:
-        for index, page_backend in enumerate(doc_backend.iter_pages()):
+        for page_backend in doc_backend.iter_pages():
             page_numbers.append(page_backend.page_no)
             page_backends.append(page_backend)
-            if index == 2:
-                break
     finally:
         for page_backend in page_backends:
             page_backend.unload()
         doc_backend.unload()
 
-    assert page_numbers == [1, 2, 3]
+    assert sorted(page_numbers) == [1, 2, 3]
 
 
 class _FakeThreadedResult:
