@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -49,21 +48,6 @@ def _make_threaded_converter(**kwargs) -> DocumentConverter:
     )
 
 
-def _make_standard_converter() -> DocumentConverter:
-    return DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=StandardPdfPipeline,
-                backend=DoclingParseDocumentBackend,
-                pipeline_options=ThreadedPdfPipelineOptions(
-                    do_table_structure=False,
-                    do_ocr=False,
-                ),
-            )
-        }
-    )
-
-
 def test_threaded_pipeline_multiple_documents():
     converter = _make_threaded_converter()
     converter.initialize_pipeline(InputFormat.PDF)
@@ -72,17 +56,6 @@ def test_threaded_pipeline_multiple_documents():
 
     assert len(results) == len(_TEST_FILES)
     assert all(r.status == ConversionStatus.SUCCESS for r in results)
-
-
-def test_threaded_and_standard_backends_convert_with_standard_pipeline():
-    threaded_converter = _make_threaded_converter()
-    standard_converter = _make_standard_converter()
-
-    threaded_result = threaded_converter.convert(_SINGLE_FILE)
-    standard_result = standard_converter.convert(_SINGLE_FILE)
-
-    assert threaded_result.status == ConversionStatus.SUCCESS
-    assert standard_result.status == ConversionStatus.SUCCESS
 
 
 def test_threaded_pipeline_with_pypdfium_backend():

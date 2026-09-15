@@ -66,7 +66,7 @@ pip install docling-slim[service-client]
 |-------|-------------|----------|
 | `format-pdf` | PDF parsing (pypdfium2 + docling-parse) | PDF documents |
 | `format-pdf-pypdfium2` | PDF rendering only | Lightweight PDF support |
-| `format-pdf-docling` | Advanced PDF parsing | Complex PDF layouts |
+| `format-pdf-docling` | Advanced PDF parsing with docling-parse (independent of pypdfium2) | Complex PDF layouts |
 
 #### Office Formats (office = docx + pptx + xlsx)
 

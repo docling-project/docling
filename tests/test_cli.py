@@ -865,7 +865,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             "legacy",
             "LegacyStandardPdfPipeline",
             PdfBackend.DOCLING_PARSE,
-            "DoclingParseDocumentBackend",
+            "ThreadedDoclingParseDocumentBackend",
         ),
         (
             "vlm",
@@ -903,7 +903,10 @@ def test_cli_routes_pdf_backend_for_legacy_and_vlm(
             captured["pipeline"] = pdf_option.pipeline_cls.__name__
             captured["pdf_backend"] = pdf_option.backend.__name__
             captured["image_backend"] = image_option.backend.__name__
-            if pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+            if pdf_backend in {
+                PdfBackend.DOCLING_PARSE,
+                PdfBackend.THREADED_DOCLING_PARSE,
+            }:
                 assert isinstance(
                     pdf_option.backend_options, ThreadedDoclingParseBackendOptions
                 )

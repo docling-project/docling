@@ -1146,7 +1146,6 @@ def convert(  # noqa: C901
     # (and `convert-remote`) stay importable without the local PDF stack
     # (pypdfium2 / docling_parse). Only local `convert` needs them.
     from docling.backend.docling_parse_backend import (
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
     )
     from docling.backend.image_backend import ImageDocumentBackend
@@ -1179,8 +1178,6 @@ def convert(  # noqa: C901
     def _resolve_pdf_backend() -> tuple[type[PdfDocumentBackend], PdfBackendOptions]:
         selected_backend = normalize_pdf_backend(pdf_backend)
         password = SecretStr(pdf_password) if pdf_password is not None else None
-        if selected_backend == PdfBackend.DOCLING_PARSE:
-            return DoclingParseDocumentBackend, PdfBackendOptions(password=password)
         if selected_backend == PdfBackend.THREADED_DOCLING_PARSE:
             return (
                 ThreadedDoclingParseDocumentBackend,
