@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+from email.utils import getaddresses
 from io import BytesIO
 from pathlib import Path
 
@@ -125,6 +126,67 @@ This is a second paragraph.
         "This is a second paragraph.",
     ]
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
+
+
+def test_email_backend_quotes_display_names_holding_specials():
+    raw_email = b"""From: "Doe, John" <john@example.com>
+To: "Smith, Jane" <jane@example.com>, "Roe, Richard" <rich@example.com>
+Subject: Quarterly Report
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Numbers attached.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="specials.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = {
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    }
+    to_line = next(text for text in rendered if text.startswith("To: "))
+
+    assert 'From: "Doe, John" <john@example.com>' in rendered
+    # The rendered list still parses back to the two recipients it was built
+    # from; unquoted, each comma inside a name reads as another address.
+    assert [address for _, address in getaddresses([to_line.removeprefix("To: ")])] == [
+        "jane@example.com",
+        "rich@example.com",
+    ]
+
+
+def test_email_backend_keeps_non_ascii_display_names_readable():
+    raw_email = b"""From: =?utf-8?b?5byg5LiJ?= <zhang@example.com>
+To: =?utf-8?q?M=C3=BCller=2C_Anna?= <anna@example.com>
+Subject: Non-ASCII Names
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Body.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="non_ascii.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = {
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    }
+
+    # A name is quoted when it holds specials but is never re-encoded: the
+    # document is read by people, not parsed off the wire.
+    assert "From: \u5f20\u4e09 <zhang@example.com>" in rendered
+    assert 'To: "M\xfcller, Anna" <anna@example.com>' in rendered
+    assert not any("=?utf-8?" in text for text in rendered)
 
 
 def test_email_backend_converts_html_body_to_text_paragraphs():

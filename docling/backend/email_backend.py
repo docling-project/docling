@@ -51,6 +51,12 @@ except ImportError as e:  # pragma: no cover - import-time guard
 
 _log = logging.getLogger(__name__)
 
+# RFC 5322 3.2.3: a display-name holding any of these characters has to be sent
+# as a quoted-string. Rendered without the quotes, a name such as "Doe, John"
+# is indistinguishable from two recipients once the list is joined with ", ".
+_ADDRESS_SPECIALS = re.compile(r'[][\\()<>@,:;".]')
+_ADDRESS_ESCAPES = re.compile(r'[\\"]')
+
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
 _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
@@ -201,6 +207,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.EMAIL}
 
+    @staticmethod
+    def _quote_display_name(name: str) -> str:
+        """Quote a display name when RFC 5322 3.2.3 requires it.
+
+        ``email.utils.formataddr`` applies the same rule, but it also RFC 2047
+        encodes a non-ASCII name, which would leave ``=?utf-8?b?...?=`` in a
+        document meant to be read. Only the quoting part is reused here.
+        """
+        if _ADDRESS_SPECIALS.search(name):
+            return '"' + _ADDRESS_ESCAPES.sub(r"\\\g<0>", name) + '"'
+        return name
+
     def _format_addresses(
         self, addresses: list[tuple[str, str]] | None, fallback: str
     ) -> str:
@@ -210,7 +228,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         formatted = []
         for name, email in addresses:
             if name:
-                formatted.append(f"{name} <{email}>")
+                formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
                 formatted.append(email)
 
