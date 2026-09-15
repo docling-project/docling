@@ -51,10 +51,13 @@ except ImportError as e:  # pragma: no cover - import-time guard
 
 _log = logging.getLogger(__name__)
 
-# RFC 5322 3.2.3: a display-name holding any of these characters has to be sent
-# as a quoted-string. Rendered without the quotes, a name such as "Doe, John"
-# is indistinguishable from two recipients once the list is joined with ", ".
-_ADDRESS_SPECIALS = re.compile(r'[][\\()<>@,:;".]')
+# Characters that make a rendered display name parse back as something other
+# than itself: a name such as "Doe, John" is indistinguishable from two
+# recipients once the list is joined with ", ", and "a@b" swallows the address.
+# This is RFC 5322 3.2.3's specials minus "." and "\", which round-trip intact
+# unquoted and are common enough in real names ("John A. Smith", "Acme Inc.")
+# that quoting them only adds noise to a document meant to be read.
+_ADDRESS_SPECIALS = re.compile(r'[][()<>@,:;"]')
 _ADDRESS_ESCAPES = re.compile(r'[\\"]')
 
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
@@ -209,11 +212,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _quote_display_name(name: str) -> str:
-        """Quote a display name when RFC 5322 3.2.3 requires it.
+        """Quote a display name that would otherwise not parse back as itself.
 
-        ``email.utils.formataddr`` applies the same rule, but it also RFC 2047
-        encodes a non-ASCII name, which would leave ``=?utf-8?b?...?=`` in a
-        document meant to be read. Only the quoting part is reused here.
+        ``email.utils.formataddr`` and ``email.headerregistry.Address`` apply
+        the full RFC 5322 rule, but both RFC 2047 encode a non-ASCII name,
+        which would leave ``=?utf-8?b?...?=`` in a document meant to be read,
+        and both quote "." and "\\" even though those survive unquoted here.
         """
         if _ADDRESS_SPECIALS.search(name):
             return '"' + _ADDRESS_ESCAPES.sub(r"\\\g<0>", name) + '"'
@@ -227,6 +231,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         formatted = []
         for name, email in addresses:
+            # An RFC 2047 encoded-word decodes to arbitrary text, CR/LF
+            # included, so a crafted name can otherwise spread across lines and
+            # forge headers of its own in the rendered document.
+            name = self._header_safe(name) if name else name
             if name:
                 formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
@@ -320,7 +328,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         subject = (
-            self.mail.subject.strip() if isinstance(self.mail.subject, str) else ""
+            self._header_safe(self.mail.subject)
+            if isinstance(self.mail.subject, str)
+            else ""
         )
         from_text = self._format_addresses(self.mail.from_, fallback="")
         to_text = self._format_addresses(self.mail.to, fallback="")
