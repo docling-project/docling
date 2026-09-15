@@ -474,28 +474,38 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         gen_kwargs = {
             **inputs,
             "generation_config": merged_generation_config,
+            "stopping_criteria": stopping_criteria_list,
         }
 
-        if stopping_criteria_list:
-            gen_kwargs["stopping_criteria"] = stopping_criteria_list
-
         _log.info(
-            "Running Transformers inference on %s image(s) on %s (max_new_tokens=%s)...",
-            len(input_batch),
-            self.device,
-            first_input.max_new_tokens,
+            f"Running inference on {len(input_batch)} image(s) "
+            f"(max_new_tokens={first_input.max_new_tokens})..."
         )
         start_time = time.time()
-        with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
+        assert self.vlm_model is not None
+        generated_ids = self.vlm_model.generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
-        # Decode
-        input_len = inputs["input_ids"].shape[1]
-        trimmed_sequences = generated_ids[:, input_len:]
+        input_lengths: list[int]
+        if prompt_style == TransformersPromptStyle.NONE:
+            input_lengths = [0] * generated_ids.shape[0]
+        else:
+            input_ids = inputs.get("input_ids")
+            if input_ids is None:
+                raise RuntimeError("Processor output is missing input_ids.")
+            attention_mask = inputs.get("attention_mask")
+            if attention_mask is not None:
+                input_lengths = attention_mask.sum(dim=1).tolist()
+            else:
+                input_lengths = [input_ids.shape[1]] * input_ids.shape[0]
 
-        decode_fn = getattr(self.processor, "batch_decode", None)
-        if decode_fn is None and tokenizer is not None:
+        trimmed_sequences = [
+            generated_ids[i, input_lengths[i] :] for i in range(generated_ids.shape[0])
+        ]
+        decode_fn: Callable[..., list[str]] | None = getattr(
+            self.processor, "batch_decode", None
+        )
+        if decode_fn is None:
             decode_fn = getattr(tokenizer, "batch_decode", None)
         if decode_fn is None:
             raise RuntimeError(
@@ -570,4 +580,5 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.device and self.device.startswith("cuda"):
             torch.cuda.empty_cache()
 
-        _log.info("Transformers runtime cleaned up")
+        if _log is not None:
+            _log.info("Transformers runtime cleaned up")
