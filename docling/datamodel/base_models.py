@@ -129,6 +129,7 @@ class InputFormat(str, Enum):
     EPUB = "epub"
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
+    IWORK_NUMBERS = "iwork_numbers"
     EBCDIC = "ebcdic"
 
 
@@ -180,6 +181,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.IWORK_NUMBERS: ["numbers"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
 }
 
@@ -272,6 +274,10 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.IWORK_PAGES: [
         "application/vnd.apple.pages",
         "application/x-iwork-pages-sffpages",
+    ],
+    InputFormat.IWORK_NUMBERS: [
+        "application/vnd.apple.numbers",
+        "application/x-iwork-numbers-sffnumbers",
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
 }
