@@ -1806,3 +1806,64 @@ def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
     assert "COVER TITLE INSIDE SDT" in from_file
     assert "BODY TEXT OUTSIDE SDT" in from_file
     assert from_file.count("<!-- image -->") == 1
+
+
+def _docx_with_fragment_only_rel():
+    """Build a minimal DOCX whose ``word/_rels/document.xml.rels`` contains a
+    fragment-only ``Target`` (``#bookmark``).
+
+    The standard ``python-docx`` parser tries to resolve every relationship
+    target as a zip member and raises ``KeyError`` for such entries.  The
+    backend must sanitize the archive before handing it to ``python-docx``.
+    """
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_paragraph("Hello, world!")
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    with zipfile.ZipFile(buf) as src:
+        entries = {name: src.read(name) for name in src.namelist()}
+
+    # Inject a fragment-only relationship into ``word/_rels/document.xml.rels``.
+    rels_key = "word/_rels/document.xml.rels"
+    rels_xml = entries[rels_key].decode("utf-8")
+    fragment_rel = (
+        '<Relationship Id="rId999" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" '
+        'Target="#_Proc%C3%A9dures_sp%C3%A9ciales" TargetMode="External"/>'
+    )
+    rels_xml = rels_xml.replace("</Relationships>", fragment_rel + "</Relationships>")
+    entries[rels_key] = rels_xml.encode("utf-8")
+
+    out = BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for name, data in entries.items():
+            dst.writestr(name, data)
+    out.seek(0)
+    return out
+
+
+def test_fragment_only_rel_does_not_crash_backend():
+    """Regression test: a DOCX whose .rels contains a ``Target`` starting with
+    ``#`` (internal bookmark anchor) must load successfully.
+
+    Before the fix, ``python-docx`` tried to open the anchor as a zip member
+    and raised ``KeyError``, causing the backend to fail the entire document.
+    """
+    stream = DocumentStream(
+        name="fragment_rel.docx",
+        stream=_docx_with_fragment_only_rel(),
+    )
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    texts = [
+        item.text
+        for item, _ in result.document.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+    assert any("Hello, world!" in t for t in texts)

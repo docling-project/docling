@@ -128,6 +128,11 @@ _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
 _STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
 """Byte string present in every Strict OOXML part that carries a Strict namespace URI."""
 
+_OPC_RELS_NS: Final[str] = (
+    "http://schemas.openxmlformats.org/package/2006/relationships"
+)
+"""XML namespace URI for OPC ``*.rels`` relationship parts."""
+
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
@@ -262,6 +267,87 @@ def _is_safe_zip_member(name: str) -> bool:
     return not any(part == ".." for part in normalized.split("/"))
 
 
+def _has_fragment_only_rels(archive: zipfile.ZipFile) -> bool:
+    """Return True if any ``*.rels`` part contains a fragment-only relationship target.
+
+    A fragment-only target (e.g. ``Target="#_Procédures_spéciales"``) is an
+    internal bookmark anchor, not a zip member.  ``python-docx`` tries to open it
+    as a physical part and raises ``KeyError``.  We detect the problem cheaply
+    here before handing the archive to ``python-docx``.
+    """
+    rels_tag = f"{{{_OPC_RELS_NS}}}Relationship"
+    for info in archive.infolist():
+        if not info.filename.endswith(".rels"):
+            continue
+        try:
+            content = archive.read(info.filename)
+            root = etree.fromstring(content, _SAFE_XML_PARSER)
+            for rel in root.iter(rels_tag):
+                target = rel.get("Target", "")
+                if target.startswith("#"):
+                    return True
+        except Exception:
+            # Malformed XML is not our problem here; let python-docx handle it.
+            pass
+    return False
+
+
+def _remove_fragment_only_rels(content: bytes) -> bytes:
+    """Strip ``Relationship`` elements whose ``Target`` is a fragment-only anchor.
+
+    Returns the (possibly unchanged) serialised ``*.rels`` XML bytes.
+    """
+    rels_tag = f"{{{_OPC_RELS_NS}}}Relationship"
+    try:
+        root = etree.fromstring(content, _SAFE_XML_PARSER)
+    except Exception:
+        return content
+    to_remove = [
+        rel for rel in root.iter(rels_tag) if rel.get("Target", "").startswith("#")
+    ]
+    if not to_remove:
+        return content
+    for rel in to_remove:
+        parent = rel.getparent()
+        if parent is not None:
+            parent.remove(rel)
+    return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+
+
+def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
+    """Rewrite a DOCX archive in memory, removing fragment-only relationship targets.
+
+    Fragment-only targets (``Target="#anchor"``) are internal bookmark references
+    that must not be treated as physical zip members.  This pass removes the
+    offending ``Relationship`` elements from every ``*.rels`` part so that
+    ``python-docx`` can load the document without raising ``KeyError``.
+
+    The archive is validated against zip-slip and zip-bomb attacks while it is
+    read.  Non-``.rels`` members are copied through unchanged.
+    """
+    sanitized = BytesIO()
+    total_uncompressed = 0
+    with zipfile.ZipFile(sanitized, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in archive.infolist():
+            if not _is_safe_zip_member(info.filename):
+                raise SecurityError(f"ZIP slip attempt: {info.filename}")
+            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    f"Refusing to expand oversized OOXML part: {info.filename}"
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
+                )
+            content = archive.read(info.filename)
+            if info.filename.endswith(".rels"):
+                content = _remove_fragment_only_rels(content)
+            target.writestr(info, content)
+    sanitized.seek(0)
+    return sanitized
+
+
 def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
     """Rewrite an open Strict OOXML package to Transitional namespaces in memory.
 
@@ -270,6 +356,10 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
     through with its original compression, avoiding a needless decode pass. Each
     member is decompressed exactly once. The archive is validated against
     zip-slip and zip-bomb attacks while it is read.
+
+    Fragment-only relationship targets are also removed in this pass (see
+    ``_remove_fragment_only_rels``), so a combined Strict + fragment-only
+    document is handled in a single archive traversal.
     """
     normalized = BytesIO()
     total_uncompressed = 0
@@ -287,14 +377,15 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
                     "Refusing to expand OOXML package exceeding the uncompressed size limit"
                 )
             content = archive.read(info.filename)
-            if (
-                info.filename.endswith((".xml", ".rels"))
-                and _STRICT_OOXML_MARKER in content
+            if info.filename.endswith((".xml", ".rels")) and (
+                _STRICT_OOXML_MARKER in content
             ):
                 content = _STRICT_OOXML_NS_RE.sub(
                     lambda match: _strict_ns_to_transitional(match.group(0)),
                     content.decode("utf-8"),
                 ).encode("utf-8")
+            if info.filename.endswith(".rels"):
+                content = _remove_fragment_only_rels(content)
             target.writestr(info, content)
     normalized.seek(0)
     return normalized
@@ -594,13 +685,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         try:
             if isinstance(path_or_stream, Path):
                 with zipfile.ZipFile(path_or_stream) as archive:
-                    if _is_strict_ooxml(archive):
+                    is_strict = _is_strict_ooxml(archive)
+                    has_fragment_rels = not is_strict and _has_fragment_only_rels(
+                        archive
+                    )
+                    if is_strict:
                         return Document(_normalize_strict_ooxml(archive))
+                    if has_fragment_rels:
+                        return Document(_sanitize_docx(archive))
                 return Document(str(path_or_stream))
             elif isinstance(path_or_stream, BytesIO):
                 with zipfile.ZipFile(path_or_stream) as archive:
-                    if _is_strict_ooxml(archive):
+                    is_strict = _is_strict_ooxml(archive)
+                    has_fragment_rels = not is_strict and _has_fragment_only_rels(
+                        archive
+                    )
+                    if is_strict:
                         return Document(_normalize_strict_ooxml(archive))
+                    if has_fragment_rels:
+                        return Document(_sanitize_docx(archive))
                 path_or_stream.seek(0)
                 return Document(path_or_stream)
             else:
