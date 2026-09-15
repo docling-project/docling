@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+from base64 import b64encode
+from email.headerregistry import HeaderRegistry
 from email.utils import getaddresses
 from io import BytesIO
 from pathlib import Path
@@ -219,13 +221,129 @@ Body.
     ]
 
 
-def test_email_backend_collapses_crlf_in_headers():
-    # An RFC 2047 encoded-word decodes to arbitrary text, CR/LF included, so a
-    # crafted name would otherwise spread across lines and forge headers of its
-    # own in the rendered document.
-    raw_email = b"""From: =?utf-8?q?Attacker=0D=0ADate=3A_1999-01-01=0D=0ATo=3A_ceo=40corp?= <evil@example.com>
+def test_email_backend_collapses_line_breaks_in_headers():
+    # An RFC 2047 encoded-word decodes to arbitrary text, line breaks included,
+    # so a crafted name, subject or attachment filename would otherwise spread
+    # across lines and forge headers of its own in the rendered document.
+    raw_email = (
+        b"From: =?utf-8?q?Attacker=0D=0ADate=3A_1999-01-01=0D=0ATo=3A_ceo=40corp?="
+        b" <evil@example.com>\r\n"
+        b"To: real@example.com\r\n"
+        b"Subject: =?utf-8?q?Hi=0D=0AFrom=3A_boss=40corp?=\r\n"
+        b"Date: Tue, 20 May 2026 10:30:00 +0000\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b'Content-Type: multipart/mixed; boundary="BOUNDARY"\r\n'
+        b"\r\n"
+        b"--BOUNDARY\r\n"
+        b'Content-Type: text/plain; charset="utf-8"\r\n'
+        b"\r\n"
+        b"Body.\r\n"
+        b"--BOUNDARY\r\n"
+        b"Content-Type: text/plain\r\n"
+        b"Content-Disposition: attachment;"
+        b' filename="=?utf-8?q?evil=0D=0AFrom=3A_boss=40corp?=.txt"\r\n'
+        b"\r\n"
+        b"payload\r\n"
+        b"--BOUNDARY--\r\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="crlf.eml",
+        backend=EmailDocumentBackend,
+    )
+    # Attachment listing is off by default, and the filename is the one
+    # header-derived string that reaches the document through neither the
+    # subject nor an address, so the invariant below only means something with
+    # it enabled.
+    backend = EmailDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_email),
+        options=EmailBackendOptions(list_attachments=True),
+    )
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+
+    assert not any("\r" in text or "\n" in text for text in rendered)
+    assert (
+        'From: "Attacker Date: 1999-01-01 To: ceo@corp" <evil@example.com>' in rendered
+    )
+    assert "Hi From: boss@corp" in rendered
+    assert "evil From: boss@corp.txt (text/plain)" in rendered
+
+
+def test_email_backend_collapses_non_crlf_line_breaks_in_headers():
+    # str.splitlines() breaks on more than CR and LF, so a downstream consumer
+    # that splits the rendered text into lines sees a forged header standing on
+    # its own unless these are collapsed too.
+    for break_char in ("\x0b", "\x0c", "\x1c", "\x85", "\u2028"):
+        encoded = b64encode(f"Hi{break_char}From: boss@corp".encode()).decode()
+        raw_email = (
+            b"From: sender@example.com\r\n"
+            b"To: real@example.com\r\n"
+            b"Subject: =?utf-8?b?" + encoded.encode() + b"?=\r\n"
+            b"MIME-Version: 1.0\r\n"
+            b'Content-Type: text/plain; charset="utf-8"\r\n'
+            b"\r\n"
+            b"Body.\r\n"
+        )
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(raw_email),
+            format=InputFormat.EMAIL,
+            filename="breaks.eml",
+            backend=EmailDocumentBackend,
+        )
+        backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+        title = next(
+            item.text
+            for item in backend.convert().texts
+            if isinstance(item, TextItem) and item.label == DocItemLabel.TITLE
+        )
+
+        assert title == "Hi From: boss@corp"
+        assert title.splitlines() == [title]
+
+
+def test_email_backend_unfolds_folded_headers_to_single_spaces():
+    # A long subject arrives folded, and mailparser hands back the CRLF and the
+    # continuation whitespace; replacing each character with a space would leave
+    # a visible run in the title.
+    raw_email = (
+        b"From: sender@example.com\r\n"
+        b"To: real@example.com\r\n"
+        b"Subject: A very long subject that is\r\n folded across lines\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b'Content-Type: text/plain; charset="utf-8"\r\n'
+        b"\r\n"
+        b"Body.\r\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="folded.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    title = next(
+        item.text
+        for item in backend.convert().texts
+        if isinstance(item, TextItem) and item.label == DocItemLabel.TITLE
+    )
+
+    assert title == "A very long subject that is folded across lines"
+
+
+def test_email_backend_quotes_display_names_holding_a_backslash():
+    # A Windows-style account name is the common case. Left unquoted, the
+    # modern parser reads the whole thing as a bogus local-part and the real
+    # address disappears.
+    raw_email = b"""From: =?utf-8?q?CORP=5Cjsmith?= <jsmith@example.com>
 To: real@example.com
-Subject: =?utf-8?q?Hi=0D=0AFrom=3A_boss=40corp?=
+Subject: Backslash Name
 Date: Tue, 20 May 2026 10:30:00 +0000
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -235,7 +353,7 @@ Body.
     in_doc = InputDocument(
         path_or_stream=BytesIO(raw_email),
         format=InputFormat.EMAIL,
-        filename="crlf.eml",
+        filename="backslash.eml",
         backend=EmailDocumentBackend,
     )
     backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
@@ -243,13 +361,16 @@ Body.
     rendered = [
         item.text for item in backend.convert().texts if isinstance(item, TextItem)
     ]
+    from_line = next(text for text in rendered if text.startswith("From: "))
 
-    assert not any("\r" in text or "\n" in text for text in rendered)
-    assert (
-        'From: "Attacker  Date: 1999-01-01  To: ceo@corp" <evil@example.com>'
-        in rendered
-    )
-    assert "Hi  From: boss@corp" in rendered
+    # getaddresses() is lenient enough to recover the address either way, so
+    # assert against the parser the rendered form has to survive.
+    header = HeaderRegistry()("To", from_line.removeprefix("From: "))
+    assert [
+        (address.display_name, address.addr_spec)
+        for group in header.groups
+        for address in group.addresses
+    ] == [("CORP\\jsmith", "jsmith@example.com")]
 
 
 def test_email_backend_keeps_non_ascii_display_names_readable():

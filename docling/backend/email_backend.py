@@ -54,10 +54,12 @@ _log = logging.getLogger(__name__)
 # Characters that make a rendered display name parse back as something other
 # than itself: a name such as "Doe, John" is indistinguishable from two
 # recipients once the list is joined with ", ", and "a@b" swallows the address.
-# This is RFC 5322 3.2.3's specials minus "." and "\", which round-trip intact
-# unquoted and are common enough in real names ("John A. Smith", "Acme Inc.")
-# that quoting them only adds noise to a document meant to be read.
-_ADDRESS_SPECIALS = re.compile(r'[][()<>@,:;"]')
+# This is RFC 5322 3.2.3's specials minus ".", which does round-trip unquoted and
+# is common enough in real names ("John A. Smith", "Acme Inc.") that quoting it
+# only adds noise to a document meant to be read. "\" has to stay in the set: a
+# name like "CORP\jsmith" left unquoted makes email.headerregistry read the whole
+# address as a bogus local-part and drop the real one.
+_ADDRESS_SPECIALS = re.compile(r'[][()<>@,:;"\\]')
 _ADDRESS_ESCAPES = re.compile(r'[\\"]')
 
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
@@ -124,9 +126,23 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _header_safe(value: str) -> str:
-        # Email header values must be single-line; collapse CR/LF to spaces so a
-        # crafted .msg cannot inject headers and EmailMessage does not reject it.
-        return value.replace("\r", " ").replace("\n", " ").strip()
+        r"""Collapse a header value to a single line of single-spaced text.
+
+        Two callers need this. The ``.msg`` path assembles an ``EmailMessage``,
+        whose header values must be single-line. The rendered document needs it
+        too: an RFC 2047 encoded-word decodes to arbitrary text, so a crafted
+        name, subject or filename can otherwise stand up a forged header on its
+        own line.
+
+        ``str.split()`` is what makes that hold. It treats every character
+        ``str.splitlines()`` breaks on as whitespace -- vertical tab, form feed,
+        ``\x1c`` to ``\x1e``, ``\x85``, ``U+2028`` and ``U+2029`` as well as CR
+        and LF -- so no line-based consumer downstream can find a break that
+        survived. Collapsing runs also unfolds a legitimately folded header to a
+        single space, instead of leaving the CRLF and its continuation WSP
+        behind as three.
+        """
+        return " ".join(value.split())
 
     @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
@@ -217,7 +233,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ``email.utils.formataddr`` and ``email.headerregistry.Address`` apply
         the full RFC 5322 rule, but both RFC 2047 encode a non-ASCII name,
         which would leave ``=?utf-8?b?...?=`` in a document meant to be read,
-        and both quote "." and "\\" even though those survive unquoted here.
+        and both quote "." even though it survives unquoted here.
         """
         if _ADDRESS_SPECIALS.search(name):
             return '"' + _ADDRESS_ESCAPES.sub(r"\\\g<0>", name) + '"'
@@ -231,10 +247,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         formatted = []
         for name, email in addresses:
-            # An RFC 2047 encoded-word decodes to arbitrary text, CR/LF
-            # included, so a crafted name can otherwise spread across lines and
-            # forge headers of its own in the rendered document.
-            name = self._header_safe(name) if name else name
+            # An RFC 2047 encoded-word decodes to arbitrary text, line
+            # breaks included, so a crafted name can otherwise spread across
+            # lines and forge headers of its own in the rendered document.
+            name = self._header_safe(name)
             if name:
                 formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
@@ -286,27 +302,29 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def _get_date_text(self) -> str:
         assert self.mail is not None
 
+        # mailparser's `date` returns convert_mail_date(...)[0], so it is a
+        # datetime or None -- never the raw header string. isoformat() cannot
+        # contain a line break, so this needs no header sanitising.
         mail_date = self.mail.date
-        if isinstance(mail_date, datetime):
-            return mail_date.isoformat()
-        if isinstance(mail_date, str):
-            return mail_date.strip()
-        return ""
+        return mail_date.isoformat() if isinstance(mail_date, datetime) else ""
 
     def _get_attachment_labels(self) -> list[str]:
         """Return one display label per attachment (name, optional content type).
 
         Only attachment metadata is surfaced; the encoded payload is never
         included, matching how ``.eml`` attachment content is excluded.
+
+        The filename is header-derived and RFC 2047-decoded by mailparser, so it
+        gets the same single-line treatment as a subject or a display name.
         """
         assert self.mail is not None
 
         labels: list[str] = []
         for index, attachment in enumerate(self.mail.attachments or []):
-            filename = (attachment.get("filename") or "").strip()
+            filename = self._header_safe(attachment.get("filename") or "")
             if not filename:
                 filename = f"attachment-{index + 1}"
-            content_type = (attachment.get("mail_content_type") or "").strip()
+            content_type = self._header_safe(attachment.get("mail_content_type") or "")
             labels.append(f"{filename} ({content_type})" if content_type else filename)
         return labels
 
