@@ -211,9 +211,7 @@ def test_deprecated_document_backend_delegates_to_threaded_parser(
         _FakeThreadedParser,
     )
 
-    with pytest.warns(
-        DeprecationWarning, match="ThreadedDoclingParseDocumentBackend"
-    ):
+    with pytest.warns(DeprecationWarning, match="ThreadedDoclingParseDocumentBackend"):
         in_doc = InputDocument(
             path_or_stream=test_doc_path,
             format=InputFormat.PDF,
@@ -632,9 +630,7 @@ def _create_black_square_pdf(path: Path) -> None:
 
 
 @pytest.mark.parametrize("scale", [1, 2], ids=["scale_1", "scale_2"])
-def test_get_page_image_crop_contains_black_square(
-    tmp_path: Path, scale: int
-) -> None:
+def test_get_page_image_crop_contains_black_square(tmp_path: Path, scale: int) -> None:
     pdf_path = tmp_path / "black_square.pdf"
     _create_black_square_pdf(pdf_path)
 
