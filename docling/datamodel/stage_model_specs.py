@@ -1853,7 +1853,7 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
                 torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                }
+                },
             ),
         },
         api_overrides={

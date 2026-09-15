@@ -149,11 +149,13 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
         )
         use_api_prompts = VlmEngineType.is_api_variant(engine_type)
 
-        # Build a flat batch: image × prompt, keeping them in sync
+        # Build a flat batch: image x prompt, keeping them in sync
         batch_inputs: list[VlmEngineInput] = []
         for image in images:
             for prompt in active_prompts:
-                wire_prompt = _API_PROMPT_MAP.get(prompt, prompt) if use_api_prompts else prompt
+                wire_prompt = (
+                    _API_PROMPT_MAP.get(prompt, prompt) if use_api_prompts else prompt
+                )
                 batch_inputs.append(
                     VlmEngineInput(
                         image=image,

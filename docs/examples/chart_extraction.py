@@ -108,7 +108,9 @@ def main():
     _log.info(f"Chart extraction backend: {backend}")
     _log.info(f"  model  : {chart_options.model_spec.name}")
     _log.info(f"  engine : {chart_options.engine_options.engine_type.value}")
-    _log.info(f"  outputs: csv={chart_options.chart2csv}  summary={chart_options.chart2summary}  code={chart_options.chart2code}")
+    _log.info(
+        f"  outputs: csv={chart_options.chart2csv}  summary={chart_options.chart2summary}  code={chart_options.chart2code}"
+    )
 
     # Configure the PDF pipeline with chart extraction enabled.
     # This automatically enables picture classification as well.

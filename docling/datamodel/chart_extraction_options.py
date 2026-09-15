@@ -58,15 +58,11 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
     )
     chart2summary: bool = Field(
         default=False,
-        description=(
-            "Generate a natural-language summary describing the chart."
-        ),
+        description=("Generate a natural-language summary describing the chart."),
     )
     chart2code: bool = Field(
         default=False,
-        description=(
-            "Generate Python code that recreates the chart."
-        ),
+        description=("Generate Python code that recreates the chart."),
     )
 
     @model_validator(mode="after")
