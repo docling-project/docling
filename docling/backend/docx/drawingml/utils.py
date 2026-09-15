@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import signal
 import subprocess
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -26,12 +27,150 @@ Without this, a hung ``soffice`` process (e.g. a modal dialog it can't
 show in headless mode) blocks the calling thread forever.
 """
 
+LIBREOFFICE_HARDENING_FLAGS: Final[tuple[str, ...]] = (
+    "--headless",
+    "--norestore",
+    "--nologo",
+    "--nolockcheck",
+    "--nodefault",
+)
+"""Flags that constrain a throwaway ``soffice`` invocation.
+
+``--headless`` avoids any GUI/dialogs; ``--norestore`` stops LibreOffice
+from trying to reopen documents from a previous crashed session (which can
+include attacker files); ``--nologo``/``--nodefault`` suppress the start
+splash and the empty default document; ``--nolockcheck`` avoids stalling on
+a stale lock file inside the throwaway profile.
+"""
+
+
+def _registrymodifications_xcu() -> str:
+    """Return the contents of a hardening ``registrymodifications.xcu``.
+
+    The file is seeded into the throwaway user profile so that the very
+    first (and only) ``soffice`` launch already runs with a locked-down
+    configuration instead of relying on the build's implicit defaults:
+
+    * ``MacroSecurityLevel = 3`` (Very High / maximum) and
+      ``DisableMacrosExecution = true`` prevent document macros from
+      running during conversion.
+    * ``.../Writer/Content/Update/Link = 0`` and the Calc equivalent set
+      "update links when loading" to *never*, so opening an attacker file
+      does not fetch external/DDE-linked content (an SSRF / file-inclusion
+      vector via e.g. ``TargetMode="External"`` relationships).
+
+    Registry nodes deliberately *not* set here (see module notes): explicit
+    DDE, OLE-object and remote-image resolution toggles do not have a single
+    well-documented registry key across LibreOffice versions; macro-security
+    High plus disabled link updates covers the primary vectors, and the rest
+    is tracked as follow-up rather than guessed at.
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        "<oor:items "
+        'xmlns:oor="http://openoffice.org/2001/registry" '
+        'xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'
+        ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
+        '  <prop oor:name="MacroSecurityLevel" oor:op="fuse">\n'
+        "   <value>3</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
+        '  <prop oor:name="DisableMacrosExecution" oor:op="fuse">\n'
+        "   <value>true</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Writer/Content/Update">\n'
+        '  <prop oor:name="Link" oor:op="fuse">\n'
+        "   <value>0</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Calc/Content/Update">\n'
+        '  <prop oor:name="Link" oor:op="fuse">\n'
+        "   <value>0</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        "</oor:items>\n"
+    )
+
+
+def _build_soffice_command(
+    libreoffice_cmd: str,
+    profile_arg: str,
+    *,
+    target_format: str,
+    outdir: str,
+    input_path: str,
+) -> list[str]:
+    """Assemble a hardened ``soffice`` argv for a single conversion.
+
+    Kept as a pure function so the exact flags can be asserted in unit
+    tests without a LibreOffice binary present.
+    """
+    return [
+        libreoffice_cmd,
+        profile_arg,
+        *LIBREOFFICE_HARDENING_FLAGS,
+        "--convert-to",
+        target_format,
+        "--outdir",
+        outdir,
+        str(input_path),
+    ]
+
+
+def _kill_soffice_process_group(proc: subprocess.Popen) -> None:
+    """Best-effort SIGKILL of the whole ``soffice`` process group.
+
+    ``soffice`` is a thin wrapper that forks ``soffice.bin``; killing only
+    the wrapper (as ``subprocess.run(timeout=...)`` does) can leave the real
+    worker alive to accumulate. Launching with ``start_new_session=True``
+    puts the wrapper in its own process group so the whole tree can be
+    signalled here.
+    """
+    if hasattr(os, "killpg") and hasattr(os, "getpgid"):
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            proc.kill()
+    else:  # pragma: no cover - Windows has no process groups
+        proc.kill()
+    try:
+        proc.wait(timeout=5)
+    except Exception:
+        pass
+
+
+def _run_hardened_soffice(args: list[str], timeout_s: int) -> None:
+    """Run ``soffice`` in its own process group with a hard timeout.
+
+    Mirrors the previous ``subprocess.run(check=True, timeout=...)``
+    contract (raising :class:`subprocess.CalledProcessError` on a non-zero
+    exit and :class:`subprocess.TimeoutExpired` on timeout) but, on timeout,
+    kills the entire process group so ``soffice.bin`` cannot survive.
+    """
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        returncode = proc.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        _kill_soffice_process_group(proc)
+        raise
+    if returncode != 0:
+        raise subprocess.CalledProcessError(returncode, args)
+
 
 def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
     """Return the libreoffice cmd and optionally test it."""
 
     libreoffice_cmd = (
-        shutil.which("libreoffice")
+        os.environ.get("DOCLING_LIBREOFFICE_CMD")
+        or shutil.which("libreoffice")
         or shutil.which("soffice")
         or (
             "/Applications/LibreOffice.app/Contents/MacOS/soffice"
@@ -67,6 +206,10 @@ def _isolated_libreoffice_profile() -> Iterator[str]:
     handling simultaneous requests) share the default profile and collide
     on that lock, causing conversions to fail intermittently and silently.
 
+    The profile is also seeded with a hardening ``registrymodifications.xcu``
+    (see :func:`_registrymodifications_xcu`) so the conversion runs with
+    macros disabled and external link updates turned off.
+
     Yields:
         A ``-env:UserInstallation=<uri>`` CLI argument pointing at a freshly
         created, empty profile directory. The directory is removed again
@@ -74,6 +217,11 @@ def _isolated_libreoffice_profile() -> Iterator[str]:
     """
     profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
     try:
+        user_dir = profile_dir / "user"
+        user_dir.mkdir(parents=True, exist_ok=True)
+        (user_dir / "registrymodifications.xcu").write_text(
+            _registrymodifications_xcu(), encoding="utf-8"
+        )
         yield f"-env:UserInstallation={profile_dir.as_uri()}"
     finally:
         shutil.rmtree(profile_dir, ignore_errors=True)
@@ -127,21 +275,15 @@ def convert_to_modern_format(
             input_path = source
 
         with _isolated_libreoffice_profile() as profile_arg:
-            subprocess.run(
-                [
+            _run_hardened_soffice(
+                _build_soffice_command(
                     libreoffice_cmd,
                     profile_arg,
-                    "--headless",
-                    "--convert-to",
-                    target_suffix,
-                    "--outdir",
-                    str(tmp_dir),
-                    str(input_path),
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-                timeout=timeout_s,
+                    target_format=target_suffix,
+                    outdir=str(tmp_dir),
+                    input_path=str(input_path),
+                ),
+                timeout_s=timeout_s,
             )
 
         converted_path = tmp_dir / (input_path.stem + "." + target_suffix)
@@ -183,21 +325,15 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
                 output_path: Desired path for the converted PDF.
             """
             with _isolated_libreoffice_profile() as profile_arg:
-                subprocess.run(
-                    [
+                _run_hardened_soffice(
+                    _build_soffice_command(
                         libreoffice_cmd,
                         profile_arg,
-                        "--headless",
-                        "--convert-to",
-                        "pdf",
-                        "--outdir",
-                        os.path.dirname(output_path),
-                        input_path,
-                    ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=True,
-                    timeout=LIBREOFFICE_TIMEOUT_S,
+                        target_format="pdf",
+                        outdir=os.path.dirname(output_path),
+                        input_path=str(input_path),
+                    ),
+                    timeout_s=LIBREOFFICE_TIMEOUT_S,
                 )
 
             expected_output = os.path.join(
