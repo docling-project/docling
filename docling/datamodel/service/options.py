@@ -13,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    SerializeAsAny,
     field_validator,
     model_validator,
 )
@@ -660,7 +661,7 @@ class ConvertDocumentsOptions(BaseModel):
     ] = None
 
     chart_extraction_custom_config: Annotated[
-        Optional[Union[ChartExtractionVlmEngineOptions, dict]],
+        Optional[SerializeAsAny[Union[ChartExtractionVlmEngineOptions, dict]]],
         Field(
             default=None,
             description=(
