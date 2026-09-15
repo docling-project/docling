@@ -15,6 +15,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
@@ -47,17 +48,11 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
-        # Load content. utf-8-sig drops a leading BOM, which Excel and Google
-        # Sheets both write when exporting "CSV UTF-8"; left in, it becomes part
-        # of the first header cell. It is equivalent to utf-8 when no BOM is
-        # present.
+        # A leading BOM is dropped, which matters here because Excel and Google
+        # Sheets both write one when exporting "CSV UTF-8"; left in, it becomes
+        # part of the first header cell.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.content = StringIO(
-                    self.path_or_stream.getvalue().decode("utf-8-sig")
-                )
-            elif isinstance(self.path_or_stream, Path):
-                self.content = StringIO(self.path_or_stream.read_text("utf-8-sig"))
+            self.content = StringIO(decode_text(path_or_stream))
             self.valid = True
         except Exception as e:
             raise DocumentLoadError(
