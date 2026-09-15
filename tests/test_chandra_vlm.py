@@ -7,7 +7,7 @@ from pathlib import Path
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, Size
 
-from docling.utils.chandra_utils import parse_chandra_html
+from docling.utils.chandra_utils import _TableHTMLParser, parse_chandra_html
 
 
 def get_chandra_test_paths():
@@ -62,6 +62,26 @@ def test_chandra_br_spacing():
 
     assert len(doc.texts) == 1
     assert doc.texts[0].text == "Hello World"
+
+
+def test_table_html_parser_br_inside_cell():
+    """Test that <br> inside a table cell is treated as whitespace."""
+    html = """
+    <table>
+        <tr>
+            <td>15<br/>16<br/>17</td>
+            <td>100<br/>200<br/>300</td>
+        </tr>
+    </table>
+    """
+
+    parser = _TableHTMLParser()
+    parser.feed(html)
+
+    assert len(parser.rows) == 1
+    assert len(parser.rows[0]) == 2
+    assert parser.rows[0][0]["text"] == "15 16 17"
+    assert parser.rows[0][1]["text"] == "100 200 300"
 
 
 def test_chandra_multiblock_parsing():

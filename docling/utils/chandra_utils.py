@@ -105,6 +105,8 @@ class _TableHTMLParser(HTMLParser):
                 "rowspan": int(attr_dict.get("rowspan") or "1"),
             }
             self._cell_text_parts = []
+        elif tag_lower == "br" and self._in_cell:
+            self._cell_text_parts.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
         tag_lower = tag.lower()
