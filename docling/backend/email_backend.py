@@ -217,6 +217,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return ", ".join(formatted)
 
     def _split_paragraphs(self, text: str) -> list[str]:
+        """Split a body into paragraphs, normalising CRLF and lone CR first."""
+        text = re.sub(r"\r\n|\r", "\n", text)
         return [
             paragraph.strip()
             for paragraph in re.split(r"\n\s*\n+", text.strip())
