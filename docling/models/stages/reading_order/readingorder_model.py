@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from statistics import median
@@ -670,8 +671,17 @@ class ReadingOrderModel:
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
         continuation_text = merged_elem.text.lstrip()
+        prev_words = re.findall(r"\b[\w]+\b", new_item.text)
+        continuation_words = re.findall(r"\b[\w]+\b", continuation_text)
+        hyphen_attached_to_word = len(new_item.text) > 1 and new_item.text[-2].isalnum()
+
         if new_item.text.endswith("\u00ad") or (
             new_item.text.endswith("-")
+            and hyphen_attached_to_word
+            and len(prev_words) > 0
+            and len(prev_words[-1]) >= 2
+            and len(continuation_words) > 0
+            and not continuation_words[0][0].isdigit()
             and continuation_text
             and continuation_text[0].islower()
         ):
@@ -680,6 +690,18 @@ class ReadingOrderModel:
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
             )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        elif (
+            new_item.text.endswith("-")
+            and hyphen_attached_to_word
+            and len(prev_words) > 0
+            and (
+                len(prev_words[-1]) == 1
+                or (len(continuation_words) > 0 and continuation_words[0][0].isdigit())
+            )
+        ):
+            # Attached semantic hyphen (e.g. single-letter prefix "n-" or digit continuation "6-methyl-5-")
+            new_item.text = new_item.text + merged_elem.text
+            new_item.orig = new_item.orig + merged_elem.text
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
