@@ -1251,23 +1251,20 @@ class PdfBackend(str, Enum):
     Attributes:
         PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and
             reliable for basic text extraction.
-        DOCLING_PARSE: Docling Parse backend providing enhanced layout
-            analysis, structure preservation, and advanced table detection.
-            Single-threaded; use `THREADED_DOCLING_PARSE` unless serialized
-            page parsing is required.
+        DOCLING_PARSE: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
         THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
             concurrent page parsing in the standard PDF pipeline. This is the
             default and recommended backend for most use cases.
-        DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
-        DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
-        DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V1: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
+        DLPARSE_V2: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
+        DLPARSE_V4: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
     """
 
     PYPDFIUM2 = "pypdfium2"
     DOCLING_PARSE = "docling_parse"
     THREADED_DOCLING_PARSE = "threaded_docling_parse"
 
-    # Deprecated - these map to DOCLING_PARSE
+    # Deprecated - these map to THREADED_DOCLING_PARSE
     DLPARSE_V1 = "dlparse_v1"  # deprecated
     DLPARSE_V2 = "dlparse_v2"  # deprecated
     DLPARSE_V4 = "dlparse_v4"  # deprecated
@@ -1288,14 +1285,16 @@ def normalize_pdf_backend(backend: PdfBackend) -> PdfBackend:
     import warnings
 
     deprecated_mapping = {
-        PdfBackend.DLPARSE_V1: PdfBackend.DOCLING_PARSE,
-        PdfBackend.DLPARSE_V2: PdfBackend.DOCLING_PARSE,
-        PdfBackend.DLPARSE_V4: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DOCLING_PARSE: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V1: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V2: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V4: PdfBackend.THREADED_DOCLING_PARSE,
     }
 
     if backend in deprecated_mapping:
         warnings.warn(
-            f"PdfBackend.{backend.name} was previously deprecated and removed in this docling version. Using PdfBackend.DOCLING_PARSE instead. ",
+            f"PdfBackend.{backend.name} is deprecated; using "
+            "PdfBackend.THREADED_DOCLING_PARSE instead.",
             DeprecationWarning,
             stacklevel=3,
         )

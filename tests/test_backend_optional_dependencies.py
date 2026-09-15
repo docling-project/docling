@@ -199,6 +199,28 @@ def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
     assert result.returncode == 0, result.stderr
 
 
+def test_docling_parse_backend_operates_without_pypdfium2() -> None:
+    sample = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+    body = (
+        "from pathlib import Path\n"
+        "from docling.backend.docling_parse_backend import "
+        "ThreadedDoclingParseDocumentBackend\n"
+        "from docling.datamodel.base_models import InputFormat\n"
+        "from docling.datamodel.document import InputDocument\n"
+        f"path = Path({str(sample)!r})\n"
+        "in_doc = InputDocument(path_or_stream=path, format=InputFormat.PDF, "
+        "backend=ThreadedDoclingParseDocumentBackend)\n"
+        "backend = in_doc._backend\n"
+        "page = next(backend.iter_pages())\n"
+        "assert page.get_page_image().width > 0\n"
+        "backend.unload()\n"
+    )
+
+    result = _run_with_blocked_module("pypdfium2", body)
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_converter_constructs_without_chart_extraction_dependency() -> None:
     """Importing DocumentConverter must not require transformers.
 
