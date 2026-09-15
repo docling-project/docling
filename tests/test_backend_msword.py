@@ -1835,7 +1835,7 @@ def _docx_with_fragment_only_rel():
     fragment_rel = (
         '<Relationship Id="rId999" '
         'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" '
-        'Target="#_Proc%C3%A9dures_sp%C3%A9ciales" TargetMode="External"/>'
+        'Target="#_Proc%C3%A9dures_sp%C3%A9ciales"/>'
     )
     rels_xml = rels_xml.replace("</Relationships>", fragment_rel + "</Relationships>")
     entries[rels_key] = rels_xml.encode("utf-8")
