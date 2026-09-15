@@ -12,8 +12,8 @@ import logging
 
 import pytest
 
-from docling.datamodel.settings import settings
 from docling.models.utils.hf_model_download import (
+    _REFUSE_ENV_VAR,
     is_pinned_revision,
     warn_on_unpinned_trust_remote_code,
 )
@@ -76,9 +76,7 @@ class TestWarnOnUnpinnedTrustRemoteCode:
         assert "some/repo" in record.getMessage()
 
     def test_refuse_flag_raises_instead_of_warning(self, caplog, monkeypatch):
-        monkeypatch.setattr(
-            settings.security, "refuse_unpinned_remote_code", True, raising=False
-        )
+        monkeypatch.setenv(_REFUSE_ENV_VAR, "1")
         with caplog.at_level(logging.WARNING):
             with pytest.raises(ValueError, match="SECURITY"):
                 warn_on_unpinned_trust_remote_code(
@@ -88,10 +86,17 @@ class TestWarnOnUnpinnedTrustRemoteCode:
         assert caplog.records == []
 
     def test_refuse_flag_allows_pinned_revision(self, monkeypatch):
-        monkeypatch.setattr(
-            settings.security, "refuse_unpinned_remote_code", True, raising=False
-        )
+        monkeypatch.setenv(_REFUSE_ENV_VAR, "1")
         # A pinned revision must not raise even when refusal is enabled.
         warn_on_unpinned_trust_remote_code(
             "some/repo", revision=_PINNED_SHA, trust_remote_code=True
         )
+
+    @pytest.mark.parametrize("value", ["0", "false", "no", "", "  "])
+    def test_non_truthy_env_values_only_warn(self, caplog, monkeypatch, value):
+        monkeypatch.setenv(_REFUSE_ENV_VAR, value)
+        with caplog.at_level(logging.WARNING):
+            warn_on_unpinned_trust_remote_code(
+                "some/repo", revision="main", trust_remote_code=True
+            )
+        assert len(caplog.records) == 1
