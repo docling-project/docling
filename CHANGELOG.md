@@ -1,3 +1,34 @@
+## [v2.127.0](https://github.com/docling-project/docling/releases/tag/v2.127.0) - 2026-09-14
+
+### Feature
+
+* Addition of 'region' to S3Coordinates ([#4221](https://github.com/docling-project/docling/issues/4221)) ([`5ea6490`](https://github.com/docling-project/docling/commit/5ea6490ffdc57b2fd7de5cc436f2d0a22f2214d4))
+* **mhtml:** Add MHTML input backend ([#4184](https://github.com/docling-project/docling/issues/4184)) ([`7e05ed6`](https://github.com/docling-project/docling/commit/7e05ed60f203ee4c1890e7e63846239dc68f4a50))
+* Add RTF input support via LibreOffice ([`be443e8`](https://github.com/docling-project/docling/commit/be443e8d158223c3aff55fb0e33c6ba6a434d848))
+* **jats:** Embed local figure images ([#4041](https://github.com/docling-project/docling/issues/4041)) ([`3d33038`](https://github.com/docling-project/docling/commit/3d330388b8f37291964a613274fd24b357edcc3b))
+* Canonicalize the OCR languages across all engines according to the BCP-47 standard ([#4075](https://github.com/docling-project/docling/issues/4075)) ([`9a2d947`](https://github.com/docling-project/docling/commit/9a2d947b70e093e301a5328d114760d8e86d61e9))
+
+### Fix
+
+* **html:** Flag pivot-table row headers as row_header, not column_header ([#4216](https://github.com/docling-project/docling/issues/4216)) ([`5ef4f92`](https://github.com/docling-project/docling/commit/5ef4f9283ed8810350ac9730a1b135db41cd8f47))
+* **jats:** Preserve structured abstract sections and fix nested list parent ([#4172](https://github.com/docling-project/docling/issues/4172)) ([`5eef82b`](https://github.com/docling-project/docling/commit/5eef82b9e042c916c01dd1799463da3657fec035))
+* **pptx:** Correct paragraph provenance, subtitle labels, and chart caption parenting ([#4190](https://github.com/docling-project/docling/issues/4190)) ([`1c46705`](https://github.com/docling-project/docling/commit/1c46705062a61043f2c944d32fecbf23c39c38f2))
+* **docx:** Parse table cells wrapped in a content control (#3946) ([#3951](https://github.com/docling-project/docling/issues/3951)) ([`78caf0a`](https://github.com/docling-project/docling/commit/78caf0abdbce177ffbdcd9dacd1869159567980e))
+* **iwork:** Drop mimetypes.add_type workaround for Pages MIME type ([#4215](https://github.com/docling-project/docling/issues/4215)) ([`636c9d5`](https://github.com/docling-project/docling/commit/636c9d5c5ed0ba5707919817f97c44e18494c814))
+* **epub:** Decode percent-escaped manifest hrefs ([#4199](https://github.com/docling-project/docling/issues/4199)) ([`c35bb02`](https://github.com/docling-project/docling/commit/c35bb0209266315b0b3da4024cab770c2fafbd6a))
+* **docx:** Avoid per-figure document reload and use bulk body reset ([#4193](https://github.com/docling-project/docling/issues/4193)) ([`82e6361`](https://github.com/docling-project/docling/commit/82e6361224a71caf7ed57f49fe96274f07cae1b1))
+* **webvtt:** Accept CRLF and CR line terminators from a stream ([#4157](https://github.com/docling-project/docling/issues/4157)) ([`3682b16`](https://github.com/docling-project/docling/commit/3682b16bde4e7c5acce838b734bbaf54555edf52))
+* **docx:** Honor w:numFmt when building Word list markers ([#4087](https://github.com/docling-project/docling/issues/4087)) ([`ff764c2`](https://github.com/docling-project/docling/commit/ff764c2853589fc4be753b929d91d23e967d663b))
+* **asciidoc:** Remove dead max_image_data_base64_bytes option ([#4173](https://github.com/docling-project/docling/issues/4173)) ([`97f73ef`](https://github.com/docling-project/docling/commit/97f73efdc145af9cf37c020200fb40d5c87eba1f))
+* **xlsx:** Add missing openpyxl template formats ([#4178](https://github.com/docling-project/docling/issues/4178)) ([`c34fa4d`](https://github.com/docling-project/docling/commit/c34fa4d92ef194387132bc987bcd662b052604f9))
+* **iwork:** Prune sf:ghost-text-ref placeholder text ([#4170](https://github.com/docling-project/docling/issues/4170)) ([`025b27c`](https://github.com/docling-project/docling/commit/025b27ca2c2f040b5b9628dccffd2611246990ca))
+
+### Documentation
+
+* **datamodel:** Fix two pydantic field descriptions ([#4197](https://github.com/docling-project/docling/issues/4197)) ([`2d5560e`](https://github.com/docling-project/docling/commit/2d5560e7f131594c6b27996051fd86919cb2aadf))
+* Add labelstudio integration to docs ([#4191](https://github.com/docling-project/docling/issues/4191)) ([`6bfab1c`](https://github.com/docling-project/docling/commit/6bfab1c9749203fd494465566c50addd39e91e4a))
+* Fix links to moved or out-of-tree targets ([#4187](https://github.com/docling-project/docling/issues/4187)) ([`6ee68fd`](https://github.com/docling-project/docling/commit/6ee68fd3459c695abedd97441c3ceb77e1d07b2b))
+
 ## [v2.126.0](https://github.com/docling-project/docling/releases/tag/v2.126.0) - 2026-09-04
 
 ### Feature
