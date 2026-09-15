@@ -52,6 +52,7 @@ try:  # pragma: no cover - import-time guard
     from pptx import Presentation, presentation
     from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
     from pptx.exc import InvalidXmlError
+    from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
 
     _PPTX_AVAILABLE = True
@@ -1204,6 +1205,33 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             _log.debug("LibreOffice not found — PPTX charts will not be rendered.")
         return self.pptx_to_pdf_converter
 
+    @staticmethod
+    def _prune_to_shape(sp_tree, shape_element) -> None:
+        """Strip a slide down to one shape, keeping the groups that hold it.
+
+        Walks from ``shape_element`` up to ``sp_tree`` and, at every level,
+        drops the siblings that are not on that path. A chart nested in a group
+        therefore keeps its enclosing ``p:grpSp`` elements, whose ``chOff`` and
+        ``chExt`` define the coordinate space its own ``xfrm`` is expressed in;
+        re-parenting the chart to the slide instead would move it. The group
+        bookkeeping children are never removed, or the file stops being valid.
+
+        Args:
+            sp_tree: The slide's ``p:spTree`` element, where pruning stops.
+            shape_element: The element of the shape to keep.
+        """
+        keep_tags = (qn("p:nvGrpSpPr"), qn("p:grpSpPr"))
+
+        node = shape_element
+        while node is not sp_tree:
+            parent = node.getparent()
+            if parent is None:
+                return
+            for sibling in list(parent):
+                if sibling is not node and sibling.tag not in keep_tags:
+                    parent.remove(sibling)
+            node = parent
+
     def _isolate_chart_presentation(
         self, slide_ind: int, chart_shape_id: int, out_path: Path
     ) -> bool:
@@ -1211,10 +1239,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         A fresh copy of the loaded presentation is reopened, every slide except
         the chart's is removed, and on that slide every shape except the chart
-        is removed. LibreOffice then renders a single-chart page. When the chart
-        is not a top-level shape (e.g. nested in a group) its ``shape_id`` is not
-        found among the slide's shapes, so the slide is left intact and the whole
-        slide is rendered instead — a best-effort fallback.
+        is removed. LibreOffice then renders a single-chart page. The chart is
+        looked up by ``shape_id`` anywhere in the shape tree, so one nested in a
+        group is found too and only its sibling shapes are dropped. When no
+        shape carries that id the slide is left intact and the whole slide is
+        rendered instead — a best-effort fallback.
 
         Args:
             slide_ind: Zero-based index of the slide holding the chart.
@@ -1242,9 +1271,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if idx != slide_ind:
                 slide_id_list.remove(slide_id)
 
-        for shp in list(target_slide.shapes):
-            if shp.shape_id != chart_shape_id:
-                shp._element.getparent().remove(shp._element)
+        # Shape ids are unique within a slide, so the non-visual properties
+        # carrying the id identify the chart wherever it sits in the tree.
+        sp_tree = target_slide.shapes._spTree
+        matches = sp_tree.xpath(f'.//p:cNvPr[@id="{int(chart_shape_id)}"]')
+        if matches:
+            self._prune_to_shape(sp_tree, matches[0].getparent().getparent())
 
         prs.save(str(out_path))
         return True

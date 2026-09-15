@@ -448,6 +448,137 @@ def test_chart_image_rendering(libreoffice_available):
     )
 
 
+def _add_bar_chart(shapes):
+    """Add a small bar chart to a slide or group shape tree."""
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    chart_data = CategoryChartData()
+    chart_data.categories = ["a", "b", "c"]
+    chart_data.add_series("s1", (1.0, 2.0, 3.0))
+    return shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(1),
+        Inches(1),
+        Inches(4),
+        Inches(3),
+        chart_data,
+    )
+
+
+def _iter_shapes_recursive(shapes) -> Iterable:
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    for shape in shapes:
+        yield shape
+        if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+            yield from _iter_shapes_recursive(shape.shapes)
+
+
+def test_chart_isolation_keeps_chart_nested_in_a_group(tmp_path: Path):
+    """Isolating a grouped chart must keep the chart, not delete its group.
+
+    Charts inside a group are reached through the recursive shape walk, so the
+    shape_id handed to the isolation step belongs to a nested shape. Pruning
+    only the slide's top-level shapes removed the enclosing group along with
+    the chart, leaving an empty slide that LibreOffice rendered as a blank
+    page. The enclosing groups must survive, since their chOff/chExt define
+    the coordinate space the chart's own position is expressed in.
+    """
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    group = slide.shapes.add_group_shape()
+    chart_frame = _add_bar_chart(group.shapes)
+    group.shapes.add_textbox(
+        Inches(1), Inches(4.2), Inches(3), Inches(0.5)
+    ).text_frame.text = "sibling inside the group"
+    slide.shapes.add_textbox(
+        Inches(0.2), Inches(0.2), Inches(3), Inches(0.5)
+    ).text_frame.text = "sibling outside the group"
+    source = tmp_path / "grouped_chart.pptx"
+    prs.save(source)
+    geometry = (
+        chart_frame.left,
+        chart_frame.top,
+        chart_frame.width,
+        chart_frame.height,
+    )
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated.pptx"
+    assert backend._isolate_chart_presentation(0, chart_frame.shape_id, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    charts = [shape for shape in shapes if shape.has_chart]
+    assert len(charts) == 1, "the grouped chart was deleted along with its group"
+    assert [shape.shape_type for shape in isolated.slides[0].shapes] == [
+        MSO_SHAPE_TYPE.GROUP
+    ]
+    assert len(shapes) == 2, "sibling shapes should have been pruned"
+    assert (
+        charts[0].left,
+        charts[0].top,
+        charts[0].width,
+        charts[0].height,
+    ) == geometry
+    plot = charts[0].chart.plots[0]
+    assert list(plot.categories) == ["a", "b", "c"]
+
+
+def test_chart_isolation_prunes_siblings_at_every_group_level(tmp_path: Path):
+    """Only the chart and the groups enclosing it survive the isolation."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    outer = slide.shapes.add_group_shape()
+    inner = outer.shapes.add_group_shape()
+    chart_frame = _add_bar_chart(inner.shapes)
+    inner.shapes.add_textbox(Inches(1), Inches(4.2), Inches(2), Inches(0.4))
+    outer.shapes.add_textbox(Inches(5), Inches(1), Inches(2), Inches(0.4))
+    slide.shapes.add_textbox(Inches(0.2), Inches(0.2), Inches(2), Inches(0.4))
+    source = tmp_path / "nested_chart.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_nested.pptx"
+    assert backend._isolate_chart_presentation(0, chart_frame.shape_id, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    assert [shape.has_chart for shape in shapes] == [False, False, True]
+
+
+def test_chart_isolation_keeps_slide_when_shape_id_is_unknown(tmp_path: Path):
+    """An id matching no shape falls back to rendering the untouched slide."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_bar_chart(slide.shapes)
+    slide.shapes.add_textbox(Inches(0.2), Inches(0.2), Inches(2), Inches(0.4))
+    source = tmp_path / "chart.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_unknown.pptx"
+    assert backend._isolate_chart_presentation(0, 9999, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    assert len(list(isolated.slides[0].shapes)) == 2
+
+
 def test_pptx_shapes_are_sorted_by_visual_position():
     class FakeShape:
         def __init__(self, name, top=None, left=None):
