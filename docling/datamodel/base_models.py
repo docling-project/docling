@@ -550,6 +550,9 @@ class Page(BaseModel):
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
+    # Some reasoning-style servers (e.g. LM Studio serving chandra-ocr-2) leave
+    # content empty and place the actual answer in reasoning_content.
+    reasoning_content: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
 
 

@@ -475,13 +475,25 @@ class VlmPipeline(PaginatedPipeline):
         elif response_format == ResponseFormat.CHANDRA_HTML:
             from docling.utils.chandra_utils import parse_chandra_html
 
-            document = parse_chandra_html(
-                content=predicted_text,
-                original_page_size=page.size,
-                page_no=page.page_no,
-                filename=conv_res.input.file.name or "file",
-                page_image=page.image,
-            )
+            try:
+                document = parse_chandra_html(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Chandra response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
         elif response_format == ResponseFormat.DOTS_JSON:
             document = self._dots_page_document(
                 conv_res, page, predicted_text, page.image
@@ -654,7 +666,9 @@ class VlmPipeline(PaginatedPipeline):
             page_item = next(iter(document.pages.values()))
             page_item.page_no = 1
             document.pages = {1: page_item}
-        for item, _level in document.iterate_items():
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
             if isinstance(item, DocItem):
                 for provenance in item.prov:
                     provenance.page_no = 1
