@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -20,6 +21,18 @@ _CACHE_HIT_SECONDS = 1.0
 # can change under us after review (a force-push, a retag, or a compromised Hub
 # account). That distinction is the whole basis of the supply-chain guard below.
 _COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+# This module sits in tach's ``foundation`` layer, below ``docling.datamodel``,
+# so the refusal toggle is read straight from the environment rather than
+# through ``docling.datamodel.settings``. Read at call time, not import time, so
+# the variable can be set after import.
+_REFUSE_ENV_VAR = "DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE"
+_TRUTHY_ENV_VALUES = frozenset({"1", "true", "yes", "on"})
+
+
+def _refuse_unpinned_remote_code() -> bool:
+    """Return True when the env var asks for a hard refusal rather than a warning."""
+    return os.environ.get(_REFUSE_ENV_VAR, "").strip().lower() in _TRUTHY_ENV_VALUES
 
 
 def is_pinned_revision(revision: Optional[str]) -> bool:
@@ -47,15 +60,11 @@ def warn_on_unpinned_trust_remote_code(
     single chokepoint (called from :func:`download_hf_model`) that flags it.
 
     Default behaviour is a prominent ``log.warning``. Set
-    ``DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1`` (settings
-    ``security.refuse_unpinned_remote_code``) to raise instead, for callers that
-    want to fail closed.
+    ``DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1`` to raise instead, for
+    callers that want to fail closed.
     """
     if not trust_remote_code or is_pinned_revision(revision):
         return
-
-    # Imported lazily to keep this module import-cheap and cycle-free.
-    from docling.datamodel.settings import settings
 
     message = (
         "SECURITY: model repo '{repo}' is loaded with trust_remote_code=True at "
@@ -66,7 +75,7 @@ def warn_on_unpinned_trust_remote_code(
         "DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1 to refuse instead of warn."
     ).format(repo=repo_id, rev=revision or "main")
 
-    if settings.security.refuse_unpinned_remote_code:
+    if _refuse_unpinned_remote_code():
         raise ValueError(message)
     _log.warning(message)
 
