@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.91.0,<3.0.0',
+  'docling-core>=2.96.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -278,7 +278,7 @@ models-vlm-inline = [
 feat-chunking = [
   # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
-  'docling-core[chunking]>=2.94.1,<3.0.0',
+  'docling-core[chunking]>=2.96.0,<3.0.0',
 ]
 
 service-client = [
@@ -330,7 +330,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.94.1,<3.0.0)",
+  "docling-core[chunking] (>=2.96.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.15.12",
