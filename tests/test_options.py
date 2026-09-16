@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -191,9 +190,7 @@ def test_document_timeout(test_doc_path):
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=PdfPipelineOptions(document_timeout=1),
                 pipeline_cls=LegacyStandardPdfPipeline,
-                # The legacy pipeline needs random page access, which the
-                # default (threaded) backend does not provide.
-                backend=DoclingParseDocumentBackend,
+                backend=PyPdfiumDocumentBackend,
             )
         }
     )
@@ -512,7 +509,6 @@ def test_parser_backends(test_doc_path):
     pipeline_options.do_table_structure = False
 
     for backend_t in [
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:

@@ -129,13 +129,13 @@ class InputDocument(BaseModel):
     """A document as an input of a Docling conversion."""
 
     file: Annotated[
-        PurePath, Field(description="A path representation the input document.")
+        PurePath, Field(description="A path representation of the input document.")
     ]
     document_hash: Annotated[
         str,
         Field(description="A stable hash of the path or stream of the input document."),
     ]
-    valid: bool = Field(True, description="Whether this is is a valid input document.")
+    valid: bool = Field(True, description="Whether this is a valid input document.")
     backend_options: Optional[BackendOptions] = Field(
         None, description="Custom options for backends."
     )
@@ -779,7 +779,12 @@ class _DocumentConversionInput(BaseModel):
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
                 mime is not None
-                and mime.lower() in {"application/xml", "application/xhtml+xml"}
+                and mime.lower()
+                in {
+                    "application/octet-stream",
+                    "application/xml",
+                    "application/xhtml+xml",
+                }
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
@@ -839,6 +844,9 @@ class _DocumentConversionInput(BaseModel):
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
                 mime = detected_mime
 
+        if not mime or mime.lower() == "application/octet-stream":
+            if detected_afp := _DocumentConversionInput._detect_afp(content):
+                mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
@@ -980,6 +988,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
+        elif ext in FormatToExtensions[InputFormat.MHTML]:
+            mime = FormatToMimeType[InputFormat.MHTML][0]
         elif ext in FormatToExtensions[InputFormat.XML_USPTO]:
             # USPTO text files share the "txt" extension with Markdown. Leave mime=None
             # so content probing can distinguish PATN text from plain Markdown text.
@@ -994,12 +1004,16 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.BOXNOTE][0]
         elif ext in FormatToExtensions[InputFormat.EBCDIC]:
             mime = FormatToMimeType[InputFormat.EBCDIC][0]
+        elif ext in FormatToExtensions[InputFormat.AFP]:
+            mime = FormatToMimeType[InputFormat.AFP][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
             mime = FormatToMimeType[InputFormat.DOCX][0]
         elif ext in FormatToExtensions[InputFormat.DOC]:
             mime = FormatToMimeType[InputFormat.DOC][0]
+        elif ext in FormatToExtensions[InputFormat.RTF]:
+            mime = FormatToMimeType[InputFormat.RTF][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.PPT]:
@@ -1025,6 +1039,21 @@ class _DocumentConversionInput(BaseModel):
                 else FormatToMimeType[InputFormat.EMAIL][0]
             )
         return mime
+
+    @staticmethod
+    def _detect_afp(content: bytes) -> Optional[str]:
+        """Detect an AFP MO:DCA structured-field introducer.
+
+        The two-byte length excludes the leading X'5A' carriage-control byte and
+        includes the eight-byte structured-field introducer. Only the header is
+        required here because format sniffing reads a bounded prefix of the file.
+        """
+        if len(content) < 9 or content[0] != 0x5A:
+            return None
+        field_length = int.from_bytes(content[1:3], byteorder="big")
+        if not 8 <= field_length <= 32767 or content[3] != 0xD3:
+            return None
+        return FormatToMimeType[InputFormat.AFP][0]
 
     @staticmethod
     def _detect_html_xhtml(

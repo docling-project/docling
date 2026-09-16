@@ -475,15 +475,31 @@ class VlmPipeline(PaginatedPipeline):
         elif response_format == ResponseFormat.CHANDRA_HTML:
             from docling.utils.chandra_utils import parse_chandra_html
 
-            document = parse_chandra_html(
-                content=predicted_text,
-                original_page_size=page.size,
-                page_no=page.page_no,
-                filename=conv_res.input.file.name or "file",
-                page_image=page.image,
-            )
+            try:
+                document = parse_chandra_html(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Chandra response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
         elif response_format == ResponseFormat.DOTS_JSON:
             document = self._dots_page_document(
+                conv_res, page, predicted_text, page.image
+            )
+        elif response_format == ResponseFormat.NEMOTRON_PARSE_V2:
+            document = self._nemotron_parse_v2_page_document(
                 conv_res, page, predicted_text, page.image
             )
         else:
@@ -583,6 +599,43 @@ class VlmPipeline(PaginatedPipeline):
             model_image_size=model_image_size,
         )
 
+    def _nemotron_parse_v2_page_document(
+        self,
+        conv_res: ConversionResult,
+        page: Page,
+        predicted_text: str,
+        page_image: PILImage.Image | None,
+    ) -> DoclingDocument:
+        from docling.utils.nemotron_parse_utils import (
+            parse_nemotron_parse_v2,
+        )
+
+        vlm_options = self.pipeline_options.vlm_options
+        if isinstance(vlm_options, (VlmConvertOptions, BaseVlmOptions)):
+            vlm_scale = vlm_options.scale
+            vlm_max_size = vlm_options.max_size
+        else:
+            raise TypeError(
+                "Nemotron Parse 2.0 parsing requires VlmConvertOptions or "
+                f"BaseVlmOptions, got {type(vlm_options).__name__}."
+            )
+
+        assert page.size is not None
+        inference_image = page.get_image(scale=vlm_scale, max_size=vlm_max_size)
+        inference_image_size = (
+            Size(width=inference_image.width, height=inference_image.height)
+            if inference_image is not None
+            else page.size
+        )
+        return parse_nemotron_parse_v2(
+            content=predicted_text,
+            original_page_size=page.size,
+            inference_image_size=inference_image_size,
+            page_no=page.page_no,
+            filename=conv_res.input.file.name or "file",
+            page_image=page_image,
+        )
+
     def _extract_code_block(self, text: str) -> str:
         """
         Extracts text from markdown code blocks (enclosed in triple backticks).
@@ -654,7 +707,9 @@ class VlmPipeline(PaginatedPipeline):
             page_item = next(iter(document.pages.values()))
             page_item.page_no = 1
             document.pages = {1: page_item}
-        for item, _level in document.iterate_items():
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
             if isinstance(item, DocItem):
                 for provenance in item.prov:
                     provenance.page_no = 1
