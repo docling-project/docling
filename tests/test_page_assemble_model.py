@@ -16,7 +16,14 @@ from docling_core.types.doc.page import (
 )
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import Cluster, Page, Table
+from docling.datamodel.base_models import (
+    Cluster,
+    LayoutPrediction,
+    Page,
+    PagePredictions,
+    Table,
+    TableStructurePrediction,
+)
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -323,8 +330,13 @@ def _text_cell(text: str, bbox: BoundingBox, index: int) -> TextCell:
 
 def test_unmatched_table_text_is_preserved(model):
     matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
-    orphan = _text_cell("outside", BoundingBox(l=100, t=100, r=130, b=110), 2)
-    earlier_orphan = _text_cell("earlier", BoundingBox(l=100, t=60, r=130, b=70), 3)
+    center_matched = _text_cell("center", BoundingBox(l=40, t=40, r=56, b=56), 2)
+    orphan = _text_cell("outside", BoundingBox(l=100, t=100, r=130, b=110), 3)
+    earlier_orphan = _text_cell("earlier", BoundingBox(l=100, t=60, r=130, b=70), 4)
+    blank = _text_cell("   ", BoundingBox(l=100, t=120, r=130, b=130), 5)
+    hyphen_orphan = _text_cell(
+        "split\x02word", BoundingBox(l=100, t=140, r=130, b=150), 6
+    )
     table = Table(
         label=DocItemLabel.TABLE,
         id=5,
@@ -333,7 +345,60 @@ def test_unmatched_table_text_is_preserved(model):
             id=5,
             label=DocItemLabel.TABLE,
             bbox=BoundingBox(l=0, t=0, r=150, b=150),
-            cells=[matched, orphan, earlier_orphan],
+            cells=[
+                matched,
+                center_matched,
+                orphan,
+                earlier_orphan,
+                blank,
+                hyphen_orphan,
+            ],
+        ),
+        otsl_seq=[],
+        num_rows=2,
+        num_cols=1,
+        table_cells=[
+            TableCell(
+                bbox=BoundingBox(l=0, t=0, r=50, b=50),
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                text="inside",
+            ),
+            TableCell(
+                bbox=None,
+                start_row_offset_idx=1,
+                end_row_offset_idx=2,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                text="no_bbox",
+            ),
+        ],
+    )
+
+    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == [
+        earlier_orphan,
+        orphan,
+        hyphen_orphan,
+    ]
+    fallback = model._make_unmatched_table_text(table, 150, 6)
+    assert fallback is not None
+    assert fallback.text == "earlier outside split-word"
+
+
+def test_unmatched_table_text_none_when_all_cells_matched(model):
+    matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
+    blank = _text_cell("   ", BoundingBox(l=100, t=100, r=130, b=110), 2)
+    table = Table(
+        label=DocItemLabel.TABLE,
+        id=5,
+        page_no=0,
+        cluster=Cluster(
+            id=5,
+            label=DocItemLabel.TABLE,
+            bbox=BoundingBox(l=0, t=0, r=150, b=150),
+            cells=[matched, blank],
         ),
         otsl_seq=[],
         num_rows=1,
@@ -350,10 +415,112 @@ def test_unmatched_table_text_is_preserved(model):
         ],
     )
 
-    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == [
-        earlier_orphan,
-        orphan,
-    ]
-    fallback = model._make_unmatched_table_text(table, 150, 6)
-    assert fallback is not None
-    assert fallback.text == "earlier outside"
+    assert PageAssembleModel._get_unmatched_table_cells(table, 150) == []
+    assert model._make_unmatched_table_text(table, 150, 6) is None
+
+
+def test_page_assemble_model_call_emits_unmatched_table_text(model):
+    matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
+    orphan = _text_cell("outside", BoundingBox(l=100, t=100, r=130, b=110), 2)
+    cluster = Cluster(
+        id=5,
+        label=DocItemLabel.TABLE,
+        bbox=BoundingBox(l=0, t=0, r=150, b=150),
+        cells=[matched, orphan],
+    )
+    table = Table(
+        label=DocItemLabel.TABLE,
+        id=5,
+        page_no=0,
+        cluster=cluster,
+        otsl_seq=[],
+        num_rows=1,
+        num_cols=1,
+        table_cells=[
+            TableCell(
+                bbox=BoundingBox(l=0, t=0, r=50, b=50),
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                text="inside",
+            )
+        ],
+    )
+
+    page = Page(
+        page_no=0,
+        size=Size(width=150, height=150),
+        predictions=PagePredictions(
+            layout=LayoutPrediction(clusters=[cluster]),
+            tablestructure=TableStructurePrediction(table_map={5: table}),
+        ),
+    )
+    backend = MagicMock()
+    backend.is_valid.return_value = True
+    page._backend = backend
+
+    conv_res = MagicMock()
+    conv_res.timings = {}
+
+    assembled_pages = list(model(conv_res, [page]))
+    assert len(assembled_pages) == 1
+    assembled_page = assembled_pages[0]
+    assert assembled_page.assembled is not None
+    assert len(assembled_page.assembled.body) == 2
+    assert isinstance(assembled_page.assembled.body[0], Table)
+    orphan_element = assembled_page.assembled.body[1]
+    assert orphan_element.label == DocItemLabel.TEXT
+    assert orphan_element.id == 6
+    assert orphan_element.text == "outside"
+
+
+def test_page_assemble_model_call_without_unmatched_table_text(model):
+    matched = _text_cell("inside", BoundingBox(l=10, t=10, r=30, b=20), 1)
+    cluster = Cluster(
+        id=3,
+        label=DocItemLabel.TABLE,
+        bbox=BoundingBox(l=0, t=0, r=150, b=150),
+        cells=[matched],
+    )
+    table = Table(
+        label=DocItemLabel.TABLE,
+        id=3,
+        page_no=0,
+        cluster=cluster,
+        otsl_seq=[],
+        num_rows=1,
+        num_cols=1,
+        table_cells=[
+            TableCell(
+                bbox=BoundingBox(l=0, t=0, r=50, b=50),
+                start_row_offset_idx=0,
+                end_row_offset_idx=1,
+                start_col_offset_idx=0,
+                end_col_offset_idx=1,
+                text="inside",
+            )
+        ],
+    )
+
+    page = Page(
+        page_no=0,
+        size=Size(width=150, height=150),
+        predictions=PagePredictions(
+            layout=LayoutPrediction(clusters=[cluster]),
+            tablestructure=TableStructurePrediction(table_map={3: table}),
+        ),
+    )
+    backend = MagicMock()
+    backend.is_valid.return_value = True
+    page._backend = backend
+
+    conv_res = MagicMock()
+    conv_res.timings = {}
+
+    assembled_pages = list(model(conv_res, [page]))
+    assert len(assembled_pages) == 1
+    assembled_page = assembled_pages[0]
+    assert assembled_page.assembled is not None
+    assert len(assembled_page.assembled.body) == 1
+    assert isinstance(assembled_page.assembled.body[0], Table)
