@@ -266,6 +266,9 @@ models-vlm-inline = [
   # already excludes all of 5.13.*; docling-ibm-models no longer pins it itself.
   'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,!=5.13.0 ; sys_platform != "darwin"',
   'accelerate>=1.2.1,<2.0.0',
+  'einops>=0.8.1,<1.0.0',
+  'open-clip-torch>=3.2.0,<4.0.0',
+  'timm>=1.0.22,<2.0.0',
   'mlx-vlm>=0.6.17,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
   'peft>=0.18.1',

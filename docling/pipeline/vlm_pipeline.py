@@ -486,6 +486,10 @@ class VlmPipeline(PaginatedPipeline):
             document = self._dots_page_document(
                 conv_res, page, predicted_text, page.image
             )
+        elif response_format == ResponseFormat.NEMOTRON_PARSE_V2:
+            document = self._nemotron_parse_v2_page_document(
+                conv_res, page, predicted_text, page.image
+            )
         else:
             raise RuntimeError(f"Unsupported VLM response format {response_format}")
 
@@ -581,6 +585,43 @@ class VlmPipeline(PaginatedPipeline):
             filename=conv_res.input.file.name or "file",
             page_image=page_image,
             model_image_size=model_image_size,
+        )
+
+    def _nemotron_parse_v2_page_document(
+        self,
+        conv_res: ConversionResult,
+        page: Page,
+        predicted_text: str,
+        page_image: PILImage.Image | None,
+    ) -> DoclingDocument:
+        from docling.backend.nemotron_parse_v2_backend import (
+            parse_nemotron_parse_v2,
+        )
+
+        vlm_options = self.pipeline_options.vlm_options
+        if isinstance(vlm_options, (VlmConvertOptions, BaseVlmOptions)):
+            vlm_scale = vlm_options.scale
+            vlm_max_size = vlm_options.max_size
+        else:
+            raise TypeError(
+                "Nemotron Parse 2.0 parsing requires VlmConvertOptions or "
+                f"BaseVlmOptions, got {type(vlm_options).__name__}."
+            )
+
+        assert page.size is not None
+        inference_image = page.get_image(scale=vlm_scale, max_size=vlm_max_size)
+        inference_image_size = (
+            Size(width=inference_image.width, height=inference_image.height)
+            if inference_image is not None
+            else page.size
+        )
+        return parse_nemotron_parse_v2(
+            content=predicted_text,
+            original_page_size=page.size,
+            inference_image_size=inference_image_size,
+            page_no=page.page_no,
+            filename=conv_res.input.file.name or "file",
+            page_image=page_image,
         )
 
     def _extract_code_block(self, text: str) -> str:
