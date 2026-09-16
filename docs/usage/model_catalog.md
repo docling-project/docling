@@ -252,6 +252,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `phi4` | Phi-4-Multimodal | - | ✅ | ❌ | ❌ | ✅ | Markdown |
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
+| `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |

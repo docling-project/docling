@@ -133,6 +133,39 @@ _OPC_RELS_NS: Final[str] = (
 )
 """XML namespace URI for OPC ``*.rels`` relationship parts."""
 
+_W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_A_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/main"
+_C_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+_R_NS: Final[str] = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+)
+_WP_NS: Final[str] = (
+    "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+)
+_MC_NS: Final[str] = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+_V_NS: Final[str] = "urn:schemas-microsoft-com:vml"
+_WPS_NS: Final[str] = (
+    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+)
+_W10_NS: Final[str] = "urn:schemas-microsoft-com:office:word"
+_A14_NS: Final[str] = "http://schemas.microsoft.com/office/drawing/2010/main"
+_W14_NS: Final[str] = "http://schemas.microsoft.com/office/word/2010/wordml"
+_W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+
+_OOXML_NAMESPACES: Final[dict[str, str]] = {
+    "a": _A_NS,
+    "c": _C_NS,
+    "r": _R_NS,
+    "w": _W_NS,
+    "wp": _WP_NS,
+    "mc": _MC_NS,
+    "v": _V_NS,
+    "wps": _WPS_NS,
+    "w10": _W10_NS,
+    "a14": _A14_NS,
+    "w14": _W14_NS,
+}
+
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
@@ -409,23 +442,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         layout spacers and discarded during parsing.
     """
 
-    _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-    _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
-
-    _BLIP_NAMESPACES: Final = {
-        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "w": _W_NS,
-        "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-        "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
-        "v": "urn:schemas-microsoft-com:vml",
-        "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
-        "w10": "urn:schemas-microsoft-com:office:word",
-        "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
-        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
-    }
-
     SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
@@ -544,15 +560,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 path_or_stream, in_doc.format.value, "docx"
             )
         super().__init__(in_doc, path_or_stream, options)
-        self.XML_KEY = f"{self._W_NS_CLARK}val"
-        self.xml_namespaces = {
-            "w": "http://schemas.microsoft.com/office/word/2003/wordml"
-        }
-        self.blip_xpath_expr = etree.XPath(
-            ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-        )
+        self.XML_KEY = f"{_W_NS_CLARK}val"
+        self.blip_xpath_expr = etree.XPath(".//a:blip", namespaces=_OOXML_NAMESPACES)
         self.vml_imagedata_xpath_expr = etree.XPath(
-            ".//v:imagedata", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            ".//v:imagedata", namespaces=_OOXML_NAMESPACES
         )
         # self.initialise(path_or_stream)
         # Word file:
@@ -862,7 +873,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
             _raw_drawingml_els = element.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                ".//w:drawing", namespaces=_OOXML_NAMESPACES
             )
             _raw_vml_images = self.vml_imagedata_xpath_expr(element)
 
@@ -884,7 +895,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
                     ".//w:txbxContent|.//v:textbox//w:p",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 textbox_elements = txbx_xpath(element)
 
@@ -893,7 +904,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Additional checks for textboxes in DrawingML and VML formats
                     alt_txbx_xpath = etree.XPath(
                         ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
-                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                        namespaces=_OOXML_NAMESPACES,
                     )
                     textbox_elements = alt_txbx_xpath(element)
 
@@ -901,7 +912,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if not textbox_elements:
                         shape_text_xpath = etree.XPath(
                             ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                            namespaces=_OOXML_NAMESPACES,
                         )
                         shape_text_elements = shape_text_xpath(element)
                         if shape_text_elements:
@@ -953,7 +964,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # would match there and its paragraphs would never be walked.
             elif tag_name == "sdt":
                 sdt_content = element.find(
-                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    "./w:sdtContent", namespaces=_OOXML_NAMESPACES
                 )
                 if sdt_content is not None:
                     # Recursively walk the SDT content to catch textboxes, tables, and nested structures
@@ -966,10 +977,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for Text after the Image
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
@@ -980,10 +988,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for Text after the VML Image
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te2 = self._handle_text_elements(element, doc)
                     added_elements.extend(te2)
@@ -1025,10 +1030,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Always process text in paragraph
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
@@ -1131,14 +1133,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
             style_elem = getattr(style, "element", None)
             if style_elem is not None:
-                style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
+                style_numPr = style_elem.find(f".//{_W_NS_CLARK}numPr")
                 if style_numPr is not None:
                     if numId is None:
-                        numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                        numId_elem = style_numPr.find(f"{_W_NS_CLARK}numId")
                         if numId_elem is not None:
                             numId = numId_elem.get(self.XML_KEY)
                     if ilvl is None:
-                        ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                        ilvl_elem = style_numPr.find(f"{_W_NS_CLARK}ilvl")
                         if ilvl_elem is not None:
                             ilvl = ilvl_elem.get(self.XML_KEY)
             if numId is not None and ilvl is not None:
@@ -1166,7 +1168,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return None
 
             numbering_root = numbering_part.element
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
 
             num_element = numbering_root.find(
                 f".//w:num[@w:numId='{numid}']", namespaces=namespaces
@@ -1203,7 +1205,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         lvl_element = self._get_level_element(numid, ilvl)
         if lvl_element is None:
             return None
-        namespaces = {"w": self._W_NS}
+        namespaces = _OOXML_NAMESPACES
         num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
         if num_fmt_element is None:
             return None
@@ -1213,7 +1215,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """Read the start value from the abstractNum definition."""
         lvl_element = self._get_level_element(numid, ilvl)
         if lvl_element is not None:
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
             start_element = lvl_element.find(".//w:start", namespaces=namespaces)
             if start_element is not None:
                 val = start_element.get(self.XML_KEY)
@@ -1252,7 +1254,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         the default ``1.2.3.`` fallback.
         """
         lvl_element = self._get_level_element(numid, ilvl)
-        namespaces = {"w": self._W_NS}
+        namespaces = _OOXML_NAMESPACES
         lvl_text = None
         num_fmt = None
         if lvl_element is not None:
@@ -1311,7 +1313,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if lvl_element is None:
                 return False
 
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
             num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
             if num_fmt_element is None:
                 return False
@@ -1346,9 +1348,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         # Look for outlineLvl in the style's paragraph properties
-        outline_elem = style_elem.find(f".//{self._W_NS_CLARK}outlineLvl")
+        outline_elem = style_elem.find(f".//{_W_NS_CLARK}outlineLvl")
         if outline_elem is not None:
-            val = outline_elem.get(f"{self._W_NS_CLARK}val")
+            val = outline_elem.get(f"{_W_NS_CLARK}val")
             if val is not None:
                 try:
                     # Convert 0-indexed outlineLvl to 1-indexed heading level
@@ -1651,9 +1653,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if run._element is not None:
                     b_tags = run._element.xpath(".//w:b | .//w:bCs")
                     for b in b_tags:
-                        val = b.get(
-                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-                        )
+                        val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
@@ -1664,9 +1664,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
                     )
                     for b in pPr_b:
-                        val = b.get(
-                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-                        )
+                        val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
@@ -1757,7 +1755,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 text = "".join(
                     child.xpath(
                         ".//w:sdtContent//w:t/text()",
-                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                        namespaces=_OOXML_NAMESPACES,
                     )
                 )
                 if len(text) == 0:
@@ -1765,7 +1763,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 runs = child.xpath(
                     ".//w:sdtContent//w:r",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 fmt = (
                     self._get_format_from_run(Run(runs[0], paragraph), paragraph)
@@ -1861,9 +1859,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if the element contains a checkbox, False otherwise.
         """
         try:
-            checkboxes = element.findall(
-                f".//{{{self._BLIP_NAMESPACES['w14']}}}checkbox"
-            )
+            checkboxes = element.findall(f".//{{{_OOXML_NAMESPACES['w14']}}}checkbox")
             return len(checkboxes) > 0
         except (AttributeError, TypeError):
             return False
@@ -1878,7 +1874,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if checked (w14:checked val="1"), False if unchecked
                 (val="0" or missing).
         """
-        w14_ns = self._BLIP_NAMESPACES["w14"]
+        w14_ns = _OOXML_NAMESPACES["w14"]
         checkboxes = element.findall(f".//{{{w14_ns}}}checkbox")
         if not checkboxes:
             return False
@@ -2131,9 +2127,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Extract embedded images inside the text box
             tb_drawing_blip = self.blip_xpath_expr(p)
             tb_vml_images = self.vml_imagedata_xpath_expr(p)
-            tb_drawingml_els = p.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-            )
+            tb_drawingml_els = p.findall(".//w:drawing", namespaces=_OOXML_NAMESPACES)
 
             if tb_drawing_blip:
                 pics = self._handle_pictures(tb_drawing_blip, doc)
@@ -2975,7 +2969,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elif tag_name == "sdt":
                 sdt_content = child.find(
                     "./w:sdtContent",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 if sdt_content is not None:
                     cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
@@ -3125,9 +3119,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for item in element:
             if self.blip_xpath_expr(item):
                 return True
-            if item.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-            ):
+            if item.findall(".//w:drawing", namespaces=_OOXML_NAMESPACES):
                 return True
 
         return False
@@ -3155,7 +3147,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         tc = cell._tc
 
         # must contain only one paragraph
-        paragraphs = list(tc.iterchildren(f"{self._W_NS_CLARK}p"))
+        paragraphs = list(tc.iterchildren(f"{_W_NS_CLARK}p"))
         if len(paragraphs) > 1:
             return True
 
@@ -3170,7 +3162,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # paragraph must contain runs with no run-properties
         for para in paragraphs:
-            runs = list(para.iterchildren(f"{self._W_NS_CLARK}r"))
+            runs = list(para.iterchildren(f"{_W_NS_CLARK}r"))
             for rn in runs:
                 item: Run = Run(rn, self.docx_obj)
                 if item is not None:
@@ -3346,7 +3338,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for image in drawing_blip:
                 image_data = self._get_image_from_relationship(
                     image,
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed",
+                    f"{{{_R_NS}}}embed",
                     "image",
                 )
                 pil_image: Image.Image | None = None
@@ -3419,7 +3411,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for imagedata in vml_imagedatas:
                 image_data = self._get_image_from_relationship(
                     imagedata,
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id",
+                    f"{{{_R_NS}}}id",
                     "VML image",
                 )
                 pil_image: Image.Image | None = None
@@ -3494,9 +3486,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         references a ``word/charts/chartN.xml`` part (rather than an ``a:blip``
         image or a shape).
         """
-        return (
-            drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES) is not None
-        )
+        return drawing_el.find(".//c:chart", namespaces=_OOXML_NAMESPACES) is not None
 
     def _resolve_chart_root(self, drawing_el: Any) -> Any | None:
         """Resolve a charted ``w:drawing`` to the root of its chart part.
@@ -3506,10 +3496,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         hardened XML parser. Returns None when the relationship or payload is
         missing or malformed.
         """
-        chart_ref = drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES)
+        chart_ref = drawing_el.find(".//c:chart", namespaces=_OOXML_NAMESPACES)
         if chart_ref is None:
             return None
-        rid = chart_ref.get(f"{{{self._BLIP_NAMESPACES['r']}}}id")
+        rid = chart_ref.get(f"{{{_OOXML_NAMESPACES['r']}}}id")
         if not rid:
             return None
         try:
@@ -3530,7 +3520,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         mapped to a docling classification label; unknown or combination charts
         fall back to OTHER_CHART.
         """
-        plot_area = chart_root.find(".//c:plotArea", namespaces=self._BLIP_NAMESPACES)
+        plot_area = chart_root.find(".//c:plotArea", namespaces=_OOXML_NAMESPACES)
         if plot_area is not None:
             for child in plot_area:
                 label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
@@ -3568,7 +3558,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         if node is None:
             return []
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         cache = None
         for tag in ("numCache", "strCache", "numLit", "strLit"):
             cache = node.find(f".//c:{tag}", namespaces=ns)
@@ -3602,13 +3592,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
-        tx = series.find("c:tx", namespaces=self._BLIP_NAMESPACES)
+        tx = series.find("c:tx", namespaces=_OOXML_NAMESPACES)
         if tx is None:
             return ""
         cached = self._read_chart_cache(tx)
         if cached:
             return cached[0]
-        literal = tx.find("c:v", namespaces=self._BLIP_NAMESPACES)
+        literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
         return self._chart_cell_text(literal.text) if literal is not None else ""
 
     def _chart_title_text(self, chart_root: Any) -> str | None:
@@ -3617,7 +3607,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         A chart title is DrawingML rich text (``a:t`` runs) under ``c:chart/
         c:title``; some charts instead reference a cell, cached in a ``c:strRef``.
         """
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         chart = chart_root.find("c:chart", namespaces=ns)
         if chart is None:
             return None
@@ -3651,7 +3641,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             A TableData, or None if the chart exposes no usable series.
         """
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
@@ -3826,7 +3816,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         txbx_xpath = etree.XPath(
             ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//a:p//a:t",
-            namespaces=self._BLIP_NAMESPACES,
+            namespaces=_OOXML_NAMESPACES,
         )
         emitted_partnames: set[str] = set()
 
@@ -3984,9 +3974,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return
 
         # Parse the document body for comment range markers
-        namespaces = {
-            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        }
+        namespaces = _OOXML_NAMESPACES
 
         try:
             # Find all paragraphs with comment ranges
@@ -4002,16 +3990,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 comment_ids = set()
 
                 for start_marker in comment_starts:
-                    comment_id = start_marker.get(
-                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-                    )
+                    comment_id = start_marker.get(f"{_W_NS_CLARK}id")
                     if comment_id:
                         comment_ids.add(comment_id)
 
                 for end_marker in comment_ends:
-                    comment_id = end_marker.get(
-                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-                    )
+                    comment_id = end_marker.get(f"{_W_NS_CLARK}id")
                     if comment_id:
                         comment_ids.add(comment_id)
 
@@ -4027,30 +4011,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _get_comment_ids_for_element(self, element: BaseOxmlElement) -> set[str]:
         """Return the set of comment IDs attached to a paragraph element."""
-        namespaces = {
-            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        }
+        namespaces = _OOXML_NAMESPACES
         comment_ids: set[str] = set()
 
         for marker in element.findall(".//w:commentRangeStart", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 
         for marker in element.findall(".//w:commentRangeEnd", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 
         # Some documents only contain commentReference nodes without range markers
         for marker in element.findall(".//w:commentReference", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 

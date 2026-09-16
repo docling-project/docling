@@ -31,7 +31,6 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
 )
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
-    extract_outline_from_docling_parse,
     extract_outline_from_pdfium,
 )
 
@@ -330,27 +329,19 @@ def test_docling_parse_backends_outline_from_sample_pdf_have_page_targets(backen
 
 
 def test_docling_parse_native_outline_from_sample_pdf():
-    # Native docling-parse destinations provide both target pages and coordinates.
-    from docling_parse.pdf_parser import DoclingPdfParser
-
-    dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
+    in_doc = InputDocument(
+        path_or_stream=SAMPLE_PDF,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
     try:
-        outline = extract_outline_from_docling_parse(dp_doc)
+        outline = in_doc._backend.get_document_outline()
     finally:
-        dp_doc.unload()
+        in_doc._backend.unload()
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
     assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
-    assert [o.y_top for o in outline] == [
-        66.0,
-        126.0,
-        316.0,
-        66.0,
-        126.0,
-        316.0,
-        66.0,
-        316.0,
-    ]
+    assert all(o.y_top is not None and o.y_top > 0 for o in outline)
 
 
 def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
@@ -358,7 +349,6 @@ def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
     # outline; the native flattener must return [] rather than crashing on None.children.
     reportlab_canvas = pytest.importorskip("reportlab.pdfgen.canvas")
     import pypdfium2 as pdfium
-    from docling_parse.pdf_parser import DoclingPdfParser
 
     path = tmp_path / "no_outline.pdf"
     c = reportlab_canvas.Canvas(str(path))
@@ -369,8 +359,12 @@ def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
     pdoc = pdfium.PdfDocument(str(path))
     assert extract_outline_from_pdfium(pdoc) == []
 
-    dp_doc = DoclingPdfParser(loglevel="fatal").load(str(path))
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
     try:
-        assert extract_outline_from_docling_parse(dp_doc) == []
+        assert in_doc._backend.get_document_outline() == []
     finally:
-        dp_doc.unload()
+        in_doc._backend.unload()

@@ -1,3 +1,23 @@
+## [v2.128.0](https://github.com/docling-project/docling/releases/tag/v2.128.0) - 2026-09-16
+
+### Feature
+
+* Add minimal AFP document support ([#4177](https://github.com/docling-project/docling/issues/4177)) ([`1cdae27`](https://github.com/docling-project/docling/commit/1cdae2749e89853a0c6d7896ced6cdfddcb76721))
+* Add nvidia/NVIDIA-Nemotron-Parse-2.0 as vlm model ([#4253](https://github.com/docling-project/docling/issues/4253)) ([`01b5738`](https://github.com/docling-project/docling/commit/01b57389a33c5b2eac974b41344fb957a1e80838))
+* **pdf:** Refactor the docling-parse backend to remove pypdfium ([#4244](https://github.com/docling-project/docling/issues/4244)) ([`ca0ecd4`](https://github.com/docling-project/docling/commit/ca0ecd413e5902bb423d5224b02969edf2561971))
+
+### Fix
+
+* **asciidoc:** Block titles, picture parenting, skipped headings, and list dedent ([#4171](https://github.com/docling-project/docling/issues/4171)) ([`7fe1b3c`](https://github.com/docling-project/docling/commit/7fe1b3c602105b2f3fb7b6a75d0c529e4a4da4b2))
+* **image:** Apply the EXIF orientation when loading image frames ([#4247](https://github.com/docling-project/docling/issues/4247)) ([`77ab16d`](https://github.com/docling-project/docling/commit/77ab16d8a6510572d8c720d3df2ad1bc99c7fd92))
+* Improve Chandra OCR parsing and preserve document structure ([#4239](https://github.com/docling-project/docling/issues/4239)) ([`b322564`](https://github.com/docling-project/docling/commit/b32256402addc02452697805ee25f38b5e8abffb))
+* **email:** Keep rendered display names parseable and single-line ([#4242](https://github.com/docling-project/docling/issues/4242)) ([`e8c6092`](https://github.com/docling-project/docling/commit/e8c6092fe6ee995ce0719a71352b9f1fad5350cf))
+* **docx:** Sanitize fragment-only relationship targets in DOCX archives before parsing ([#4243](https://github.com/docling-project/docling/issues/4243)) ([`1aec03f`](https://github.com/docling-project/docling/commit/1aec03f1c3326584e8a7b97b2d0ed2ad95d946b4))
+
+### Documentation
+
+* Fix stale TransformersModelType enum member in vision models guide ([#4251](https://github.com/docling-project/docling/issues/4251)) ([`bbdaeda`](https://github.com/docling-project/docling/commit/bbdaeda1d8a749b9dafe16d701cbacf495435c11))
+
 ## [v2.127.0](https://github.com/docling-project/docling/releases/tag/v2.127.0) - 2026-09-14
 
 ### Feature

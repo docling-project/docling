@@ -28,6 +28,7 @@ from docling.datamodel.service.responses import (
     TaskFailureResult,
     TaskStatusResponse,
 )
+from docling.datamodel.service.sources import S3Coordinates
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
@@ -36,6 +37,74 @@ from docling.datamodel.service.targets import (
     S3Target,
     ZipTarget,
 )
+
+S3_MODEL_TYPES = (S3Coordinates, S3SourceRequest, S3Target)
+FAKE_S3_CREDENTIALS = {
+    "access_key": "fake-access-key-for-testing-only",
+    "secret_key": "fake-secret-key-for-testing-only",
+}
+
+
+def test_s3_source_and_target_inherit_coordinates() -> None:
+    assert issubclass(S3SourceRequest, S3Coordinates)
+    assert issubclass(S3Target, S3Coordinates)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_allow_ambient_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(endpoint="s3.example.com", bucket="documents")
+
+    assert coordinates.access_key is None
+    assert coordinates.secret_key is None
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_preserve_explicit_string_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(
+        endpoint="s3.example.com",
+        bucket="documents",
+        **FAKE_S3_CREDENTIALS,
+    )
+
+    assert coordinates.access_key == FAKE_S3_CREDENTIALS["access_key"]
+    assert coordinates.secret_key == FAKE_S3_CREDENTIALS["secret_key"]
+    assert isinstance(coordinates.access_key, str)
+    assert isinstance(coordinates.secret_key, str)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"access_key": "fake-access-key-for-testing-only"},
+        {"secret_key": "fake-secret-key-for-testing-only"},
+    ],
+)
+def test_s3_coordinates_reject_incomplete_explicit_credentials(
+    model_type: type[S3Coordinates], credentials: dict[str, str]
+) -> None:
+    with pytest.raises(ValidationError, match="access_key and secret_key"):
+        model_type(endpoint="s3.example.com", bucket="documents", **credentials)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_credential_schema_is_optional_string(
+    model_type: type[S3Coordinates],
+) -> None:
+    schema = model_type.model_json_schema()
+
+    assert not {"access_key", "secret_key"} & set(schema["required"])
+    for field_name in ("access_key", "secret_key"):
+        field_schema = schema["properties"][field_name]
+        assert {item.get("type") for item in field_schema["anyOf"]} == {
+            "null",
+            "string",
+        }
+        assert "Optional" in field_schema["description"]
 
 
 def test_http_source_request_rejects_zip_urls() -> None:

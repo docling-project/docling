@@ -4,6 +4,7 @@
 import logging
 import os
 import re
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -88,7 +89,13 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
 
         gt_path = docx_path.parent.parent / "groundtruth" / docx_path.name
 
-        conv_result: ConversionResult = converter.convert(docx_path)
+        warning_context = (
+            pytest.warns(UserWarning, match="Skipping external image reference")
+            if docx_path.name == "docx_external_image.docx"
+            else nullcontext()
+        )
+        with warning_context:
+            conv_result: ConversionResult = converter.convert(docx_path)
 
         doc: DoclingDocument = conv_result.document
 

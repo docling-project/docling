@@ -4,13 +4,13 @@
 """Extract a PDF's outline (bookmarks / table-of-contents).
 
 The outline, when present, is the most authoritative heading-hierarchy signal in a PDF. Two
-extractors are provided:
+extractors are provided so each backend uses its own native capability:
 
 * :func:`extract_outline_from_pdfium` -- for the pypdfium2 backend. Returns the richest data:
   title, depth, target page and vertical position.
-* :func:`extract_outline_from_docling_parse` -- for the docling-parse backends, using their native
-  ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries titles,
-  hierarchy, target pages, and optional target positions.
+* :func:`extract_outline_from_docling_parse` -- for the docling-parse backend, using its native
+  document annotations (no pypdfium2 dependency). The native outline carries titles, hierarchy,
+  and destinations.
 
 ``pypdfium2`` is imported lazily, inside the functions that use it, never at module level:
 ``datamodel.document`` imports this module for the ``_PdfOutlineItem`` model, which places it on
@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import logging
 from functools import cache
-from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -31,7 +30,7 @@ from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
     import pypdfium2 as pdfium
-    from docling_parse.pdf_parser import PdfDocument as DoclingParsePdfDocument
+    from docling_parse.pdf_parser import PdfTableOfContents
 
 _log = logging.getLogger(__name__)
 
@@ -48,9 +47,9 @@ class _PdfOutlineItem(BaseModel):
     title: str
     # 0-based depth as reported by the PDF outline; compressed to contiguous levels downstream.
     level: int
-    # 1-based target page; None when the entry has no resolvable destination.
+    # 1-based target page; None when the entry has no resolvable page.
     page_no: int | None = None
-    # Top-left-origin vertical position of the target, when derivable from the destination.
+    # Top-left-origin vertical position of the target, when derivable from the destination view.
     y_top: float | None = None
 
 
@@ -105,7 +104,6 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
 
     items: list[_PdfOutlineItem] = []
     page_heights: dict[int, float] = {}
-    pypdfium2_major = int(version("pypdfium2").split(".", 1)[0])
 
     with pypdfium2_lock:
         try:
@@ -115,36 +113,26 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
             return []
 
         for bm in toc:
-            if pypdfium2_major >= 5:
-                title = bm.get_title()
-                try:
-                    dest = bm.get_dest()
-                except PdfiumError:
-                    dest = None
-                page_index, y_pdf = (
-                    _dest_top_pdf(dest) if dest is not None else (None, None)
-                )
-            else:
-                # pypdfium2 4.x exposes outline records as namedtuples.
-                title = bm.title
-                page_index = bm.page_index
-                idx = _view_top_index().get(bm.view_mode)
-                pos = bm.view_pos or ()
-                y_pdf = pos[idx] if idx is not None and idx < len(pos) else None
-            title = (title or "").strip()
+            title = (bm.get_title() or "").strip()
             if not title:
                 continue
 
             page_no: int | None = None
             y_top: float | None = None
-            if page_index is not None:
-                page_no = page_index + 1
-                if y_pdf is not None:
-                    if page_index not in page_heights:
-                        page = pdoc[page_index]
-                        page_heights[page_index] = page.get_height()
-                        page.close()
-                    y_top = page_heights[page_index] - y_pdf
+            try:
+                dest = bm.get_dest()
+            except PdfiumError:
+                dest = None
+            if dest is not None:
+                page_index, y_pdf = _dest_top_pdf(dest)
+                if page_index is not None:
+                    page_no = page_index + 1
+                    if y_pdf is not None:
+                        if page_index not in page_heights:
+                            page = pdoc[page_index]
+                            page_heights[page_index] = page.get_height()
+                            page.close()
+                        y_top = page_heights[page_index] - y_pdf
 
             items.append(
                 _PdfOutlineItem(
@@ -156,43 +144,28 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
 
 
 def extract_outline_from_docling_parse(
-    dp_doc: DoclingParsePdfDocument,
+    toc: PdfTableOfContents | None,
 ) -> list[_PdfOutlineItem]:
     """Flatten docling-parse's native table-of-contents into ordered ``_PdfOutlineItem``\\ s.
 
-    Walks the ``PdfTableOfContents`` tree returned by ``PdfDocument.get_table_of_contents()``,
-    depth-first, assigning each node a 0-based ``level`` from its depth (top-level entries at
-    level 0, matching the pypdfium2 extractor). Target pages are read from docling-parse's
-    ``PdfDestination.page_no``, which is already 1-based like Docling's page numbering. When the
-    destination includes a point, its bottom-left-origin y-coordinate is converted to Docling's
-    top-left-origin ``y_top`` using the destination page height.
-
-    ``get_table_of_contents()`` returns ``None`` for PDFs without an embedded outline, in which
-    case an empty list is returned. The docling-parse dependency is required to expose each
-    entry's destination page.
+    The native iterator supplies each node's 0-based depth. Destination coordinates are
+    normalized to top-left origin to match document-item provenance. ``None`` represents a PDF
+    without an embedded outline.
     """
-    toc = dp_doc.get_table_of_contents()
     if toc is None:
         return []
 
     items: list[_PdfOutlineItem] = []
-
-    # Iterative pre-order depth-first walk via an explicit stack, avoiding Python's
-    # call-stack recursion limit. Some large real-world documents (technical manuals,
-    # legal filings) legitimately nest headings hundreds of levels deep, and malformed
-    # PDFs can nest further still; a naive recursive walk here raises RecursionError.
-    stack = [(child, 0) for child in reversed(toc.children or [])]
-    while stack:
-        node, level = stack.pop()
+    for level, node in toc.iterate():
         title = (node.text or node.orig or "").strip()
         if title:
             destination = node.destination
             page_no = destination.page_no if destination is not None else None
-            y_top = (
-                destination.page_size.height - destination.point.y
-                if destination is not None and destination.point is not None
-                else None
-            )
+            y_top: float | None = None
+            if destination is not None:
+                top_left_destination = destination.to_top_left_origin()
+                if top_left_destination.point is not None:
+                    y_top = top_left_destination.point.y
             items.append(
                 _PdfOutlineItem(
                     title=title,
@@ -201,6 +174,5 @@ def extract_outline_from_docling_parse(
                     y_top=y_top,
                 )
             )
-        stack.extend((child, level + 1) for child in reversed(node.children or []))
 
     return items
