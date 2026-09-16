@@ -398,11 +398,14 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,
+                # Leave the default (sdpa where supported, eager otherwise) to
+                # transformers: the native model's Q-Former only supports sdpa
+                # from transformers 5.13, and requesting it explicitly fails.
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
                     and self.accelerator_options.cuda_use_flash_attention2
-                    else "sdpa"
+                    else None
                 ),
                 trust_remote_code=trust_remote_code,
             )
