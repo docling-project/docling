@@ -97,7 +97,7 @@ def _heading_level(resolved_type: str) -> int | None:
     return None
 
 
-def _mcids_on_page(element: PdfStructureElement, page_index: int) -> set[int]:
+def _mcids_on_page(element: PdfStructureElement, page_no: int) -> set[int]:
     """Every /MCID this element and its inline descendants own on the page."""
     found: set[int] = set()
     stack = [element]
@@ -105,31 +105,11 @@ def _mcids_on_page(element: PdfStructureElement, page_index: int) -> set[int]:
         current = stack.pop()
         for kid in current.kids:
             if isinstance(kid, PdfMarkedContentRef):
-                if kid.page == page_index:
+                if kid.page_no == page_no:
                     found.add(kid.mcid)
             elif isinstance(kid, PdfStructureElement):
                 stack.append(kid)
     return found
-
-
-def _layout_bbox(
-    element: PdfStructureElement, page_height: float
-) -> BoundingBox | None:
-    """The Layout /BBox attribute (bottom-left user space) as a top-left box."""
-    layout = element.attributes.get("/Layout") or {}
-    raw = layout.get("/BBox")
-    if not isinstance(raw, list) or len(raw) != 4:
-        return None
-    try:
-        x0, y0, x1, y1 = (float(v) for v in raw)
-    except (TypeError, ValueError):
-        return None
-    return BoundingBox(
-        l=min(x0, x1),
-        r=max(x0, x1),
-        t=page_height - max(y0, y1),
-        b=page_height - min(y0, y1),
-    )
 
 
 class TaggedStructureModel(BasePageModel):
@@ -160,7 +140,6 @@ class TaggedStructureModel(BasePageModel):
         cells: list[TaggedTextCell],
     ) -> tuple[list[Cluster], TaggedStructurePrediction]:
         assert page.size is not None
-        page_index = page.page_no - 1
         page_height = page.size.height
         by_mcid: dict[int, list[TaggedTextCell]] = {}
         for cell in cells:
@@ -194,7 +173,7 @@ class TaggedStructureModel(BasePageModel):
                 return
             boxes = [
                 cell.bbox
-                for mcid in _mcids_on_page(element, page_index)
+                for mcid in _mcids_on_page(element, page.page_no)
                 for cell in by_mcid.get(mcid, [])
             ]
             if boxes:
@@ -202,10 +181,10 @@ class TaggedStructureModel(BasePageModel):
                 return
             # Figures and formulas are often pure graphics: no text cells, so
             # fall back to the authored Layout /BBox when the element is on this page.
-            if element.page == page_index:
-                bbox = _layout_bbox(element, page_height)
-                if bbox is not None:
-                    emit(label, bbox, element)
+            # docling-parse reports it in the frame of the page's cells (rotation
+            # and crop box applied, bottom-left), so only the origin changes here.
+            if element.page_no == page.page_no and element.bbox is not None:
+                emit(label, element.bbox.to_top_left_origin(page_height), element)
 
         for root in structure.elements:
             visit(root)
