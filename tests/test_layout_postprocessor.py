@@ -158,6 +158,47 @@ def test_section_headers_with_insufficient_overlap_are_not_merged() -> None:
     assert [cluster.id for cluster in result] == [1, 2]
 
 
+def test_section_headers_with_insufficient_vertical_overlap_are_not_merged() -> None:
+    first = _cluster(
+        1,
+        BoundingBox(l=0, t=0, r=100, b=100),
+        DocItemLabel.SECTION_HEADER,
+    )
+    second = _cluster(
+        2,
+        BoundingBox(l=0, t=60, r=100, b=160),
+        DocItemLabel.SECTION_HEADER,
+    )
+
+    result = _postprocessor(first, second)._process_regular_clusters()
+
+    assert [cluster.id for cluster in result] == [1, 2]
+
+
+def test_section_header_merge_preserves_unrelated_clusters() -> None:
+    first = _cluster(
+        1,
+        BoundingBox(l=137, t=278, r=293, b=307),
+        DocItemLabel.SECTION_HEADER,
+    )
+    second = _cluster(
+        2,
+        BoundingBox(l=72, t=278, r=206, b=307),
+        DocItemLabel.SECTION_HEADER,
+    )
+    body_text = _cluster(
+        3,
+        BoundingBox(l=0, t=320, r=150, b=340),
+        DocItemLabel.TEXT,
+    )
+
+    result = _postprocessor(first, second, body_text)._process_regular_clusters()
+
+    by_id = {cluster.id: cluster for cluster in result}
+    assert set(by_id) == {1, 3}
+    assert by_id[3].label == DocItemLabel.TEXT
+
+
 def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
     cells = [_text_cell(0, BoundingBox(l=10, t=10, r=30, b=30))]
     stale_clusters = [_cluster(0, BoundingBox(l=300, t=300, r=360, b=360))]
