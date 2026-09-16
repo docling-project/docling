@@ -192,7 +192,9 @@ def _resolve_bare_arabic(
 
     A leading number alone may be a year or quantity. Require a chapter sequence before treating
     it as numbering, allowing explicit Arabic markers to provide evidence too. Dotted sections
-    and unnumbered headings may intervene; an unexpected single Arabic index ends the run.
+    and unnumbered headings may intervene. A gap such as ``1 Intro``, ``2 Methods``, ``4 Results``
+    ends the run, leaving the bare ``4`` unrecognized. A 1-based run of incidental headings, such
+    as ``1 January``, ``2 February`` or ``1 kg``, ``2 kg``, can still be misclassified.
     """
     sequence: list[int] = []
     for i, heading in enumerate(headings):
