@@ -13,7 +13,7 @@ artifacts come from the tree.
 
 from pathlib import Path
 
-from docling_core.types.doc import BoundingBox, DocItemLabel, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.document import SectionHeaderItem
 from docling_parse.pdf_parser import (
     PdfMarkedContentRef,
@@ -51,7 +51,7 @@ def test_structure_elements_become_clusters_with_levels_alt_and_furniture():
     element = lambda kind, kids, **extra: PdfStructureElement(  # noqa: E731
         id=kind, type=kind, kids=kids, **extra
     )
-    mc = lambda mcid: PdfMarkedContentRef(page=0, mcid=mcid)  # noqa: E731
+    mc = lambda mcid: PdfMarkedContentRef(page_no=1, mcid=mcid)  # noqa: E731
     structure = PdfStructure(
         marked=True,
         role_map={"/Heading": "/H2"},
@@ -64,8 +64,12 @@ def test_structure_elements_become_clusters_with_levels_alt_and_furniture():
                     element(
                         "/Figure",
                         [],
-                        page=0,
+                        page_no=1,
                         alt="A grey square",
+                        # docling-parse reports the Layout /BBox in the cell frame
+                        bbox=BoundingBox(
+                            l=20, b=20, r=80, t=60, coord_origin=CoordOrigin.BOTTOMLEFT
+                        ),
                         attributes={"/Layout": {"/BBox": [20, 20, 80, 60]}},
                     ),
                     element(
@@ -113,7 +117,7 @@ def test_structure_elements_become_clusters_with_levels_alt_and_furniture():
     # role-mapped heading keeps its explicit level; alt text rides along
     assert prediction.heading_levels == {0: 2}
     assert prediction.alt_texts == {2: "A grey square"}
-    # a graphics-only figure is placed from its Layout /BBox (bottom-left in the file)
+    # a graphics-only figure is placed from its Layout /BBox (bottom-left from the parser)
     assert clusters[2].bbox == BoundingBox(l=20, t=40, r=80, b=80)
 
 
