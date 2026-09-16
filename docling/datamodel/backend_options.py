@@ -10,7 +10,9 @@ from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
+    PositiveFloat,
     PositiveInt,
+    PrivateAttr,
     SecretStr,
     conint,
     model_validator,
@@ -32,6 +34,30 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     """Default backend options for a declarative document backend."""
 
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
+
+
+class AsciiDocBackendOptions(BaseBackendOptions):
+    """Options specific to the AsciiDoc backend."""
+
+    kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
+    fetch_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether the backend should access remote or local resources to parse "
+                "images in the AsciiDoc document."
+            )
+        ),
+    ] = False
+    source_uri: Annotated[
+        AnyUrl | PurePath | None,
+        Field(
+            description=(
+                "The URI that originates the AsciiDoc document. If provided, the backend "
+                "will use it to resolve relative image paths."
+            ),
+        ),
+    ] = None
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -153,6 +179,26 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class JatsBackendOptions(BaseBackendOptions):
+    """Options specific to the JATS XML backend."""
+
+    kind: Literal["xml_jats"] = Field("xml_jats", exclude=True, repr=False)
+    fetch_images: bool = Field(
+        False,
+        description=(
+            "Whether the backend should access local resources to parse figure "
+            "images in a JATS document."
+        ),
+    )
+    source_uri: Optional[Union[AnyUrl, PurePath]] = Field(
+        None,
+        description=(
+            "The URI that originates the JATS document. If provided, the backend "
+            "will use it to resolve relative figure paths."
+        ),
+    )
+
+
 class EpubBackendOptions(BaseBackendOptions):
     """Options specific to the EPUB backend."""
 
@@ -180,6 +226,8 @@ class EpubBackendOptions(BaseBackendOptions):
 class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
 
+    _materialize_char_cells: bool = PrivateAttr(default=False)
+
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
     enforce_same_font: bool = Field(
@@ -188,6 +236,15 @@ class PdfBackendOptions(BaseBackendOptions):
             "Whether docling-parse should split text cells at font boundaries. "
             "Disable this when PDFs use separate fonts for base glyphs and "
             "diacritics that should remain in the same text cell."
+        ),
+    )
+    include_bitmap_images: bool = Field(
+        False,
+        description=(
+            "Whether docling-parse should decode the bytes of the bitmap images "
+            "embedded in the page, in addition to their bounding boxes. Needed to "
+            "extract native picture images (e.g. by the native PDF pipeline); "
+            "decoding costs time and memory, so it is off by default."
         ),
     )
 
@@ -203,6 +260,22 @@ class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
         description=(
             "Number of parser threads to use for the threaded docling-parse backend. "
             "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    render_pages: bool = Field(
+        True,
+        description=(
+            "Whether the parser should also render a page image while decoding a page. "
+            "Rendering is what makes page images available; turn it off to parse the "
+            "text and image content only, at which point requesting a page image fails."
+        ),
+    )
+    render_scale: PositiveFloat = Field(
+        1.0,
+        description=(
+            "Raster scale in pixels per point of the page image rendered while decoding "
+            "(1.0 renders at 72 DPI, 2.0 at 144 DPI). Set it to the scale the page images "
+            "are consumed at, so pages are not rendered a second time on request."
         ),
     )
     release_native_memory_every_n_pages: conint(ge=0) = Field(
@@ -580,6 +653,13 @@ class EbcdicLayout(BaseModel):
             raise ValueError(
                 "record_type_field is required for a layout with several records"
             )
+        if len(self.records) > 1:
+            names = [item.name for item in self.records]
+            if len(set(names)) != len(names):
+                # The parser buckets decoded rows by name and the name becomes
+                # the table heading, so duplicates silently merge two schemas'
+                # rows.
+                raise ValueError("record names must be unique")
         if self.record_type_field is not None:
             selectors = [item.selector for item in self.records]
             if None in selectors:
@@ -630,9 +710,11 @@ class EbcdicBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        AsciiDocBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,
+        JatsBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
         ThreadedDoclingParseBackendOptions,

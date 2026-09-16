@@ -7,6 +7,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
@@ -27,7 +28,13 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
 from docling.datamodel.spatial import BoundingBoxSpatialIndex
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -130,6 +137,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
+    # Whether the engine can run several languages at once
+    multiple_languages: ClassVar[bool] = False
+
     def __init__(
         self,
         *,
@@ -140,6 +150,67 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     ):
         self.enabled = enabled
         self.options = options
+
+        # Translate options.lang into a list of OcrLanguage
+        self.languages: list[OcrLanguage] = (
+            OcrLanguageResolver.canonicalize_ocr_languages(options.lang)
+            if options.canonicalize_lang
+            else []
+        )
+
+    @property
+    def _engine_name(self) -> str:
+        """Human-readable engine name for coverage errors."""
+        return type(self).__name__.removesuffix("Model")
+
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        """The languages this OCR engine supports, segregated in BCP47 and native"""
+        return OcrLanguageSupport()
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
+        """Map one canonical tag onto this engine's native code(s).
+
+        A list covers an engine that answers one request with several codes;
+        most engines return a single code.
+
+        Raises:
+            OcrLanguageNotSupportedError: The engine has no model for it.
+        """
+        if language.is_passthrough():
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag(),
+                supported=self.supported_ocr_languages(),
+                detail="This engine needs a BCP-47 tag behind the `iso:` prefix.",
+            )
+        return language.bcp47_language
+
+    def resolve_ocr_languages(self) -> list[str]:
+        """Turn the canonical request into the native codes to hand the engine.
+
+        An empty request stays empty: `lang=[]` means "the engine's own default",
+        and each engine decides what that is when it reads the result.
+
+        Applies the two uniform policies: too many languages for the engine are
+        dropped with a warning (list order is preference order), and a language
+        with no model is an error, never a silent substitution.
+        """
+        languages = list(self.languages)
+        if not self.multiple_languages and len(languages) > 1:
+            _log.warning(
+                "%s handles one OCR language at a time. Using %s and ignoring %s; "
+                "the order of `lang` is the order of preference.",
+                self._engine_name,
+                [languages[0].tag()],
+                [lang.tag() for lang in languages[1:]],
+            )
+            languages = languages[:1]
+
+        codes: list[str] = []
+        for language in languages:
+            mapped = self.map_ocr_language(language)
+            codes.extend([mapped] if isinstance(mapped, str) else mapped)
+        return list(dict.fromkeys(codes))
 
     def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""

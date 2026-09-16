@@ -35,7 +35,7 @@ def test_convert_valid():
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]
-    json_filter = ["escaped_characters", "signature_stamp_01"]
+    json_filter = ["escaped_characters", "line_breaks", "signature_stamp_01"]
 
     for in_path in relevant_paths:
         md_gt_path = md_path / "groundtruth" / f"{in_path.name}.md"
@@ -81,51 +81,10 @@ def test_convert_valid():
                 verify_docitems(doc_true=act_doc, doc_pred=exp_doc, fuzzy=False)
 
 
-def get_md_paths():
-    # Define the directory you want to search
-    directory = Path("./tests/data/md/groundtruth")
-
-    # List all MD files in the directory and its subdirectories
-    md_files = sorted(directory.rglob("*.md"))
-    return md_files
-
-
 def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.MD])
 
     return converter
-
-
-@pytest.mark.skip(
-    reason="Previously a silent no-op (globbed a non-existent ./tests/groundtruth "
-    "path). Roundtrip of the markdown groundtruth does not hold (trailing-newline "
-    "drift); re-enable once that is fixed."
-)
-def test_e2e_md_conversions():
-    md_paths = get_md_paths()
-    converter = get_converter()
-
-    for md_path in md_paths:
-        # print(f"converting {md_path}")
-
-        with open(md_path) as fr:
-            true_md = fr.read()
-
-        conv_result: ConversionResult = converter.convert(md_path)
-
-        doc: DoclingDocument = conv_result.document
-
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md
-
-        conv_result_: ConversionResult = converter.convert_string(
-            true_md, format=InputFormat.MD
-        )
-
-        doc_: DoclingDocument = conv_result_.document
-
-        pred_md_: str = doc_.export_to_markdown(compact_tables=True)
-        assert true_md == pred_md_
 
 
 def test_convert_leading_dash_sequences():
@@ -139,9 +98,10 @@ Here is some content...
 <!-- image -->
 """
 
-    conv_result: ConversionResult = converter.convert_string(
-        markdown, format=InputFormat.MD
-    )
+    with pytest.warns(UserWarning, match="Detected potentially incorrect Markdown"):
+        conv_result: ConversionResult = converter.convert_string(
+            markdown, format=InputFormat.MD
+        )
 
     pred_md = conv_result.document.export_to_markdown()
 
@@ -508,3 +468,145 @@ def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Title"
         assert doc.texts[1].text == "Some body text."
+
+
+def test_convert_line_breaks():
+    """GFM line-break semantics are correctly mapped to DoclingDocument text fields.
+
+    - Soft break (bare newline): two runs joined with a space.
+    - Hard break (two trailing spaces or backslash before newline): two runs joined with '\\n'.
+    - Paragraph break (blank line): two separate TextItems.
+    - Hard break across a formatting boundary: runs that differ in formatting are
+      kept as separate TextItems; the break does not merge them.
+    - Hard and soft breaks inside list items are handled the same as in paragraphs,
+      and do not bleed across sibling items.
+    - Multiple hard breaks and mixed hard+soft breaks in one paragraph are all preserved.
+    """
+    opt = MarkdownBackendOptions()
+
+    # Soft break: joined with a space (GFM §6.7)
+    doc = _convert_markdown("Author 1\nAffiliation 1", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1 Affiliation 1"
+
+    # Hard break (trailing spaces): joined with '\n'
+    doc = _convert_markdown("Author 1  \nAffiliation 1", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Author 1\nAffiliation 1"
+
+    # Paragraph break: two separate items
+    doc = _convert_markdown("Author 1\n\nAffiliation 1", opt)
+    assert len(doc.texts) == 2
+    assert doc.texts[0].text == "Author 1"
+    assert doc.texts[1].text == "Affiliation 1"
+
+    # Hard break across a formatting boundary: the break is preserved as a
+    # leading '\n' on the run that follows, since the runs cannot be merged.
+    doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
+    assert len(doc.texts) == 3
+    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].formatting is None
+    assert doc.texts[1].text == "John"
+    assert doc.texts[1].formatting is not None
+    assert doc.texts[1].formatting.bold is True
+    assert doc.texts[2].text == "\nUniversity XYZ"
+    assert doc.texts[2].formatting is None
+
+    # Multiple hard breaks in one paragraph
+    doc = _convert_markdown("Line1  \nLine2  \nLine3", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Line1\nLine2\nLine3"
+
+    # Mixed hard + soft in one paragraph
+    doc = _convert_markdown("Line1  \nLine2\nLine3", opt)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "Line1\nLine2 Line3"
+
+    # Hard break in a list item
+    doc = _convert_markdown("- Item 1  \n  continued", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "Item 1\ncontinued"
+
+    # Multiple hard breaks in one list item
+    doc = _convert_markdown("- first  \nsecond  \nthird", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 1
+    assert list_items[0].text == "first\nsecond\nthird"
+
+    # Hard break does not bleed into the next sibling list item
+    doc = _convert_markdown("- Item 1  \n  continued\n- Item 2", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "Item 1\ncontinued"
+    assert list_items[1].text == "Item 2"
+
+    # Soft break in a list item: joined with a space
+    doc = _convert_markdown("- First\n  Second\n- Item 2", opt)
+    list_items = [t for t in doc.texts if t.label == "list_item"]
+    assert len(list_items) == 2
+    assert list_items[0].text == "First Second"
+    assert list_items[1].text == "Item 2"
+
+
+def test_ordered_list_preserves_start_number():
+    """Ordered lists that start at a number other than 1 must preserve that number.
+
+    A list written as `5. foo\\n6. bar` must export as `5. foo\\n6. bar`,
+    not `1. foo\\n2. bar`.
+    """
+    markdown = "5. foo\n6. bar\n7. baz\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    items = list(conv_result.document.texts)
+    assert len(items) == 3
+    assert [item.marker for item in items] == ["5.", "6.", "7."]
+
+    exported = conv_result.document.export_to_markdown()
+    assert exported == "5. foo\n6. bar\n7. baz"
+
+
+def test_ordered_list_split_by_prose_preserves_numbers():
+    """A procedure interrupted by prose must keep sequence numbers across the break.
+
+    Steps 1-2, a prose paragraph, then steps 3-4 in the source must come back
+    with exactly those numbers: the second list must NOT restart at 1.
+    """
+    markdown = (
+        "1. Install the package.\n"
+        "2. Set the API key.\n"
+        "\n"
+        "Restart the shell before continuing.\n"
+        "\n"
+        "3. Run the import.\n"
+        "4. Check the output.\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    exported = conv_result.document.export_to_markdown()
+    assert "1. Install the package." in exported
+    assert "2. Set the API key." in exported
+    assert "3. Run the import." in exported
+    assert "4. Check the output." in exported
+    # Guard against the "two step 1s" regression explicitly.
+    lines = [
+        ln for ln in exported.splitlines() if ln.startswith(("1.", "2.", "3.", "4."))
+    ]
+    assert lines == [
+        "1. Install the package.",
+        "2. Set the API key.",
+        "3. Run the import.",
+        "4. Check the output.",
+    ]
+
+
+def test_standard_ordered_list_still_starts_at_one():
+    """Ordinary 1-based ordered lists must continue to export as 1-based."""
+    markdown = "1. alpha\n2. beta\n3. gamma\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    exported = conv_result.document.export_to_markdown()
+    assert exported == "1. alpha\n2. beta\n3. gamma"

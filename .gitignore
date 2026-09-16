@@ -8,6 +8,10 @@ ds_convert_models/
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~
+*.dclx
+*.dclg
+*.xml
+*.zip
 \#*\#
 /.emacs.desktop
 /.emacs.desktop.lock
@@ -15,6 +19,8 @@ ds_convert_models/
 auto-save-list
 tramp
 .\#*
+_plans*
+_references*
 
 # Org-mode
 .org-id-locations
