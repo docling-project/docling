@@ -689,19 +689,21 @@ class StagePresetMixin:
             else:
                 engine_options = AutoInlineVlmEngineOptions()
 
-        # Create instance with preset values
-        # Type ignore because cls is the concrete options class, not the mixin
-        instance = cls(  # type: ignore[call-arg]
+        # Build a merged dict of preset values + caller overrides, then construct
+        # a single validated instance so that model_validators (e.g. "at least one
+        # output") run against the final merged state rather than the pre-override
+        # state.
+        preset_data: dict = dict(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
             **preset.stage_options,
         )
+        preset_data.update(overrides)
 
-        # Apply overrides
-        for key, value in overrides.items():
-            setattr(instance, key, value)
+        # Type ignore because cls is the concrete options class, not the mixin
+        instance = cls(**preset_data)  # type: ignore[call-arg]
 
         return instance
 

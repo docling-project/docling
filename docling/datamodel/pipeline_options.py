@@ -1215,9 +1215,9 @@ CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULA
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
 
 # Register ChartExtraction presets
-ChartExtractionVlmEngineOptions.register_preset(
-    stage_model_specs.CHART_EXTRACTION_GRANITE_VISION
-)
+# NOTE: CHART_EXTRACTION_GRANITE_VISION_V4 is already registered at import time
+# in chart_extraction_options.py; the call here is idempotent (skipped when already
+# registered). CHART_EXTRACTION_GRANITE_VISION (V1) has been removed.
 ChartExtractionVlmEngineOptions.register_preset(
     stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4
 )

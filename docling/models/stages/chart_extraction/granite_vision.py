@@ -38,10 +38,13 @@ _log = logging.getLogger(__name__)
 
 SUPPORTED_CHART_TYPES = ["bar_chart", "pie_chart", "line_chart"]
 
-# The granite-vision-4.1-4b GGUF model served via API does not have the
-# <chart2csv> / <chart2summary> / <chart2code> special tokens from HF fine-tuning.
-# Map them to natural-language equivalents used when the active engine is an API type.
-_API_PROMPT_MAP: dict[str, str] = {
+# Natural-language equivalents for the special-token prompts used by the
+# fine-tuned Granite Vision model.  These are only substituted when the user
+# explicitly sets ``use_natural_language_prompts=True`` on the options (e.g.
+# when serving a GGUF quantization that lacks the fine-tuned special tokens).
+# API engines that serve the HF fine-tune via vLLM support the special tokens
+# natively and should NOT use this map.
+_NL_PROMPT_MAP: dict[str, str] = {
     "<chart2csv>": (
         "Convert the information in this chart into a data table in CSV format "
         "with a header row and numeric values."
@@ -117,6 +120,12 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
         main_pred = element.meta.classification.get_main_prediction()
         return main_pred.class_name in SUPPORTED_CHART_TYPES
 
+    def _resolve_runtime_engine_type(self) -> VlmEngineType:
+        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        if selected_engine_type is not None:
+            return selected_engine_type
+        return self.options.engine_options.engine_type
+
     def __call__(
         self,
         doc: DoclingDocument,
@@ -134,34 +143,38 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
             images.append(el.image)
 
         # The prompts that are active for each image (one pass per prompt per image).
-        # active_prompts() returns the special-token keys (<chart2csv> etc.) which
-        # double as dispatch keys in the result-handling loop below.
         active_prompts = self.options.active_prompts()
         if not active_prompts:
             for item in elements:
                 yield item
             return
 
-        # API engines (LM Studio, Ollama, OpenAI-compat) don't have the HF
-        # special tokens; translate them to natural-language prompts.
-        engine_type = getattr(
-            self.options.engine_options, "engine_type", VlmEngineType.TRANSFORMERS
-        )
-        use_api_prompts = VlmEngineType.is_api_variant(engine_type)
+        # Translate special-token prompts to natural-language only when the user
+        # has explicitly requested it (e.g. for a GGUF deployment that lacks the
+        # fine-tuned tokens). HF fine-tunes served via vLLM/OpenAI-compat support
+        # the special tokens natively — do not substitute by default.
+        use_nl = self.options.use_natural_language_prompts
+
+        # Forward the full generation configuration from model_spec so that
+        # stop strings, temperature, and extra flags reach the engine.
+        model_spec = self.options.model_spec
+        engine_type = self._resolve_runtime_engine_type()
+        stop_strings = list(model_spec.stop_strings)
+        extra_generation_config = model_spec.get_runtime_input_extra_config(engine_type)
 
         # Build a flat batch: image x prompt, keeping them in sync
         batch_inputs: list[VlmEngineInput] = []
         for image in images:
             for prompt in active_prompts:
-                wire_prompt = (
-                    _API_PROMPT_MAP.get(prompt, prompt) if use_api_prompts else prompt
-                )
+                wire_prompt = _NL_PROMPT_MAP.get(prompt, prompt) if use_nl else prompt
                 batch_inputs.append(
                     VlmEngineInput(
                         image=image,
                         prompt=wire_prompt,
-                        temperature=0.0,
-                        max_new_tokens=self.options.model_spec.max_new_tokens,
+                        temperature=model_spec.temperature,
+                        max_new_tokens=model_spec.max_new_tokens,
+                        stop_strings=stop_strings,
+                        extra_generation_config=extra_generation_config,
                     )
                 )
 
@@ -199,10 +212,8 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
                                 text=code, language=CodeLanguageLabel.PYTHON
                             )
                     else:
-                        # V1 model: fixed "Convert the information…" prompt → CSV only
-                        chart_df = _extract_csv_to_dataframe_v1(result)
-                        item.meta.tabular_chart = TabularChartMetaField(
-                            chart_data=_dataframe_to_tabledata(chart_df)
+                        _log.warning(
+                            f"Unknown prompt token {prompt!r} for image {img_idx}; skipping."
                         )
                 except Exception as exc:
                     _log.error(
@@ -293,27 +304,6 @@ def _extract_csv_to_dataframe(decoded_text: str) -> pd.DataFrame:
         csv_content = csv_match.group(1).strip()
     else:
         csv_content = re.sub(r"^```+(?:csv)?\s*", "", decoded_text.strip())
-        csv_content = re.sub(r"```+\s*$", "", csv_content).strip()
-    try:
-        return pd.read_csv(StringIO(csv_content), header=None)
-    except Exception as exc:
-        _log.error(f"Error parsing CSV: {exc}\nCSV content:\n{csv_content}")
-        raise
-
-
-def _extract_csv_to_dataframe_v1(decoded_text: str) -> pd.DataFrame:
-    """Parse CSV from the V1 model output (wrapped in <|assistant|> tags)."""
-    assistant_match = re.search(r"<\|assistant\|>\s*(.*)", decoded_text, re.DOTALL)
-    if not assistant_match:
-        raise ValueError("Could not find assistant response in decoded text")
-    assistant_response = assistant_match.group(1).strip()
-
-    csv_match = re.search(r"```csv\s*\n(.*?)\n```", assistant_response, re.DOTALL)
-    if csv_match:
-        csv_content = csv_match.group(1).strip()
-    else:
-        csv_content = assistant_response.split("<|end_of_text|>")[0].strip()
-        csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
         csv_content = re.sub(r"```+\s*$", "", csv_content).strip()
     try:
         return pd.read_csv(StringIO(csv_content), header=None)
