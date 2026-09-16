@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import statistics
 from collections.abc import Iterable
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
@@ -14,9 +15,97 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.models.base_layout_model import TEXT_ELEM_LABELS
+from docling.models.base_layout_model import TABLE_LABELS, TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+
+
+def _gap(w: BoundingBox, c: BoundingBox) -> float:
+    """Rectangle edge-gap between a widget and a candidate label.
+
+    Top-left origin: ``t`` is the upper edge (smaller y), ``b`` the lower. The gap
+    is the direction logic for free -- a label directly left shares a horizontal
+    band (``dy=0``, gap = horizontal spacing); a label above/below shares a
+    vertical band (``dx=0``, gap = vertical spacing); a diagonal distractor has
+    both nonzero and so scores worse. Zero when the rects overlap on both axes.
+    """
+    dx = max(0.0, w.l - c.r, c.l - w.r)
+    dy = max(0.0, w.t - c.b, c.t - w.b)
+    return dx + dy
+
+
+def _precedes(c: BoundingBox, frontier: BoundingBox, row_band: float) -> bool:
+    """True when ``c`` sits in a strictly higher row than ``frontier``.
+
+    The no-crossing guard blocks a later widget from reaching back to a label in
+    an earlier (higher) row -- vertical monotonicity only. It deliberately does
+    *not* gate on left/right within a row: horizontal order is where multi-column
+    forms interleave, and binding a right-side label (e.g. a trailing "RT")
+    otherwise poisons the frontier so every left-side label in the next row is
+    wrongly seen as preceding it. Per-label 1:1 consumption (``used``) handles
+    the same-row case instead. ``row_band`` (a line-height multiple) is how much
+    higher a center must be to count as a previous row.
+    """
+    cy, fy = (c.t + c.b) / 2.0, (frontier.t + frontier.b) / 2.0
+    return cy < fy - row_band
+
+
+def _table_of(bbox: BoundingBox, tables: list[Cluster]) -> int | None:
+    """Id of the smallest table region whose bbox holds ``bbox``'s center, else None.
+
+    The label binding must not cross this boundary. A table body cell's real key is
+    a structural row/column header the layout absorbs into the table (never a
+    free-standing label in the binding pool), so a widget inside a table stays
+    keyless unless a label sits in the *same* table -- a cell carrying its own
+    key+value, e.g. a radio option with its caption. Center-in-rect is robust at
+    cell borders where an edge label's IoS with the table is fragile; smallest
+    enclosing table wins so a nested sub-table beats its wrapper.
+    """
+    cx, cy = (bbox.l + bbox.r) / 2.0, (bbox.t + bbox.b) / 2.0
+    best: tuple[float, int] | None = None
+    for table in tables:
+        tb = table.bbox
+        if (
+            tb.l <= cx <= tb.r
+            and tb.t <= cy <= tb.b
+            and (best is None or tb.area() < best[0])
+        ):
+            best = (tb.area(), table.id)
+    return best[1] if best else None
+
+
+def _match_labels(
+    widgets: list[tuple[int, BoundingBox]],  # (widget.index, bbox), in index order
+    labels: list[Cluster],  # unconsumed TEXT_ELEM_LABELS clusters
+    cap: float,  # bind only if gap <= cap (text-scale bound, same units as bbox)
+    row_band: float,  # same-row tolerance for the crossing guard
+) -> dict[int, Cluster]:  # widget.index -> bound key cluster
+    """Monotonic order-preserving binding of widgets to label clusters.
+
+    One forward pass in ``widget.index`` order (proven effectively reading order).
+    Each widget takes the nearest unconsumed label at or after the last binding in
+    reading order, within ``cap``. Minimizing total gap subject to no-crossings
+    *is* "minimize global ordering deviation"; a widget with no label in reach (a
+    standalone tabular field) falls out as a skip. Binding is 1:1 -- a shared
+    header binds one field and the rest stay keyless (a later-phase concern).
+    """
+    bound: dict[int, Cluster] = {}
+    used: set[int] = set()
+    frontier: BoundingBox | None = None  # last bound label -> no crossing past it
+    for index, w in widgets:
+        best: tuple[float, Cluster] | None = None
+        for c in labels:
+            if c.id in used or (
+                frontier is not None and _precedes(c.bbox, frontier, row_band)
+            ):
+                continue
+            g = _gap(w, c.bbox)
+            if g <= cap and (best is None or g < best[0]):
+                best = (g, c)
+        if best is not None:
+            bound[index], frontier = best[1], best[1].bbox
+            used.add(best[1].id)
+    return bound
 
 
 class PdfFormFieldModel(BasePageModel):
@@ -35,6 +124,14 @@ class PdfFormFieldModel(BasePageModel):
     # before tightening. Unselected boxes usually have no overlapping cluster and
     # fall through to the widget-only path (see docs handoff prereq B.5).
     _CHECKBOX_OVERLAP_THRESHOLD = 0.5
+    # Bind a keyless widget to a nearby label only when their rectangle edge-gap
+    # is within this many median line-heights -- a text-scale bound, not a page
+    # fraction, so a field with no nearby label stays keyless. Row-band is the
+    # same-row tolerance for the crossing guard. Both are the calibration knobs
+    # the fixtures set; ponytail: 2.0 / 1.5 are the starting points, tune on the
+    # 15-form corpus before trusting them.
+    _LABEL_GAP_CAP_LINES = 2.0
+    _LABEL_ROW_BAND_LINES = 1.5
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
@@ -85,6 +182,17 @@ class PdfFormFieldModel(BasePageModel):
             )
 
         return FieldValuePrediction(text=source_value, orig=source_value, bbox=bbox)
+
+    @staticmethod
+    def _median_line_height(clusters: list[Cluster]) -> float:
+        """Text scale for the label-gap cap: median label-cluster height.
+
+        Most field labels are a single line, so cluster height is a good line-height
+        proxy without digging into per-cell rects. Zero when there are no labels,
+        which short-circuits the binding pass.
+        """
+        heights = [c.bbox.height for c in clusters if c.bbox.height > 0]
+        return statistics.median(heights) if heights else 0.0
 
     @classmethod
     def _cluster_label_text(cls, cluster: Cluster) -> str:
@@ -194,6 +302,9 @@ class PdfFormFieldModel(BasePageModel):
                 text_containers: dict[int, Cluster] = {}
                 unmatched_values: list[FieldValuePrediction] = []
                 promoted_cluster_ids: set[int] = set()
+                # (widget.index, value) for keyless widgets, in index order, fed to
+                # the order-preserving label binding after the triage loop.
+                keyless: list[tuple[int, FieldValuePrediction]] = []
 
                 for widget in page.parsed_page.widgets:
                     bbox = widget.rect.to_bounding_box().to_top_left_origin(
@@ -240,14 +351,87 @@ class PdfFormFieldModel(BasePageModel):
                     if form is not None:
                         matched_forms[form.id] = form
                         matched_values.setdefault(form.id, []).append(value)
-                        continue
-                    unmatched_values.append(value)
+                    else:
+                        unmatched_values.append(value)
+                    # Value-only so far: a keyless FORM/unmatched widget whose label
+                    # (if any) lives detached in the body. Queue it for the binding
+                    # pass. A matched checkbox already carries its option label (a
+                    # non-empty checkbox_label), so it is not keyless -- leave its
+                    # validated behaviour untouched.
+                    if not value.checkbox_label:
+                        keyless.append((widget.index, value))
+
+                # Order-preserving binding: pair each keyless widget with the
+                # nearest unconsumed body label at or after the last binding in
+                # reading order. text_containers are already keys, so they leave
+                # the candidate pool. Bound labels become field-item keys and drop
+                # from the body, reusing the overlapping-case promotion machinery.
+                label_pool = [c for c in text_clusters if c.id not in text_containers]
+                line_height = self._median_line_height(label_pool)
+                # Binding must not cross a table boundary. A table body cell's real
+                # key is a structural row/column header that the layout absorbs
+                # into the table (never a free-standing label in this pool), so a
+                # widget in a table stays keyless -- unless a label sits in the
+                # SAME table (a cell carrying its own key+value, e.g. rf-1125s
+                # radio options with their captions). Grouping by containing table
+                # removes the mis-bind class where a widget grabs a section header
+                # above the table (italy SEZIONE/QUADRO) or a wrong-column
+                # neighbour (rf-1084s). See docs/acroform-reading-order-keying-handoff.md.
+                tables = [
+                    cluster
+                    for cluster in page.predictions.layout.clusters
+                    if cluster.label in TABLE_LABELS
+                ]
+
+                bound_value_keys: dict[int, Cluster] = {}
+                if keyless and label_pool and line_height > 0:
+                    labels_by_table: dict[int | None, list[Cluster]] = {}
+                    for cluster in label_pool:
+                        labels_by_table.setdefault(
+                            _table_of(cluster.bbox, tables), []
+                        ).append(cluster)
+                    widgets_by_table: dict[
+                        int | None, list[tuple[int, BoundingBox]]
+                    ] = {}
+                    for index, value in keyless:
+                        widgets_by_table.setdefault(
+                            _table_of(value.bbox, tables), []
+                        ).append((index, value.bbox))
+                    bound: dict[int, Cluster] = {}
+                    for table_id, group_widgets in widgets_by_table.items():
+                        group_labels = labels_by_table.get(table_id)
+                        if not group_labels:
+                            continue
+                        bound.update(
+                            _match_labels(
+                                widgets=group_widgets,
+                                labels=group_labels,
+                                cap=self._LABEL_GAP_CAP_LINES * line_height,
+                                row_band=self._LABEL_ROW_BAND_LINES * line_height,
+                            )
+                        )
+                    value_by_index = dict(keyless)
+                    for index, cluster in bound.items():
+                        # Identity map: values are unique, live objects for this
+                        # page, so id() safely tags which item gets the key below.
+                        bound_value_keys[id(value_by_index[index])] = cluster
+                        promoted_cluster_ids.add(cluster.id)
+
+                def _field_item(value: FieldValuePrediction) -> FieldItemPrediction:
+                    cluster = bound_value_keys.get(id(value))
+                    if cluster is None:
+                        return FieldItemPrediction(values=[value])
+                    return FieldItemPrediction(
+                        key_text=self._cluster_label_text(cluster),
+                        key_bbox=cluster.bbox,
+                        values=[value],
+                    )
 
                 regions = [
                     FieldRegionPrediction(
                         source_container_id=form_id,
                         bbox=matched_forms[form_id].bbox,
-                        items=[FieldItemPrediction(values=[value]) for value in values],
+                        items=[_field_item(value) for value in values],
                     )
                     for form_id, values in matched_values.items()
                 ]
@@ -275,10 +459,7 @@ class PdfFormFieldModel(BasePageModel):
                             bbox=BoundingBox.enclosing_bbox(
                                 [value.bbox for value in unmatched_values]
                             ),
-                            items=[
-                                FieldItemPrediction(values=[value])
-                                for value in unmatched_values
-                            ],
+                            items=[_field_item(value) for value in unmatched_values],
                         )
                     )
                 page.predictions.field_regions = regions

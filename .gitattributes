@@ -22,3 +22,8 @@
 tests/data/** linguist-vendored
 tests/data_scanned/** linguist-vendored
 docs/** linguist-vendored
+
+# Frozen extracted text retains source whitespace.
+output/acroform-keying-annotation-review/*.txt whitespace=-blank-at-eol
+# Preserve context lines in the saved patch.
+output/acroform-keying-coverage-20260910/change.diff whitespace=-blank-at-eol

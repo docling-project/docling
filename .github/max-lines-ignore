@@ -9,6 +9,18 @@
 docs/examples/data/**
 tests/data/**
 
+# Frozen AcroForm replay inputs; preserve bytes for their recorded hashes.
+output/acroform-keying-review-20260908/snapshots/*.json
+
+# Saved AcroForm replay reports and diagnostics (generated data, not source).
+output/acroform-keying-prototype/*.json
+output/acroform-keying-coverage-20260910/*.json
+output/acroform-keying-failure-audit/*.json
+
+output/acroform-keying-grouping-20260910/*.json
+
+output/acroform-keying-roles-20260910/*.json
+
 [warn]
 .plans/active/docling-slim.md
 CHANGELOG.md
