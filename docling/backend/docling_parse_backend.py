@@ -732,29 +732,15 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             dp_doc.unload()
 
     def get_structure(self) -> Optional[PdfStructure]:
-        """The logical structure tree, read once through a lazy docling-parse document.
+        """The logical structure tree, read once from the loaded document's annotations.
 
-        The threaded parser exposes no document-level structure accessor, so
-        the tree is read the same way the outline is: a structure-only load
-        that decodes no page content.
+        Annotations are structure-only: reading them decodes no page, so this
+        neither waits for nor interferes with the threaded page decoding.
         """
-        if self._structure_loaded:
-            return self._structure
-        self._structure_loaded = True
-        password = (
-            self.options.password.get_secret_value() if self.options.password else None
-        )
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.seek(0)
-        dp_doc = DoclingPdfParser(loglevel="fatal").load(
-            path_or_stream=self.path_or_stream, lazy=True, password=password
-        )
-        if dp_doc is None:
-            return None
-        try:
-            self._structure = dp_doc.get_structure()
-        finally:
-            dp_doc.unload()
+        if not self._structure_loaded:
+            self._structure_loaded = True
+            annotations = self.parser.get_annotations(self.doc_key)
+            self._structure = annotations.structure if annotations is not None else None
         return self._structure
 
     def load_page(self, page_no: int) -> PdfPageBackend:
