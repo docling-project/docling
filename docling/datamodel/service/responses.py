@@ -5,22 +5,21 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
 
 from docling.datamodel.base_models import (
+    ConfidenceReport,
     ConversionStatus,
     ErrorItem,
     FailureCategory,
+    PageConfidenceScores,
     QualityGrade,
 )
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
-
-if TYPE_CHECKING:
-    from docling.datamodel.base_models import ConfidenceReport, PageConfidenceScores
 
 
 def _nan_to_none(value: float) -> Optional[float]:
@@ -33,10 +32,6 @@ class ConfidenceScores(BaseModel):
     Plain stored floats (NaN coerced to null) rather than a reuse of
     docling's ``ConfidenceReport``, so the wire schema carries no numpy
     computed fields and deserializing clients don't recompute anything.
-
-    Document-level only. A per-page breakdown can be added later as an
-    optional ``pages`` field without breaking this shape (adding an optional
-    field is non-breaking on its own).
     """
 
     parse_score: Optional[float] = None
@@ -50,10 +45,8 @@ class ConfidenceScores(BaseModel):
     pages: Optional[dict[int, "ConfidenceScores"]] = None
 
     @classmethod
-    def from_scores(
-        cls, scores: "PageConfidenceScores | ConfidenceReport"
-    ) -> "ConfidenceScores":
-        pages = getattr(scores, "pages", None)
+    def from_scores(cls, scores: PageConfidenceScores) -> "ConfidenceScores":
+        pages = scores.pages if isinstance(scores, ConfidenceReport) else None
         return cls(
             parse_score=_nan_to_none(scores.parse_score),
             layout_score=_nan_to_none(scores.layout_score),
