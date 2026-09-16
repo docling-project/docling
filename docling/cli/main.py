@@ -11,10 +11,11 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Literal, cast
+from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
 from urllib.parse import urlparse
 
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
+from docling.utils.ocr_language import OcrLanguageResolver
 
 # Check for CLI dependencies
 try:
@@ -44,7 +45,7 @@ from docling_core.transforms.serializer.latex import LaTeXDocSerializer
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import SecretStr, TypeAdapter
+from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
 
 from docling.cli.export_utils import (
@@ -158,6 +159,17 @@ except ImportError:
 
 if TYPE_CHECKING:
     from docling.models.factories.base_factory import BaseFactory
+
+
+def _first_error_message(err: ValidationError) -> str:
+    """The most useful line of a pydantic error, for a typer.BadParameter."""
+    errors = err.errors()
+    if not errors:
+        return str(err)
+    message = errors[0].get("msg", "")
+    # Pydantic prefixes messages raised from a validator with "Value error, ".
+    return message.removeprefix("Value error, ") or str(err)
+
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -446,6 +458,25 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
+def _write_native_vlm_output(conv_res: ConversionResult) -> None:
+    native_responses = [
+        (page.page_no, page.predictions.vlm_response)
+        for page in conv_res.pages
+        if page.predictions.vlm_response is not None
+    ]
+    if not native_responses:
+        return
+
+    debug_output_dir = (
+        Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
+    )
+    debug_output_dir.mkdir(parents=True, exist_ok=True)
+    for page_no, response in native_responses:
+        filename = debug_output_dir / f"vlm_response_page_{page_no:05d}.txt"
+        filename.write_text(response.text, encoding="utf-8")
+        _log.info("writing native VLM output to %s", filename)
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -468,6 +499,7 @@ def export_documents(
     chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
+    debug_vlm_native_output: bool = False,
 ):
     success_count = 0
     failure_count = 0
@@ -498,6 +530,9 @@ def export_documents(
             chunker_obj = HybridChunker(tokenizer=hf_tok)
 
     for conv_res in conv_results:
+        if debug_vlm_native_output:
+            _write_native_vlm_output(conv_res)
+
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
@@ -813,6 +848,16 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
+    debug_vlm_native_output: Annotated[
+        bool,
+        typer.Option(
+            "--debug-vlm-native-output",
+            help=(
+                "Write each page's unparsed VLM response to the document's "
+                "debug output directory."
+            ),
+        ),
+    ] = False,
     asr_model: Annotated[
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
@@ -912,7 +957,22 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             ...,
-            help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
+            help=(
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a 'native' tag, which is specific to the selected OCR engine/backend, or as a"
+                " canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant')."
+                " By default the language is handled as a native tag and is passed through verbatim"
+                " to the OCR engine. For example '--ocr-engine rapidocr --ocr-lang ch' is PP-OCR's"
+                " Simplified Chinese, and '--ocr-engine tesseract --ocr-lang deu' is the deu.traineddata."
+                f" A BCP-47 tag must be prefixed with '{OcrLanguageResolver._ISO_PREFIX}', e.g."
+                f" '--ocr-engine rapidocr --ocr-lang {OcrLanguageResolver._ISO_PREFIX}zh-Hans'."
+                " When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " In case of the Kserve engine, there is zero language validation. The entire input"
+                " is pass through verbatim to the remote OCR engine."
+                " To skip OCR entirely use --no-ocr."
+            ),
         ),
     ] = None,
     psm: Annotated[
@@ -923,7 +983,12 @@ def convert(  # noqa: C901
         ),
     ] = None,
     pdf_backend: Annotated[
-        PdfBackend, typer.Option(..., help="The PDF backend to use.")
+        PdfBackend,
+        typer.Option(
+            ...,
+            help="The PDF backend to use.",
+            metavar="[pypdfium2|docling_parse]",
+        ),
     ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
@@ -1119,7 +1184,6 @@ def convert(  # noqa: C901
     # (and `convert-remote`) stay importable without the local PDF stack
     # (pypdfium2 / docling_parse). Only local `convert` needs them.
     from docling.backend.docling_parse_backend import (
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
     )
     from docling.backend.image_backend import ImageDocumentBackend
@@ -1152,8 +1216,6 @@ def convert(  # noqa: C901
     def _resolve_pdf_backend() -> tuple[type[PdfDocumentBackend], PdfBackendOptions]:
         selected_backend = normalize_pdf_backend(pdf_backend)
         password = SecretStr(pdf_password) if pdf_password is not None else None
-        if selected_backend == PdfBackend.DOCLING_PARSE:
-            return DoclingParseDocumentBackend, PdfBackendOptions(password=password)
         if selected_backend == PdfBackend.THREADED_DOCLING_PARSE:
             return (
                 ThreadedDoclingParseDocumentBackend,
@@ -1322,14 +1384,21 @@ def convert(  # noqa: C901
             resolved_ocr_mode = OcrMode.FULL_PAGE
         else:
             resolved_ocr_mode = ocr_mode
-        ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
-            kind=ocr_engine,
-            mode=resolved_ocr_mode,
-        )
-
+        ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
         ocr_lang_list = _split_list(ocr_lang)
+        # `_split_list` returns None only when the option was not given, so an
+        # explicitly empty value reaches the engine as `lang=[]`: "your default".
         if ocr_lang_list is not None:
-            ocr_options.lang = ocr_lang_list
+            ocr_kwargs["lang"] = ocr_lang_list
+        try:
+            ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
+                kind=ocr_engine,
+                **ocr_kwargs,
+            )
+        except ValidationError as err:
+            raise typer.BadParameter(
+                _first_error_message(err), param_hint="--ocr-lang"
+            ) from err
         if psm is not None and isinstance(
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
@@ -1488,10 +1557,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.NATIVE:
             normalized_pdf_backend = normalize_pdf_backend(pdf_backend)
-            if normalized_pdf_backend not in (
-                PdfBackend.DOCLING_PARSE,
-                PdfBackend.THREADED_DOCLING_PARSE,
-            ):
+            if normalized_pdf_backend not in (PdfBackend.THREADED_DOCLING_PARSE,):
                 err_console.print(
                     f"[red]Error: --pipeline native requires a docling-parse PDF backend, "
                     f"got '{normalized_pdf_backend.value}'.[/red]"
@@ -1675,6 +1741,7 @@ def convert(  # noqa: C901
             chunker_type=chunker_type,
             chunk_max_tokens=chunk_max_tokens,
             chunk_tokenizer=chunk_tokenizer,
+            debug_vlm_native_output=debug_vlm_native_output,
         )
 
         end_time = time.time() - start_time

@@ -46,8 +46,12 @@ Docling has three pipeline families for PDFs and images. Choose with `--pipeline
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
+
+When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
+page's unparsed model response in the shared `debug_<document>/` directory.
 
 Decision guide:
 
@@ -72,7 +76,8 @@ docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesserac
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
-docling scan.pdf --ocr-lang en --ocr-lang de --output /tmp/   # restrict languages
+docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
+docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
 ```
 
 OCR engines are optional dependencies — see

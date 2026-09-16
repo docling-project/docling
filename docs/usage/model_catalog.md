@@ -225,6 +225,9 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 
 ### OCR Engines
 
+Languages are given as BCP-47 tags for every engine; see
+[OCR engines](../concepts/OCR.md#language-selection).
+
 | OCR Engine | Backend | Language Support | Notes |
 |------------|---------|------------------|-------|
 | Tesseract | CLI or tesserocr | 100+ languages | Most widely used, good accuracy |
@@ -249,6 +252,7 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 | `phi4` | Phi-4-Multimodal | - | ✅ | ❌ | ❌ | ✅ | Markdown |
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
+| `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
@@ -316,8 +320,9 @@ classifier_options = DocumentPictureClassifierOptions.from_preset("document_figu
 ```python
 from docling.datamodel.pipeline_options import TesseractOcrOptions
 
-# Use Tesseract with English and German
-ocr_options = TesseractOcrOptions(lang=["eng", "deu"])
+# Use Tesseract with English and German. Languages are BCP-47 tags;
+# `eng`/`deu` still work and canonicalize to `en-Latn`/`de-Latn`.
+ocr_options = TesseractOcrOptions(lang=["en", "de"])
 ```
 
 ### VLM Convert (Full Page)
