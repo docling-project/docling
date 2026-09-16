@@ -808,7 +808,7 @@ def test_cli_audio_extensions_coverage():
         )
 
 
-def test_cli_accepts_docling_parse_backend(
+def test_cli_accepts_threaded_docling_parse_backend(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured_backend: type[Any] | None = None
@@ -855,7 +855,7 @@ def test_cli_accepts_docling_parse_backend(
             "--output",
             str(output),
             "--pdf-backend",
-            PdfBackend.DOCLING_PARSE.value,
+            PdfBackend.THREADED_DOCLING_PARSE.value,
             "--num-threads",
             "7",
             "--release-native-memory-every-n-pages",
@@ -880,7 +880,7 @@ def test_cli_accepts_docling_parse_backend(
         (
             "legacy",
             "LegacyStandardPdfPipeline",
-            PdfBackend.DOCLING_PARSE,
+            PdfBackend.THREADED_DOCLING_PARSE,
             "ThreadedDoclingParseDocumentBackend",
         ),
         (
@@ -919,10 +919,7 @@ def test_cli_routes_pdf_backend_for_legacy_and_vlm(
             captured["pipeline"] = pdf_option.pipeline_cls.__name__
             captured["pdf_backend"] = pdf_option.backend.__name__
             captured["image_backend"] = image_option.backend.__name__
-            if pdf_backend in {
-                PdfBackend.DOCLING_PARSE,
-                PdfBackend.THREADED_DOCLING_PARSE,
-            }:
+            if pdf_backend is PdfBackend.THREADED_DOCLING_PARSE:
                 assert isinstance(
                     pdf_option.backend_options, ThreadedDoclingParseBackendOptions
                 )

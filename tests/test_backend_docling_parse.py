@@ -244,7 +244,6 @@ def test_deprecated_document_backend_delegates_to_threaded_parser(
 @pytest.mark.parametrize(
     "backend",
     [
-        PdfBackend.DOCLING_PARSE,
         PdfBackend.DLPARSE_V1,
         PdfBackend.DLPARSE_V2,
         PdfBackend.DLPARSE_V4,
