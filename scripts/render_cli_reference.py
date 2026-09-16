@@ -45,6 +45,11 @@ _TOOLS_CLICK_APP = typer.main.get_command(docling_tools_typer_app)
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
+# `TyperGroup` does not derive from `click.Group` since typer 0.26.
+_GROUP_TYPES = (click.Group, typer.core.TyperGroup)
+_ARGUMENT_TYPES = (click.Argument, typer.core.TyperArgument)
+_OPTION_TYPES = (click.Option, typer.core.TyperOption)
+
 
 def _md_cell(text: str | None) -> str:
     """Sanitize text so it can live inside a markdown table cell."""
@@ -68,8 +73,11 @@ def _format_choices(choices: tuple[str, ...] | list[str]) -> str:
 def _format_type(param: click.Parameter) -> str:
     """Human-readable type for the Type column."""
     t = param.type
-    if isinstance(t, click.Choice):
-        rendered = _format_choices(t.choices)
+    # typer's choice type is `typer._types.TyperChoice`, a private class that is
+    # not a `click.Choice`; match the attribute rather than the class.
+    choices = getattr(t, "choices", None)
+    if choices is not None:
+        rendered = _format_choices(choices)
     elif isinstance(t, click.Tuple):
         parts = [getattr(sub, "name", "value") for sub in t.types]
         rendered = " ".join(_code(p) for p in parts)
@@ -81,6 +89,14 @@ def _format_type(param: click.Parameter) -> str:
     if param.multiple:
         rendered = f"{rendered} (repeatable)"
     return rendered
+
+
+def _with_home_placeholder(path: PurePath) -> str:
+    """Render a path with the home directory replaced by ``$HOME``."""
+    home = Path.home()
+    if path == home or home in path.parents:
+        return str(PurePath("$HOME") / path.relative_to(home))
+    return str(path)
 
 
 def _format_default(param: click.Parameter) -> str:
@@ -100,7 +116,9 @@ def _format_default(param: click.Parameter) -> str:
     if isinstance(default, enum.Enum):
         return _code(str(default.value))
     if isinstance(default, PurePath):
-        return _code(str(default))
+        # Defaults under the home directory (e.g. the model cache) would
+        # otherwise bake the generating user's path into the docs.
+        return _code(_with_home_placeholder(default))
     if isinstance(default, str):
         return _code(default)
     return _code(repr(default))
@@ -178,7 +196,7 @@ def _render_options_table(opts: list[click.Option], lines: list[str]) -> None:
 
 
 def _render_subcommands_table(
-    group: click.Group, prog_path: list[str], lines: list[str]
+    group: click.Group | typer.core.TyperGroup, prog_path: list[str], lines: list[str]
 ) -> None:
     ctx = click.Context(group, info_name=prog_path[-1])
     rows: list[tuple[str, str]] = []
@@ -222,12 +240,12 @@ def _render_command(
     lines.append("```")
     lines.append("")
 
-    args = [p for p in cmd.params if isinstance(p, click.Argument)]
-    opts = [p for p in cmd.params if isinstance(p, click.Option) and not p.hidden]
+    args = [p for p in cmd.params if isinstance(p, _ARGUMENT_TYPES)]
+    opts = [p for p in cmd.params if isinstance(p, _OPTION_TYPES) and not p.hidden]
     _render_arguments_table(args, lines)
     _render_options_table(opts, lines)
 
-    if isinstance(cmd, click.Group):
+    if isinstance(cmd, _GROUP_TYPES):
         _render_subcommands_table(cmd, prog_path, lines)
         ctx = click.Context(cmd, info_name=prog_path[-1])
         for sub_name in sorted(cmd.list_commands(ctx)):
@@ -258,6 +276,10 @@ def main() -> int:
 
     _render_command(docling_click_app, ["docling"], lines, depth=0)
     _render_command(_TOOLS_CLICK_APP, ["docling-tools"], lines, depth=0)
+
+    # Fail loudly rather than write a reference page with no commands.
+    if "### `docling convert`" not in lines:
+        raise SystemExit("no subcommands rendered; the group detection is out of date")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(lines) + "\n", encoding="utf-8")

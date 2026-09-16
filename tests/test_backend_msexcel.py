@@ -999,3 +999,27 @@ def test_emf_images_in_xlsx(libreoffice_available):
             f"Page {page_no}: picture (idx {pic_indices}) should come before "
             f"table (idx {tbl_indices}) in document order"
         )
+
+
+def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
+    """A chart caption belongs to the sheet holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced outside its
+    sheet group and carried no provenance.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    picture = doc.pictures[0]
+    sheet = picture.parent.resolve(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.parent.cref == sheet.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {sheet.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in sheet.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))

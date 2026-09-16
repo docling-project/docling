@@ -19,13 +19,43 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
 
+def _get_vision_languages() -> list[str]:
+    """The recognition languages the running macOS reports.
+
+    The list is OS-version dependent, so it is always queried rather than hardcoded.
+    """
+    errmsg = (
+        "Apple Vision did not report any recognition language. "
+        "The OcrMac engine cannot be used on this system."
+    )
+    try:
+        import Vision
+
+        # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
+        request = Vision.VNRecognizeTextRequest.alloc().init()  # ty: ignore[unresolved-attribute]
+        languages, error = request.supportedRecognitionLanguagesAndReturnError_(None)
+    except Exception as exc:  # pyobjc/Vision availability varies by OS version
+        raise RuntimeError(errmsg) from exc
+    if error is not None or not languages:
+        raise RuntimeError(f"{errmsg} Vision reported: {error}")
+    return [str(language) for language in languages]
+
+
 class OcrMacModel(BaseOcrModel):
+    multiple_languages = True
+
     def __init__(
         self,
         enabled: bool,
@@ -43,6 +73,8 @@ class OcrMacModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
+        self._native_codes: list[str] = []
+        self._vision_languages: list[str] = []
 
         if self.enabled:
             if "darwin" != sys.platform:
@@ -59,6 +91,58 @@ class OcrMacModel(BaseOcrModel):
                 raise ImportError(install_errmsg)
 
             self.reader_RIL = ocrmac.OCR
+
+            self._vision_languages = _get_vision_languages()
+            self._native_codes = self.resolve_ocr_languages()
+
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        # Map the Vision language tags to the canonical tags.
+        tags: set[str] = set()
+        native: set[str] = set()
+        for vision_tag in self._vision_languages:
+            # Vision spells its own vocabulary with regions but not always well:
+            # it reports `vi-VT`, and VT is not a valid region, so the primary
+            # subtag is tried after the whole tag.
+            candidates = [
+                OcrLanguageResolver.canonicalize_bcp47(candidate, raise_exception=False)
+                for candidate in (vision_tag, vision_tag.split("-")[0])
+            ]
+
+            for candidate in candidates:
+                if (
+                    candidate is not None
+                    and OcrLanguageResolver.match_ocr_language(
+                        candidate, self._vision_languages
+                    )
+                    == vision_tag
+                ):
+                    tags.add(candidate.short_tag())
+                    break
+            else:
+                # A recognition language no tag can reach is offered as the Vision code itself
+                native.add(vision_tag)
+
+        return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
+        if language.is_passthrough():
+            # One of Vision's own recognition languages
+            if language.native in self._vision_languages:
+                return language.native
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag(),
+                supported=self.supported_ocr_languages(),
+            )
+        # Vision's own vocabulary is BCP-47 with regions, so match rather than map
+        code = OcrLanguageResolver.match_ocr_language(language, self._vision_languages)
+        if code is None:
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag(),
+                supported=self.supported_ocr_languages(),
+            )
+        return code
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -94,7 +178,7 @@ class OcrMacModel(BaseOcrModel):
                                 fname,
                                 recognition_level=self.options.recognition,
                                 framework=self.options.framework,
-                                language_preference=self.options.lang,
+                                language_preference=self._native_codes or None,
                             ).recognize()
 
                         im_width, im_height = high_res_image.size

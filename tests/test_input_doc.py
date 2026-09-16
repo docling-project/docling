@@ -232,6 +232,14 @@ def test_guess_format(tmp_path):
         )
         assert dci._guess_format(no_ext_stream) == expected_format
 
+    # Rich Text Format is detected from its extension for both paths and streams.
+    rtf_path = Path("./tests/data/rtf/sources/legacy_sample.rtf")
+    assert dci._guess_format(rtf_path) == InputFormat.RTF
+    rtf_stream = DocumentStream(
+        name=rtf_path.name, stream=BytesIO(rtf_path.read_bytes())
+    )
+    assert dci._guess_format(rtf_stream) == InputFormat.RTF
+
     # Valid OpenDocument formats
     odfdo_available = importlib.util.find_spec("odfdo") is not None
     odf_cases = [

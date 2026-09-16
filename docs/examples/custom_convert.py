@@ -28,7 +28,8 @@
 # - If you don't have the test data, update `input_doc_path` to a local PDF.
 #
 # Notes
-# - EasyOCR language: adjust `pipeline_options.ocr_options.lang` (e.g., ["en"], ["es"], ["en", "de"]).
+# - EasyOCR language: adjust `pipeline_options.ocr_options.lang` with BCP-47 tags
+#   (e.g., ["en"], ["es"], ["en", "de"], ["zh-Hant"]).
 # - Accelerators: tune `AcceleratorOptions` to select CPU/GPU or threads.
 # - Exports: JSON, plain text, Markdown, and doctags are saved in `scratch/`.
 

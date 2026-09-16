@@ -57,7 +57,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         self._image_loader = ImageResourceLoader(
             enable_local_fetch=options.enable_local_fetch,
             enable_remote_fetch=options.enable_remote_fetch,
-            max_image_data_base64_bytes=options.max_image_data_base64_bytes,
         )
 
         # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
