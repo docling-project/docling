@@ -4,7 +4,7 @@
   "name": "docx_lists",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 1425613705524439342,
+    "binary_hash": 9139362508637254197,
     "filename": "docx_lists.docx"
   },
   "furniture": {
@@ -513,6 +513,43 @@
       "children": [
         {
           "$ref": "#/texts/79"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/26",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/83"
+        },
+        {
+          "$ref": "#/groups/27"
+        },
+        {
+          "$ref": "#/texts/86"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/27",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/84"
+        },
+        {
+          "$ref": "#/texts/85"
         }
       ],
       "content_layer": "body",
@@ -1780,6 +1817,9 @@
         },
         {
           "$ref": "#/texts/81"
+        },
+        {
+          "$ref": "#/texts/82"
         }
       ],
       "content_layer": "body",
@@ -2119,6 +2159,107 @@
       "prov": [],
       "orig": "",
       "text": ""
+    },
+    {
+      "self_ref": "#/texts/82",
+      "parent": {
+        "$ref": "#/texts/64"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/26"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Test 10: Non-decimal lvlText suffix",
+      "text": "Test 10: Non-decimal lvlText suffix",
+      "level": 4
+    },
+    {
+      "self_ref": "#/texts/83",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Parent decimal item",
+      "text": "Parent decimal item",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "1."
+    },
+    {
+      "self_ref": "#/texts/84",
+      "parent": {
+        "$ref": "#/groups/27"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Child lettered first",
+      "text": "Child lettered first",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "a)"
+    },
+    {
+      "self_ref": "#/texts/85",
+      "parent": {
+        "$ref": "#/groups/27"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Child lettered second",
+      "text": "Child lettered second",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "b)"
+    },
+    {
+      "self_ref": "#/texts/86",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Parent decimal two",
+      "text": "Parent decimal two",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "2."
     }
   ],
   "pictures": [],

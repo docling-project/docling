@@ -43,8 +43,8 @@ docling https://example.com/paper.pdf --to json --output /tmp/
 Output files are named after the input (`report.pdf` → `report.md`). Default
 output directory is the current directory. This handles the majority of
 "what's in this file" requests. See **[references/cli.md](references/cli.md)**
-for pipelines (standard vs VLM), OCR engines, tables, scanned PDFs, passwords,
-and every flag.
+for pipelines (standard vs VLM vs native), OCR engines, tables, scanned PDFs,
+passwords, and every flag.
 
 ## Choosing how to use Docling
 

@@ -21,9 +21,6 @@
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/1"
-      },
-      {
         "$ref": "#/groups/1"
       }
     ],
@@ -40,6 +37,9 @@
       "children": [
         {
           "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
         },
         {
           "$ref": "#/pictures/0"
@@ -98,12 +98,27 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 914400.0,
+            "t": 5852160.0,
+            "r": 8229600.0,
+            "b": 1463040.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            30
+          ]
+        }
+      ],
       "orig": "Wild Duck Observations by Year",
       "text": "Wild Duck Observations by Year"
     },

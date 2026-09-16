@@ -225,6 +225,9 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 
 ### OCR Engines
 
+Languages are given as BCP-47 tags for every engine; see
+[OCR engines](../concepts/OCR.md#language-selection).
+
 | OCR Engine | Backend | Language Support | Notes |
 |------------|---------|------------------|-------|
 | Tesseract | CLI or tesserocr | 100+ languages | Most widely used, good accuracy |
@@ -316,8 +319,9 @@ classifier_options = DocumentPictureClassifierOptions.from_preset("document_figu
 ```python
 from docling.datamodel.pipeline_options import TesseractOcrOptions
 
-# Use Tesseract with English and German
-ocr_options = TesseractOcrOptions(lang=["eng", "deu"])
+# Use Tesseract with English and German. Languages are BCP-47 tags;
+# `eng`/`deu` still work and canonicalize to `en-Latn`/`de-Latn`.
+ocr_options = TesseractOcrOptions(lang=["en", "de"])
 ```
 
 ### VLM Convert (Full Page)

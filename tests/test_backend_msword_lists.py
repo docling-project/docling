@@ -210,6 +210,116 @@ def test_manage_list_structure_no_keyerror_open_indented_list_exceeds_parents(tm
     assert isinstance(backend.parents.get(use_level), ListGroup)
 
 
+def test_list_markers_follow_num_fmt_end_to_end(tmp_path):
+    """Lettered/roman markers must survive convert(), including plain-suffix lvlText.
+
+    Word keeps the counter as an integer and the display form in ``w:numFmt``.
+    A level whose ``lvlText`` is only ``%2)`` (no extra text after stripping
+    placeholders/punctuation) must still take the lvlText path when numFmt is
+    non-decimal, so ``lowerLetter`` renders ``a)`` rather than hierarchical
+    ``1.a.``. Hierarchical decimal/letter/roman mixes stay on the fallback form.
+    """
+
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(abstract_id: str, num_id: str, levels: list[tuple[str, str]]):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        for ilvl, (num_fmt, lvl_text) in enumerate(levels):
+            lvl = OxmlElement("w:lvl")
+            lvl.set(qn("w:ilvl"), str(ilvl))
+            start = OxmlElement("w:start")
+            start.set(qn("w:val"), "1")
+            lvl.append(start)
+            fmt = OxmlElement("w:numFmt")
+            fmt.set(qn("w:val"), num_fmt)
+            lvl.append(fmt)
+            text_el = OxmlElement("w:lvlText")
+            text_el.set(qn("w:val"), lvl_text)
+            lvl.append(text_el)
+            abstract_num.append(lvl)
+        numbering.append(abstract_num)
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    # Hierarchical mix: decimal / lowerLetter / upperRoman (fallback form).
+    add_numbering(
+        "500",
+        "501",
+        [("decimal", "%1."), ("lowerLetter", "%1.%2."), ("upperRoman", "%1.%2.%3.")],
+    )
+    # Plain-suffix lowerLetter: the issue's a) / b) case (lvlText "%1)").
+    add_numbering("600", "601", [("lowerLetter", "%1)")])
+    # Other non-decimal formats with punctuation-only templates.
+    add_numbering("700", "701", [("upperLetter", "%1.")])
+    add_numbering("800", "801", [("lowerRoman", "%1.")])
+    add_numbering("900", "901", [("upperRoman", "%1.")])
+    add_numbering("1000", "1001", [("decimalZero", "%1.")])
+
+    def add_item(text: str, num_id: str, ilvl_val: int = 0):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), num_id)
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("top one", "501", 0)
+    add_item("lettered first", "501", 1)
+    add_item("lettered second", "501", 1)
+    add_item("roman first", "501", 2)
+    add_item("roman second", "501", 2)
+    add_item("top two", "501", 0)
+
+    add_item("plain suffix first", "601")
+    add_item("plain suffix second", "601")
+
+    add_item("upper letter", "701")
+    add_item("lower roman", "801")
+    add_item("upper roman", "901")
+    add_item("zero pad", "1001")
+
+    docx_path = tmp_path / "num_fmt_markers.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    markers = [
+        (item.text, item.marker)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert markers == [
+        ("top one", "1."),
+        ("lettered first", "1.a."),
+        ("lettered second", "1.b."),
+        ("roman first", "1.b.I."),
+        ("roman second", "1.b.II."),
+        ("top two", "2."),
+        ("plain suffix first", "a)"),
+        ("plain suffix second", "b)"),
+        ("upper letter", "A."),
+        ("lower roman", "i."),
+        ("upper roman", "I."),
+        ("zero pad", "01."),
+    ]
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
