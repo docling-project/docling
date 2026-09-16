@@ -114,10 +114,6 @@ format-pdf-docling = [
 ]
 ```
 
-Pin uv resolution to commit `ee9fa4a9f57741653f36fcaa99dc8d258df5d971`,
-the current head of PR #350. Replace this temporary source pin with the first
-released docling-parse version containing PR #350 before publishing Docling.
-
 Remove pypdfium2 from this extra. Keep it exclusively in
 `format-pdf-pypdfium2`. The combined `format-pdf` extra continues to install
 both implementations.
