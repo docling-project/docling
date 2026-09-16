@@ -100,3 +100,47 @@ class TestWarnOnUnpinnedTrustRemoteCode:
                 "some/repo", revision="main", trust_remote_code=True
             )
         assert len(caplog.records) == 1
+
+
+def _module_level(module, cls):
+    return [(name, obj) for name, obj in vars(module).items() if isinstance(obj, cls)]
+
+
+class TestShippedSpecsArePinned:
+    """Every trust_remote_code spec shipped with docling must be commit-pinned."""
+
+    def test_stage_presets(self):
+        from docling.datamodel import stage_model_specs
+        from docling.datamodel.stage_model_specs import StageModelPreset
+
+        presets = _module_level(stage_model_specs, StageModelPreset)
+        assert presets
+        for name, preset in presets:
+            spec = preset.model_spec
+            if not getattr(spec, "trust_remote_code", False):
+                continue
+            assert is_pinned_revision(spec.revision), name
+            for engine, override in spec.engine_overrides.items():
+                assert is_pinned_revision(spec.get_revision(engine)), (
+                    name,
+                    engine,
+                    override.repo_id,
+                )
+
+    def test_inline_vlm_options(self):
+        from docling.datamodel import vlm_model_specs
+        from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
+
+        specs = _module_level(vlm_model_specs, InlineVlmOptions)
+        assert specs
+        for name, spec in specs:
+            if spec.trust_remote_code:
+                assert is_pinned_revision(spec.revision), name
+
+    def test_distil_whisper_checkpoints(self):
+        from docling.pipeline.asr_transcriber import (
+            _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+        )
+
+        for name, (_, _, revision) in _DISTIL_WHISPER_OPENAI_CHECKPOINTS.items():
+            assert is_pinned_revision(revision), name
