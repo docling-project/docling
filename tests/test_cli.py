@@ -46,8 +46,8 @@ def test_convert_help_only_advertises_supported_pdf_backends() -> None:
         for parameter in convert_command.params
         if parameter.name == "pdf_backend"
     )
-    assert pdf_backend_option.metavar == "[pypdfium2|threaded_docling_parse]"
-    assert "docling_parse|threaded_docling_parse" not in result.stdout
+    assert pdf_backend_option.metavar == "[pypdfium2|docling_parse]"
+    assert "threaded_docling_parse" not in result.stdout
     assert "dlparse_v1" not in result.stdout
 
 
@@ -808,7 +808,7 @@ def test_cli_audio_extensions_coverage():
         )
 
 
-def test_cli_accepts_threaded_docling_parse_backend(
+def test_cli_accepts_docling_parse_backend(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured_backend: type[Any] | None = None
@@ -855,7 +855,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             "--output",
             str(output),
             "--pdf-backend",
-            PdfBackend.THREADED_DOCLING_PARSE.value,
+            PdfBackend.DOCLING_PARSE.value,
             "--num-threads",
             "7",
             "--release-native-memory-every-n-pages",

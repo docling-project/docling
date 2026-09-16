@@ -954,7 +954,7 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help="The PDF backend to use.",
-            metavar="[pypdfium2|threaded_docling_parse]",
+            metavar="[pypdfium2|docling_parse]",
         ),
     ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
@@ -1524,10 +1524,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.NATIVE:
             normalized_pdf_backend = normalize_pdf_backend(pdf_backend)
-            if normalized_pdf_backend not in (
-                PdfBackend.DOCLING_PARSE,
-                PdfBackend.THREADED_DOCLING_PARSE,
-            ):
+            if normalized_pdf_backend not in (PdfBackend.THREADED_DOCLING_PARSE,):
                 err_console.print(
                     f"[red]Error: --pipeline native requires a docling-parse PDF backend, "
                     f"got '{normalized_pdf_backend.value}'.[/red]"

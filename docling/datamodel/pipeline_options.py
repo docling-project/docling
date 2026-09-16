@@ -1261,8 +1261,7 @@ class PdfBackend(str, Enum):
     """
 
     PYPDFIUM2 = "pypdfium2"
-    DOCLING_PARSE = "docling_parse"
-    THREADED_DOCLING_PARSE = "threaded_docling_parse"
+    THREADED_DOCLING_PARSE = "docling_parse"  # we use `docling_parse` as a short hand for the `threaded_docling_parse` (pointing to DoclingThreadedPdfParser). We do not support the single threaded DoclingPdfParser (the original `docling_parse`) from docling-parse!
 
     # Deprecated - these map to THREADED_DOCLING_PARSE
     DLPARSE_V1 = "dlparse_v1"  # deprecated
@@ -1285,7 +1284,6 @@ def normalize_pdf_backend(backend: PdfBackend) -> PdfBackend:
     import warnings
 
     deprecated_mapping = {
-        PdfBackend.DOCLING_PARSE: PdfBackend.THREADED_DOCLING_PARSE,
         PdfBackend.DLPARSE_V1: PdfBackend.THREADED_DOCLING_PARSE,
         PdfBackend.DLPARSE_V2: PdfBackend.THREADED_DOCLING_PARSE,
         PdfBackend.DLPARSE_V4: PdfBackend.THREADED_DOCLING_PARSE,
