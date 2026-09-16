@@ -29,3 +29,11 @@ A nested HTML list:
     - Subitem 1
     - Subitem 2
 - Last list item
+
+A nested ordered list:
+
+1. First main item
+2. Second main item
+    1. First nested sub-item
+    2. Second nested sub-item
+3. Third main item

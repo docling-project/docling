@@ -14,18 +14,17 @@ Downloading layout model...
 Downloading tableformer model...
 Downloading picture classifier model...
 Downloading code formula model...
-Downloading rapidocr torch chinese models...
-Downloading rapidocr torch english models...
-Downloading rapidocr onnxruntime chinese models...
-Downloading rapidocr onnxruntime english models...
+Downloading rapidocr torch ch models...
+Downloading rapidocr onnxruntime ch models...
 Models downloaded into $HOME/.cache/docling/models.
 ```
 
 To prefetch EasyOCR recognition models for specific languages, repeat
-`--easyocr-lang` with the same language codes used by `EasyOcrOptions.lang`:
+`--easyocr-lang` with the same values used by `EasyOcrOptions.lang` -- EasyOCR's own codes, or
+BCP-47 tags behind the `iso:` prefix:
 
 ```sh
-$ docling-tools models download easyocr --easyocr-lang ch_sim --easyocr-lang ja
+$ docling-tools models download easyocr --easyocr-lang iso:zh-Hans --easyocr-lang ja
 ```
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
@@ -145,6 +144,36 @@ doc_converter = DocumentConverter(
         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
     }
 )
+```
+
+
+### Extract the native content of a PDF
+
+`NativePdfPipeline` uses docling-parse alone: one text item per native text cell
+and one picture per embedded bitmap, without layout, OCR or table models.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.document_converter import DocumentConverter, NativePdfFormatOption
+
+pipeline_options = NativePdfPipelineOptions()
+pipeline_options.generate_page_images = True
+pipeline_options.images_scale = 2.0
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: NativePdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+Set `generate_page_images=False` to skip rendering. `parser_threads` configures
+docling-parse independently of model-inference `accelerator_options.num_threads`.
+
+```sh
+docling --pipeline native --from pdf FILE
+docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
 

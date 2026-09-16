@@ -73,9 +73,8 @@ The DM intake of each ingredient throughout the entire life of animals during la
 
 Table 2 Dairy cows’ diets in different scenariosa.
 
-|  | Calf | Calf | Pregnant/dry | Pregnant/dry | Lactation | Lactation | Lactation | Weighted average | Weighted average | Weighted average |
+|  | Calf - 0–12 mo | Calf - 12-AI mo | Pregnant/dry - Heifer | Pregnant/dry - Cow | Lactation - TMR | Lactation - TMR75 | Lactation - TMR50 | Weighted average - TMR | Weighted average - TMR75 | Weighted average - TMR50 |
 | - | - | - | - | - | - | - | - | - | - | - |
-|  | 0–12 mo | 12-AI mo | Heifer | Cow | TMR | TMR75 | TMR50 | TMR | TMR75 | TMR50 |
 | Days | 360 | 120 | 270 | 180 | 1220 | 1220 | 1220 |  |  |  |
 | DM intake, kg d-1 | 3.35 | 6.90 | 10.4 | 11.0 | 18.7 | 17.2 | 17.0 | 13.8 | 12.9 | 12.8 |
 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 |

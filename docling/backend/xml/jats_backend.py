@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+import warnings
 from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
@@ -35,6 +36,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
+    ImageRef,
     NodeItem,
     TableCell,
     TableData,
@@ -47,6 +49,8 @@ from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -75,6 +79,14 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+_RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".tif",
+    ".tiff",
+    ".gif",
+)
 
 # Maps JATS formatting tags to docling-core formatting attributes.
 _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
@@ -108,9 +120,17 @@ class InlineSegment:
     hyperlink: AnyUrl | Path | None = None
 
 
+class AbstractSection(TypedDict):
+    """A single titled section inside a structured abstract."""
+
+    title: str
+    paragraphs: list[str]
+
+
 class Abstract(TypedDict):
     label: str
-    content: str
+    content: str  # plain (un-sectioned) paragraphs joined together
+    sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
 
 class Author(TypedDict):
@@ -162,11 +182,32 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: JatsBackendOptions | None = None,
+    ) -> None:
         if not _BS4_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        if options is None:
+            options = JatsBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: JatsBackendOptions
         self.path_or_stream = path_or_stream
+        self.base_path: str | None = (
+            str(options.source_uri)
+            if options.source_uri is not None
+            else (
+                str(path_or_stream)
+                if options.enable_local_fetch and isinstance(path_or_stream, Path)
+                else None
+            )
+        )
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+        )
 
         # Initialize the root of the document hierarchy
         self.root: NodeItem | None = None
@@ -281,34 +322,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
 
     @staticmethod
-    def _parse_abstract_section(section_node: etree._Element) -> str:
-        section_texts: list[str] = []
+    def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
+        """Parse a single `<sec>` element inside an abstract into an
+        `AbstractSection` with a title and a list of paragraph strings."""
+        title_nodes = section_node.xpath("title|label")
+        title = (
+            JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
+        )
 
+        paragraphs: list[str] = []
         for child_node in section_node:
             if child_node.tag == "p":
-                paragraph_text = JatsDocumentBackend._normalize_whitespace(
+                text = JatsDocumentBackend._normalize_whitespace(
                     JatsDocumentBackend._get_text(child_node)
                 )
-                if paragraph_text:
-                    section_texts.append(paragraph_text)
-            elif child_node.tag == "sec":
-                section_text = JatsDocumentBackend._parse_abstract_section(child_node)
-                if section_text:
-                    section_texts.append(section_text)
+                if text:
+                    paragraphs.append(text)
 
-        section_content = JatsDocumentBackend._normalize_whitespace(
-            " ".join(section_texts)
-        )
-        if not section_content:
-            return ""
-
-        label_node = section_node.xpath("title|label")
-        if len(label_node) > 0:
-            label = JatsDocumentBackend._get_node_text(label_node[0])
-            if label:
-                return f"{label}: {section_content}"
-
-        return section_content
+        return AbstractSection(title=title, paragraphs=paragraphs)
 
     @staticmethod
     def _parse_structured_name(name_node: etree._Element) -> str:
@@ -386,8 +417,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            abstract: Abstract = dict(label="", content="")
-            texts: list[str] = []
+            plain_texts: list[str] = []
+            sections: list[AbstractSection] = []
 
             for child_node in abs_node:
                 if child_node.tag == "p":
@@ -395,22 +426,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         JatsDocumentBackend._get_text(child_node)
                     )
                     if paragraph_text:
-                        texts.append(paragraph_text)
+                        plain_texts.append(paragraph_text)
                 elif child_node.tag == "sec":
-                    section_text = JatsDocumentBackend._parse_abstract_section(
-                        child_node
-                    )
-                    if section_text:
-                        texts.append(section_text)
-
-            abstract["content"] = JatsDocumentBackend._normalize_whitespace(
-                " ".join(texts)
-            )
+                    section = JatsDocumentBackend._parse_abstract_section(child_node)
+                    if section["paragraphs"]:
+                        sections.append(section)
 
             label_node = abs_node.xpath("title|label")
-            if len(label_node) > 0:
-                abstract["label"] = JatsDocumentBackend._get_node_text(label_node[0])
+            label = (
+                JatsDocumentBackend._get_node_text(label_node[0]) if label_node else ""
+            )
 
+            abstract: Abstract = Abstract(
+                label=label,
+                content=JatsDocumentBackend._normalize_whitespace(
+                    " ".join(plain_texts)
+                ),
+                sections=sections,
+            )
             abs_list.append(abstract)
 
         return abs_list
@@ -497,18 +530,44 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
         for abstract in xml_components["abstract"]:
-            text: str = abstract["content"]
-            title: str = abstract["label"] or DEFAULT_HEADER_ABSTRACT
-            if not text:
+            sections = abstract["sections"]
+            plain_text = abstract["content"]
+            title = abstract["label"] or DEFAULT_HEADER_ABSTRACT
+
+            # Skip empty abstracts.
+            if not plain_text and not sections:
                 continue
-            parent = doc.add_heading(
+
+            abstract_heading = doc.add_heading(
                 parent=self.root, text=title, level=self.hlevel + 1
             )
-            doc.add_text(
-                parent=parent,
-                text=text,
-                label=DocItemLabel.TEXT,
-            )
+
+            if sections:
+                # Structured abstract: emit each <sec> as a sub-heading with
+                # its own paragraph(s) beneath the abstract heading.
+                for section in sections:
+                    section_title = section["title"]
+                    if section_title:
+                        section_parent: NodeItem = doc.add_heading(
+                            parent=abstract_heading,
+                            text=section_title,
+                            level=self.hlevel + 2,
+                        )
+                    else:
+                        section_parent = abstract_heading
+                    for paragraph in section["paragraphs"]:
+                        doc.add_text(
+                            parent=section_parent,
+                            text=paragraph,
+                            label=DocItemLabel.TEXT,
+                        )
+            else:
+                # Plain (un-sectioned) abstract: single text item.
+                doc.add_text(
+                    parent=abstract_heading,
+                    text=plain_text,
+                    label=DocItemLabel.TEXT,
+                )
 
         return
 
@@ -862,9 +921,88 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
-        doc.add_picture(parent=parent, caption=fig_caption)
+        doc.add_picture(
+            parent=parent,
+            caption=fig_caption,
+            image=self._load_figure_image(node),
+        )
 
         return
+
+    def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
+        """Load an explicitly enabled local JATS figure image."""
+        if (
+            not self.options.fetch_images
+            or self.base_path is None
+            or not ImageResourceLoader.is_local_path(self.base_path)
+        ):
+            return None
+
+        graphic_nodes = node.xpath("graphic | alternatives/graphic")
+        if not graphic_nodes:
+            return None
+
+        missing_hrefs: list[str] = []
+        for graphic_node in graphic_nodes:
+            href = graphic_node.get(_XLINK_HREF)
+            if href is None or not href.strip():
+                continue
+
+            href = href.strip()
+            if not ImageResourceLoader.is_local_path(href):
+                continue
+
+            # An absolute rendition is invalid for a confined local base, but it
+            # must not prevent a later relative rendition from being used.
+            if ImageResourceLoader.is_absolute_path(href):
+                warnings.warn(
+                    "Could not process an image from "
+                    f"{href}: Absolute paths are not allowed with local base_path."
+                )
+                continue
+
+            if Path(href).suffix.lower() == ".svg":
+                _log.warning("Skipping unsupported JATS SVG figure image: %s", href)
+                continue
+
+            candidate_hrefs = [href]
+            if not Path(href).suffix:
+                candidate_hrefs.extend(
+                    f"{href}{suffix}" for suffix in _RASTER_IMAGE_SUFFIXES
+                )
+
+            found_candidate = False
+            for candidate_href in candidate_hrefs:
+                try:
+                    resolved_href = self._image_loader.resolve_relative_path(
+                        candidate_href, self.base_path
+                    )
+                except ValueError as e:
+                    warnings.warn(f"Could not process an image from {href}: {e}")
+                    return None
+
+                # Extensionless JATS references require probing several conventional
+                # suffixes. Check readability first so expected probe misses do not
+                # emit one warning per suffix; decoding remains centralized in the
+                # loader.
+                if Path(resolved_href).is_file():
+                    found_candidate = True
+                    image_ref = self._image_loader.create_image_ref(
+                        resolved_href, self.base_path
+                    )
+                    if image_ref is not None:
+                        return image_ref
+
+            if not found_candidate:
+                missing_hrefs.append(href)
+
+        if missing_hrefs:
+            warnings.warn(
+                "Could not process JATS figure image(s) "
+                f"{', '.join(missing_hrefs)}: no matching local file exists."
+            )
+
+        return None
 
     def _add_metadata(
         self, doc: DoclingDocument, xml_components: XMLComponents
@@ -1154,7 +1292,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
 
                 for nested in nested_lists:
-                    self._walk_linear(doc, new_parent, nested)
+                    nested_group = doc.add_group(
+                        label=GroupLabel.LIST, name="list", parent=new_parent
+                    )
+                    self._walk_linear(doc, nested_group, nested)
 
                 stop_walk = True
 
