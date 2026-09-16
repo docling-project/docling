@@ -77,9 +77,7 @@ _KW_ARTICLE = re.compile(
 _SECTION_SYMBOL = re.compile(r"^§+\s*\d")  # § 1 / §§ 1.2
 _SEP = r"(?:[)\]]|[:\-\u2013\u2014](?=\s|$)|(?:\.(?!\d)))"
 # Dotted decimal outline (1.1, 1.1.1, ...), terminated by punctuation/space/end.
-_DOTTED = re.compile(
-    r"^\(?\s*(\d+(?:\.\d+)+)(?:[.)\]\s]|[:\-\u2013\u2014](?=\s|$)|$)"
-)
+_DOTTED = re.compile(r"^\(?\s*(\d+(?:\.\d+)+)(?:[.)\]\s]|[:\-\u2013\u2014](?=\s|$)|$)")
 # Single Arabic index (1. / 1) / (1) / 1: / 1 -).
 _ARABIC = re.compile(r"^\(?\s*(\d+)\s*" + _SEP)
 # A bare index is only accepted with document-wide sequence evidence.
@@ -385,9 +383,9 @@ _LEADING_MARKER = re.compile(
     r"(?:part|title|book|chapter|article|section|clause|schedule|annex|appendix|rule)"
     r"\b[\s.:]*[0-9ivxlcdm]*"
     r"|§+\s*[0-9.]+"
-    r"|\(?[0-9]+(?:\.[0-9]+)*[).]?"
-    r"|\(?[A-Za-z]{1,2}[).]"
-    r")[\s.:)\-]*",
+    r"|\(?[0-9]+(?:\.[0-9]+)*[.)\]]?"
+    r"|\(?[A-Za-z]{1,2}(?:[.)\]]|(?=\s*[:\-\u2013\u2014]))"
+    r")[\s.:)\-\u2013\u2014]*",
     re.IGNORECASE,
 )
 
