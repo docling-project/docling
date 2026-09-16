@@ -10,10 +10,7 @@ import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.labels import DocItemLabel
 
-from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
-    ThreadedDoclingParseDocumentBackend,
-)
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pdf_backend import PdfPageBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -84,19 +81,25 @@ def _load_first_page(backend_cls):
 
 
 @pytest.mark.parametrize(
-    "backend_cls",
+    ("backend_cls", "native_queries"),
     [
-        # Spatial-index path (no `has_content_in`).
-        DoclingParseDocumentBackend,
         # Native-query paths, which can see vector shapes.
-        ThreadedDoclingParseDocumentBackend,
-        PyPdfiumDocumentBackend,
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        # Spatial-index path, which indexes connected shapes when the backend has them.
+        (ThreadedDoclingParseDocumentBackend, False),
     ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
 )
-def test_vector_rule_does_not_force_ocr_of_programmatic_text(backend_cls):
+def test_vector_rule_does_not_force_ocr_of_programmatic_text(
+    backend_cls, native_queries, monkeypatch
+):
     """A text cluster crossed by a rule keeps its text layer; an empty cluster is OCR'd."""
     doc_backend, page_backend = _load_first_page(backend_cls)
     model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
 
     try:
         # Sanity: the fixture really has programmatic text there.
