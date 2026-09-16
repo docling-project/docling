@@ -50,8 +50,8 @@ docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
-When diagnosing a VLM parser, add `--vlm-write-native-output` to save each
-page's unparsed model response under `<output>/<document>.vlm-native/`.
+When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
+page's unparsed model response in the shared `debug_<document>/` directory.
 
 Decision guide:
 

@@ -5,6 +5,7 @@
 
 from pathlib import Path
 
+import pytest
 import typer
 from docling_core.types.doc import ImageRefMode
 
@@ -20,20 +21,22 @@ from docling.datamodel.document import (
     InputDocument,
     _DummyBackend,
 )
+from docling.datamodel.settings import settings
 
 
-def test_cli_exposes_vlm_write_native_output() -> None:
+def test_cli_exposes_debug_vlm_native_output() -> None:
     convert_command = typer.main.get_command(app).commands["convert"]
 
     assert any(
-        "--vlm-write-native-output" in parameter.opts
+        "--debug-vlm-native-output" in parameter.opts
         for parameter in convert_command.params
     )
 
 
 def test_export_documents_writes_native_vlm_output_for_each_page(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(settings.debug, "debug_output_path", str(tmp_path / "debug"))
     input_path = tmp_path / "input.pdf"
     input_path.write_bytes(b"%PDF-1.4")
     input_doc = InputDocument(
@@ -71,13 +74,13 @@ def test_export_documents_writes_native_vlm_output_for_each_page(
         print_timings=False,
         export_timings=False,
         image_export_mode=ImageRefMode.PLACEHOLDER,
-        vlm_write_native_output=True,
+        debug_vlm_native_output=True,
     )
 
-    native_output_dir = output_dir / "input.vlm-native"
-    assert (native_output_dir / "page_00001.txt").read_text(encoding="utf-8") == (
-        "<class_Title><x_0.1>First page"
-    )
-    assert (native_output_dir / "page_00003.txt").read_text(encoding="utf-8") == (
-        "Third page\n\n| A | B |"
-    )
+    native_output_dir = tmp_path / "debug" / "debug_input"
+    assert (native_output_dir / "vlm_response_page_00001.txt").read_text(
+        encoding="utf-8"
+    ) == "<class_Title><x_0.1>First page"
+    assert (native_output_dir / "vlm_response_page_00003.txt").read_text(
+        encoding="utf-8"
+    ) == "Third page\n\n| A | B |"

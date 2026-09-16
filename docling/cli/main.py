@@ -458,7 +458,7 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
-def _write_native_vlm_output(conv_res: ConversionResult, output_dir: Path) -> None:
+def _write_native_vlm_output(conv_res: ConversionResult) -> None:
     native_responses = [
         (page.page_no, page.predictions.vlm_response)
         for page in conv_res.pages
@@ -467,10 +467,12 @@ def _write_native_vlm_output(conv_res: ConversionResult, output_dir: Path) -> No
     if not native_responses:
         return
 
-    native_output_dir = output_dir / f"{conv_res.input.file.stem}.vlm-native"
-    native_output_dir.mkdir(parents=True, exist_ok=True)
+    debug_output_dir = (
+        Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
+    )
+    debug_output_dir.mkdir(parents=True, exist_ok=True)
     for page_no, response in native_responses:
-        filename = native_output_dir / f"page_{page_no:05d}.txt"
+        filename = debug_output_dir / f"vlm_response_page_{page_no:05d}.txt"
         filename.write_text(response.text, encoding="utf-8")
         _log.info("writing native VLM output to %s", filename)
 
@@ -497,7 +499,7 @@ def export_documents(
     chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
-    vlm_write_native_output: bool = False,
+    debug_vlm_native_output: bool = False,
 ):
     success_count = 0
     failure_count = 0
@@ -528,8 +530,8 @@ def export_documents(
             chunker_obj = HybridChunker(tokenizer=hf_tok)
 
     for conv_res in conv_results:
-        if vlm_write_native_output:
-            _write_native_vlm_output(conv_res, output_dir)
+        if debug_vlm_native_output:
+            _write_native_vlm_output(conv_res)
 
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
@@ -846,13 +848,13 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
-    vlm_write_native_output: Annotated[
+    debug_vlm_native_output: Annotated[
         bool,
         typer.Option(
-            "--vlm-write-native-output",
+            "--debug-vlm-native-output",
             help=(
-                "Write each page's unparsed VLM response under "
-                "<output>/<document>.vlm-native/."
+                "Write each page's unparsed VLM response to the document's "
+                "debug output directory."
             ),
         ),
     ] = False,
@@ -1740,7 +1742,7 @@ def convert(  # noqa: C901
             chunker_type=chunker_type,
             chunk_max_tokens=chunk_max_tokens,
             chunk_tokenizer=chunk_tokenizer,
-            vlm_write_native_output=vlm_write_native_output,
+            debug_vlm_native_output=debug_vlm_native_output,
         )
 
         end_time = time.time() - start_time
