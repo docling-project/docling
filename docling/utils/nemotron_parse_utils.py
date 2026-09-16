@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Parser for NVIDIA Nemotron Parse 2.0 native output."""
+"""Utilities for parsing NVIDIA Nemotron Parse 2.0 native output."""
 
 from __future__ import annotations
 

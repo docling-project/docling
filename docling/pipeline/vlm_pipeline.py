@@ -594,7 +594,7 @@ class VlmPipeline(PaginatedPipeline):
         predicted_text: str,
         page_image: PILImage.Image | None,
     ) -> DoclingDocument:
-        from docling.backend.nemotron_parse_v2_backend import (
+        from docling.utils.nemotron_parse_utils import (
             parse_nemotron_parse_v2,
         )
 

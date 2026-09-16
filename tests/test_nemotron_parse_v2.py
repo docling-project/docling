@@ -6,11 +6,6 @@
 import pytest
 from docling_core.types.doc import DocItemLabel, Size
 
-from docling.backend.nemotron_parse_v2_backend import (
-    extract_nemotron_parse_v2_regions,
-    parse_nemotron_parse_v2,
-    transform_nemotron_bbox,
-)
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
@@ -18,6 +13,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.utils.nemotron_parse_utils import (
+    extract_nemotron_parse_v2_regions,
+    parse_nemotron_parse_v2,
+    transform_nemotron_bbox,
+)
 
 
 def test_nemotron_parse_v2_preset() -> None:
