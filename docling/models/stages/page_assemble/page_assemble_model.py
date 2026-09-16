@@ -8,12 +8,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    Cluster,
     ContainerElement,
+    FieldRegionElement,
     FigureElement,
     Page,
     PageElement,
@@ -193,6 +195,12 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    field_regions_by_source = {
+                        region.source_container_id: region
+                        for region in page.predictions.field_regions
+                        if region.source_container_id is not None
+                    }
+                    assembled_field_sources: set[int] = set()
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
@@ -204,6 +212,15 @@ class PageAssembleModel(BasePageModel):
                             ]
                             text = self.sanitize_text(textlines)
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
+                            # A paragraph that inlines AcroForm widgets carries a
+                            # single keyed field item; attach it so it materializes
+                            # as a field_item in place (see TextElement.field_item)
+                            # instead of being pulled into a separate field_region.
+                            inline_region = field_regions_by_source.get(cluster.id)
+                            field_item = None
+                            if inline_region is not None and inline_region.items:
+                                field_item = inline_region.items[0]
+                                assembled_field_sources.add(cluster.id)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -211,6 +228,7 @@ class PageAssembleModel(BasePageModel):
                                 hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
+                                field_item=field_item,
                             )
                             elements.append(text_el)
 
@@ -255,14 +273,56 @@ class PageAssembleModel(BasePageModel):
                             elements.append(fig)
                             body.append(fig)
                         elif cluster.label in CONTAINER_LABELS:
-                            container_el = ContainerElement(
-                                label=cluster.label,
-                                id=cluster.id,
-                                page_no=page.page_no,
-                                cluster=cluster,
-                            )
+                            field_region = field_regions_by_source.get(cluster.id)
+                            if field_region is None:
+                                container_el = ContainerElement(
+                                    label=cluster.label,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                )
+                            else:
+                                container_el = FieldRegionElement(
+                                    label=DocItemLabel.FIELD_REGION,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster.model_copy(
+                                        update={"bbox": field_region.bbox}
+                                    ),
+                                    items=field_region.items,
+                                )
+                                assembled_field_sources.add(cluster.id)
                             elements.append(container_el)
                             body.append(container_el)
+
+                    next_id = (
+                        max(
+                            (
+                                cluster.id
+                                for cluster in page.predictions.layout.clusters
+                            ),
+                            default=0,
+                        )
+                        + 1
+                    )
+                    for field_region in page.predictions.field_regions:
+                        if field_region.source_container_id in assembled_field_sources:
+                            continue
+                        cluster = Cluster(
+                            id=next_id,
+                            label=DocItemLabel.FIELD_REGION,
+                            bbox=field_region.bbox,
+                        )
+                        field_element = FieldRegionElement(
+                            label=DocItemLabel.FIELD_REGION,
+                            id=next_id,
+                            page_no=page.page_no,
+                            cluster=cluster,
+                            items=field_region.items,
+                        )
+                        elements.append(field_element)
+                        body.append(field_element)
+                        next_id += 1
 
                     page.assembled = AssembledUnit(
                         elements=elements, headers=headers, body=body

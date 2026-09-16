@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -409,10 +409,43 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
 
 
+class FieldValuePrediction(BaseModel):
+    text: str
+    orig: str
+    bbox: BoundingBox
+    # Selection state for a checkbox/radio widget; None for text-like fields.
+    # When set, the value is materialized as an empty field value that nests a
+    # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
+    checkbox: Literal["selected", "unselected"] | None = None
+    # Option label of the matched layout checkbox cluster (e.g. "4797"), placed
+    # on the nested checkbox child. Empty when no cluster matched the widget.
+    checkbox_label: str = ""
+
+
+class FieldItemPrediction(BaseModel):
+    # A keyed item groups several values under one key (e.g. an inline checkbox
+    # and a fillable amount that share a sentence). key_bbox is the prov of the
+    # key -- the enclosing text cluster. Keyless items (key_text == "") carry a
+    # single value and reproduce the flat field_item shape.
+    key_text: str = ""
+    key_bbox: BoundingBox | None = None
+    values: list[FieldValuePrediction] = []
+
+
+class FieldRegionPrediction(BaseModel):
+    source_container_id: int | None = None
+    bbox: BoundingBox
+    items: list[FieldItemPrediction] = []
+
+
 class ContainerElement(
     BasePageElement
 ):  # Used for Form and Key-Value-Regions, only for typing.
     pass
+
+
+class FieldRegionElement(ContainerElement):
+    items: list[FieldItemPrediction] = []
 
 
 class Table(BasePageElement):
@@ -430,6 +463,12 @@ class TableStructurePrediction(BaseModel):
 class TextElement(BasePageElement):
     text: str
     hyperlink: Optional[Union[AnyUrl, Path]] = None
+    # Set when this paragraph inlines AcroForm widgets (e.g. a sentence with an
+    # inline checkbox and a fillable amount). The paragraph then materializes as
+    # a field_item -- its text becomes the key, the widgets its values -- in the
+    # paragraph's own place in the reading order (its list, its container), rather
+    # than being pulled out into a separate field_region.
+    field_item: Optional["FieldItemPrediction"] = None
 
 
 class FigureElement(BasePageElement):
@@ -461,13 +500,16 @@ class EquationPrediction(BaseModel):
 
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
+    field_regions: list[FieldRegionPrediction] = []
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None
     vlm_response: VlmPrediction | None = None
 
 
-PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
+PageElement = Union[
+    TextElement, Table, FigureElement, ContainerElement, FieldRegionElement
+]
 
 
 class AssembledUnit(BaseModel):

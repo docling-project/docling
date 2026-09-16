@@ -1,0 +1,66 @@
+%PDF-1.6
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [6 0 R 7 0 R 8 0 R 10 0 R] /DR << /Font << /Helv 5 0 R >> >> /DA (/Helv 0 Tf 0 g) >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> /Annots [6 0 R 7 0 R 8 0 R 9 0 R 10 0 R] >>
+endobj
+4 0 obj
+<< /Length 258 >>
+stream
+BT /F1 12 Tf 72 695 Td (Full name:) Tj ET BT /F1 12 Tf 95 643 Td (I agree to the terms) Tj ET BT /F1 12 Tf 95 613 Td (Subscribe to newsletter) Tj ET BT /F1 12 Tf 95 583 Td (Monthly mail digest) Tj ET BT /F1 12 Tf 72 563 Td (See example.org for details) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (applicant_name) /TU (Full legal name) /V (Ada Lovelace) /Ff 2 /F 4 /Rect [150 690 400 710] /P 3 0 R /DA (/Helv 12 Tf 0 g) >>
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (agree_terms) /TU (I agree to the terms) /V /Yes /AS /Yes /F 4 /Rect [72 638 86 652] /P 3 0 R >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (newsletter) /V /Off /AS /Off /F 4 /Rect [72 608 86 622] /P 3 0 R >>
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Link /Rect [72 558 230 573] /Border [0 0 0] /A << /S /URI /URI (https://example.org) >> >>
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (mail_optin) /AS /On /F 4 /Rect [72 578 86 592] /P 3 0 R /AP << /N << /On 11 0 R /Off 12 0 R >> >> >>
+endobj
+11 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 14 14] /Length 0 >>
+stream
+
+endstream
+endobj
+12 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 14 14] /Length 0 >>
+stream
+
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000164 00000 n 
+0000000221 00000 n 
+0000000388 00000 n 
+0000000697 00000 n 
+0000000767 00000 n 
+0000000952 00000 n 
+0000001109 00000 n 
+0000001238 00000 n 
+0000001370 00000 n 
+0000001533 00000 n 
+0000001631 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+1729
+%%EOF
