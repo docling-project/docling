@@ -2356,6 +2356,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
+            # _add_heading clears the tail of the parents stack, so any list
+            # context still open at this point is stale. Without this reset the
+            # next list item derives use_level from the old level_at_new_list,
+            # finds an already-cleared parent slot and gets attached to the body
+            # root, which renders it at the end of the document.
+            self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
