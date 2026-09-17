@@ -1094,11 +1094,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # Phase 2 emits the entire bounding box, so the entire bounding box is
-        # consumed by this table — not only the cells the flood fill reached.
-        # Returning just the latter leaves any value the fill could not reach
-        # (one with an empty cell between it and the rest, say) free to start a
-        # second table out of content this one already carries.
+        # Mark the full emitted table region as visited.
         covered_cells = {
             (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
         }
