@@ -56,6 +56,7 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CsvBackendOptions,
     EbcdicBackendOptions,
     EmailBackendOptions,
     EpubBackendOptions,
@@ -137,6 +138,7 @@ class BoxNoteFormatOption(FormatOption):
 class CsvFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
+    backend_options: Optional[CsvBackendOptions] = None
 
 
 class ExcelFormatOption(FormatOption):

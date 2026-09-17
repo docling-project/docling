@@ -64,9 +64,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # document title ("= Title") is no longer recognized as one and the BOM
         # reaches the output.
         try:
-            self.lines = decode_text(self.path_or_stream).split("\n")
+            self.lines = decode_text(self.path_or_stream, options.encoding).split("\n")
             self.valid = True
 
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize AsciiDoc backend for file with hash {self.document_hash}."

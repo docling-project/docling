@@ -283,7 +283,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
         # output.
         try:
-            md_content = decode_text(self.path_or_stream)
+            md_content = decode_text(self.path_or_stream, options.encoding)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
@@ -293,6 +293,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self.valid = True
 
             _log.debug(self.markdown)
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
