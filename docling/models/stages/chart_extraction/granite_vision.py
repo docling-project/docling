@@ -6,7 +6,7 @@ import re
 from collections.abc import Iterable
 from io import StringIO
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 from docling_core.types.doc import (
@@ -25,7 +25,10 @@ from docling_core.types.doc.document import CodeMetaField
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
-from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionOutputFormat,
+    ChartExtractionVlmEngineOptions,
+)
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
@@ -192,29 +195,22 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
             if item.meta is None or not isinstance(item.meta, PictureMeta):
                 item.meta = PictureMeta()
 
+            handler = _OUTPUT_FORMAT_HANDLERS.get(self.options.output_format)
+            if handler is None:
+                _log.error(
+                    f"No handler registered for output_format "
+                    f"{self.options.output_format!r}; skipping image {img_idx}."
+                )
+                yield item
+                continue
+
             for prompt_idx, prompt in enumerate(active_prompts):
                 result = outputs[img_idx * n_prompts + prompt_idx].text
                 _log.debug(
                     f"chart extraction [{prompt}] image {img_idx}: {result[:120]}"
                 )
                 try:
-                    if prompt == "<chart2csv>":
-                        chart_df = _extract_csv_to_dataframe(result)
-                        item.meta.tabular_chart = TabularChartMetaField(
-                            chart_data=_dataframe_to_tabledata(chart_df)
-                        )
-                    elif prompt == "<chart2summary>":
-                        item.meta.description = DescriptionMetaField(text=result)
-                    elif prompt == "<chart2code>":
-                        code = _extract_python_code(result)
-                        if code is not None:
-                            item.meta.code = CodeMetaField(
-                                text=code, language=CodeLanguageLabel.PYTHON
-                            )
-                    else:
-                        _log.warning(
-                            f"Unknown prompt token {prompt!r} for image {img_idx}; skipping."
-                        )
+                    handler(prompt, result, item)
                 except Exception as exc:
                     _log.error(
                         f"Failed to process [{prompt}] for image {img_idx}: {exc}"
@@ -228,6 +224,51 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
                 self.engine.cleanup()
             except Exception as exc:
                 _log.warning(f"Error cleaning up chart extraction engine: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Output format handlers
+# ---------------------------------------------------------------------------
+# Each handler has the signature:
+#   (prompt: str, result: str, item: PictureItem) -> None
+# and is responsible for interpreting `result` for a single (prompt, image)
+# pair and writing the parsed value into `item.meta`.
+#
+# Register a new callable in _OUTPUT_FORMAT_HANDLERS to support a model whose
+# output shape differs from the existing ones.
+
+_ChartOutputHandler = Callable[[str, str, PictureItem], None]
+
+
+def _handle_granite_vision_charts(prompt: str, result: str, item: PictureItem) -> None:
+    """Parser for the Granite Vision chart model multi-pass protocol.
+
+    * ``<chart2csv>``     → fenced ```csv``` block (or bare CSV)
+    * ``<chart2summary>`` → plain text passthrough
+    * ``<chart2code>``    → fenced ```python``` block
+    """
+    assert item.meta is not None  # guaranteed by the caller
+    if prompt == "<chart2csv>":
+        chart_df = _extract_csv_to_dataframe(result)
+        item.meta.tabular_chart = TabularChartMetaField(
+            chart_data=_dataframe_to_tabledata(chart_df)
+        )
+    elif prompt == "<chart2summary>":
+        item.meta.description = DescriptionMetaField(text=result)
+    elif prompt == "<chart2code>":
+        code = _extract_python_code(result)
+        if code is not None:
+            item.meta.code = CodeMetaField(text=code, language=CodeLanguageLabel.PYTHON)
+    else:
+        _log.warning(
+            f"Unknown prompt token {prompt!r} for output_format "
+            f"{ChartExtractionOutputFormat.GRANITE_VISION_CHARTS!r}; skipping."
+        )
+
+
+_OUTPUT_FORMAT_HANDLERS: Dict[ChartExtractionOutputFormat, _ChartOutputHandler] = {
+    ChartExtractionOutputFormat.GRANITE_VISION_CHARTS: _handle_granite_vision_charts,
+}
 
 
 # ---------------------------------------------------------------------------

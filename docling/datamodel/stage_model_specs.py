@@ -1828,6 +1828,7 @@ CHART_EXTRACTION_GRANITE_VISION = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.TRANSFORMERS,
+    stage_options={"output_format": "granite_vision_charts"},
 )
 
 CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
@@ -1872,4 +1873,5 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.TRANSFORMERS,
+    stage_options={"output_format": "granite_vision_charts"},
 )

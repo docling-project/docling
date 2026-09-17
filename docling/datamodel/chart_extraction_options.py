@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import warnings
+from enum import Enum
 from typing import Any, ClassVar, Dict, Iterator, Literal, Optional
 
 from pydantic import Field, model_validator
@@ -9,6 +10,29 @@ from typing_extensions import Self
 
 from docling.datamodel.stage_model_specs import StagePresetMixin, VlmModelSpec
 from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
+
+
+class ChartExtractionOutputFormat(str, Enum):
+    """Names the output-parsing contract for a chart extraction model.
+
+    Each value identifies how the chart stage should interpret the raw text
+    returned by the VLM for each active prompt, independently of the generic
+    VLM ``ResponseFormat`` used by the conversion pipeline.
+
+    Values
+    ------
+    GRANITE_VISION_CHARTS
+        The multi-pass Granite Vision chart model protocol:
+
+        * ``<chart2csv>``     → fenced ````csv```` block (or bare CSV), parsed
+          into ``TabularChartMetaField``
+        * ``<chart2summary>`` → plain-text sentence(s), stored in
+          ``DescriptionMetaField``
+        * ``<chart2code>``    → fenced ````python```` block, stored in
+          ``CodeMetaField``
+    """
+
+    GRANITE_VISION_CHARTS = "granite_vision_charts"
 
 
 class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
@@ -77,6 +101,16 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
         default=False,
         description=("Generate Python code that recreates the chart."),
     )
+    output_format: ChartExtractionOutputFormat = Field(
+        default=ChartExtractionOutputFormat.GRANITE_VISION_CHARTS,
+        description=(
+            "Parsing contract for the model's raw output. "
+            "Each value selects the set of post-processors applied to the "
+            "per-prompt responses. Add a new enum member and handler when "
+            "integrating a model whose output shape differs from the existing ones."
+        ),
+    )
+
     use_natural_language_prompts: bool = Field(
         default=False,
         description=(
