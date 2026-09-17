@@ -2242,6 +2242,20 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+    deterministic_batching: Annotated[
+        bool,
+        Field(
+            description=(
+                "Decide a stage's batch by the item stream rather than by the poll interval. By default a stage "
+                "processes whatever has arrived when `batch_polling_interval_seconds` expires, so a busy machine "
+                "assembles smaller batches than an idle one, and model output is not bit-identical across batch "
+                "sizes: the same document then converts to a slightly different structure depending on load. With "
+                "this enabled a stage waits for a full batch and only takes a short one at the end of a run, which "
+                "makes a conversion reproducible at the cost of some latency. Only used by `StandardPdfPipeline` "
+                "(threaded mode)."
+            )
+        ),
+    ] = False
     # Shutdown control
     stage_shutdown_timeout_seconds: Annotated[
         float,

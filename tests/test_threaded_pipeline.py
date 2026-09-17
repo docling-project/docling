@@ -25,6 +25,7 @@ from docling.pipeline.standard_pdf_pipeline import (
     StandardPdfPipeline,
     ThreadedItem,
     ThreadedPipelineStage,
+    ThreadedQueue,
 )
 
 _TEST_FILES = [
@@ -61,6 +62,21 @@ def test_threaded_pipeline_multiple_documents():
 
     assert len(results) == len(_TEST_FILES)
     assert all(r.status == ConversionStatus.SUCCESS for r in results)
+
+
+def test_threaded_pipeline_with_deterministic_batching():
+    """The option must convert the same document as the default does, and must not stall:
+    waiting for a full batch relies on the queue being closed to release the last one."""
+    default = _make_threaded_converter()
+    default.initialize_pipeline(InputFormat.PDF)
+    expected = default.convert(_SINGLE_FILE, raises_on_error=True)
+
+    converter = _make_threaded_converter(deterministic_batching=True)
+    converter.initialize_pipeline(InputFormat.PDF)
+    result = converter.convert(_SINGLE_FILE, raises_on_error=True)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert [p.page_no for p in result.pages] == [p.page_no for p in expected.pages]
 
 
 def test_threaded_pipeline_with_pypdfium_backend():
@@ -205,3 +221,91 @@ def test_threaded_pipeline_stage_shutdown_timeout():
         release.set()
         if stage._thread is not None:
             stage._thread.join(timeout=5.0)
+
+
+def _item(page_no: int) -> ThreadedItem:
+    return ThreadedItem(
+        payload=Page(page_no=page_no), run_id=1, page_no=page_no, conv_res=None
+    )
+
+
+def test_get_batch_without_require_full_takes_what_is_queued():
+    """The default: whatever arrived by the time the poll interval expires."""
+    queue = ThreadedQueue(10)
+    queue.put(_item(1))
+
+    batch = queue.get_batch(4, timeout=0.05)
+
+    assert [item.page_no for item in batch] == [1]
+
+
+def test_get_batch_with_require_full_waits_for_the_whole_batch():
+    """A slow producer must not decide the batch: without this, the size of a batch - and
+    with it the model output - depends on how busy the machine is."""
+    queue = ThreadedQueue(10)
+    queue.put(_item(1))
+
+    def feed_slowly() -> None:
+        for page_no in (2, 3, 4):
+            time.sleep(0.05)
+            queue.put(_item(page_no))
+
+    producer = threading.Thread(target=feed_slowly)
+    producer.start()
+    try:
+        batch = queue.get_batch(4, timeout=0.01, require_full=True)
+    finally:
+        producer.join(timeout=5.0)
+
+    assert [item.page_no for item in batch] == [1, 2, 3, 4]
+
+
+def test_get_batch_with_require_full_returns_the_remainder_once_closed():
+    """The last batch of a run is short, and closing the queue is what releases it."""
+    queue = ThreadedQueue(10)
+    queue.put(_item(1))
+    queue.put(_item(2))
+    released = threading.Event()
+
+    def close_soon() -> None:
+        time.sleep(0.05)
+        released.set()
+        queue.close()
+
+    closer = threading.Thread(target=close_soon)
+    closer.start()
+    try:
+        batch = queue.get_batch(4, require_full=True)
+    finally:
+        closer.join(timeout=5.0)
+
+    assert released.is_set(), "the batch came back before the queue was closed"
+    assert [item.page_no for item in batch] == [1, 2]
+
+
+def test_get_batch_with_require_full_does_not_deadlock_on_a_short_queue():
+    """A queue that cannot hold a full batch would otherwise stop both sides: the producer
+    blocks at `max_size` while the consumer waits for more."""
+    queue = ThreadedQueue(2)
+    queue.put(_item(1))
+    queue.put(_item(2))
+
+    batch = queue.get_batch(4, require_full=True)
+
+    assert [item.page_no for item in batch] == [1, 2]
+
+
+def test_deterministic_batching_reaches_the_stage():
+    """The option is off by default and is what the stage passes to its queue."""
+    assert ThreadedPdfPipelineOptions().deterministic_batching is False
+
+    stage = ThreadedPipelineStage(
+        name="noop",
+        model=lambda conv_res, pages: pages,
+        batch_size=2,
+        batch_timeout=0.05,
+        queue_max_size=10,
+        require_full_batches=True,
+    )
+
+    assert stage.require_full_batches is True
