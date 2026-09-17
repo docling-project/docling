@@ -610,3 +610,18 @@ def test_standard_ordered_list_still_starts_at_one():
 
     exported = conv_result.document.export_to_markdown()
     assert exported == "1. alpha\n2. beta\n3. gamma"
+
+
+def test_close_table_with_empty_buffer_does_not_crash():
+    """An open table with no buffered rows used to IndexError on result_table[0]."""
+    backend = object.__new__(MarkdownDocumentBackend)
+    backend.in_table = True
+    backend.in_pipeless_table = False
+    backend.md_table_buffer = []
+    doc = DoclingDocument(name="empty-table")
+
+    backend._close_table(doc)
+
+    assert backend.in_table is False
+    assert backend.md_table_buffer == []
+    assert doc.tables == []

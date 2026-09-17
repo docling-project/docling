@@ -340,6 +340,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     for row in result_table
                 ]
 
+            if not result_table:
+                self.in_table = False
+                self.md_table_buffer = []
+                return
+
             for trow_ind, trow in enumerate(result_table):
                 for tcol_ind, cellval in enumerate(trow):
                     row_span = (
