@@ -5,6 +5,8 @@ import logging
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from docling.backend.latex.engines import tectonic
 from docling.backend.latex.engines.tectonic import TectonicEngine
 
@@ -235,16 +237,10 @@ def test_tectonic_render_blocks_dependency_path_traversal(monkeypatch, tmp_path)
     outside_file = outside_dir / "secret.tex"
     outside_file.write_text("\\newcommand{\\secret}{1}\n", encoding="utf-8")
 
-    captured = {}
-
-    def fake_run(cmd, **kwargs):
-        cwd = Path(kwargs["cwd"])
-        captured["staged_secret"] = (cwd / "secret.tex").exists()
-        raise subprocess.CalledProcessError(
-            returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
-        )
-
-    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
+    calls = []
+    monkeypatch.setattr(
+        tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
+    )
 
     assert (
         engine.render(
@@ -254,4 +250,141 @@ def test_tectonic_render_blocks_dependency_path_traversal(monkeypatch, tmp_path)
         )
         is None
     )
-    assert captured["staged_secret"] is False
+    assert calls == []
+
+
+def _untrusted_engine() -> TectonicEngine:
+    engine = TectonicEngine.__new__(TectonicEngine)
+    engine.binary_path = Path("/usr/bin/tectonic")
+    engine._is_available = True
+    engine.timeout = 5.0
+    engine.allow_shell_escape = False
+    return engine
+
+
+UNSAFE_TIKZ_SOURCES = [
+    r"\input{/etc/passwd}",
+    r"\input /etc/passwd ",
+    r"\include{../outside}",
+    r"\def\p{/etc/passwd}\input\p",
+    r"\expandafter\let\csname x\endcsname\relax",
+    r"^^5cinput{/etc/passwd}",
+    r"\begin{input}/etc/passwd \end{input}",
+    r"\def\x{input}\begin\x /etc/passwd \end\x",
+    r"\def\x{input}\begin{\x}/etc/passwd \end{\x}",
+    r"\UseName{input}{/etc/passwd}",
+    r"\csuse{input}",
+    r"\catcode`\|=0 |input{/etc/passwd}",
+    r"\makeatletter\@@input /etc/passwd",
+    r"\openin1=/etc/passwd",
+    r"\includegraphics{/etc/image.png}",
+    r"\includegraphics[width=2cm]{../image.png}",
+    r"\graphicspath{{/etc/}}",
+    r"\usepackage{../evil}",
+    r"\lstinputlisting{notes.txt}",
+    r"\pgfplotstableread{/etc/data.dat}\t",
+    r"\begin{axis}\addplot table {/etc/data.dat};\end{axis}",
+    r"\begin{axis}\addplot table[search path={/etc}] {data.dat};\end{axis}",
+    r"\draw plot file {/etc/data.dat};",
+    r"\begin{filecontents*}{/tmp/out.tex}x\end{filecontents*}",
+    r"\special{pdf:image (/etc/image.png)}",
+]
+
+
+@pytest.mark.parametrize("source", UNSAFE_TIKZ_SOURCES)
+@pytest.mark.parametrize("location", ["tikz", "preamble"])
+def test_tectonic_render_skips_unsafe_file_access(
+    monkeypatch, caplog, source, location
+):
+    engine = _untrusted_engine()
+    calls = []
+    monkeypatch.setattr(
+        tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
+    )
+
+    tikz = rf"\begin{{tikzpicture}}{source}\end{{tikzpicture}}"
+    preamble = "\\usepackage{tikz}"
+    if location == "preamble":
+        tikz = r"\begin{tikzpicture}\end{tikzpicture}"
+        preamble = f"\\usepackage{{tikz}}\n{source}"
+
+    with caplog.at_level(logging.WARNING):
+        assert engine.render(tikz, preamble=preamble) is None
+
+    assert calls == []
+    assert "Skipping TikZ rendering" in caplog.text
+
+
+def test_tectonic_render_skips_unsafe_staged_dependency(monkeypatch, tmp_path):
+    engine = _untrusted_engine()
+    (tmp_path / "macros.tex").write_text("\\input{/etc/passwd}\n", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(
+        tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
+    )
+
+    assert (
+        engine.render(
+            r"\begin{tikzpicture}\end{tikzpicture}",
+            preamble="\\input{macros}",
+            source_root=tmp_path,
+        )
+        is None
+    )
+    assert calls == []
+
+
+SAFE_TIKZ_SOURCES = [
+    (
+        "\\usepackage{amsmath,tikz,pgfplots}\n"
+        "\\usetikzlibrary{arrows.meta,positioning}\n"
+        "\\pgfplotsset{compat=1.18}\n"
+        "\\graphicspath{{figures/}{img/}}\n"
+        "\\tikzset{every node/.style={draw, rounded corners}}\n"
+        "\\newcommand{\\half}{0.5}",
+        "\\begin{tikzpicture}\n"
+        "\\draw[->, >=Stealth] (0,0) -- (1,1) node[above] {$a/b$};\n"
+        "\\foreach \\x in {1,...,5} \\node at (\\x,0) {\\x};\n"
+        "\\begin{axis}[xlabel={time / s}]\n"
+        "\\addplot table {\nx y\n1 2\n3 4\n};\n"
+        "\\addplot table[row sep=\\\\] {x y\\\\ 1 2\\\\};\n"
+        "\\addplot coordinates {(0,0) (1,\\half)};\n"
+        "\\end{axis}\n"
+        "\\end{tikzpicture}",
+    ),
+]
+
+
+@pytest.mark.parametrize(("preamble", "tikz"), SAFE_TIKZ_SOURCES)
+def test_tectonic_render_compiles_ordinary_tikz(monkeypatch, preamble, tikz):
+    engine = _untrusted_engine()
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        raise subprocess.CalledProcessError(
+            returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
+        )
+
+    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
+
+    assert TectonicEngine._find_unsafe_construct(preamble + "\n" + tikz) is None
+    engine.render(tikz, preamble=preamble)
+    assert len(calls) == 1
+
+
+def test_tectonic_shell_escape_optin_skips_source_check(monkeypatch):
+    engine = _untrusted_engine()
+    engine.allow_shell_escape = True
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        raise subprocess.CalledProcessError(
+            returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
+        )
+
+    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
+
+    engine.render(r"\begin{tikzpicture}\input{/etc/hostname}\end{tikzpicture}")
+    assert len(calls) == 1

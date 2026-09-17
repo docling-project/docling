@@ -509,7 +509,13 @@ class LatexBackendOptions(BaseBackendOptions):
         None,
         description=(
             "The engine to use for rendering Tikz diagrams into images. "
-            "Set to 'tectonic' to enable asynchronous image generation."
+            "Set to 'tectonic' to enable asynchronous image generation. "
+            "Rendering compiles LaTeX from the input document. Without shell "
+            "escape, diagrams whose source references files outside the "
+            "document directory, or builds commands or paths indirectly, are "
+            "kept as TikZ code instead of rendered. This check is best-effort: "
+            "enable rendering only for trusted input or run conversion in an "
+            "isolated environment."
         ),
     )
     tikz_engine_timeout: float = Field(
