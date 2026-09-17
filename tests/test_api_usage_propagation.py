@@ -216,8 +216,11 @@ def test_picture_description_vlm_engine_model_preserves_usage() -> None:
 
 
 def test_picture_description_vlm_engine_model_populates_picture_meta_usage() -> None:
+    from unittest.mock import patch
+
     from docling_core.types.doc import DoclingDocument
 
+    from docling.datamodel.accelerator_options import AcceleratorOptions
     from docling.datamodel.base_models import ItemAndImageEnrichmentElement
     from docling.datamodel.pipeline_options import PictureDescriptionVlmEngineOptions
     from docling.models.inference_engines.vlm.base import VlmEngineOutput
@@ -239,13 +242,17 @@ def test_picture_description_vlm_engine_model_populates_picture_meta_usage() -> 
             pass
 
     options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm")
-    model = PictureDescriptionVlmEngineModel.__new__(PictureDescriptionVlmEngineModel)
-    model.options = options
-    model.engine = _DummyEngine()
-    model.enabled = True
-    model.provenance = "test"
-    model.elements_batch_size = 1
-    model.images_scale = 1.0
+    with patch(
+        "docling.models.stages.picture_description.picture_description_vlm_engine_model.create_vlm_engine",
+        return_value=_DummyEngine(),
+    ):
+        model = PictureDescriptionVlmEngineModel(
+            enabled=True,
+            enable_remote_services=False,
+            artifacts_path=None,
+            options=options,
+            accelerator_options=AcceleratorOptions(),
+        )
 
     doc = DoclingDocument(name="test")
     doc.add_picture()
