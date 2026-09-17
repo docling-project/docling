@@ -277,6 +277,7 @@ UNSAFE_TIKZ_SOURCES = [
     r"\catcode`\|=0 |input{/etc/passwd}",
     r"\makeatletter\@@input /etc/passwd",
     r"\openin1=/etc/passwd",
+    r"\newwrite\f\immediate\openout\f=/tmp/out.txt",
     r"\includegraphics{/etc/image.png}",
     r"\includegraphics[width=2cm]{../image.png}",
     r"\graphicspath{{/etc/}}",
