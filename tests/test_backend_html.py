@@ -1570,3 +1570,20 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_get_attr_as_string_coerces_non_string_values():
+    soup = BeautifulSoup('<img src="ok.png">', "html.parser")
+    img = soup.img
+    assert img is not None
+
+    img.attrs["src"] = ["listed.png"]
+    assert HTMLDocumentBackend._get_attr_as_string(img, "src") == "listed.png"
+
+    img.attrs["src"] = 123
+    assert HTMLDocumentBackend._get_attr_as_string(img, "src") == "123"
+
+    img.attrs["src"] = []
+    assert HTMLDocumentBackend._get_attr_as_string(img, "src", default="fallback") == (
+        "fallback"
+    )

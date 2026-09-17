@@ -5066,7 +5066,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _get_attr_as_string(tag: Tag, attr: str, default: str = "") -> str:
         """Get attribute value as string, handling list values."""
         value = tag.get(attr)
-        if not value:
+        if value is None or value is False:
             return default
-
-        return value[0] if isinstance(value, list) else value
+        if isinstance(value, list):
+            if not value:
+                return default
+            value = value[0]
+        if not isinstance(value, str):
+            value = str(value)
+        return value if value else default
