@@ -228,9 +228,9 @@ def _build_multi_object_pdf(n_paths: int = 40) -> bytes:
 
 
 def test_pdfium_object_index_built_once(tmp_path, monkeypatch):
-    """The page-object walk must run once per page even when ``has_content_in`` is
-    called repeatedly (once per layout cluster) -- otherwise the backend is
-    O(clusters x objects). Count the underlying pypdfium2 object enumeration."""
+    """The page-object walk runs once per page even when ``has_content_in`` is
+    called repeatedly (once per layout cluster). Counts the underlying pypdfium2
+    object enumeration."""
     import pypdfium2 as pdfium
 
     pdf_path = tmp_path / "multi_object.pdf"

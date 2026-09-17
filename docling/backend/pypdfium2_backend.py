@@ -271,10 +271,8 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             self.valid = False
         self.text_page: Optional[PdfTextPage] = None
         self._seg_page: Optional[SegmentedPdfPage] = None
-        # Page-object bboxes, bucketed by FPDF_PAGEOBJ_* type and built once per
-        # page (see ``_get_object_index``). ``has_content_in`` is called per layout
-        # cluster (2-3x each), and each call previously re-walked every page object
-        # per object type -- O(clusters x objects). Caching the walk removes that.
+        # Page-object bboxes bucketed by FPDF_PAGEOBJ_* type, built lazily once per
+        # page by ``_get_object_index`` and shared by all object-rect queries.
         self._object_index: Optional[dict[int, List[tuple[BoundingBox, bool]]]] = None
 
     def is_valid(self) -> bool:
@@ -447,11 +445,12 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         fixed for a loaded page, the index is valid for the page's whole lifetime;
         it is cleared in ``_close_native_page``.
 
-        Lock safety: the ``pypdfium2_lock`` (a plain, non-reentrant lock) is taken
-        only for the single object walk, and never while ``get_size`` is called
-        (which takes the lock itself). Unlike the previous generator -- which held
-        the lock across its ``yield`` while callers ran overlap tests -- callers now
-        iterate the cached pure-Python lists with the lock released.
+        ``pypdfium2_lock`` is not reentrant, so it is held only for the object walk
+        and not while ``get_size`` (which takes the lock itself) runs. Callers
+        iterate the cached lists with the lock released.
+
+        Returns:
+            The object index for this page.
         """
         if self._object_index is not None:
             return self._object_index
@@ -494,7 +493,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     ) -> Iterable[BoundingBox]:
         """Yield the bboxes of the page objects of ``obj_type``, in top-left origin.
 
-        Served from the per-page object index (:meth:`_get_object_index`) so repeated
+        Served from the per-page object index (``_get_object_index``), so repeated
         calls do not re-walk the page. With ``skip_invisible_text``, text objects
         drawn in a rendering mode that paints no ink are left out, matching what
         docling-parse does natively.
