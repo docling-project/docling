@@ -193,6 +193,32 @@ def test_table_out_of_range_namest_does_not_crash():
     assert [cell.text for cell in ok.table_cells] == ["a", "b"]
 
 
+def test_table_non_numeric_colwidth_does_not_crash():
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="auto"/>'
+        '<colspec colname="2" colwidth="10pt"/>'
+        "<tbody><row><entry>a</entry><entry>b</entry></row></tbody>"
+        "</tgroup></table>"
+    )
+    table = XmlTable(xml).parse()
+    assert table is not None
+    assert [cell.text for cell in table.table_cells] == ["a", "b"]
+
+
+def test_table_missing_colwidth_does_not_crash():
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1"/>'
+        '<colspec colname="2" colwidth="1"/>'
+        "<tbody><row><entry>a</entry><entry>b</entry></row></tbody>"
+        "</tgroup></table>"
+    )
+    table = XmlTable(xml).parse()
+    assert table is not None
+    assert [cell.text for cell in table.table_cells] == ["a", "b"]
+
+
 def test_patent_uspto_ice(patents):
     """Test applications and grants Full Text Data/XML Version 4.x ICE."""
 

@@ -1552,12 +1552,19 @@ class XmlTable:
             offst = 0
             for info in tg["colinfo"]:
                 cw = info["colwidth"]
+                if isinstance(cw, list):
+                    cw = cw[0] if cw else None
+                if not isinstance(cw, str):
+                    cw = "" if cw is None else str(cw)
                 cw = re.sub("pt", "", cw, flags=re.I)
                 cw = re.sub("mm", "", cw, flags=re.I)
                 try:
                     cw = int(cw)
-                except BaseException:
-                    cw = float(cw)
+                except (TypeError, ValueError):
+                    try:
+                        cw = float(cw)
+                    except (TypeError, ValueError):
+                        cw = 0
                 colinfo[itg]["colwidth"].append(cw)
                 colinfo[itg]["offset"].append(offst)
                 offst += cw
