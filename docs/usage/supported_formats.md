@@ -27,6 +27,7 @@ Below you can find a listing of all supported input and output formats.
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
+| AFP | IBM Advanced Function Presentation / MO:DCA |
 
 Schema-specific support:
 

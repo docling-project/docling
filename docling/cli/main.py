@@ -458,6 +458,25 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
+def _write_native_vlm_output(conv_res: ConversionResult) -> None:
+    native_responses = [
+        (page.page_no, page.predictions.vlm_response)
+        for page in conv_res.pages
+        if page.predictions.vlm_response is not None
+    ]
+    if not native_responses:
+        return
+
+    debug_output_dir = (
+        Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
+    )
+    debug_output_dir.mkdir(parents=True, exist_ok=True)
+    for page_no, response in native_responses:
+        filename = debug_output_dir / f"vlm_response_page_{page_no:05d}.txt"
+        filename.write_text(response.text, encoding="utf-8")
+        _log.info("writing native VLM output to %s", filename)
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -480,6 +499,7 @@ def export_documents(
     chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
+    debug_vlm_native_output: bool = False,
 ):
     success_count = 0
     failure_count = 0
@@ -510,6 +530,9 @@ def export_documents(
             chunker_obj = HybridChunker(tokenizer=hf_tok)
 
     for conv_res in conv_results:
+        if debug_vlm_native_output:
+            _write_native_vlm_output(conv_res)
+
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
@@ -825,6 +848,16 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
+    debug_vlm_native_output: Annotated[
+        bool,
+        typer.Option(
+            "--debug-vlm-native-output",
+            help=(
+                "Write each page's unparsed VLM response to the document's "
+                "debug output directory."
+            ),
+        ),
+    ] = False,
     asr_model: Annotated[
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
@@ -950,7 +983,12 @@ def convert(  # noqa: C901
         ),
     ] = None,
     pdf_backend: Annotated[
-        PdfBackend, typer.Option(..., help="The PDF backend to use.")
+        PdfBackend,
+        typer.Option(
+            ...,
+            help="The PDF backend to use.",
+            metavar="[pypdfium2|docling_parse]",
+        ),
     ] = PdfBackend.THREADED_DOCLING_PARSE,
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
@@ -1146,7 +1184,6 @@ def convert(  # noqa: C901
     # (and `convert-remote`) stay importable without the local PDF stack
     # (pypdfium2 / docling_parse). Only local `convert` needs them.
     from docling.backend.docling_parse_backend import (
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
     )
     from docling.backend.image_backend import ImageDocumentBackend
@@ -1179,8 +1216,6 @@ def convert(  # noqa: C901
     def _resolve_pdf_backend() -> tuple[type[PdfDocumentBackend], PdfBackendOptions]:
         selected_backend = normalize_pdf_backend(pdf_backend)
         password = SecretStr(pdf_password) if pdf_password is not None else None
-        if selected_backend == PdfBackend.DOCLING_PARSE:
-            return DoclingParseDocumentBackend, PdfBackendOptions(password=password)
         if selected_backend == PdfBackend.THREADED_DOCLING_PARSE:
             return (
                 ThreadedDoclingParseDocumentBackend,
@@ -1522,10 +1557,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.NATIVE:
             normalized_pdf_backend = normalize_pdf_backend(pdf_backend)
-            if normalized_pdf_backend not in (
-                PdfBackend.DOCLING_PARSE,
-                PdfBackend.THREADED_DOCLING_PARSE,
-            ):
+            if normalized_pdf_backend not in (PdfBackend.THREADED_DOCLING_PARSE,):
                 err_console.print(
                     f"[red]Error: --pipeline native requires a docling-parse PDF backend, "
                     f"got '{normalized_pdf_backend.value}'.[/red]"
@@ -1709,6 +1741,7 @@ def convert(  # noqa: C901
             chunker_type=chunker_type,
             chunk_max_tokens=chunk_max_tokens,
             chunk_tokenizer=chunk_tokenizer,
+            debug_vlm_native_output=debug_vlm_native_output,
         )
 
         end_time = time.time() - start_time

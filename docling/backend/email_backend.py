@@ -51,6 +51,11 @@ except ImportError as e:  # pragma: no cover - import-time guard
 
 _log = logging.getLogger(__name__)
 
+# RFC 5322 3.2.3 specials, minus "." which parses back unquoted and is common
+# in real names. A rendered display name holding any of these is quoted.
+_ADDRESS_SPECIALS = re.compile(r'[][()<>@,:;"\\]')
+_ADDRESS_ESCAPES = re.compile(r'[\\"]')
+
 # OLE2 / Compound File Binary signature that prefixes every Outlook .msg file.
 _MSG_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
@@ -115,9 +120,14 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _header_safe(value: str) -> str:
-        # Email header values must be single-line; collapse CR/LF to spaces so a
-        # crafted .msg cannot inject headers and EmailMessage does not reject it.
-        return value.replace("\r", " ").replace("\n", " ").strip()
+        """Collapse a header value to a single line of single-spaced text.
+
+        ``.msg`` header assembly needs single-line values, and a decoded RFC 2047
+        encoded-word must not stand up a forged header in the rendered document.
+        ``str.split()`` covers every character ``str.splitlines()`` breaks on, and
+        collapsing runs also unfolds a folded header to one space.
+        """
+        return " ".join(value.split())
 
     @staticmethod
     def _msg_to_rfc822_bytes(data: bytes) -> bytes:
@@ -201,6 +211,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.EMAIL}
 
+    @staticmethod
+    def _quote_display_name(name: str) -> str:
+        """Quote a display name that would otherwise not parse back as itself.
+
+        ``formataddr`` and ``headerregistry.Address`` apply the same rule but
+        also RFC 2047 encode a non-ASCII name, which this rendering keeps as
+        readable text.
+        """
+        if _ADDRESS_SPECIALS.search(name):
+            return '"' + _ADDRESS_ESCAPES.sub(r"\\\g<0>", name) + '"'
+        return name
+
     def _format_addresses(
         self, addresses: list[tuple[str, str]] | None, fallback: str
     ) -> str:
@@ -209,14 +231,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         formatted = []
         for name, email in addresses:
+            name = self._header_safe(name)
             if name:
-                formatted.append(f"{name} <{email}>")
+                formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
                 formatted.append(email)
 
         return ", ".join(formatted)
 
     def _split_paragraphs(self, text: str) -> list[str]:
+        """Split a body into paragraphs, normalising CRLF and lone CR first."""
+        text = re.sub(r"\r\n|\r", "\n", text)
         return [
             paragraph.strip()
             for paragraph in re.split(r"\n\s*\n+", text.strip())
@@ -260,27 +285,26 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def _get_date_text(self) -> str:
         assert self.mail is not None
 
+        # mailparser returns a datetime or None here, never the raw header.
         mail_date = self.mail.date
-        if isinstance(mail_date, datetime):
-            return mail_date.isoformat()
-        if isinstance(mail_date, str):
-            return mail_date.strip()
-        return ""
+        return mail_date.isoformat() if isinstance(mail_date, datetime) else ""
 
     def _get_attachment_labels(self) -> list[str]:
         """Return one display label per attachment (name, optional content type).
 
         Only attachment metadata is surfaced; the encoded payload is never
         included, matching how ``.eml`` attachment content is excluded.
+
+        Filenames are header-derived, so they get the same single-line treatment.
         """
         assert self.mail is not None
 
         labels: list[str] = []
         for index, attachment in enumerate(self.mail.attachments or []):
-            filename = (attachment.get("filename") or "").strip()
+            filename = self._header_safe(attachment.get("filename") or "")
             if not filename:
                 filename = f"attachment-{index + 1}"
-            content_type = (attachment.get("mail_content_type") or "").strip()
+            content_type = self._header_safe(attachment.get("mail_content_type") or "")
             labels.append(f"{filename} ({content_type})" if content_type else filename)
         return labels
 
@@ -302,7 +326,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         subject = (
-            self.mail.subject.strip() if isinstance(self.mail.subject, str) else ""
+            self._header_safe(self.mail.subject)
+            if isinstance(self.mail.subject, str)
+            else ""
         )
         from_text = self._format_addresses(self.mail.from_, fallback="")
         to_text = self._format_addresses(self.mail.to, fallback="")

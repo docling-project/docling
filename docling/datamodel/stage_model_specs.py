@@ -1308,6 +1308,64 @@ VLM_CONVERT_NANONETS_OCR2 = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
+    preset_id="nemotron_parse_v2",
+    name="Nemotron Parse 2.0",
+    description=(
+        "NVIDIA Nemotron Parse 2.0 model for multilingual document parsing "
+        "with semantic classes and bounding boxes (0.9B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        name="NVIDIA-Nemotron-Parse-2.0",
+        default_repo_id="nvidia/NVIDIA-Nemotron-Parse-2.0",
+        prompt=(
+            "</s><s><predict_bbox><predict_classes><output_markdown>"
+            "<predict_no_text_in_pic>"
+        ),
+        response_format=ResponseFormat.NEMOTRON_PARSE_V2,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.VLLM,
+        },
+        trust_remote_code=True,
+        max_new_tokens=9000,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.6.1",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_processor_kwargs": {"add_special_tokens": False},
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "skip_special_tokens": True,
+                    },
+                },
+            ),
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Nemotron-Parse-2.0-8bit",
+                min_engine_version="0.6.17",
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                min_engine_version="0.20.0",
+                extra_config={
+                    "dtype": "bfloat16",
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "top_k": 1,
+                        "skip_special_tokens": False,
+                    },
+                },
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 VLM_CONVERT_GEMMA_12B = StageModelPreset(
     preset_id="gemma_12b",
     name="Gemma-3-12B",
