@@ -620,15 +620,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Citation parsing started")
 
-        # Author names
+        # Author names. Keep surname before given-names so existing citations
+        # stay stable, but do not assume both parts exist or carry .text.
         names = []
         for name_node in node.xpath(".//name"):
-            name_str = (
-                name_node.xpath("surname")[0].text.replace("\n", " ").strip()
-                + " "
-                + name_node.xpath("given-names")[0].text.replace("\n", " ").strip()
-            )
-            names.append(name_str)
+            name_parts: list[str] = []
+            for tag_name in ("surname", "given-names"):
+                for part_node in name_node.xpath(tag_name):
+                    part_text = JatsDocumentBackend._get_node_text(part_node)
+                    if part_text:
+                        name_parts.append(part_text)
+            name_str = JatsDocumentBackend._normalize_whitespace(" ".join(name_parts))
+            if name_str:
+                names.append(name_str)
         etal_node = node.xpath(".//etal")
         if len(etal_node) > 0:
             etal_text = etal_node[0].text or DEFAULT_TEXT_ETAL
@@ -652,7 +656,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         citation["title"] = (
             JatsDocumentBackend._get_text(title_node)
             if title_node is not None
-            else node.text.replace("\n", " ").strip()
+            else JatsDocumentBackend._normalize_whitespace(node.text)
         )
 
         # Journal, year, publisher name, publisher location, volume, elocation
@@ -667,7 +671,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    item_node[0].text.replace("\n", " ").strip()
+                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
                 )
 
         # Publication identifier
@@ -689,15 +693,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Pages
         if len(node.xpath("elocation-id")) > 0:
-            citation["page"] = (
-                node.xpath("elocation-id")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("elocation-id")[0].text
             )
         elif len(node.xpath("fpage")) > 0:
-            citation["page"] = node.xpath("fpage")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("fpage")[0].text
+            )
             if len(node.xpath("lpage")) > 0:
-                citation["page"] += (
-                    "–" + node.xpath("lpage")[0].text.replace("\n", " ").strip()  # noqa: RUF001
+                lpage = JatsDocumentBackend._normalize_whitespace(
+                    node.xpath("lpage")[0].text
                 )
+                if lpage:
+                    citation["page"] += "–" + lpage  # noqa: RUF001
 
         # Flatten the citation to string
 

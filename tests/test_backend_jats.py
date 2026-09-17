@@ -939,6 +939,48 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_element_citation_surname_only_does_not_crash():
+    """A citation name with only a surname must not IndexError on given-names."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname></name>"
+        "<article-title>Only a surname</article-title>"
+        "<year>2020</year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith" in markdown
+    assert "Only a surname" in markdown
+
+
+def test_jats_element_citation_empty_name_parts_do_not_crash():
+    """Empty surname/given-names nodes have .text of None, not a string."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname></surname><given-names></given-names></name>"
+        "<name><given-names>Ada</given-names></name>"
+        "<article-title>Empty name parts</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Ada" in markdown
+    assert "Empty name parts" in markdown
+
+
+def test_jats_element_citation_empty_year_does_not_crash():
+    """A present but empty <year/> used to AttributeError on .text.replace."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
+        "<article-title>Empty year</article-title>"
+        "<year></year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith Jane" in markdown
+    assert "Empty year" in markdown
+
+
 @pytest.mark.parametrize(
     ("contrib", "expected"),
     [
