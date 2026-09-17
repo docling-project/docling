@@ -903,6 +903,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
         return
 
+    @staticmethod
+    def _table_span_int(value: Any, default: int = 1) -> int:
+        """Coerce a DrawingML table span attribute to a positive integer."""
+        if value in (None, ""):
+            return default
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return default
+        return parsed if parsed > 0 else default
+
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
         if shape.has_table:
@@ -930,18 +941,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         continue  # If no cell XML is found, skip
 
                     cell_xml = cell_xml[0]  # Get the first matching XML node
-                    row_span = cell_xml.get("rowSpan")  # Vertical span
-                    col_span = cell_xml.get("gridSpan")  # Horizontal span
-
-                    if row_span is None:
-                        row_span = 1
-                    else:
-                        row_span = int(row_span)
-
-                    if col_span is None:
-                        col_span = 1
-                    else:
-                        col_span = int(col_span)
+                    row_span = MsPowerpointDocumentBackend._table_span_int(
+                        cell_xml.get("rowSpan")
+                    )
+                    col_span = MsPowerpointDocumentBackend._table_span_int(
+                        cell_xml.get("gridSpan")
+                    )
 
                     icell = TableCell(
                         text=cell.text.strip(),

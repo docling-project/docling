@@ -968,3 +968,29 @@ def test_paragraph_provenance_spans_its_own_text():
                 f"{item.self_ref} ({item.label}) spans {prov.charspan} "
                 f"but its text is {len(item.text)} characters"
             )
+
+
+def test_table_non_numeric_spans_do_not_crash(tmp_path: Path):
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    table = slide.shapes.add_table(
+        2, 2, Inches(0.5), Inches(0.5), Inches(4), Inches(2)
+    ).table
+    table.cell(0, 0).text = "A"
+    table.cell(0, 1).text = "B"
+    table.cell(1, 0).text = "C"
+    table.cell(1, 1).text = "D"
+    table.cell(0, 0)._tc.set("rowSpan", "auto")
+    table.cell(0, 0)._tc.set("gridSpan", "x")
+
+    path = tmp_path / "bad_spans.pptx"
+    prs.save(str(path))
+    doc = convert_with_pptx_backend(path)
+
+    assert len(doc.tables) == 1
+    texts = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert "A" in texts
+    assert "B" in texts
