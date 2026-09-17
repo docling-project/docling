@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Security-guard tests for the model-download revision-pinning helpers.
+"""Tests for the revision-pinning helpers in ``hf_model_download``.
 
-These cover the moving-ref detector and the trust_remote_code supply-chain guard
-that warns (or refuses) when custom code from the Hub would be loaded from an
-unpinned revision. See docling.models.utils.hf_model_download.
+These cover commit-SHA detection and the check that warns (or refuses) when a
+``trust_remote_code`` model is downloaded from an unpinned revision.
 """
 
 import logging
@@ -25,11 +24,16 @@ class TestIsPinnedRevision:
     def test_full_commit_sha_is_pinned(self):
         assert is_pinned_revision(_PINNED_SHA) is True
 
-    def test_uppercase_sha_is_pinned(self):
-        assert is_pinned_revision(_PINNED_SHA.upper()) is True
-
-    def test_sha_with_surrounding_whitespace_is_pinned(self):
-        assert is_pinned_revision(f"  {_PINNED_SHA}\n") is True
+    @pytest.mark.parametrize(
+        "revision",
+        [
+            _PINNED_SHA.upper(),
+            f"  {_PINNED_SHA}",
+            f"{_PINNED_SHA}\n",
+        ],
+    )
+    def test_sha_not_as_passed_to_hub_is_not_pinned(self, revision):
+        assert is_pinned_revision(revision) is False
 
     @pytest.mark.parametrize(
         "revision",

@@ -1208,12 +1208,10 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.TRANSFORMERS,
 )
 
-# SUPPLY-CHAIN SECURITY: presets that set trust_remote_code=True run custom
-# Python from a third-party Hub repo on model load, so they are pinned to a
-# commit SHA (including any engine override that points at a different repo).
-# Bump a pin only after reviewing the remote code at the new commit. Unpinned
-# trust_remote_code downloads log a SECURITY warning (see
-# docling.models.utils.hf_model_download.warn_on_unpinned_trust_remote_code).
+# All presets in this module that set trust_remote_code=True execute Python
+# code from their Hugging Face repo on model load, so each one is pinned to a
+# commit SHA, including engine overrides that point at a different repo. A pin
+# is bumped only after reviewing the remote code at the new commit.
 VLM_CONVERT_PHI4 = StageModelPreset(
     preset_id="phi4",
     name="Phi-4",

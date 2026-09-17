@@ -253,8 +253,9 @@ PIXTRAL_12B_MLX = InlineVlmOptions(
     temperature=0.0,
 )
 
-# SUPPLY-CHAIN SECURITY: specs that set trust_remote_code=True are pinned to a
-# commit SHA; bump a pin only after reviewing the remote code at the new commit.
+# All specs in this module that set trust_remote_code=True are pinned to a
+# commit SHA. A pin is bumped only after reviewing the remote code at the new
+# commit.
 # Phi4
 PHI4_TRANSFORMERS = InlineVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",

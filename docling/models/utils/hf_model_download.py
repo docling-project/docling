@@ -15,12 +15,10 @@ _log = logging.getLogger(__name__)
 # log without asking huggingface_hub whether every file was already present.
 _CACHE_HIT_SECONDS = 1.0
 
-# A Hugging Face revision that is a full 40-character hex commit SHA is
-# immutable: it always resolves to the exact same tree. Anything else -- None
-# (defaults to ``main``), a branch, or a tag -- is a *moving* ref whose contents
-# can change under us after review (a force-push, a retag, or a compromised Hub
-# account). That distinction is the whole basis of the supply-chain guard below.
-_COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+# A full 40-character lowercase hex commit SHA always resolves to the same
+# repository tree. Any other revision (None, which resolves to ``main``, a
+# branch, or a tag) is a moving ref whose contents can change.
+_COMMIT_SHA_RE = re.compile(r"[0-9a-f]{40}")
 
 # This module sits in tach's ``foundation`` layer, below ``docling.datamodel``,
 # so the refusal toggle is read straight from the environment rather than
@@ -36,14 +34,21 @@ def _refuse_unpinned_remote_code() -> bool:
 
 
 def is_pinned_revision(revision: Optional[str]) -> bool:
-    """Return True only if ``revision`` is a full 40-hex-char commit SHA.
+    """Check whether ``revision`` is a full commit SHA.
 
-    Branches, tags, ``None`` (which resolves to ``main``) and short SHAs are all
-    treated as *moving* refs and return False.
+    The value is matched exactly as it is passed to the Hugging Face Hub, so
+    surrounding whitespace or uppercase hex digits do not count as pinned.
+
+    Args:
+        revision: The revision passed to the Hugging Face Hub.
+
+    Returns:
+        True if ``revision`` is a 40-character lowercase hex commit SHA; False for
+        ``None``, branches, tags, short SHAs and any other value.
     """
     if not revision:
         return False
-    return _COMMIT_SHA_RE.match(revision.strip().lower()) is not None
+    return _COMMIT_SHA_RE.fullmatch(revision) is not None
 
 
 def warn_on_unpinned_trust_remote_code(
@@ -51,17 +56,23 @@ def warn_on_unpinned_trust_remote_code(
     revision: Optional[str],
     trust_remote_code: bool,
 ) -> None:
-    """Guard the trust_remote_code + moving-revision supply-chain risk.
+    """Flag a ``trust_remote_code`` model download from an unpinned revision.
 
-    When a model repo is loaded with ``trust_remote_code=True`` (custom Python
-    from the Hub is executed on load) *and* the revision is a moving ref rather
-    than a pinned commit SHA, an attacker who force-pushes or takes over that Hub
-    repo gains arbitrary code execution on the next model load. This helper is the
-    single chokepoint (called from :func:`download_hf_model`) that flags it.
+    With ``trust_remote_code=True``, loading the model executes Python code from
+    the repository, so the revision must be a commit SHA for the executed code to
+    be fixed. ``download_hf_model`` calls this before fetching. An unpinned
+    revision logs a warning, or raises when
+    ``DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE`` is set to ``1``, ``true``,
+    ``yes`` or ``on`` (case-insensitive).
 
-    Default behaviour is a prominent ``log.warning``. Set
-    ``DOCLING_SECURITY_REFUSE_UNPINNED_REMOTE_CODE=1`` to raise instead, for
-    callers that want to fail closed.
+    Args:
+        repo_id: The Hugging Face repository ID.
+        revision: The requested revision; ``None`` resolves to ``main``.
+        trust_remote_code: Whether the model is loaded with remote code enabled.
+
+    Raises:
+        ValueError: If ``trust_remote_code`` is True, ``revision`` is not a commit
+            SHA, and the refusal environment variable is set to a truthy value.
     """
     if not trust_remote_code or is_pinned_revision(revision):
         return
