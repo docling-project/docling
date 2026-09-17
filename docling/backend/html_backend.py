@@ -1865,7 +1865,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
                 # extract inline formulas
                 for formula in html_cell("inline-formula"):
-                    math_parts = formula.text.split("$$")
+                    math_parts = (formula.text or "").split("$$")
                     if len(math_parts) == 3:
                         math_formula = f"$${math_parts[1]}$$"
                         formula.replace_with(NavigableString(math_formula))

@@ -1570,3 +1570,14 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_empty_inline_formula_in_table_cell_does_not_crash(tmp_path: Path):
+    src = tmp_path / "formula.html"
+    src.write_bytes(
+        b"<table><tr><td><inline-formula></inline-formula>x</td></tr></table>"
+    )
+    doc = DocumentConverter(allowed_formats=[InputFormat.HTML]).convert(src).document
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["x"]

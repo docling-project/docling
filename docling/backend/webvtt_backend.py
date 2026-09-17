@@ -128,6 +128,8 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             nonlocal cue_text, parents
             if not cue_text:
                 cue_text.append(AnnotatedPar(items=[]))
+            if not payload:
+                return
             for comp in payload:
                 item: AnnotatedText = (
                     parents[-1].copy_meta("") if parents else AnnotatedText(text="")
@@ -191,7 +193,10 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             cue_text = []
             parents = []
             identifier = str(block.identifier) if block.identifier else None
-            _extract_components(block.payload)
+            payload = getattr(block, "payload", None)
+            if not payload:
+                continue
+            _extract_components(payload)
             for par in cue_text:
                 if not par.items:
                     continue
