@@ -168,3 +168,57 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
     expected = converter.convert(source, raises_on_error=True).document
     for doc in (stream_doc, file_doc):
         assert doc.export_to_markdown() == expected.export_to_markdown()
+
+
+def test_heading_level_as_string_does_not_crash():
+    """JSON exporters sometimes store heading level as a string."""
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "heading",
+                    "attrs": {"level": "2"},
+                    "content": [{"type": "text", "text": "String level"}],
+                }
+            ],
+        }
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+    markdown = doc.export_to_markdown()
+    assert "String level" in markdown
+
+
+def test_table_spans_as_strings_do_not_crash():
+    """ProseMirror rowspan/colspan as strings used to TypeError on int+str."""
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "table",
+                    "content": [
+                        {
+                            "type": "table_row",
+                            "content": [
+                                {
+                                    "type": "table_cell",
+                                    "attrs": {"colspan": "2", "rowspan": "1"},
+                                    "content": [
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {"type": "text", "text": "Wide"}
+                                            ],
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+    assert "Wide" in doc.export_to_markdown()

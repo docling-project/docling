@@ -109,11 +109,22 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         self._add_blocks(self.data["doc"].get("content", []), doc, None)
         return doc
 
+    @staticmethod
+    def _positive_int(value: Any, default: int = 1) -> int:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return default
+        return parsed if parsed > 0 else default
+
     def _add_blocks(
         self, nodes: list[dict], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
+        if not isinstance(nodes, list):
+            return
         for node in nodes:
-            self._add_block(node, doc, parent)
+            if isinstance(node, dict):
+                self._add_block(node, doc, parent)
 
     def _add_block(
         self, node: dict[str, Any], doc: DoclingDocument, parent: NodeItem | None
@@ -124,7 +135,8 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         if node_type == "heading":
             text, formatting, hyperlink = self._collapse(content)
             if text:
-                level = node.get("attrs", {}).get("level") or 1
+                attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
+                level = self._positive_int(attrs.get("level"), default=1)
                 if level <= 1:
                     doc.add_title(
                         text=text,
@@ -259,7 +271,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     def _add_table(
         self, rows: list[dict], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
-        rows = [row for row in rows if row.get("type") == "table_row"]
+        if not isinstance(rows, list):
+            return
+        rows = [
+            row
+            for row in rows
+            if isinstance(row, dict) and row.get("type") == "table_row"
+        ]
         if not rows:
             return
 
@@ -276,9 +294,9 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 while (row_idx, col_idx) in occupied:
                     col_idx += 1
-                attrs = cell.get("attrs", {})
-                row_span = attrs.get("rowspan") or 1
-                col_span = attrs.get("colspan") or 1
+                attrs = cell.get("attrs") if isinstance(cell.get("attrs"), dict) else {}
+                row_span = self._positive_int(attrs.get("rowspan"), default=1)
+                col_span = self._positive_int(attrs.get("colspan"), default=1)
                 end_row = row_idx + row_span
                 end_col = col_idx + col_span
                 blocks = cell.get("content", [])
@@ -367,6 +385,8 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
 
     def _runs(self, content: list[dict]) -> list[_Run]:
         runs: list[_Run] = []
+        if not isinstance(content, list):
+            return runs
         for node in content or []:
             node_type = node.get("type")
             if node_type == "text":
