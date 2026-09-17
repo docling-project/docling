@@ -13,6 +13,7 @@ from docling.backend.docling_parse_backend import (
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     DocumentStream,
@@ -121,6 +122,37 @@ def test_accelerator_options():
     ao7 = AcceleratorOptions()
     assert ao7.num_threads == 4
     assert ao7.device == AcceleratorDevice.AUTO
+
+
+def test_pdf_format_option_parses_with_the_requested_accelerator_threads():
+    format_option = PdfFormatOption(
+        pipeline_options=PdfPipelineOptions(
+            accelerator_options=AcceleratorOptions(num_threads=1)
+        )
+    )
+
+    backend_options = format_option.backend_options
+    assert isinstance(backend_options, ThreadedDoclingParseBackendOptions)
+    assert backend_options.parser_threads == 1
+
+    # Callers who ask for nothing keep the backend's own fallback.
+    assert PdfFormatOption().backend_options is None
+    assert (
+        PdfFormatOption(pipeline_options=PdfPipelineOptions()).backend_options is None
+    )
+
+
+def test_pdf_format_option_keeps_explicit_backend_options():
+    format_option = PdfFormatOption(
+        pipeline_options=PdfPipelineOptions(
+            accelerator_options=AcceleratorOptions(num_threads=1)
+        ),
+        backend_options=ThreadedDoclingParseBackendOptions(parser_threads=7),
+    )
+
+    backend_options = format_option.backend_options
+    assert isinstance(backend_options, ThreadedDoclingParseBackendOptions)
+    assert backend_options.parser_threads == 7
 
 
 def test_kserve_v2_binary_data_deprecated_alias():

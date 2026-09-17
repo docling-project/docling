@@ -91,6 +91,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.settings import (
@@ -256,6 +257,23 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+    @model_validator(mode="after")
+    def configure_parser_threads(self) -> Self:
+        # The threaded backend falls back to a fresh AcceleratorOptions(), which cannot
+        # see the one the caller put on the pipeline options, so carry it across here.
+        if not isinstance(self.pipeline_options, PdfPipelineOptions):
+            return self
+        if self.backend_options is not None:
+            return self
+        if "accelerator_options" not in self.pipeline_options.model_fields_set:
+            return self
+
+        self.backend_options = ThreadedDoclingParseBackendOptions(
+            parser_threads=self.pipeline_options.accelerator_options.num_threads,
+        )
+
+        return self
 
 
 class IWorkPagesFormatOption(FormatOption):
