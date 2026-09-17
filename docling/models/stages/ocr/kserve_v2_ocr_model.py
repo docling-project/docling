@@ -53,8 +53,8 @@ class KserveV2OcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
-        enable_remote_services: bool = False,
         default_language: str = "en",
+        enable_remote_services: bool = False,
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -63,10 +63,10 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path: Path to model artifacts (not used for remote inference).
             options: KServe v2 OCR configuration options.
             accelerator_options: Accelerator configuration (not used for remote inference).
-            enable_remote_services: Whether connections to remote services are
-                allowed. This engine ships page crops to a remote inference
-                server, so it refuses to run unless this is set explicitly.
             default_language: Language sent when `options.lang` is empty.
+            enable_remote_services: Whether connections to remote services are
+                allowed. The model sends page crops to a remote inference server
+                and raises ``OperationNotAllowed`` if enabled while this is ``False``.
         """
         super().__init__(
             enabled=enabled,
@@ -79,9 +79,7 @@ class KserveV2OcrModel(BaseOcrModel):
         self._kserve_client: Optional[KserveV2Client] = None
 
         if self.enabled:
-            # This engine sends page crops to a remote inference server. Refuse
-            # to run -- before creating any client or opening any connection --
-            # unless remote services have been explicitly allowed.
+            # Checked before the client is created.
             if not enable_remote_services:
                 raise OperationNotAllowed(
                     "Connections to remote services is only allowed when set explicitly. "

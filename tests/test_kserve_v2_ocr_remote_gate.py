@@ -1,13 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""The KServe v2 OCR model must honor `enable_remote_services`.
-
-This engine ships page crops to a remote inference server, so -- like every
-other remote engine in Docling -- it must refuse to run unless remote services
-have been explicitly enabled, and it must refuse *before* opening any
-connection.
-"""
+"""Tests for the `enable_remote_services` check in the KServe v2 OCR model."""
 
 import pytest
 
@@ -18,14 +12,11 @@ from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
 
 
 def _options() -> KserveV2OcrOptions:
-    # A syntactically valid but never-contacted endpoint.
+    # Valid URL that is never contacted.
     return KserveV2OcrOptions(url="http://kserve.invalid:8000")
 
 
 def test_enabled_without_remote_services_raises(monkeypatch) -> None:
-    # If the guard failed to fire first, this would run and blow up loudly
-    # instead of the expected OperationNotAllowed -- proving the guard runs
-    # before any client/connection is created.
     def _boom(self) -> None:
         raise AssertionError("connection attempted before the remote-services gate")
 
@@ -42,7 +33,6 @@ def test_enabled_without_remote_services_raises(monkeypatch) -> None:
 
 
 def test_default_is_deny() -> None:
-    # Omitting the flag entirely must also deny (deny-by-default).
     with pytest.raises(OperationNotAllowed):
         KserveV2OcrModel(
             enabled=True,
@@ -53,8 +43,6 @@ def test_default_is_deny() -> None:
 
 
 def test_disabled_does_not_raise(monkeypatch) -> None:
-    # A disabled engine never connects, so the gate is irrelevant and
-    # construction must succeed (mirrors the picture-description model).
     monkeypatch.setattr(KserveV2OcrModel, "_initialize_client", lambda self: None)
     model = KserveV2OcrModel(
         enabled=False,
