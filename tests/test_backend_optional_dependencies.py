@@ -59,6 +59,7 @@ def _run_with_blocked_module(
         "openpyxl",
         "pylatexenc",
         "bs4",
+        "pypdfium2",
     ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
@@ -214,6 +215,62 @@ def test_docling_parse_backend_operates_without_pypdfium2() -> None:
         "page = next(backend.iter_pages())\n"
         "assert page.get_page_image().width > 0\n"
         "backend.unload()\n"
+    )
+
+    result = _run_with_blocked_module("pypdfium2", body)
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("backend_import", "backend_class", "sample", "fmt"),
+    [
+        (
+            "docling.backend.msexcel_backend",
+            "MsExcelDocumentBackend",
+            _XLSX_SAMPLE,
+            "XLSX",
+        ),
+        (
+            "docling.backend.msword_backend",
+            "MsWordDocumentBackend",
+            _DOCX_SAMPLE,
+            "DOCX",
+        ),
+        (
+            "docling.backend.mspowerpoint_backend",
+            "MsPowerpointDocumentBackend",
+            _PPTX_SAMPLE,
+            "PPTX",
+        ),
+        (
+            "docling.backend.latex_backend",
+            "LatexDocumentBackend",
+            _TEX_SAMPLE,
+            "LATEX",
+        ),
+    ],
+)
+def test_office_and_latex_backends_convert_without_pypdfium2(
+    backend_import: str,
+    backend_class: str,
+    sample: Path,
+    fmt: str,
+) -> None:
+    # pypdfium2 ships with the PDF extras, and these backends need it only to
+    # rasterize embedded charts and EMF/WMF pictures. Text, tables, and chart
+    # data must still convert without it, the way they do when LibreOffice is
+    # absent.
+    body = (
+        "from pathlib import Path\n"
+        f"from {backend_import} import {backend_class}\n"
+        "from docling.datamodel.base_models import InputFormat\n"
+        "from docling.datamodel.document import InputDocument\n"
+        f"path = Path({str(sample)!r})\n"
+        "in_doc = InputDocument(path_or_stream=path, "
+        f"format=InputFormat.{fmt}, backend={backend_class})\n"
+        "doc = in_doc._backend.convert()\n"
+        "assert doc.texts or doc.tables\n"
     )
 
     result = _run_with_blocked_module("pypdfium2", body)

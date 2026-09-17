@@ -16,7 +16,6 @@ from tempfile import mkdtemp
 from typing import Annotated, Any, Callable, Final, cast
 from zipfile import ZipFile
 
-import pypdfium2
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -59,6 +58,19 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# pypdfium2 ships with the PDF extras, not with format-xlsx. Chart and EMF/WMF
+# rendering is the only thing here that needs it, and that path already
+# degrades to "no image" when LibreOffice is missing, so treat an absent
+# pypdfium2 the same way instead of breaking the whole backend at import time.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError:  # pragma: no cover - import-time guard
+    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -1139,12 +1151,22 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice is not available.
+            A converter callable, or None when LibreOffice or pypdfium2 is not
+            available. Both are needed: LibreOffice produces the PDF and
+            pypdfium2 rasterizes it.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
 
         self.xlsx_to_pdf_converter_init = True
+        if not _PYPDFIUM2_AVAILABLE:
+            _log.debug(
+                "pypdfium2 not installed — charts and EMF/WMF images in XLSX will "
+                "be skipped. Install it with "
+                "`pip install 'docling-slim[format-pdf-pypdfium2]'`."
+            )
+            return None
+
         self.xlsx_to_pdf_converter = get_docx_to_pdf_converter()
         if self.xlsx_to_pdf_converter is None:
             _log.debug(

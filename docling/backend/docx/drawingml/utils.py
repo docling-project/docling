@@ -13,11 +13,30 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Callable, Final, Optional
 
-import pypdfium2
 from PIL import Image, ImageChops
 
 if TYPE_CHECKING:
     from docx.document import Document
+
+# pypdfium2 ships with the PDF extras, not with format-docx/pptx/xlsx, but this
+# module is imported eagerly by the Word, PowerPoint, and Excel backends. A
+# module-level import therefore breaks those backends on installs that omit the
+# PDF extras. Only the DrawingML rasterization helper below needs it, so guard
+# the import and degrade gracefully when it is missing.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+_PYPDFIUM2_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _PYPDFIUM2_IMPORT_ERROR = e
+
+_PYPDFIUM2_INSTALL_HINT = (
+    "The 'pypdfium2' package is required to rasterize DrawingML graphics. "
+    "Install it with `pip install 'docling-slim[format-pdf-pypdfium2]'`."
+)
 
 LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 """Maximum seconds to wait for a single LibreOffice conversion.
@@ -239,6 +258,8 @@ def get_pil_from_dml_docx(
 ) -> Optional[Image.Image]:
     if converter is None:
         return None
+    if not _PYPDFIUM2_AVAILABLE:
+        raise ImportError(_PYPDFIUM2_INSTALL_HINT) from _PYPDFIUM2_IMPORT_ERROR
 
     temp_dir = Path(mkdtemp())
     try:
