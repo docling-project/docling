@@ -1036,3 +1036,13 @@ def test_e2e_jats_conversions_stream():
 
 def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
+
+
+def test_jats_empty_article_title_does_not_crash():
+    """An empty <article-title> has elem.text is None in lxml and used to AttributeError."""
+    doc = convert_jats_article_meta(
+        "<title-group><article-title></article-title></title-group>"
+    )
+    assert doc is not None
+    exported = doc.export_to_markdown()
+    assert isinstance(exported, str)

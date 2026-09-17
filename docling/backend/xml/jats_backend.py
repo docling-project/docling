@@ -504,7 +504,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                elem.text.replace("\n", " ").strip()
+                JatsDocumentBackend._normalize_whitespace(elem.text)
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
