@@ -59,11 +59,9 @@ def _registrymodifications_xcu() -> str:
       does not fetch external/DDE-linked content (an SSRF / file-inclusion
       vector via e.g. ``TargetMode="External"`` relationships).
 
-    Registry nodes deliberately *not* set here (see module notes): explicit
-    DDE, OLE-object and remote-image resolution toggles do not have a single
-    well-documented registry key across LibreOffice versions; macro-security
-    High plus disabled link updates covers the primary vectors, and the rest
-    is tracked as follow-up rather than guessed at.
+    Registry nodes for DDE, OLE-object, and remote-image resolution are
+    *not* set here because no single well-documented key covers those
+    vectors across LibreOffice versions.
     """
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -145,10 +143,18 @@ def _kill_soffice_process_group(proc: subprocess.Popen) -> None:
 def _run_hardened_soffice(args: list[str], timeout_s: int) -> None:
     """Run ``soffice`` in its own process group with a hard timeout.
 
-    Mirrors the previous ``subprocess.run(check=True, timeout=...)``
-    contract (raising :class:`subprocess.CalledProcessError` on a non-zero
-    exit and :class:`subprocess.TimeoutExpired` on timeout) but, on timeout,
-    kills the entire process group so ``soffice.bin`` cannot survive.
+    On timeout, the entire process group is killed so ``soffice.bin``
+    cannot survive.
+
+    Args:
+        args: The ``soffice`` command line to execute.
+        timeout_s: Timeout in seconds for the subprocess.
+
+    Raises:
+        subprocess.CalledProcessError: If ``soffice`` exits with a non-zero
+            status.
+        subprocess.TimeoutExpired: If ``soffice`` does not exit within
+            ``timeout_s`` seconds.
     """
     proc = subprocess.Popen(
         args,
@@ -207,12 +213,13 @@ def _isolated_libreoffice_profile() -> Iterator[str]:
     on that lock, causing conversions to fail intermittently and silently.
 
     The profile is also seeded with a hardening ``registrymodifications.xcu``
-    (see :func:`_registrymodifications_xcu`) so the conversion runs with
+    (see `_registrymodifications_xcu`) so the conversion runs with
     macros disabled and external link updates turned off.
 
     Yields:
         A ``-env:UserInstallation=<uri>`` CLI argument pointing at a freshly
-        created, empty profile directory. The directory is removed again
+        created profile directory that contains only the hardening
+        ``registrymodifications.xcu``. The directory is removed again
         once the ``with`` block exits.
     """
     profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
