@@ -203,6 +203,8 @@ def test_numbering_delimiter_variants():
     assert _parse_marker("(1.1) Details").family == "dotted"
     assert _parse_marker("A - Appendix").family == "alpha_u"
     assert _parse_marker("A: Appendix").family == "alpha_u"
+    assert _parse_marker("A.1 Proofs").family == "alpha_u"
+    assert _parse_marker("I.1 Scope").family == "roman_u"
 
     # Preserves correct hierarchical depth when dotted headings use colons
     levels = _levels(["1. Introduction", "1.1: Background", "1.1.1: Details"])
