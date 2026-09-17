@@ -1465,11 +1465,10 @@ def test_browser_request_block_reason_policy():
 
 
 def test_browser_request_block_reason_rejects_private_remote_ip():
-    """With remote fetch on, a remote URL resolving to a private/metadata IP is
-    still blocked so the render cannot pull e.g. cloud metadata into a page."""
+    """With remote fetch on, a remote URL resolving to a non-public IP is blocked."""
     backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=True))
 
-    # Link-local cloud metadata address (IP literal, so no DNS is needed).
+    # Link-local IP literal, so no DNS lookup is needed.
     reason = backend._get_browser_request_block_reason(
         "http://169.254.169.254/latest/meta-data"
     )

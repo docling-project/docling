@@ -457,8 +457,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             max_remote_image_bytes=options.max_remote_image_bytes,
             max_redirects=options.max_redirects,
             headers=options.headers,
-            # Scope configured headers to the source document's origin so bearer
-            # tokens are not leaked to other hosts referenced by the document.
+            # Configured headers are only sent to the source document's origin.
             header_origin=configured_base_path,
         )
 
@@ -970,12 +969,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     "remote fetch is disabled "
                     "(set options.enable_remote_fetch=True to allow)"
                 )
-            # Even with remote fetch enabled, refuse URLs whose host resolves to
-            # a private/loopback/link-local/metadata address so that e.g. an
-            # <img>/<iframe> pointing at 169.254.169.254 is not fetched into the
-            # rendered page. Chromium performs its own DNS resolution, so this
-            # in-process check is a best-effort guard (TOCTOU is possible); a
-            # validating egress proxy is the robust complement.
+            # Remote URLs must resolve to public addresses. Chromium resolves DNS
+            # itself, so the address it connects to can differ from this check.
             try:
                 validate_url_safety(request_url)
             except ValueError as exc:
@@ -1038,10 +1033,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 render_html, self._coerce_base_url(self.base_path)
             )
 
-        # Main-frame navigations are only allowed to stay on the source document
-        # itself (or the blank/srcdoc placeholders used with set_content). This
-        # blocks e.g. a <meta http-equiv="refresh"> to an internal address from
-        # navigating the page away and capturing that target in the screenshot.
+        # Main-frame navigations may only target the source document or the
+        # blank/srcdoc placeholders used with set_content.
         allowed_navigation_urls = {"about:blank", "about:srcdoc"}
         if render_url:
             allowed_navigation_urls.add(render_url)

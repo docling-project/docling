@@ -121,12 +121,7 @@ def test_load_image_data_local_requires_base_path():
 
 
 def test_validate_url_safety_rejects_ipv6_only_private_host():
-    """A host whose only address is a private IPv6 must be rejected.
-
-    The prior implementation validated a single IPv4 A record; a host that
-    resolves only to an IPv6 address (here ::1) slipped through and the
-    connection then re-resolved to the private address.
-    """
+    """A host whose only address is a private IPv6 must be rejected."""
 
     def fake_getaddrinfo(host, *args, **kwargs):
         return [_gai("::1", socket.AF_INET6)]

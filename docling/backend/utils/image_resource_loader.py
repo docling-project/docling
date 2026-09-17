@@ -36,7 +36,7 @@ _log = logging.getLogger(__name__)
 _IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 
 # NAT64 well-known prefix (RFC 6052): 64:ff9b::/96 embeds an IPv4 address in its
-# low 32 bits, so a private IPv4 target can hide inside a "public" IPv6 literal.
+# low 32 bits.
 _NAT64_PREFIX = ipaddress.ip_network("64:ff9b::/96")
 
 
@@ -59,8 +59,7 @@ def _embedded_ipv4(ip: _IPAddress) -> Optional[ipaddress.IPv4Address]:
     """Extract an IPv4 address embedded in an IPv6 literal, if any.
 
     Covers IPv4-mapped (``::ffff:a.b.c.d``), 6to4 (``2002::/16``) and NAT64
-    (``64:ff9b::/96``) forms, each of which can smuggle a private/loopback IPv4
-    target past a naive IPv6-only check.
+    (``64:ff9b::/96``) forms.
     """
     if not isinstance(ip, ipaddress.IPv6Address):
         return None
@@ -114,13 +113,11 @@ def _resolve_all_ips(hostname: str) -> list[_IPAddress]:
 def validate_url_safety(url: str) -> None:
     """Reject URLs that resolve to a non-public IP address.
 
-    Guards against SSRF by requiring *every* address the URL's host resolves to
-    (both IPv4 A and IPv6 AAAA records) to be a globally routable address.
-    Private, loopback, link-local, reserved, multicast, and unspecified
-    addresses are refused, as are IPv4 addresses embedded in IPv6 literals
-    (IPv4-mapped, 6to4 and NAT64 forms). Validating all records — not just the
-    first IPv4 A record — closes the gap where the connection re-resolves via
-    ``getaddrinfo`` and reaches a private IPv6 (e.g. ``::1``) instead.
+    Guards against SSRF by requiring every address the URL's host resolves to
+    (IPv4 and IPv6) to be globally routable, since a connection may use any of
+    them. Private, loopback, link-local, reserved, multicast, and unspecified
+    addresses are refused, as are IPv4 addresses embedded in IPv6 addresses
+    (IPv4-mapped, 6to4 and NAT64 forms).
 
     Args:
         url: The URL whose host is validated.
@@ -149,12 +146,9 @@ def pinned_dns_resolution() -> Iterator[None]:
     """Force in-process DNS resolution to only reach validated addresses.
 
     Installs a ``socket.getaddrinfo`` wrapper for the duration of the context
-    that validates *every* address returned for *every* host looked up (the
-    initial request and any redirect target). Because the wrapper returns the
-    same list the connector then iterates, the connection can only be
-    established to an address that has just passed validation — there is no
-    window for the host to re-resolve to a different (e.g. rebound, private)
-    address between the safety check and ``connect()``.
+    that validates every address returned for every host looked up, including
+    redirect targets. The connection uses the list the wrapper returns, so it
+    can only reach addresses that passed validation.
 
     Note:
         This replaces ``socket.getaddrinfo`` process-wide while active, so it is
@@ -169,8 +163,8 @@ def pinned_dns_resolution() -> Iterator[None]:
             _validate_ip(ipaddress.ip_address(info[4][0]))
         return infos
 
-    # Assign via setattr so static checkers do not flag the (intentional)
-    # signature mismatch with the stdlib getaddrinfo stub.
+    # setattr avoids a type-checker error: the wrapper signature differs from
+    # the stdlib getaddrinfo stub.
     setattr(socket, "getaddrinfo", _guarded_getaddrinfo)
     try:
         yield
@@ -219,10 +213,8 @@ class ImageResourceLoader:
         self.max_remote_image_bytes = max_remote_image_bytes
         self.max_redirects = max_redirects
         self.headers = headers
-        # Origin (from the source document URI) that configured `headers` may be
-        # sent to. Headers are withheld from any other origin so that bearer
-        # tokens/API keys are not leaked to arbitrary hosts a document names or
-        # redirects to. None means no allowlisted origin -> headers never sent.
+        # Only requests to this origin carry the configured `headers`. None
+        # means the headers are never sent.
         self.header_origin = url_origin(header_origin) if header_origin else None
 
     @staticmethod
@@ -312,9 +304,8 @@ class ImageResourceLoader:
         """Build request headers for a single hop.
 
         The download size cap (``Range``) is always sent. Configured custom
-        headers (e.g. an ``Authorization`` bearer token) are included only when
-        the request's origin matches the allowlisted `header_origin`, so they
-        are never leaked to a different host the document names or redirects to.
+        headers are included only when the request's origin matches
+        ``header_origin``.
         """
         headers = {"Range": f"bytes=0-{max_size - 1}"}
         if (
@@ -343,13 +334,9 @@ class ImageResourceLoader:
 
             max_size = self.max_remote_image_bytes
 
-            # Create session with redirect limit
             session = requests.Session()
-            session.max_redirects = self.max_redirects
 
-            # Hook to validate each redirect target (defence-in-depth: this also
-            # fires when redirects are followed manually below, and covers any
-            # caller-provided response object exercising it directly).
+            # Hook to validate each redirect target
             def _check_redirect_safety(response, *args, **kwargs):
                 """Validate each redirect target before following it."""
                 if response.is_redirect or response.is_permanent_redirect:
@@ -364,10 +351,9 @@ class ImageResourceLoader:
 
             session.hooks["response"].append(_check_redirect_safety)
 
-            # Follow redirects manually so that (a) each hop is validated before
-            # it is contacted and (b) configured headers are scoped per hop and
-            # dropped on cross-origin redirects (see `_request_headers`). Pin DNS
-            # so the connection can only reach an address that just validated.
+            # Redirects are followed manually so each hop is validated before it
+            # is requested and gets headers for its own origin. DNS resolution is
+            # pinned so connections only reach validated addresses.
             current_url = src_loc
             redirects_remaining = self.max_redirects
             with pinned_dns_resolution():
