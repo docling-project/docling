@@ -81,9 +81,8 @@ def _video_mimetype(filename: str) -> str:
 def _extract_audio_cmd(video_path: Path, wav_path: Path) -> list[str]:
     """Build the ffmpeg argv for audio extraction.
 
-    ``-protocol_whitelist file,pipe`` precedes ``-i`` so a crafted "video" that
-    is actually a playlist/concat script cannot make ffmpeg follow remote URLs
-    (SSRF) or read arbitrary local files.
+    ``-protocol_whitelist file,pipe`` precedes ``-i`` so that only the ``file``
+    and ``pipe`` protocols are allowed for the input and anything it references.
     """
     return [
         "ffmpeg",

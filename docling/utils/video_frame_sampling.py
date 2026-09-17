@@ -44,16 +44,13 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
     "Windows)."
 )
 
-# ffmpeg/ffprobe decide the demuxer by inspecting the file's *content*, not its
-# extension. A crafted "video" that is actually an HLS/M3U8 playlist or a
-# concat/subfile script can therefore make ffmpeg follow arbitrary URLs (SSRF)
-# or read arbitrary local files. Restricting the allowed protocols to local
-# ``file`` and ``pipe`` refuses every remote/playlist protocol. These flags MUST
-# appear BEFORE ``-i`` so they apply to the input demuxer.
+# ffmpeg/ffprobe select the demuxer from the file content, so an input may be a
+# playlist or concat script that references other resources. Only the ``file``
+# and ``pipe`` protocols are allowed, which excludes network protocols. The
+# option must appear before ``-i`` to apply to the input.
 _PROTOCOL_WHITELIST: Final[tuple[str, ...]] = ("-protocol_whitelist", "file,pipe")
 
-# Hard wall-clock cap on any single ffmpeg/ffprobe invocation. Bounds the damage
-# a pathological or hostile input can do by hanging a decode indefinitely (DoS).
+# Wall-clock limit in seconds for a single ffmpeg/ffprobe invocation.
 FFMPEG_TIMEOUT_SECONDS: Final[float] = 300.0
 
 

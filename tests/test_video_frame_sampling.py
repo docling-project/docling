@@ -207,7 +207,7 @@ def test_scene_change_respects_min_duration(three_scene_video: Path):
     assert len(scenes) == 1
 
 
-# --- Hardening: ffmpeg/ffprobe protocol whitelist + timeout (A8 / B11) -------
+# --- ffmpeg/ffprobe protocol whitelist and timeout ---------------------------
 
 
 def _assert_whitelist_before_input(argv: list[str]) -> None:

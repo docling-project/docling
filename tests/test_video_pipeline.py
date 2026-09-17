@@ -443,7 +443,7 @@ def test_process_video_runs_diarization_when_enabled(
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
 
 
-# --- Hardening: audio extraction protocol whitelist + timeout (A8 / B11) -----
+# --- Audio extraction protocol whitelist and timeout -------------------------
 
 
 def test_extract_audio_cmd_whitelists_protocols_before_input():
