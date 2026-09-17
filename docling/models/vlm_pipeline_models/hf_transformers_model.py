@@ -113,7 +113,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
             if artifacts_path is None:
                 artifacts_path = self.download_models(
-                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                    self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                    trust_remote_code=self.vlm_options.trust_remote_code,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

@@ -183,11 +183,27 @@ class _ConversationItem(BaseModel):
 # Distil-Whisper models are not part of openai-whisper's model registry, but
 # their Hugging Face repos publish the checkpoint in the original OpenAI
 # format, which whisper.load_model() accepts as a local file path.
-_DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str]] = {
-    "distil-small.en": ("distil-whisper/distil-small.en", "original-model.bin"),
-    "distil-medium.en": ("distil-whisper/distil-medium.en", "original-model.bin"),
-    "distil-large-v3": ("distil-whisper/distil-large-v3-openai", "model.bin"),
-    "distil-large-v3.5": ("distil-whisper/distil-large-v3.5-openai", "model.bin"),
+_DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str, str]] = {
+    "distil-small.en": (
+        "distil-whisper/distil-small.en",
+        "original-model.bin",
+        "9e4a67ca4569c30be43a3fe7fba1621e504f0093",
+    ),
+    "distil-medium.en": (
+        "distil-whisper/distil-medium.en",
+        "original-model.bin",
+        "6e61418885eaf4d5cc9f64e508e80ac5b4c052b7",
+    ),
+    "distil-large-v3": (
+        "distil-whisper/distil-large-v3-openai",
+        "model.bin",
+        "81941037893cb90dc82af45bc5dc5146ab0a818f",
+    ),
+    "distil-large-v3.5": (
+        "distil-whisper/distil-large-v3.5-openai",
+        "model.bin",
+        "24c117e115e74a9979c49f65cff75c5552dc3652",
+    ),
 }
 
 
@@ -236,7 +252,7 @@ class _NativeWhisperModel:
                 from huggingface_hub import hf_hub_download
                 from huggingface_hub.utils import LocalEntryNotFoundError
 
-                repo_id, filename = distil_checkpoint
+                repo_id, filename, revision = distil_checkpoint
                 _log.info(
                     f"loading {self.model_name} from OpenAI-format checkpoint "
                     f"{repo_id}/{filename}"
@@ -248,6 +264,7 @@ class _NativeWhisperModel:
                         checkpoint_path = hf_hub_download(
                             repo_id=repo_id,
                             filename=filename,
+                            revision=revision,
                             cache_dir=str(artifacts_path),
                             local_files_only=True,
                         )
@@ -257,11 +274,12 @@ class _NativeWhisperModel:
                             f"the checkpoint {repo_id}/{filename} required by ASR "
                             f"model '{self.model_name}'. Prefetch it with: "
                             f"hf download {repo_id} {filename} "
+                            f"--revision {revision} "
                             f'--cache-dir "{artifacts_path}"'
                         ) from err
                 else:
                     checkpoint_path = hf_hub_download(
-                        repo_id=repo_id, filename=filename
+                        repo_id=repo_id, filename=filename, revision=revision
                     )
                 self.model = whisper.load_model(
                     name=checkpoint_path, device=self.device
