@@ -1192,6 +1192,44 @@ def test_custom_numbering_format_markers(tmp_path):
     assert backend._build_enum_marker(1, 1) == "2.3."
 
 
+def test_non_numeric_numbering_start_does_not_crash(tmp_path):
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    abstract_num = OxmlElement("w:abstractNum")
+    abstract_num.set(qn("w:abstractNumId"), "100")
+    lvl = OxmlElement("w:lvl")
+    lvl.set(qn("w:ilvl"), "0")
+    start = OxmlElement("w:start")
+    start.set(qn("w:val"), "abc")
+    lvl.append(start)
+    numfmt = OxmlElement("w:numFmt")
+    numfmt.set(qn("w:val"), "decimal")
+    lvl.append(numfmt)
+    lvltext = OxmlElement("w:lvlText")
+    lvltext.set(qn("w:val"), "%1.")
+    lvl.append(lvltext)
+    abstract_num.append(lvl)
+    numbering.append(abstract_num)
+
+    num_elem = OxmlElement("w:num")
+    num_elem.set(qn("w:numId"), "200")
+    abstract_ref = OxmlElement("w:abstractNumId")
+    abstract_ref.set(qn("w:val"), "100")
+    num_elem.append(abstract_ref)
+    numbering.append(num_elem)
+
+    docx_path = tmp_path / "bad_start.docx"
+    doc.save(str(docx_path))
+    backend = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )._backend
+
+    assert backend._get_start_value(200, 0) == 1
+
+
 def test_handle_equations_in_text_returns_original_text_on_mismatch(
     backend, monkeypatch
 ):

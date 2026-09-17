@@ -1074,7 +1074,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
         try:
             return int(s)
-        except ValueError:
+        except (TypeError, ValueError):
             return default
 
     def _split_text_and_number(self, input_string: str) -> list[str]:
@@ -1220,7 +1220,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if start_element is not None:
                 val = start_element.get(self.XML_KEY)
                 if val is not None:
-                    return int(val)
+                    parsed = self._str_to_int(val, 1)
+                    return 1 if parsed is None else parsed
         return 1
 
     def _get_list_counter(self, numid: int, ilvl: int) -> int:
