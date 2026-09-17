@@ -168,6 +168,9 @@ class TextHelperMixin:
         return (" ".join(arg_parts), consumed)
 
     def _nodes_to_text(self, nodes) -> str:
+        if not nodes:
+            return ""
+
         text_parts = []
 
         idx = 0
