@@ -611,6 +611,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 skip_cell_extraction=resolve_skip_cell_extraction(
                     self.pipeline_options
                 ),
+                capture_reading_order_separators=(
+                    self.pipeline_options.use_reading_order_separators
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
@@ -646,7 +649,11 @@ class StandardPdfPipeline(ConvertPipeline):
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(
+            options=ReadingOrderOptions(
+                use_page_separators=self.pipeline_options.use_reading_order_separators
+            )
+        )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )

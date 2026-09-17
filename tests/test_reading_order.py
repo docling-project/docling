@@ -9,7 +9,7 @@ import sys
 from typing import Dict, List
 
 import pytest
-from docling_core.types.doc.base import CoordOrigin, Size
+from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import (
     ContentLayer,
     DocItem,
@@ -21,6 +21,8 @@ from docling_core.types.doc.labels import DocItemLabel
 from docling.models.postprocessing.reading_order_rb import (
     PageElement,
     ReadingOrderPredictor,
+    SeparatorElement,
+    build_page_separators,
 )
 
 IS_CI = bool(os.getenv("CI"))
@@ -627,3 +629,123 @@ def test_reading_order_near_boundary_clusters(monkeypatch):
     state = _ReadingOrderPredictorState()
     # Must not raise; before the fix this built y_min > y_max.
     ReadingOrderPredictor()._init_ud_maps(page_elems, state)
+
+
+def test_horizontal_separator_finishes_upper_band_before_lower_columns() -> None:
+    page_size = Size(width=600, height=800)
+
+    def element(
+        cid: int, left: float, bottom: float, right: float, top: float
+    ) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.TEXT,
+            l=left,
+            r=right,
+            b=bottom,
+            t=top,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        element(0, 40, 500, 250, 600),
+        element(1, 330, 470, 560, 600),
+        element(2, 40, 200, 250, 400),
+        element(3, 330, 200, 560, 400),
+    ]
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=1,
+        page_size=page_size,
+        orientation="horizontal",
+        l=40,
+        r=560,
+        b=440,
+        t=440,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    baseline = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements)
+    )
+    separated = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=[separator]
+    )
+
+    assert [element.cid for element in baseline] == [0, 2, 1, 3]
+    assert [element.cid for element in separated] == [0, 1, 2, 3]
+    assert all(isinstance(element, PageElement) for element in separated)
+
+
+def test_build_page_separators_merges_visible_rules_and_rejects_text_crossing() -> None:
+    page_size = Size(width=600, height=800)
+    elements = [
+        _box(0, DocItemLabel.TEXT, l=40, r=560, b=500, t=650).model_copy(
+            update={"text": "upper band"}
+        ),
+        _box(1, DocItemLabel.TEXT, l=40, r=560, b=150, t=300).model_copy(
+            update={"text": "lower band"}
+        ),
+    ]
+    horizontal_line = BoundingBox(
+        l=40,
+        r=560,
+        t=400,
+        b=400,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    horizontal_filled_rule = BoundingBox(
+        l=40,
+        r=560,
+        t=399.8,
+        b=400.2,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    crossing_vertical = BoundingBox(
+        l=300,
+        r=300,
+        t=100,
+        b=700,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+
+    separators = build_page_separators(
+        page_no=1,
+        page_size=page_size,
+        page_elements=elements,
+        shape_lines=[horizontal_line, crossing_vertical],
+        shape_bounding_boxes=[horizontal_filled_rule],
+    )
+
+    assert len(separators) == 1
+    assert separators[0].orientation == "horizontal"
+    assert separators[0].l == pytest.approx(40)
+    assert separators[0].r == pytest.approx(560)
+
+
+def test_vertical_separator_clamps_horizontal_dilation() -> None:
+    element = _box(0, DocItemLabel.TEXT, l=100, r=200, b=200, t=300)
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        orientation="vertical",
+        l=250,
+        r=250,
+        b=100,
+        t=400,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    x0, x1 = ReadingOrderPredictor._clamp_dilation_to_vertical_separators(
+        element,
+        x0=80,
+        x1=300,
+        vertical_separators=[separator],
+    )
+
+    assert x0 == 80
+    assert x1 == 250

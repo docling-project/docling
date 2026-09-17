@@ -147,6 +147,45 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Use visible PDF rules for reading order
+
+For PDFs whose columns or horizontal bands are separated by visible rules, the
+rule-based reading-order stage can use those rules as additional structural
+signals. This is experimental and disabled by default:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(use_reading_order_separators=True)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option uses visible vector geometry exposed by the PDF backend. Separator
+geometry affects ordering only and is not added to the resulting document.
+
+The same option is available from the CLI. Use `--no-reading-order-separators`
+to make the disabled comparison explicit. `--output-file` selects an exact
+destination when converting one input to one output format:
+
+```bash
+uv run docling convert --from pdf --to dclx \
+  --reading-order-separators \
+  --output-file ./Elsevier-with-separators.dclx \
+  ./Elsevier.pdf
+
+uv run docling convert --from pdf --to dclx \
+  --no-reading-order-separators \
+  --output-file ./Elsevier-without-separators.dclx \
+  ./Elsevier.pdf
+```
+
+
 ### Extract the native content of a PDF
 
 `NativePdfPipeline` uses docling-parse alone: one text item per native text cell
