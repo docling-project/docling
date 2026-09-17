@@ -357,3 +357,17 @@ def test_crlf_and_cr_line_terminators(converter, terminator, tmp_path):
 
     for doc in (stream_doc, file_doc):
         assert _process_vtt_doc(doc) == "Hello there"
+
+
+def test_empty_cue_payload_does_not_crash(converter):
+    vtt = """
+WEBVTT
+
+00:00:00.000 --> 00:00:01.000
+
+00:00:01.000 --> 00:00:02.000
+Hi
+"""
+    stream = _create_vtt_stream(vtt)
+    doc = converter.convert(stream).document
+    assert _process_vtt_doc(doc) == "Hi"
