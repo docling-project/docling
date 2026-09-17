@@ -319,3 +319,91 @@ def _schema_to_nuextract(schema: dict[str, Any]) -> dict[str, Any]:
         _fail((*path, "type"), "a supported non-null type is required")
 
     return convert(schema, ())
+
+
+def _vllm_constraint_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Bounded vLLM response_format subset: typed objects/arrays/scalars, enums, nullability.
+
+    Inline non-recursive local references; reject other assertions rather than dropping
+    them. Original validation and guidance keep the unchanged Draft 2020-12 contract.
+    """
+    schema_validator(schema)
+    allowed = _ANNOTATIONS | {
+        "type",
+        "properties",
+        "required",
+        "items",
+        "enum",
+        "anyOf",
+        "$ref",
+        "additionalProperties",
+    }
+
+    def convert(node: Any, path: tuple[str | int, ...]) -> Any:
+        if isinstance(node, bool):
+            return node
+        for key in node:
+            if key not in allowed:
+                _fail((*path, key), "unsupported vLLM constrained-output keyword")
+        if "$ref" in node:
+            for key in node.keys() - _ANNOTATIONS - {"$ref"}:
+                _fail(
+                    (*path, key),
+                    "assertion siblings of $ref are outside the vLLM subset",
+                )
+            return convert(_resolve_ref(schema, node["$ref"], (*path, "$ref")), path)
+        kind = node.get("type")
+        if isinstance(kind, list) and (
+            len(kind) > 2 or (len(kind) == 2 and "null" not in kind)
+        ):
+            _fail((*path, "type"), "only a single type plus null is in the vLLM subset")
+        if kind is None and not ({"enum", "anyOf"} & node.keys()):
+            _fail(
+                (*path, "type"),
+                "a type, enum or nullable union is required by the vLLM subset",
+            )
+        if kind == "array" and "items" not in node:
+            _fail(
+                (*path, "items"),
+                "homogeneous array items are required by the vLLM subset",
+            )
+        for index, name in enumerate(node.get("required", [])):
+            if name not in node.get("properties", {}):
+                _fail(
+                    (*path, "required", index),
+                    "required property has no declared type in the vLLM subset",
+                )
+        result = {
+            key: deepcopy(value)
+            for key, value in node.items()
+            if key not in {"$schema", "$id", "$defs", "definitions", "$comment"}
+        }
+        if "properties" in node:
+            result["properties"] = {
+                name: convert(child, (*path, "properties", name))
+                for name, child in node["properties"].items()
+            }
+        if "items" in node:
+            result["items"] = convert(node["items"], (*path, "items"))
+        if "additionalProperties" in node:
+            if not isinstance(node["additionalProperties"], bool):
+                _fail(
+                    (*path, "additionalProperties"),
+                    "dynamic keys are outside the vLLM subset",
+                )
+        if "anyOf" in node:
+            branches = node["anyOf"]
+            if len(branches) != 2 or not any(
+                isinstance(branch, dict)
+                and branch.get("type") == "null"
+                and branch.keys() <= _ANNOTATIONS | {"type"}
+                for branch in branches
+            ):
+                _fail((*path, "anyOf"), "only nullable unions are in the vLLM subset")
+            result["anyOf"] = [
+                convert(child, (*path, "anyOf", index))
+                for index, child in enumerate(branches)
+            ]
+        return result
+
+    return convert(schema, ())

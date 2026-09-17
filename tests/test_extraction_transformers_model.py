@@ -145,3 +145,208 @@ def test_transformers_rejects_input_over_context_limit() -> None:
 
     with pytest.raises(ValueError, match="exceeding the configured context limit"):
         list(model._generate_and_decode({"input_ids": torch.tensor([[1, 2, 3, 4, 5]])}))
+
+
+@pytest.mark.parametrize("preparation", ["generic_chat", "nuextract"])
+def test_ordered_local_content_routes_chat_and_processor_options(
+    monkeypatch, preparation
+):
+    from copy import deepcopy
+
+    from PIL import Image
+
+    from docling.datamodel.extraction import (
+        ExtractionTarget,
+        ExtractionTemplate,
+        ImageContentItem,
+        TextContentItem,
+    )
+    from docling.datamodel.extraction_options import (
+        GRANITE_VISION_4_1_SPEC,
+        NUEXTRACT_2B_SPEC,
+    )
+    from docling.models.extraction import prompt_utils
+    from docling.models.extraction.prompt_utils import prepare_target
+
+    spec = (
+        NUEXTRACT_2B_SPEC if preparation == "nuextract" else GRANITE_VISION_4_1_SPEC
+    ).model_copy(
+        update={
+            "extra_chat_template_kwargs": {
+                "enable_thinking": False,
+                "nested": {"call": True},
+            },
+            "extra_processor_kwargs": {"max_soft_tokens": 32},
+        }
+    )
+    model = TransformersExtractionModel(
+        False,
+        None,
+        AcceleratorOptions(),
+        module.ExtractionVlmOptions(
+            model_spec=spec, engine_options=TransformersVlmEngineOptions()
+        ),
+    )
+    render = Mock(return_value="rendered")
+    preprocess = Mock(return_value={"input_ids": torch.tensor([[1, 2]])})
+
+    class Processor:
+        tokenizer = SimpleNamespace(apply_chat_template=render)
+        apply_chat_template = render
+
+        def __call__(self, **kwargs):
+            return preprocess(**kwargs)
+
+    model.processor = Processor()
+    model.device = "cpu"
+    model._generate_and_decode = Mock(return_value=[SimpleNamespace(text="{}")])
+    vision = Mock(return_value=["vision"])
+    monkeypatch.setattr(prompt_utils, "_process_all_vision_info", vision)
+    with Image.new("RGB", (3, 2)) as image:
+        for field in ("total", "date"):
+            target = prepare_target(
+                ExtractionTarget(
+                    template=ExtractionTemplate(
+                        format="nuextract"
+                        if preparation == "nuextract"
+                        else "example_json",
+                        value={field: "string"},
+                    ),
+                    instructions=f"Extract {field}",
+                ),
+                spec,
+            )
+            saved = deepcopy(target.chat_template_kwargs)
+            content = [
+                TextContentItem(text="before"),
+                ImageContentItem(image=image),
+                TextContentItem(text="after"),
+            ]
+            list(model.process([content], target))
+            messages = render.call_args.args[0][0]["content"]
+            assert [item["type"] for item in messages[:3]] == ["text", "image", "text"]
+            assert messages[1]["image"] is image and messages[2]["text"] == "after"
+            kwargs = render.call_args.kwargs
+            assert kwargs["enable_thinking"] is False
+            assert (
+                kwargs["tokenize"] is False and kwargs["add_generation_prompt"] is True
+            )
+            assert "max_soft_tokens" not in kwargs
+            if preparation == "nuextract":
+                assert (
+                    f'"{field}"' in kwargs["template"]
+                    and f"Extract {field}" in kwargs["instructions"]
+                )
+                assert len(messages) == 3
+            else:
+                assert messages[3]["text"] == target.prompt and "template" not in kwargs
+            assert preprocess.call_args.kwargs == {
+                "text": ["rendered"],
+                "images": ["vision"] if preparation == "nuextract" else [image],
+                "padding": True,
+                "return_tensors": "pt",
+                "max_soft_tokens": 32,
+            }
+            kwargs["nested"]["call"] = False
+            assert target.chat_template_kwargs == saved
+        # Text-only requests do not import or invoke vision preprocessing.
+        vision.reset_mock()
+        list(model.process([[TextContentItem(text="only text")]], target))
+        assert preprocess.call_args.kwargs["images"] is None
+        vision.assert_not_called()
+    assert spec.extra_chat_template_kwargs == {
+        "enable_thinking": False,
+        "nested": {"call": True},
+    }
+
+
+@pytest.mark.parametrize(
+    "style",
+    [
+        module.ExtractionPromptStyle.NUEXTRACT,
+        module.ExtractionPromptStyle.GRANITE_VISION,
+    ],
+)
+def test_main_inline_constructor_and_image_wrapper(style):
+    import numpy as np
+
+    from docling.datamodel.pipeline_options_vlm_model import (
+        InferenceFramework,
+        InlineVlmOptions,
+        ResponseFormat,
+    )
+    from docling.models.extraction.nuextract_transformers_model import (
+        NuExtractTransformersModel,
+    )
+    from docling.models.extraction.prompt_utils import _PreparedTarget
+
+    inline = InlineVlmOptions(
+        repo_id="test/model",
+        prompt="",
+        inference_framework=InferenceFramework.TRANSFORMERS,
+        response_format=ResponseFormat.PLAINTEXT,
+        extra_processor_kwargs={"size": 12},
+    )
+    model = TransformersExtractionModel(
+        False, None, AcceleratorOptions(), inline, style
+    )
+    assert model.vlm_options is inline
+    captured = []
+
+    def process(requests, targets):
+        captured.append((requests, targets))
+        return [SimpleNamespace(text="{}") for _ in requests]
+
+    model._process_prepared = process
+    result = list(
+        model.process_images(
+            [np.zeros((3, 2, 4), dtype=np.uint8), np.zeros((3, 2), dtype=np.uint8)],
+            ["final one", "final two"],
+        )
+    )
+    assert len(result) == 2
+    requests, targets = captured[0]
+    assert all(req[0].image.mode == "RGB" for req in requests)
+    assert all(isinstance(target, _PreparedTarget) for target in targets)
+    if style == module.ExtractionPromptStyle.NUEXTRACT:
+        assert [target.chat_template_kwargs["template"] for target in targets] == [
+            "final one",
+            "final two",
+        ]
+    else:
+        assert [target.prompt for target in targets] == ["final one", "final two"]
+        assert targets[0].processor_kwargs == {"do_pad": True, "size": 12}
+    assert (
+        NuExtractTransformersModel(
+            False, None, AcceleratorOptions(), inline
+        ).model_spec.preparation
+        == "nuextract"
+    )
+    with pytest.raises(ValueError, match="must match"):
+        list(model.process_images([np.zeros((2, 2))], ["one", "two"]))
+    with pytest.raises(ValueError, match="Unsupported numpy"):
+        list(model.process_images([np.zeros((2, 2, 5))], "prompt"))
+
+
+@pytest.mark.parametrize(
+    "key", ["text", "images", "padding", "return_tensors", "template", "instructions"]
+)
+def test_local_processor_request_collisions_fail_before_preprocessing(key):
+    from docling.datamodel.extraction import TextContentItem
+    from docling.models.extraction.prompt_utils import prepare_legacy_target
+
+    options = GRANITE_VISION_4_1_TRANSFORMERS.model_copy(deep=True)
+    options.model_spec.extra_processor_kwargs[key] = "static"
+    model = TransformersExtractionModel(False, None, AcceleratorOptions(), options)
+    model.device = "cpu"
+    processor = Mock()
+    processor.apply_chat_template.return_value = "rendered"
+    model.processor = processor
+    with pytest.raises(ValueError, match="request-owned"):
+        list(
+            model.process(
+                [[TextContentItem(text="text")]],
+                prepare_legacy_target("{}", options.model_spec),
+            )
+        )
+    processor.assert_not_called()

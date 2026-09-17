@@ -176,7 +176,7 @@ def test_docx_serialized_to_markdown() -> None:
 
 
 def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
-    from docling.utils import api_nuextract_request as mod
+    from docling.utils import api_extraction_request as mod
 
     captured: dict = {}
 
@@ -186,9 +186,10 @@ def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "_post_openai_chat_completion", _post)
 
-    mod.api_nuextract_request(
+    mod.api_extraction_request(
         content_items=[TextContentItem(text="hello doc")],
-        template='{"title": "string"}',
+        prompt="",
+        chat_template_kwargs={"template": '{"title": "string"}'},
         url=cast(ApiVlmEngineOptions, NU_EXTRACT_API.engine_options).url,
         model="numind/NuExtract-2.0-8B",
     )
@@ -209,10 +210,10 @@ def test_text_extraction_maps_to_single_page() -> None:
     seen: dict = {}
 
     class _StubModel:
-        def process(self, requests, template):
+        def process(self, requests, target):
             reqs = [list(r) for r in requests]
             seen["requests"] = reqs
-            seen["template"] = template
+            seen["target"] = target
             return [
                 VlmPrediction(
                     text='{"title": "Duck"}', stop_reason=VlmStopReason.END_OF_SEQUENCE
@@ -223,13 +224,16 @@ def test_text_extraction_maps_to_single_page() -> None:
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
     ext_res = ExtractionResult(input=in_doc)
 
-    pipeline._extract_via_text(ext_res, prompt='{"title": "string"}')
+    pipeline._extract_via_text(
+        ext_res, target=pipeline._prepare_target('{"title": "string"}')
+    )
 
     assert len(ext_res.pages) == 1
     page = ext_res.pages[0]
     assert page.page_no == 1
     assert page.extracted_data == {"title": "Duck"}
     assert page.raw_text == '{"title": "Duck"}'
+    assert seen["target"].chat_template_kwargs["template"] == '{"title": "string"}'
     assert len(seen["requests"][0]) == 1
     assert isinstance(seen["requests"][0][0], TextContentItem)
 
@@ -243,7 +247,7 @@ def test_api_failure_makes_text_extraction_fail(
     def _fail(**_kwargs):
         raise RuntimeError("service unavailable")
 
-    monkeypatch.setattr(mod, "api_nuextract_request", _fail)
+    monkeypatch.setattr(mod, "api_extraction_request", _fail)
     pipeline = ExtractionVlmPipeline(
         VlmExtractionPipelineOptions(
             vlm_options=NU_EXTRACT_API,
@@ -254,7 +258,7 @@ def test_api_failure_makes_text_extraction_fail(
         input=_input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
     )
 
-    pipeline._extract_via_text(result, prompt="{}")
+    pipeline._extract_via_text(result, target=pipeline._prepare_target("{}"))
 
     assert result.pages[0].errors == ["service unavailable"]
     assert pipeline._determine_status(result) == ConversionStatus.FAILURE

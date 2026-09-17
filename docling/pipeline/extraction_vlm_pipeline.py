@@ -41,6 +41,11 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.models.base_model import BaseVlmModel, SupportsContentExtraction
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
+from docling.models.extraction.prompt_utils import (
+    _PreparedTarget,
+    prepare_legacy_target,
+    prepared_image_prompt,
+)
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 
@@ -79,15 +84,15 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         ext_res: ExtractionResult,
         template: ExtractionTemplateType | None = None,
     ) -> ExtractionResult:
-        prompt = self._build_prompt(template)
+        target = self._prepare_target(template)
         channel = self._resolve_channel(ext_res.input)
 
         if channel == ChannelSelection.TEXT:
-            self._extract_via_text(ext_res, prompt)
+            self._extract_via_text(ext_res, target)
         else:
             self._extract_per_page(
                 ext_res,
-                prompt,
+                target,
                 include_text=channel == ChannelSelection.IMAGE_AND_TEXT,
             )
 
@@ -166,12 +171,14 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             )
         return resolved
 
-    def _extract_via_text(self, ext_res: ExtractionResult, prompt: str) -> None:
+    def _extract_via_text(
+        self, ext_res: ExtractionResult, target: _PreparedTarget
+    ) -> None:
         text = self._get_text_from_input(ext_res.input)
         request: list[ContentItem] = [TextContentItem(text=text)]
         assert isinstance(self.vlm_model, SupportsContentExtraction)
         try:
-            predictions = list(self.vlm_model.process([request], prompt))
+            predictions = list(self.vlm_model.process([request], target))
         except Exception as e:
             _log.error(f"Error processing text document: {e}")
             ext_res.pages.append(
@@ -219,7 +226,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         return MarkdownDocSerializer(doc=doc, params=params).serialize().text
 
     def _extract_per_page(
-        self, ext_res: ExtractionResult, prompt: str, *, include_text: bool
+        self, ext_res: ExtractionResult, target: _PreparedTarget, *, include_text: bool
     ) -> None:
         """Extract one result per page image."""
         doc: DoclingDocument | None = None
@@ -235,20 +242,16 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             for page_number, image in images:
                 processed_image = True
                 try:
+                    assert isinstance(self.vlm_model, SupportsContentExtraction)
+                    request: list[ContentItem] = [ImageContentItem(image=image)]
                     if include_text:
                         assert doc is not None
-                        assert isinstance(self.vlm_model, SupportsContentExtraction)
-                        request: list[ContentItem] = [
-                            ImageContentItem(image=image),
+                        request.append(
                             TextContentItem(
                                 text=self._serialize_doc(doc, pages={page_number})
-                            ),
-                        ]
-                        predictions = list(self.vlm_model.process([request], prompt))
-                    else:
-                        predictions = list(
-                            self.vlm_model.process_images([image], prompt)
+                            )
                         )
+                    predictions = list(self.vlm_model.process([request], target))
                     page_data = self._prediction_to_page_data(
                         page_number, predictions, ext_res
                     )
@@ -421,11 +424,17 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             finally:
                 resized.close()
 
-    def _build_prompt(self, template: ExtractionTemplateType | None) -> str:
+    def _prepare_target(
+        self, template: ExtractionTemplateType | None
+    ) -> _PreparedTarget:
         if template is None:
-            return "Extract all text and structured information from this document. Return as JSON."
-
-        return self.pipeline_options.vlm_options.build_extraction_prompt(template)
+            return prepared_image_prompt(
+                "Extract all text and structured information from this document. Return as JSON.",
+                self.pipeline_options.vlm_options.model_spec,
+            )
+        return prepare_legacy_target(
+            template, self.pipeline_options.vlm_options.model_spec
+        )
 
     @classmethod
     def get_default_options(cls) -> PipelineOptions:

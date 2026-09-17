@@ -3,6 +3,7 @@
 
 import inspect
 import json
+from copy import deepcopy
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -24,12 +25,53 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import (
+    BaseVlmEngineOptions,
     VlmEngineOptionsMixin,
     VlmEngineType,
 )
 
 if TYPE_CHECKING:
     from docling.datamodel.extraction import ExtractionTemplateType
+
+
+_REQUEST_FIELDS = {
+    "prompt",
+    "constraint_schema",
+    "content_items",
+    "messages",
+    "conversation",
+    "template",
+    "instructions",
+    "response_format",
+    "structured_outputs",
+    "guided_json",
+    "guided_regex",
+    "guided_choice",
+    "guided_grammar",
+    "tools",
+    "tool_choice",
+    "stream",
+}
+
+
+def _reject_request_fields(
+    options: dict[str, Any], *, reserved: set[str] | None = None
+) -> None:
+    for key in options.keys() & (_REQUEST_FIELDS if reserved is None else reserved):
+        raise ValueError(f"option {key!r} is request-owned")
+
+
+def _merge_chat_options(*options: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for mapping in options:
+        if not isinstance(mapping, dict):
+            raise ValueError("chat-template options must be a mapping")
+        _reject_request_fields(mapping)
+        _reject_request_fields(
+            mapping, reserved={"tokenize", "add_generation_prompt", "return_tensors"}
+        )
+        merged.update(deepcopy(mapping))
+    return merged
 
 
 class ExtractionPromptStyle(str, Enum):
@@ -152,6 +194,10 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     model_spec: ExtractionVlmModelSpec = Field(
         description="Model specification (repo, prompt style, capability, runtime)"
     )
+    output_mode: Literal["prompt_only", "schema_constrained"] = Field(
+        default="prompt_only",
+        description="schema_constrained opts the generic API into the vLLM JSON Schema contract",
+    )
     scale: float = Field(
         default=2.0, gt=0, description="Image scaling factor for the image channel"
     )
@@ -181,6 +227,13 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
             raise ValueError(
                 f"Extraction does not support the {engine_type.value} VLM engine"
             )
+        if (
+            self.output_mode == "schema_constrained"
+            and engine_type != VlmEngineType.API
+        ):
+            raise ValueError(
+                "schema_constrained requires the explicitly configured vLLM API engine"
+            )
         return self
 
     def build_extraction_prompt(self, template: "ExtractionTemplateType") -> str:
@@ -193,6 +246,18 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
             **self.model_spec.get_api_params(engine.engine_type),
             **engine.params,
         }
+
+    @classmethod
+    def from_preset(
+        cls,
+        preset_id: str,
+        engine_options: BaseVlmEngineOptions | None = None,
+        **overrides,
+    ) -> "ExtractionVlmOptions":
+        # The shared mixin applies overrides with setattr; extraction must preflight
+        # the final combination, including output mode, before any model is loaded.
+        options = super().from_preset(preset_id, engine_options, **overrides)
+        return cls.model_validate(options.model_dump(mode="python"))
 
     @classmethod
     def from_legacy_inline_options(
@@ -218,7 +283,14 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
                 response_format=inline.response_format,
                 supported_devices=inline.supported_devices,
                 trust_remote_code=inline.trust_remote_code,
-                extra_processor_kwargs=inline.extra_processor_kwargs,
+                extra_processor_kwargs={
+                    **(
+                        {"do_pad": True}
+                        if style is ExtractionPromptStyle.GRANITE_VISION
+                        else {}
+                    ),
+                    **inline.extra_processor_kwargs,
+                },
                 extra_generation_config=inline.extra_generation_config,
                 max_new_tokens=inline.max_new_tokens,
                 temperature=inline.temperature,
@@ -257,6 +329,7 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     name="Granite Vision 4.1",
     prompt_style=ExtractionPromptStyle.GRANITE_VISION,
     preparation="generic_chat",
+    extra_processor_kwargs={"do_pad": True},
     accepts_image=True,
     accepts_text=False,  # Granite cannot take a text payload
     default_repo_id="ibm-granite/granite-vision-4.1-4b",

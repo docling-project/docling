@@ -86,7 +86,7 @@ class _StubModel:
         self.image_calls.append(list(images))
         return [VlmPrediction(text="{}", stop_reason=VlmStopReason.END_OF_SEQUENCE)]
 
-    def process(self, requests, template):
+    def process(self, requests, target):
         reqs = [list(r) for r in requests]
         self.content_requests.extend(reqs)
         return [
@@ -115,11 +115,14 @@ def test_dclx_image_extraction_yields_page_per_image(dclx_two_pages: Path) -> No
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
 
-    pipeline._extract_per_page(ext_res, prompt="{}", include_text=False)
+    pipeline._extract_per_page(
+        ext_res, target=pipeline._prepare_target("{}"), include_text=False
+    )
 
     assert [p.page_no for p in ext_res.pages] == [1, 2]
-    assert len(model.image_calls) == 2
-    assert not model.content_requests
+    assert len(model.content_requests) == 2
+    assert all(isinstance(req[0], ImageContentItem) for req in model.content_requests)
+    assert not model.image_calls
 
 
 def test_dclx_image_and_text_builds_content_array(dclx_two_pages: Path) -> None:
@@ -129,7 +132,9 @@ def test_dclx_image_and_text_builds_content_array(dclx_two_pages: Path) -> None:
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
 
-    pipeline._extract_per_page(ext_res, prompt="{}", include_text=True)
+    pipeline._extract_per_page(
+        ext_res, target=pipeline._prepare_target("{}"), include_text=True
+    )
 
     assert [p.page_no for p in ext_res.pages] == [1, 2]
     assert len(model.content_requests) == 2
@@ -144,7 +149,9 @@ def test_dclx_status_success(dclx_two_pages: Path) -> None:
     pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
     in_doc = _input(dclx_two_pages)
     ext_res = ExtractionResult(input=in_doc)
-    pipeline._extract_per_page(ext_res, prompt="{}", include_text=False)
+    pipeline._extract_per_page(
+        ext_res, target=pipeline._prepare_target("{}"), include_text=False
+    )
     assert pipeline._determine_status(ext_res) == ConversionStatus.SUCCESS
 
 

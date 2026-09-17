@@ -1,8 +1,10 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-17. Stages 0 and 1 are complete. The user subsequently
-authorized the signed-off stage 1 commit, titled
-`feat: add extraction target contracts and preparation`. Next stage: **2**.
+Updated 2026-09-17. Stages 0–2 are complete. Stage 1 is committed at
+`0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`. The user authorized the signed-off
+stage 2 commit, titled `refactor: unify extraction inference adapters`; resolve
+its checkpoint with `git log -1` after committing. Next stage: **3**. No push or
+publication is authorized.
 
 ## Authority and boundaries
 
@@ -100,7 +102,7 @@ Stages 4–7 separate real model verification from shared plumbing.
 |---|---|---|---|---|
 | 0 | All | Branch setup, current baseline, this ledger | Baseline | Done |
 | 1 | Docling | Target/result types and call-local target preparation | A types, B, D types | Done |
-| 2 | Docling | One local/API ordered-content execution contract | C, A model compatibility | Next |
+| 2 | Docling | One local/API ordered-content execution contract | C, A model compatibility | Done |
 | 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Pending |
 | 4 | Docling | NuExtract3 integration and native/conversion smoke evidence | F: NuExtract | Pending |
 | 5 | Docling | Lift single-page integration and explicit vLLM constraints | F: Lift | Pending |
@@ -294,7 +296,7 @@ the design into handoff prose. Do not create empty evidence trees or new trackin
 frameworks. Without commit authorization, identify the working-tree delta and
 do not mistake HEAD for an immutable implementation checkpoint.
 
-### Current checkpoint
+### Stage 1 checkpoint (historical)
 
 - Completed: stages 0 and 1. Stage 1's behavioral gates and applicable existing
   extraction regressions pass. Branch remains `cau/extraction-api-service-models`,
@@ -442,6 +444,187 @@ Actual logs (temporary local evidence):
 [converter results](/tmp/docling-numind-evaluation.log),
 [final behavioral/regression results](/tmp/docling-stage1-regressions.log),
 [repository validation](/tmp/docling-stage1-validate.log).
+
+### Current checkpoint: stage 2
+
+- Location: `/Users/cau/Documents/Development/docling-second` only. Branch
+  `cau/extraction-api-service-models`, stage 2 implementation base
+  `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`. The subsequent user request
+  authorized a signed-off stage 2 commit; resolve its ID with `git log -1`.
+  Before edits, explicit
+  `git status --short --untracked-files=all` and
+  `git ls-files --others --exclude-standard` were empty. No unrelated files
+  needed isolation from mutating hooks. Only stage 2 paths are authorized for
+  staging/commit; no push or publication.
+- Authority: reread this worktree's `AGENTS.md`, stage 2 above, Part I's target,
+  conversion and option-ownership constraints, and revised handoff Part II C/A.
+  The superseded standalone proposal was not used. Traced both adapters,
+  `SupportsContentExtraction`, all production `process()`/`process_images()`
+  callers, legacy prompt preparation, wrappers and their branch tests before edits.
+- Delivered: both inference adapters consume ordered `ContentItem` requests plus
+  `_PreparedTarget`. Removed NuExtract-only content guards. Every extraction
+  pipeline channel now calls `process()` with fresh legacy preparation; SDK
+  signatures, pipeline/result/page semantics and chunk production remain unchanged.
+  No old/new branch-only process-signature shim survives.
+- Local compatibility: restored the main inline constructor's optional positional
+  `prompt_style`, and the `NuExtractTransformersModel` import/constructor through
+  thin forwarding. Image wrappers still accept PIL/numpy images, RGB conversion,
+  shared/per-image final prompts and mismatched-count rejection; final prompts are
+  never wrapped twice. The optional pipeline no-template prompt retains its prior
+  meaning. Main-shaped inline constants remain the explicitly sequenced stage 3
+  boundary restoration; this stage does not change `vlm_model_specs.py`.
+- Routing/ownership: generic local rendering uses the processor; NuExtract retains
+  the verified tokenizer/Qwen vision path. Chat options are supplied during rendering;
+  visual options during preprocessing. Granite's existing `do_pad=True` is preset
+  data. API chat options merge model defaults, model API defaults and engine params
+  shallowly into owned call-local mappings, then insert dynamic template/instructions.
+  Ordinary model/temperature/token overrides keep engine precedence. Static request-
+  owned messages/templates/instructions/output controls fail explicitly, including
+  values concealed by an engine override. Processor input collisions fail before
+  rendering/preprocessing. No target, validator or constraint is stored on an engine.
+- Output mode: `ExtractionVlmOptions.output_mode` defaults to `prompt_only`.
+  `schema_constrained` deliberately opts `engine_type=API` into the documented
+  vLLM `response_format={type: json_schema, json_schema: {name, schema}}` contract.
+  It requires an explicit output schema; local and named API variants reject it.
+  Named variants also reject unverified vLLM chat kwargs instead of assuming option
+  compatibility from an OpenAI envelope. Shared conversion engine options and
+  `api_image_request()` are unchanged. Provider rejection propagates through the
+  existing error mapping; no retry removes constraints or changes the output mode.
+- Decoder subset: typed nested objects, homogeneous arrays, primitive/enumerated
+  values, single-type/null type lists, nullable `anyOf`, required declared properties,
+  boolean schemas/additionalProperties, annotations and nonrecursive local references.
+  References are inlined into a fresh derived schema; schema resource metadata and
+  definitions are omitted after inlining. Scalar bounds, patterns/formats, tuple/
+  unique-item assertions, arbitrary unions/composition, dynamic-key schemas and
+  assertion siblings of references fail with schema paths. Unsupported schema
+  assertions are never silently dropped. Prompt-only may use valid schemas outside
+  this decoder subset; original guidance and validator schemas stay unchanged.
+- Preset validation: the inherited factory assigns overrides after construction.
+  Extraction revalidates its final options so output-mode/engine combinations cannot
+  bypass preflight. The shared conversion preset factory was not changed.
+- Environment: Python 3.13.5 from `docling_release/.venv` with imports from
+  `docling-second`; torch 2.14.0, Transformers 5.16.1, Pydantic 2.13.5,
+  jsonschema 4.26.0, pytest 9.0.3 and polyfactory 3.3.0. Published Core 2.96.0
+  resolves under that environment's `site-packages`. Local Python 3.14 tools used
+  without syncing dependencies. No Core checkout/override, Jobkit or Serve edits,
+  dependency/lock changes, model presets/enablement or weight downloads.
+- Behavioral gates: captured actual shared HTTP payloads and local processor
+  arguments for text/images/mixed ordering, templates/instructions and two independent
+  cached calls; proved fresh nested mappings, dynamic constraints, collision preflight,
+  explicit mode/engine/schema rejection and no fallback after provider compilation
+  rejection. Main image constructors/wrappers, slim imports, remote authorization,
+  empty/filtered/failed API behavior, generation overrides/token counts/stop reasons,
+  context checks, DCLX and resource-streaming regressions pass.
+- Stage 2 blockers: none. Real served vLLM/model inference remains a stage 4–7
+  smoke gate, not a support claim from these payload tests. Two unrelated conversion
+  golden failures reproduced against unchanged stage 1 source; no goldens or
+  conversion implementation were changed.
+- Next: stage 3 only, complete SDK target forwarding, envelopes/items/validation,
+  main-shaped inline constants and automatic streaming chunks. Do not expose SDK
+  `target=` until that complete source-to-result path is functional.
+
+Changed paths for stage 2:
+
+- `docling/datamodel/extraction_options.py`
+- `docling/models/base_model.py`
+- `docling/models/extraction/api_extraction_model.py`
+- `docling/models/extraction/transformers_extraction_model.py`
+- `docling/models/extraction/nuextract_transformers_model.py` (restored main import)
+- `docling/models/extraction/prompt_utils.py`
+- `docling/models/extraction/template_utils.py`
+- `docling/utils/api_extraction_request.py` (replaces deleted `api_nuextract_request.py`)
+- `docling/pipeline/extraction_vlm_pipeline.py` (legacy preparation/call routing only)
+- `tests/test_extraction_api.py`
+- `tests/test_extraction_text_channel.py`
+- `tests/test_extraction_transformers_model.py`
+- `tests/test_extraction_dclx.py`
+- `tests/test_extraction_vlm_streaming.py`
+- `docs/plans/extraction-additional-vlm-models-execution.md`
+
+### Stage 2 commands and evidence
+
+Commands run from `docling-second` unless a different working directory is stated:
+
+```sh
+# Start-state verification: branch/HEAD above; clean tracked/untracked state, exit 0.
+pwd
+git branch --show-current
+git rev-parse HEAD
+git status --short --untracked-files=all
+git ls-files --others --exclude-standard
+
+# Environment check: versions/path above, exit 0.
+/Users/cau/Documents/Development/docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
+
+# Baseline, outside sandbox: 144 passed, 4 skipped, 27 warnings; exit 0, 12.97s.
+CI=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_transformers_model.py tests/test_service_datamodels.py \
+  > /tmp/docling-stage2-baseline.log 2>&1
+
+# Final gates/regressions, outside sandbox: 225 passed, 4 skipped, 2 deselected;
+# 27 existing warnings, exit 0. HF_HUB_OFFLINE prevents downloads.
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_transformers_model.py tests/test_service_datamodels.py \
+  tests/test_api_image_request.py tests/test_build_generation_config.py \
+  tests/test_interfaces.py -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage2-regressions.log 2>&1
+
+# Isolated baseline for unrelated conversion failures; no worktree/commit created.
+mkdir -p /tmp/docling-stage2-baseline-source
+git archive HEAD | tar -x -C /tmp/docling-stage2-baseline-source
+# Working directory: /tmp/docling-stage2-baseline-source.
+# 2 failed, 4 deselected, 4 warnings; exit 1, 8.11s.
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/tmp/docling-stage2-baseline-source \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_interfaces.py -k 'test_convert_path or test_convert_stream' \
+  > /tmp/docling-stage2-interface-baseline.log 2>&1
+
+# Required repository validation, outside sandbox: applicable hooks pass, exit 0.
+# Rerun after final source/ledger changes; no unrelated rewrites or dependency sync.
+UV_NO_SYNC=1 make validate > /tmp/docling-stage2-validate.log 2>&1
+
+# Final diff audit: exit 0.
+git diff --check
+```
+
+The sandbox baseline aborted on eager MLX import, exit 134, before collection;
+rerunning outside the sandbox passed. `UV_NO_SYNC=1 uv run ruff ...` initially
+failed to access uv's cache, exit 2; the existing `.venv/bin/ruff` tools then
+formatted/linted only changed paths, exit 0. No code workaround or environment
+sync was used. The first migrated regression run had three streaming failures
+because the test image fake did not meet the existing PIL `ImageContentItem`
+contract; updated the fake's base class while retaining all resource assertions.
+Later boundary runs caught the preset-validation bypass and corrected test-only
+assumptions about raw usage mappings, the existing RuntimeError provider mapping,
+required inline option fields and the `content_filter` enum value. Final gates pass.
+
+An expanded run also collected `test_interfaces.py`'s two real conversion cases.
+Both fail with the same Markdown table golden mismatch (TEDs headings lack the
+simple/complex/all qualifiers) on this delta and unchanged stage 1 source.
+They are the two deselections in final stage 2 validation. The four skips are
+existing heavy/weight-loading extraction tests guarded by `CI=1`; all local
+adapter boundary tests run without model weights.
+
+Backend contract checked against the official
+[vLLM v0.19.1 structured-output documentation](https://docs.vllm.ai/en/v0.19.1/features/structured_outputs/).
+This verifies the transport contract and backend choice; it does not replace
+real deployment/model smoke evidence. The implementation intentionally accepts
+only its documented bounded subset rather than claiming every decoder's schema
+support. No backend capability is inferred from a URL.
+
+Temporary local evidence:
+[baseline](/tmp/docling-stage2-baseline.log),
+[final stage 2 gates and regressions](/tmp/docling-stage2-regressions.log),
+[unchanged-source conversion failures](/tmp/docling-stage2-interface-baseline.log),
+[make validate](/tmp/docling-stage2-validate.log).
 
 Resume prompt (only this file path needs to be carried into a new conversation):
 

@@ -5,6 +5,7 @@ import json
 from types import SimpleNamespace
 
 from docling_core.types.doc import Size
+from PIL.Image import Image
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.base_models import (
@@ -28,8 +29,9 @@ class _Tracker:
         self.render_scales: list[float] = []
 
 
-class _Image:
+class _Image(Image):
     def __init__(self, page_no: int, tracker: _Tracker) -> None:
+        super().__init__()
         self.page_no = page_no
         self._tracker = tracker
         self._closed = False
@@ -127,8 +129,8 @@ class _Model:
         self._failed_page_nos = failed_page_nos or set()
         self._truncated_page_nos = truncated_page_nos or set()
 
-    def process_images(self, images, prompt):
-        image = images[0]
+    def process(self, requests, target):
+        image = requests[0][0].image
         if image.page_no in self._failed_page_nos:
             raise RuntimeError(f"page {image.page_no} failed")
         yield SimpleNamespace(

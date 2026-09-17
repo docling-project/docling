@@ -17,6 +17,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from docling.datamodel.extraction import ContentItem
+    from docling.models.extraction.prompt_utils import _PreparedTarget
 
 import numpy as np
 from docling_core.types.doc import (
@@ -87,7 +88,7 @@ class SupportsContentExtraction(Protocol):
     def process(
         self,
         requests: Iterable[list["ContentItem"]],
-        template: str,
+        target: "_PreparedTarget",
     ) -> Iterable[VlmPrediction]: ...
 
 
