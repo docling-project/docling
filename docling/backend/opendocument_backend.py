@@ -191,6 +191,18 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
         self.path_or_stream = None
 
 
+def _odf_span_int(attrs: Any, key: str, default: int = 1) -> int:
+    """Read a table span attribute as a positive integer, defaulting on junk."""
+    raw = attrs.get(key) if attrs is not None else None
+    if raw in (None, ""):
+        return default
+    try:
+        parsed = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
+
 def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     """Find the true data boundaries (min/max rows and columns) in an ODS table.
 
@@ -222,8 +234,8 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
             # Also check for cells with spans (they define data regions)
             if cell.tag != "table:covered-table-cell":
                 attrs = cell.attributes
-                row_span = int(attrs.get("table:number-rows-spanned") or 1)
-                col_span = int(attrs.get("table:number-columns-spanned") or 1)
+                row_span = _odf_span_int(attrs, "table:number-rows-spanned")
+                col_span = _odf_span_int(attrs, "table:number-columns-spanned")
                 if row_span > 1 or col_span > 1:
                     if min_row is None:
                         min_row = row_idx
@@ -1375,8 +1387,8 @@ def _add_table_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            row_span = _odf_span_int(attrs, "table:number-rows-spanned")
+            col_span = _odf_span_int(attrs, "table:number-columns-spanned")
             adjusted_row = row_idx - min_row
             adjusted_col = col_idx - min_col
             text = _odf_cell_text(cell)
@@ -1483,8 +1495,8 @@ def _table_data_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            row_span = _odf_span_int(attrs, "table:number-rows-spanned")
+            col_span = _odf_span_int(attrs, "table:number-columns-spanned")
             text = _odf_cell_text(cell)
 
             # Adjust cell coordinates to be relative to the data region

@@ -1457,3 +1457,28 @@ def test_odt_extensionless_path_is_not_read(tmp_path: Path):
     assert "/etc/passwd" not in files_opened, (
         "ODF backend attempted to open an extension-less system path"
     )
+
+
+def test_ods_non_numeric_table_spans_do_not_crash(tmp_path: Path):
+    path = tmp_path / "bad_span.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=2, height=2)
+    t.set_value("A1", "x")
+    t.set_value("B1", "y")
+    t.set_value("A2", "z")
+    t.set_value("B2", "w")
+    cell = t.get_cell("A1")
+    if hasattr(cell, "set_attribute"):
+        cell.set_attribute("table:number-rows-spanned", "auto")
+    else:
+        cell.set("table:number-rows-spanned", "auto")
+    t.set_cell("A1", cell)
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+    assert len(res.document.tables) == 1
+    texts = [c.text for c in res.document.tables[0].data.table_cells]
+    assert "x" in texts
