@@ -334,3 +334,10 @@ def test_utf8_bom_does_not_hide_the_document_title(tmp_path: Path) -> None:
     for doc in (stream_doc, file_doc):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Document Title"
+
+
+def test_parse_section_header_without_match_does_not_crash():
+    parsed = AsciiDocBackend._parse_section_header("not a header")
+    assert parsed["type"] == "header"
+    assert parsed["level"] == 1
+    assert parsed["text"] == "not a header"

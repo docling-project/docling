@@ -460,6 +460,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _parse_section_header(line):
         match = re.match(r"^(=+)\s+(.*)", line)
+        if not match:
+            return {
+                "type": "header",
+                "level": 1,
+                "text": line.strip(),
+            }
 
         marker = match.group(1)  # The list marker (e.g., "*", "-", "1.")
         text = match.group(2)  # The actual text of the list item
