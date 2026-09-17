@@ -558,8 +558,13 @@ def test_chart_isolation_prunes_siblings_at_every_group_level(tmp_path: Path):
     assert [shape.has_chart for shape in shapes] == [False, False, True]
 
 
-def test_chart_isolation_keeps_slide_when_shape_id_is_unknown(tmp_path: Path):
-    """An id matching no shape falls back to rendering the untouched slide."""
+def test_chart_isolation_fails_when_shape_id_is_unknown(tmp_path: Path, caplog):
+    """An id matching no graphic frame yields no image rather than a screenshot.
+
+    Rendering the untouched slide would attach a picture of the whole slide as
+    the chart's image, which misleads picture classification and enrichment
+    more than having no image at all. The caller keeps the chart data.
+    """
     from pptx import Presentation
     from pptx.util import Inches
 
@@ -573,10 +578,82 @@ def test_chart_isolation_keeps_slide_when_shape_id_is_unknown(tmp_path: Path):
     backend = object.__new__(MsPowerpointDocumentBackend)
     backend.pptx_obj = Presentation(str(source))
     isolated_path = tmp_path / "isolated_unknown.pptx"
-    assert backend._isolate_chart_presentation(0, 9999, isolated_path)
+
+    with caplog.at_level(
+        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
+    ):
+        assert backend._isolate_chart_presentation(0, 9999, isolated_path) is False
+
+    assert not isolated_path.exists()
+    assert "9999" in caplog.text
+
+
+def test_chart_isolation_ignores_alternate_content_with_a_duplicate_id(
+    tmp_path: Path,
+):
+    """A shape id reused inside mc:AlternateContent must not shadow the chart.
+
+    Shape ids are not reliably unique on a slide: an mc:AlternateContent block
+    repeats the same shape with the same cNvPr/@id in its mc:Choice and
+    mc:Fallback, and some generators emit duplicates outright. An unscoped
+    lookup taking the first match in document order would keep that shape and
+    delete the real chart, attaching a picture of an unrelated shape.
+    """
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.oxml.ns import nsdecls
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart_frame = _add_bar_chart(slide.shapes)
+    duplicate_id = chart_frame.shape_id
+
+    # An AlternateContent block ahead of the chart whose fallback reuses the
+    # chart's id, as a SmartArt or ink shape written by PowerPoint would.
+    alternate = etree.fromstring(
+        f"""<mc:AlternateContent {nsdecls("p", "a")}
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+             <mc:Choice Requires="a14">
+               <p:graphicFrame>
+                 <p:nvGraphicFramePr>
+                   <p:cNvPr id="{duplicate_id}" name="Decoy choice"/>
+                   <p:cNvGraphicFramePr/>
+                   <p:nvPr/>
+                 </p:nvGraphicFramePr>
+                 <p:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></p:xfrm>
+                 <a:graphic><a:graphicData uri="decoy"/></a:graphic>
+               </p:graphicFrame>
+             </mc:Choice>
+             <mc:Fallback>
+               <p:graphicFrame>
+                 <p:nvGraphicFramePr>
+                   <p:cNvPr id="{duplicate_id}" name="Decoy fallback"/>
+                   <p:cNvGraphicFramePr/>
+                   <p:nvPr/>
+                 </p:nvGraphicFramePr>
+                 <p:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></p:xfrm>
+                 <a:graphic><a:graphicData uri="decoy"/></a:graphic>
+               </p:graphicFrame>
+             </mc:Fallback>
+           </mc:AlternateContent>"""
+    )
+    sp_tree = slide.shapes._spTree
+    sp_tree.insert(list(sp_tree).index(chart_frame._element), alternate)
+    source = tmp_path / "alternate_content.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_alternate.pptx"
+    assert backend._isolate_chart_presentation(0, duplicate_id, isolated_path)
 
     isolated = Presentation(str(isolated_path))
-    assert len(list(isolated.slides[0].shapes)) == 2
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    assert [shape.has_chart for shape in shapes] == [True], (
+        "the decoy was kept instead of the chart"
+    )
+    assert list(shapes[0].chart.plots[0].categories) == ["a", "b", "c"]
 
 
 def test_pptx_shapes_are_sorted_by_visual_position():
