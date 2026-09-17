@@ -7,24 +7,138 @@ Each function takes a processor, images, and templates and returns
 tokenized inputs ready for model.generate().
 """
 
-from typing import Any
+import json
+from copy import deepcopy
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from PIL.Image import Image
 
 from docling.datamodel.extraction import (
     ContentItem,
+    ExtractionTarget,
+    ExtractionTemplateType,
     ImageContentItem,
     TextContentItem,
 )
 
 # Re-exported: the schema-instruction wrapper now lives with the model spec in datamodel.
-from docling.datamodel.extraction_options import _build_extraction_prompt
+from docling.datamodel.extraction_options import (
+    ExtractionPromptStyle,
+    ExtractionVlmModelSpec,
+    _build_extraction_prompt,
+)
+from docling.models.extraction.template_utils import (
+    _schema_to_nuextract,
+    normalize_target,
+    schema_validator,
+)
+
+if TYPE_CHECKING:
+    from jsonschema.protocols import Validator
 
 __all__ = [
     "_build_extraction_prompt",
     "build_granite_vision_inputs",
     "build_nuextract_content_inputs",
 ]
+
+
+@dataclass(frozen=True)
+class _PreparedTarget:
+    """Call-owned guidance and validator, ready for either inference adapter."""
+
+    target: ExtractionTarget | None
+    validator: "Validator | None"
+    prompt: str
+    chat_template_kwargs: dict[str, Any]
+    processor_kwargs: dict[str, Any]
+    constraint_schema: dict[str, Any] | None = None
+
+
+_OBJECT_INSTRUCTIONS = "Return ONLY a valid JSON object, with no other text."
+_MISSING_INSTRUCTIONS = (
+    "For unavailable information, use null only where the schema permits null. "
+    "Optional properties may be omitted. Never invent a required non-nullable "
+    "value; an unavailable required value makes the output invalid."
+)
+
+
+def prepare_target(
+    target: ExtractionTarget, model_spec: ExtractionVlmModelSpec
+) -> _PreparedTarget:
+    """Normalize once and prepare guidance without invoking an engine or model."""
+    owned = normalize_target(target)
+    schema = owned.output_schema
+    validator = schema_validator(schema) if schema is not None else None
+    chat_kwargs = deepcopy(model_spec.extra_chat_template_kwargs)
+    for key in (
+        "template",
+        "instructions",
+        "messages",
+        "response_format",
+        "structured_outputs",
+    ):
+        if key in chat_kwargs:
+            raise ValueError(f"chat-template option {key!r} is request-owned")
+    processor_kwargs = deepcopy(model_spec.extra_processor_kwargs)
+    guidance = [_OBJECT_INSTRUCTIONS]
+    if model_spec.prompt:
+        guidance.append(model_spec.prompt)
+    if owned.instructions:
+        guidance.append(owned.instructions)
+    if schema is not None:
+        guidance.extend(
+            [
+                _MISSING_INSTRUCTIONS,
+                "Output contract (JSON Schema Draft 2020-12):\n"
+                + json.dumps(schema, indent=2),
+            ]
+        )
+
+    template = owned.template
+    if model_spec.preparation == "nuextract":
+        if chat_kwargs.get("mode", "structured") != "structured":
+            raise ValueError("NuExtract extraction requires structured mode")
+        if template is not None:
+            if template.format != "nuextract":
+                raise ValueError(
+                    "NuExtract requires a nuextract native template, not example_json"
+                )
+            native = template.value
+        else:
+            assert schema is not None  # ExtractionTarget requires schema or template.
+            native = _schema_to_nuextract(schema)
+        chat_kwargs["template"] = json.dumps(native, indent=2)
+        chat_kwargs["instructions"] = "\n\n".join(guidance)
+        prompt = ""
+    else:
+        if template is not None:
+            if template.format != "example_json":
+                raise ValueError(
+                    "generic chat does not support the nuextract native dialect"
+                )
+            guidance.append(
+                "Example output (illustration only, not a schema or source facts):\n"
+                + json.dumps(template.value, indent=2)
+            )
+        prompt = "\n\n".join(guidance)
+
+    return _PreparedTarget(owned, validator, prompt, chat_kwargs, processor_kwargs)
+
+
+def prepare_legacy_target(
+    template: ExtractionTemplateType, model_spec: ExtractionVlmModelSpec
+) -> _PreparedTarget:
+    """Keep main's sample serialization and prompts separate from explicit targets."""
+    prompt = model_spec.build_extraction_prompt(template)
+    chat_kwargs = deepcopy(model_spec.extra_chat_template_kwargs)
+    if model_spec.prompt_style is ExtractionPromptStyle.NUEXTRACT:
+        chat_kwargs["template"] = prompt
+        prompt = ""
+    return _PreparedTarget(
+        None, None, prompt, chat_kwargs, deepcopy(model_spec.extra_processor_kwargs)
+    )
 
 
 def _content_item_to_nuextract(item: ContentItem) -> dict[str, Any]:

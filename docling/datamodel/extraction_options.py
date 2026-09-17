@@ -4,7 +4,7 @@
 import inspect
 import json
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, model_validator
 
@@ -74,6 +74,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
     """Model specification for structured extraction."""
 
     prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT
+    preparation: Literal["nuextract", "generic_chat"] = "nuextract"
 
     accepts_image: bool = True
     accepts_text: bool = False
@@ -91,6 +92,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
         ]
     )
     extra_processor_kwargs: dict = Field(default_factory=dict)
+    extra_chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)
     max_input_tokens: int | None = Field(
         default=None,
         gt=0,
@@ -103,7 +105,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
     )
 
     def serialize_template(self, template: "ExtractionTemplateType") -> str:
-        """Serialize any of the four template forms to a schema string.
+        """Serialize legacy bare templates, without inferring an output contract.
 
         Only a Pydantic *class* is style-dependent: NuExtract wants a sample
         instance (field name -> example value), GRANITE_VISION wants a real JSON
@@ -201,6 +203,11 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
             model_spec=ExtractionVlmModelSpec(
                 name=inline.repo_id,
                 prompt_style=style,
+                preparation=(
+                    "nuextract"
+                    if style is ExtractionPromptStyle.NUEXTRACT
+                    else "generic_chat"
+                ),
                 accepts_image=True,
                 accepts_text=style is ExtractionPromptStyle.NUEXTRACT,
                 default_repo_id=inline.repo_id,
@@ -249,6 +256,7 @@ NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
 GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     name="Granite Vision 4.1",
     prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    preparation="generic_chat",
     accepts_image=True,
     accepts_text=False,  # Granite cannot take a text payload
     default_repo_id="ibm-granite/granite-vision-4.1-4b",
