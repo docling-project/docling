@@ -126,7 +126,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         encoded-word must not stand up a forged header in the rendered document.
         ``str.split()`` covers every character ``str.splitlines()`` breaks on, and
         collapsing runs also unfolds a folded header to one space.
+
+        mailparser can hand None for a missing display name. Indexing that as a
+        string raised AttributeError and aborted the whole conversion.
         """
+        if not isinstance(value, str):
+            return ""
         return " ".join(value.split())
 
     @staticmethod
@@ -232,15 +237,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         formatted = []
         for name, email in addresses:
             name = self._header_safe(name)
+            email_text = email if isinstance(email, str) else ""
             if name:
-                formatted.append(f"{self._quote_display_name(name)} <{email}>")
-            else:
-                formatted.append(email)
+                formatted.append(f"{self._quote_display_name(name)} <{email_text}>")
+            elif email_text:
+                formatted.append(email_text)
 
         return ", ".join(formatted)
 
     def _split_paragraphs(self, text: str) -> list[str]:
         """Split a body into paragraphs, normalising CRLF and lone CR first."""
+        if not isinstance(text, str) or not text:
+            return []
         text = re.sub(r"\r\n|\r", "\n", text)
         return [
             paragraph.strip()
@@ -270,12 +278,16 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         if self.mail.text_plain:
             paragraphs: list[str] = []
             for part in self.mail.text_plain:
+                if not isinstance(part, str):
+                    continue
                 paragraphs.extend(self._split_paragraphs(part))
             return paragraphs
 
         if self.mail.text_html:
             paragraphs = []
             for part in self.mail.text_html:
+                if not isinstance(part, str):
+                    continue
                 html_doc = self._convert_html_part(part)
                 paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
             return paragraphs

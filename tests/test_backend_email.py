@@ -575,3 +575,16 @@ def test_msg_document_converter_lists_attachments_via_format_option():
     assert "Attachments" in markdown
     assert "test.txt" in markdown
     assert "report.pdf" in markdown
+
+
+def test_header_safe_skips_non_string_values():
+    assert EmailDocumentBackend._header_safe(None) == ""
+    assert EmailDocumentBackend._header_safe(123) == ""
+    assert EmailDocumentBackend._header_safe("Alice Example") == "Alice Example"
+
+
+def test_split_paragraphs_skips_non_string_bodies():
+    backend = EmailDocumentBackend.__new__(EmailDocumentBackend)
+    assert backend._split_paragraphs(None) == []
+    assert backend._split_paragraphs(b"hello") == []
+    assert backend._split_paragraphs("Hello\n\nWorld") == ["Hello", "World"]
