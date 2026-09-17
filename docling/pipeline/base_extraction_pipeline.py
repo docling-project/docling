@@ -13,9 +13,16 @@ from docling.datamodel.base_models import (
     FailureCategory,
 )
 from docling.datamodel.document import InputDocument
-from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
+from docling.datamodel.extraction import (
+    DocumentExtractionResult,
+    ExtractionResult,
+    ExtractionTarget,
+    ExtractionTemplateType,
+    _legacy_result,
+)
 from docling.datamodel.pipeline_options import BaseOptions, PipelineOptions
 from docling.datamodel.settings import settings
+from docling.models.extraction.prompt_utils import normalize_extraction_call
 
 _log = logging.getLogger(__name__)
 
@@ -41,11 +48,34 @@ class BaseExtractionPipeline(ABC):
         in_doc: InputDocument,
         raises_on_error: bool,
         template: Optional[ExtractionTemplateType] = None,
-    ) -> ExtractionResult:
-        ext_res = ExtractionResult(input=in_doc)
+        *,
+        target: ExtractionTarget | None = None,
+    ) -> ExtractionResult | DocumentExtractionResult:
+        try:
+            # Main also permits pipeline execution with its default prompt.
+            owned = (
+                normalize_extraction_call(template, target)
+                if template is not None or target is not None
+                else None
+            )
+        except Exception:
+            in_doc._backend.unload()
+            raise
+        result = self._execute(in_doc, raises_on_error, target=owned)
+        return _legacy_result(result) if target is None else result
+
+    def _execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        *,
+        target: ExtractionTarget | str | None,
+    ) -> DocumentExtractionResult:
+        """Execute an already normalized SDK or pipeline call."""
+        ext_res = DocumentExtractionResult(input=in_doc)
 
         try:
-            ext_res = self._extract_data(ext_res, template)
+            ext_res = self._extract_data(ext_res, target)
             ext_res.status = self._determine_status(ext_res)
         except Exception as e:
             ext_res.status = ConversionStatus.FAILURE
@@ -66,14 +96,14 @@ class BaseExtractionPipeline(ABC):
     @abstractmethod
     def _extract_data(
         self,
-        ext_res: ExtractionResult,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> ExtractionResult:
-        """Subclass must populate ext_res.pages/errors and return the result."""
+        ext_res: DocumentExtractionResult,
+        target: ExtractionTarget | str | None = None,
+    ) -> DocumentExtractionResult:
+        """Subclass must populate ext_res.items/errors and return the result."""
         raise NotImplementedError
 
     @abstractmethod
-    def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
+    def _determine_status(self, ext_res: DocumentExtractionResult) -> ConversionStatus:
         """Subclass must decide SUCCESS/PARTIAL_SUCCESS/FAILURE based on ext_res."""
         raise NotImplementedError
 

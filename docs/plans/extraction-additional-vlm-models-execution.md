@@ -1,10 +1,11 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-17. Stages 0–2 are complete. Stage 1 is committed at
-`0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`. The user authorized the signed-off
-stage 2 commit, titled `refactor: unify extraction inference adapters`; resolve
-its checkpoint with `git log -1` after committing. Next stage: **3**. No push or
-publication is authorized.
+Updated 2026-09-17. Stages 0–3 are complete. Stage 1 is committed at
+`0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
+`b0e888f846d82c24b5ba64e587f1dd64bd568c5f`. The user subsequently authorized the
+signed-off stage 3 commit, titled `feat: complete extraction target SDK path`;
+resolve its checkpoint with `git log -1`. Next stage: **4**, under separate
+authorization. No push or publication is authorized.
 
 ## Authority and boundaries
 
@@ -103,7 +104,7 @@ Stages 4–7 separate real model verification from shared plumbing.
 | 0 | All | Branch setup, current baseline, this ledger | Baseline | Done |
 | 1 | Docling | Target/result types and call-local target preparation | A types, B, D types | Done |
 | 2 | Docling | One local/API ordered-content execution contract | C, A model compatibility | Done |
-| 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Pending |
+| 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Done |
 | 4 | Docling | NuExtract3 integration and native/conversion smoke evidence | F: NuExtract | Pending |
 | 5 | Docling | Lift single-page integration and explicit vLLM constraints | F: Lift | Pending |
 | 6 | Docling | Shared Qwen3.5 profile, 4B functional and 9B capacity checks | F: Qwen | Pending |
@@ -625,6 +626,173 @@ Temporary local evidence:
 [final stage 2 gates and regressions](/tmp/docling-stage2-regressions.log),
 [unchanged-source conversion failures](/tmp/docling-stage2-interface-baseline.log),
 [make validate](/tmp/docling-stage2-validate.log).
+
+### Current checkpoint: stage 3 — done
+
+- Worktree: `/Users/cau/Documents/Development/docling-second`, branch
+  `cau/extraction-api-service-models`, implementation base HEAD
+  `b0e888f846d82c24b5ba64e587f1dd64bd568c5f`. Initial `git status --short`
+  was empty. Final changes are only the paths below. The subsequent user request authorized
+  a signed-off commit of these paths only; no push. No unrelated tracked/untracked
+  work was present or rewritten.
+- Authority: read `AGENTS.md`, this stage's instructions, Part I's target,
+  pagination, scope, validation and ownership constraints, and revised Part II
+  A, D and E of the canonical handoff. The standalone proposal was not used.
+  Traced SDK dispatch/cache, base/VLM execution, legacy DTOs, both ordered-content
+  adapters/image wrappers, PDF sequential/random page access, declarative serializers,
+  DCLX borrowing and InputDocument rejection/ownership paths before their edits.
+- SDK: keyword-only `target=` and overloads preserve all positional arguments.
+  Exactly one target/template entry is required. Each public SDK call immediately
+  owns/revalidates its target or serializes its legacy template, including lazy
+  `extract_all()` calls; one legacy warning is emitted per call. Class templates
+  preserve main's example/default/sample semantics without inferring a schema.
+  The existing style-dependent preparation helpers remain behind that boundary.
+- Results: internal execution accumulates only `DocumentExtractionResult.items`.
+  SDK legacy calls and public pipeline `execute(template=...)` project page items
+  once at their respective outer boundaries. Legacy `pages=` DTO construction and
+  serialization are unchanged. The main optional pipeline default prompt still
+  works. Legacy unpaginated input fails with directions to use `target=`.
+- Chunks: one pipeline-local generator determines native/converted pagination
+  before resolving channels. Every selected absolute page receives an independent
+  ordered-content request; an unpaginated source receives one text-only document
+  request. Explicit image channels/non-default ranges on unpaginated input fail.
+  Native page text uses backend text cells; converted page text uses Core's existing
+  Markdown serializer. Unattributed, unknown-page and multi-page element provenance
+  fail explicitly instead of dropping or repeating text across independent pages.
+  Image-only pages remain represented. Converted documents also honor the existing
+  `max_num_pages` input limit.
+- Ownership: lazy prediction iterators are consumed before advancing the producer.
+  Page backends and owned rendered/resized images release in `finally`; the consumer
+  closes the chunk generator on early exit. Borrowed DCLX images remain open.
+  Invalid/policy-rejected inputs and pipeline initialization/unavailability exits
+  release constructed backends, accounting explicitly for rejected inputs whose
+  backend was never constructed. Missing/invalid/load-failed selected pages retain
+  their known scope; no empty-content chunk is fabricated.
+- Validation/status: exactly one unchanged-schema validation per available final
+  object; no repair, coercion or default filling. Invalid/nonfinite/non-object JSON,
+  schema failures and provider filtering retain raw output/metadata but no successful
+  extracted data. Inference/parse/prevented validation reports `not_run`; template-only
+  calls report `not_requested`. Standards validation reports `passed`/`failed` with
+  JSON paths. A lazy prediction iterator that yields then raises retains its raw
+  answer and metadata as a failed item. Independent valid items yield partial success;
+  length/stop-sequence completion and document timeout cannot yield full success.
+  SDK raised errors now include scoped item errors.
+- Timeout: check the document budget before loading/requesting each chunk, carry
+  the remaining budget in call-local preparation into API transport (bounded by
+  its configured timeout), and represent unprocessed selected pages. Completed
+  items remain inspectable. Local generation is not claimed to be hard-preempted.
+- Compatibility: restored main-shaped inline NuExtract2/Granite constants in
+  `vlm_model_specs.py`; modern callers/defaults use `extraction_options.py`.
+  Inline repository/render/generation/processor overrides, serialized options,
+  constructors/imports, PIL/numpy/RGB image wrappers and slim imports pass. Serialized
+  string prompt styles are normalized to the enum in the shared inline adapter,
+  correcting the enum-identity bug exposed by the gate.
+- Environment: Python 3.13.5 from `docling_release/.venv`, importing this worktree.
+  Published Core 2.96.0 resolves from that environment's `site-packages`; torch
+  2.14.0, Transformers 5.16.1, Pydantic 2.13.5, jsonschema 4.26.0, pytest 9.0.3
+  and polyfactory 3.3.0. Existing local Python 3.14 tools run without environment
+  synchronization. No Core checkout/override, Jobkit/Serve edit, dependency/lock
+  change, model enablement or weight download occurred.
+- Gates: all channels and absolute ranges, paginated native/converted text,
+  unpaginated text/rejections, unattributed text, image-only/missing/invalid pages,
+  source load, tokenization, inference, lazy inference, parse, schema-preflight,
+  validation-runtime and supplied-schema failures, context overflow, filtering,
+  length stop, API budget and timeout cleanup, one-live-page bounds, borrowed/resized
+  DCLX ownership, early exits and cached-call isolation pass. Both existing local
+  NuExtract2/Granite paths ran through the SDK with synthetic processors/generation;
+  both existing API paths ran with captured transport arguments. This is plumbing
+  evidence, not a new real-model smoke/support claim.
+- Blockers: none for stage 3. The four existing weight-loading skips remain.
+  The two known conversion golden mismatches remain deselected, with unchanged-source
+  evidence in stage 2 above; no golden was changed. Initial gate failures exposed
+  fixture assumptions (DCLX page renumbering, source provenance restoration, compact
+  versus pretty JSON, synthetic EOS config and error-message case). Fixtures now
+  use actual 1–3 pagination before selecting 2–3, and synthetic converted image-only/
+  unsupported-attribution documents retain explicit page metadata. No Core fix was
+  necessary. Required `make validate` passes without unrelated rewrites.
+- Next: stage 4 only under separate authorization: NuExtract3 model/deployment and
+  native/conversion smoke evidence. Stages 4–8 were not implemented in this task.
+
+Changed paths for stage 3:
+
+- `docling/datamodel/extraction.py`
+- `docling/datamodel/extraction_options.py`
+- `docling/datamodel/pipeline_options.py`
+- `docling/datamodel/vlm_model_specs.py`
+- `docling/document_extractor.py`
+- `docling/models/extraction/api_extraction_model.py`
+- `docling/models/extraction/prompt_utils.py`
+- `docling/pipeline/base_extraction_pipeline.py`
+- `docling/pipeline/extraction_vlm_pipeline.py`
+- `tests/test_extraction_api.py`
+- `tests/test_extraction_dclx.py`
+- `tests/test_extraction_text_channel.py`
+- `tests/test_extraction_transformers_model.py`
+- `tests/test_extraction_vlm_streaming.py`
+- `tests/test_extraction_stage3.py` (new source-to-item gates)
+- `docs/plans/extraction-additional-vlm-models-execution.md`
+
+### Stage 3 commands and evidence
+
+Commands run from `docling-second`; no dependency synchronization:
+
+```sh
+# Start state: correct path/branch, stage 2 HEAD, clean worktree; exit 0.
+pwd
+git status --short
+git branch --show-current
+git rev-parse HEAD
+
+# Environment: published Core/site-packages and versions above; exit 0.
+/Users/cau/Documents/Development/docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
+
+# Baseline outside sandbox: 225 passed, 4 skipped, 2 deselected, 27 warnings;
+# exit 0, 14.99s. Initial sandbox attempt aborted on existing MLX imports, exit 134.
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_transformers_model.py tests/test_service_datamodels.py \
+  tests/test_api_image_request.py tests/test_build_generation_config.py \
+  tests/test_interfaces.py -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage3-baseline.log 2>&1
+
+# Final acceptance gates + regressions outside sandbox: 331 passed, 4 skipped,
+# 2 deselected, 31 warnings; exit 0, 16.23s.
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_service_datamodels.py tests/test_api_image_request.py \
+  tests/test_build_generation_config.py tests/test_interfaces.py \
+  tests/test_input_doc.py tests/test_invalid_input.py \
+  -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage3-regressions.log 2>&1
+
+# Required repository validation outside sandbox: all applicable hooks pass,
+# exit 0; rerun after final source/test/ledger edits. No unrelated rewrites.
+UV_NO_SYNC=1 make validate > /tmp/docling-stage3-validate.log 2>&1
+
+# Final branch/HEAD/scope and whitespace audits; exit 0.
+git branch --show-current
+git rev-parse HEAD
+git status --short --untracked-files=all
+git diff --check
+```
+
+Local `.venv/bin/ruff check --fix` and `.venv/bin/ruff format` were restricted to
+changed Python paths; final required hook validation checks those same paths.
+Non-fatal installed-hook cache metadata warnings remain. The extra four warnings
+in the final regression run are the intentional legacy pipeline warnings in existing
+DCLX tests; the SDK warning-count gates explicitly capture/assert one per call.
+
+Temporary evidence:
+[baseline](/tmp/docling-stage3-baseline.log),
+[final acceptance and regression results](/tmp/docling-stage3-regressions.log),
+[required repository validation](/tmp/docling-stage3-validate.log).
 
 Resume prompt (only this file path needs to be carried into a new conversation):
 

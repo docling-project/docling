@@ -264,6 +264,7 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         cls, inline: InlineVlmOptions, style: ExtractionPromptStyle
     ) -> "ExtractionVlmOptions":
         """Adapt the deprecated flat extraction options."""
+        style = ExtractionPromptStyle(style)
         return cls(
             model_spec=ExtractionVlmModelSpec(
                 name=inline.repo_id,

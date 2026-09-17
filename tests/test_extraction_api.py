@@ -9,6 +9,8 @@ import pytest
 from pydantic import AnyUrl, BaseModel, Field
 
 from docling.datamodel.extraction_options import (
+    GRANITE_VISION_4_1_API,
+    NU_EXTRACT_2B_TRANSFORMERS,
     ExtractionPromptStyle,
     ExtractionVlmOptions,
 )
@@ -22,10 +24,6 @@ from docling.datamodel.vlm_engine_options import (
     ApiVlmEngineOptions,
     MlxVlmEngineOptions,
     TransformersVlmEngineOptions,
-)
-from docling.datamodel.vlm_model_specs import (
-    GRANITE_VISION_4_1_API,
-    NU_EXTRACT_2B_TRANSFORMERS,
 )
 from docling.exceptions import OperationNotAllowed
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel

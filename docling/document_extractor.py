@@ -9,7 +9,7 @@ from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Type, Union, overload
 
 from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
@@ -31,7 +31,14 @@ from docling.datamodel.document import (
     _DocumentConversionInput,  # intentionally reused builder
     build_invalid_input_errors,
 )
-from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
+from docling.datamodel.extraction import (
+    DocumentExtractionResult,
+    ExtractionResult,
+    ExtractionTarget,
+    ExtractionTemplateType,
+    PageScope,
+    _legacy_result,
+)
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
@@ -40,6 +47,7 @@ from docling.datamodel.settings import (
     settings,
 )
 from docling.exceptions import ConversionError
+from docling.models.extraction.prompt_utils import normalize_extraction_call
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 from docling.utils.pipeline_cache import create_pipeline_options_hash
@@ -140,7 +148,7 @@ class DocumentExtractor:
             tuple[Type[BaseExtractionPipeline], str], BaseExtractionPipeline
         ] = {}
 
-    @validate_call(config=ConfigDict(strict=True))
+    @overload
     def extract(
         self,
         source: Union[Path, str, DocumentStream],
@@ -150,19 +158,50 @@ class DocumentExtractor:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-    ) -> ExtractionResult:
-        all_res = self.extract_all(
+        *,
+        target: None = None,
+    ) -> ExtractionResult: ...
+
+    @overload
+    def extract(
+        self,
+        source: Union[Path, str, DocumentStream],
+        template: ExtractionTemplateType | None = None,
+        headers: Optional[dict[str, str]] = None,
+        raises_on_error: bool = True,
+        max_num_pages: int = sys.maxsize,
+        max_file_size: int = sys.maxsize,
+        page_range: PageRange = DEFAULT_PAGE_RANGE,
+        *,
+        target: ExtractionTarget,
+    ) -> DocumentExtractionResult: ...
+
+    @validate_call(config=ConfigDict(strict=True))
+    def extract(
+        self,
+        source: Union[Path, str, DocumentStream],
+        template: ExtractionTemplateType | None = None,
+        headers: Optional[dict[str, str]] = None,
+        raises_on_error: bool = True,
+        max_num_pages: int = sys.maxsize,
+        max_file_size: int = sys.maxsize,
+        page_range: PageRange = DEFAULT_PAGE_RANGE,
+        *,
+        target: ExtractionTarget | None = None,
+    ) -> ExtractionResult | DocumentExtractionResult:
+        owned = normalize_extraction_call(template, target)
+        results = self._extract_all(
             source=[source],
             headers=headers,
             raises_on_error=raises_on_error,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
-            template=template,
+            target=owned,
         )
-        return next(all_res)
+        return next(results)
 
-    @validate_call(config=ConfigDict(strict=True))
+    @overload
     def extract_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],
@@ -172,7 +211,60 @@ class DocumentExtractor:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-    ) -> Iterator[ExtractionResult]:
+        *,
+        target: None = None,
+    ) -> Iterator[ExtractionResult]: ...
+
+    @overload
+    def extract_all(
+        self,
+        source: Iterable[Union[Path, str, DocumentStream]],
+        template: ExtractionTemplateType | None = None,
+        headers: Optional[dict[str, str]] = None,
+        raises_on_error: bool = True,
+        max_num_pages: int = sys.maxsize,
+        max_file_size: int = sys.maxsize,
+        page_range: PageRange = DEFAULT_PAGE_RANGE,
+        *,
+        target: ExtractionTarget,
+    ) -> Iterator[DocumentExtractionResult]: ...
+
+    @validate_call(config=ConfigDict(strict=True))
+    def extract_all(
+        self,
+        source: Iterable[Union[Path, str, DocumentStream]],
+        template: ExtractionTemplateType | None = None,
+        headers: Optional[dict[str, str]] = None,
+        raises_on_error: bool = True,
+        max_num_pages: int = sys.maxsize,
+        max_file_size: int = sys.maxsize,
+        page_range: PageRange = DEFAULT_PAGE_RANGE,
+        *,
+        target: ExtractionTarget | None = None,
+    ) -> Iterator[ExtractionResult | DocumentExtractionResult]:
+        owned = normalize_extraction_call(template, target)
+        results = self._extract_all(
+            source=source,
+            headers=headers,
+            raises_on_error=raises_on_error,
+            max_num_pages=max_num_pages,
+            max_file_size=max_file_size,
+            page_range=page_range,
+            target=owned,
+        )
+        return results
+
+    def _extract_all(
+        self,
+        source: Iterable[Union[Path, str, DocumentStream]],
+        headers: Optional[dict[str, str]],
+        raises_on_error: bool,
+        max_num_pages: int,
+        max_file_size: int,
+        page_range: PageRange,
+        *,
+        target: ExtractionTarget | str,
+    ) -> Iterator[ExtractionResult | DocumentExtractionResult]:
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
@@ -183,7 +275,7 @@ class DocumentExtractor:
         )
 
         ext_res_iter = self._extract(
-            conv_input, raises_on_error=raises_on_error, template=template
+            conv_input, raises_on_error=raises_on_error, target=target
         )
 
         had_result = False
@@ -193,15 +285,24 @@ class DocumentExtractor:
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
             }:
-                error_details = ""
-                if ext_res.errors:
-                    error_messages = [err.error_message for err in ext_res.errors]
-                    error_details = f" Errors: {'; '.join(error_messages)}"
+                error_messages = [err.error_message for err in ext_res.errors]
+                for item in ext_res.items:
+                    scope = (
+                        f"Page {item.scope.page_no}"
+                        if isinstance(item.scope, PageScope)
+                        else "Document"
+                    )
+                    error_messages.extend(
+                        f"{scope}: {message}" for message in item.errors
+                    )
+                error_details = (
+                    f" Errors: {'; '.join(error_messages)}" if error_messages else ""
+                )
                 raise ConversionError(
                     f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status.value}.{error_details}"
                 )
             else:
-                yield ext_res
+                yield _legacy_result(ext_res) if isinstance(target, str) else ext_res
 
         if not had_result and raises_on_error:
             raise ConversionError(
@@ -212,8 +313,8 @@ class DocumentExtractor:
         self,
         conv_input: _DocumentConversionInput,
         raises_on_error: bool,
-        template: ExtractionTemplateType,
-    ) -> Iterator[ExtractionResult]:
+        target: ExtractionTarget | str,
+    ) -> Iterator[DocumentExtractionResult]:
         start_time = time.monotonic()
 
         for input_batch in chunkify(
@@ -224,7 +325,7 @@ class DocumentExtractor:
             process_func = partial(
                 self._process_document_extraction,
                 raises_on_error=raises_on_error,
-                template=template,
+                target=target,
             )
 
             if (
@@ -255,14 +356,14 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: ExtractionTemplateType,
-    ) -> ExtractionResult:
+        target: ExtractionTarget | str,
+    ) -> DocumentExtractionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
         )
         if valid:
             return self._execute_extraction_pipeline(
-                in_doc, raises_on_error=raises_on_error, template=template
+                in_doc, raises_on_error=raises_on_error, target=target
             )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
@@ -272,7 +373,8 @@ class DocumentExtractor:
                 error_message=error_message,
                 category=FailureCategory.POLICY,
             )
-            return ExtractionResult(
+            self._unload_unexecuted_input(in_doc)
+            return DocumentExtractionResult(
                 input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
             )
 
@@ -280,27 +382,42 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: ExtractionTemplateType,
-    ) -> ExtractionResult:
+        target: ExtractionTarget | str,
+    ) -> DocumentExtractionResult:
         if not in_doc.valid:
-            return ExtractionResult(
+            self._unload_unexecuted_input(in_doc)
+            return DocumentExtractionResult(
                 input=in_doc,
                 status=ConversionStatus.FAILURE,
                 errors=build_invalid_input_errors(in_doc),
             )
 
-        pipeline = self._get_pipeline(in_doc.format)
+        try:
+            pipeline = self._get_pipeline(in_doc.format)
+        except Exception:
+            self._unload_unexecuted_input(in_doc)
+            raise
         if pipeline is None:
+            self._unload_unexecuted_input(in_doc)
             if raises_on_error:
                 raise ConversionError(
                     f"No extraction pipeline could be initialized for {in_doc.file}."
                 )
             else:
-                return ExtractionResult(input=in_doc, status=ConversionStatus.FAILURE)
+                return DocumentExtractionResult(
+                    input=in_doc, status=ConversionStatus.FAILURE
+                )
 
-        return pipeline.execute(
-            in_doc, raises_on_error=raises_on_error, template=template
-        )
+        return pipeline._execute(in_doc, raises_on_error=raises_on_error, target=target)
+
+    @staticmethod
+    def _unload_unexecuted_input(in_doc: InputDocument) -> None:
+        # Input rejection before backend construction leaves _backend unset.
+        try:
+            backend = in_doc._backend
+        except AttributeError:
+            return
+        backend.unload()
 
     def _get_pipeline(
         self, doc_format: InputFormat

@@ -173,3 +173,22 @@ class ExtractionResult(BaseModel):
 
 
 ExtractionTemplateType = str | dict[str, Any] | BaseModel | type[BaseModel]
+
+
+def _legacy_result(result: DocumentExtractionResult) -> ExtractionResult:
+    """Project page outcomes only at an outer legacy execution boundary."""
+    return ExtractionResult(
+        input=result.input,
+        status=result.status,
+        errors=result.errors,
+        pages=[
+            ExtractedPageData(
+                page_no=item.scope.page_no,
+                extracted_data=item.extracted_data,
+                raw_text=item.raw_text,
+                errors=item.errors,
+            )
+            for item in result.items
+            if isinstance(item.scope, PageScope)
+        ],
+    )

@@ -127,7 +127,11 @@ class ApiExtractionVlmModel(BaseVlmModel):
             chat_template_kwargs=deepcopy(chat),
             constraint_schema=target.constraint_schema,
             url=self.engine_options.url,
-            timeout=self.timeout,
+            timeout=(
+                min(self.timeout, target.request_timeout)
+                if target.request_timeout is not None
+                else self.timeout
+            ),
             headers=self.engine_options.headers,
             **deepcopy(params),
         )

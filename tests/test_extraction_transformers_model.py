@@ -10,12 +10,12 @@ from transformers import GenerationConfig
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import VlmStopReason
-from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
-from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
-from docling.datamodel.vlm_model_specs import (
+from docling.datamodel.extraction_options import (
     GRANITE_VISION_4_1_TRANSFORMERS,
     NU_EXTRACT_2B_TRANSFORMERS,
 )
+from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.extraction import transformers_extraction_model as module
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,

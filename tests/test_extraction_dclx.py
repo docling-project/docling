@@ -21,13 +21,15 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
-    ExtractionResult,
+    DocumentExtractionResult,
     ImageContentItem,
     TextContentItem,
 )
-from docling.datamodel.extraction_options import ChannelSelection
+from docling.datamodel.extraction_options import (
+    NU_EXTRACT_2B_TRANSFORMERS,
+    ChannelSelection,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
-from docling.datamodel.vlm_model_specs import NU_EXTRACT_2B_TRANSFORMERS
 from docling.models.base_model import BaseVlmModel
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
@@ -113,13 +115,11 @@ def test_dclx_image_extraction_yields_page_per_image(dclx_two_pages: Path) -> No
     model = _StubModel()
     pipeline.vlm_model = cast(BaseVlmModel, model)
     in_doc = _input(dclx_two_pages)
-    ext_res = ExtractionResult(input=in_doc)
+    ext_res = DocumentExtractionResult(input=in_doc)
 
-    pipeline._extract_per_page(
-        ext_res, target=pipeline._prepare_target("{}"), include_text=False
-    )
+    pipeline._extract_data(ext_res, target="{}")
 
-    assert [p.page_no for p in ext_res.pages] == [1, 2]
+    assert [p.scope.page_no for p in ext_res.items] == [1, 2]
     assert len(model.content_requests) == 2
     assert all(isinstance(req[0], ImageContentItem) for req in model.content_requests)
     assert not model.image_calls
@@ -130,13 +130,11 @@ def test_dclx_image_and_text_builds_content_array(dclx_two_pages: Path) -> None:
     model = _StubModel()
     pipeline.vlm_model = cast(BaseVlmModel, model)
     in_doc = _input(dclx_two_pages)
-    ext_res = ExtractionResult(input=in_doc)
+    ext_res = DocumentExtractionResult(input=in_doc)
 
-    pipeline._extract_per_page(
-        ext_res, target=pipeline._prepare_target("{}"), include_text=True
-    )
+    pipeline._extract_data(ext_res, target="{}")
 
-    assert [p.page_no for p in ext_res.pages] == [1, 2]
+    assert [p.scope.page_no for p in ext_res.items] == [1, 2]
     assert len(model.content_requests) == 2
     first = model.content_requests[0]
     assert isinstance(first[0], ImageContentItem)
@@ -148,10 +146,8 @@ def test_dclx_status_success(dclx_two_pages: Path) -> None:
     pipeline = _pipeline_shell(ChannelSelection.IMAGE)
     pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
     in_doc = _input(dclx_two_pages)
-    ext_res = ExtractionResult(input=in_doc)
-    pipeline._extract_per_page(
-        ext_res, target=pipeline._prepare_target("{}"), include_text=False
-    )
+    ext_res = DocumentExtractionResult(input=in_doc)
+    pipeline._extract_data(ext_res, target="{}")
     assert pipeline._determine_status(ext_res) == ConversionStatus.SUCCESS
 
 
@@ -174,8 +170,12 @@ def test_dclx_without_page_images_uses_text(tmp_path: Path) -> None:
         _pipeline_shell(ChannelSelection.AUTO)._resolve_channel(_input(path))
         == ChannelSelection.TEXT
     )
-    with pytest.raises(ValueError, match="does not offer page images"):
-        _pipeline_shell(ChannelSelection.IMAGE)._resolve_channel(_input(path))
+    pipeline = _pipeline_shell(ChannelSelection.IMAGE)
+    pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
+    result = pipeline.execute(_input(path), raises_on_error=False, template="{}")
+    assert result.status == ConversionStatus.FAILURE
+    assert result.pages[0].page_no == 1
+    assert "no restored image" in result.pages[0].errors[0]
 
 
 def test_pipeline_unloads_streamed_dclx_backend(dclx_two_pages: Path) -> None:
@@ -195,3 +195,34 @@ def test_pipeline_unloads_streamed_dclx_backend(dclx_two_pages: Path) -> None:
 
     assert result.status == ConversionStatus.SUCCESS
     assert backend._temp_dir is None
+
+
+@pytest.mark.parametrize("max_size", [None, 16])
+def test_borrowed_dclx_images_stay_open_and_resized_copies_close(
+    dclx_two_pages, max_size
+):
+    pipeline = _pipeline_shell(ChannelSelection.IMAGE)
+    pipeline.pipeline_options.vlm_options = NU_EXTRACT_2B_TRANSFORMERS.model_copy(
+        update={"max_size": max_size}
+    )
+    model = _StubModel()
+    pipeline.vlm_model = cast(BaseVlmModel, model)
+    in_doc = _input(dclx_two_pages)
+    doc = in_doc._backend.convert()
+    borrowed = [page.image.pil_image for page in doc.pages.values()]
+    result = DocumentExtractionResult(input=in_doc)
+    pipeline._extract_data(result, target="{}")
+    assert pipeline._determine_status(result) == ConversionStatus.SUCCESS
+    assert [image.getpixel((0, 0)) for image in borrowed] == [
+        (10, 120, 10),
+        (10, 10, 120),
+    ]
+    used = [request[0].image for request in model.content_requests]
+    if max_size is None:
+        assert used == borrowed
+    else:
+        assert all(max(image.size) <= max_size for image in used)
+        for image in used:
+            with pytest.raises(ValueError, match="closed image"):
+                image.getpixel((0, 0))
+    in_doc._backend.unload()

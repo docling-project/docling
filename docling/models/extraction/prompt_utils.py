@@ -7,6 +7,7 @@ Call-owned target preparation and ordered-content local preprocessing.
 """
 
 import json
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
@@ -46,6 +47,7 @@ class _PreparedTarget:
     chat_template_kwargs: dict[str, Any]
     processor_kwargs: dict[str, Any]
     constraint_schema: dict[str, Any] | None = None
+    request_timeout: float | None = None
 
 
 _OBJECT_INSTRUCTIONS = "Return ONLY a valid JSON object, with no other text."
@@ -60,7 +62,12 @@ def prepare_target(
     target: ExtractionTarget, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
     """Normalize once and prepare guidance without invoking an engine or model."""
-    owned = normalize_target(target)
+    return _prepare_normalized_target(normalize_target(target), model_spec)
+
+
+def _prepare_normalized_target(
+    owned: ExtractionTarget, model_spec: ExtractionVlmModelSpec
+) -> _PreparedTarget:
     schema = owned.output_schema
     validator = schema_validator(schema) if schema is not None else None
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
@@ -108,6 +115,24 @@ def prepare_target(
         prompt = "\n\n".join(guidance)
 
     return _PreparedTarget(owned, validator, prompt, chat_kwargs, processor_kwargs)
+
+
+def normalize_extraction_call(
+    template: ExtractionTemplateType | None, target: ExtractionTarget | None
+) -> ExtractionTarget | str:
+    if (template is None) == (target is None):
+        raise ValueError("Provide exactly one of target= or template=")
+    if target is not None:
+        return normalize_target(target)
+    warnings.warn(
+        "template= extraction is deprecated; use an explicit ExtractionTarget with target=",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    from docling.datamodel.extraction_options import NUEXTRACT_2B_SPEC
+
+    assert template is not None
+    return NUEXTRACT_2B_SPEC.serialize_template(template)
 
 
 def prepare_legacy_target(
