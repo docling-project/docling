@@ -55,15 +55,11 @@ def test_chandra_simple_parsing():
     assert "tests/data/pdf/2305.03393v1-pg9.pdf, page 1" in source
     assert len(doc.tables) > 0, "Should have table elements"
 
-    for item in doc.texts:
-        # Empty wrappers (a labeled block split into inline runs) carry no prov
-        # of their own; their geometry lives on the inline children.
-        if not item.text:
-            continue
-        assert len(item.prov) > 0, "Text item should have provenance"
-        bbox = item.prov[0].bbox
-        assert bbox is not None, "Should have bbox"
-        assert bbox.l >= 0 and bbox.t >= 0, "Bbox coords should be non-negative"
+    located = [*doc.texts, *doc.tables, *doc.pictures, *doc.field_regions]
+    assert any(item.prov for item in located)
+    for item in located:
+        for prov in item.prov:
+            assert prov.bbox.l >= 0 and prov.bbox.t >= 0
 
 
 def test_chandra_br_spacing():
@@ -204,6 +200,8 @@ def test_chandra_form_table_parsing():
     )
 
     assert len(doc.tables) == 4
+    assert all(region.prov for region in doc.field_regions)
+    assert all(not table.prov for table in doc.tables)
 
 
 def test_chandra_list_group_prediction_sample():
@@ -285,8 +283,10 @@ def test_chandra_mixed_structure_and_rich_table_cells():
     ]
     assert doc.texts[0].text == "Before < table"
     assert doc.texts[-1].text == "After"
-    assert first.prov[0].bbox.l == 10.5
-    assert all(t.prov[0].charspan == (0, len(t.text)) for t in doc.texts if t.text)
+    assert doc.texts[0].prov[0].bbox.l == 10.5
+    assert not first.prov
+    assert all(not item.prov for item in [*doc.texts[1:], *doc.tables])
+    assert doc.export_to_doclang().count("<location") == 4
     restored = DoclingDocument.model_validate_json(doc.model_dump_json())
     assert restored.validate_tree(restored.body)
     assert "Extra" in restored.export_to_doclang()
@@ -302,6 +302,8 @@ def test_chandra_nested_lists_preserve_parent_order_and_markers():
     assert items[0].marker == "3." and items[2].marker == "4."
     assert items[1].parent.resolve(doc).parent == items[0].get_ref()
     assert items[0].children[-1].resolve(doc).text == "Tail"
+    assert all(not item.prov for item in items)
+    assert "<location" not in doc.export_to_doclang()
     assert doc.validate_tree(doc.body)
 
 
@@ -326,6 +328,8 @@ def test_chandra_paragraph_list_and_form_controls():
         ("Alice & Bob", "fillable"),
         ("", "fillable"),
     ]
+    assert form.field_regions[0].prov
+    assert all(not value.prov for value in values)
 
 
 @pytest.mark.parametrize("kind", ["checkbox", "radio"])
@@ -356,9 +360,9 @@ def test_chandra_labeled_multirun_block_emits_location_once():
     # doclang serialized the coordinate twice (8 <location> values).
     doc = _parse_fragment("<p><sup>1</sup> Footnote body text.</p>", "Footnote")
     footnote = next(t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE)
-    # The wrapper carries no prov of its own; the inline runs keep theirs.
-    assert not footnote.prov
-    assert all(t.prov for t in doc.texts if t.text)
+    # The source block owns the bbox; its derived inline runs do not inherit it.
+    assert footnote.prov
+    assert all(not t.prov for t in doc.texts if t is not footnote)
     assert doc.export_to_doclang().count("<location") == 4
 
 
@@ -393,6 +397,31 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
     assert doc.texts[-1].level == 3
 
 
+def test_chandra_nested_math_does_not_inherit_table_bbox():
+    doc = _parse_fragment(
+        "<div><math display='block'>R</math></div>"
+        "<table><tr><td><math>x</math></td></tr></table>",
+        "Table",
+    )
+    table = doc.tables[0]
+    formulas = [item for item in doc.texts if isinstance(item, FormulaItem)]
+    rich_cell = table.data.table_cells[0]
+
+    assert isinstance(rich_cell, RichTableCell)
+    assert formulas[1].parent == rich_cell.ref
+    assert table.prov
+    assert all(not formula.prov for formula in formulas)
+    assert doc.export_to_doclang().count("<location") == 4
+
+    own_bbox = _parse_fragment(
+        "<table><tr><td><math data-bbox='20 30 40 50'>x</math></td></tr></table>",
+        "Table",
+    )
+    formula = next(item for item in own_bbox.texts if isinstance(item, FormulaItem))
+    assert own_bbox.tables[0].prov and formula.prov
+    assert own_bbox.export_to_doclang().count("<location") == 8
+
+
 def test_chandra_picture_descriptions_data_captions_and_crop():
     content = (
         "<div data-label='Figure' data-bbox='100 200 600 700'>"
@@ -415,6 +444,12 @@ def test_chandra_picture_descriptions_data_captions_and_crop():
     assert [r.resolve(doc).text for r in picture.captions] == ["Explicit caption"]
     assert [r.resolve(doc).text for r in doc.tables[0].captions] == ["Data"]
     assert any(isinstance(r.resolve(doc), CodeItem) for r in picture.children)
+    assert picture.prov and not doc.tables[0].prov
+    assert all(
+        not item.prov
+        for item in doc.texts
+        if item.text in {"Chart details", "Data", "graph LR; A --> B"}
+    )
     crop = picture.get_image(doc)
     assert crop.size == (100, 100) and crop.getpixel((0, 0)) == (255, 0, 0)
     assert doc.texts[-1].parent == doc.body.get_ref()
@@ -484,6 +519,23 @@ def test_chandra_table_row_groups_and_optional_end_tags():
     assert table.table_cells[2].row_span == 2
     assert table.table_cells[2].row_header
     assert table.table_cells[-2].start_col_offset_idx == 0
+
+
+def test_chandra_rejects_runaway_table_grids():
+    with pytest.raises(ValueError, match="exceeds 1000 grid cells"):
+        _parse_fragment(
+            "<table><tr><td>Header</td></tr><tr>" + "<td></td>" * 501 + "</tr></table>"
+        )
+
+
+def test_chandra_malformed_overlapping_spans_do_not_shift_the_grid():
+    doc = _parse_fragment(
+        "<table><tr><td>A</td><td rowspan='2'>B</td></tr>"
+        "<tr><td colspan='2'>C</td></tr></table>"
+    )
+    table = doc.tables[0].data
+    assert table.num_cols == 2
+    assert table.table_cells[-1].start_col_offset_idx == 0
 
 
 def test_chandra_nested_table_remains_a_rich_cell():

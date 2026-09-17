@@ -335,7 +335,7 @@ def test_vlm_owns_requested_page_and_picture_images_after_release(
     assert all(picture.image is not None for picture in conv_res.document.pictures)
 
 
-def test_chandra_page_assembly_preserves_nested_provenance_and_reports_bad_responses():
+def test_chandra_page_assembly_preserves_source_provenance_and_reports_bad_responses():
     tracker = _Tracker()
     pipeline = VlmPipeline.__new__(VlmPipeline)
     pipeline.pipeline_options = SimpleNamespace(
@@ -378,7 +378,13 @@ def test_chandra_page_assembly_preserves_nested_provenance_and_reports_bad_respo
         pipeline._release_page_resources(page)
     document = pipeline._concatenate_page_documents(page_documents)
     assert sorted(document.pages) == [5, 6]
-    assert all(item.prov[0].page_no == 5 for item in document.texts)
+    assert all(item.prov[0].page_no == 5 for item in document.texts if item.prov)
+    assert all(
+        not item.prov
+        for item in document.texts
+        if item.text in {"Picture text", "Cell"}
+    )
+    assert document.pictures[0].prov[0].page_no == 5
     assert document.pictures[0].get_image(document) is not None
     assert [(error.page_no, error.category) for error in conv_res.errors] == [
         (6, FailureCategory.INFERENCE_FAILURE)
