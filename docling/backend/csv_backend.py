@@ -109,10 +109,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        # Parse CSV
+        # Parse CSV. strict=True rejects malformed quotes; that used to escape
+        # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
-        result = csv.reader(self.content, dialect=dialect, strict=True)
-        self.csv_data = list(result)
+        try:
+            result = csv.reader(self.content, dialect=dialect, strict=True)
+            self.csv_data = list(result)
+        except csv.Error as e:
+            raise DocumentLoadError(
+                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+            ) from e
         _log.info(f"Detected {len(self.csv_data)} lines")
 
         # Parse the CSV into a structured document model
