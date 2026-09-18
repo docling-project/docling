@@ -165,6 +165,34 @@ class TestSanitizeTextHyphenation:
     @pytest.mark.parametrize(
         ("lines", "expected"),
         [
+            (
+                ["compounds: undecanal or n-", "tridecanal, from each blend"],
+                "compounds: undecanal or n-tridecanal, from each blend",
+            ),
+            (["i-", "butyric acid"], "i-butyric acid"),
+            (["e-", "commerce platform"], "e-commerce platform"),
+            (["X-", "ray diffraction"], "X-ray diffraction"),
+        ],
+    )
+    def test_single_character_prefix_hyphen_is_preserved(self, model, lines, expected):
+        """A single-character token before a line-final hyphen is a prefix (e.g. n-, i-, e-) and must not be merged."""
+        assert model.sanitize_text(list(lines)) == expected
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            (["6-methyl-", "5-hepten-2-one"], "6-methyl-5-hepten-2-one"),
+            (["COVID-", "19 pandemic"], "COVID-19 pandemic"),
+            (["ISO-", "9001 standard"], "ISO-9001 standard"),
+        ],
+    )
+    def test_digit_continuation_hyphen_is_preserved(self, model, lines, expected):
+        """A hyphen followed by a digit continuation is not a word split and must be preserved."""
+        assert model.sanitize_text(list(lines)) == expected
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
             # Wrapped CLI flag, as reported: the dash must not be swallowed.
             (
                 ["gsh create_diameter_peer -ip 10.0.8.72 -pn 1 -", "prio 3 -dh mme"],

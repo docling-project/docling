@@ -57,6 +57,9 @@ def _element(cluster_id: int, text: str) -> TextElement:
         ("algo-", "rithms", "algorithms"),
         ("algo\u00ad", "rithms", "algorithms"),
         ("algo-", "Rithms", "algo- Rithms"),
+        ("n-", "tridecanal", "n-tridecanal"),
+        ("i-", "butyric", "i-butyric"),
+        ("6-methyl-", "5-hepten-2-one", "6-methyl-5-hepten-2-one"),
     ],
 )
 def test_merge_elements_dehyphenates_lowercase_continuations(
