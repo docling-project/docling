@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import importlib.metadata
 import logging
 import warnings
 from collections.abc import Sequence
@@ -18,6 +19,7 @@ from docling.datamodel.pipeline_options import GraniteVisionTableStructureOption
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.granite_vision_utils import granite_vision_4_needs_remote_code
 from docling.utils.otsl import parse_otsl_output
 from docling.utils.profiling import TimeRecorder
 
@@ -81,6 +83,9 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         )
 
     def _load_model(self, artifacts_path: Path) -> None:
+        trust_remote_code = granite_vision_4_needs_remote_code(
+            importlib.metadata.version("transformers")
+        )
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -94,23 +99,24 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             )
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
-                trust_remote_code=True,
+                trust_remote_code=trust_remote_code,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
             self._model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,
+                # The native granite4_vision Q-Former rejects an explicit sdpa
+                # request before transformers 5.13; the transformers default
+                # selects sdpa where the model supports it.
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
                     and self.accelerator_options.cuda_use_flash_attention2
-                    else "sdpa"
+                    else None
                 ),
-                trust_remote_code=True,
+                trust_remote_code=trust_remote_code,
             )
-        if hasattr(self._model, "merge_lora_adapters"):
-            cast(Any, self._model).merge_lora_adapters()
         self._model.eval()
 
     def predict_tables(
