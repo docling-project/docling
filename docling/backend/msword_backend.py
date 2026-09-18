@@ -1954,8 +1954,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 value = elem.get(attr_name)
                 if value:
                     try:
-                        # Remove any non-numeric characters (like 'pt', 'px', etc.)
-                        clean_value = re.sub(r"[^0-9.]", "", value)
+                        # Remove any non-numeric characters (like 'pt', 'px',
+                        # etc.), keeping a leading sign. A shape anchored above
+                        # or left of its reference point carries a legal
+                        # negative offset, and dropping the minus turns it into
+                        # a position further down.
+                        clean_value = re.sub(r"[^0-9.\-]", "", value)
                         if clean_value:
                             return float(clean_value)
                     except (ValueError, TypeError):
