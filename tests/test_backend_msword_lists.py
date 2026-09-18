@@ -320,6 +320,81 @@ def test_list_markers_follow_num_fmt_end_to_end(tmp_path):
     ]
 
 
+def test_list_starting_above_zero_retains_items_on_return_to_initial_level(tmp_path):
+    """Lists starting at non-zero indent level must retain items when returning to that level.
+
+    Fixes #4185: when a list starts at ilevel >= 1 (rather than 0), goes deeper
+    (e.g. ilevel 2), and then returns to the initial level (ilevel 1), the
+    returning item previously caused a warning ('Parent element of the list item
+    is not a ListGroup') and was silently discarded.
+    """
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    abstract_num = OxmlElement("w:abstractNum")
+    abstract_num.set(qn("w:abstractNumId"), "1100")
+    for ilvl in range(3):
+        lvl = OxmlElement("w:lvl")
+        lvl.set(qn("w:ilvl"), str(ilvl))
+        start = OxmlElement("w:start")
+        start.set(qn("w:val"), "1")
+        lvl.append(start)
+        fmt = OxmlElement("w:numFmt")
+        fmt.set(qn("w:val"), "decimal")
+        lvl.append(fmt)
+        text_el = OxmlElement("w:lvlText")
+        text_el.set(qn("w:val"), f"%{ilvl + 1}.")
+        lvl.append(text_el)
+        abstract_num.append(lvl)
+    numbering.append(abstract_num)
+
+    num = OxmlElement("w:num")
+    num.set(qn("w:numId"), "1101")
+    ref = OxmlElement("w:abstractNumId")
+    ref.set(qn("w:val"), "1100")
+    num.append(ref)
+    numbering.append(num)
+
+    def add_item(text: str, ilvl_val: int):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), "1101")
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("Item A at level 1", 1)
+    add_item("Item B at level 2", 2)
+    add_item("Item C at level 1", 1)
+
+    docx_path = tmp_path / "list_starting_above_zero.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    items = [
+        (item.text, item.marker)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert items == [
+        ("Item A at level 1", "1.1."),
+        ("Item B at level 2", "1.1.1."),
+        ("Item C at level 1", "1.2."),
+    ]
+    assert any("Item C" in t.text for t in converted.texts)
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
