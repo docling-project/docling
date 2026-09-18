@@ -59,16 +59,13 @@ from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
-# pypdfium2 ships with the PDF extras, not with format-xlsx. Chart and EMF/WMF
-# rendering is the only thing here that needs it, and that path already
-# degrades to "no image" when LibreOffice is missing, so treat an absent
-# pypdfium2 the same way instead of breaking the whole backend at import time.
+# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
+# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
+# None when it is missing, so the rendering paths already degrade to "no image";
+# this guard only keeps the module itself importable.
 # See https://github.com/docling-project/docling/issues/3613.
-_PYPDFIUM2_AVAILABLE: bool = False
 try:  # pragma: no cover - import-time guard
     import pypdfium2
-
-    _PYPDFIUM2_AVAILABLE = True
 except ImportError:  # pragma: no cover - import-time guard
     pass
 
@@ -1152,21 +1149,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         Returns:
             A converter callable, or None when LibreOffice or pypdfium2 is not
-            available. Both are needed: LibreOffice produces the PDF and
-            pypdfium2 rasterizes it.
+            available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
 
         self.xlsx_to_pdf_converter_init = True
-        if not _PYPDFIUM2_AVAILABLE:
-            _log.debug(
-                "pypdfium2 not installed — charts and EMF/WMF images in XLSX will "
-                "be skipped. Install it with "
-                "`pip install 'docling-slim[format-pdf-pypdfium2]'`."
-            )
-            return None
-
         self.xlsx_to_pdf_converter = get_docx_to_pdf_converter()
         if self.xlsx_to_pdf_converter is None:
             _log.debug(
