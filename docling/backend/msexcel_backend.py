@@ -1097,9 +1097,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # same rectangle as visited so those cells are not scanned again and
         # emitted as duplicate fragment tables.
         visited_cells = {
-            (ri, rj)
-            for ri in range(min_r, max_r + 1)
-            for rj in range(min_c, max_c + 1)
+            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
         }
 
         return (
