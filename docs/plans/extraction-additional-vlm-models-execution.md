@@ -1,12 +1,14 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-18. Stages 0–5 are implementation-complete. Stage 1 is committed
+Updated 2026-09-18. Stages 0–5 and 8 are implementation-complete. Stage 1 is committed
 at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
 `b0e888f846d82c24b5ba64e587f1dd64bd568c5f`; stage 3 at
 `cd550410f9715f730f7ef5bb88ac533580706a19`; stage 4 at
-`ef5a8a9305f63e4c4eb3831505a4e71a2056d367`. Stage 5 is a reviewable working-tree
-delta pending the parent's authorized signoff commit. **Next: stage 6 (Qwen3.5)**,
-using [the stage 6 prompt](extraction-additional-vlm-models-stage6-resumption.md).
+`ef5a8a9305f63e4c4eb3831505a4e71a2056d367`; stage 5 at
+`6f7beeab6fdba9f1f6682512986a38df68596be1`. The user deferred stages 6–7
+(Qwen3.5 and Gemma) and authorized proceeding through stages 8–10 instead.
+**Next: stage 9 after parent stage 8 review/signoff**, using
+[the stage 9 prompt](extraction-additional-vlm-models-stage9-resumption.md).
 NuExtract3 Transformers/vLLM integration is contract-tested, not live verified;
 the recorded LM Studio deployment is incompatible with caller template delivery.
 No push, publication or production default change is authorized.
@@ -125,10 +127,10 @@ Stages 4–7 implement each documented model contract; live verification is sepa
 | 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Done |
 | 4 | Docling | NuExtract3 integration and offline template/transport contracts | F: NuExtract | Done (implementation); live verification separate |
 | 5 | Docling | Lift template integration and documented vLLM constraints | F: Lift | Done (implementation); live verification separate |
-| 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Next |
-| 7 | Docling | Gemma template/processor/response integration and offline contracts | F: Gemma | Pending |
-| 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Pending |
-| 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Pending |
+| 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Deferred by user |
+| 7 | Docling | Gemma template/processor/response integration and offline contracts | F: Gemma | Deferred by user |
+| 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Done (implementation); parent signoff pending |
+| 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Next after stage 8 signoff |
 | 10 | Serve | Admission/OpenAPI/endpoint migration and authorization | G: Serve | Pending |
 | 11 | All | Exact-source end-to-end verification and final audit | G: closure | Pending |
 
@@ -1305,6 +1307,116 @@ Changed paths: `docling/datamodel/extraction_options.py`,
 `tests/test_extraction_stage3.py`, `tests/test_extraction_transformers_model.py`,
 `docs/plans/extraction.md`, this ledger, and the task-owned stage 5 continuation
 renamed/replaced by [the self-contained stage 6 prompt](extraction-additional-vlm-models-stage6-resumption.md).
-Stage 6 must preserve explicit caller examples and the separate live-verification
+That stage 6 continuation is historical and deferred; current routing is stage 9
+after stage 8 signoff. Stage 6 must preserve explicit caller examples and the separate live-verification
 policy for both Qwen sizes. Parent review and the authorized signoff commit come
 before dispatching the next sequential stage worker.
+
+
+## Stage 8 checkpoint — explicit service/client contract
+
+Started from `cau/extraction-api-service-models` at signed stage 5 HEAD
+`6f7beeab6fdba9f1f6682512986a38df68596be1`, preserving the parent's uncommitted
+stage 8 routing/prompt. Implementation is complete, pending parent review/signoff.
+Stages 6–7 remain deferred; stage 9 is next, stage 10 follows, stage 11 stays pending.
+No Core, Jobkit, Serve, dependency/environment/runtime/default change, live
+inference, model downloads, commits or pushes occurred.
+
+Replaced unreleased service `template` directly with `target: ExtractionTarget`,
+sharing SDK tagged templates/output schemas/instructions. Strict options reject
+old and unknown fields; output mode is explicit `prompt_only` (default) or
+`schema_constrained`. Kept model/channel/page-range settings and the request's
+independent output-storage `target`. Downstream admission/preparation remains
+responsible for model/engine/schema compatibility before queueing.
+
+Replaced branch-only `ExtractionResultItem.pages` with JSON-safe
+`ExtractionDocumentResult`: required original source index, expanded source URI,
+filename, status/errors and canonical `ExtractionItem`s. No runtime input/backend
+serialization or duplicated item type. Existing task unions and inline responses
+use those envelopes; conversion DTOs and released SDK compatibility are unchanged.
+Page/document scopes, raw answers, validation failure/not-run records, stop reasons,
+token/usage metadata and source identity survive JSON task/result round-trips.
+
+There was no generic extraction client submission path. Added only
+`submit_extract(ExtractSourcesRequest)` to sync/async clients, reusing current
+transport, credential restoration, job polling/watch/wait and result handling.
+In-body results are typed `ExtractDocumentResponse`; storage responses stay
+`RawServiceResult`, preserving artifact contracts/destinations. Different caller
+schema/template/instructions/output-mode payloads reach the actual HTTP JSON on
+one client without stale values. No new SDK remote conversion infrastructure.
+
+Updated shipped extraction/slim/service-client references, the extraction notebook
+and `extraction.md` to source/target, `items`/`scope`, original-schema validation,
+automatic absolute-page/document requests and capability limits. Notebook code
+was statically parsed (13 code cells); stale outputs were cleared, no notebook
+inference was run. Only NuExtract2/Granite/NuExtract3/Lift are documented as
+implemented. NuExtract3/Lift local/vLLM live verification stays unrun; installed
+NuExtract3 LM Studio stays incompatible. Qwen3.5/Gemma remain deferred.
+
+External handoff/proposal files were not rewritten: Part II and its automatic
+chunk revision remain authoritative; the standalone proposal is retired as an
+alternative authority. An eventual external pointer/retirement edit is still
+needed in its dirty checkout under separate scope, not this stage.
+
+### Stage 8 validation
+
+Borrowed Python 3.13.5 from `docling_release/.venv`, using this source `PYTHONPATH`
+and published Core at that environment's site-packages. No sync/build/override.
+First sandboxed collection aborted during known eager native MLX initialization
+(exit 134); permitted escalation ran the offline tests without loading weights.
+An incomplete GoogleDrive fixture was corrected to provide its required refresh
+token; production was not changed to accommodate the fixture.
+
+```sh
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_service_contract.py tests/test_service_datamodels.py \
+  > /tmp/docling-stage8-contracts.log 2>&1
+
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_service_contract.py tests/test_extraction_templates.py \
+  tests/test_extraction.py tests/test_extraction_api.py \
+  tests/test_extraction_text_channel.py tests/test_extraction_dclx.py \
+  tests/test_extraction_vlm_streaming.py tests/test_extraction_stage3.py \
+  tests/test_extraction_transformers_model.py tests/test_service_datamodels.py \
+  tests/test_api_image_request.py tests/test_build_generation_config.py \
+  tests/test_interfaces.py tests/test_input_doc.py tests/test_invalid_input.py \
+  tests/test_service_callbacks.py tests/test_service_client_sdk_unit.py \
+  tests/test_service_client_payload_fidelity.py tests/test_service_client_fake_service.py \
+  -k 'not test_convert_path and not test_convert_stream and not test_polymorphic_option_fields_are_serialized_as_any' \
+  > /tmp/docling-stage8-regressions.log 2>&1
+
+mkdir -p /tmp/docling-stage8-baseline
+git archive HEAD docling | tar -x -C /tmp/docling-stage8-baseline
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/tmp/docling-stage8-baseline \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_service_client_payload_fidelity.py \
+  -k test_polymorphic_option_fields_are_serialized_as_any \
+  > /tmp/docling-stage8-baseline.log 2>&1
+
+UV_NO_SYNC=1 make validate > /tmp/docling-stage8-validate.log 2>&1
+git diff --check
+git status --short --untracked-files=all
+```
+
+Focused contracts: **61 passed**, exit 0. Applicable broad regressions:
+**580 passed, 4 existing weight skips, 3 deselected, 3559 warnings**, exit 0,
+31.33 seconds. The third exclusion is conversion-only
+`test_polymorphic_option_fields_are_serialized_as_any`: identical failure on
+untouched signed stage 5 source (1 failed, 7 deselected), naming `model_spec` on
+CodeFormulaVlmOptions/PictureDescriptionVlmEngineOptions/VlmConvertOptions as
+existing SerializeAsAny debt. Its neighboring payload tests pass. Other two
+exclusions and weight skips are the prior known baseline; no golden changes.
+Repeated required `make validate` after reviewing Ruff import/formatter edits;
+all applicable hooks including ty/tach/coverage/max-lines pass. Existing installed
+hook-cache metadata warnings remain non-fatal. Whitespace/scope checks pass.
+
+Changed source: `docling/datamodel/service/{options,requests,responses,__init__}.py`,
+`docling/service_client/{client,_async_client}.py`. Tests:
+`tests/test_service_datamodels.py`, new `tests/test_extraction_service_contract.py`.
+Docs: shipped references `{extraction,slim-packaging,service-client}.md`,
+`docs/examples/extraction.ipynb`, `docs/plans/extraction.md`, this ledger,
+preserved parent stage 8 prompt and new stage 9 prompt. Stage 9 must use the exact
+parent-signed stage 8 source; downstream source paths/dependency strategy and
+artifact/callback contracts are explicit in its self-contained continuation.

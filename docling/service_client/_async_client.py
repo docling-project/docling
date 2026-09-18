@@ -49,11 +49,13 @@ from docling.datamodel.service.requests import (
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourcesRequest,
     HttpSourceRequest,
 )
 from docling.datamodel.service.responses import (
     ChunkDocumentResponse,
     ConvertDocumentResponse,
+    ExtractDocumentResponse,
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
@@ -391,6 +393,49 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             task_id=initial_status.task_id,
             submitted_at=datetime.now(tz=timezone.utc),
             handlers=handlers,
+            initial_status=initial_status,
+        )
+
+    async def submit_extract(
+        self, request: ExtractSourcesRequest
+    ) -> AsyncConversionJob[ExtractDocumentResponse | RawServiceResult]:
+        """Submit source extraction; storage destinations return their raw response."""
+        response = await self._request_with_retry(
+            method="POST",
+            path="/v1/extract/source/async",
+            json=self._serialize_extract_request(request),
+        )
+        if response.status_code != 200:
+            self._raise_for_generic_http_error(
+                response, "Extraction task submission failed."
+            )
+        initial_status = TaskStatusResponse.model_validate_json(response.text)
+        inbody = isinstance(request.target, InBodyTarget)
+
+        async def fetch_result(
+            task_id: str, last_status: TaskStatusResponse | None
+        ) -> ExtractDocumentResponse | RawServiceResult:
+            response = await self._fetch_result_response(
+                async_client=self._async_client,
+                task_id=task_id,
+                last_status=last_status,
+                error_message=f"Fetching extraction result for task {task_id} failed.",
+            )
+            if inbody:
+                return self._parse_result_model_response(
+                    response, ExtractDocumentResponse
+                )
+            return self._decode_raw_result(response)
+
+        return AsyncConversionJob(
+            task_id=initial_status.task_id,
+            submitted_at=datetime.now(tz=timezone.utc),
+            handlers=_AsyncJobHandlers(
+                poll=self._poll_task_status,
+                watch=lambda tid, t: self._status_watcher().iter_updates(tid, t),
+                wait=lambda tid, t: self._status_watcher().wait_for_terminal(tid, t),
+                fetch_result=fetch_result,
+            ),
             initial_status=initial_status,
         )
 

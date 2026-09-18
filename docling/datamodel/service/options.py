@@ -4,7 +4,7 @@
 # Define the input options for the API
 import json
 import warnings
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from docling_core.types.doc import ImageRefMode, PictureClassificationLabel
 from pydantic import (
@@ -20,6 +20,7 @@ from typing_extensions import Self
 
 from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat, OutputFormat
+from docling.datamodel.extraction import ExtractionTarget
 from docling.datamodel.extraction_options import (
     ChannelSelection,
     ExtractionVlmOptions,
@@ -1151,26 +1152,16 @@ class ConvertDocumentsOptions(BaseModel):
 
 
 class ExtractDocumentsOptions(BaseModel):
-    """Options for the template-driven ``/extract`` endpoint.
+    """Call-local extraction guidance and operator-gated model configuration.
 
-    A distinct, growing options bag — not a reuse of ``ConvertDocumentsOptions``
-    (whose layout/OCR/table/chunking knobs are all irrelevant to extraction).
-    The extraction model is selected server-side and operator-gated (see
-    ``DocumentExtractionManager``): on the default path a client sends only a
-    ``template``. Template serialization and prompt-building live on the docling
-    model spec, so this carries the raw template through unchanged.
+    ``target`` describes extraction output; the request's top-level ``target``
+    selects the destination for the resulting artifacts.
     """
 
-    template: Annotated[
-        Union[str, dict[str, Any]],
-        Field(
-            description=(
-                "Extraction schema template — the wire-safe subset of docling's "
-                "ExtractionTemplateType: a NuExtract-style example string or a "
-                "JSON-schema-like dict."
-            ),
-        ),
-    ]
+    model_config = ConfigDict(extra="forbid")
+
+    target: ExtractionTarget
+    output_mode: Literal["prompt_only", "schema_constrained"] = "prompt_only"
 
     extraction_preset: Annotated[
         Optional[str],

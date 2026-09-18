@@ -16,7 +16,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     QualityGrade,
 )
-from docling.datamodel.extraction import ExtractedPageData
+from docling.datamodel.extraction import ExtractionItem
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
 
@@ -210,20 +210,24 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
-class ExtractionResultItem(BaseModel):
-    """Per-document extraction result (one entry per source document)."""
+class ExtractionDocumentResult(BaseModel):
+    """JSON-safe extraction envelope owned by one expanded source document."""
 
+    model_config = ConfigDict(extra="forbid")
+
+    source_index: int = Field(ge=0, strict=True)
+    source_uri: str
     filename: str
     status: ConversionStatus
-    errors: list[ErrorItem] = []
-    pages: list[ExtractedPageData] = []
+    errors: list[ErrorItem] = Field(default_factory=list)
+    items: list[ExtractionItem] = Field(default_factory=list)
 
 
 class ExtractionTaskResult(BaseModel):
     """In-body extraction result envelope; mirrors PresignedArtifactResult."""
 
     kind: Literal["ExtractionResult"] = "ExtractionResult"
-    documents: list[ExtractionResultItem]
+    documents: list[ExtractionDocumentResult]
 
 
 class ConvertedOutcomeCountsMixin(BaseModel):
@@ -321,7 +325,7 @@ class PresignedUrlConvertResponse(PresignedUrlConvertDocumentResponse):
 class ExtractDocumentResponse(ConvertedOutcomeCountsMixin):
     """In-body extraction response with task-level counts and timing."""
 
-    documents: list[ExtractionResultItem]
+    documents: list[ExtractionDocumentResult]
     processing_time: float
 
 

@@ -31,7 +31,7 @@ Extras compose — combine them with commas:
 
 **Core**
 - `convert-core` — numpy/pillow/rtree/scipy (base of most format extras)
-- `extract-core` — structured extraction support
+- `extract-core` — structured extraction targets, JSON Schema validation (`jsonschema`), and SDK execution
 
 **Formats**
 - `format-pdf` (`format-pdf-pypdfium2`, `format-pdf-docling`)
@@ -79,8 +79,10 @@ Extras compose — combine them with commas:
   non-PDF formats or use a remote service.
 - To convert with zero local models, use `service-client` and point at a
   `docling-serve` endpoint — see [service-client.md](service-client.md).
-- `extract-core` pulls no torch and no qwen-vl-utils, so **remote** NuExtract
-  text extraction (`NU_EXTRACT_API` over DOCX/HTML/MD) runs on
-  `extract-core` + the relevant format extra (`format-office`, `format-web`) —
-  no `models-vlm-inline`. Local extraction still needs `models-vlm-inline`
-  (and qwen-vl-utils for the NuExtract image path).
+- `extract-core` pulls no torch, Transformers or qwen-vl-utils. API SDK
+  extraction needs `extract-core` plus the relevant format extra and an explicit
+  API engine; local extraction also needs `models-vlm-inline`.
+- `service-client` imports extraction wire targets/items and sync/async clients
+  without `extract-core` or local model packages. Submit `ExtractSourcesRequest`
+  with `options.target` guidance and a separate top-level storage `target` using
+  `submit_extract(request)`. Matching downstream Jobkit/Serve contracts are required.

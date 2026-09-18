@@ -223,7 +223,7 @@ ConvertDocumentsRequest = ConvertSourcesRequest
 ## Extraction requests
 # KnownBatchTargetRequest with InBodyTarget added back: ad-hoc extraction needs
 # the in-body result, unlike convert's batch union. Database targets are excluded
-# (rejected at enqueue in v1 — their contract is chunk-shaped, extraction emits pages).
+# (rejected at enqueue in v1 — their contract is chunk-shaped, extraction emits document envelopes).
 ExtractTargetRequest = Annotated[
     InBodyTarget
     | S3Target
@@ -239,7 +239,8 @@ class ExtractSourcesRequest(BaseModel):
     """Batch-capable request for asynchronous source extraction.
 
     ``sources`` accepts both individual and expandable connector sources.
-    Extraction v1 writes to one in-body or storage target.
+    ``options.target`` supplies extraction guidance; ``target`` selects one
+    in-body or storage destination.
     """
 
     model_config = ConfigDict(extra="forbid")

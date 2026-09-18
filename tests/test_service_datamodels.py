@@ -335,24 +335,20 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     assert result.result.kind == "PresignedArtifactResult"
 
 
-def test_extract_request_has_one_target_and_preserves_template_string() -> None:
-    template = '{"not": "decoded"}'
+def test_extract_request_separates_guidance_from_storage() -> None:
+    target = {"template": {"format": "example_json", "value": {"invoice": "INV-42"}}}
     request = ExtractSourcesRequest(
-        options=ExtractDocumentsOptions(template=template),
+        options=ExtractDocumentsOptions(target=target),
         sources=[{"kind": "http", "url": "https://example.com/report.pdf"}],
     )
-
-    assert request.options.template == template
+    assert request.options.target.template.value == {"invoice": "INV-42"}
     assert request.target.kind == "inbody"
-    assert "targets" not in ExtractSourcesRequest.model_fields
-
+    assert (
+        ExtractSourcesRequest.model_validate_json(request.model_dump_json()) == request
+    )
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         ExtractSourcesRequest.model_validate(
-            {
-                "options": {"template": "x"},
-                "sources": [{"kind": "http", "url": "https://example.com/a.pdf"}],
-                "targets": [{"kind": "inbody"}],
-            }
+            {**request.model_dump(), "targets": [{"kind": "inbody"}]}
         )
 
 
