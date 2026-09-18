@@ -1,19 +1,36 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-17. Stages 0–3 are complete. Stage 1 is committed at
-`0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
-`b0e888f846d82c24b5ba64e587f1dd64bd568c5f`. The user subsequently authorized the
-signed-off stage 3 commit, titled `feat: complete extraction target SDK path`;
-resolve its checkpoint with `git log -1`. Next stage: **4**, under separate
-authorization. No push or publication is authorized.
+Updated 2026-09-18. Stages 0–4 are implementation-complete. Stage 1 is committed
+at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
+`b0e888f846d82c24b5ba64e587f1dd64bd568c5f`; stage 3 at
+`cd550410f9715f730f7ef5bb88ac533580706a19`. Stage 4 is a reviewable working-tree
+delta pending the parent's authorized signoff commit. **Next: stage 5 (Lift)**,
+using [the stage 5 prompt](extraction-additional-vlm-models-stage5-resumption.md).
+NuExtract3 Transformers/vLLM integration is contract-tested, not live verified;
+the recorded LM Studio deployment is incompatible with caller template delivery.
+No push, publication or production default change is authorized.
 
 ## Authority and boundaries
 
 The design and acceptance criteria live in
 [the handoff in docling_release](/Users/cau/Documents/Development/docling_release/docs/plans/extraction-additional-vlm-models-handoff.md),
 including its 2026-09-17 automatic-chunk revision. Part II supersedes the older
-standalone implementation proposal. This ledger sequences that work; it does
-not introduce a competing design or relax any acceptance gate.
+standalone implementation proposal. This ledger sequences that work; it preserves the
+design/schema/ownership/interfaces. The user's 2026-09-18 instruction supersedes
+the old per-stage live-model completion gates: implement documented behavior and
+prove offline contracts even when models/endpoints are unavailable or unresponsive.
+Live smoke, capacity and quality evidence gate deployment verification/production
+enablement separately; they do not block source stages 4–11.
+
+Caller-provided **extraction templates** are mandatory for every model: native
+typed `nuextract` guidance for NuExtract; explicit `example_json` guidance for
+generic models, alongside any documented schema-only route. An extraction
+template specifies the user's output structure; the checkpoint's **chat template**
+serializes messages (often with Jinja). No chat-template replacement is required.
+Each stage must prove exact caller fields/values reach rendering/API transport and
+remain isolated across different targets on a cached extractor. Static targets,
+silently dropped fields and schema-only support without explicit templates fail
+the implementation gate; formats must remain honestly tagged.
 
 - Docling first, then Jobkit, then Serve. Do not implement model behavior downstream.
 - **Stop immediately if a change to docling-core is needed.** Do not switch,
@@ -97,7 +114,7 @@ One stage is the default budget for one conversation. The first three divide
 the handoff's A–E by executable boundaries rather than exposing an incomplete
 public API after slice A. Stage 3 intentionally keeps chunk ownership, failure
 scope, result status and SDK projection together: they must agree end to end.
-Stages 4–7 separate real model verification from shared plumbing.
+Stages 4–7 implement each documented model contract; live verification is separate.
 
 | Stage | Repository | Deliverable | Handoff coverage | State |
 |---|---|---|---|---|
@@ -105,10 +122,10 @@ Stages 4–7 separate real model verification from shared plumbing.
 | 1 | Docling | Target/result types and call-local target preparation | A types, B, D types | Done |
 | 2 | Docling | One local/API ordered-content execution contract | C, A model compatibility | Done |
 | 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Done |
-| 4 | Docling | NuExtract3 integration and native/conversion smoke evidence | F: NuExtract | Pending |
-| 5 | Docling | Lift single-page integration and explicit vLLM constraints | F: Lift | Pending |
-| 6 | Docling | Shared Qwen3.5 profile, 4B functional and 9B capacity checks | F: Qwen | Pending |
-| 7 | Docling | Gemma processor/response integration and smoke evidence | F: Gemma | Pending |
+| 4 | Docling | NuExtract3 integration and offline template/transport contracts | F: NuExtract | Done (implementation); live verification separate |
+| 5 | Docling | Lift template integration and documented vLLM constraints | F: Lift | Next |
+| 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Pending |
+| 7 | Docling | Gemma template/processor/response integration and offline contracts | F: Gemma | Pending |
 | 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Pending |
 | 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Pending |
 | 10 | Serve | Admission/OpenAPI/endpoint migration and authorization | G: Serve | Pending |
@@ -188,35 +205,40 @@ pipeline `execute(template=...)`, inline overrides and slim imports still work.
 Run the full applicable extraction regression set, not only new tests. Exercise
 existing NuExtract2/Granite through the completed path before new presets.
 
-### 4–7. Verify one model behavior per conversation
+### 4–7. Implement one documented model contract per conversation
 
-For each stage, read its Part I prerequisites and Part II F. First recheck the
-official model/server contracts and available deployment; then add preset data
-and only a helper justified by observed behavior. Do not add pipeline branches.
+Read its Part I prerequisites and Part II F, then verify pinned primary model,
+processor and server documentation. Add explicit opt-in presets and only helpers
+needed by those contracts; no pipeline branches or verification framework.
 
-- **4, NuExtract3:** verify native and supported converted templates, instructions,
-  thinking control, text/image/mixed content and two independent page requests.
-- **5, Lift:** verify useful independent single-page results, termination settings,
-  local execution where advertised, request-specific vLLM constraints and original-
-  schema validation. Unsupported constraints fail; prompt-only is intentional.
-- **6, Qwen:** one preparation profile for both sizes; verify clean non-thinking
-  output and advertised channels on 4B; separately prove 9B loading/capacity.
-- **7, Gemma:** verify access/license, visual-token settings, image-before-text
-  ordering, clean response interpretation, and each advertised channel/engine.
-  Add response parsing only if real output requires it.
+- **4, NuExtract3:** native and supported schema/Pydantic-converted templates,
+  instructions/thinking/mode controls, documented processor and vLLM transport.
+- **5, Lift:** explicit `example_json` templates plus schema-only guidance,
+  independent single-page requests, documented EOS/stop settings, local path where
+  documented, request-specific vLLM constraints and original-schema validation.
+- **6, Qwen:** explicit `example_json` templates plus schema-only guidance;
+  one non-thinking profile for 4B/9B with documented channel/processor transport.
+- **7, Gemma:** explicit `example_json` templates plus schema-only guidance,
+  access/license requirements, visual-token settings, image-before-text order and
+  documented response interpretation. Add native parsing only if required.
 
-Exit for each: real inference evidence for every advertised engine/capability,
-not only payload tests or auto-loader mappings. Record exact model revision,
-library/server versions, device, input/target, settings, raw output, extracted-
-value accuracy and validation outcome. Choose capacity limits from evidence.
-Perform the handoff's schema-versus-example comparison with fixed independent
-inputs; JSON validity alone is not extraction quality.
+Implementation exit for each: offline tests capture exact caller fields/values at
+real rendering/API boundaries for its documented engines and all claimed channels;
+prove two independent absolute selected pages, changed cached-call templates,
+original-schema validation and explicit rejection of unsupported modes/constraints.
+Existing applicable extraction regressions and required validation must pass.
+Opt-in presets describe implemented contracts, not certified deployments. Reject
+known incompatible transports (NuExtract3 LM Studio); do not generalize one engine's
+results to another. Stages 8–11 consume the exact source implementations regardless
+of outstanding live-model verification.
 
-Access, license, hardware or deployment blockers must be recorded per model/
-engine. Keep unverified presets unavailable; do not weaken chunk policy or call
-them supported. Unblocked stages may proceed, but blocked gates remain open
-and final completion cannot be claimed for those capabilities. Request missing
-deployment choices/authority rather than downloading large weights by assumption.
+Separately record per-model/engine live verification: not run, incompatible or
+verified with exact revision, versions, device/settings, inputs/targets, raw answers,
+quality and validation. Weights/downloads/inference require their own authorization.
+Fixed-input schema-versus-example quality comparisons remain unrun until authorized
+models respond; JSON validity is not extraction accuracy. Published context/output
+settings are theoretical bounds or documented examples, not tested capacity. Use
+measured deployment limits only when measured; leave blocked live verification open.
 
 ### 8. Finish Docling's service/client boundary
 
@@ -266,13 +288,14 @@ tenant/result authorization and endpoint/result serialization regressions.
 
 ### 11. Close the cross-repository gates
 
-Run real end-to-end service jobs for each enabled preparation behavior, including
+Run exact-source end-to-end service jobs with deterministic model boundaries, including
 independent selected pages, unpaginated text, schema failure and partial input.
 Use controlled callback receivers; no real external customer callbacks.
 Verify durable artifacts, source identity, terminal status, callback ordering,
 tenant boundaries and unchanged conversion behavior. Repeat regression/hooks
-against the exact source revisions; retain real logs/exit codes for smoke and
-integration evidence. Report outstanding deployment gates honestly.
+against the exact source revisions; retain actual logs/exit codes. Live-model jobs
+are a separate authorized verification pass. Report outstanding deployment gates
+honestly; source delivery completion does not certify unrun deployments.
 
 ## Resume protocol and evidence
 
@@ -280,7 +303,8 @@ Start each conversation by reading this ledger, repo guidance and only the
 relevant handoff sections. Recheck branch/HEAD/worktree state and existing code;
 do not reset a changed baseline or carry forward unverified package assumptions.
 Trace affected callers, implement only the current stage and run its behavioral
-gate plus relevant existing regressions. A failed gate means the stage is not done.
+implementation gate plus relevant existing regressions. A failed offline contract
+gate means the stage is not done; unavailable live models do not block it.
 
 For Docling changes run `make validate`, review formatter changes and repeat
 until clean. The checkout has many unrelated untracked artifacts: hooks must
@@ -800,3 +824,339 @@ Resume prompt (only this file path needs to be carried into a new conversation):
 > `/Users/cau/Documents/Development/docling-second/docs/plans/extraction-additional-vlm-models-execution.md`.
 > Implement that stage, verify its gates and update the checkpoint. Preserve
 > unrelated work; stop if docling-core needs changes. Do not commit or publish.
+
+### Current checkpoint: stage 4 — implementation complete
+
+The revised gates above apply to all remaining stages. `nuextract_3` is an explicit
+opt-in preset pinned to `c99dc8f5641b866aa0192b6ea78f84bf9f3535f1`, for local
+Transformers and generic API configured for vLLM. It preserves native types
+(including `verbatim-string`), reuses bounded schema/Pydantic conversion and merges
+caller template/instructions with thinking false and structured mode. The shared
+loader remains; no custom SDK, Jinja override, additional weight download, dependency
+or runtime change.
+NuExtract2/legacy retain tokenizer/Qwen vision preparation; NuExtract3 uses the
+checkpoint processor renderer and raw images, letting its patch-size-16 processor
+own image sizing. Caller image ownership and one-request-per-page policy are unchanged.
+
+Offline coverage extends existing tests: local processor rendering receives exact
+native values on text/image/mixed input; source SDK DCLX → actual HTTP JSON carries
+native/schema/Pydantic templates on all channels, independently for pages 2–3.
+One cached extractor changes templates/instructions without leakage; a valid JSON
+answer violating the unchanged original schema fails validation. Named incompatible
+API variants are rejected. These are contract tests, not model-generated answers.
+
+| Model/engine | Source implementation | Live verification |
+|---|---|---|
+| NuExtract3 / Transformers | Contract tested; explicit opt-in | Not run; no weights loaded |
+| NuExtract3 / vLLM API | Contract tested; caller configures endpoint | Not run; no server substituted |
+| NuExtract3 / installed LM Studio | Not offered by preset; rejected | Incompatible: recorded extraction controls dropped |
+| Lift, Qwen3.5, Gemma 4 | Pending stages 5–7 | Not run |
+
+Primary sources rechecked: [pinned model card](https://huggingface.co/numind/NuExtract3/blob/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1/README.md),
+[pinned processor config](https://huggingface.co/numind/NuExtract3/blob/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1/processor_config.json),
+[chat template](https://huggingface.co/numind/NuExtract3/blob/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1/chat_template.jinja),
+[model config](https://huggingface.co/numind/NuExtract3/blob/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1/config.json),
+[generation config](https://huggingface.co/numind/NuExtract3/blob/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1/generation_config.json),
+[Transformers processor contract](https://huggingface.co/docs/transformers/main/en/main_classes/processors#transformers.ProcessorMixin.apply_chat_template)
+and [vLLM chat request protocol](https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/openai/chat_completion/protocol.py).
+Config records Transformers 5.5.4; installed 5.16.1 maps `qwen3_5` through the
+existing auto-loader. This does not establish a minimum supported version or live
+loading success. Pinned native processor is `Qwen3VLProcessor`; remote code is not
+needed by these built-in mappings (the model-card example passes trust true).
+
+The 4096 output budget follows the official non-thinking Transformers example;
+258048 input tokens is config's 262144 context minus that output budget, a static
+upper bound, not measured capacity. API server context limits are deployment-owned;
+the client does not configure them. Earlier 8192 LM Studio/256–512 output probes
+remain probe settings. Capacity and schema-versus-example quality comparisons are
+unrun for Transformers/vLLM and make no claims about extraction accuracy.
+
+Validation results and commands are recorded after the historical investigation.
+Next is [stage 5 (Lift)](extraction-additional-vlm-models-stage5-resumption.md).
+
+### Historical stage 4 live investigation — superseded completion gate
+
+The following records describe the earlier live-only gate. Their raw evidence is
+preserved; the revised delivery policy above supersedes their stage-blocking
+conclusion. They establish installed LM Studio incompatibility, not a source
+implementation blocker.
+
+Verification on 2026-09-17–18 used stage 3 HEAD
+`cd550410f9715f730f7ef5bb88ac533580706a19` on
+`cau/extraction-api-service-models`, initially clean. The user's deployment
+choice was: “we can only do it through lmstudio, that is installed. Take a GGUF
+with 4 bit”. Official Q4 weights and the required vision projector were downloaded
+and loaded successfully. No Transformers/vLLM inference was substituted.
+
+**At this historical checkpoint, stage 4 was not accepted under the old live gate.** No preset, loader,
+transport helper, numeric capacity limit, dependency, production default, Core,
+Jobkit or Serve change was made. No stage commit, push or publication was made.
+The only changed paths are this ledger and these two bounded artifacts:
+
+- [Exact requests, raw answers and rendered-input evidence](extraction-nuextract3-lmstudio-smoke.json).
+- [Next stage 5 continuation](extraction-additional-vlm-models-stage5-resumption.md).
+
+#### Model, contract and environment evidence
+
+- Source: [numind/NuExtract3](https://huggingface.co/numind/NuExtract3/tree/c99dc8f5641b866aa0192b6ea78f84bf9f3535f1),
+  revision `c99dc8f5641b866aa0192b6ea78f84bf9f3535f1`, public/ungated,
+  Apache-2.0. Official config names `Qwen3_5ForConditionalGeneration`,
+  `qwen3_5`, Transformers 5.5.4. The installed Transformers 5.16.1 auto mapping
+  contains this architecture; that is inspection evidence, not local inference
+  certification. No remote-code loading or loader replacement was needed/proven.
+- Weights: [official NuExtract3-GGUF revision](https://huggingface.co/numind/NuExtract3-GGUF/tree/28a1aae6288c5d50bdf999ca2e572240966d669b)
+  `28a1aae6288c5d50bdf999ca2e572240966d669b`.
+  `NuExtract3-Q4_K_M.gguf`: 2,783,445,984 bytes, SHA256
+  `7ee3c0ee9e5699a4391624ae758487f583f73b3242aa4e73dc2bb33e508d703e`.
+  Required `mmproj-NuExtract3-BF16.gguf`: 675,569,184 bytes, SHA256
+  `9a506ce43544691f4f56f1533768f43e1887ef69b8cd74b2e7a46c4d9a155a01`.
+  The language model is Q4_K_M; the vision projector is BF16, not Q4.
+- The embedded GGUF native Jinja template and the SDK-returned native template
+  both equal the pinned source byte-for-byte: 6,752 UTF-8 bytes, SHA256
+  `31e44d28615d268efdc3dcf59cb59bd2d51714d517455fbad97518d351b84119`.
+  The template is referenced by revision/hash rather than copied into this repo.
+  A nonempty native `template` sets structured mode itself. Its default is content
+  mode and thinking false; the observed LM Studio prompt opens thinking instead.
+- Native `verbatim-string` means exact copying; it is not interchangeable with
+  paraphrasing `string`. Reused the existing bounded schema/Pydantic converter
+  and call-local target preparation during tracing; no new schema semantics were
+  inferred. Existing native/conversion/template-ownership tests remain green.
+- Runtime: LM Studio `0.4.21+2`, `lms` commit `71bd99c`,
+  `llama.cpp-mac-arm64-apple-metal-advsimd@2.40.0`; llama-server reports
+  `0.4.1-dev`, build 1, commit `7ceed87`, AppleClang 15.0.0.15000309,
+  Darwin ARM64. Device is Apple Metal on macOS ARM64, 64 GiB system memory;
+  torch CUDA unavailable/MPS available. The HTTP smoke loaded identifier
+  `docling-stage4-nuextract3-q4`, context 8192, parallel 1, GPU max:
+  1.57 seconds, reported 3.22 GiB. SDK follow-up used the subsequently loaded
+  official identifier `numind/nuextract3`, context 8192, parallel 4, GPU ratio 1.0,
+  flash attention true. Both point to the same verified official weights.
+- Metadata context length 262144 is not a measured working capacity. The 8192
+  context and 256/512 output caps are probe settings, not support/preset limits.
+- Tests borrowed Python 3.13.5 from `docling_release/.venv` with this worktree
+  on `PYTHONPATH`; published Core 2.96.0 resolves from site-packages. Versions:
+  torch 2.14.0, Transformers 5.16.1, Pydantic 2.13.5, jsonschema 4.26.0,
+  pytest 9.0.3, polyfactory 3.3.0, huggingface-hub 1.31.0,
+  qwen-vl-utils 0.0.14. No environment sync/Core override occurred. Official
+  SDK `lmstudio==1.5.0` was installed only into `/tmp/docling-stage4-sdk` for
+  bounded feasibility probes; no permanent dependency was added.
+
+#### Real inference and the blocker
+
+Four independent requests to `http://127.0.0.1:1234/v1/chat/completions`
+held source text, temperature 0, output cap 256 and streaming false fixed.
+They supplied (1) native invoice/total template with instructions/thinking false,
+(2) a different buyer-only native template/instructions/thinking false,
+(3) total-only template/thinking true, and (4) no template kwargs.
+All returned HTTP 200 and identical content/reasoning: an HTML table truncated
+at `finish_reason=length`, with 70 prompt, 256 completion and 188 reasoning
+tokens. Actual model input logs are identical: `【task】content`, no template or
+instruction sections, and an open `<think>`. HTTP acceptance did not apply
+`chat_template_kwargs` to the native template.
+
+The official [HTTP chat contract](https://lmstudio.ai/docs/developer/openai-compat/chat-completions)
+does not document those kwargs. The [native REST chat contract](https://lmstudio.ai/docs/developer/rest/chat)
+exposes reasoning controls but no per-call extraction template/Jinja override.
+The [legacy completion endpoint](https://lmstudio.ai/docs/developer/openai-compat/completions)
+skips chat formatting but does not establish a multimodal native-template route.
+The [GUI template override](https://lmstudio.ai/docs/app/advanced/prompt-template)
+is a model default, which does not establish per-call ownership/isolation.
+Internal application forwarding of `chatTemplateKwargs` alone was insufficient
+evidence; the rendered inputs resolve the actual HTTP behavior.
+
+The official SDK was then tested independently, without changing Docling's API
+path. Its [prediction config mapping](https://github.com/lmstudio-ai/lmstudio-python/blob/main/src/lmstudio/_kv_config.py)
+supports `config.promptTemplate`/`llm.prediction.promptTemplate`. A one-token
+control returned the exact native checkpoint template in the prediction config.
+The next probe prepended Jinja assignments for the original native template,
+instructions and thinking false and supplied that template per prediction,
+temperature 0/output cap 512. Actual input still used content mode/open thinking;
+the answer contained reasoning delimiters and the complete HTML table, 70 prompt
+and 373 predicted tokens, stopping at EOS. An independent eight-token sentinel
+override (`{{ 'DOCLING_STAGE4_SENTINEL' }}`) was echoed unchanged in the result's
+prediction config but ignored by the actual prompt, which retained the original
+content task, 42 prompt tokens and open thinking. A small SDK transport wrapper
+would therefore still fail the required native contract on this installed runtime.
+No custom WebSocket stack, engine-guard bypass or generic prompting imitation was
+introduced. Load-time/custom runtime configuration remains an unverified future
+option, not a demonstrated dynamic transport.
+
+Factual quality and output validity are separate: the truncated HTTP answer
+contains the correct invoice/seller but omits the requested final total/buyer
+before its length stop. The full SDK table includes the correct source fields,
+including final total 32.43, while following the wrong task/output form. None
+is a JSON object. These native-template transport probes supplied no standards
+`output_schema`; unchanged-schema validation was **not requested**, not passed.
+No extraction accuracy score or schema-versus-example advantage is claimed.
+
+Remaining real-model gates were not run: Docling SDK native/converted/Pydantic
+targets, image and mixed channels, two independent absolute selected pages/non-1
+ranges, honored instruction/thinking variants, cached-call isolation, original
+schema validation and fixed-input schema-versus-example comparison without
+copying evaluation answers into examples. No NuExtract3 engine/channel is
+advertised as supported. NuExtract2/Granite/main behavior remains unchanged.
+
+#### Commands and regression results
+
+Commands were run from `docling-second`; network/model/MLX-dependent operations
+used permitted escalation. The first `lms get` proxy attempt timed out around
+8 MB; pinned direct downloads succeeded and the explicit proxy retry eventually
+completed. Native `lms import` and opening the installed app refreshed the catalog;
+the first pre-refresh loads returned model-not-found. No unrelated model or
+defaults were changed by these probes. Cached verified artifacts are now under
+`/Users/cau/.lmstudio/models/numind/NuExtract3-GGUF`; temporary hard links under
+`docling-stage4/NuExtract3-GGUF` do not duplicate the weight bytes. No cleanup of
+unrelated local artifacts was performed.
+
+```sh
+git branch --show-current
+git rev-parse HEAD
+git status --short
+
+/Users/cau/.lmstudio/bin/lms get \
+  'https://huggingface.co/numind/NuExtract3-GGUF@Q4_K_M' --gguf -y
+# Direct fallback, repeated for mmproj-NuExtract3-BF16.gguf:
+curl -fL --retry 3 --connect-timeout 20 -C - \
+  -o /tmp/NuExtract3-Q4_K_M.gguf \
+  https://huggingface.co/numind/NuExtract3-GGUF/resolve/28a1aae6288c5d50bdf999ca2e572240966d669b/NuExtract3-Q4_K_M.gguf
+/Users/cau/.lmstudio/bin/lms import /tmp/NuExtract3-Q4_K_M.gguf \
+  --user-repo numind/NuExtract3-GGUF -y
+open -a 'LM Studio'
+/Users/cau/.lmstudio/bin/lms load nuextract3 \
+  --identifier docling-stage4-nuextract3-q4 --context-length 8192 \
+  --parallel 1 --gpu max -y
+# Exact HTTP bodies and actual inputs are preserved in the linked JSON.
+/Users/cau/.lmstudio/bin/lms log stream --source model --filter input --json
+/Users/cau/Documents/Development/docling_release/.venv/bin/python \
+  /tmp/docling-stage4-lmstudio-probe.py
+
+uv pip install --python /Users/cau/Documents/Development/docling_release/.venv/bin/python \
+  --target /tmp/docling-stage4-sdk lmstudio
+# SDK records preserve config, exact variable prefix, native-template hash,
+# raw content/stats and actual inputs; no copied checkpoint template is needed.
+
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_service_datamodels.py tests/test_api_image_request.py \
+  tests/test_build_generation_config.py tests/test_interfaces.py \
+  tests/test_input_doc.py tests/test_invalid_input.py \
+  -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage4-regressions.log 2>&1
+
+UV_NO_SYNC=1 make validate > /tmp/docling-stage4-validate.log 2>&1
+git diff --check
+git status --short --untracked-files=all
+```
+
+Regressions: **331 passed, 4 existing weight skips, 2 existing conversion tests
+deselected, 31 warnings**, exit 0, 21.64 seconds. The two conversion/table golden
+mismatches were already reproduced on unchanged stage 1 source in stage 2; no
+golden rewrite was made. Final `UV_NO_SYNC=1 make validate` passes, exit 0;
+applicable conflict/large-file/max-lines hooks pass and source hooks have no
+changed files. Existing installed-hook cache metadata warnings are non-fatal.
+`git diff --check` passes; the final scope is exactly the three documentation
+paths listed above, with no production/test changes.
+
+The old live gate paused at stage 4 here. Under the revised policy this deployment
+failure stays recorded while source implementation and stage 5 may proceed.
+
+#### User-confirmed live endpoint follow-up — 2026-09-18
+
+The user confirmed `localhost:1234`, model ID `numind/nuextract3`. Rechecked the
+live deployment outside the localhost-restricted sandbox: the exact identifier
+is already loaded, official Q4_K_M/qwen35 with vision, context 8192, parallel 4,
+flash attention true, native MTP speculative decoding enabled. The model catalog
+reports reasoning options off/on with default on. App version remains 0.4.21+2;
+`lms runtime ls` confirms selected GGUF Metal runtime 2.40.0. No model download,
+reload, switch, defaults change or other-model operation was performed.
+
+One bounded fresh request to `http://localhost:1234/v1/chat/completions` used
+`model=numind/nuextract3` and added explicit `mode=structured` to the original
+native template/instructions/`enable_thinking=false` controls. It returned HTTP
+200 with the exact requested model identifier, the same length-stopped HTML
+answer and 70/256/188 prompt/completion/reasoning tokens. The actual rendered
+input is byte-for-byte equal to the original content-task/open-thinking input;
+native template and instructions remain absent. The catalog's default thinking
+setting explains the default behavior; it does not establish application of the
+per-call controls. The explicit target mode itself was also ignored.
+
+The exact request/raw response, selected model's current catalog/load config and
+rendered-input event are appended under `user_endpoint_follow_up` in the existing
+smoke JSON. Prior records are preserved. Rechecked documented native REST/SDK
+controls and existing shared converter/adapters: REST reasoning alone cannot
+supply the native extraction template, and the recorded SDK sentinel already
+proves its per-prediction template override is ineffective in actual input on
+this runtime. Endpoint clarification resolves availability, while the dynamic
+native-template transport blocker remains. No native schema validation was
+requested by this transport probe; no additional model gate is marked passed.
+
+```sh
+/Users/cau/.lmstudio/bin/lms ps --json
+curl -fsS --connect-timeout 5 --max-time 10 http://localhost:1234/api/v1/models
+/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+  '/Applications/LM Studio.app/Contents/Info.plist'
+/Users/cau/.lmstudio/bin/lms runtime ls
+# Replayable HTTP body and actual model-input event are in user_endpoint_follow_up.
+# Used urllib.request with timeout120 and an owned lms model/input logger;
+# terminated only that logger after the single request.
+UV_NO_SYNC=1 make validate > /tmp/docling-stage4-validate.log 2>&1
+git diff --check
+git status --short --untracked-files=all
+```
+
+The documentation-only follow-up retains the 331-pass regression checkpoint;
+tests were not repeated without production changes. Required `make validate` and
+whitespace/scope checks pass again. This follow-up remained incomplete under the old live gate. The later revised
+policy and current implementation checkpoint above supersede that gate.
+
+### Stage 4 implementation validation — revised delivery policy
+
+The current source pass loaded no weights, ran no live inference and made no
+additional model downloads/runtime changes. The historical smoke JSON is unchanged
+(SHA256 `ca79ae727b165058f41419a4f138faebddb03bd96d9c22e20b43d38cad7ba2f0`).
+The task-owned obsolete stage 4 prompt was replaced by the next stage 5 prompt.
+
+```sh
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_extraction_api.py -k 'nuextract3 or ordered_local_content' \
+  > /tmp/docling-stage4-contracts.log 2>&1
+
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_service_datamodels.py tests/test_api_image_request.py \
+  tests/test_build_generation_config.py tests/test_interfaces.py \
+  tests/test_input_doc.py tests/test_invalid_input.py \
+  -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage4-regressions.log 2>&1
+
+UV_NO_SYNC=1 make validate > /tmp/docling-stage4-validate.log 2>&1
+git diff --check
+git status --short --untracked-files=all
+```
+
+Focused contracts: **10 passed, 140 deselected**, exit 0. Applicable regressions:
+**339 passed, 4 existing weight skips, 2 known conversion tests deselected,
+31 warnings**, exit 0, 15.89 seconds. No golden changes. Tests used the recorded
+borrowed Python/site-packages environment with source `PYTHONPATH` and permitted
+escalation for native MLX import initialization, without syncing anything.
+`make validate` required escalation for existing UV/hook cache access; Ruff first
+fixed import order and reformatted one test. Reviewed those edits; final repeated
+validation passes (including ty/tach/max-lines), exit 0. Whitespace/scope checks
+pass. Existing installed-hook cache metadata warnings remain non-fatal.
+
+Changed source/tests: `extraction_options.py`, `prompt_utils.py`,
+`test_extraction_api.py`, `test_extraction_stage3.py`,
+`test_extraction_transformers_model.py`; docs: this ledger, `extraction.md` and the
+next stage 5 prompt, plus preserved historical smoke evidence. No Core, Jobkit,
+Serve, environment, loader or production-default change. Stage 4 implementation
+is complete; the live verification matrix stays open. Parent review/signoff commit
+is the next authorized delivery step, then stage 5.

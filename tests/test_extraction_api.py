@@ -79,6 +79,17 @@ def test_unsupported_local_engine_is_rejected() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "engine_type",
+    [VlmEngineType.API_LMSTUDIO, VlmEngineType.API_OLLAMA, VlmEngineType.API_OPENAI],
+)
+def test_nuextract3_rejects_transports_without_native_template_contract(engine_type):
+    with pytest.raises(ValueError, match="does not support"):
+        ExtractionVlmOptions.from_preset(
+            "nuextract_3", engine_options=ApiVlmEngineOptions(engine_type=engine_type)
+        )
+
+
 def _prompt_only_pipeline(style: ExtractionPromptStyle) -> ExtractionVlmPipeline:
     spec = {
         ExtractionPromptStyle.NUEXTRACT: NU_EXTRACT_2B_TRANSFORMERS,

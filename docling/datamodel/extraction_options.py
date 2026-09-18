@@ -117,6 +117,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
 
     prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT
     preparation: Literal["nuextract", "generic_chat"] = "nuextract"
+    local_preprocessing: Literal["processor", "tokenizer_qwen"] = "processor"
 
     accepts_image: bool = True
     accepts_text: bool = False
@@ -274,6 +275,11 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
                     if style is ExtractionPromptStyle.NUEXTRACT
                     else "generic_chat"
                 ),
+                local_preprocessing=(
+                    "tokenizer_qwen"
+                    if style is ExtractionPromptStyle.NUEXTRACT
+                    else "processor"
+                ),
                 accepts_image=True,
                 accepts_text=style is ExtractionPromptStyle.NUEXTRACT,
                 default_repo_id=inline.repo_id,
@@ -312,6 +318,7 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     name="NuExtract 2.0 2B",
     prompt_style=ExtractionPromptStyle.NUEXTRACT,
+    local_preprocessing="tokenizer_qwen",
     accepts_image=True,
     accepts_text=True,
     default_repo_id="numind/NuExtract-2.0-2B",
@@ -324,6 +331,24 @@ NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     temperature=0.0,
     # Qwen2-VL-2B base: 32768-token context minus the 4096 generation budget.
     max_input_tokens=28672,
+)
+
+NUEXTRACT_3_SPEC = ExtractionVlmModelSpec(
+    name="NuExtract3",
+    preparation="nuextract",
+    accepts_image=True,
+    accepts_text=True,
+    default_repo_id="numind/NuExtract3",
+    revision="c99dc8f5641b866aa0192b6ea78f84bf9f3535f1",
+    prompt="",
+    torch_dtype="bfloat16",
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+    extra_chat_template_kwargs={"enable_thinking": False, "mode": "structured"},
+    temperature=0.0,
+    max_new_tokens=4096,  # Official non-thinking Transformers example; not measured capacity.
+    # Config context minus output budget; a deployment may impose a smaller limit.
+    max_input_tokens=258048,
 )
 
 GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
@@ -344,6 +369,20 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     trust_remote_code=True,
     # Granite-4.1-3B base: 131072-token context minus the 4096 generation budget.
     max_input_tokens=126976,
+)
+
+ExtractionVlmOptions.register_preset(
+    StageModelPreset(
+        preset_id="nuextract_3",
+        name="NuExtract3",
+        description=(
+            "Opt-in native-template extraction (Transformers or vLLM API); "
+            "contract tested, live deployment unverified."
+        ),
+        model_spec=NUEXTRACT_3_SPEC,
+        default_engine_type=VlmEngineType.TRANSFORMERS,
+        scale=2.0,
+    )
 )
 
 ExtractionVlmOptions.register_preset(
@@ -387,6 +426,7 @@ NU_EXTRACT_API = ExtractionVlmOptions(
     model_spec=ExtractionVlmModelSpec(
         name="NuExtract 2.0 8B (API)",
         prompt_style=ExtractionPromptStyle.NUEXTRACT,
+        local_preprocessing="tokenizer_qwen",
         accepts_image=True,
         accepts_text=True,
         default_repo_id="numind/NuExtract-2.0-8B",

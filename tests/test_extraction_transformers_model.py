@@ -147,7 +147,7 @@ def test_transformers_rejects_input_over_context_limit() -> None:
         list(model._generate_and_decode({"input_ids": torch.tensor([[1, 2, 3, 4, 5]])}))
 
 
-@pytest.mark.parametrize("preparation", ["generic_chat", "nuextract"])
+@pytest.mark.parametrize("preparation", ["generic_chat", "nuextract", "nuextract_3"])
 def test_ordered_local_content_routes_chat_and_processor_options(
     monkeypatch, preparation
 ):
@@ -164,13 +164,16 @@ def test_ordered_local_content_routes_chat_and_processor_options(
     from docling.datamodel.extraction_options import (
         GRANITE_VISION_4_1_SPEC,
         NUEXTRACT_2B_SPEC,
+        NUEXTRACT_3_SPEC,
     )
     from docling.models.extraction import prompt_utils
     from docling.models.extraction.prompt_utils import prepare_target
 
-    spec = (
-        NUEXTRACT_2B_SPEC if preparation == "nuextract" else GRANITE_VISION_4_1_SPEC
-    ).model_copy(
+    spec = {
+        "generic_chat": GRANITE_VISION_4_1_SPEC,
+        "nuextract": NUEXTRACT_2B_SPEC,
+        "nuextract_3": NUEXTRACT_3_SPEC,
+    }[preparation].model_copy(
         update={
             "extra_chat_template_kwargs": {
                 "enable_thinking": False,
@@ -191,7 +194,11 @@ def test_ordered_local_content_routes_chat_and_processor_options(
     preprocess = Mock(return_value={"input_ids": torch.tensor([[1, 2]])})
 
     class Processor:
-        tokenizer = SimpleNamespace(apply_chat_template=render)
+        tokenizer = SimpleNamespace(
+            apply_chat_template=render
+            if preparation == "nuextract"
+            else Mock(side_effect=AssertionError("must render through processor"))
+        )
         apply_chat_template = render
 
         def __call__(self, **kwargs):
@@ -208,9 +215,9 @@ def test_ordered_local_content_routes_chat_and_processor_options(
                 ExtractionTarget(
                     template=ExtractionTemplate(
                         format="nuextract"
-                        if preparation == "nuextract"
+                        if preparation != "generic_chat"
                         else "example_json",
-                        value={field: "string"},
+                        value={field: "verbatim-string"},
                     ),
                     instructions=f"Extract {field}",
                 ),
@@ -232,11 +239,13 @@ def test_ordered_local_content_routes_chat_and_processor_options(
                 kwargs["tokenize"] is False and kwargs["add_generation_prompt"] is True
             )
             assert "max_soft_tokens" not in kwargs
-            if preparation == "nuextract":
+            if preparation != "generic_chat":
                 assert (
                     f'"{field}"' in kwargs["template"]
+                    and '"verbatim-string"' in kwargs["template"]
                     and f"Extract {field}" in kwargs["instructions"]
                 )
+                assert kwargs["template"] == target.chat_template_kwargs["template"]
                 assert len(messages) == 3
             else:
                 assert messages[3]["text"] == target.prompt and "template" not in kwargs
@@ -249,6 +258,13 @@ def test_ordered_local_content_routes_chat_and_processor_options(
             }
             kwargs["nested"]["call"] = False
             assert target.chat_template_kwargs == saved
+        if preparation == "nuextract_3":
+            vision.assert_not_called()
+            list(model.process([[ImageContentItem(image=image)]], target))
+            assert render.call_args.args[0][0]["content"] == [
+                {"type": "image", "image": image}
+            ]
+            assert preprocess.call_args.kwargs["images"] == [image]
         # Text-only requests do not import or invoke vision preprocessing.
         vision.reset_mock()
         list(model.process([[TextContentItem(text="only text")]], target))

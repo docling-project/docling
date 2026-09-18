@@ -1,0 +1,495 @@
+{
+  "stage": 4,
+  "status": "incomplete: installed LM Studio runtime ignores per-call native template controls",
+  "verification_dates": [
+    "2026-09-17",
+    "2026-09-18"
+  ],
+  "branch": "cau/extraction-api-service-models",
+  "base_head": "cd550410f9715f730f7ef5bb88ac533580706a19",
+  "authorization": "LM Studio only; official 4-bit GGUF and required vision projector",
+  "source_model": {
+    "repository": "numind/NuExtract3",
+    "revision": "c99dc8f5641b866aa0192b6ea78f84bf9f3535f1",
+    "architecture": "Qwen3_5ForConditionalGeneration",
+    "model_type": "qwen3_5",
+    "config_transformers_version": "5.5.4",
+    "native_template_utf8_bytes": 6752,
+    "native_template_sha256": "31e44d28615d268efdc3dcf59cb59bd2d51714d517455fbad97518d351b84119",
+    "gguf_and_sdk_control_template_equal_pinned_source": true
+  },
+  "gguf": {
+    "repository": "numind/NuExtract3-GGUF",
+    "revision": "28a1aae6288c5d50bdf999ca2e572240966d669b",
+    "architecture": "qwen35",
+    "language_model": {
+      "filename": "NuExtract3-Q4_K_M.gguf",
+      "bytes": 2783445984,
+      "sha256": "7ee3c0ee9e5699a4391624ae758487f583f73b3242aa4e73dc2bb33e508d703e",
+      "quantization": "Q4_K_M"
+    },
+    "vision_projector": {
+      "filename": "mmproj-NuExtract3-BF16.gguf",
+      "bytes": 675569184,
+      "sha256": "9a506ce43544691f4f56f1533768f43e1887ef69b8cd74b2e7a46c4d9a155a01",
+      "quantization": "BF16"
+    },
+    "metadata_context_length": 262144,
+    "metadata_context_length_is_not_a_measured_limit": true
+  },
+  "environment": {
+    "python": "3.13.5",
+    "python_path": "/Users/cau/Documents/Development/docling_release/.venv/bin/python",
+    "published_core": "2.96.0",
+    "torch": "2.14.0",
+    "transformers": "5.16.1",
+    "pydantic": "2.13.5",
+    "jsonschema": "4.26.0",
+    "pytest": "9.0.3",
+    "polyfactory": "3.3.0",
+    "huggingface_hub": "1.31.0",
+    "qwen_vl_utils": "0.0.14",
+    "device": "macOS ARM64 Apple Metal",
+    "system_memory_bytes": 68719476736,
+    "cuda_available": false,
+    "torch_mps_available": true,
+    "lm_studio": "0.4.21+2",
+    "lms_cli_commit": "71bd99c",
+    "runtime": "llama.cpp-mac-arm64-apple-metal-advsimd@2.40.0",
+    "llama_server_version": "0.4.1-dev build 1 commit 7ceed87",
+    "llama_server_compiler": "AppleClang 15.0.0.15000309 Darwin arm64",
+    "temporary_sdk": "lmstudio==1.5.0",
+    "temporary_sdk_directory": "/tmp/docling-stage4-sdk"
+  },
+  "http_load_settings": {
+    "identifier": "docling-stage4-nuextract3-q4",
+    "context_length": 8192,
+    "parallel": 1,
+    "gpu": "max",
+    "load_seconds": 1.57,
+    "reported_memory_gib": 3.22
+  },
+  "http_endpoint": "http://127.0.0.1:1234/v1/chat/completions",
+  "http_probes": [
+    {
+      "case": "native",
+      "request": {
+        "model": "docling-stage4-nuextract3-q4",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF."
+              }
+            ]
+          }
+        ],
+        "temperature": 0,
+        "max_tokens": 256,
+        "stream": false,
+        "chat_template_kwargs": {
+          "template": "{\"invoice\": \"verbatim-string\", \"total\": \"number\"}",
+          "instructions": "Extract the final payable total including tax; copy the invoice identifier exactly.",
+          "enable_thinking": false
+        }
+      },
+      "http_status": 200,
+      "raw_response": "{\n  \"id\": \"chatcmpl-2dgnpkhlnzzavp7tsij2u5\",\n  \"object\": \"chat.completion\",\n  \"created\": 1789677958,\n  \"model\": \"docling-stage4-nuextract3-q4\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"<table>\\n  <tbody>\\n    <tr>\\n      <td>Invoice No.</td>\\n      <td>ZUR-827</td>\\n    </tr>\\n    <tr>\\n      <td>Seller</td>\\n      <td>Alpen Data AG</td>\",\n        \"reasoning_content\": \"The user wants me to extract information from a short text about an invoice and format it as a markdown table.\\n\\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \\\"Invoice No.\\\") and another for the value.\\n3.  **Handle currency:** The values include currency symbols (\\\"CHF\\\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\\n\",\n        \"tool_calls\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"length\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 70,\n    \"completion_tokens\": 256,\n    \"total_tokens\": 326,\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 188\n    }\n  },\n  \"stats\": {\n    \"total_draft_tokens_count\": 123,\n    \"accepted_draft_tokens_count\": 112,\n    \"rejected_draft_tokens_count\": 11\n  },\n  \"system_fingerprint\": \"docling-stage4-nuextract3-q4\"\n}",
+      "elapsed_seconds": 3.177455541997915,
+      "rendered_input_log": {
+        "timestamp": 1789677961654,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "docling-stage4/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "docling-stage4-nuextract3-q4"
+        }
+      }
+    },
+    {
+      "case": "changed-target",
+      "request": {
+        "model": "docling-stage4-nuextract3-q4",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF."
+              }
+            ]
+          }
+        ],
+        "temperature": 0,
+        "max_tokens": 256,
+        "stream": false,
+        "chat_template_kwargs": {
+          "template": "{\"buyer\": \"verbatim-string\"}",
+          "instructions": "Extract the buyer, not the seller.",
+          "enable_thinking": false
+        }
+      },
+      "http_status": 200,
+      "raw_response": "{\n  \"id\": \"chatcmpl-dup9m6ft8wf18jvychkv01\",\n  \"object\": \"chat.completion\",\n  \"created\": 1789677961,\n  \"model\": \"docling-stage4-nuextract3-q4\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"<table>\\n  <tbody>\\n    <tr>\\n      <td>Invoice No.</td>\\n      <td>ZUR-827</td>\\n    </tr>\\n    <tr>\\n      <td>Seller</td>\\n      <td>Alpen Data AG</td>\",\n        \"reasoning_content\": \"The user wants me to extract information from a short text about an invoice and format it as a markdown table.\\n\\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \\\"Invoice No.\\\") and another for the value.\\n3.  **Handle currency:** The values include currency symbols (\\\"CHF\\\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\\n\",\n        \"tool_calls\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"length\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 70,\n    \"completion_tokens\": 256,\n    \"total_tokens\": 326,\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 188\n    }\n  },\n  \"stats\": {\n    \"total_draft_tokens_count\": 123,\n    \"accepted_draft_tokens_count\": 112,\n    \"rejected_draft_tokens_count\": 11\n  },\n  \"system_fingerprint\": \"docling-stage4-nuextract3-q4\"\n}",
+      "elapsed_seconds": 3.00360433300375,
+      "rendered_input_log": {
+        "timestamp": 1789677964658,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "docling-stage4/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "docling-stage4-nuextract3-q4"
+        }
+      }
+    },
+    {
+      "case": "thinking-on",
+      "request": {
+        "model": "docling-stage4-nuextract3-q4",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF."
+              }
+            ]
+          }
+        ],
+        "temperature": 0,
+        "max_tokens": 256,
+        "stream": false,
+        "chat_template_kwargs": {
+          "template": "{\"total\": \"number\"}",
+          "instructions": "Extract the final payable total including tax.",
+          "enable_thinking": true
+        }
+      },
+      "http_status": 200,
+      "raw_response": "{\n  \"id\": \"chatcmpl-tyz8iugp9dsu3e9fukxsql\",\n  \"object\": \"chat.completion\",\n  \"created\": 1789677964,\n  \"model\": \"docling-stage4-nuextract3-q4\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"<table>\\n  <tbody>\\n    <tr>\\n      <td>Invoice No.</td>\\n      <td>ZUR-827</td>\\n    </tr>\\n    <tr>\\n      <td>Seller</td>\\n      <td>Alpen Data AG</td>\",\n        \"reasoning_content\": \"The user wants me to extract information from a short text about an invoice and format it as a markdown table.\\n\\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \\\"Invoice No.\\\") and another for the value.\\n3.  **Handle currency:** The values include currency symbols (\\\"CHF\\\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\\n\",\n        \"tool_calls\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"length\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 70,\n    \"completion_tokens\": 256,\n    \"total_tokens\": 326,\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 188\n    }\n  },\n  \"stats\": {\n    \"total_draft_tokens_count\": 123,\n    \"accepted_draft_tokens_count\": 112,\n    \"rejected_draft_tokens_count\": 11\n  },\n  \"system_fingerprint\": \"docling-stage4-nuextract3-q4\"\n}",
+      "elapsed_seconds": 2.9599750000052154,
+      "rendered_input_log": {
+        "timestamp": 1789677967619,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "docling-stage4/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "docling-stage4-nuextract3-q4"
+        }
+      }
+    },
+    {
+      "case": "no-template",
+      "request": {
+        "model": "docling-stage4-nuextract3-q4",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF."
+              }
+            ]
+          }
+        ],
+        "temperature": 0,
+        "max_tokens": 256,
+        "stream": false
+      },
+      "http_status": 200,
+      "raw_response": "{\n  \"id\": \"chatcmpl-3kabxw2plxw1u6x3ufcaxf\",\n  \"object\": \"chat.completion\",\n  \"created\": 1789677967,\n  \"model\": \"docling-stage4-nuextract3-q4\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"<table>\\n  <tbody>\\n    <tr>\\n      <td>Invoice No.</td>\\n      <td>ZUR-827</td>\\n    </tr>\\n    <tr>\\n      <td>Seller</td>\\n      <td>Alpen Data AG</td>\",\n        \"reasoning_content\": \"The user wants me to extract information from a short text about an invoice and format it as a markdown table.\\n\\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \\\"Invoice No.\\\") and another for the value.\\n3.  **Handle currency:** The values include currency symbols (\\\"CHF\\\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\\n\",\n        \"tool_calls\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"length\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 70,\n    \"completion_tokens\": 256,\n    \"total_tokens\": 326,\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 188\n    }\n  },\n  \"stats\": {\n    \"total_draft_tokens_count\": 123,\n    \"accepted_draft_tokens_count\": 112,\n    \"rejected_draft_tokens_count\": 11\n  },\n  \"system_fingerprint\": \"docling-stage4-nuextract3-q4\"\n}",
+      "elapsed_seconds": 2.9547759580018464,
+      "rendered_input_log": {
+        "timestamp": 1789677970574,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "docling-stage4/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "docling-stage4-nuextract3-q4"
+        }
+      }
+    }
+  ],
+  "sdk_control": {
+    "transport": "official SDK1.5.0 respond",
+    "api_host": "localhost:1234",
+    "model": "numind/nuextract3",
+    "text": "Invoice ZUR-827. Total 32.43 CHF.",
+    "supplied_config": {
+      "temperature": 0,
+      "maxTokens": 1
+    },
+    "content": "The__LM_STUDIO_INTERNAL_LSEP_SYNTHETIC_REASONING_END_f4e9a8d2c6b14d0c9e5f3a7b8c1d2e6a__",
+    "stats": {
+      "stopReason": "maxPredictedTokensReached",
+      "tokensPerSecond": 0.0,
+      "timeToFirstTokenSec": 0.249562,
+      "promptTokensCount": 42,
+      "predictedTokensCount": 1,
+      "totalTokensCount": 43
+    },
+    "load_config": {
+      "gpu": {
+        "ratio": 1.0
+      },
+      "contextLength": 8192,
+      "flashAttention": true
+    },
+    "model_info": {
+      "type": "llm",
+      "modelKey": "numind/nuextract3",
+      "format": "gguf",
+      "displayName": "NuExtract3",
+      "path": "numind/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+      "sizeBytes": 3459015168,
+      "vision": true,
+      "trainedForToolUse": false,
+      "maxContextLength": 262144,
+      "paramsString": "4.3B",
+      "architecture": "qwen35"
+    },
+    "returned_native_template_sha256": "31e44d28615d268efdc3dcf59cb59bd2d51714d517455fbad97518d351b84119"
+  },
+  "sdk_probes": [
+    {
+      "case": "native",
+      "transport": "official SDK 1.5.0 respond/config.promptTemplate",
+      "model": "numind/nuextract3",
+      "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.",
+      "chat_template_kwargs": {
+        "template": "{\"invoice\": \"verbatim-string\", \"total\": \"number\"}",
+        "instructions": "Extract the final payable total including tax; copy the invoice identifier exactly.",
+        "enable_thinking": false
+      },
+      "injection_prefix": "{%- set template = \"{\\\"invoice\\\": \\\"verbatim-string\\\", \\\"total\\\": \\\"number\\\"}\" -%}{%- set instructions = \"Extract the final payable total including tax; copy the invoice identifier exactly.\" -%}{%- set enable_thinking = false -%}",
+      "temperature": 0,
+      "maxTokens": 512,
+      "content": "The user wants me to extract information from a short text about an invoice and format it as a markdown table.\n\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \"Invoice No.\") and another for the value.\n3.  **Handle currency:** The values include currency symbols (\"CHF\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\n__LM_STUDIO_INTERNAL_LSEP_SYNTHETIC_REASONING_END_f4e9a8d2c6b14d0c9e5f3a7b8c1d2e6a__<table>\n  <tbody>\n    <tr>\n      <td>Invoice No.</td>\n      <td>ZUR-827</td>\n    </tr>\n    <tr>\n      <td>Seller</td>\n      <td>Alpen Data AG</td>\n    </tr>\n    <tr>\n      <td>Buyer</td>\n      <td>Blue Lake SA</td>\n    </tr>\n    <tr>\n      <td>Subtotal</td>\n      <td>30.00 CHF</td>\n    </tr>\n    <tr>\n      <td>Final payable total including tax</td>\n      <td>32.43 CHF</td>\n    </tr>\n  </tbody>\n</table>",
+      "stats": {
+        "stopReason": "eosFound",
+        "tokensPerSecond": 85.41676377465863,
+        "timeToFirstTokenSec": 0.19016999999999998,
+        "promptTokensCount": 70,
+        "predictedTokensCount": 373,
+        "totalTokensCount": 443,
+        "totalDraftTokensCount": 202,
+        "acceptedDraftTokensCount": 191,
+        "rejectedDraftTokensCount": 11
+      },
+      "load_config": {
+        "gpu": {
+          "ratio": 1.0
+        },
+        "contextLength": 8192,
+        "flashAttention": true
+      },
+      "model_info": {
+        "type": "llm",
+        "modelKey": "numind/nuextract3",
+        "format": "gguf",
+        "displayName": "NuExtract3",
+        "path": "numind/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+        "sizeBytes": 3459015168,
+        "vision": true,
+        "trainedForToolUse": false,
+        "maxContextLength": 262144,
+        "paramsString": "4.3B",
+        "architecture": "qwen35"
+      },
+      "elapsed_seconds": 4.565198540993151,
+      "rendered_input_log": {
+        "timestamp": 1789711946787,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "numind/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "numind/nuextract3"
+        }
+      }
+    },
+    {
+      "case": "sentinel",
+      "transport": "official SDK1.5.0 respond/config.promptTemplate",
+      "model": "numind/nuextract3",
+      "text": "Invoice ZUR-827. Total 32.43 CHF.",
+      "supplied_config": {
+        "temperature": 0,
+        "maxTokens": 8,
+        "promptTemplate": {
+          "type": "jinja",
+          "jinjaPromptTemplate": {
+            "template": "{{ 'DOCLING_STAGE4_SENTINEL' }}"
+          },
+          "stopStrings": []
+        }
+      },
+      "effective_config": {
+        "maxTokens": 8,
+        "temperature": 0.0,
+        "rawTools": {
+          "type": "none"
+        },
+        "cpuThreads": 12
+      },
+      "effective_prompt_template_sha256": "48ff308064a99effd1fdc620a413e2ef15e9e1ecfba06fd5821a27cdfcd165c6",
+      "effective_prompt_template_matches_supplied": true,
+      "content": "The user has provided a very short text__LM_STUDIO_INTERNAL_LSEP_SYNTHETIC_REASONING_END_f4e9a8d2c6b14d0c9e5f3a7b8c1d2e6a__",
+      "stats": {
+        "stopReason": "maxPredictedTokensReached",
+        "tokensPerSecond": 68.97842945970181,
+        "timeToFirstTokenSec": 0.161453,
+        "promptTokensCount": 42,
+        "predictedTokensCount": 8,
+        "totalTokensCount": 50,
+        "totalDraftTokensCount": 2,
+        "acceptedDraftTokensCount": 2,
+        "rejectedDraftTokensCount": 0
+      },
+      "elapsed_seconds": 0.3077622499986319,
+      "rendered_input_log": {
+        "timestamp": 1789711983845,
+        "data": {
+          "type": "llm.prediction.input",
+          "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Total 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+          "modelPath": "numind/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+          "modelIdentifier": "numind/nuextract3"
+        }
+      }
+    }
+  ],
+  "assessment": {
+    "http": "All four requests returned HTTP200, identical content and reasoning, identical rendered content-task/open-thinking prompt and 70/256/188 prompt/completion/reasoning tokens. Native template, instructions and disabled thinking were absent from the actual prompt.",
+    "sdk": "Per-prediction promptTemplate native prefix and independent sentinel override were ignored in actual rendered input. Sentinel was echoed by result.prediction_config, proving accepted/echoed is insufficient evidence.",
+    "json_object_contract": "All actual probe answers are non-JSON; SDK native answer includes reasoning delimiters and an HTML table.",
+    "factual_quality": "HTTP truncated table contains the correct invoice and seller; requested buyer/final total are absent before length stop. SDK native full table contains correct source fields and final32.43, but follows content mode rather than requested native schema. No extraction accuracy score is claimed.",
+    "original_schema_validation": "not_requested: these transport probes supplied native template controls, not a standards output_schema; no formal unchanged-schema validation was run",
+    "remaining_model_gates": "not_run: Docling SDK native/converted schema and Pydantic targets; image/mixed channels; independent two-page/non1 ranges; cached-call isolation; thinking/instruction variants under honored native mode; fixed-input schema-versus-example comparison",
+    "advertised_nuextract3_capabilities": []
+  },
+  "regressions": {
+    "passed": 331,
+    "skipped_existing_weight_tests": 4,
+    "deselected_existing_conversion_tests": 2,
+    "warnings": 31,
+    "seconds": 21.64,
+    "exit_code": 0,
+    "log": "/tmp/docling-stage4-regressions.log"
+  },
+  "sdk_load_settings": {
+    "identifier": "numind/nuextract3",
+    "context_length": 8192,
+    "parallel": 4,
+    "gpu_ratio": 1.0,
+    "flash_attention": true
+  },
+  "repository_validation": {
+    "command": "UV_NO_SYNC=1 make validate",
+    "exit_code": 0,
+    "log": "/tmp/docling-stage4-validate.log",
+    "production_or_test_changes": false
+  },
+  "user_endpoint_follow_up": {
+    "user_provided_endpoint": "localhost:1234",
+    "user_provided_model_id": "numind/nuextract3",
+    "date": "2026-09-18",
+    "app_version_rechecked": "0.4.21+2",
+    "probe": {
+      "endpoint": "http://localhost:1234/v1/chat/completions",
+      "observed_model": {
+        "type": "llm",
+        "publisher": "numind",
+        "key": "numind/nuextract3",
+        "display_name": "NuExtract3",
+        "architecture": "qwen35",
+        "quantization": {
+          "name": "Q4_K_M",
+          "bits_per_weight": 4
+        },
+        "size_bytes": 3459015168,
+        "params_string": "4.3B",
+        "loaded_instances": [
+          {
+            "id": "numind/nuextract3",
+            "config": {
+              "context_length": 8192,
+              "eval_batch_size": 2048,
+              "physical_batch_size": 512,
+              "parallel": 4,
+              "flash_attention": true,
+              "context_checkpoints": 32,
+              "reasoning_budget_message": "",
+              "speculative_draft_mtp": true,
+              "speculative_draft_simple": false,
+              "speculative_draft_model": "",
+              "speculative_draft_max_tokens": 2,
+              "speculative_draft_min_tokens": 0,
+              "speculative_draft_min_continue_probability": 0.75,
+              "offload_kv_cache_to_gpu": true
+            }
+          }
+        ],
+        "max_context_length": 262144,
+        "format": "gguf",
+        "capabilities": {
+          "vision": true,
+          "trained_for_tool_use": false,
+          "reasoning": {
+            "allowed_options": [
+              "off",
+              "on"
+            ],
+            "default": "on"
+          }
+        },
+        "description": null
+      },
+      "request": {
+        "model": "numind/nuextract3",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Invoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF."
+              }
+            ]
+          }
+        ],
+        "temperature": 0,
+        "max_tokens": 256,
+        "stream": false,
+        "chat_template_kwargs": {
+          "template": "{\"invoice\": \"verbatim-string\", \"total\": \"number\"}",
+          "instructions": "Extract the final payable total including tax; copy the invoice identifier exactly.",
+          "enable_thinking": false,
+          "mode": "structured"
+        }
+      },
+      "http_status": 200,
+      "raw_response": "{\n  \"id\": \"chatcmpl-ox09bxsbnt1qih8inbww6\",\n  \"object\": \"chat.completion\",\n  \"created\": 1789712348,\n  \"model\": \"numind/nuextract3\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"<table>\\n  <tbody>\\n    <tr>\\n      <td>Invoice No.</td>\\n      <td>ZUR-827</td>\\n    </tr>\\n    <tr>\\n      <td>Seller</td>\\n      <td>Alpen Data AG</td>\",\n        \"reasoning_content\": \"The user wants me to extract information from a short text about an invoice and format it as a markdown table.\\n\\n1.  **Identify the key pieces of information:** I'll scan the input text for specific data points: Invoice number, Seller, Buyer, Subtotal, and Final payable total including tax.\\n2.  **Determine the structure:** The most logical way to present this structured data is in a table with two columns: one for the label (e.g., \\\"Invoice No.\\\") and another for the value.\\n3.  **Handle currency:** The values include currency symbols (\\\"CHF\\\"). I will place these directly next to the numerical values within the table cells as they appear in the text.\\n4.  **Format the output:** I will use standard markdown syntax for the table, ensuring it's clean and accurately reflects the provided data without adding any extra information or formatting not present in the source.\\n\",\n        \"tool_calls\": []\n      },\n      \"logprobs\": null,\n      \"finish_reason\": \"length\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 70,\n    \"completion_tokens\": 256,\n    \"total_tokens\": 326,\n    \"completion_tokens_details\": {\n      \"reasoning_tokens\": 188\n    }\n  },\n  \"stats\": {\n    \"total_draft_tokens_count\": 123,\n    \"accepted_draft_tokens_count\": 112,\n    \"rejected_draft_tokens_count\": 11\n  },\n  \"system_fingerprint\": \"numind/nuextract3\"\n}",
+      "elapsed_seconds": 3.306814833995304,
+      "rendered_input_logs": [
+        {
+          "timestamp": 1789712352282,
+          "data": {
+            "type": "llm.prediction.input",
+            "input": "<|im_start|>user\n【task】content\n【document_start】\nInvoice ZUR-827. Seller: Alpen Data AG. Buyer: Blue Lake SA. Subtotal: 30.00 CHF. Final payable total including tax: 32.43 CHF.\n【document_end】<|im_end|>\n<|im_start|>assistant\n<think>\n",
+            "modelPath": "numind/NuExtract3-GGUF/NuExtract3-Q4_K_M.gguf",
+            "modelIdentifier": "numind/nuextract3"
+          }
+        }
+      ]
+    },
+    "assessment": "User-confirmed endpoint/model is reachable and already loaded. Request includes explicit mode=structured and native template/instructions/enable_thinking=false; rendered input remains content task without native target/instructions and with open thinking. HTTP200 echoes exact model identifier and retains the prior70prompt/256completion/188reasoning,length-stopped HTML output. Model reasoning default on does not prove request controls were applied; actual input proves they were not.",
+    "deployment_mutations": [],
+    "original_schema_validation": "not_requested: no standards output_schema supplied in this native transport probe",
+    "regression_rerun": "not_run: documentation-only update, no production/test changes; prior331pass regression result retained",
+    "selected_gguf_runtime_rechecked": "llama.cpp-mac-arm64-apple-metal-advsimd@2.40.0"
+  }
+}

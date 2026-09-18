@@ -15,9 +15,29 @@ existing image path.
 - engine options, which own runtime concerns: device, endpoint, headers, timeout,
   concurrency, and parameter overrides.
 
-Presets are `nuextract_2b` and `granite_vision_4_1`. Named specs:
+Presets are `nuextract_2b`, `nuextract_3` and `granite_vision_4_1`. Named specs:
 `NU_EXTRACT_2B_TRANSFORMERS`, `GRANITE_VISION_4_1_TRANSFORMERS`, `NU_EXTRACT_API`,
 `GRANITE_VISION_4_1_API`.
+
+`nuextract_3` is opt-in and implements the documented local Transformers and vLLM
+API contracts. Those deployments have offline contract coverage, not live-model
+verification. Its preset rejects LM Studio/Ollama/OpenAI named engines because
+native caller-template delivery is not established there. The recorded installed
+LM Studio runtime drops extraction template controls.
+
+Supply `target=ExtractionTarget(template=ExtractionTemplate(format="nuextract",
+value={"invoice": "verbatim-string", "total": "number"}), instructions="Copy the
+invoice identifier exactly")`, or use an explicit output schema/Pydantic target
+in the bounded conversion subset. Native values stay intact; `verbatim-string`
+selects exact copying. The caller's extraction template reaches `template` and
+`instructions` chat kwargs; no replacement of the checkpoint Jinja is needed.
+Thinking defaults false and extraction mode structured. Different targets on a
+cached extractor remain call-local, with one request per selected absolute page.
+
+The local 258048 input-token check derives from the published 262144 context minus
+4096 output tokens (the model-card non-thinking example); it is an unmeasured upper
+bound. Configure smaller limits for your deployment. API server context limits
+are owned by the server; no capacity or extraction-quality claim is implied.
 
 API parameters derive from the model spec (model identifier, temperature,
 max_tokens) and are then overridden by `ApiVlmEngineOptions.params`, which has

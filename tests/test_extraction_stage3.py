@@ -7,6 +7,7 @@ import json
 import warnings
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from docling_core.types.doc import (
@@ -33,19 +34,23 @@ from docling.datamodel.extraction import (
     ExtractedPageData,
     ExtractionResult,
     ExtractionTarget,
+    ExtractionTemplate,
     PageScope,
 )
 from docling.datamodel.extraction_options import (
     GRANITE_VISION_4_1_API,
     NU_EXTRACT_API,
     ChannelSelection,
+    ExtractionVlmOptions,
 )
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.document_extractor import DocumentExtractor, ExtractionFormatOption
 from docling.exceptions import ConversionError
 from docling.models.extraction import api_extraction_model, prompt_utils
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+from docling.utils import api_image_request
 
 
 class _Output(BaseModel):
@@ -185,6 +190,113 @@ def test_unpaginated_source_is_one_text_document(tmp_path, monkeypatch, channel)
     assert len(calls) == 1
     assert [part.type for part in calls[0]["content_items"]] == ["text"]
     assert calls[0]["content_items"][0].text == source.read_text()
+
+
+@pytest.mark.parametrize("channel", list(ChannelSelection))
+def test_nuextract3_templates_reach_http_from_cached_sdk(
+    tmp_path, monkeypatch, channel
+):
+    source = _archive(tmp_path)
+    session = MagicMock()
+    post = session.__enter__.return_value.post
+    response = post.return_value
+    response.ok = True
+    monkeypatch.setattr(api_image_request, "_make_retry_session", lambda: session)
+    options = ExtractionVlmOptions.from_preset(
+        "nuextract_3", engine_options=ApiVlmEngineOptions()
+    )
+    extractor = _extractor(channel, options)
+    first = _target().model_copy(
+        update={
+            "template": ExtractionTemplate(
+                format="nuextract",
+                value={"total": "number", "note": "verbatim-string"},
+            ),
+            "instructions": "Copy note exactly; first template",
+        }
+    )
+    buyer_schema = {
+        "type": "object",
+        "properties": {"buyer": {"type": "string"}},
+        "required": ["buyer"],
+    }
+    targets = [
+        first,
+        ExtractionTarget(output_schema=deepcopy(first.output_schema)),
+        _target(),
+        ExtractionTarget(
+            output_schema=buyer_schema,
+            template=ExtractionTemplate(
+                format="nuextract", value={"buyer": "verbatim-string"}
+            ),
+            instructions="Copy buyer exactly; second template",
+        ),
+    ]
+    for index, target in enumerate(targets):
+        # The last syntactically valid answer deliberately violates its original schema.
+        answer = '{"buyer": 17}' if index == 3 else '{"total": 42}'
+        response.text = json.dumps(
+            {
+                "id": "offline",
+                "created": 1,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": answer},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 3,
+                    "completion_tokens": 7,
+                    "total_tokens": 10,
+                },
+            }
+        )
+        saved = target.model_dump(mode="json")
+        post.reset_mock()
+        result = extractor.extract(
+            source, target=target, page_range=(2, 3), raises_on_error=False
+        )
+        assert [item.scope for item in result.items] == [
+            PageScope(page_no=2),
+            PageScope(page_no=3),
+        ]
+        assert post.call_count == 2
+        for n, call, item in zip((2, 3), post.call_args_list, result.items):
+            payload = call.kwargs["json"]
+            chat = payload["chat_template_kwargs"]
+            expected = (
+                target.template.value
+                if target.template is not None
+                else {"total": "number", "note": "string"}
+            )
+            assert json.loads(chat["template"]) == expected
+            assert chat["enable_thinking"] is False and chat["mode"] == "structured"
+            assert payload["model"] == "numind/NuExtract3"
+            content = payload["messages"][0]["content"]
+            expected_types = (
+                ["text"]
+                if channel == ChannelSelection.TEXT
+                else ["image_url", "text"]
+                if channel == ChannelSelection.IMAGE_AND_TEXT
+                else ["image_url"]
+            )
+            assert [part["type"] for part in content] == expected_types
+            if "text" in expected_types:
+                assert f"Page {n} total" in content[-1]["text"]
+                assert f"Page {5 - n} total" not in content[-1]["text"]
+            assert item.validation_status == ("failed" if index == 3 else "passed")
+            assert item.raw_text == answer
+            if index == 3:
+                assert "second template" in chat["instructions"]
+                assert "first template" not in chat["instructions"]
+            elif index == 0:
+                assert "first template" in chat["instructions"]
+        assert target.model_dump(mode="json") == saved
+    assert "template" not in options.model_spec.extra_chat_template_kwargs
+    assert "instructions" not in options.engine_options.params
+    assert len(extractor._initialized_pipelines) == 1
 
 
 @pytest.mark.parametrize(

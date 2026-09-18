@@ -214,7 +214,9 @@ def build_content_inputs(
     texts = []
     for conversation, target in zip(messages, targets):
         renderer = (
-            processor.tokenizer if model_spec.preparation == "nuextract" else processor
+            processor.tokenizer
+            if model_spec.local_preprocessing == "tokenizer_qwen"
+            else processor
         )
         texts.append(
             renderer.apply_chat_template(
@@ -230,10 +232,10 @@ def build_content_inputs(
         for item in req
         if isinstance(item, ImageContentItem)
     ]
-    # The verified NuExtract tokenizer path still needs Qwen vision preprocessing.
+    # NuExtract 2 uses legacy Qwen preprocessing; newer processors own image sizing.
     image_inputs = (
         _process_all_vision_info(messages)
-        if images and model_spec.preparation == "nuextract"
+        if images and model_spec.local_preprocessing == "tokenizer_qwen"
         else images or None
     )
     inputs = processor(
