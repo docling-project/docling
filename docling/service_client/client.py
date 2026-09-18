@@ -59,6 +59,7 @@ from docling.datamodel.service.requests import (
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourcesRequest,
     GenericTargetRequest,
     HttpSourceRequest,
 )
@@ -67,6 +68,7 @@ from docling.datamodel.service.responses import (
     ChunkDocumentResponse,
     ConvertDocumentResponse,
     DocumentArtifactItem,
+    ExtractDocumentResponse,
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
@@ -329,6 +331,14 @@ class _BaseDoclingServiceClient:
         payload = self._restore_secret_values(raw_payload, payload)
         payload["options"] = self._serialize_convert_options(request.options)
         return payload
+
+    def _serialize_extract_request(
+        self, request: ExtractSourcesRequest
+    ) -> dict[str, Any]:
+        return self._restore_secret_values(
+            request.model_dump(mode="python", exclude_none=True),
+            request.model_dump(mode="json", exclude_none=True),
+        )
 
     def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
         if isinstance(raw, (SecretStr, SecretBytes)):
@@ -1112,6 +1122,48 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             target=request.target,
             targets=request.targets,
             request_headers=headers,
+        )
+
+    def submit_extract(
+        self, request: ExtractSourcesRequest
+    ) -> ConversionJob[ExtractDocumentResponse | RawServiceResult]:
+        """Submit source extraction; storage destinations return their raw response."""
+        response = self._request_with_retry(
+            method="POST",
+            path="/v1/extract/source/async",
+            json=self._serialize_extract_request(request),
+        )
+        if response.status_code != 200:
+            self._raise_for_generic_http_error(
+                response, "Extraction task submission failed."
+            )
+        initial_status = TaskStatusResponse.model_validate_json(response.text)
+        inbody = isinstance(request.target, InBodyTarget)
+
+        def fetch_result(
+            task_id: str, last_status: TaskStatusResponse | None
+        ) -> ExtractDocumentResponse | RawServiceResult:
+            response = self._fetch_result_response(
+                task_id=task_id,
+                last_status=last_status,
+                error_message=f"Fetching extraction result for task {task_id} failed.",
+            )
+            if inbody:
+                return self._parse_result_model_response(
+                    response, ExtractDocumentResponse
+                )
+            return self._decode_raw_result(response)
+
+        return ConversionJob(
+            task_id=initial_status.task_id,
+            submitted_at=datetime.now(tz=timezone.utc),
+            handlers=_JobHandlers(
+                poll=self._poll_task_status,
+                watch=self._watch_task_updates,
+                wait=self._wait_for_terminal_status,
+                fetch_result=fetch_result,
+            ),
+            initial_status=initial_status,
         )
 
     def submit_chunk(

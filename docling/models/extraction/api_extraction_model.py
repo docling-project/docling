@@ -5,23 +5,28 @@
 
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from typing import Any
 
 import numpy as np
 from PIL import Image as PILImage
 from PIL.Image import Image
 
-from docling.datamodel.base_models import VlmPrediction, VlmStopReason
+from docling.datamodel.base_models import VlmPrediction
 from docling.datamodel.extraction import ContentItem, ImageContentItem
 from docling.datamodel.extraction_options import (
-    ExtractionPromptStyle,
     ExtractionVlmOptions,
 )
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmModel
-from docling.utils.api_image_request import api_image_request
-from docling.utils.api_nuextract_request import api_nuextract_request
+from docling.models.extraction.prompt_utils import (
+    _PreparedTarget,
+    prepare_api_request_options,
+    prepare_output_target,
+    prepared_image_prompt,
+)
+from docling.utils.api_extraction_request import api_extraction_request
 
 
 class ApiExtractionVlmModel(BaseVlmModel):
@@ -35,6 +40,7 @@ class ApiExtractionVlmModel(BaseVlmModel):
     ):
         self.enabled = enabled
         self.model_spec = vlm_options.model_spec
+        self.output_mode = vlm_options.output_mode
         engine_options = vlm_options.engine_options
         assert isinstance(engine_options, ApiVlmEngineOptions)
         self.engine_options = engine_options
@@ -56,34 +62,56 @@ class ApiExtractionVlmModel(BaseVlmModel):
     def process(
         self,
         requests: Iterable[list[ContentItem]],
-        template: str,
+        target: _PreparedTarget,
     ) -> Iterable[VlmPrediction]:
-        if self.model_spec.prompt_style != ExtractionPromptStyle.NUEXTRACT:
-            raise ValueError("Content extraction is supported only by NuExtract")
+        target = prepare_output_target(
+            target, self.output_mode, self.engine_options.engine_type
+        )
+        params, chat = self._request_options(target)
         request_list = [list(req) for req in requests]
-
-        def _run(content_items: list[ContentItem]) -> VlmPrediction:
-            resp = api_nuextract_request(
-                content_items=content_items,
-                template=template,
-                url=self.engine_options.url,
-                timeout=self.timeout,
-                headers=self.engine_options.headers,
-                **self.params,
-            )
-            if not resp.text.strip():
-                raise RuntimeError("Extraction API returned no content")
-            return VlmPrediction(
-                text=resp.text,
-                num_tokens=resp.num_tokens,
-                usage=resp.usage,
-                stop_reason=resp.stop_reason,
-            )
-
         if not request_list:
             return
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            yield from executor.map(_run, request_list)
+            yield from executor.map(
+                lambda content: self._run(content, target, params, chat), request_list
+            )
+
+    def _request_options(
+        self, target: _PreparedTarget
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        return prepare_api_request_options(
+            target, self.model_spec, self.engine_options, self.params
+        )
+
+    def _run(
+        self,
+        content: list[ContentItem],
+        target: _PreparedTarget,
+        params: dict[str, Any],
+        chat: dict[str, Any],
+    ) -> VlmPrediction:
+        resp = api_extraction_request(
+            content_items=content,
+            prompt=target.prompt,
+            chat_template_kwargs=deepcopy(chat),
+            constraint_schema=target.constraint_schema,
+            url=self.engine_options.url,
+            timeout=(
+                min(self.timeout, target.request_timeout)
+                if target.request_timeout is not None
+                else self.timeout
+            ),
+            headers=self.engine_options.headers,
+            **deepcopy(params),
+        )
+        if not resp.text.strip():
+            raise RuntimeError("Extraction API returned no content")
+        return VlmPrediction(
+            text=resp.text,
+            num_tokens=resp.num_tokens,
+            usage=resp.usage,
+            stop_reason=resp.stop_reason,
+        )
 
     def process_images(
         self,
@@ -96,13 +124,6 @@ class ApiExtractionVlmModel(BaseVlmModel):
                 raise ValueError(
                     f"Number of prompts ({len(prompt)}) must match number of "
                     f"images ({len(images)})"
-                )
-            if (
-                self.model_spec.prompt_style == ExtractionPromptStyle.NUEXTRACT
-                and len(set(prompt)) > 1
-            ):
-                raise ValueError(
-                    "Remote NuExtract requires a single shared template per batch."
                 )
             prompts = prompt
         else:
@@ -120,31 +141,8 @@ class ApiExtractionVlmModel(BaseVlmModel):
                     raise ValueError(f"Unsupported numpy array shape: {img.shape}")
             pil_images.append(img)
 
-        if self.model_spec.prompt_style == ExtractionPromptStyle.NUEXTRACT:
-            requests: list[list[ContentItem]] = [
-                [ImageContentItem(image=img)] for img in pil_images
-            ]
-            yield from self.process(requests, prompts[0] if prompts else "")
-            return
-
-        def _run(image_prompt: tuple[Image, str]) -> VlmPrediction:
-            image, prompt_text = image_prompt
-            resp = api_image_request(
-                image=image,
-                prompt=prompt_text,
-                url=self.engine_options.url,
-                timeout=self.timeout,
-                headers=self.engine_options.headers,
-                **self.params,
+        for image, text in zip(pil_images, prompts):
+            yield from self.process(
+                [[ImageContentItem(image=image)]],
+                prepared_image_prompt(text, self.model_spec),
             )
-            if not resp.text.strip():
-                raise RuntimeError("Extraction API returned no content")
-            return VlmPrediction(
-                text=resp.text,
-                num_tokens=resp.num_tokens,
-                usage=resp.usage,
-                stop_reason=resp.stop_reason,
-            )
-
-        with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            yield from executor.map(_run, zip(pil_images, prompts))

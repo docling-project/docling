@@ -5,7 +5,7 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
@@ -16,6 +16,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     QualityGrade,
 )
+from docling.datamodel.extraction import ExtractionItem
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
 
@@ -209,6 +210,26 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
+class ExtractionDocumentResult(BaseModel):
+    """JSON-safe extraction envelope owned by one expanded source document."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_index: int = Field(ge=0, strict=True)
+    source_uri: str
+    filename: str
+    status: ConversionStatus
+    errors: list[ErrorItem] = Field(default_factory=list)
+    items: list[ExtractionItem] = Field(default_factory=list)
+
+
+class ExtractionTaskResult(BaseModel):
+    """In-body extraction result envelope; mirrors PresignedArtifactResult."""
+
+    kind: Literal["ExtractionResult"] = "ExtractionResult"
+    documents: list[ExtractionDocumentResult]
+
+
 class ConvertedOutcomeCountsMixin(BaseModel):
     num_converted: int
     num_succeeded: int
@@ -244,7 +265,8 @@ ResultType = Annotated[
     | ZipArchiveResult
     | RemoteTargetResult
     | ChunkedDocumentResult
-    | PresignedArtifactResult,
+    | PresignedArtifactResult
+    | ExtractionTaskResult,
     Field(discriminator="kind"),
 ]
 
@@ -298,6 +320,13 @@ class PresignedUrlConvertDocumentResponse(ConvertedOutcomeCountsMixin):
 
 class PresignedUrlConvertResponse(PresignedUrlConvertDocumentResponse):
     documents: list[DocumentArtifactItem]
+
+
+class ExtractDocumentResponse(ConvertedOutcomeCountsMixin):
+    """In-body extraction response with task-level counts and timing."""
+
+    documents: list[ExtractionDocumentResult]
+    processing_time: float
 
 
 class ConvertDocumentErrorResponse(BaseModel):

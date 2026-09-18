@@ -5,11 +5,13 @@ import pytest
 from pydantic import ValidationError
 
 from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.service.options import ExtractDocumentsOptions
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     AzureBlobSourceRequest,
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
+    ExtractSourcesRequest,
     GenericSourceRequest,
     GenericTargetRequest,
     GoogleCloudStorageSourceRequest,
@@ -331,6 +333,23 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     )
 
     assert result.result.kind == "PresignedArtifactResult"
+
+
+def test_extract_request_separates_guidance_from_storage() -> None:
+    target = {"template": {"format": "example_json", "value": {"invoice": "INV-42"}}}
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(target=target),
+        sources=[{"kind": "http", "url": "https://example.com/report.pdf"}],
+    )
+    assert request.options.target.template.value == {"invoice": "INV-42"}
+    assert request.target.kind == "inbody"
+    assert (
+        ExtractSourcesRequest.model_validate_json(request.model_dump_json()) == request
+    )
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        ExtractSourcesRequest.model_validate(
+            {**request.model_dump(), "targets": [{"kind": "inbody"}]}
+        )
 
 
 def test_task_failure_result_roundtrip() -> None:

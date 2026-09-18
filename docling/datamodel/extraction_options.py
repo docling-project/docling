@@ -3,8 +3,9 @@
 
 import inspect
 import json
+from copy import deepcopy
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, model_validator
 
@@ -15,6 +16,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
 )
 from docling.datamodel.stage_model_specs import (
+    ApiModelConfig,
     StageModelPreset,
     StagePresetMixin,
     VlmModelSpec,
@@ -24,12 +26,53 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import (
+    BaseVlmEngineOptions,
     VlmEngineOptionsMixin,
     VlmEngineType,
 )
 
 if TYPE_CHECKING:
     from docling.datamodel.extraction import ExtractionTemplateType
+
+
+_REQUEST_FIELDS = {
+    "prompt",
+    "constraint_schema",
+    "content_items",
+    "messages",
+    "conversation",
+    "template",
+    "instructions",
+    "response_format",
+    "structured_outputs",
+    "guided_json",
+    "guided_regex",
+    "guided_choice",
+    "guided_grammar",
+    "tools",
+    "tool_choice",
+    "stream",
+}
+
+
+def _reject_request_fields(
+    options: dict[str, Any], *, reserved: set[str] | None = None
+) -> None:
+    for key in options.keys() & (_REQUEST_FIELDS if reserved is None else reserved):
+        raise ValueError(f"option {key!r} is request-owned")
+
+
+def _merge_chat_options(*options: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for mapping in options:
+        if not isinstance(mapping, dict):
+            raise ValueError("chat-template options must be a mapping")
+        _reject_request_fields(mapping)
+        _reject_request_fields(
+            mapping, reserved={"tokenize", "add_generation_prompt", "return_tensors"}
+        )
+        merged.update(deepcopy(mapping))
+    return merged
 
 
 class ExtractionPromptStyle(str, Enum):
@@ -74,9 +117,12 @@ class ExtractionVlmModelSpec(VlmModelSpec):
     """Model specification for structured extraction."""
 
     prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT
+    preparation: Literal["nuextract", "generic_chat"] = "nuextract"
+    local_preprocessing: Literal["processor", "tokenizer_qwen"] = "processor"
 
     accepts_image: bool = True
     accepts_text: bool = False
+    requires_output_schema: bool = False
 
     torch_dtype: str | None = None
     transformers_model_type: TransformersModelType = (
@@ -91,6 +137,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
         ]
     )
     extra_processor_kwargs: dict = Field(default_factory=dict)
+    extra_chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)
     max_input_tokens: int | None = Field(
         default=None,
         gt=0,
@@ -103,7 +150,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
     )
 
     def serialize_template(self, template: "ExtractionTemplateType") -> str:
-        """Serialize any of the four template forms to a schema string.
+        """Serialize legacy bare templates, without inferring an output contract.
 
         Only a Pydantic *class* is style-dependent: NuExtract wants a sample
         instance (field name -> example value), GRANITE_VISION wants a real JSON
@@ -150,6 +197,10 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     model_spec: ExtractionVlmModelSpec = Field(
         description="Model specification (repo, prompt style, capability, runtime)"
     )
+    output_mode: Literal["prompt_only", "schema_constrained"] = Field(
+        default="prompt_only",
+        description="schema_constrained opts the generic API into the vLLM JSON Schema contract",
+    )
     scale: float = Field(
         default=2.0, gt=0, description="Image scaling factor for the image channel"
     )
@@ -179,6 +230,13 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
             raise ValueError(
                 f"Extraction does not support the {engine_type.value} VLM engine"
             )
+        if (
+            self.output_mode == "schema_constrained"
+            and engine_type != VlmEngineType.API
+        ):
+            raise ValueError(
+                "schema_constrained requires the explicitly configured vLLM API engine"
+            )
         return self
 
     def build_extraction_prompt(self, template: "ExtractionTemplateType") -> str:
@@ -193,14 +251,37 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         }
 
     @classmethod
+    def from_preset(
+        cls,
+        preset_id: str,
+        engine_options: BaseVlmEngineOptions | None = None,
+        **overrides,
+    ) -> "ExtractionVlmOptions":
+        # The shared mixin applies overrides with setattr; extraction must preflight
+        # the final combination, including output mode, before any model is loaded.
+        options = super().from_preset(preset_id, engine_options, **overrides)
+        return cls.model_validate(options.model_dump(mode="python"))
+
+    @classmethod
     def from_legacy_inline_options(
         cls, inline: InlineVlmOptions, style: ExtractionPromptStyle
     ) -> "ExtractionVlmOptions":
         """Adapt the deprecated flat extraction options."""
+        style = ExtractionPromptStyle(style)
         return cls(
             model_spec=ExtractionVlmModelSpec(
                 name=inline.repo_id,
                 prompt_style=style,
+                preparation=(
+                    "nuextract"
+                    if style is ExtractionPromptStyle.NUEXTRACT
+                    else "generic_chat"
+                ),
+                local_preprocessing=(
+                    "tokenizer_qwen"
+                    if style is ExtractionPromptStyle.NUEXTRACT
+                    else "processor"
+                ),
                 accepts_image=True,
                 accepts_text=style is ExtractionPromptStyle.NUEXTRACT,
                 default_repo_id=inline.repo_id,
@@ -211,7 +292,14 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
                 response_format=inline.response_format,
                 supported_devices=inline.supported_devices,
                 trust_remote_code=inline.trust_remote_code,
-                extra_processor_kwargs=inline.extra_processor_kwargs,
+                extra_processor_kwargs={
+                    **(
+                        {"do_pad": True}
+                        if style is ExtractionPromptStyle.GRANITE_VISION
+                        else {}
+                    ),
+                    **inline.extra_processor_kwargs,
+                },
                 extra_generation_config=inline.extra_generation_config,
                 max_new_tokens=inline.max_new_tokens,
                 temperature=inline.temperature,
@@ -232,6 +320,7 @@ class ExtractionVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     name="NuExtract 2.0 2B",
     prompt_style=ExtractionPromptStyle.NUEXTRACT,
+    local_preprocessing="tokenizer_qwen",
     accepts_image=True,
     accepts_text=True,
     default_repo_id="numind/NuExtract-2.0-2B",
@@ -246,9 +335,55 @@ NUEXTRACT_2B_SPEC = ExtractionVlmModelSpec(
     max_input_tokens=28672,
 )
 
+NUEXTRACT_3_SPEC = ExtractionVlmModelSpec(
+    name="NuExtract3",
+    preparation="nuextract",
+    accepts_image=True,
+    accepts_text=True,
+    default_repo_id="numind/NuExtract3",
+    revision="c99dc8f5641b866aa0192b6ea78f84bf9f3535f1",
+    prompt="",
+    torch_dtype="bfloat16",
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+    extra_chat_template_kwargs={"enable_thinking": False, "mode": "structured"},
+    temperature=0.0,
+    max_new_tokens=4096,  # Official non-thinking Transformers example; not measured capacity.
+    # Config context minus output budget; a deployment may impose a smaller limit.
+    max_input_tokens=258048,
+)
+
+LIFT_SPEC = ExtractionVlmModelSpec(
+    name="Lift",
+    prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    preparation="generic_chat",
+    accepts_image=True,
+    accepts_text=True,
+    requires_output_schema=True,
+    default_repo_id="datalab-to/lift",
+    revision="3129597900eb6f84fb4f2c0b240f9a7cfddae595",
+    prompt="Extract structured data from this document according to the provided JSON schema.",
+    torch_dtype="bfloat16",
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+    extra_chat_template_kwargs={"enable_thinking": False},
+    # Pinned tokenizer IDs: <|endoftext|> and <|im_end|>, as in Lift's HF helper.
+    extra_generation_config={"eos_token_id": [248044, 248046]},
+    api_overrides={
+        VlmEngineType.API: ApiModelConfig(
+            params={"stop": ["<|endoftext|>", "<|im_end|>"]}
+        )
+    },
+    temperature=0.0,
+    max_new_tokens=12384,  # Official setting, not measured deployment capacity.
+    max_input_tokens=249760,  # Config context (262144) minus output budget; unmeasured.
+)
+
 GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     name="Granite Vision 4.1",
     prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    preparation="generic_chat",
+    extra_processor_kwargs={"do_pad": True},
     accepts_image=True,
     accepts_text=False,  # Granite cannot take a text payload
     default_repo_id="ibm-granite/granite-vision-4.1-4b",
@@ -262,6 +397,34 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     trust_remote_code=True,
     # Granite-4.1-3B base: 131072-token context minus the 4096 generation budget.
     max_input_tokens=126976,
+)
+
+ExtractionVlmOptions.register_preset(
+    StageModelPreset(
+        preset_id="lift",
+        name="Lift",
+        description=(
+            "Opt-in JSON Schema and example-template extraction (Transformers or vLLM API); "
+            "live deployment unverified; modified OpenRAIL-M weights license."
+        ),
+        model_spec=LIFT_SPEC,
+        default_engine_type=VlmEngineType.TRANSFORMERS,
+        scale=2.0,
+    )
+)
+
+ExtractionVlmOptions.register_preset(
+    StageModelPreset(
+        preset_id="nuextract_3",
+        name="NuExtract3",
+        description=(
+            "Opt-in native-template extraction (Transformers or vLLM API); "
+            "contract tested, live deployment unverified."
+        ),
+        model_spec=NUEXTRACT_3_SPEC,
+        default_engine_type=VlmEngineType.TRANSFORMERS,
+        scale=2.0,
+    )
 )
 
 ExtractionVlmOptions.register_preset(
@@ -305,6 +468,7 @@ NU_EXTRACT_API = ExtractionVlmOptions(
     model_spec=ExtractionVlmModelSpec(
         name="NuExtract 2.0 8B (API)",
         prompt_style=ExtractionPromptStyle.NUEXTRACT,
+        local_preprocessing="tokenizer_qwen",
         accepts_image=True,
         accepts_text=True,
         default_repo_id="numind/NuExtract-2.0-8B",

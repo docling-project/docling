@@ -37,6 +37,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelOptions,
 )
 from docling.datamodel.extraction_options import (
+    NU_EXTRACT_2B_TRANSFORMERS,
     ChannelSelection,
     ExtractionPromptStyle,
     ExtractionVlmModelSpec,
@@ -76,7 +77,6 @@ from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
-    NU_EXTRACT_2B_TRANSFORMERS,
     SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,

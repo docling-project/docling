@@ -104,6 +104,39 @@ Batch sources and targets (S3, presigned URLs, plugin sources) are exposed as
 `BatchSourceRequestInput` / `BatchTargetRequestInput`, `S3Target`,
 `PresignedUrlTarget`, etc. from `docling.service_client`.
 
+## Source extraction
+
+Extraction requires the matching explicit-target Jobkit/Serve implementation.
+It uses the existing source endpoint and job status/result APIs:
+
+```python
+from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+from docling.datamodel.service import ExtractDocumentsOptions, ExtractSourcesRequest
+from docling.service_client import DoclingServiceClient
+
+request = ExtractSourcesRequest(
+    options=ExtractDocumentsOptions(
+        target=ExtractionTarget(template=ExtractionTemplate(
+            format="nuextract", value={"invoice": "string", "total": "number"}
+        )),
+    ),
+    sources=[{"kind": "http", "url": "https://example.com/invoice.pdf"}],
+)
+with DoclingServiceClient(url="https://docling.example.com") as client:
+    result = client.submit_extract(request).result()
+    for document in result.documents:
+        for item in document.items:
+            print(document.source_uri, item.scope, item.extracted_data, item.errors)
+```
+
+`AsyncDoclingServiceClient.submit_extract(request)` is the async equivalent.
+`options.target` carries caller guidance; request-level `target` chooses the
+in-body or storage destination. In-body extraction returns typed document/item
+wire envelopes. Storage destinations return `RawServiceResult` with the response
+bytes/content type; retain the existing artifact handling for those destinations.
+See [extraction.md](extraction.md) for templates, validation, model/channel limits,
+and the separate live-verification status.
+
 ## CLI equivalent
 
 For a one-off remote conversion without writing code:

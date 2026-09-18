@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -18,16 +19,17 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import TextContentItem
-from docling.datamodel.extraction_options import ChannelSelection, ExtractionPromptStyle
-from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
-from docling.datamodel.settings import DEFAULT_PAGE_RANGE, DocumentLimits
-from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
-from docling.datamodel.vlm_model_specs import (
+from docling.datamodel.extraction_options import (
     GRANITE_VISION_4_1_API,
     GRANITE_VISION_4_1_TRANSFORMERS,
     NU_EXTRACT_2B_TRANSFORMERS,
     NU_EXTRACT_API,
+    ChannelSelection,
+    ExtractionPromptStyle,
 )
+from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, DocumentLimits
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.api_extraction_model import ApiExtractionVlmModel
@@ -48,6 +50,7 @@ def _pipeline_shell(
             vlm_options=spec,
             input_channels=channel,
             markdown_params=markdown_params,
+            document_timeout=None,
         ),
     )
     return pipeline
@@ -94,11 +97,17 @@ def _get_text_for_range(doc: _Doc, page_range: tuple[int, int]) -> str:
         format=InputFormat.DCLX,
         limits=DocumentLimits(page_range=page_range),
     )
-    return pipeline._get_text_from_input(cast(InputDocument, input_doc))
+    start, end = input_doc.limits.page_range
+    return pipeline._serialize_doc(
+        doc, pages={p for p in doc.pages if start <= p <= end}
+    )
 
 
-def test_text_channel_default_range_serializes_whole_document() -> None:
-    assert _get_text_for_range(_Doc([1, 2, 3]), DEFAULT_PAGE_RANGE) == "<all>"
+def test_text_channel_default_range_serializes_all_pages() -> None:
+    assert (
+        _get_text_for_range(_Doc([1, 2, 3]), DEFAULT_PAGE_RANGE)
+        == "<p1>\n\n<p2>\n\n<p3>"
+    )
 
 
 def test_text_channel_restricts_to_page_range() -> None:
@@ -161,22 +170,19 @@ def test_static_channel_capability_rejected_at_construction() -> None:
 
 
 def test_markdown_uses_normalized_source_text() -> None:
-    pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
-    assert pipeline._get_text_from_input(in_doc) == _MD_FIXTURE.read_text(
-        encoding="utf-8"
-    )
+    assert in_doc._backend.markdown == _MD_FIXTURE.read_text(encoding="utf-8")
 
 
 def test_docx_serialized_to_markdown() -> None:
     pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
     in_doc = _input(_DOCX_FIXTURE, InputFormat.DOCX, MsWordDocumentBackend)
-    text = pipeline._get_text_from_input(in_doc)
+    text = pipeline._serialize_doc(in_doc._backend.convert())
     assert text.strip()
 
 
 def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
-    from docling.utils import api_nuextract_request as mod
+    from docling.utils import api_extraction_request as mod
 
     captured: dict = {}
 
@@ -186,9 +192,10 @@ def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "_post_openai_chat_completion", _post)
 
-    mod.api_nuextract_request(
+    mod.api_extraction_request(
         content_items=[TextContentItem(text="hello doc")],
-        template='{"title": "string"}',
+        prompt="",
+        chat_template_kwargs={"template": '{"title": "string"}'},
         url=cast(ApiVlmEngineOptions, NU_EXTRACT_API.engine_options).url,
         model="numind/NuExtract-2.0-8B",
     )
@@ -201,18 +208,22 @@ def test_nuextract_request_carries_template_out_of_band(monkeypatch) -> None:
     assert payload["model"] == "numind/NuExtract-2.0-8B"
 
 
-def test_text_extraction_maps_to_single_page() -> None:
+def test_unpaginated_text_extraction_maps_to_document_scope() -> None:
     from docling.datamodel.base_models import VlmPrediction, VlmStopReason
-    from docling.datamodel.extraction import ExtractionResult
+    from docling.datamodel.extraction import (
+        DocumentExtractionResult,
+        ExtractionTarget,
+        ExtractionTemplate,
+    )
 
     pipeline = _pipeline_shell(NU_EXTRACT_2B_TRANSFORMERS)
     seen: dict = {}
 
     class _StubModel:
-        def process(self, requests, template):
+        def process(self, requests, target):
             reqs = [list(r) for r in requests]
             seen["requests"] = reqs
-            seen["template"] = template
+            seen["target"] = target
             return [
                 VlmPrediction(
                     text='{"title": "Duck"}', stop_reason=VlmStopReason.END_OF_SEQUENCE
@@ -221,15 +232,23 @@ def test_text_extraction_maps_to_single_page() -> None:
 
     pipeline.vlm_model = cast(BaseVlmModel, _StubModel())
     in_doc = _input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
-    ext_res = ExtractionResult(input=in_doc)
+    ext_res = DocumentExtractionResult(input=in_doc)
 
-    pipeline._extract_via_text(ext_res, prompt='{"title": "string"}')
+    pipeline._extract_data(
+        ext_res,
+        target=ExtractionTarget(
+            template=ExtractionTemplate(format="nuextract", value={"title": "string"})
+        ),
+    )
 
-    assert len(ext_res.pages) == 1
-    page = ext_res.pages[0]
-    assert page.page_no == 1
+    assert len(ext_res.items) == 1
+    page = ext_res.items[0]
+    assert page.scope.kind == "document"
     assert page.extracted_data == {"title": "Duck"}
     assert page.raw_text == '{"title": "Duck"}'
+    assert json.loads(seen["target"].chat_template_kwargs["template"]) == {
+        "title": "string"
+    }
     assert len(seen["requests"][0]) == 1
     assert isinstance(seen["requests"][0][0], TextContentItem)
 
@@ -237,24 +256,33 @@ def test_text_extraction_maps_to_single_page() -> None:
 def test_api_failure_makes_text_extraction_fail(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from docling.datamodel.extraction import ExtractionResult
+    from docling.datamodel.extraction import (
+        DocumentExtractionResult,
+        ExtractionTarget,
+        ExtractionTemplate,
+    )
     from docling.models.extraction import api_extraction_model as mod
 
     def _fail(**_kwargs):
         raise RuntimeError("service unavailable")
 
-    monkeypatch.setattr(mod, "api_nuextract_request", _fail)
+    monkeypatch.setattr(mod, "api_extraction_request", _fail)
     pipeline = ExtractionVlmPipeline(
         VlmExtractionPipelineOptions(
             vlm_options=NU_EXTRACT_API,
             enable_remote_services=True,
         )
     )
-    result = ExtractionResult(
+    result = DocumentExtractionResult(
         input=_input(_MD_FIXTURE, InputFormat.MD, MarkdownDocumentBackend)
     )
 
-    pipeline._extract_via_text(result, prompt="{}")
+    pipeline._extract_data(
+        result,
+        target=ExtractionTarget(
+            template=ExtractionTemplate(format="nuextract", value={})
+        ),
+    )
 
-    assert result.pages[0].errors == ["service unavailable"]
+    assert result.items[0].errors == ["service unavailable"]
     assert pipeline._determine_status(result) == ConversionStatus.FAILURE

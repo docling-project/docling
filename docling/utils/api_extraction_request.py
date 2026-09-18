@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Build and send OpenAI-compatible NuExtract requests."""
+"""Encode ordered extraction content using the explicit vLLM chat contract."""
 
 import base64
+from copy import deepcopy
 from io import BytesIO
 from typing import Any
 
@@ -15,6 +16,7 @@ from docling.datamodel.extraction import (
     ImageContentItem,
     TextContentItem,
 )
+from docling.datamodel.extraction_options import _reject_request_fields
 from docling.utils.api_image_request import _post_openai_chat_completion
 
 
@@ -32,10 +34,12 @@ def _content_item_to_openai(item: ContentItem) -> dict[str, Any]:
     raise ValueError(f"Unsupported content item: {type(item)}")
 
 
-def api_nuextract_request(
+def api_extraction_request(
     content_items: list[ContentItem],
     *,
-    template: str,
+    prompt: str,
+    chat_template_kwargs: dict[str, Any],
+    constraint_schema: dict[str, Any] | None = None,
     url: AnyUrl,
     timeout: float = 120,
     headers: dict[str, str] | None = None,
@@ -43,18 +47,24 @@ def api_nuextract_request(
     token_extract_key: str | None = None,
     **params: Any,
 ) -> ApiImageRequestResult:
-    """POST one NuExtract request: document item(s) in content, template out-of-band."""
+    """POST once through the shared transport; never retry without constraints."""
+    _reject_request_fields(params)
+    content = [_content_item_to_openai(item) for item in content_items]
+    if prompt:
+        content.append({"type": "text", "text": prompt})
+    payload = {**deepcopy(params), "messages": [{"role": "user", "content": content}]}
+    if chat_template_kwargs:
+        payload["chat_template_kwargs"] = deepcopy(chat_template_kwargs)
+    if constraint_schema is not None:
+        payload["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "extraction",
+                "schema": deepcopy(constraint_schema),
+            },
+        }
     return _post_openai_chat_completion(
-        payload={
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [_content_item_to_openai(i) for i in content_items],
-                }
-            ],
-            "chat_template_kwargs": {"template": template},
-            **params,
-        },
+        payload=payload,
         url=url,
         timeout=timeout,
         headers=headers,
