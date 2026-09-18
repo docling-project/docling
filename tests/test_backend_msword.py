@@ -1874,3 +1874,37 @@ def test_fragment_only_rel_does_not_crash_backend():
         if isinstance(item, TextItem)
     ]
     assert any("Hello, world!" in t for t in texts)
+
+
+@pytest.mark.parametrize("attr", ["y", "top", "positionY", "y-position"])
+def test_get_paragraph_position_keeps_a_negative_sign(attr: str):
+    """A shape anchored above its reference point carries a legal negative offset.
+
+    The position feeds the top-to-bottom sort of floating textbox paragraphs, so
+    dropping the sign moves such a shape to the wrong end of the document.
+    """
+    from lxml import etree
+
+    from docling.backend.msword_backend import MsWordDocumentBackend
+
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+    elem = etree.fromstring(
+        f'<p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+        f' {attr}="-45.5"/>'
+    )
+
+    assert MsWordDocumentBackend._get_paragraph_position(backend, elem) == -45.5
+
+
+def test_get_paragraph_position_still_strips_units():
+    from lxml import etree
+
+    from docling.backend.msword_backend import MsWordDocumentBackend
+
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+    elem = etree.fromstring(
+        '<p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+        ' y="45.5pt"/>'
+    )
+
+    assert MsWordDocumentBackend._get_paragraph_position(backend, elem) == 45.5
