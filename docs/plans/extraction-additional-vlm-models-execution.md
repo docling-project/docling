@@ -1,6 +1,6 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-18. Stages 0–5 and 8–9 are implementation-complete. Stage 1 is committed
+Updated 2026-09-18. Stages 0–5 and 8–10 are implementation-complete. Stage 1 is committed
 at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
 `b0e888f846d82c24b5ba64e587f1dd64bd568c5f`; stage 3 at
 `cd550410f9715f730f7ef5bb88ac533580706a19`; stage 4 at
@@ -9,8 +9,12 @@ at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
 `c2d5347b7534972b3e8c7282236b7515e09b1e4f`. Stage 9 is signed off in Jobkit at
 `a833735833a1299d5a6878433e99bfdcb80e1629`. The user deferred stages 6–7
 (Qwen3.5 and Gemma) and authorized proceeding through stages 8–10 instead.
-**Next: stage 10**, using
-[the stage 10 prompt](extraction-additional-vlm-models-stage10-resumption.md).
+**Stage 10: reviewed and signed off.** Serve checkpoint:
+`00cd751c682b24d2be9d25c95d9b8770d2d4c93c`; shared followups: Docling
+`bb6ef8b5020ffcb3f90529ad341b7c7456367515`, Jobkit
+`7f641bf7e701d9f1411afc8b6b89e526b57a94fb`.
+Stage 11 remains pending and is not authorized for automatic dispatch; use
+[its continuation](extraction-additional-vlm-models-stage11-resumption.md) only when requested.
 NuExtract3 Transformers/vLLM integration is contract-tested, not live verified;
 the recorded LM Studio deployment is incompatible with caller template delivery.
 No push, publication or production default change is authorized.
@@ -134,8 +138,8 @@ Stages 4–7 implement each documented model contract; live verification is sepa
 | 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Deferred by user |
 | 7 | Docling | Gemma template/processor/response integration and offline contracts | F: Gemma | Deferred by user |
 | 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Done; signed parent checkpoint recorded |
-| 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Done (implementation); parent review/signoff pending |
-| 10 | Serve | Admission/OpenAPI/endpoint migration and authorization | G: Serve | Pending |
+| 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Done; signed off |
+| 10 | Serve | Admission/OpenAPI/endpoint migration and authorization | G: Serve | Done; signed off |
 | 11 | All | Exact-source end-to-end verification and final audit | G: closure | Pending |
 
 ### 1. Define the contract and prepare targets
@@ -1092,3 +1096,153 @@ Next: parent review/signoff, then stage 10 only using
 Stage 6–7 Qwen3.5/Gemma remain deferred, stage 11 remains pending. NuExtract3
 Transformers/vLLM and Lift live verification remain unrun; installed NuExtract3
 LM Studio remains incompatible. Production enablement is separate.
+
+## Stage 10 checkpoint — Serve admission and shared preflight
+
+Implementation is complete and parent review passed. Signed checkpoints:
+Serve `00cd751c682b24d2be9d25c95d9b8770d2d4c93c`, Docling API preflight
+`bb6ef8b5020ffcb3f90529ad341b7c7456367515`, Jobkit startup resolution
+`7f641bf7e701d9f1411afc8b6b89e526b57a94fb`.
+Started from Serve `cau/extract-endpoint` clean tracked HEAD
+`e9820f6069122cd1c771d1147942a0a7a9d4b8ad`, exact signed Jobkit stage 9
+`a833735833a1299d5a6878433e99bfdcb80e1629`, and Docling tracking
+`99e3e8d634657c818de37a8256e52ac16d4c2315` (production source stage 8
+`c2d5347b7534972b3e8c7282236b7515e09b1e4f`; intervening changes docs only).
+All pre-existing untracked material is preserved. No commits, push/publication,
+Core changes/overrides, dependency sync/pins/builds, weights, live extraction
+inference, callbacks or production enablement were performed by the worker.
+
+Serve now validates channels via Docling `VlmExtractionPipelineOptions`, guidance
+via `prepare_target`, constrained schemas via `prepare_output_target`, and API
+transport options via `prepare_api_request_options` before enqueue. The last
+helper is a parent-authorized minimal factoring of the existing API adapter
+`_request_options` logic into Docling: reserved request-field collisions, merged
+chat kwargs, NuExtract structured mode and named API engines unable to deliver
+chat-template kwargs all retain the existing runtime semantics. Adapter calls
+still honor its public `params`; target guidance and returned mappings remain
+call-owned. Serve duplicates no schema/dialect/decoder/transport policy and
+constructs no pipeline/model for admission.
+
+Parent authorized a small Jobkit followup: `resolve_extraction_model(options=None)`
+resolves stable configured default and prompt-only mode without fabricating a
+request target. Existing request/custom/preset/engine/remote policy checks remain.
+Serve startup uses that path, including generic and schema-required model defaults.
+The endpoint/result implementations already consume canonical service DTOs;
+no application/settings/response rewrite was needed. README describes tagged
+guidance versus destination, output mode, item scopes and eventual release minimums.
+
+Changed paths are explicit:
+
+- Serve: `README.md`, `docling_serve/policy.py`, `tests/test_service_policy.py`,
+  new `tests/test_extraction_admission.py`.
+- Jobkit followup: `docling_jobkit/convert/extraction_manager.py`,
+  `tests/test_extraction_manager.py`.
+- Docling followup: `docling/models/extraction/{prompt_utils,api_extraction_model}.py`,
+  `tests/test_extraction_api.py`; tracking: this ledger and new stage 11 prompt.
+
+### Stage 10 environment and validation
+
+Serve uses its existing Python 3.12.7 environment, installed metadata Docling slim
+2.124.0, Jobkit 3.5.0, published Core 2.93.0, FastAPI 0.136.3, pytest 9.1.1.
+Exact imported Docling/Jobkit packages are respectively
+`/Users/cau/Documents/Development/docling-second/docling/__init__.py` and
+`/Users/cau/Documents/Development/docling-jobkit/docling_jobkit/__init__.py`.
+Core is `/Users/cau/Documents/Development/docling-serve/.venv/lib/python3.12/site-packages/docling_core/__init__.py`.
+Docling followup tests use existing `docling_release/.venv` Python 3.13.5 and
+published Core 2.96.0 from that environment's site-packages, with exact Docling
+source. Jobkit followup uses its existing stage 9 environment (Core 2.92.0).
+These are source-contract checks with stale installed Docling/Jobkit metadata,
+not a synchronized release matrix. Serve's declared Docling >=2.127.0 and Jobkit
+>=3.7.0 must advance to the first published contract releases when known; no
+invented release versions or persistent local path pins were added.
+
+Serve commands run from its checkout with `CI=1 HF_HUB_OFFLINE=1` and
+`PYTHONPATH=/Users/cau/Documents/Development/docling-serve:/Users/cau/Documents/Development/docling-jobkit:/Users/cau/Documents/Development/docling-second`:
+
+```sh
+.venv/bin/python -m pytest -q --maxfail=0 tests/test_service_policy.py tests/test_extraction_admission.py
+.venv/bin/python -m pytest -q --maxfail=0 \
+  tests/test_service_policy.py tests/test_extraction_admission.py tests/test_batch_endpoint.py \
+  tests/test_allow_custom_config_settings.py tests/test_azure_presigned_storage.py \
+  tests/test_cli_subprocess_settings.py tests/test_config_file_loading.py tests/test_env_parsing.py \
+  tests/test_error_message_propagation.py tests/test_form_field_defaults.py \
+  tests/test_form_options_validation.py tests/test_heading_hierarchy_options.py \
+  tests/test_orchestrator_factory_slice_parallelism.py tests/test_otel_filtering.py \
+  tests/test_ray_metrics_collector.py tests/test_rq_job_timeout.py tests/test_rq_plugin_policy.py \
+  tests/test_rq_queue_name.py tests/test_websocket_notifier.py tests/test_failure_ttl.py \
+  -k 'not test_batch_endpoint_accepts_s3_source_with_s3_target and not test_batch_endpoint_accepts_http_source_with_presigned_target and not test_batch_endpoint_accepts_new_expandable_sources_with_storage_target and not test_batch_endpoint_resolves_plugin_source_and_target and not test_non_batch_convert_enqueues_kind_bearing_sources and not test_convert_source_accepts_file_when_file_excluded_from_allowed_source_types and not test_nonexistent_config_file_ignored and not test_invalid_yaml_ignored and not test_ray_config_passes_presigned_storage_when_enabled and not test_filtered_paths_constant'
+.venv/bin/python -m mypy docling_serve
+UV_NO_SYNC=1 UV_OFFLINE=1 UV_CACHE_DIR=/tmp/serve-stage10-uv-cache \
+  SKIP=update-docs-common-parameters .venv/bin/pre-commit run --files \
+  README.md docling_serve/policy.py tests/test_service_policy.py tests/test_extraction_admission.py
+.venv/bin/pre-commit run uv-lock --files pyproject.toml uv.lock
+```
+
+Focused: **99 passed**, 270 warnings, exit 0. Final applicable offline selection:
+**226 passed, 12 deselected**, 312 warnings, exit 0. Tests cover mandatory/tagged
+native/example/schema-only targets, malformed/unknown fields, schemas/references,
+channels, modes, decoder constructs, API reserved/mode/engine collisions, exact
+forwarding and call isolation. OpenAPI advertises target/output mode/canonical
+items and scopes. Extraction/presigned/remote/failure result unions retain durable
+source identity, absolute/document scopes, validation/usage/raw errors and partial
+counts. Same-tenant access works; wrong/default tenants are denied before fetching
+outcomes. API-key rejection and Local/RQ prequeue 501 rejection are covered.
+No duplicate result/item types or runtime input/backends are serialized.
+
+Initial broad selection: 221 passed, 12 failed (before 5 added API preflight cases).
+All 12 reproduce on archived baseline under `/tmp/serve-stage10-baseline`:
+8 stale batch doubles/assertions expect singular `target` while unchanged production
+passes `targets`; 2 config tests expect missing/invalid YAML ignored while settings
+fail fast; 1 S3 region mismatch; 1 OTEL expectation omits `/ready`. Archive baseline
+had one explicit compatibility accommodation: replace only old startup
+`ExtractDocumentsOptions(template={})` resolution with no-argument stable resolution,
+so unchanged batch behavior can be compared against mandatory-target sources.
+It is not claimed as an untouched full-startup baseline. Baseline command uses
+those four modules and the ten excluded names joined with `or`; **12 failed,
+46 deselected**, exit 1. No unrelated fixes or skipped model-running integration
+modules are presented as passing.
+
+Full Serve MyPy: **26 files pass**. Native Ruff/Vale pass. Docs-generation hook
+rewrites unrelated conversion rows; identical generated bytes reproduce on archive
+with tracked files (**exit 1**). Restored only previously clean `docs/usage.md` and
+skipped that proven unrelated hook. Native uv-lock has identical macOS
+system-configuration NULL-object panic on current/baseline (**exit 1**); no lock
+changes. Jobkit native Ruff and scoped MyPy pass; full MyPy retains the same four
+untouched S3 helper errors proven at stage 9. Followup focused command remains
+`CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=<Jobkit>:<Docling> .venv/bin/python -m pytest -q tests/test_extraction_manager.py tests/test_presigned_target_results.py`:
+**40 passed**, 402 warnings, exit 0.
+
+Docling affected command, from its checkout with `CI=1 HF_HUB_OFFLINE=1
+DOCLING_GEN_TEST_DATA=0 PYTHONPATH=/Users/cau/Documents/Development/docling-second`:
+
+```sh
+/Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_api.py tests/test_extraction_templates.py tests/test_extraction_stage3.py \
+  tests/test_extraction_transformers_model.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_text_channel.py tests/test_extraction_dclx.py \
+  tests/test_build_generation_config.py tests/test_api_image_request.py \
+  tests/test_extraction_service_contract.py
+CI=1 HF_HUB_OFFLINE=1 UV_NO_SYNC=1 make validate
+```
+
+Docling tests: **315 passed**, 92 warnings, exit 0. Sandbox import initially aborted
+in installed MLX/Metal (**exit 134**); authorized offline rerun outside sandbox passes.
+Required Docling hooks ran outside sandbox because installed prek cache log is
+outside writable roots. Reviewed import/formatter fixes and reran required hooks.
+Final required hook rerun passes all applicable checks, including ty/Tach/coverage
+and max-lines; existing installed-hook cache metadata warnings remain non-fatal.
+Logs: `/tmp/serve-stage10-{focused-final,offline-final,baseline-tests,hooks-final,baseline-doc-hook-tracked,lock-hook,baseline-lock-hook}.log`,
+`/tmp/jobkit-stage10-{focused-final,hooks-final,scoped-mypy}.log`,
+`/tmp/docling-stage10-{extraction-final,validate-final}.log`.
+Whitespace and explicit changed-path audits pass; all unrelated material is preserved.
+
+Parent commit hooks passed Docling's full applicable checks and Serve Ruff/MyPy/Vale.
+Jobkit skipped only the reproduced full MyPy S3 debt (`SKIP=system`), after scoped
+MyPy passed. Serve skipped only the reproduced unrelated documentation generation
+and lock crash (`SKIP=update-docs-common-parameters,uv-lock`). All three production
+checkouts have clean tracked state; unrelated untracked material remains. No push.
+
+Stage 11 is **pending, not dispatched**, with its self-contained
+[continuation](extraction-additional-vlm-models-stage11-resumption.md).
+Stages 6–7 remain user-deferred. NuExtract3 Transformers/vLLM and Lift live gates
+remain unrun; the recorded NuExtract3 LM Studio deployment remains incompatible.
