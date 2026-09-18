@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import subprocess
@@ -13,11 +14,34 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Callable, Final, Optional
 
-import pypdfium2
 from PIL import Image, ImageChops
 
 if TYPE_CHECKING:
     from docx.document import Document
+
+# pypdfium2 ships with the PDF extras, not with format-docx/pptx/xlsx, but this
+# module is imported eagerly by the Word, PowerPoint, and Excel backends. A
+# module-level import therefore breaks those backends on installs that omit the
+# PDF extras. Guard it here and report the absence once from
+# `get_docx_to_pdf_converter`, which every caller goes through.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError:  # pragma: no cover - import-time guard
+    pass
+
+_PYPDFIUM2_INSTALL_HINT = (
+    "The 'pypdfium2' package is required to rasterize the PDF that LibreOffice "
+    "produces, so charts and EMF/WMF pictures will be skipped. Install it with "
+    "`pip install 'docling-slim[format-pdf-pypdfium2]'`."
+)
+
+_log = logging.getLogger(__name__)
+
+_pypdfium2_warning_emitted = False
 
 LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 """Maximum seconds to wait for a single LibreOffice conversion.
@@ -159,8 +183,17 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
     The returned function accepts (input_path, output_path).
-    Returns None if no tool is available.
+    Returns None if no tool is available, or if pypdfium2 is missing: every caller
+    rasterizes the resulting PDF with it, so the conversion would be useless.
     """
+    # Every consumer feeds the LibreOffice PDF straight into pypdfium2, so report
+    # the missing package here once rather than in each backend.
+    global _pypdfium2_warning_emitted
+    if not _PYPDFIUM2_AVAILABLE:
+        if not _pypdfium2_warning_emitted:
+            _log.warning(_PYPDFIUM2_INSTALL_HINT)
+            _pypdfium2_warning_emitted = True
+        return None
 
     # Try LibreOffice
     libreoffice_cmd = get_libreoffice_cmd()

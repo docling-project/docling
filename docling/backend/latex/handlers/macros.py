@@ -9,7 +9,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-import pypdfium2
 from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
@@ -53,6 +52,24 @@ except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
 _log = logging.getLogger(__name__)
+
+# pypdfium2 ships with the PDF extras, not with format-latex. Only \includegraphics
+# of a .pdf file needs it, so guard the import and report it on that path instead
+# of breaking every LaTeX conversion at import time.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+_PYPDFIUM2_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _PYPDFIUM2_IMPORT_ERROR = e
+
+_PYPDFIUM2_INSTALL_HINT = (
+    "The 'pypdfium2' package is required to embed PDF images from LaTeX "
+    "sources. Install it with `pip install 'docling-slim[format-pdf-pypdfium2]'`."
+)
 
 
 class MacroHandlerMixin:
@@ -331,6 +348,10 @@ class MacroHandlerMixin:
                         if img_full_path.exists():
                             suffix = img_full_path.suffix.lower()
                             if suffix == ".pdf":
+                                if not _PYPDFIUM2_AVAILABLE:
+                                    raise ImportError(
+                                        _PYPDFIUM2_INSTALL_HINT
+                                    ) from _PYPDFIUM2_IMPORT_ERROR
                                 pdf = pypdfium2.PdfDocument(img_full_path)
                                 page = pdf[0]
                                 pil_image = page.render(scale=2).to_pil()

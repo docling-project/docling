@@ -16,7 +16,6 @@ from tempfile import mkdtemp
 from typing import Annotated, Any, Callable, Final, cast
 from zipfile import ZipFile
 
-import pypdfium2
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -59,6 +58,16 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
+# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
+# None when it is missing, so the rendering paths already degrade to "no image";
+# this guard only keeps the module itself importable.
+# See https://github.com/docling-project/docling/issues/3613.
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+except ImportError:  # pragma: no cover - import-time guard
+    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -1139,7 +1148,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice is not available.
+            A converter callable, or None when LibreOffice or pypdfium2 is not
+            available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
