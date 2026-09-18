@@ -25,6 +25,7 @@ from docling.datamodel.extraction_options import (
     _merge_chat_options,
     _reject_request_fields,
 )
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.extraction.template_utils import (
     _schema_to_nuextract,
     _vllm_constraint_schema,
@@ -168,6 +169,56 @@ def prepare_output_target(
     return replace(
         target, constraint_schema=_vllm_constraint_schema(target.target.output_schema)
     )
+
+
+def prepare_api_request_options(
+    target: _PreparedTarget,
+    model_spec: ExtractionVlmModelSpec,
+    engine_options: ApiVlmEngineOptions,
+    params: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Preflight API transport options without constructing a model or engine."""
+    model_params = model_spec.get_api_params(engine_options.engine_type)
+    engine_params = engine_options.params
+    for mapping in (model_params, engine_params):
+        _reject_request_fields(mapping)
+    dynamic = {
+        key: value
+        for key, value in target.chat_template_kwargs.items()
+        if key in {"template", "instructions"}
+    }
+    defaults = {
+        key: value
+        for key, value in target.chat_template_kwargs.items()
+        if key not in dynamic
+    }
+    chat = _merge_chat_options(
+        defaults,
+        model_params.get("chat_template_kwargs", {}),
+        engine_params.get("chat_template_kwargs", {}),
+    )
+    if (
+        model_spec.preparation == "nuextract"
+        and chat.get("mode", "structured") != "structured"
+    ):
+        raise ValueError("NuExtract extraction requires structured mode")
+    chat.update(deepcopy(dynamic))
+    if chat and engine_options.engine_type != VlmEngineType.API:
+        raise ValueError(
+            "chat_template_kwargs require the explicitly configured vLLM API engine"
+        )
+    owned_params = deepcopy(
+        params
+        if params is not None
+        else {
+            "temperature": model_spec.temperature,
+            "max_tokens": model_spec.max_new_tokens,
+            **model_params,
+            **engine_params,
+        }
+    )
+    owned_params.pop("chat_template_kwargs", None)
+    return owned_params, chat
 
 
 def build_content_messages(

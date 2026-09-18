@@ -611,3 +611,40 @@ def test_lift_schema_and_template_preflight_before_http(extraction_http, output_
             options.model_spec,
         )
     post.assert_not_called()
+
+
+def test_api_preflight_matches_adapter_and_owns_per_call_options():
+    from copy import deepcopy
+
+    from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+    from docling.models.extraction.prompt_utils import (
+        prepare_api_request_options,
+        prepare_target,
+    )
+
+    model = _api_model(
+        preparation="nuextract",
+        params={"chat_template_kwargs": {"nested": {"engine": True}}},
+    )
+    prepared = prepare_target(
+        ExtractionTarget(
+            template=ExtractionTemplate(format="nuextract", value={"total": "number"}),
+            instructions="Extract only total.",
+        ),
+        model.model_spec,
+    )
+    original_params = deepcopy(model.params)
+    original_chat = deepcopy(prepared.chat_template_kwargs)
+    params, chat = prepare_api_request_options(
+        prepared, model.model_spec, model.engine_options
+    )
+    assert (params, chat) == model._request_options(prepared)
+    assert "Extract only total." in chat["instructions"]
+    assert chat["nested"] == {"engine": True}
+    chat["nested"]["engine"] = False
+    params["max_tokens"] = 1
+    assert model.params == original_params
+    assert prepared.chat_template_kwargs == original_chat
+    assert (
+        model.engine_options.params["chat_template_kwargs"]["nested"]["engine"] is True
+    )

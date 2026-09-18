@@ -16,18 +16,16 @@ from docling.datamodel.base_models import VlmPrediction
 from docling.datamodel.extraction import ContentItem, ImageContentItem
 from docling.datamodel.extraction_options import (
     ExtractionVlmOptions,
-    _merge_chat_options,
-    _reject_request_fields,
 )
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
     _PreparedTarget,
+    prepare_api_request_options,
     prepare_output_target,
     prepared_image_prompt,
 )
-from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.utils.api_extraction_request import api_extraction_request
 
 
@@ -81,38 +79,9 @@ class ApiExtractionVlmModel(BaseVlmModel):
     def _request_options(
         self, target: _PreparedTarget
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        model_params = self.model_spec.get_api_params(self.engine_options.engine_type)
-        engine_params = self.engine_options.params
-        for mapping in (model_params, engine_params):
-            _reject_request_fields(mapping)
-        dynamic = {
-            key: value
-            for key, value in target.chat_template_kwargs.items()
-            if key in {"template", "instructions"}
-        }
-        defaults = {
-            key: value
-            for key, value in target.chat_template_kwargs.items()
-            if key not in dynamic
-        }
-        chat = _merge_chat_options(
-            defaults,
-            model_params.get("chat_template_kwargs", {}),
-            engine_params.get("chat_template_kwargs", {}),
+        return prepare_api_request_options(
+            target, self.model_spec, self.engine_options, self.params
         )
-        if (
-            self.model_spec.preparation == "nuextract"
-            and chat.get("mode", "structured") != "structured"
-        ):
-            raise ValueError("NuExtract extraction requires structured mode")
-        chat.update(deepcopy(dynamic))
-        if chat and self.engine_options.engine_type != VlmEngineType.API:
-            raise ValueError(
-                "chat_template_kwargs require the explicitly configured vLLM API engine"
-            )
-        params = deepcopy(self.params)
-        params.pop("chat_template_kwargs", None)
-        return params, chat
 
     def _run(
         self,
