@@ -86,7 +86,7 @@ RapidOcrOptions(lang=["iso:zh-Hans"]).lang # -> ["iso:zh-Hans"], the same PP-OCR
 Two cases need the bare code:
 
 - the model has no `(language, script)` name at all -- see
-  [Models no tag can name](#models-no-tag-can-name)
+  [Models no tag can name](#when-an-engine-has-no-model)
 - you want the engine's reading of a code that is also a tag for something else -- see
   [Codes that shadow a tag](#codes-that-shadow-a-tag)
 
