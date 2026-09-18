@@ -35,6 +35,7 @@ from docling_core.types.doc import (
     TableData,
     TableItem,
     TabularChartMetaField,
+    TextItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from lxml import etree
@@ -789,13 +790,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The list group to use (either reused or newly created).
         """
         if self._can_reuse_list_group(numid, parent):
-            # When reusing a list group, remove any empty text item that was added
-            # between the last list item and this one (from closing the list)
-            if doc.texts and len(doc.texts) > 0:
-                last_text = doc.texts[-1]
-                if not last_text.text or not last_text.text.strip():
-                    doc.delete_items(node_items=[last_text])
-            return self.last_list_group
+            # Reuse only if nothing but empty paragraphs (added when the list was
+            # closed) follows the cached group in its parent. Otherwise the new
+            # items would be placed before the intervening content, e.g. a table.
+            container = parent if parent is not None else doc.body
+            trailing_empty: list[TextItem] = []
+            for ref in reversed(container.children):
+                item = ref.resolve(doc)
+                if isinstance(item, TextItem) and not item.text.strip():
+                    trailing_empty.append(item)
+                    continue
+                if item.self_ref == self.last_list_group.self_ref:
+                    if trailing_empty:
+                        doc.delete_items(node_items=trailing_empty)
+                    return self.last_list_group
+                break
 
         list_gr = doc.add_list_group(
             name="list",
