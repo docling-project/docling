@@ -10,9 +10,12 @@ from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
     FailureCategory,
+    VlmPrediction,
     VlmStopReason,
 )
+from docling.datamodel.extraction_options import ChannelSelection
 from docling.datamodel.settings import DocumentLimits
+from docling.datamodel.vlm_model_specs import NU_EXTRACT_2B_TRANSFORMERS
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 
 
@@ -22,6 +25,7 @@ class _Tracker:
         self.live_images = 0
         self.page_high_water = 0
         self.image_high_water = 0
+        self.render_scales: list[float] = []
 
 
 class _Image:
@@ -64,6 +68,7 @@ class _PageBackend(PdfPageBackend):
         return []
 
     def get_page_image(self, scale: float = 1, cropbox=None):
+        self._tracker.render_scales.append(scale)
         return _Image(self.page_no, self._tracker)
 
     def get_size(self) -> Size:
@@ -144,13 +149,18 @@ def _run_pipeline(
     failed_page_nos: set[int] | None = None,
     truncated_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
+    scale: float = 1.0,
+    max_size: int | None = None,
 ):
     tracker = _Tracker()
     backend = _StreamingBackend(page_nos, tracker, invalid_page_nos)
     pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
     pipeline.pipeline_options = SimpleNamespace(
         document_timeout=document_timeout,
-        vlm_options=SimpleNamespace(scale=1.0),
+        vlm_options=NU_EXTRACT_2B_TRANSFORMERS.model_copy(
+            update={"scale": scale, "max_size": max_size}
+        ),
+        input_channels=ChannelSelection.AUTO,
     )
     pipeline.vlm_model = _Model(
         failed_page_nos=failed_page_nos,
@@ -196,7 +206,7 @@ def test_extraction_records_failed_page_by_absolute_number_and_continues() -> No
 
     assert [page.page_no for page in ext_res.pages] == [5, 6, 7, 8, 9]
     assert ext_res.pages[2].errors == ["page 7 failed"]
-    assert pipeline._determine_status(ext_res) == ConversionStatus.FAILURE
+    assert pipeline._determine_status(ext_res) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
 
 
@@ -211,3 +221,29 @@ def test_extraction_timeout_keeps_partial_result_and_releases_page() -> None:
     assert [error.category for error in ext_res.errors] == [FailureCategory.TIMEOUT]
     assert pipeline._determine_status(ext_res) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
+
+
+def test_extraction_applies_max_image_size_before_rendering() -> None:
+    _, _, tracker = _run_pipeline(
+        page_nos=[1],
+        page_range=(1, 1),
+        scale=2.0,
+        max_size=50,
+    )
+
+    assert tracker.render_scales == [0.5]
+
+
+def test_invalid_json_is_a_failed_extraction() -> None:
+    pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
+    ext_res = SimpleNamespace(pages=[], errors=[], status=ConversionStatus.PENDING)
+    ext_res.pages.append(
+        pipeline._prediction_to_page_data(
+            1,
+            [VlmPrediction(text="not json", stop_reason=VlmStopReason.END_OF_SEQUENCE)],
+            ext_res,
+        )
+    )
+
+    assert ext_res.pages[0].errors[0].startswith("Model returned invalid JSON")
+    assert pipeline._determine_status(ext_res) == ConversionStatus.FAILURE

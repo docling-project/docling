@@ -11,48 +11,61 @@ from typing import Any
 
 from PIL.Image import Image
 
+from docling.datamodel.extraction import (
+    ContentItem,
+    ImageContentItem,
+    TextContentItem,
+)
 
-def build_nuextract_inputs(
+# Re-exported: the schema-instruction wrapper now lives with the model spec in datamodel.
+from docling.datamodel.extraction_options import _build_extraction_prompt
+
+__all__ = [
+    "_build_extraction_prompt",
+    "build_granite_vision_inputs",
+    "build_nuextract_content_inputs",
+]
+
+
+def _content_item_to_nuextract(item: ContentItem) -> dict[str, Any]:
+    """Map a ContentItem to NuExtract's native content dict."""
+    if isinstance(item, TextContentItem):
+        return {"type": "text", "text": item.text}
+    if isinstance(item, ImageContentItem):
+        return {"type": "image", "image": item.image}
+    raise ValueError(f"Unsupported content item: {type(item)}")
+
+
+def build_nuextract_content_inputs(
     processor: Any,
-    images: list[Image],
+    requests: list[list[ContentItem]],
     templates: list[str],
     device: str,
     extra_processor_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build inputs using the NuExtract-specific template format.
+    """Build NuExtract inputs from ordered content-item requests.
 
-    Requires qwen-vl-utils for vision processing.
+    Each request is a ``list[ContentItem]`` (image and/or text). The template
+    rides the model's own ``template=`` chat kwarg, not the content. Requires
+    qwen-vl-utils only when an image is present.
     """
-    try:
-        from qwen_vl_utils import process_vision_info
-    except ImportError:
-        raise ImportError(
-            "qwen-vl-utils is required for NuExtract extraction. "
-            "Please install it with: pip install qwen-vl-utils"
-        )
-
-    inputs = []
-    for pil_img, template in zip(images, templates):
-        inputs.append(
-            {
-                "document": {"type": "image", "image": pil_img},
-                "template": template,
-            }
-        )
-
-    messages = [[{"role": "user", "content": [x["document"]]}] for x in inputs]
+    messages = [
+        [{"role": "user", "content": [_content_item_to_nuextract(i) for i in req]}]
+        for req in requests
+    ]
 
     texts = [
         processor.tokenizer.apply_chat_template(
-            messages[i],
-            template=x["template"],
+            messages[idx],
+            template=template,
             tokenize=False,
             add_generation_prompt=True,
         )
-        for i, x in enumerate(inputs)
+        for idx, template in enumerate(templates)
     ]
 
-    image_inputs = _process_all_vision_info(messages)
+    has_image = any(isinstance(i, ImageContentItem) for req in requests for i in req)
+    image_inputs = _process_all_vision_info(messages) if has_image else None
 
     processor_inputs = processor(
         text=texts,
@@ -67,23 +80,27 @@ def build_nuextract_inputs(
 def build_granite_vision_inputs(
     processor: Any,
     images: list[Image],
-    templates: list[str],
+    prompts: list[str],
     device: str,
 ) -> dict[str, Any]:
-    """Build inputs using standard chat conversation format with extraction prompt."""
-    extraction_prompts = [_build_extraction_prompt(t) for t in templates]
+    """Build inputs using standard chat conversation format.
 
+    ``prompts`` are the final, ready-to-send prompt strings. The schema-instruction
+    wrapper (:func:`_build_extraction_prompt`) is applied upstream in
+    the extraction pipeline so that every engine (transformers/api/vllm) shares
+    one prompt-construction path; do not wrap again here.
+    """
     conversations = [
         [
             {
                 "role": "user",
                 "content": [
                     {"type": "image"},
-                    {"type": "text", "text": ep},
+                    {"type": "text", "text": prompt},
                 ],
             }
         ]
-        for ep in extraction_prompts
+        for prompt in prompts
     ]
     texts = [
         processor.apply_chat_template(conv, tokenize=False, add_generation_prompt=True)
@@ -97,16 +114,6 @@ def build_granite_vision_inputs(
         do_pad=True,
     )
     return {k: v.to(device) for k, v in processor_inputs.items()}
-
-
-def _build_extraction_prompt(template: str) -> str:
-    return (
-        "Extract structured data from this document image.\n"
-        "Return a JSON object matching this schema:\n\n"
-        f"{template}\n\n"
-        "Return null for fields you cannot find in the document.\n"
-        "Return ONLY valid JSON, no other text."
-    )
 
 
 def _process_all_vision_info(messages: list, examples: list | None = None) -> Any:
