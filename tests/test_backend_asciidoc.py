@@ -68,6 +68,22 @@ def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
     assert [item.text for item in doc.texts] == []
 
 
+def test_incomplete_table_does_not_emit_an_empty_table() -> None:
+    for row in (b"|3", b"2+|wide"):
+        src = b"|===\n|A |B\n" + row + b"\n|===\n"
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(src),
+            format=InputFormat.ASCIIDOC,
+            backend=AsciiDocBackend,
+            filename="single-cell-row.adoc",
+        )
+        doc = in_doc._backend.convert()
+
+        assert len(doc.tables) == 1
+        assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (1, 2)
+        assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
+
+
 def test_auto_numbered_list_keeps_items_and_following_text() -> None:
     source = b"""= Installation Guide
 

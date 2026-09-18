@@ -284,19 +284,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif in_table and (
                 (not self._is_table_line(line)) or line.strip() == "|==="
             ):  # end of table
-                caption = None
-                if len(caption_data) > 0:
-                    caption = doc.add_text(
-                        text=" ".join(caption_data), label=DocItemLabel.CAPTION
-                    )
-
-                caption_data = []
-
-                data = self._populate_table_as_grid(table_data)
-                doc.add_table(
-                    data=data, parent=self._get_current_parent(parents), caption=caption
+                self._add_table_if_nonempty(
+                    doc, table_data, caption_data, self._get_current_parent(parents)
                 )
-
+                caption_data = []
                 in_table = False
                 table_data = []
 
@@ -531,6 +522,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         cells = line.split("|")[1:]
         # Strip whitespace from each cell (empty cells become empty strings)
         return [cell.strip() for cell in cells]
+
+    @staticmethod
+    def _add_table_if_nonempty(doc, table_data, caption_data, parent):
+        if not table_data:
+            return
+
+        caption = None
+        if caption_data:
+            caption = doc.add_text(
+                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+            )
+
+        data = AsciiDocBackend._populate_table_as_grid(table_data)
+        doc.add_table(data=data, parent=parent, caption=caption)
 
     @staticmethod
     def _populate_table_as_grid(table_data):
