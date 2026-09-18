@@ -775,7 +775,10 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
             obj_ext = obj.suffix[1:] if obj.suffix else ""
-            if mime is None:
+            if mime is None or (
+                mime == "image/bmp"
+                and obj_ext.lower() in FormatToExtensions[InputFormat.MD]
+            ):
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
                 mime is not None
@@ -820,7 +823,10 @@ class _DocumentConversionInput(BaseModel):
                 if ("." in obj.name and not obj.name.startswith("."))
                 else ""
             )
-            if mime is None:
+            if mime is None or (
+                mime == "image/bmp"
+                and obj_ext.lower() in FormatToExtensions[InputFormat.MD]
+            ):
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext.lower())
             if mime is not None and mime.lower() == "application/zip":
                 objname = obj.name.lower()
@@ -848,7 +854,8 @@ class _DocumentConversionInput(BaseModel):
             if detected_afp := _DocumentConversionInput._detect_afp(content):
                 mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
-        mime = mime or _DocumentConversionInput._detect_csv(content)
+        if obj_ext is None or obj_ext.lower() not in FormatToExtensions[InputFormat.MD]:
+            mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
