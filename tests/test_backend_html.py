@@ -189,6 +189,45 @@ def test_table_header_rowspan_without_body_does_not_crash():
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
 
 
+def test_table_zero_span_defaults_to_one():
+    # `colspan="0"` and `rowspan="0"` pass the numeric guard in _get_cell_spans,
+    # so the span reaches the grid as 0 and the cell covers no grid position at
+    # all: its text drops out of the table and the cells after it shift into the
+    # place it should have taken.
+    src = b'<table><tr><td colspan="0">A</td><td>B</td></tr></table>'
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_cols == 2
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"]
+    ]
+
+    src = (
+        b'<table><tr><td rowspan="0">A</td><td>B</td></tr>'
+        b"<tr><td>C</td><td>D</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"],
+        ["C", "D"],
+    ]
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (

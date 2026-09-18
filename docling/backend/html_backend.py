@@ -5041,7 +5041,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         This function retrieves the 'colspan' and 'rowspan' attributes from a given
         table cell tag.
-        If the attribute does not exist or it is not numeric, it defaults to 1.
+        If the attribute does not exist, is not numeric, or is zero, it defaults to 1.
         """
         raw_spans: tuple[str, str] = (
             str(cell.get("colspan", "1")),
@@ -5052,7 +5052,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if s and s[0].isnumeric():
                 match = re.search(r"\d+", s)
                 if match:
-                    return int(match.group())
+                    # A span of 0 covers no grid position, so the cell drops out
+                    # of the table and the cells after it shift. HTML5 reads
+                    # rowspan="0" as "span to the end of the row group"; falling
+                    # back to 1 keeps the cell without implementing that rule.
+                    return max(int(match.group()), 1)
             return 1
 
         int_spans: tuple[int, int] = (
