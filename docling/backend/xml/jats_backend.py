@@ -908,16 +908,16 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         caption_node = node.xpath("caption")
-        caption: str | None
+        # A <fig> may carry a <label> and no <caption>, which is common for a
+        # numbered but uncaptioned figure. Default to "" rather than None, or
+        # the f-string below renders the four characters None after the label.
+        caption: str = ""
         if len(caption_node) > 0:
-            caption = ""
             for caption_par in list(caption_node[0]):
                 if caption_par.xpath(".//supplementary-material"):
                     continue
                 caption += JatsDocumentBackend._get_text(caption_par).strip() + " "
             caption = caption.strip()
-        else:
-            caption = None
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
@@ -1178,7 +1178,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            table["label"] = node.xpath("label")[0].text
+            # An empty <label/> has .text of None in lxml. Keep the "" default
+            # so it does not reach the rendered caption as the text None.
+            table["label"] = node.xpath("label")[0].text or ""
 
         try:
             self._add_table(doc, parent, table)
