@@ -2347,6 +2347,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
+            # Same reason as for headings below: the parents stack is cleared here.
+            self.level_at_new_list = None
             te = doc.add_text(
                 parent=None,
                 label=DocItemLabel.TITLE,
@@ -2356,6 +2358,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
+            # _add_heading clears the parents tail; reset list context so the
+            # next list item opens fresh under this heading.
+            self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
