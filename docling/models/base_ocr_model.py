@@ -264,10 +264,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
         1. Start from the layout clusters.
-        2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
-           The following clusters therefore remain:
-           - Clusters without any overlapping PDF cell.
-           - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
+        2. Keep the clusters that need OCR:
+           - Clusters overlapping a bitmap (their text may be rasterised).
+           - Clusters without any visible programmatic text (their text may be
+             vector-outlined, or the region may be empty).
+           Vector shapes alone never force OCR: rules, underlines and table borders
+           routinely cross clusters of perfectly good programmatic text, and OCR-ing
+           those is both slow and lossier than the text layer (#4174, #4139).
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -300,14 +303,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             for i, text_cell in enumerate(text_cells):
                 text_index.insert(i, text_cell.rect.to_bounding_box())
 
-            # Index for the non-text PDF cells: bitmaps, and shapes when available
-            non_text_boxes = list(backend.get_bitmap_rects())
-            shape_boxes = backend.get_connected_shape_bounding_boxes()
-            if shape_boxes is not None:
-                non_text_boxes.extend(shape_boxes)
-
+            # Index for the bitmaps. Shapes are deliberately left out (see docstring).
             non_text_index = BoundingBoxSpatialIndex()
-            for i, bbox in enumerate(non_text_boxes):
+            for i, bbox in enumerate(backend.get_bitmap_rects()):
                 non_text_index.insert(i, bbox)
 
         # Collect the non-eliminated cluster bboxes
@@ -316,16 +314,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cluster_bbox = cluster.bbox
 
             if use_backend_queries:
-                has_non_text = backend.has_content_in(
-                    bbox=cluster_bbox, chars=False, shapes=True, bitmaps=True
+                has_bitmap = backend.has_content_in(
+                    bbox=cluster_bbox, chars=False, shapes=False, bitmaps=True
                 )
             else:
                 assert non_text_index is not None
-                has_non_text = any(
+                has_bitmap = any(
                     True for _ in non_text_index.intersection(cluster_bbox)
                 )
 
-            if has_non_text:
+            if has_bitmap:
                 ocr_rects.append(cluster_bbox)
                 continue
 
