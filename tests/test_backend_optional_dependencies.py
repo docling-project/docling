@@ -60,6 +60,7 @@ def _run_with_blocked_module(
         "openpyxl",
         "pylatexenc",
         "bs4",
+        "docling_parse",
     ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
