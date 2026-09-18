@@ -1036,3 +1036,33 @@ def test_e2e_jats_conversions_stream():
 
 def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
+
+
+def _caption_texts(doc: DoclingDocument) -> list[str]:
+    return [
+        t.text for t in doc.texts if str(getattr(t, "label", "")).endswith("caption")
+    ]
+
+
+def test_jats_labelled_figure_without_a_caption_omits_the_word_none():
+    """A <fig> may carry a <label> and no <caption>, which is legal and common."""
+    doc = convert_jats_body(
+        """<sec><p>Text.</p>
+        <fig id="f1"><label>Figure 1.</label><graphic/></fig>
+        </sec>"""
+    )
+
+    assert _caption_texts(doc) == ["Figure 1."]
+
+
+def test_jats_table_with_an_empty_label_produces_no_caption():
+    """An empty <label/> has .text of None in lxml."""
+    doc = convert_jats_body(
+        """<sec><p>Text.</p>
+        <table-wrap id="t1"><label/>
+          <table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>
+        </table-wrap>
+        </sec>"""
+    )
+
+    assert _caption_texts(doc) == []
