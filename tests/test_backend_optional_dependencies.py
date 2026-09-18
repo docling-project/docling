@@ -278,6 +278,29 @@ def test_office_and_latex_backends_convert_without_pypdfium2(
     assert result.returncode == 0, result.stderr
 
 
+def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
+    # PowerPoint used to gate the shared converter factory behind its own
+    # pypdfium2 import. On slim installs that bypassed the factory entirely, so
+    # users never saw its actionable install hint. Multiple backend instances
+    # must now reach the shared guard while the warning is still emitted once.
+    body = (
+        "import logging\n"
+        "from docling.backend.mspowerpoint_backend import "
+        "MsPowerpointDocumentBackend\n"
+        "logging.basicConfig(level=logging.WARNING, format='%(message)s')\n"
+        "for _ in range(3):\n"
+        "    backend = object.__new__(MsPowerpointDocumentBackend)\n"
+        "    backend.pptx_to_pdf_converter = None\n"
+        "    backend.pptx_to_pdf_converter_init = False\n"
+        "    assert backend._get_libreoffice_converter() is None\n"
+    )
+
+    result = _run_with_blocked_module("pypdfium2", body)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.count("format-pdf-pypdfium2") == 1, result.stderr
+
+
 def test_converter_constructs_without_chart_extraction_dependency() -> None:
     """Importing DocumentConverter must not require transformers.
 
