@@ -575,3 +575,40 @@ def test_msg_document_converter_lists_attachments_via_format_option():
     assert "Attachments" in markdown
     assert "test.txt" in markdown
     assert "report.pdf" in markdown
+
+
+def test_email_falls_back_to_html_when_the_plain_part_is_blank():
+    """A part being present is not the same as a part holding text.
+
+    A multipart/alternative message can carry a whitespace-only text/plain
+    part beside a real text/html one, which many senders generate
+    automatically. Returning the empty result from the plain branch drops the
+    whole body.
+    """
+    from docling.datamodel.document import DocumentStream
+
+    raw = (
+        b"From: Alice <alice@example.com>\r\n"
+        b"To: Bob <bob@example.com>\r\n"
+        b"Subject: Blank Plain Part\r\n"
+        b'Content-Type: multipart/alternative; boundary="B"\r\n'
+        b"\r\n"
+        b"--B\r\n"
+        b"Content-Type: text/plain; charset=utf-8\r\n"
+        b"\r\n"
+        # a single space: present, truthy, and holding no paragraph
+        b" \r\n"
+        b"--B\r\n"
+        b"Content-Type: text/html; charset=utf-8\r\n"
+        b"\r\n"
+        b"<html><body><p>Real content that should appear.</p></body></html>\r\n"
+        b"--B--\r\n"
+    )
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+    doc = converter.convert(
+        DocumentStream(name="blank_plain.eml", stream=BytesIO(raw)),
+        raises_on_error=True,
+    ).document
+
+    assert "Real content that should appear." in doc.export_to_markdown()
