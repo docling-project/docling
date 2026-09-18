@@ -34,8 +34,11 @@ from docling.utils.text_decoding import decode_text
 _log = logging.getLogger(__name__)
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
-# "^.^h|Header": span (3*, 2+), alignment (<, ^, >, .^), style (a/d/e/h/l/m/s).
-_CELL_SPEC: Final = r"(?:\d+(?:\.\d+)?[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
+# "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
+# (a/d/e/h/l/m/s). AsciiDoc writes the span as [colspan][.rowspan] followed by
+# "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
+# own. Requiring at least one of the two keeps a bare "+" from matching.
+_CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
 
 
