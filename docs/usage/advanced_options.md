@@ -147,6 +147,40 @@ doc_converter = DocumentConverter(
 ```
 
 
+### Control PDF parser threads
+
+The PDF parser and the model pipeline use separate thread settings.
+`PdfPipelineOptions.accelerator_options.num_threads` controls CPU threads for
+model inference, while `ThreadedDoclingParseBackendOptions.parser_threads`
+controls the docling-parse backend.
+
+For the standard PDF pipeline, configure parser threads on `PdfFormatOption`:
+
+```python
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_options=pipeline_options,
+            backend_options=ThreadedDoclingParseBackendOptions(parser_threads=8),
+        )
+    }
+)
+```
+
+The equivalent CLI option is independent of `--num-threads`:
+
+```sh
+docling --from pdf --parser-threads 8 FILE
+```
+
+
 ### Extract the native content of a PDF
 
 `NativePdfPipeline` uses docling-parse alone: one text item per native text cell
