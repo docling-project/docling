@@ -992,8 +992,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             A tuple containing:
                 - ExcelTable: An object representing the detected table with its anchor
                   position, dimensions, and cell data.
-                - set[tuple[int, int]]: A set of (row, col) tuples representing all cells
-                  that were visited during the flood fill, used to prevent re-scanning.
+                - set[tuple[int, int]]: Every (row, col) in the table's bounding box,
+                  used to prevent re-scanning. This is the region the table emits, which
+                  is wider than the flood fill itself whenever the fill stopped short of
+                  a cell the bounding box still covers.
 
         Note:
             The method respects the GAP_TOLERANCE option, which allows cells separated by
@@ -1092,10 +1094,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # The 'visited_cells' returned to the caller MUST strictly be the ones
-        # that contain data/merges, so the main loop doesn't re-scan them.
-        # However, to avoid overlapping tables, we should mark the whole bbox?
-        # Standard behavior: Mark the specific connected cells we found.
+        # Mark the full emitted table region as visited.
+        covered_cells = {
+            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
+        }
         return (
             ExcelTable(
                 anchor=(min_c, min_r),
@@ -1103,7 +1105,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 num_cols=max_c + 1 - min_c,
                 data=data,
             ),
-            table_cells,
+            covered_cells,
         )
 
     @staticmethod
