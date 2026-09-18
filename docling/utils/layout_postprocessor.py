@@ -7,6 +7,7 @@ from collections import defaultdict
 
 from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
+from PIL import Image
 
 from docling.datamodel.base_models import Cluster, Page
 from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
@@ -14,6 +15,7 @@ from docling.datamodel.spatial import (
     BoundingBoxSpatialIndex,
     has_positive_area,
     ordered_bounding_box,
+    ordered_bounds,
 )
 
 _log = logging.getLogger(__name__)
@@ -281,20 +283,7 @@ class LayoutPostprocessor:
             for c in self.special_clusters
             if c.confidence >= self.CONFIDENCE_THRESHOLDS[c.label]
         ]
-
-        # Calculate page area from known page size
-        assert self.page_size is not None
-        page_area = self.page_size.width * self.page_size.height
-        if page_area > 0:
-            # Filter out full-page pictures
-            special_clusters = [
-                cluster
-                for cluster in special_clusters
-                if not (
-                    cluster.label == DocItemLabel.PICTURE
-                    and cluster.bbox.area() / page_area > 0.90
-                )
-            ]
+        special_clusters = self._remove_wrapper_pictures(special_clusters)
 
         picture_clusters = [
             c for c in special_clusters if c.label == DocItemLabel.PICTURE
@@ -394,6 +383,106 @@ class LayoutPostprocessor:
             self._set_cluster_children(container, direct_children + nested_children)
 
         return picture_clusters + table_clusters + container_clusters
+
+    def _remove_wrapper_pictures(
+        self, special_clusters: list[Cluster]
+    ) -> list[Cluster]:
+        """Remove picture proposals that wrap all detected page content."""
+        model_cluster_ids = {cluster.id for cluster in self.all_clusters}
+        detected_clusters = [
+            cluster
+            for cluster in self.regular_clusters + special_clusters
+            if cluster.id in model_cluster_ids and has_positive_area(cluster.bbox)
+        ]
+        candidates = []
+
+        for picture in special_clusters:
+            if picture.label != DocItemLabel.PICTURE:
+                continue
+
+            others = [
+                cluster for cluster in detected_clusters if cluster.id != picture.id
+            ]
+            if not others or not all(
+                cluster.bbox.intersection_over_self(picture.bbox) == 1.0
+                for cluster in others
+            ):
+                continue
+            if not any(
+                ordered_bounds(cluster.bbox) != ordered_bounds(picture.bbox)
+                for cluster in others
+            ):
+                continue
+            candidates.append(picture)
+
+        if not candidates:
+            return special_clusters
+
+        page_image = self.page.get_image(scale=1.0)
+        if (
+            page_image is None
+            or self.page_size is None
+            or self.page_size.width <= 0
+            or self.page_size.height <= 0
+        ):
+            return special_clusters
+
+        wrapper_ids = {
+            picture.id
+            for picture in candidates
+            if self._has_uniform_surrounding(page_image, picture.bbox)
+        }
+
+        return [
+            cluster for cluster in special_clusters if cluster.id not in wrapper_ids
+        ]
+
+    def _has_uniform_surrounding(
+        self, page_image: Image.Image, bbox: BoundingBox
+    ) -> bool:
+        """Return whether all pixels outside a picture have one RGB value."""
+        assert self.page_size is not None
+        bbox = ordered_bounding_box(
+            bbox.to_top_left_origin(page_height=self.page_size.height)
+        )
+        left, top, right, bottom = (
+            round(bbox.l * page_image.width / self.page_size.width),
+            round(bbox.t * page_image.height / self.page_size.height),
+            round(bbox.r * page_image.width / self.page_size.width),
+            round(bbox.b * page_image.height / self.page_size.height),
+        )
+        left = min(max(left, 0), page_image.width)
+        right = min(max(right, 0), page_image.width)
+        top = min(max(top, 0), page_image.height)
+        bottom = min(max(bottom, 0), page_image.height)
+
+        # Exclude the picture and its one-pixel rasterization seam.
+        left = max(left - 1, 0)
+        top = max(top - 1, 0)
+        right = min(right + 2, page_image.width)
+        bottom = min(bottom + 2, page_image.height)
+
+        image = page_image if page_image.mode == "RGB" else page_image.convert("RGB")
+        regions = (
+            (0, 0, image.width, top),
+            (0, bottom, image.width, image.height),
+            (0, top, left, bottom),
+            (right, top, image.width, bottom),
+        )
+        surrounding_color = None
+        for region in regions:
+            if region[0] >= region[2] or region[1] >= region[3]:
+                continue
+            colors = image.crop(region).getcolors(maxcolors=1)
+            if colors is None:
+                return False
+            color = colors[0][1]
+            if surrounding_color is None:
+                surrounding_color = color
+            elif color != surrounding_color:
+                return False
+
+        return surrounding_color is not None
 
     def _set_cluster_children(self, cluster: Cluster, children: list[Cluster]) -> None:
         if not children:
