@@ -294,9 +294,13 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        # Pattern to match href attributes that reference .xhtml files with anchors
-        # Examples: href="endnotes.xhtml#note-1" or href="chapter-1.xhtml#section-2"
-        pattern = r'href="([^"]*\.xhtml)(#[^"]*)"'
+        # Pattern to match href attributes that reference another spine content
+        # document, with an anchor. A content document is XHTML by its declared
+        # manifest media-type, not by its file name: .xhtml, .xht, .htm and
+        # .html are all legal for the same type, and Calibre commonly writes
+        # .html.
+        # Examples: href="endnotes.xhtml#note-1" or href="chapter-1.html#section-2"
+        pattern = r'href="([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
 
         # Replace with just the anchor part
         fixed_content = re.sub(pattern, r'href="\2"', html_content)

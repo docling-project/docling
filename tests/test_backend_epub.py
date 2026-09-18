@@ -270,3 +270,81 @@ def test_epub_link_fixing():
     # This is a basic check - the actual link format may vary
     assert markdown is not None, "Should be able to export to markdown"
     assert len(markdown) > 0, "Markdown export should not be empty"
+
+
+def _build_epub_with_cross_file_link(path: Path, ext: str) -> Path:
+    """Build a two-document EPUB where the first links into the second.
+
+    Both documents are declared ``application/xhtml+xml``, which is what makes
+    them content documents; ``ext`` only changes the file name.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/content.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    names = [f"chapter1{ext}", f"chapter2{ext}"]
+    items = "".join(
+        f'<item id="c{i}" href="{name}" media-type="application/xhtml+xml"/>'
+        for i, name in enumerate(names)
+    )
+    itemrefs = "".join(f'<itemref idref="c{i}"/>' for i in range(len(names)))
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Cross File Link</dc:title></metadata>"
+        f"<manifest>{items}</manifest>"
+        f"<spine>{itemrefs}</spine>"
+        "</package>"
+    )
+
+    bodies = [
+        '<p>See <a href="chapter2' + ext + '#note1">the note</a>.</p>',
+        '<p id="note1">The note itself.</p>',
+    ]
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/content.opf", opf)
+        for name, body in zip(names, bodies):
+            z.writestr(
+                f"OEBPS/{name}",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+                + body
+                + "</body></html>",
+            )
+    return path
+
+
+@pytest.mark.parametrize("ext", [".xhtml", ".html", ".htm", ".xht"])
+def test_epub_internal_link_is_fixed_for_every_content_document_extension(
+    tmp_path: Path, ext: str
+):
+    """A content document is XHTML by its declared media type, not its name.
+
+    The spine files are merged into one HTML document, so a link into another
+    of them has to lose the file part or it points at a file that no longer
+    exists. Calibre commonly writes ``.html``.
+    """
+    epub_path = _build_epub_with_cross_file_link(tmp_path / f"link{ext}.epub", ext)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.EPUB])
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if getattr(item, "hyperlink", None) is not None
+    ]
+
+    assert hyperlinks == ["#note1"], f"got {hyperlinks}"
