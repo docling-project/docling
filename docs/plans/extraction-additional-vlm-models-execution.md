@@ -1,11 +1,12 @@
 # Additional extraction VLMs: conversation-sized execution ledger
 
-Updated 2026-09-18. Stages 0–4 are implementation-complete. Stage 1 is committed
+Updated 2026-09-18. Stages 0–5 are implementation-complete. Stage 1 is committed
 at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
 `b0e888f846d82c24b5ba64e587f1dd64bd568c5f`; stage 3 at
-`cd550410f9715f730f7ef5bb88ac533580706a19`. Stage 4 is a reviewable working-tree
-delta pending the parent's authorized signoff commit. **Next: stage 5 (Lift)**,
-using [the stage 5 prompt](extraction-additional-vlm-models-stage5-resumption.md).
+`cd550410f9715f730f7ef5bb88ac533580706a19`; stage 4 at
+`ef5a8a9305f63e4c4eb3831505a4e71a2056d367`. Stage 5 is a reviewable working-tree
+delta pending the parent's authorized signoff commit. **Next: stage 6 (Qwen3.5)**,
+using [the stage 6 prompt](extraction-additional-vlm-models-stage6-resumption.md).
 NuExtract3 Transformers/vLLM integration is contract-tested, not live verified;
 the recorded LM Studio deployment is incompatible with caller template delivery.
 No push, publication or production default change is authorized.
@@ -123,8 +124,8 @@ Stages 4–7 implement each documented model contract; live verification is sepa
 | 2 | Docling | One local/API ordered-content execution contract | C, A model compatibility | Done |
 | 3 | Docling | Complete source-to-item SDK path and automatic streaming chunks | Remaining A, D, E | Done |
 | 4 | Docling | NuExtract3 integration and offline template/transport contracts | F: NuExtract | Done (implementation); live verification separate |
-| 5 | Docling | Lift template integration and documented vLLM constraints | F: Lift | Next |
-| 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Pending |
+| 5 | Docling | Lift template integration and documented vLLM constraints | F: Lift | Done (implementation); live verification separate |
+| 6 | Docling | Shared Qwen3.5 4B/9B template profile and offline contracts | F: Qwen | Next |
 | 7 | Docling | Gemma template/processor/response integration and offline contracts | F: Gemma | Pending |
 | 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Pending |
 | 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Pending |
@@ -872,7 +873,8 @@ remain probe settings. Capacity and schema-versus-example quality comparisons ar
 unrun for Transformers/vLLM and make no claims about extraction accuracy.
 
 Validation results and commands are recorded after the historical investigation.
-Next is [stage 5 (Lift)](extraction-additional-vlm-models-stage5-resumption.md).
+Stage 4 was signed off at `ef5a8a9305f63e4c4eb3831505a4e71a2056d367`.
+Its next Lift implementation checkpoint is recorded below.
 
 ### Historical stage 4 live investigation — superseded completion gate
 
@@ -894,7 +896,7 @@ Jobkit or Serve change was made. No stage commit, push or publication was made.
 The only changed paths are this ledger and these two bounded artifacts:
 
 - [Exact requests, raw answers and rendered-input evidence](extraction-nuextract3-lmstudio-smoke.json).
-- [Next stage 5 continuation](extraction-additional-vlm-models-stage5-resumption.md).
+- The task-owned stage 5 continuation, now replaced by [stage 6](extraction-additional-vlm-models-stage6-resumption.md).
 
 #### Model, contract and environment evidence
 
@@ -1160,3 +1162,149 @@ next stage 5 prompt, plus preserved historical smoke evidence. No Core, Jobkit,
 Serve, environment, loader or production-default change. Stage 4 implementation
 is complete; the live verification matrix stays open. Parent review/signoff commit
 is the next authorized delivery step, then stage 5.
+
+
+## Stage 5 checkpoint — Lift source implementation
+
+Started from clean `cau/extraction-api-service-models` at signed stage 4 commit
+`ef5a8a9305f63e4c4eb3831505a4e71a2056d367`. Stage 5 is implementation-complete
+under the revised offline-contract delivery policy, pending parent review/signoff.
+No weights were downloaded/loaded, no live inference was run, and no environment,
+runtime, dependency, loader, production default, Core, Jobkit or Serve was changed.
+
+Added opt-in `lift`, pinned to model revision
+`3129597900eb6f84fb4f2c0b240f9a7cfddae595`, using the existing `generic_chat`
+preparation and Transformers/vLLM API adapters. Explicit caller `example_json`
+fields/values and instructions reach processor rendering/API messages intact;
+schema-only guidance works as well. Lift requires an explicit output schema in
+both output modes. Shared preset capability `requires_output_schema` rejects
+example-only targets and legacy/final-prompt image wrappers before inference;
+existing models keep their previous behavior. Native `nuextract` remains an
+unsupported dialect for generic chat. No schema is inferred from an example.
+
+The published processor is `Qwen3VLProcessor` with `Qwen2VLImageProcessorFast`,
+and the model is `Qwen3_5ForConditionalGeneration`. Lift's documented local loader
+uses exactly the existing `AutoModelForImageTextToText`/`AutoProcessor` path; no
+custom loader/preprocessor is justified. The reference HF dependency is
+Transformers >=5.2.0; the borrowed installed 5.16.1 maps the architecture. This
+is compatibility inspection, not a load test. The checkpoint's existing chat
+renderer supports `enable_thinking=False`, carried in both documented transports.
+
+Pinned tokenizer IDs 248044/248046 correspond to `<|endoftext|>`/`<|im_end|>`.
+Both reach local `GenerationConfig`; the served preset sends both stop strings
+through `ApiModelConfig`, verified in the actual HTTP payload. Local stop metadata
+recognizes either EOS. Context 262144 and official output setting 12384 justify
+249760 local input tokens as a **static unmeasured upper bound**. No measured
+memory/capacity/device eligibility follows from those values; server context is
+operator-owned and may be smaller.
+
+Constrained-vLLM mode sends a fresh request-specific schema through the shared
+`response_format` path. The original schema remains unchanged for guidance and
+validation: Lift's reference nullable-leaf rewrite and silent schema-compilation
+fallback are deliberately not copied. Shared bounded subset preflight rejects
+unsupported assertions before HTTP; explicit prompt-only generation can use the
+full original schema. Lift's recommendation to avoid enum/union/ref/
+`additionalProperties` complexity is quality/simplicity advice, not evidence that
+every such construct is unsupported by vLLM. Existing enum/nullable/local-ref/
+boolean-additionalProperties behavior remains, with backend compilation still to
+verify live; provider rejection cannot trigger a prompt-only retry.
+
+Extended existing behavioral tests rather than adding a separate model framework:
+source DCLX → SDK → actual HTTP JSON covers every channel, independent absolute
+pages 2–3, schema-only and exact explicit examples, changed schemas/templates/
+instructions on one cached extractor, preserved caller mappings and valid JSON
+that fails original-schema validation. Shared local rendering exercises text,
+image and mixed ordered content with cached-call isolation. Both local EOS values,
+legacy-wrapper/schema/dialect rejection, dynamic constraints and provider rejection
+are covered. Unpaginated Lift text remains one document-scoped request; existing
+ownership/finally, result-status, context and legacy regressions remain green.
+
+| Model/engine | Source implementation | Live verification |
+|---|---|---|
+| Lift / Transformers | Contract tested; explicit opt-in | Not run; no weights loaded |
+| Lift / vLLM API | Contract tested; explicit constrained mode available | Not run; no server substituted |
+| Lift / named LM Studio, Ollama, OpenAI | Not offered by preset; rejected | Not run; no contract claimed |
+
+Independent-page extraction usefulness, schema-versus-example field accuracy,
+actual loading, per-device memory/capacity and backend-specific schema compilation
+remain **not run**, separately from this completed source stage. The reference
+joint-page workflow and its benchmark do not certify Docling's independent-page
+behavior. NuExtract3 live verification stays unchanged: local/vLLM not run;
+installed LM Studio incompatible. Historical raw smoke evidence is unchanged,
+SHA256 `ca79ae727b165058f41419a4f138faebddb03bd96d9c22e20b43d38cad7ba2f0`.
+
+Primary sources were browsed and exact revision metadata/configs rechecked:
+
+- [Pinned Lift model card](https://huggingface.co/datalab-to/lift/blob/3129597900eb6f84fb4f2c0b240f9a7cfddae595/README.md),
+  [model config](https://huggingface.co/datalab-to/lift/blob/3129597900eb6f84fb4f2c0b240f9a7cfddae595/config.json),
+  [processor config](https://huggingface.co/datalab-to/lift/blob/3129597900eb6f84fb4f2c0b240f9a7cfddae595/processor_config.json),
+  [tokenizer/chat template](https://huggingface.co/datalab-to/lift/blob/3129597900eb6f84fb4f2c0b240f9a7cfddae595/tokenizer_config.json)
+  and [generation config](https://huggingface.co/datalab-to/lift/blob/3129597900eb6f84fb4f2c0b240f9a7cfddae595/generation_config.json).
+- Reference source revision `4ff031b8c83b44bb123d7eda42907b22ec1e1e56`:
+  [HF loader/EOS](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/lift/model/hf.py),
+  [vLLM schema transport](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/lift/model/vllm.py),
+  [prompt](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/lift/prompts.py),
+  [output setting](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/lift/settings.py),
+  [dependencies](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/pyproject.toml)
+  and [vLLM launcher](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/lift/scripts/vllm_launcher.py)
+  (reference container v0.22.0, not a measured deployment or client minimum).
+- [Transformers Qwen3.5 contract](https://huggingface.co/docs/transformers/model_doc/qwen3_5)
+  and [vLLM structured outputs](https://docs.vllm.ai/en/latest/features/structured_outputs/)
+  confirm processor multimodal input and JSON Schema `response_format` transport.
+- [Modified OpenRAIL-M weights license](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/MODEL_LICENSE)
+  differs from Apache-2.0 source code: funding/revenue and competing-service use
+  restrictions, attribution and share-alike provisions require operator review and
+  deployment allow-listing. This source stage grants no deployment authorization.
+
+### Stage 5 validation and next continuation
+
+Borrowed Python 3.13.5/Transformers 5.16.1 from
+`/Users/cau/Documents/Development/docling_release/.venv/bin/python`, with this
+checkout's `PYTHONPATH`. Published Core resolves from that environment's
+site-packages, not its dirty checkout. No sync/editable override was used.
+
+```sh
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_extraction_api.py \
+  -k 'model_templates or lift or ordered_local_content or dynamic_vllm or constrained_subset or unpaginated_source' \
+  > /tmp/docling-stage5-contracts.log 2>&1
+
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
+  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  tests/test_extraction_templates.py tests/test_extraction.py \
+  tests/test_extraction_api.py tests/test_extraction_text_channel.py \
+  tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
+  tests/test_extraction_stage3.py tests/test_extraction_transformers_model.py \
+  tests/test_service_datamodels.py tests/test_api_image_request.py \
+  tests/test_build_generation_config.py tests/test_interfaces.py \
+  tests/test_input_doc.py tests/test_invalid_input.py \
+  -k 'not test_convert_path and not test_convert_stream' \
+  > /tmp/docling-stage5-regressions.log 2>&1
+
+UV_NO_SYNC=1 make validate > /tmp/docling-stage5-validate.log 2>&1
+git diff --check
+git status --short --untracked-files=all
+shasum -a 256 docs/plans/extraction-nuextract3-lmstudio-smoke.json
+```
+
+Focused contracts: **43 passed, 134 deselected**, exit 0. Applicable regressions:
+**366 passed, 4 existing weight skips, 2 known conversion tests deselected,
+31 warnings**, exit 0, 15.05 seconds. No golden changes. Tests used permitted
+escalation for existing native MLX initialization; validation used existing
+UV/hook cache access. Ruff adjusted test imports/formatting; reviewed those edits,
+corrected the wrapper test's captured boundary and removed an unnecessary shared-
+preset mutation from its EOS test. Final focused contracts pass again (43 passed,
+134 deselected); repeated validation until all hooks (including ty/tach/max-lines)
+passed. Installed-hook cache metadata warnings
+remain non-fatal. Whitespace/scope checks pass.
+
+Changed paths: `docling/datamodel/extraction_options.py`,
+`docling/models/extraction/prompt_utils.py`, `tests/test_extraction_api.py`,
+`tests/test_extraction_stage3.py`, `tests/test_extraction_transformers_model.py`,
+`docs/plans/extraction.md`, this ledger, and the task-owned stage 5 continuation
+renamed/replaced by [the self-contained stage 6 prompt](extraction-additional-vlm-models-stage6-resumption.md).
+Stage 6 must preserve explicit caller examples and the separate live-verification
+policy for both Qwen sizes. Parent review and the authorized signoff commit come
+before dispatching the next sequential stage worker.

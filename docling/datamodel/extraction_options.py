@@ -16,6 +16,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
 )
 from docling.datamodel.stage_model_specs import (
+    ApiModelConfig,
     StageModelPreset,
     StagePresetMixin,
     VlmModelSpec,
@@ -121,6 +122,7 @@ class ExtractionVlmModelSpec(VlmModelSpec):
 
     accepts_image: bool = True
     accepts_text: bool = False
+    requires_output_schema: bool = False
 
     torch_dtype: str | None = None
     transformers_model_type: TransformersModelType = (
@@ -351,6 +353,32 @@ NUEXTRACT_3_SPEC = ExtractionVlmModelSpec(
     max_input_tokens=258048,
 )
 
+LIFT_SPEC = ExtractionVlmModelSpec(
+    name="Lift",
+    prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    preparation="generic_chat",
+    accepts_image=True,
+    accepts_text=True,
+    requires_output_schema=True,
+    default_repo_id="datalab-to/lift",
+    revision="3129597900eb6f84fb4f2c0b240f9a7cfddae595",
+    prompt="Extract structured data from this document according to the provided JSON schema.",
+    torch_dtype="bfloat16",
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+    extra_chat_template_kwargs={"enable_thinking": False},
+    # Pinned tokenizer IDs: <|endoftext|> and <|im_end|>, as in Lift's HF helper.
+    extra_generation_config={"eos_token_id": [248044, 248046]},
+    api_overrides={
+        VlmEngineType.API: ApiModelConfig(
+            params={"stop": ["<|endoftext|>", "<|im_end|>"]}
+        )
+    },
+    temperature=0.0,
+    max_new_tokens=12384,  # Official setting, not measured deployment capacity.
+    max_input_tokens=249760,  # Config context (262144) minus output budget; unmeasured.
+)
+
 GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     name="Granite Vision 4.1",
     prompt_style=ExtractionPromptStyle.GRANITE_VISION,
@@ -369,6 +397,20 @@ GRANITE_VISION_4_1_SPEC = ExtractionVlmModelSpec(
     trust_remote_code=True,
     # Granite-4.1-3B base: 131072-token context minus the 4096 generation budget.
     max_input_tokens=126976,
+)
+
+ExtractionVlmOptions.register_preset(
+    StageModelPreset(
+        preset_id="lift",
+        name="Lift",
+        description=(
+            "Opt-in JSON Schema and example-template extraction (Transformers or vLLM API); "
+            "live deployment unverified; modified OpenRAIL-M weights license."
+        ),
+        model_spec=LIFT_SPEC,
+        default_engine_type=VlmEngineType.TRANSFORMERS,
+        scale=2.0,
+    )
 )
 
 ExtractionVlmOptions.register_preset(

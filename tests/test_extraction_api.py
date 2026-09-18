@@ -83,10 +83,11 @@ def test_unsupported_local_engine_is_rejected() -> None:
     "engine_type",
     [VlmEngineType.API_LMSTUDIO, VlmEngineType.API_OLLAMA, VlmEngineType.API_OPENAI],
 )
-def test_nuextract3_rejects_transports_without_native_template_contract(engine_type):
+@pytest.mark.parametrize("preset", ["nuextract_3", "lift"])
+def test_models_reject_transports_without_documented_contract(engine_type, preset):
     with pytest.raises(ValueError, match="does not support"):
         ExtractionVlmOptions.from_preset(
-            "nuextract_3", engine_options=ApiVlmEngineOptions(engine_type=engine_type)
+            preset, engine_options=ApiVlmEngineOptions(engine_type=engine_type)
         )
 
 
@@ -186,6 +187,7 @@ def _api_model(
     params=None,
     engine_type=VlmEngineType.API,
     api_defaults=None,
+    preset=None,
 ):
     from docling.datamodel.extraction_options import (
         GRANITE_VISION_4_1_SPEC,
@@ -194,7 +196,11 @@ def _api_model(
     from docling.datamodel.stage_model_specs import ApiModelConfig
 
     spec = (
-        NUEXTRACT_2B_SPEC if preparation == "nuextract" else GRANITE_VISION_4_1_SPEC
+        ExtractionVlmOptions.from_preset(preset).model_spec
+        if preset is not None
+        else NUEXTRACT_2B_SPEC
+        if preparation == "nuextract"
+        else GRANITE_VISION_4_1_SPEC
     ).model_copy(
         update={
             "extra_chat_template_kwargs": {
@@ -306,8 +312,10 @@ def test_ordered_api_payload_and_cached_call_isolation(extraction_http, preparat
     assert "template" not in model.model_spec.extra_chat_template_kwargs
 
 
+@pytest.mark.parametrize("preset", [None, "lift"])
 def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
     extraction_http,
+    preset,
 ):
     from copy import deepcopy
 
@@ -317,7 +325,7 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
     from docling.models.extraction.prompt_utils import prepare_target
 
     post, response = extraction_http
-    model = _api_model(output_mode="schema_constrained")
+    model = _api_model(output_mode="schema_constrained", preset=preset)
     schema = {
         "type": "object",
         "$defs": {
@@ -377,12 +385,13 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
         ("format", "date"),
     ],
 )
-def test_constrained_subset_fails_before_http(extraction_http, keyword, value):
+@pytest.mark.parametrize("preset", [None, "lift"])
+def test_constrained_subset_fails_before_http(extraction_http, keyword, value, preset):
     from docling.datamodel.extraction import ExtractionTarget, TextContentItem
     from docling.models.extraction.prompt_utils import prepare_target
 
     post, _ = extraction_http
-    model = _api_model(output_mode="schema_constrained")
+    model = _api_model(output_mode="schema_constrained", preset=preset)
     prepared = prepare_target(
         ExtractionTarget(
             output_schema={"type": "object", "properties": {"value": {keyword: value}}}
@@ -563,3 +572,42 @@ def test_extraction_retains_empty_and_filtered_remote_behavior(
     else:
         assert next(iter(predictions)).stop_reason.value == "content_filter"
     assert post.call_count == 1
+
+
+@pytest.mark.parametrize("output_mode", ["prompt_only", "schema_constrained"])
+def test_lift_schema_and_template_preflight_before_http(extraction_http, output_mode):
+    from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+    from docling.models.extraction.prompt_utils import (
+        prepare_legacy_target,
+        prepare_target,
+    )
+
+    post, _ = extraction_http
+    options = ExtractionVlmOptions.from_preset(
+        "lift", engine_options=ApiVlmEngineOptions(), output_mode=output_mode
+    )
+    with pytest.raises(ValueError, match="requires an output schema"):
+        prepare_target(
+            ExtractionTarget(
+                template=ExtractionTemplate(format="example_json", value={"total": 42})
+            ),
+            options.model_spec,
+        )
+    with pytest.raises(ValueError, match="requires target="):
+        prepare_legacy_target('{"total": 42}', options.model_spec)
+    with pytest.raises(
+        ValueError, match="does not support the nuextract native dialect"
+    ):
+        prepare_target(
+            ExtractionTarget(
+                output_schema={
+                    "type": "object",
+                    "properties": {"total": {"type": "number"}},
+                },
+                template=ExtractionTemplate(
+                    format="nuextract", value={"total": "number"}
+                ),
+            ),
+            options.model_spec,
+        )
+    post.assert_not_called()

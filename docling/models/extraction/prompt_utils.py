@@ -69,6 +69,8 @@ def _prepare_normalized_target(
     owned: ExtractionTarget, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
     schema = owned.output_schema
+    if model_spec.requires_output_schema and schema is None:
+        raise ValueError(f"{model_spec.name} extraction requires an output schema")
     validator = schema_validator(schema) if schema is not None else None
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     processor_kwargs = deepcopy(model_spec.extra_processor_kwargs)
@@ -139,6 +141,8 @@ def prepare_legacy_target(
     template: ExtractionTemplateType, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
     """Keep main's sample serialization and prompts separate from explicit targets."""
+    if model_spec.requires_output_schema:
+        raise ValueError(f"{model_spec.name} requires target= with an output schema")
     prompt = model_spec.build_extraction_prompt(template)
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     if model_spec.prompt_style is ExtractionPromptStyle.NUEXTRACT:
@@ -186,6 +190,8 @@ def prepared_image_prompt(
     prompt: str, model_spec: ExtractionVlmModelSpec
 ) -> _PreparedTarget:
     """Main's image wrapper receives final prompts; never render the schema wrapper twice."""
+    if model_spec.requires_output_schema:
+        raise ValueError(f"{model_spec.name} requires target= with an output schema")
     chat = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     if model_spec.preparation == "nuextract":
         chat["template"] = prompt

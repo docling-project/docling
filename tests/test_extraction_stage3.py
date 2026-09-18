@@ -180,11 +180,17 @@ def test_existing_api_models_through_sdk(tmp_path, monkeypatch, options):
 
 
 @pytest.mark.parametrize("channel", [ChannelSelection.AUTO, ChannelSelection.TEXT])
-def test_unpaginated_source_is_one_text_document(tmp_path, monkeypatch, channel):
+@pytest.mark.parametrize("preset", ["nuextract_2b", "lift"])
+def test_unpaginated_source_is_one_text_document(
+    tmp_path, monkeypatch, channel, preset
+):
     source = tmp_path / "source.md"
     source.write_text("# Invoice\n\nTotal 42")
     calls = _responses(monkeypatch)
-    result = _extractor(channel).extract(source, target=_target())
+    options = ExtractionVlmOptions.from_preset(
+        preset, engine_options=ApiVlmEngineOptions()
+    )
+    result = _extractor(channel, options).extract(source, target=_target())
     assert result.status == ConversionStatus.SUCCESS
     assert [item.scope for item in result.items] == [DocumentScope()]
     assert len(calls) == 1
@@ -193,8 +199,16 @@ def test_unpaginated_source_is_one_text_document(tmp_path, monkeypatch, channel)
 
 
 @pytest.mark.parametrize("channel", list(ChannelSelection))
-def test_nuextract3_templates_reach_http_from_cached_sdk(
-    tmp_path, monkeypatch, channel
+@pytest.mark.parametrize(
+    "preset,output_mode",
+    [
+        ("nuextract_3", "prompt_only"),
+        ("lift", "prompt_only"),
+        ("lift", "schema_constrained"),
+    ],
+)
+def test_model_templates_reach_http_from_cached_sdk(
+    tmp_path, monkeypatch, channel, preset, output_mode
 ):
     source = _archive(tmp_path)
     session = MagicMock()
@@ -203,14 +217,17 @@ def test_nuextract3_templates_reach_http_from_cached_sdk(
     response.ok = True
     monkeypatch.setattr(api_image_request, "_make_retry_session", lambda: session)
     options = ExtractionVlmOptions.from_preset(
-        "nuextract_3", engine_options=ApiVlmEngineOptions()
+        preset, engine_options=ApiVlmEngineOptions(), output_mode=output_mode
     )
+    native = preset == "nuextract_3"
     extractor = _extractor(channel, options)
     first = _target().model_copy(
         update={
             "template": ExtractionTemplate(
-                format="nuextract",
-                value={"total": "number", "note": "verbatim-string"},
+                format="nuextract" if native else "example_json",
+                value={"total": "number", "note": "verbatim-string"}
+                if native
+                else {"total": 12.5, "note": "Caller supplied example"},
             ),
             "instructions": "Copy note exactly; first template",
         }
@@ -227,7 +244,10 @@ def test_nuextract3_templates_reach_http_from_cached_sdk(
         ExtractionTarget(
             output_schema=buyer_schema,
             template=ExtractionTemplate(
-                format="nuextract", value={"buyer": "verbatim-string"}
+                format="nuextract" if native else "example_json",
+                value={
+                    "buyer": "verbatim-string" if native else "Caller supplied buyer"
+                },
             ),
             instructions="Copy buyer exactly; second template",
         ),
@@ -271,9 +291,33 @@ def test_nuextract3_templates_reach_http_from_cached_sdk(
                 if target.template is not None
                 else {"total": "number", "note": "string"}
             )
-            assert json.loads(chat["template"]) == expected
-            assert chat["enable_thinking"] is False and chat["mode"] == "structured"
-            assert payload["model"] == "numind/NuExtract3"
+            assert chat["enable_thinking"] is False
+            if native:
+                assert json.loads(chat["template"]) == expected
+                assert chat["mode"] == "structured"
+                assert payload["model"] == "numind/NuExtract3"
+                guidance = chat["instructions"]
+            else:
+                assert "template" not in chat and "instructions" not in chat
+                assert payload["model"] == "datalab-to/lift"
+                assert payload["stop"] == ["<|endoftext|>", "<|im_end|>"]
+                guidance = payload["messages"][0]["content"][-1]["text"]
+                assert json.dumps(target.output_schema, indent=2) in guidance
+                if target.template is not None:
+                    example = guidance.split(
+                        "Example output (illustration only, not a schema or source facts):\n"
+                    )[1]
+                    assert json.loads(example) == target.template.value
+                else:
+                    assert "Example output" not in guidance
+                if output_mode == "schema_constrained":
+                    assert payload["response_format"]["type"] == "json_schema"
+                    assert (
+                        payload["response_format"]["json_schema"]["schema"]
+                        == target.output_schema
+                    )
+                else:
+                    assert "response_format" not in payload
             content = payload["messages"][0]["content"]
             expected_types = (
                 ["text"]
@@ -282,17 +326,21 @@ def test_nuextract3_templates_reach_http_from_cached_sdk(
                 if channel == ChannelSelection.IMAGE_AND_TEXT
                 else ["image_url"]
             )
-            assert [part["type"] for part in content] == expected_types
+            assert [part["type"] for part in content] == expected_types + (
+                [] if native else ["text"]
+            )
             if "text" in expected_types:
-                assert f"Page {n} total" in content[-1]["text"]
-                assert f"Page {5 - n} total" not in content[-1]["text"]
+                source_text = content[len(expected_types) - 1]["text"]
+                assert f"Page {n} total" in source_text
+                assert f"Page {5 - n} total" not in source_text
             assert item.validation_status == ("failed" if index == 3 else "passed")
             assert item.raw_text == answer
             if index == 3:
-                assert "second template" in chat["instructions"]
-                assert "first template" not in chat["instructions"]
+                assert "second template" in guidance
+                assert "first template" not in guidance
+                assert "Caller supplied example" not in guidance
             elif index == 0:
-                assert "first template" in chat["instructions"]
+                assert "first template" in guidance
         assert target.model_dump(mode="json") == saved
     assert "template" not in options.model_spec.extra_chat_template_kwargs
     assert "instructions" not in options.engine_options.params

@@ -15,7 +15,7 @@ existing image path.
 - engine options, which own runtime concerns: device, endpoint, headers, timeout,
   concurrency, and parameter overrides.
 
-Presets are `nuextract_2b`, `nuextract_3` and `granite_vision_4_1`. Named specs:
+Presets are `nuextract_2b`, `nuextract_3`, `lift` and `granite_vision_4_1`. Named specs:
 `NU_EXTRACT_2B_TRANSFORMERS`, `GRANITE_VISION_4_1_TRANSFORMERS`, `NU_EXTRACT_API`,
 `GRANITE_VISION_4_1_API`.
 
@@ -38,6 +38,53 @@ The local 258048 input-token check derives from the published 262144 context min
 4096 output tokens (the model-card non-thinking example); it is an unmeasured upper
 bound. Configure smaller limits for your deployment. API server context limits
 are owned by the server; no capacity or extraction-quality claim is implied.
+
+`lift` is opt-in for local Transformers and explicitly configured vLLM API,
+with offline contract coverage and live verification still open. It requires
+`output_schema`; examples never become schemas. Supply both, for example:
+
+```python
+options = ExtractionVlmOptions.from_preset("lift")
+target = ExtractionTarget(
+    output_schema={
+        "type": "object",
+        "properties": {"invoice": {"type": "string"}, "total": {"type": "number"}},
+        "required": ["invoice", "total"],
+    },
+    template=ExtractionTemplate(
+        format="example_json", value={"invoice": "INV-123", "total": 12.5}
+    ),
+    instructions="Copy the invoice identifier exactly",
+)
+```
+
+Omitting `template` selects schema-only guidance. Explicit examples reach the
+shared generic renderer/API content intact and are labelled illustrations, not
+source facts. Lift rejects the native `nuextract` dialect and legacy `template=`
+calls; use `target=` with an output schema. Each selected absolute page gets its
+own request, including for text and mixed channels. This does not reproduce the
+reference implementation's joint multi-page inference.
+
+For vLLM, select `engine_options=ApiVlmEngineOptions(...)` and explicitly set
+`output_mode="schema_constrained"` to send request-specific JSON Schema constraints.
+The shared bounded subset rejects unsupported keywords before inference; provider
+rejection never falls back. Prompt-only mode preserves the full original schema
+for validation. Lift's advice to avoid enums, unions, references and
+`additionalProperties` concerns schema simplicity; it is not a blanket decoder
+ban. Backend-specific compilation/quality remains to be verified live.
+
+The pinned Lift tokenizer supplies EOS IDs 248044/248046 (`<|endoftext|>` /
+`<|im_end|>`); local generation uses both, and the API preset sends those stop
+strings. The checkpoint's existing chat template receives `enable_thinking=False`.
+Its 12384 output setting and 249760 local input-token upper bound (262144 published
+context minus output budget) are static and unmeasured. They do not establish
+memory capacity or extraction accuracy.
+
+Lift's code is Apache 2.0; its weights have a
+[modified OpenRAIL-M license](https://github.com/datalab-to/lift/blob/4ff031b8c83b44bb123d7eda42907b22ec1e1e56/MODEL_LICENSE),
+including revenue/funding and competitive-use restrictions, attribution and
+share-alike provisions. Operators must review the actual terms and allow-list
+the deployment; adding a preset does not authorize deployment.
 
 API parameters derive from the model spec (model identifier, temperature,
 max_tokens) and are then overridden by `ApiVlmEngineOptions.params`, which has
