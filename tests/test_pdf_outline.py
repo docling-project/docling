@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from docling.utils.pdf_outline import extract_outline_from_docling_parse
+import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
+
+from docling.utils import pdf_outline
+from docling.utils.pdf_outline import (
+    extract_outline_from_docling_parse,
+    extract_outline_from_pdfium,
+)
 
 
 class _MockTocNode:
