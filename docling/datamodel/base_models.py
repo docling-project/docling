@@ -424,6 +424,7 @@ class Table(BasePageElement):
     num_cols: int = 0
     orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
+    unmatched_table_cells: list[TextCell] = []
 
 
 class TableStructurePrediction(BaseModel):

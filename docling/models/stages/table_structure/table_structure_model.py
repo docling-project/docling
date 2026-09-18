@@ -4,7 +4,7 @@
 import copy
 import logging
 import warnings
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -12,6 +12,7 @@ import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
+    TextCell,
     TextCellUnit,
 )
 from PIL import ImageDraw
@@ -178,6 +179,20 @@ class TableStructureModel(BaseTableStructureModel):
             out_file = out_path / f"table_struct_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
 
+    @staticmethod
+    def _get_unmatched_table_cells(
+        cells: Sequence[TextCell],
+        matches: Mapping[str | int, Sequence[object]],
+    ) -> list[TextCell]:
+        matched_cell_ids = {
+            int(cell_id) for cell_id, cell_matches in matches.items() if cell_matches
+        }
+        return [
+            cell
+            for cell in cells
+            if cell.text.strip() and cell.index not in matched_cell_ids
+        ]
+
     def predict_tables(
         self,
         conv_res: ConversionResult,
@@ -282,6 +297,11 @@ class TableStructureModel(BaseTableStructureModel):
 
                     assert "predict_details" in table_out
 
+                    unmatched_table_cells = self._get_unmatched_table_cells(
+                        tcells,
+                        table_out["predict_details"]["matches"],
+                    )
+
                     # Retrieving cols/rows, after post processing:
                     num_rows = table_out["predict_details"].get("num_rows", 0)
                     num_cols = table_out["predict_details"].get("num_cols", 0)
@@ -300,6 +320,7 @@ class TableStructureModel(BaseTableStructureModel):
                         page_no=page.page_no,
                         cluster=table_cluster,
                         label=table_cluster.label,
+                        unmatched_table_cells=unmatched_table_cells,
                     )
 
                     table_prediction.table_map[table_cluster.id] = tbl
@@ -404,6 +425,10 @@ class TableStructureModel(BaseTableStructureModel):
         num_rows = table_out["predict_details"].get("num_rows", 0)
         num_cols = table_out["predict_details"].get("num_cols", 0)
         otsl_seq = table_out["predict_details"].get("prediction", {}).get("rs_seq", [])
+        unmatched_table_cells = self._get_unmatched_table_cells(
+            table_cluster.cells,
+            table_out["predict_details"]["matches"],
+        )
 
         return Table(
             otsl_seq=otsl_seq,
@@ -414,4 +439,5 @@ class TableStructureModel(BaseTableStructureModel):
             page_no=page_no,
             cluster=table_cluster,
             label=table_cluster.label,
+            unmatched_table_cells=unmatched_table_cells,
         )

@@ -6,6 +6,7 @@ from pathlib import Path
 from statistics import median
 
 from docling_core.types.doc import (
+    BoundingBox,
     CodeItem,
     DocItemLabel,
     DoclingDocument,
@@ -34,6 +35,7 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 from docling.models.postprocessing.list_marker_processor import (
     ListItemMarkerProcessor,
 )
@@ -48,6 +50,26 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    recover_orphaned_table_text: bool = False
+
+    @classmethod
+    def from_pdf_pipeline_options(
+        cls, pipeline_options: PdfPipelineOptions
+    ) -> "ReadingOrderOptions":
+        table_options = pipeline_options.table_structure_options
+        supports_recovery = (
+            pipeline_options.do_table_structure
+            and type(table_options) is TableStructureOptions
+            and table_options.do_cell_matching
+        )
+        if pipeline_options.recover_orphaned_table_text and not supports_recovery:
+            raise ValueError(
+                "recover_orphaned_table_text requires do_table_structure=True and "
+                "TableStructureOptions (TableFormer V1) with do_cell_matching=True"
+            )
+        return cls(
+            recover_orphaned_table_text=pipeline_options.recover_orphaned_table_text
+        )
 
 
 class ReadingOrderModel:
@@ -88,10 +110,14 @@ class ReadingOrderModel:
         return elements
 
     def _add_child_elements(
-        self, element: BasePageElement, doc_item: NodeItem, doc: DoclingDocument
+        self,
+        element: BasePageElement,
+        doc_item: NodeItem,
+        doc: DoclingDocument,
+        children: list[Cluster] | None = None,
     ) -> None:
         child: Cluster
-        for child in element.cluster.children:
+        for child in element.cluster.children if children is None else children:
             c_label = child.label
             c_bbox = child.bbox.to_bottom_left_origin(
                 doc.pages[element.page_no].size.height
@@ -156,6 +182,7 @@ class ReadingOrderModel:
         out_doc: DoclingDocument,
         table_item: TableItem,
         pictures_by_cell: dict[int, list[FigureElement]] | None = None,
+        parent: NodeItem | None = None,
     ) -> None:
         if pictures_by_cell:
             self._add_rich_table_pictures(
@@ -179,6 +206,8 @@ class ReadingOrderModel:
                 ref=rich_cell_ref,
             )
             out_doc.add_table_cell(table_item=table_item, cell=rich_cell)
+        elif element.unmatched_table_cells:
+            self._add_unmatched_table_text(element, out_doc, parent)
 
     def _add_picture_element(
         self,
@@ -249,6 +278,33 @@ class ReadingOrderModel:
         self._add_child_elements(element, group_element, doc)
 
         return group_element.get_ref()
+
+    def _add_unmatched_table_text(
+        self,
+        element: Table,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+    ) -> None:
+        if (
+            not self.options.recover_orphaned_table_text
+            or not element.unmatched_table_cells
+        ):
+            return
+
+        group = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=f"orphaned_table_text_{element.cluster.id}",
+            parent=parent,
+        )
+        unmatched_cluster = Cluster(
+            id=element.cluster.id,
+            label=DocItemLabel.TEXT,
+            bbox=BoundingBox.enclosing_bbox(
+                [cell.to_bounding_box() for cell in element.unmatched_table_cells]
+            ),
+            cells=element.unmatched_table_cells,
+        )
+        self._add_child_elements(element, group, doc, children=[unmatched_cluster])
 
     @staticmethod
     def _table_data_from_table(element: Table) -> TableData:
@@ -540,6 +596,7 @@ class ReadingOrderModel:
                         out_doc,
                         table_item,
                         rich_table_pictures.get(rel.ref.cref),
+                        parent,
                     )
 
                 elif isinstance(element, FigureElement):
