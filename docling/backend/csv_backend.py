@@ -125,6 +125,13 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             raise DocumentLoadError(
                 f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
             ) from e
+
+        # csv.reader yields an empty list for a blank line, which would otherwise become a
+        # row of empty cells in the table. Files ending in a newline pair are common, and
+        # so is a blank line separating records. A line of empty fields (",,") parses as a
+        # row of empty strings rather than an empty list, so it is kept.
+        self.csv_data = [row for row in self.csv_data if row]
+
         _log.info(f"Detected {len(self.csv_data)} lines")
 
         # Parse the CSV into a structured document model
