@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import codecs
 import logging
 import posixpath
 import re
@@ -299,6 +300,21 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         return fixed_content
 
+    @staticmethod
+    def _decode_content_file(xhtml_data: bytes) -> str:
+        """Decode a content document, honouring a UTF-16 byte order mark.
+
+        Args:
+            xhtml_data: Raw bytes of a content document as stored in the archive
+
+        Returns:
+            The decoded document text
+        """
+        if xhtml_data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+            return xhtml_data.decode("utf-16")
+
+        return xhtml_data.decode("utf-8")
+
     @override
     def is_valid(self) -> bool:
         return self.valid
@@ -393,7 +409,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 # Read the XHTML content
                 xhtml_data = self.epub_zip.read(content_file)
-                xhtml_text = xhtml_data.decode("utf-8")
+                xhtml_text = self._decode_content_file(xhtml_data)
 
                 # Extract the body content from the XHTML
                 # Simple extraction - find content between <body> tags
