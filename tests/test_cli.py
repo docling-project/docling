@@ -94,13 +94,22 @@ def test_cli_help():
 
 
 def test_cli_convert_help():
-    result = runner.invoke(app, ["convert", "--help"])
+    result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output
     assert "layout clusters" in result.output
     assert "layour" not in result.output
     assert "input_sources" not in result.output
+    assert "--output-file" in result.output
+    convert_command = get_command(app).commands["convert"]
+    separator_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "reading_order_separators"
+    )
+    assert separator_option.opts == ["--reading-order-separators"]
+    assert separator_option.secondary_opts == ["--no-reading-order-separators"]
 
 
 def test_cli_version():
@@ -170,6 +179,79 @@ def test_cli_exports_dclx(tmp_path):
     with zipfile.ZipFile(converted) as archive:
         payload = b"".join(archive.read(name) for name in archive.namelist())
     assert b"DCLX CLI" in payload
+
+
+def test_cli_exports_to_exact_output_file(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# Named DCLX CLI\n\nHello.", encoding="utf-8")
+    output_file = tmp_path / "nested" / "custom-name.dclx"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "dclx",
+            "--output-file",
+            str(output_file),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_file.exists()
+    assert not (output_file.parent / "input.dclx").exists()
+    with zipfile.ZipFile(output_file) as archive:
+        payload = b"".join(archive.read(name) for name in archive.namelist())
+    assert b"Named DCLX CLI" in payload
+
+
+def test_cli_output_file_rejects_multiple_formats(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# Multiple formats", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "md",
+            "--to",
+            "json",
+            "--output-file",
+            str(tmp_path / "ambiguous-output"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--output-file requires exactly one output format" in result.output
+
+
+def test_cli_output_file_rejects_multiple_inputs(tmp_path):
+    first = tmp_path / "first.md"
+    second = tmp_path / "second.md"
+    first.write_text("# First", encoding="utf-8")
+    second.write_text("# Second", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            str(first),
+            str(second),
+            "--from",
+            "md",
+            "--to",
+            "md",
+            "--output-file",
+            str(tmp_path / "ambiguous.md"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--output-file requires exactly one input document" in result.output
 
 
 def test_cli_exports_latex(tmp_path):
@@ -1248,6 +1330,27 @@ def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert ocr_options is not None
     assert ocr_options.kind == "easyocr"
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected"),
+    [
+        (["--reading-order-separators"], True),
+        (["--no-reading-order-separators"], False),
+    ],
+)
+def test_cli_reading_order_separator_switch(
+    tmp_path, monkeypatch, extra_args, expected
+):
+    result, enabled = _capture_cli_engine_options(
+        monkeypatch,
+        extra_args,
+        tmp_path,
+        "use_reading_order_separators",
+    )
+
+    assert result.exit_code == 0
+    assert enabled is expected
 
 
 def test_cli_invalid_layout_engine_is_rejected(tmp_path):

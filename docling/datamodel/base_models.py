@@ -499,6 +499,11 @@ class Page(BaseModel):
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
+    # Visible vector geometry captured while the page backend is alive. These
+    # are transient pipeline signals and deliberately stay out of serialized
+    # conversion results.
+    _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
+    _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image

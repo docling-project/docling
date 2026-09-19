@@ -65,6 +65,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
+| `use_reading_order_separators` | Experimentally use visible PDF rules to improve reading order; off by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |

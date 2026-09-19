@@ -500,6 +500,7 @@ def export_documents(
     chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
     debug_vlm_native_output: bool = False,
+    output_file: Path | None = None,
 ):
     success_count = 0
     failure_count = 0
@@ -539,7 +540,7 @@ def export_documents(
 
             # Export JSON format:
             if export_json:
-                fname = output_dir / f"{doc_filename}.json"
+                fname = output_file or output_dir / f"{doc_filename}.json"
                 _log.info(f"writing JSON output to {fname}")
                 conv_res.document.save_as_json(
                     filename=fname, image_mode=image_export_mode
@@ -547,7 +548,7 @@ def export_documents(
 
             # Export YAML format:
             if export_yaml:
-                fname = output_dir / f"{doc_filename}.yaml"
+                fname = output_file or output_dir / f"{doc_filename}.yaml"
                 _log.info(f"writing YAML output to {fname}")
                 conv_res.document.save_as_yaml(
                     filename=fname, image_mode=image_export_mode
@@ -555,7 +556,7 @@ def export_documents(
 
             # Export HTML format:
             if export_html:
-                fname = output_dir / f"{doc_filename}.html"
+                fname = output_file or output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
                     filename=fname,
@@ -565,7 +566,7 @@ def export_documents(
 
             # Export HTML format:
             if export_html_split_page:
-                fname = output_dir / f"{doc_filename}.html"
+                fname = output_file or output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
                 if show_layout:
                     ser = HTMLDocSerializer(
@@ -591,7 +592,7 @@ def export_documents(
 
             # Export Text format:
             if export_txt:
-                fname = output_dir / f"{doc_filename}.txt"
+                fname = output_file or output_dir / f"{doc_filename}.txt"
                 _log.info(f"writing TXT output to {fname}")
                 conv_res.document.save_as_markdown(
                     filename=fname,
@@ -601,7 +602,7 @@ def export_documents(
 
             # Export Markdown format:
             if export_md:
-                fname = output_dir / f"{doc_filename}.md"
+                fname = output_file or output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
                     filename=fname, image_mode=image_export_mode
@@ -624,32 +625,32 @@ def export_documents(
 
             # Export Document Tags format:
             if export_doctags:
-                fname = output_dir / f"{doc_filename}.doctags"
+                fname = output_file or output_dir / f"{doc_filename}.doctags"
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
 
             # Export WebVTT format:
             if export_vtt:
-                fname = output_dir / f"{doc_filename}.vtt"
+                fname = output_file or output_dir / f"{doc_filename}.vtt"
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
 
             # Export DocLang format:
             if export_doclang:
-                fname = output_dir / f"{doc_filename}.dclg.xml"
+                fname = output_file or output_dir / f"{doc_filename}.dclg.xml"
                 _log.info(f"writing DocLang output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
 
             # Export DCLX format:
             if export_dclx:
-                fname = output_dir / f"{doc_filename}.dclx"
+                fname = output_file or output_dir / f"{doc_filename}.dclx"
                 _log.info(f"writing DCLX output to {fname}")
                 conv_res.document.save_as_doclang_archive(filename=fname)
 
             # Export LaTeX format:
             if export_latex:
-                fname = output_dir / f"{doc_filename}.tex"
+                fname = output_file or output_dir / f"{doc_filename}.tex"
                 _log.info(f"writing LaTeX output to {fname}")
                 ser_res = LaTeXDocSerializer(doc=conv_res.document).serialize()
                 with fname.open("w", encoding="utf-8") as fp:
@@ -657,7 +658,7 @@ def export_documents(
 
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:
-                fname = output_dir / f"{doc_filename}.chunks.jsonl"
+                fname = output_file or output_dir / f"{doc_filename}.chunks.jsonl"
                 _log.info(f"writing Chunks output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     for i, chunk in enumerate(
@@ -920,6 +921,16 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    reading_order_separators: Annotated[
+        bool,
+        typer.Option(
+            "--reading-order-separators/--no-reading-order-separators",
+            help=(
+                "Use visible horizontal and vertical PDF rules as structural "
+                "signals for reading order. Experimental."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1073,6 +1084,16 @@ def convert(  # noqa: C901
     output: Annotated[
         Path, typer.Option(..., help="Output directory where results are saved.")
     ] = Path("."),
+    output_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-file",
+            help=(
+                "Write the primary result to this exact path. Requires one input "
+                "document and one output format."
+            ),
+        ),
+    ] = None,
     verbose: Annotated[
         int,
         typer.Option(
@@ -1370,6 +1391,18 @@ def convert(  # noqa: C901
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
 
+        if output_file is not None:
+            if len(input_doc_paths) != 1:
+                err_console.print(
+                    "[red]Error: --output-file requires exactly one input document.[/red]"
+                )
+                raise typer.Abort()
+            if len(to_formats) != 1:
+                err_console.print(
+                    "[red]Error: --output-file requires exactly one output format.[/red]"
+                )
+                raise typer.Abort()
+
         export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
@@ -1435,6 +1468,7 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                use_reading_order_separators=reading_order_separators,
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
@@ -1729,10 +1763,11 @@ def convert(  # noqa: C901
             page_range=parsed_page_range,
         )
 
-        output.mkdir(parents=True, exist_ok=True)
+        export_output_dir = output_file.parent if output_file is not None else output
+        export_output_dir.mkdir(parents=True, exist_ok=True)
         export_documents(
             conv_results,
-            output_dir=output,
+            output_dir=export_output_dir,
             **export_flags,
             show_layout=show_layout,
             print_timings=profiling,
@@ -1742,6 +1777,7 @@ def convert(  # noqa: C901
             chunk_max_tokens=chunk_max_tokens,
             chunk_tokenizer=chunk_tokenizer,
             debug_vlm_native_output=debug_vlm_native_output,
+            output_file=output_file,
         )
 
         end_time = time.time() - start_time

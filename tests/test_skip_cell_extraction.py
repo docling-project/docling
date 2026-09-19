@@ -32,6 +32,10 @@ from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.layout.layout_postprocessing_model import (
     LayoutPostprocessingModel,
 )
+from docling.models.stages.page_preprocessing.page_preprocessing_model import (
+    PagePreprocessingModel,
+    PagePreprocessingOptions,
+)
 
 
 def _page() -> Page:
@@ -102,3 +106,21 @@ def test_layout_write_back_guarded_without_parsed_page() -> None:
     assert len(out_pages) == 1
     assert out_pages[0].predictions.layout.clusters
     assert page.parsed_page is None  # nothing to write back, and no crash
+
+
+def test_shape_geometry_is_retained_without_cell_extraction() -> None:
+    page = _page()
+    line = BoundingBox(l=10, t=20, r=590, b=20)
+    shape_box = BoundingBox(l=10, t=20, r=590, b=21)
+    page._backend = SimpleNamespace(
+        get_shape_lines=lambda: [line],
+        get_connected_shape_bounding_boxes=lambda: [shape_box],
+    )  # type: ignore[assignment]
+    model = PagePreprocessingModel(
+        PagePreprocessingOptions(images_scale=None, skip_cell_extraction=True)
+    )
+
+    result = model._capture_shape_geometry(page)
+
+    assert result._shape_lines == [line]
+    assert result._shape_bounding_boxes == [shape_box]

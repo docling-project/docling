@@ -7,9 +7,9 @@ import math
 import re
 from dataclasses import dataclass, field
 from itertools import islice, takewhile
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Dict, Iterable, List, Literal, Set, Tuple
 
-from docling_core.types.doc.base import BoundingBox, Size
+from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
 from docling_core.types.doc.labels import DocItemLabel
 from rtree import index as rtree_index
@@ -44,6 +44,272 @@ class PageElement(BoundingBox):
 
     def follows_maintext_order(self, rhs) -> bool:
         return self.cid + 1 == rhs.cid
+
+
+class SeparatorElement(BoundingBox):
+    """Transient page rule used only while constructing the reading-order graph."""
+
+    cid: int
+    page_no: int
+    page_size: Size
+    orientation: Literal["horizontal", "vertical"]
+
+    def __lt__(self, other) -> bool:
+        if self.page_no == other.page_no:
+            if self.overlaps_horizontally(other):
+                return self.b > other.b
+            return self.l < other.l
+        return self.page_no < other.page_no
+
+    def follows_maintext_order(self, rhs) -> bool:
+        return False
+
+
+ReadingOrderNode = PageElement | SeparatorElement
+
+
+_MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM = 0.08
+_MIN_VERTICAL_SEPARATOR_LENGTH_NORM = 0.05
+_MAX_FILLED_RULE_THICKNESS = 3.5
+_SEPARATOR_MERGE_TOLERANCE = 1.0
+_AXIS_ALIGNMENT_TOLERANCE = 1.0e-3
+
+
+def _as_bottom_left_box(bbox: BoundingBox, page_size: Size) -> BoundingBox:
+    return bbox.to_bottom_left_origin(page_height=page_size.height)
+
+
+def _candidate_separator(
+    bbox: BoundingBox,
+    *,
+    page_no: int,
+    page_size: Size,
+    allow_thickness: bool,
+) -> SeparatorElement | None:
+    box = _as_bottom_left_box(bbox, page_size)
+    horizontal = box.height <= (
+        _MAX_FILLED_RULE_THICKNESS if allow_thickness else _AXIS_ALIGNMENT_TOLERANCE
+    )
+    vertical = box.width <= (
+        _MAX_FILLED_RULE_THICKNESS if allow_thickness else _AXIS_ALIGNMENT_TOLERANCE
+    )
+
+    if horizontal and box.width >= (
+        _MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM * page_size.width
+    ):
+        y = (box.b + box.t) / 2
+        return SeparatorElement(
+            cid=0,
+            page_no=page_no,
+            page_size=page_size,
+            orientation="horizontal",
+            l=max(0.0, box.l),
+            r=min(page_size.width, box.r),
+            b=y,
+            t=y,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+    if vertical and box.height >= (
+        _MIN_VERTICAL_SEPARATOR_LENGTH_NORM * page_size.height
+    ):
+        x = (box.l + box.r) / 2
+        return SeparatorElement(
+            cid=0,
+            page_no=page_no,
+            page_size=page_size,
+            orientation="vertical",
+            l=x,
+            r=x,
+            b=max(0.0, box.b),
+            t=min(page_size.height, box.t),
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+    return None
+
+
+def _merge_separator_candidates(
+    candidates: list[SeparatorElement],
+) -> list[SeparatorElement]:
+    merged: list[SeparatorElement] = []
+    ordered = sorted(
+        candidates,
+        key=lambda item: (
+            item.orientation,
+            item.b if item.orientation == "horizontal" else item.l,
+            item.l if item.orientation == "horizontal" else item.b,
+        ),
+    )
+    for candidate in ordered:
+        match = next(
+            (
+                item
+                for item in merged
+                if _separator_candidates_can_merge(item, candidate)
+            ),
+            None,
+        )
+        if match is None:
+            merged.append(candidate)
+            continue
+
+        if candidate.orientation == "horizontal":
+            y = (match.b + candidate.b) / 2
+            match.l = min(match.l, candidate.l)
+            match.r = max(match.r, candidate.r)
+            match.b = y
+            match.t = y
+        else:
+            x = (match.l + candidate.l) / 2
+            match.b = min(match.b, candidate.b)
+            match.t = max(match.t, candidate.t)
+            match.l = x
+            match.r = x
+    return merged
+
+
+def _separator_candidates_can_merge(
+    lhs: SeparatorElement, rhs: SeparatorElement
+) -> bool:
+    if lhs.orientation != rhs.orientation:
+        return False
+    if lhs.orientation == "horizontal":
+        return (
+            abs(lhs.b - rhs.b) <= _SEPARATOR_MERGE_TOLERANCE
+            and rhs.l <= lhs.r + _SEPARATOR_MERGE_TOLERANCE
+            and lhs.l <= rhs.r + _SEPARATOR_MERGE_TOLERANCE
+        )
+    return (
+        abs(lhs.l - rhs.l) <= _SEPARATOR_MERGE_TOLERANCE
+        and rhs.b <= lhs.t + _SEPARATOR_MERGE_TOLERANCE
+        and lhs.b <= rhs.t + _SEPARATOR_MERGE_TOLERANCE
+    )
+
+
+def _separator_crosses_text(
+    separator: SeparatorElement, page_elements: list[PageElement]
+) -> bool:
+    for element in page_elements:
+        if not element.text.strip():
+            continue
+        if separator.orientation == "horizontal":
+            if (
+                element.b + element.eps < separator.b < element.t - element.eps
+                and element.l < separator.r
+                and separator.l < element.r
+            ):
+                return True
+        elif (
+            element.l + element.eps < separator.l < element.r - element.eps
+            and element.b < separator.t
+            and separator.b < element.t
+        ):
+            return True
+    return False
+
+
+def _separator_is_inside_graphic(
+    separator: SeparatorElement, page_elements: list[PageElement]
+) -> bool:
+    for element in page_elements:
+        if element.label not in GRAPHIC_LABELS:
+            continue
+        if (
+            element.l - element.eps <= separator.l
+            and separator.r <= element.r + element.eps
+            and element.b - element.eps <= separator.b
+            and separator.t <= element.t + element.eps
+        ):
+            return True
+    return False
+
+
+def _separator_has_content_on_both_sides(
+    separator: SeparatorElement, page_elements: list[PageElement]
+) -> bool:
+    structural_elements = [
+        element
+        for element in page_elements
+        if element.text.strip() or element.label in GRAPHIC_LABELS
+    ]
+    if separator.orientation == "horizontal":
+        above = any(
+            element.b >= separator.b
+            and element.l < separator.r
+            and separator.l < element.r
+            for element in structural_elements
+        )
+        below = any(
+            element.t <= separator.t
+            and element.l < separator.r
+            and separator.l < element.r
+            for element in structural_elements
+        )
+        return above and below
+
+    left = any(
+        element.r <= separator.l and element.b < separator.t and separator.b < element.t
+        for element in structural_elements
+    )
+    right = any(
+        element.l >= separator.r and element.b < separator.t and separator.b < element.t
+        for element in structural_elements
+    )
+    return left and right
+
+
+def build_page_separators(
+    *,
+    page_no: int,
+    page_size: Size,
+    page_elements: list[PageElement],
+    shape_lines: list[BoundingBox] | None,
+    shape_bounding_boxes: list[BoundingBox] | None,
+) -> list[SeparatorElement]:
+    """Build trustworthy reading-order separators from visible PDF geometry."""
+    if shape_lines is None and shape_bounding_boxes is None:
+        return []
+
+    bottom_left_elements: list[PageElement] = []
+    for element in page_elements:
+        box = _as_bottom_left_box(element, page_size)
+        bottom_left_elements.append(
+            element.model_copy(
+                update={
+                    "l": box.l,
+                    "r": box.r,
+                    "b": box.b,
+                    "t": box.t,
+                    "coord_origin": box.coord_origin,
+                }
+            )
+        )
+
+    candidates: list[SeparatorElement] = []
+    for boxes, allow_thickness in (
+        (shape_lines or [], False),
+        (shape_bounding_boxes or [], True),
+    ):
+        for bbox in boxes:
+            candidate = _candidate_separator(
+                bbox,
+                page_no=page_no,
+                page_size=page_size,
+                allow_thickness=allow_thickness,
+            )
+            if candidate is not None:
+                candidates.append(candidate)
+
+    accepted = [
+        separator
+        for separator in _merge_separator_candidates(candidates)
+        if not _separator_crosses_text(separator, bottom_left_elements)
+        and not _separator_is_inside_graphic(separator, bottom_left_elements)
+        and _separator_has_content_on_both_sides(separator, bottom_left_elements)
+    ]
+    return [
+        separator.model_copy(update={"cid": -(index + 1)})
+        for index, separator in enumerate(accepted)
+    ]
 
 
 @dataclass
@@ -98,24 +364,31 @@ class ReadingOrderPredictor:
         self._horizontal_dilation_threshold_norm = 0.15
 
     def predict_reading_order(
-        self, page_elements: List[PageElement]
+        self,
+        page_elements: List[PageElement],
+        page_separators: List[SeparatorElement] | None = None,
     ) -> List[PageElement]:
 
         page_nos: Set[int] = set()
 
-        for i, elem in enumerate(page_elements):
+        for elem in page_elements:
             page_nos.add(elem.page_no)
+        if page_separators is not None:
+            for separator in page_separators:
+                page_nos.add(separator.page_no)
 
         page_to_elems: Dict[int, List[PageElement]] = {}
+        page_to_separators: Dict[int, List[SeparatorElement]] = {}
         page_to_headers: Dict[int, List[PageElement]] = {}
         page_to_footers: Dict[int, List[PageElement]] = {}
 
         for page_no in page_nos:
             page_to_elems[page_no] = []
+            page_to_separators[page_no] = []
             page_to_footers[page_no] = []
             page_to_headers[page_no] = []
 
-        for i, elem in enumerate(page_elements):
+        for elem in page_elements:
             if elem.label == DocItemLabel.PAGE_HEADER:
                 page_to_headers[elem.page_no].append(elem)
             elif elem.label == DocItemLabel.PAGE_FOOTER:
@@ -123,13 +396,34 @@ class ReadingOrderPredictor:
             else:
                 page_to_elems[elem.page_no].append(elem)
 
+        if page_separators is not None:
+            for separator in page_separators:
+                page_to_separators[separator.page_no].append(separator)
+
         # print("headers ....")
         for page_no, elems in page_to_headers.items():
             page_to_headers[page_no] = self._predict_page(elems)
 
         # print("elems ....")
         for page_no, elems in page_to_elems.items():
-            page_to_elems[page_no] = self._predict_page(elems)
+            separators = page_to_separators[page_no]
+            horizontal_separators = [
+                separator
+                for separator in separators
+                if separator.orientation == "horizontal"
+            ]
+            vertical_separators = [
+                separator
+                for separator in separators
+                if separator.orientation == "vertical"
+            ]
+            ordered_nodes = self._predict_page(
+                [*elems, *horizontal_separators],
+                vertical_separators=vertical_separators,
+            )
+            page_to_elems[page_no] = [
+                node for node in ordered_nodes if isinstance(node, PageElement)
+            ]
 
         # print("footers ....")
         for page_no, elems in page_to_footers.items():
@@ -257,7 +551,12 @@ class ReadingOrderPredictor:
 
         return merges
 
-    def _predict_page(self, page_elements: List[PageElement]) -> List[PageElement]:
+    def _predict_page(
+        self,
+        page_elements: List[ReadingOrderNode],
+        *,
+        vertical_separators: List[SeparatorElement] | None = None,
+    ) -> List[ReadingOrderNode]:
         r"""
         Reorder the output of the page elements into a single-page reading order.
         """
@@ -270,22 +569,36 @@ class ReadingOrderPredictor:
         """
 
         for i, elem in enumerate(page_elements):
-            page_elements[i] = elem.to_bottom_left_origin(  # type: ignore
-                page_height=page_elements[i].page_size.height
+            box = elem.to_bottom_left_origin(page_height=elem.page_size.height)
+            page_elements[i] = elem.model_copy(
+                update={
+                    "l": box.l,
+                    "r": box.r,
+                    "b": box.b,
+                    "t": box.t,
+                    "coord_origin": box.coord_origin,
+                }
             )
         self._init_h2i_map(page_elements, state)
 
-        self._init_l2r_map(page_elements, state)
+        self._init_l2r_map(
+            page_elements,
+            state,
+            vertical_separators=vertical_separators,
+        )
 
         self._init_ud_maps(page_elements, state)
 
         if self.dilated_page_element:
-            dilated_page_elements: List[PageElement] = copy.deepcopy(
+            dilated_page_elements: List[ReadingOrderNode] = copy.deepcopy(
                 page_elements
             )  # deep-copy
 
             dilated_page_elements = self._do_horizontal_dilation(
-                page_elements, dilated_page_elements, state
+                page_elements,
+                dilated_page_elements,
+                state,
+                vertical_separators=vertical_separators,
             )
 
             # redo with dilated provs
@@ -318,7 +631,7 @@ class ReadingOrderPredictor:
         order: List[int] = self._find_order(page_elements, state)
         # print(f"order: {order}")
 
-        sorted_elements: List[PageElement] = []
+        sorted_elements: List[ReadingOrderNode] = []
         for ind in order:
             sorted_elements.append(page_elements[ind])
 
@@ -330,7 +643,7 @@ class ReadingOrderPredictor:
         return sorted_elements
 
     def _init_h2i_map(
-        self, page_elems: List[PageElement], state: _ReadingOrderPredictorState
+        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> None:
         state.h2i_map = {}
         state.i2h_map = {}
@@ -340,7 +653,11 @@ class ReadingOrderPredictor:
             state.i2h_map[i] = pelem.cid
 
     def _init_l2r_map(
-        self, page_elems: List[PageElement], state: _ReadingOrderPredictorState
+        self,
+        page_elems: List[ReadingOrderNode],
+        state: _ReadingOrderPredictorState,
+        *,
+        vertical_separators: List[SeparatorElement] | None,
     ) -> None:
         state.l2r_map = {}
         state.r2l_map = {}
@@ -351,12 +668,17 @@ class ReadingOrderPredictor:
                     pelem_i.follows_maintext_order(pelem_j)
                     and pelem_i.is_strictly_left_of(pelem_j)
                     and pelem_i.overlaps_vertically_with_iou(pelem_j, 0.8)
+                    and not self._has_vertical_separator_between(
+                        pelem_i,
+                        pelem_j,
+                        vertical_separators=vertical_separators,
+                    )
                 ):
                     state.l2r_map[i] = j
                     state.r2l_map[j] = i
 
     def _init_ud_maps(
-        self, page_elems: List[PageElement], state: _ReadingOrderPredictorState
+        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> None:
         """
         Initialize up/down maps for reading order prediction using R-tree spatial indexing.
@@ -415,11 +737,11 @@ class ReadingOrderPredictor:
     def _has_sequence_interruption(
         self,
         spatial_idx: rtree_index.Index,
-        page_elems: List[PageElement],
+        page_elems: List[ReadingOrderNode],
         i: int,
         j: int,
-        pelem_i: PageElement,
-        pelem_j: PageElement,
+        pelem_i: ReadingOrderNode,
+        pelem_j: ReadingOrderNode,
     ) -> bool:
         """Check if elements interrupt the reading sequence between i and j."""
         # Query R-tree for elements between i and j
@@ -458,10 +780,12 @@ class ReadingOrderPredictor:
 
     def _do_horizontal_dilation(
         self,
-        page_elems: List[PageElement],
-        dilated_page_elems: List[PageElement],
+        page_elems: List[ReadingOrderNode],
+        dilated_page_elems: List[ReadingOrderNode],
         state: _ReadingOrderPredictorState,
-    ) -> List[PageElement]:
+        *,
+        vertical_separators: List[SeparatorElement] | None,
+    ) -> List[ReadingOrderNode]:
         # Compute the dilation threshold
         th = 0.0
         if page_elems:
@@ -481,6 +805,12 @@ class ReadingOrderPredictor:
                 # Apply threshold for horizontal dilation
                 x0_dil = min(x0, pelem_up.l)
                 x1_dil = max(x1, pelem_up.r)
+                x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
+                    pelem_i,
+                    x0=x0_dil,
+                    x1=x1_dil,
+                    vertical_separators=vertical_separators,
+                )
                 if (x0 - x0_dil) > th or (x1_dil - x1) > th:
                     continue
                 x0 = x0_dil
@@ -492,6 +822,12 @@ class ReadingOrderPredictor:
                 # Apply threshold for horizontal dilation
                 x0_dil = min(x0, pelem_dn.l)
                 x1_dil = max(x1, pelem_dn.r)
+                x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
+                    pelem_i,
+                    x0=x0_dil,
+                    x1=x1_dil,
+                    vertical_separators=vertical_separators,
+                )
                 if (x0 - x0_dil) > th or (x1_dil - x1) > th:
                     continue
                 x0 = x0_dil
@@ -517,8 +853,52 @@ class ReadingOrderPredictor:
 
         return dilated_page_elems
 
+    @staticmethod
+    def _has_vertical_separator_between(
+        lhs: ReadingOrderNode,
+        rhs: ReadingOrderNode,
+        *,
+        vertical_separators: List[SeparatorElement] | None,
+    ) -> bool:
+        if vertical_separators is None:
+            return False
+
+        overlap_bottom = max(lhs.b, rhs.b)
+        overlap_top = min(lhs.t, rhs.t)
+        if overlap_bottom >= overlap_top:
+            return False
+
+        gap_left = min(lhs.r, rhs.r)
+        gap_right = max(lhs.l, rhs.l)
+        return any(
+            gap_left <= separator.l <= gap_right
+            and separator.b < overlap_top
+            and overlap_bottom < separator.t
+            for separator in vertical_separators
+        )
+
+    @staticmethod
+    def _clamp_dilation_to_vertical_separators(
+        element: ReadingOrderNode,
+        *,
+        x0: float,
+        x1: float,
+        vertical_separators: List[SeparatorElement] | None,
+    ) -> tuple[float, float]:
+        if vertical_separators is None:
+            return x0, x1
+
+        for separator in vertical_separators:
+            if separator.t <= element.b or element.t <= separator.b:
+                continue
+            if x0 < separator.l <= element.l:
+                x0 = max(x0, separator.l)
+            if element.r <= separator.l < x1:
+                x1 = min(x1, separator.l)
+        return x0, x1
+
     def _find_heads(
-        self, page_elems: List[PageElement], state: _ReadingOrderPredictorState
+        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> None:
         head_page_elems = []
         for key, vals in state.up_map.items():
@@ -545,10 +925,10 @@ class ReadingOrderPredictor:
             state.heads.append(state.h2i_map[item.cid])
 
     def _sort_ud_maps(
-        self, provs: List[PageElement], state: _ReadingOrderPredictorState
+        self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> None:
         for ind_i, vals in state.dn_map.items():
-            child_provs: List[PageElement] = []
+            child_provs: List[ReadingOrderNode] = []
             for ind_j in vals:
                 child_provs.append(provs[ind_j])
 
@@ -560,7 +940,7 @@ class ReadingOrderPredictor:
                 state.dn_map[ind_i].append(state.h2i_map[child.cid])
 
     def _find_order(
-        self, provs: List[PageElement], state: _ReadingOrderPredictorState
+        self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> List[int]:
         order: List[int] = []
 
