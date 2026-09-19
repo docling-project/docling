@@ -342,9 +342,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return AbstractSection(title=title, paragraphs=paragraphs)
 
     @staticmethod
-    def _parse_structured_name(name_node: etree._Element) -> str:
+    def _parse_structured_name(
+        name_node: etree._Element,
+        order: tuple[str, ...] = ("prefix", "given-names", "surname", "suffix"),
+    ) -> str:
         name_parts: list[str] = []
-        for tag_name in ["prefix", "given-names", "surname", "suffix"]:
+        for tag_name in order:
             for part_node in name_node.xpath(tag_name):
                 part_text = JatsDocumentBackend._get_node_text(part_node)
                 if part_text:
@@ -504,7 +507,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                elem.text.replace("\n", " ").strip()
+                JatsDocumentBackend._normalize_whitespace(elem.text)
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
@@ -620,15 +623,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Citation parsing started")
 
-        # Author names
+        # Author names: surname before given-names (citation format).
         names = []
         for name_node in node.xpath(".//name"):
-            name_str = (
-                name_node.xpath("surname")[0].text.replace("\n", " ").strip()
-                + " "
-                + name_node.xpath("given-names")[0].text.replace("\n", " ").strip()
+            name_str = JatsDocumentBackend._parse_structured_name(
+                name_node, order=("surname", "given-names")
             )
-            names.append(name_str)
+            if name_str:
+                names.append(name_str)
         etal_node = node.xpath(".//etal")
         if len(etal_node) > 0:
             etal_text = etal_node[0].text or DEFAULT_TEXT_ETAL
@@ -652,7 +654,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         citation["title"] = (
             JatsDocumentBackend._get_text(title_node)
             if title_node is not None
-            else node.text.replace("\n", " ").strip()
+            else JatsDocumentBackend._normalize_whitespace(node.text)
         )
 
         # Journal, year, publisher name, publisher location, volume, elocation
@@ -667,7 +669,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    item_node[0].text.replace("\n", " ").strip()
+                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
                 )
 
         # Publication identifier
@@ -689,15 +691,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Pages
         if len(node.xpath("elocation-id")) > 0:
-            citation["page"] = (
-                node.xpath("elocation-id")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("elocation-id")[0].text
             )
         elif len(node.xpath("fpage")) > 0:
-            citation["page"] = node.xpath("fpage")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("fpage")[0].text
+            )
             if len(node.xpath("lpage")) > 0:
-                citation["page"] += (
-                    "–" + node.xpath("lpage")[0].text.replace("\n", " ").strip()  # noqa: RUF001
+                lpage = JatsDocumentBackend._normalize_whitespace(
+                    node.xpath("lpage")[0].text
                 )
+                if lpage:
+                    citation["page"] += "–" + lpage  # noqa: RUF001
 
         # Flatten the citation to string
 
