@@ -191,6 +191,9 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
 )
 """Matches Strict OOXML namespace/relationship URIs."""
 
+_MAX_HEADING_LEVEL: Final[int] = 9
+"""OOXML headings are 1-9. Values outside that range are clamped."""
+
 _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
     {
         "decimal",
@@ -1372,9 +1375,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if parts[1].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[0], None)
-            # Ensure heading level is at least 1 (e.g., custom "Heading 0" styles)
-            if isinstance(label_level, int) and label_level < 1:
-                label_level = 1
+            # OOXML headings are 1-9. Custom names like Heading 0 or Heading 111
+            # are clamped into that range.
+            if isinstance(label_level, int):
+                label_level = min(max(1, label_level), _MAX_HEADING_LEVEL)
             return label_str, label_level
 
         return style_label, None
@@ -2517,8 +2521,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
-            # Defense in depth: ensure level is at least 1
-            curr_level = max(1, curr_level)
+            # Defense in depth: OOXML headings are 1-9.
+            curr_level = min(max(1, curr_level), _MAX_HEADING_LEVEL)
             current_level = curr_level
             parent_level = curr_level - 1
             add_level = curr_level
