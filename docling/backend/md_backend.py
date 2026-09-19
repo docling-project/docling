@@ -652,15 +652,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
             if is_table_row:
                 self.in_table = True
-            if self.in_table and snippet_text:
-                snippet_text = self._unescape_except_pipe(original_text.strip())
+            if self.in_table and (snippet_text or original_text):
+                table_text = self._unescape_except_pipe(original_text)
                 if is_escape:
-                    snippet_text = self._escape_pipes(snippet_text)
+                    table_text = self._escape_pipes(table_text)
                 # If we're in a table, keep adding text (for formatted content in cells)
                 if self.md_table_buffer:
-                    self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text
+                    self.md_table_buffer[len(self.md_table_buffer) - 1] += table_text
                 else:
-                    self.md_table_buffer.append(snippet_text)
+                    self.md_table_buffer.append(table_text)
             elif snippet_text:
                 # Not in table - close any pending table and process as regular text
                 self._close_table(doc)

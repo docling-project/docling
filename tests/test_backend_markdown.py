@@ -689,3 +689,36 @@ def test_standard_ordered_list_still_starts_at_one():
 
     exported = conv_result.document.export_to_markdown()
     assert exported == "1. alpha\n2. beta\n3. gamma"
+
+
+def test_convert_table_cell_whitespace_around_inline_emphasis():
+    """Regression test for #4314:
+    Whitespace around inline emphasis inside table cells must not be dropped.
+    Leading space after emphasis, trailing space before emphasis, and space
+    between adjacent inline formatting runs must all be preserved.
+    """
+    markdown = (
+        "| Letter | Word |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| foo **bar** | y |\n"
+        "| **A** **B** | z |\n"
+        "| *italic* and **bold** | w |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0].data
+    cell_texts = [cell.text for cell in table.table_cells]
+    assert cell_texts == [
+        "Letter",
+        "Word",
+        "C Cadre",
+        "x",
+        "foo bar",
+        "y",
+        "A B",
+        "z",
+        "italic and bold",
+        "w",
+    ]
