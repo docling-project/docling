@@ -342,9 +342,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return AbstractSection(title=title, paragraphs=paragraphs)
 
     @staticmethod
-    def _parse_structured_name(name_node: etree._Element) -> str:
+    def _parse_structured_name(
+        name_node: etree._Element,
+        order: tuple[str, ...] = ("prefix", "given-names", "surname", "suffix"),
+    ) -> str:
         name_parts: list[str] = []
-        for tag_name in ["prefix", "given-names", "surname", "suffix"]:
+        for tag_name in order:
             for part_node in name_node.xpath(tag_name):
                 part_text = JatsDocumentBackend._get_node_text(part_node)
                 if part_text:
@@ -620,17 +623,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Citation parsing started")
 
-        # Author names. Keep surname before given-names so existing citations
-        # stay stable, but do not assume both parts exist or carry .text.
+        # Author names: surname before given-names (citation format).
         names = []
         for name_node in node.xpath(".//name"):
-            name_parts: list[str] = []
-            for tag_name in ("surname", "given-names"):
-                for part_node in name_node.xpath(tag_name):
-                    part_text = JatsDocumentBackend._get_node_text(part_node)
-                    if part_text:
-                        name_parts.append(part_text)
-            name_str = JatsDocumentBackend._normalize_whitespace(" ".join(name_parts))
+            name_str = JatsDocumentBackend._parse_structured_name(
+                name_node, order=("surname", "given-names")
+            )
             if name_str:
                 names.append(name_str)
         etal_node = node.xpath(".//etal")

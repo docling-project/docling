@@ -940,7 +940,7 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
 
 
 def test_jats_element_citation_surname_only_does_not_crash():
-    """A citation name with only a surname must not IndexError on given-names."""
+    """Citations with only a surname are rendered with that surname."""
     doc = convert_jats_body(
         "<ref-list><ref><element-citation>"
         "<name><surname>Smith</surname></name>"
@@ -953,22 +953,34 @@ def test_jats_element_citation_surname_only_does_not_crash():
     assert "Only a surname" in markdown
 
 
-def test_jats_element_citation_empty_name_parts_do_not_crash():
-    """Empty surname/given-names nodes have .text of None, not a string."""
+def test_jats_element_citation_empty_name_parts_are_omitted():
+    """Citations with empty surname and given-names elements omit that author."""
     doc = convert_jats_body(
         "<ref-list><ref><element-citation>"
         "<name><surname></surname><given-names></given-names></name>"
-        "<name><given-names>Ada</given-names></name>"
         "<article-title>Empty name parts</article-title>"
         "</element-citation></ref></ref-list>"
     )
     markdown = doc.export_to_markdown()
-    assert "Ada" in markdown
     assert "Empty name parts" in markdown
+    assert not markdown.lstrip().startswith(",")
+
+
+def test_jats_element_citation_given_names_only():
+    """Citations with only given-names are rendered with that name."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><given-names>Ada</given-names></name>"
+        "<article-title>Given names only</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Ada" in markdown
+    assert "Given names only" in markdown
 
 
 def test_jats_element_citation_empty_year_does_not_crash():
-    """A present but empty <year/> used to AttributeError on .text.replace."""
+    """Citations with an empty year element are rendered without a year."""
     doc = convert_jats_body(
         "<ref-list><ref><element-citation>"
         "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
@@ -1081,10 +1093,11 @@ def test_e2e_jats_conversions_no_stream():
 
 
 def test_jats_empty_article_title_does_not_crash():
-    """An empty <article-title> has elem.text is None in lxml and used to AttributeError."""
+    """An empty article-title element produces an empty document title without aborting conversion."""
     doc = convert_jats_article_meta(
         "<title-group><article-title></article-title></title-group>"
     )
-    assert doc is not None
     exported = doc.export_to_markdown()
-    assert isinstance(exported, str)
+    # Empty title is an H1 with no text. On unmodified main this is "" because
+    # AttributeError aborts metadata parsing and convert() returns an empty doc.
+    assert exported == "# "
