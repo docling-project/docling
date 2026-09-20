@@ -138,7 +138,7 @@ class EnvironmentHandlerMixin:
         elif node.envname in ENV_LIST:
             self._process_list(node, doc, parent, formatting, text_label)
 
-        elif node.envname == "tabular":
+        elif node.envname in {"tabular", "tabular*", "tabularx", "longtable"}:
             table_data = self._parse_table(node)
             if table_data:
                 doc.add_table(parent=parent, data=table_data)
