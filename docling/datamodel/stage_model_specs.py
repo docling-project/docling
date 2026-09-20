@@ -1368,6 +1368,68 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_MINERU2_PRO = StageModelPreset(
+    preset_id="mineru2_pro",
+    name="MinerU2.5-Pro",
+    description=(
+        "OpenDataLab MinerU2.5-Pro model for two-step document layout and "
+        "content recognition (1.2B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        name="MinerU2.5-Pro-2604-1.2B",
+        default_repo_id="opendatalab/MinerU2.5-Pro-2604-1.2B",
+        prompt="\nLayout Detection:",
+        response_format=ResponseFormat.MINERU2,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+            VlmEngineType.API_LMSTUDIO,
+        },
+        max_new_tokens=4096,
+        extra_generation_config={
+            "top_k": 1,
+            "top_p": 0.01,
+            "repetition_penalty": 1.0,
+            "no_repeat_ngram_size": 20,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="4.56.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16",
+                extra_config={"mlx_tied_word_embeddings": True},
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+                    "max_tokens": 4096,
+                }
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+                    "max_tokens": 4096,
+                }
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "mineru2.5-pro-2604-1.2b", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 VLM_CONVERT_GEMMA_12B = StageModelPreset(
     preset_id="gemma_12b",
     name="Gemma-3-12B",

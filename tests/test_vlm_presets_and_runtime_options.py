@@ -671,6 +671,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.CHANDRA_HTML,
             ResponseFormat.DOTS_JSON,
             ResponseFormat.NEMOTRON_PARSE_V2,
+            ResponseFormat.MINERU2,
         ]
 
         # Check VlmConvert presets
