@@ -162,7 +162,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
-    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
+    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm", "xltx", "xltm"],
