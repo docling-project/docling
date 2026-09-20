@@ -30,6 +30,7 @@ from docling.backend.iwork.content import (
 from docling.backend.iwork.keynote_content import (
     DEFAULT_SLIDE_HEIGHT,
     DEFAULT_SLIDE_WIDTH,
+    Placed,
     Presentation,
     Slide,
     reading_order,
@@ -211,12 +212,12 @@ def read_slide(slide: Element, archive: zipfile.ZipFile, styles: Styles) -> Slid
     """
     placed = slide_drawables(slide)
 
-    blocks: list[Block] = []
+    blocks: list[Placed] = []
     comments: list[Comment] = []
     for position in reading_order([geometry for _, _, geometry in placed]):
-        element, label, _ = placed[position]
+        element, label, geometry = placed[position]
         found, said = drawable_blocks(element, label, archive, styles)
-        blocks.extend(found)
+        blocks.extend(Placed(block, geometry) for block in found)
         comments.extend(said)
 
     return Slide(blocks=blocks, notes=slide_notes(slide, styles), comments=comments)

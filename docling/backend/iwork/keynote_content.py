@@ -27,6 +27,19 @@ slide still gets a page of plausible dimensions rather than none.
 """
 
 
+class Placed(NamedTuple):
+    """One block of a slide, and where the drawable holding it sits.
+
+    Every block a drawable yields takes that drawable's geometry, so the three
+    bullets of one text box share its box. That is the same granularity the
+    PowerPoint backend records, since it is as fine as either container goes:
+    neither writes down where a line of text landed once it was laid out.
+    """
+
+    block: Block
+    geometry: Geometry | None = None
+
+
 class Slide(NamedTuple):
     """One slide: what is placed on it, what was said about it, and its notes.
 
@@ -35,7 +48,7 @@ class Slide(NamedTuple):
     to the slide as a whole rather than to a position on it.
     """
 
-    blocks: list[Block]
+    blocks: list[Placed]
     notes: list[Paragraph] = []
     comments: list[Comment] = []
 

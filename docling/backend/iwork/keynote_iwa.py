@@ -36,6 +36,7 @@ from docling.backend.iwork.iwa import IWAObject
 from docling.backend.iwork.keynote_content import (
     DEFAULT_SLIDE_HEIGHT,
     DEFAULT_SLIDE_WIDTH,
+    Placed,
     Presentation,
     Slide,
     reading_order,
@@ -266,12 +267,12 @@ class KeynoteReader(IWAReader):
         number = iwa_reference_field(slide.payload, SLIDE_NUMBER_FIELD)
 
         placed = self._placed(slide, number)
-        blocks: list[Block] = []
+        blocks: list[Placed] = []
         comments: list[Comment] = []
         for position in reading_order([geometry for _, geometry in placed]):
-            identifier = placed[position][0]
+            identifier, geometry = placed[position]
             found, said = self._blocks(identifier, title=identifier == title)
-            blocks.extend(found)
+            blocks.extend(Placed(block, geometry) for block in found)
             comments.extend(said)
 
         return Slide(blocks=blocks, notes=self._notes(slide), comments=comments)
