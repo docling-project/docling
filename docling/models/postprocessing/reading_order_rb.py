@@ -68,6 +68,13 @@ class SeparatorElement(BoundingBox):
 ReadingOrderNode = PageElement | SeparatorElement
 
 
+def _is_horizontal_separator(element: ReadingOrderNode) -> bool:
+    return (
+        isinstance(element, SeparatorElement)
+        and element.orientation == "horizontal"
+    )
+
+
 _MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM = 0.08
 _MIN_VERTICAL_SEPARATOR_LENGTH_NORM = 0.05
 _MAX_FILLED_RULE_THICKNESS = 3.5
@@ -673,9 +680,40 @@ class ReadingOrderPredictor:
                         pelem_j,
                         vertical_separators=vertical_separators,
                     )
+                    and not (
+                        isinstance(pelem_i, PageElement)
+                        and isinstance(pelem_j, PageElement)
+                        and _is_graphic(pelem_i)
+                        and _is_graphic(pelem_j)
+                        and self._has_page_element_between(
+                            page_elems, left_index=i, right_index=j
+                        )
+                    )
                 ):
                     state.l2r_map[i] = j
                     state.r2l_map[j] = i
+
+    @staticmethod
+    def _has_page_element_between(
+        page_elems: List[ReadingOrderNode],
+        *,
+        left_index: int,
+        right_index: int,
+    ) -> bool:
+        left = page_elems[left_index]
+        right = page_elems[right_index]
+        overlap_bottom = max(left.b, right.b)
+        overlap_top = min(left.t, right.t)
+
+        return any(
+            index not in (left_index, right_index)
+            and isinstance(element, PageElement)
+            and left.r < element.r
+            and element.l < right.l
+            and overlap_bottom < element.t
+            and element.b < overlap_top
+            for index, element in enumerate(page_elems)
+        )
 
     def _init_ud_maps(
         self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
@@ -765,12 +803,21 @@ class ReadingOrderPredictor:
 
             pelem_w = page_elems[w]
 
+            horizontal_i = _is_horizontal_separator(pelem_i)
+            horizontal_j = _is_horizontal_separator(pelem_j)
+            if horizontal_i != horizontal_j:
+                # A page-wide separator is a synchronization point, not an
+                # extension of the ordinary element's horizontal lane.
+                lane_element = pelem_j if horizontal_i else pelem_i
+                overlaps_sequence = lane_element.overlaps_horizontally(pelem_w)
+            else:
+                overlaps_sequence = pelem_i.overlaps_horizontally(
+                    pelem_w
+                ) or pelem_j.overlaps_horizontally(pelem_w)
+
             # Check if w interrupts the i->j sequence
             if (
-                (
-                    pelem_i.overlaps_horizontally(pelem_w)
-                    or pelem_j.overlaps_horizontally(pelem_w)
-                )
+                overlaps_sequence
                 and pelem_i.is_strictly_above(pelem_w)
                 and pelem_w.is_strictly_above(pelem_j)
             ):
@@ -793,6 +840,9 @@ class ReadingOrderPredictor:
             th = self._horizontal_dilation_threshold_norm * page_size.width
 
         for i, pelem_i in enumerate(dilated_page_elems):
+            if _is_horizontal_separator(pelem_i):
+                continue
+
             x0 = pelem_i.l
             y0 = pelem_i.b
 
@@ -800,38 +850,46 @@ class ReadingOrderPredictor:
             y1 = pelem_i.t
 
             if i in state.up_map and len(state.up_map[i]) > 0:
-                pelem_up = page_elems[state.up_map[i][0]]
+                up_index = state.up_map[i][0]
+                pelem_up = page_elems[up_index]
 
-                # Apply threshold for horizontal dilation
-                x0_dil = min(x0, pelem_up.l)
-                x1_dil = max(x1, pelem_up.r)
-                x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
-                    pelem_i,
-                    x0=x0_dil,
-                    x1=x1_dil,
-                    vertical_separators=vertical_separators,
-                )
-                if (x0 - x0_dil) > th or (x1_dil - x1) > th:
-                    continue
-                x0 = x0_dil
-                x1 = x1_dil
+                if not _is_horizontal_separator(
+                    pelem_up
+                ) and self._is_one_to_one_vertical_edge(state, up_index, i):
+                    # Apply threshold for horizontal dilation
+                    x0_dil = min(x0, pelem_up.l)
+                    x1_dil = max(x1, pelem_up.r)
+                    x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
+                        pelem_i,
+                        x0=x0_dil,
+                        x1=x1_dil,
+                        vertical_separators=vertical_separators,
+                    )
+                    if (x0 - x0_dil) > th or (x1_dil - x1) > th:
+                        continue
+                    x0 = x0_dil
+                    x1 = x1_dil
 
             if i in state.dn_map and len(state.dn_map[i]) > 0:
-                pelem_dn = page_elems[state.dn_map[i][0]]
+                down_index = state.dn_map[i][0]
+                pelem_dn = page_elems[down_index]
 
-                # Apply threshold for horizontal dilation
-                x0_dil = min(x0, pelem_dn.l)
-                x1_dil = max(x1, pelem_dn.r)
-                x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
-                    pelem_i,
-                    x0=x0_dil,
-                    x1=x1_dil,
-                    vertical_separators=vertical_separators,
-                )
-                if (x0 - x0_dil) > th or (x1_dil - x1) > th:
-                    continue
-                x0 = x0_dil
-                x1 = x1_dil
+                if not _is_horizontal_separator(
+                    pelem_dn
+                ) and self._is_one_to_one_vertical_edge(state, i, down_index):
+                    # Apply threshold for horizontal dilation
+                    x0_dil = min(x0, pelem_dn.l)
+                    x1_dil = max(x1, pelem_dn.r)
+                    x0_dil, x1_dil = self._clamp_dilation_to_vertical_separators(
+                        pelem_i,
+                        x0=x0_dil,
+                        x1=x1_dil,
+                        vertical_separators=vertical_separators,
+                    )
+                    if (x0 - x0_dil) > th or (x1_dil - x1) > th:
+                        continue
+                    x0 = x0_dil
+                    x1 = x1_dil
 
             pelem_i.l = x0
             pelem_i.r = x1
@@ -852,6 +910,14 @@ class ReadingOrderPredictor:
                 dilated_page_elems[i].t = y1
 
         return dilated_page_elems
+
+    @staticmethod
+    def _is_one_to_one_vertical_edge(
+        state: _ReadingOrderPredictorState, upper_index: int, lower_index: int
+    ) -> bool:
+        return state.dn_map.get(upper_index) == [lower_index] and state.up_map.get(
+            lower_index
+        ) == [upper_index]
 
     @staticmethod
     def _has_vertical_separator_between(
@@ -927,17 +993,13 @@ class ReadingOrderPredictor:
     def _sort_ud_maps(
         self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState
     ) -> None:
-        for ind_i, vals in state.dn_map.items():
-            child_provs: List[ReadingOrderNode] = []
-            for ind_j in vals:
-                child_provs.append(provs[ind_j])
-
-            # this will invoke __lt__ from PageElements
-            child_provs = sorted(child_provs)
-
-            state.dn_map[ind_i] = []
-            for child in child_provs:
-                state.dn_map[ind_i].append(state.h2i_map[child.cid])
+        for neighbor_map in (state.up_map, state.dn_map):
+            for element_index, neighbor_indices in neighbor_map.items():
+                # This invokes __lt__ on the reading-order nodes.
+                sorted_neighbors = sorted(provs[index] for index in neighbor_indices)
+                neighbor_map[element_index] = [
+                    state.h2i_map[neighbor.cid] for neighbor in sorted_neighbors
+                ]
 
     def _find_order(
         self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState
