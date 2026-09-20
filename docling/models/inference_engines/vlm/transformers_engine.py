@@ -59,6 +59,7 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+_EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -259,6 +260,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
         if is_dots_model:
             attn_implementation = "sdpa"
+
+        if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
+            attn_implementation = "eager"
 
         dtype_arg_name = (
             "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"

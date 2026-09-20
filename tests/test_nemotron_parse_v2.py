@@ -191,3 +191,11 @@ def test_parse_nemotron_markdown_and_semantic_classes() -> None:
     assert document.pictures[1].meta.tabular_chart is not None
     assert document.pictures[1].meta.tabular_chart.chart_data.num_cols == 2
     assert all(item.prov for item in document.texts)
+
+
+def test_nemotron_parse_v2_requires_eager_attention() -> None:
+    from docling.models.inference_engines.vlm.transformers_engine import (
+        _EAGER_ATTN_REQUIRED_REPO_IDS,
+    )
+
+    assert "nvidia/NVIDIA-Nemotron-Parse-2.0" in _EAGER_ATTN_REQUIRED_REPO_IDS
