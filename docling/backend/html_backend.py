@@ -204,6 +204,11 @@ _IMPLIED_END_TAGS: Final = {
     "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
 }
 
+# Direct children of <table> that wrap rows. Unwrapping them makes <tr>
+# visible to the non-recursive row scan. Omitting tfoot used to drop footer
+# totals (and any other rows stored there).
+_TABLE_SECTION_TAGS: Final = ("thead", "tbody", "tfoot")
+
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
 _FORMAT_TAG_MAP: Final = {
@@ -1961,7 +1966,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         num_rows: int,
         num_cols: int,
     ) -> Optional[TableData]:
-        for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
+        for t in cast(
+            list[Tag], element.find_all(_TABLE_SECTION_TAGS, recursive=False)
+        ):
             t.unwrap()
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
@@ -3221,7 +3228,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
-        for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
+        for t in cast(list[Tag], tag.find_all(_TABLE_SECTION_TAGS, recursive=False)):
             t.unwrap()
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
