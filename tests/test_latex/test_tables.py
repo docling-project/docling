@@ -127,6 +127,47 @@ def test_latex_starred_table_and_figure():
     assert len(doc.pictures) >= 1
 
 
+def test_latex_tabularx_and_longtable_are_tables():
+    """tabularx and longtable are table environments, not loose text.
+
+    Only `tabular` was parsed as a table, so the two most common wrappers
+    for wide and multi-page tables leaked their cells as body text.
+    """
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabularx}{\textwidth}{lX}
+    Name & Description \\
+    Alpha & First row \\
+    \end{tabularx}
+    \begin{longtable}{cc}
+    Item & Qty \\
+    \endhead
+    Widgets & 3 \\
+    \end{longtable}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 2
+    first = [c.text.strip() for c in doc.tables[0].data.table_cells]
+    second = [c.text.strip() for c in doc.tables[1].data.table_cells]
+    assert "Name" in first
+    assert "Description" in first
+    assert "Alpha" in first
+    assert "First row" in first
+    assert "Widgets" in second
+    assert "3" in second
+    assert "endhead" not in " ".join(second)
+
+
 def test_latex_multicolumn_table():
     """Test \\multicolumn in a tabular environment produces correct column span."""
     latex_content = rb"""
