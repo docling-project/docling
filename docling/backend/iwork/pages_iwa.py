@@ -27,6 +27,7 @@ from docling.backend.iwork.archives import (
     iwa_reference_field,
     iwa_reference_list,
     iwa_referenced_ids,
+    read_objects,
 )
 from docling.backend.iwork.content import (
     Block,
@@ -36,11 +37,13 @@ from docling.backend.iwork.content import (
 )
 from docling.backend.iwork.iwa import (
     IWAObject,
-    iter_objects,
     read_fields,
     read_reference,
 )
 from docling.exceptions import DocumentLoadError
+
+PAGES_KIND = "Pages"
+"""What Pages calls its documents, for the error messages of a shared reader."""
 
 DOCUMENT_DRAWABLES_FIELD = 20
 """Field of ``TP.DocumentArchive`` referencing the document's floating drawables.
@@ -96,18 +99,7 @@ def read_content(
         DocumentLoadError: If a member is too large, or the object graph has no
             document archive or no body text storage.
     """
-    objects: dict[int, IWAObject] = {}
-    for info in infos:
-        if not info.filename.endswith(".iwa"):
-            continue
-        if info.file_size > max_file_bytes:
-            raise DocumentLoadError(
-                f"Pages archive member {info.filename} is {info.file_size} "
-                f"bytes, exceeding the max_file_bytes limit of "
-                f"{max_file_bytes}."
-            )
-        for obj in iter_objects(archive.read(info)):
-            objects[obj.identifier] = obj
+    objects = read_objects(archive, infos, max_file_bytes, PAGES_KIND)
 
     document = next(
         (o for o in objects.values() if o.message_type == TP_DOCUMENT_ARCHIVE),

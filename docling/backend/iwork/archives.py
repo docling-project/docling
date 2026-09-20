@@ -16,6 +16,7 @@ schemas, so every number below was established against real documents.
 """
 
 import logging
+import struct
 import zipfile
 from collections.abc import Callable
 from typing import NamedTuple, TypeVar
@@ -44,6 +45,7 @@ from docling.backend.iwork.content import (
 )
 from docling.backend.iwork.iwa import (
     IWAObject,
+    iter_objects,
     read_fields,
     read_reference,
 )
@@ -63,6 +65,15 @@ class CellValues(NamedTuple):
 
     strings: dict[int, str] = {}
     rich_text: dict[int, str] = {}
+
+
+class Geometry(NamedTuple):
+    """Where a drawable sits on the page it is placed on, in points."""
+
+    left: float
+    top: float
+    width: float
+    height: float
 
 
 MAX_REFERENCE_DEPTH = 4
@@ -99,6 +110,29 @@ and "Link" field 11, and "Strikethrough" field 12. Fields carrying anything else
 
 TSWP_SHAPE_INFO = 2011
 """Message type of ``TSWP.ShapeInfoArchive``, a shape that holds text."""
+
+SHAPE_STORAGE_FIELD = 2
+"""Field of ``TSWP.ShapeInfoArchive`` referencing the storage holding its text."""
+
+GEOMETRY_POSITION_FIELD = 1
+
+GEOMETRY_SIZE_FIELD = 2
+"""Fields of ``TSD.GeometryArchive``, each a pair of 32-bit floats.
+
+Every drawable reaches its geometry by the same route: a chain of ``super``
+messages, each of them field 1 of the one above, ending at the
+``TSD.DrawableArchive`` whose own field 1 this is. How long that chain is
+depends on what the drawable is — an image sits one level above it, a Keynote
+placeholder four — so :func:`drawable_geometry` walks down rather than counting.
+"""
+
+POINT_X_FIELD = 1
+
+POINT_Y_FIELD = 2
+"""Fields of a ``TSP.Point``, which ``TSP.Size`` spells the same way."""
+
+MAX_DRAWABLE_DEPTH = 6
+"""How far to descend through a drawable's supers looking for its geometry."""
 
 TSWP_STORAGE_ARCHIVE = 2001
 """Message type of ``TSWP.StorageArchive``, which holds a run of text.
@@ -821,6 +855,92 @@ def read_uint32(buffer: bytes, at: int) -> int:
     return int.from_bytes(buffer[at : at + 4], "little")
 
 
+def read_objects(
+    archive: zipfile.ZipFile,
+    infos: list[zipfile.ZipInfo],
+    max_file_bytes: int,
+    kind: str,
+) -> dict[int, IWAObject]:
+    """Read every archived object of an iWork 2013+ container, by identifier.
+
+    Args:
+        archive: The open container, or the inner ``Index.zip`` of one.
+        infos: Its members.
+        max_file_bytes: The largest member this is willing to decompress.
+        kind: What the app calls its documents, for error messages.
+
+    Returns:
+        Every object the container's ``.iwa`` members hold.
+
+    Raises:
+        DocumentLoadError: If a member is larger than ``max_file_bytes``.
+    """
+    objects: dict[int, IWAObject] = {}
+    for info in infos:
+        if not info.filename.endswith(".iwa"):
+            continue
+        if info.file_size > max_file_bytes:
+            raise DocumentLoadError(
+                f"{kind} archive member {info.filename} is {info.file_size} "
+                f"bytes, exceeding the max_file_bytes limit of "
+                f"{max_file_bytes}."
+            )
+        for obj in iter_objects(archive.read(info)):
+            objects[obj.identifier] = obj
+    return objects
+
+
+def drawable_geometry(payload: bytes) -> Geometry | None:
+    """Read where a drawable sits, wherever its geometry turns out to be.
+
+    Args:
+        payload: The encoded drawable, of whichever archive type placed it.
+
+    Returns:
+        The geometry, or None when the descent runs out of supers without
+        finding one — which is what a drawable that is not positioned, or one
+        whose archive this does not understand, looks like.
+    """
+    for _ in range(MAX_DRAWABLE_DEPTH):
+        fields = safe_fields(payload)
+        position = read_point(fields.get(GEOMETRY_POSITION_FIELD, [None])[0])
+        size = read_point(fields.get(GEOMETRY_SIZE_FIELD, [None])[0])
+        if position is not None and size is not None:
+            return Geometry(position[0], position[1], size[0], size[1])
+        nested = fields.get(1, [None])[0]
+        if not isinstance(nested, bytes):
+            return None
+        payload = nested
+    return None
+
+
+def read_point(raw: int | bytes | None) -> tuple[float, float] | None:
+    """Read a ``TSP.Point``, or None when the value is not one.
+
+    The check is deliberately strict — two fields, both 32-bit — because the
+    descent of :func:`drawable_geometry` has no schema to tell it when it has
+    arrived, and a message that merely starts with two length-delimited fields
+    must not be mistaken for a position.
+
+    Args:
+        raw: A decoded field value.
+
+    Returns:
+        The point's two coordinates, or None.
+    """
+    if not isinstance(raw, bytes):
+        return None
+    fields = safe_fields(raw)
+    if set(fields) != {POINT_X_FIELD, POINT_Y_FIELD}:
+        return None
+    x, y = fields[POINT_X_FIELD][0], fields[POINT_Y_FIELD][0]
+    if not isinstance(x, bytes) or not isinstance(y, bytes):
+        return None
+    if len(x) != 4 or len(y) != 4:
+        return None
+    return struct.unpack("<f", x)[0], struct.unpack("<f", y)[0]
+
+
 def safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
     """Decode a message, treating an unreadable one as empty.
 
@@ -835,17 +955,30 @@ def safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
 
 
 class IWAReader:
-    """Reads content out of the object graph of a Pages 5+ document.
+    """Reads content out of the object graph of an iWork 2013+ document.
 
     Drawables are reached twice over — once from the attachment table of the
-    text they are anchored in, and once from the document's own list of floating
-    ones — so every drawable this has already emitted is remembered. That also
-    bounds the walk: an object graph may contain cycles.
+    text they are anchored in, and once from whatever list the app itself keeps
+    of them — so every drawable this has already emitted is remembered. That
+    also bounds the walk: an object graph may contain cycles.
+
+    Args:
+        archive: The container the images are members of, which is the outer
+            one when the app nested its index in an ``Index.zip``.
+        objects: Every object in the document, keyed by identifier.
+        data_prefix: What the container puts in front of its ``Data/`` members,
+            empty unless the package was flattened into a subdirectory.
     """
 
-    def __init__(self, archive: zipfile.ZipFile, objects: dict[int, IWAObject]) -> None:
+    def __init__(
+        self,
+        archive: zipfile.ZipFile,
+        objects: dict[int, IWAObject],
+        data_prefix: str = "",
+    ) -> None:
         self._archive = archive
         self._objects = objects
+        self._data_prefix = data_prefix
         self._data_files = iwa_data_files(objects)
         self._emitted: set[int] = set()
 
@@ -1021,7 +1154,7 @@ class IWAReader:
                 continue
             named = named or member
             try:
-                return Picture(self._archive.read(member), member)
+                return Picture(self._archive.read(self._data_prefix + member), member)
             except KeyError:
                 # Pages names every rendition it knows of, including ones it did
                 # not write into this container, so keep trying the rest.
