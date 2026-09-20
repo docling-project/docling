@@ -43,9 +43,11 @@ class ApiVlmModel(BaseVlmPageModel):
 
             self.timeout = self.vlm_options.timeout
             self.concurrency = self.vlm_options.concurrency
+            # As in the API engine, the user's params override the injected
+            # default; a key set to None is left out of the request.
             self.params = {
-                **self.vlm_options.params,
                 "temperature": self.vlm_options.temperature,
+                **self.vlm_options.params,
             }
 
     def __call__(
