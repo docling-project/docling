@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import threading
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
@@ -18,7 +19,13 @@ from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import ApiImageRequestResult
+from docling.datamodel.base_models import (
+    ApiImageRequestResult,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    VlmStopReason,
+)
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
@@ -56,6 +63,10 @@ class PictureDescriptionBaseModel(
         self.provenance = "not-implemented"
         self.elements_batch_size = options.batch_size
         self.images_scale = options.scale
+        # Failed requests are handed to the pipeline through collect_errors().
+        # Kept per thread: pipelines share model instances, and conversions
+        # running concurrently must not collect each other's failures.
+        self._failures = threading.local()
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
@@ -104,6 +115,12 @@ class PictureDescriptionBaseModel(
         outputs = self._annotate_images(images)
 
         for item, output in zip(elements, outputs):
+            if _is_failed_request(output):
+                # No description was produced: report the failure to the
+                # pipeline instead of storing an empty text as if it were one.
+                self._pending_errors().append(self._failure_item(item, output))
+                yield item
+                continue
             description_text, usage = _normalize_description_output(output)
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
             if self.options._keep_deprecated_annotations:
@@ -129,10 +146,40 @@ class PictureDescriptionBaseModel(
 
             yield item
 
+    def collect_errors(self) -> List[ErrorItem]:
+        errors = self._pending_errors()
+        self._failures.errors = []
+        return errors
+
+    def _pending_errors(self) -> List[ErrorItem]:
+        errors: Optional[List[ErrorItem]] = getattr(self._failures, "errors", None)
+        if errors is None:
+            errors = self._failures.errors = []
+        return errors
+
+    def _failure_item(
+        self, item: PictureItem, output: ApiImageRequestResult
+    ) -> ErrorItem:
+        return ErrorItem(
+            component_type=DoclingComponentType.MODEL,
+            module_name=type(self).__name__,
+            error_message="Picture description failed: "
+            f"{output.error or 'unknown error'}.",
+            category=FailureCategory.INFERENCE_FAILURE,
+            page_no=item.prov[0].page_no if item.prov else None,
+        )
+
     @classmethod
     @abstractmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         pass
+
+
+def _is_failed_request(output: str | ApiImageRequestResult) -> bool:
+    return (
+        isinstance(output, ApiImageRequestResult)
+        and output.stop_reason == VlmStopReason.INFERENCE_ERROR
+    )
 
 
 def _normalize_description_output(
