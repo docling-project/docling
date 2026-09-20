@@ -784,6 +784,28 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
     )  # Allow for processing failure
 
 
+def test_cli_directory_includes_gif_images(tmp_path):
+    """GIF is a supported image MIME type, but .gif was missing from
+    FormatToExtensions, so directory conversion skipped GIF files.
+    """
+    from docling.cli.main import _iter_input_paths_from_directory, _name_matches_format
+    from docling.datamodel.base_models import FormatToExtensions
+
+    assert "gif" in FormatToExtensions[InputFormat.IMAGE]
+    assert _name_matches_format("photo.gif", InputFormat.IMAGE)
+    assert _name_matches_format("photo.GIF", InputFormat.IMAGE)
+
+    source = tmp_path / "images"
+    source.mkdir()
+    (source / "photo.gif").write_bytes(b"GIF89a")
+    (source / "photo.png").write_bytes(b"png")
+    found = {
+        path.name
+        for path in _iter_input_paths_from_directory(source, [InputFormat.IMAGE])
+    }
+    assert found == {"photo.gif", "photo.png"}
+
+
 def test_cli_audio_extensions_coverage():
     """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
