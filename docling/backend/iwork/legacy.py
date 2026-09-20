@@ -90,6 +90,8 @@ SF_TABULAR_MODEL = f"{{{SF_NAMESPACE}}}tabular-model"
 
 SF_GRID = f"{{{SF_NAMESPACE}}}grid"
 
+SF_DATASOURCE = f"{{{SF_NAMESPACE}}}datasource"
+
 SF_CELL_TEXT = f"{{{SF_NAMESPACE}}}ct"
 
 SF_SPAN = f"{{{SF_NAMESPACE}}}span"
@@ -149,9 +151,10 @@ SF_ATTR_LIST_LEVEL = f"{{{SF_NAMESPACE}}}list-level"
 SF_ATTR_LIST_STYLE = f"{{{SF_NAMESPACE}}}list-style"
 """The iWork '09 vocabulary for lists.
 
-An ``sf:liststyle`` holds one ``sf:list-label-typeinfo`` per nesting level, and
-a paragraph joins the list by naming the style and its own ``sf:list-level``,
-which counts from one.
+An ``sf:liststyle`` holds one ``sf:list-label-typeinfo`` per rung of a ladder
+nine deep, and a paragraph joins the list by naming the style and the rung it
+sits on. Rung zero is the unlabelled one ordinary body text sits on, so a
+paragraph that names no level is not a list item.
 """
 
 SF_ATTR_PARENT_IDENT = f"{{{SF_NAMESPACE}}}parent-ident"
@@ -284,11 +287,12 @@ def legacy_table(model: Element) -> TableData | None:
     if not num_cols or not num_rows:
         return None
 
-    values = [
-        clean(cell.get(SFA_ATTR_STRING) or "".join(cell.itertext())).strip()
-        for cell in model.iter(SF_CELL_TEXT)
-    ]
-    if not values:
+    source = next(iter(grid.iter(SF_DATASOURCE)), None)
+    if source is None:
+        return None
+
+    values = [legacy_cell_text(cell) for cell in source]
+    if not any(values):
         return None
 
     cells: list[TableCell] = []
@@ -306,6 +310,28 @@ def legacy_table(model: Element) -> TableData | None:
         )
 
     return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+
+def legacy_cell_text(cell: Element) -> str:
+    """Read one cell of an '09 table, which is empty unless it holds text.
+
+    The datasource holds one element per cell of the grid, in row-major order,
+    named for what the cell turned out to hold: ``sf:t`` for text, ``sf:n`` for
+    a number, and so on. Only text is recovered — a number, a date or a formula
+    result is left empty rather than guessed at from the stored value and the
+    format beside it — but every cell still takes its place, or everything after
+    the first non-text one shifts along a column.
+
+    Args:
+        cell: One child of an ``sf:datasource``.
+
+    Returns:
+        The cell's text, or an empty string when it holds none.
+    """
+    text = next(iter(cell.iter(SF_CELL_TEXT)), None)
+    if text is None:
+        return ""
+    return clean(text.get(SFA_ATTR_STRING) or "".join(text.itertext())).strip()
 
 
 def legacy_picture(media: Element, archive: zipfile.ZipFile) -> Picture | None:
