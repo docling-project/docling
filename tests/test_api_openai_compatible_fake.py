@@ -23,6 +23,7 @@ from PIL import Image
 from pydantic import AnyUrl
 
 from docling.datamodel.base_models import VlmStopReason
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
@@ -32,6 +33,7 @@ from docling.models.stages.vlm_convert.vlm_convert_model import (
     _prediction_from_engine_output,
 )
 from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.utils.api_image_request import (
     api_image_request,
     api_image_request_streaming,
@@ -285,6 +287,65 @@ def test_engine_keeps_logprobs_when_a_stopper_aborts_the_stream(api, image):
         ("ok ", -0.1),
         ("loop", -0.2),
     ]
+
+
+def test_engine_leaves_params_set_to_none_out_of_the_request(api, image):
+    """The engine injects `temperature` and `max_tokens` from the request. A user
+    param set to None drops the key instead of sending null, while
+    `max_completion_tokens` keeps replacing `max_tokens`: together the recipe
+    for a model that accepts neither, such as GPT-5 on Azure OpenAI."""
+    engine = _engine(
+        api,
+        params={"model": "gpt-5", "temperature": None, "max_completion_tokens": 256},
+    )
+
+    engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=image, prompt="describe", temperature=0.2, max_new_tokens=128
+            )
+        ]
+    )
+
+    body = _sent_body(api)
+    assert body["model"] == "gpt-5"
+    assert body["max_completion_tokens"] == 256
+    assert "temperature" not in body
+    assert "max_tokens" not in body
+
+
+def _legacy_model(endpoint: AnyUrl, **overrides) -> ApiVlmModel:
+    options = ApiVlmOptions(
+        url=endpoint,
+        prompt="describe",
+        response_format=ResponseFormat.PLAINTEXT,
+        **overrides,
+    )
+    return ApiVlmModel(enabled=True, enable_remote_services=True, vlm_options=options)
+
+
+def test_legacy_api_model_params_override_its_temperature_option(api, endpoint, image):
+    """`ApiVlmOptions.temperature` is the injected default; `params` win over it,
+    as they do on the engine path."""
+    model = _legacy_model(
+        endpoint, temperature=0.0, params={"model": "m", "temperature": 0.7}
+    )
+
+    next(model.process_images([image], "describe"))
+
+    assert _sent_body(api)["temperature"] == 0.7
+
+
+def test_legacy_api_model_leaves_params_set_to_none_out_of_the_request(
+    api, endpoint, image
+):
+    model = _legacy_model(endpoint, params={"model": "m", "temperature": None})
+
+    next(model.process_images([image], "describe"))
+
+    body = _sent_body(api)
+    assert body["model"] == "m"
+    assert "temperature" not in body
 
 
 def test_engine_requires_remote_services_to_be_enabled(api):
