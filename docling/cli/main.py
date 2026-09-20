@@ -215,8 +215,35 @@ def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
     return _name_matches_format(source_name, InputFormat.HTML)
 
 
+# Office writes a ~$ lock file next to an open document. Word, Excel, and
+# PowerPoint all use the same prefix; only the suffix changes.
+_OFFICE_LOCK_SUFFIXES = {
+    ".doc",
+    ".dot",
+    ".docx",
+    ".dotx",
+    ".docm",
+    ".dotm",
+    ".xls",
+    ".xlt",
+    ".xlsx",
+    ".xltx",
+    ".xlsm",
+    ".xltm",
+    ".ppt",
+    ".pot",
+    ".pps",
+    ".pptx",
+    ".potx",
+    ".ppsx",
+    ".pptm",
+    ".potm",
+    ".ppsm",
+}
+
+
 def _is_temporary_word_file(path: Path) -> bool:
-    return path.name.startswith("~$") and path.suffix.lower() == ".docx"
+    return path.name.startswith("~$") and path.suffix.lower() in _OFFICE_LOCK_SUFFIXES
 
 
 def _iter_input_paths_from_directory(
@@ -229,7 +256,7 @@ def _iter_input_paths_from_directory(
         ):
             continue
         if _is_temporary_word_file(path):
-            _log.info(f"Ignoring temporary Word file: {path}")
+            _log.info(f"Ignoring temporary Office file: {path}")
             continue
         if path not in seen_paths:
             seen_paths.add(path)
@@ -1324,7 +1351,7 @@ def convert(  # noqa: C901
                             _iter_input_paths_from_directory(local_path, from_formats)
                         )
                     elif _is_temporary_word_file(local_path):
-                        _log.info(f"Ignoring temporary Word file: {local_path}")
+                        _log.info(f"Ignoring temporary Office file: {local_path}")
                     elif _is_html_source(src, from_formats):
                         input_doc_paths.append(local_path)
                     else:
@@ -1354,7 +1381,7 @@ def convert(  # noqa: C901
                         )
                     elif local_path.exists():
                         if _is_temporary_word_file(local_path):
-                            _log.info(f"Ignoring temporary Word file: {local_path}")
+                            _log.info(f"Ignoring temporary Office file: {local_path}")
                         else:
                             input_doc_paths.append(local_path)
                     else:

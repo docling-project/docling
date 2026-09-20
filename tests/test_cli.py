@@ -392,6 +392,32 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     _assert_markdown_embeds_png(output / "second.md", second_png)
 
 
+def test_cli_directory_skips_office_lock_files(tmp_path):
+    """Excel and PowerPoint write ~$ lock files next to an open workbook or
+    deck. Directory conversion already skipped Word's ~$*.docx files, but not
+    the same lock files for .xlsx/.pptx, so converting a folder while Office
+    was open failed on those unreadable stubs.
+    """
+    from docling.cli.main import _iter_input_paths_from_directory
+
+    source = tmp_path / "office"
+    source.mkdir()
+    (source / "report.xlsx").write_bytes(b"real")
+    (source / "~$report.xlsx").write_bytes(b"lock")
+    (source / "slides.pptx").write_bytes(b"real")
+    (source / "~$slides.pptx").write_bytes(b"lock")
+    (source / "notes.docx").write_bytes(b"real")
+    (source / "~$notes.docx").write_bytes(b"lock")
+
+    found = {
+        path.name
+        for path in _iter_input_paths_from_directory(
+            source, [InputFormat.XLSX, InputFormat.PPTX, InputFormat.DOCX]
+        )
+    }
+    assert found == {"report.xlsx", "slides.pptx", "notes.docx"}
+
+
 def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
     source_dir = tmp_path / "source"
     _write_html_image_case(source_dir, "Case.HtMl", "Mixed case")

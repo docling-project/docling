@@ -125,7 +125,7 @@ def _collect_sources(
         if local_path.is_dir():
             sources.extend(_iter_input_paths_from_directory(local_path, from_formats))
         elif _is_temporary_word_file(local_path):
-            _log.info(f"Ignoring temporary Word file: {local_path}")
+            _log.info(f"Ignoring temporary Office file: {local_path}")
         else:
             sources.append(local_path)
     return sources
