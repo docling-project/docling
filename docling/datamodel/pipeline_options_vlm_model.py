@@ -390,7 +390,8 @@ class ApiVlmOptions(BaseVlmOptions):
             description=(
                 "Additional query parameters to include in API requests. "
                 "Service-specific parameters for customizing API behavior "
-                "beyond standard options."
+                "beyond standard options. They override `temperature`; a key "
+                "set to None is left out of the request."
             )
         ),
     ] = {}

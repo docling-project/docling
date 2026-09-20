@@ -202,6 +202,12 @@ pipeline_options.picture_description_options = PictureDescriptionApiOptions(
 )
 ```
 
+On this path `params` is sent as it is; Docling adds no parameters of its own. The
+engine-based `PictureDescriptionVlmEngineOptions` with `ApiVlmEngineOptions` does
+add `temperature` and `max_tokens`; see
+[Request parameters](vision_models.md#request-parameters) for how to override or
+leave them out.
+
 End-to-end code snippets for cloud providers are available in the examples section:
 
 - [IBM watsonx.ai](../examples/pictures_description_api.py)
