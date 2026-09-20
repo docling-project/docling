@@ -200,21 +200,26 @@ class BasePipeline(ABC):
                 completed_items = 0
                 if total_items:
                     progress.enrichment_progress(step, label, 0, total_items)
-                for element_batch in chunkify(
-                    _prepare_elements(conv_res, model),
-                    model.elements_batch_size,
-                ):
-                    for element in model(
-                        doc=conv_res.document, element_batch=element_batch
-                    ):  # Must exhaust!
-                        pass
-                    if total_items:
-                        completed_items = min(
-                            completed_items + len(element_batch), total_items
-                        )
-                        progress.enrichment_progress(
-                            step, label, completed_items, total_items
-                        )
+                try:
+                    for element_batch in chunkify(
+                        _prepare_elements(conv_res, model),
+                        model.elements_batch_size,
+                    ):
+                        for element in model(
+                            doc=conv_res.document, element_batch=element_batch
+                        ):  # Must exhaust!
+                            pass
+                        if total_items:
+                            completed_items = min(
+                                completed_items + len(element_batch), total_items
+                            )
+                            progress.enrichment_progress(
+                                step, label, completed_items, total_items
+                            )
+                finally:
+                    # Also when a batch raised: the failures recorded so far
+                    # belong to this conversion, not to the next one.
+                    conv_res.errors.extend(model.collect_errors())
                 # Items the model could not prepare (e.g. no image) are skipped.
                 if completed_items < total_items:
                     progress.enrichment_progress(step, label, total_items, total_items)
