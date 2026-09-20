@@ -6,6 +6,7 @@ from collections.abc import Iterable
 import pytest
 from PIL import Image
 
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options import PictureDescriptionVlmEngineOptions
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.stage_model_specs import VlmModelSpec
@@ -99,3 +100,26 @@ def test_engine_picture_description_forwards_generation_config(
     sent_input = model.engine.received_inputs[0]
     assert sent_input.max_new_tokens == 1234
     assert sent_input.temperature == 0.42
+
+
+class _FailingEngine(_DummyEngine):
+    def predict_batch(self, inputs: Iterable[VlmEngineInput]):
+        raise ConnectionError("endpoint unreachable")
+
+
+def test_engine_picture_description_reports_a_failed_batch_as_inference_error(
+    create_dummy_model,
+) -> None:
+    """A failing engine yields one INFERENCE_ERROR result per image instead of
+    indistinguishable empty descriptions (#4009)."""
+    model = create_dummy_model(_build_options())
+    model.engine = _FailingEngine()
+
+    results = list(model._annotate_images([Image.new("RGB", (4, 4))] * 2))
+
+    assert len(results) == 2
+    assert all(result.text == "" for result in results)
+    assert all(
+        result.stop_reason == VlmStopReason.INFERENCE_ERROR for result in results
+    )
+    assert results[0].error == "ConnectionError: endpoint unreachable"

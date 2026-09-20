@@ -156,6 +156,7 @@ class ApiVlmEngine(BaseVlmEngine):
             )
             request_start_time = time.time()
             stop_reason = "unspecified"
+            error = None
 
             if custom_stoppers:
                 # Streaming path with early abort support
@@ -189,6 +190,7 @@ class ApiVlmEngine(BaseVlmEngine):
                 generated_text = api_response.text
                 num_tokens = api_response.num_tokens
                 stop_reason = api_response.stop_reason
+                error = api_response.error
 
             generation_time = time.time() - request_start_time
 
@@ -200,6 +202,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     "num_tokens": num_tokens,
                     "usage": api_response.usage,
                     "logprobs": api_response.logprobs,
+                    "error": error,
                 },
             )
 
