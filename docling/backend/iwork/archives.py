@@ -31,6 +31,7 @@ from docling.backend.iwork.content import (
     SCRIPTS,
     Block,
     Comment,
+    Geometry,
     ListStyle,
     Paragraph,
     Picture,
@@ -65,15 +66,6 @@ class CellValues(NamedTuple):
 
     strings: dict[int, str] = {}
     rich_text: dict[int, str] = {}
-
-
-class Geometry(NamedTuple):
-    """Where a drawable sits on the page it is placed on, in points."""
-
-    left: float
-    top: float
-    width: float
-    height: float
 
 
 MAX_REFERENCE_DEPTH = 4

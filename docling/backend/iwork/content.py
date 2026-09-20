@@ -101,6 +101,20 @@ class Paragraph(NamedTuple):
         return "".join(run.text for run in self.runs)
 
 
+class Geometry(NamedTuple):
+    """Where a drawable sits on the page it is placed on, in points.
+
+    Both container generations record this, and both record it for the same
+    reason: a drawable is positioned on the page rather than flowing in the
+    text, so where it sits is the only thing that says when it is read.
+    """
+
+    left: float
+    top: float
+    width: float
+    height: float
+
+
 class Picture(NamedTuple):
     """An image anchored in the text flow.
 

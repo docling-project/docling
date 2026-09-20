@@ -30,6 +30,7 @@ from docling.backend.iwork.content import (
     LABEL_TYPE_NUMBER,
     LABEL_TYPE_STRING,
     SCRIPTS,
+    Geometry,
     ListLabel,
     ListStyle,
     Picture,
@@ -113,6 +114,26 @@ neither is descended into once found: the renditions Pages keeps below them all
 name the same picture.
 """
 
+SF_GEOMETRY = f"{{{SF_NAMESPACE}}}geometry"
+
+SF_POSITION = f"{{{SF_NAMESPACE}}}position"
+
+SF_SIZE = f"{{{SF_NAMESPACE}}}size"
+
+SFA_ATTR_X = f"{{{SFA_NAMESPACE}}}x"
+
+SFA_ATTR_Y = f"{{{SFA_NAMESPACE}}}y"
+
+SFA_ATTR_W = f"{{{SFA_NAMESPACE}}}w"
+
+SFA_ATTR_H = f"{{{SFA_NAMESPACE}}}h"
+"""The iWork '09 vocabulary for where a drawable sits.
+
+An ``sf:geometry`` gives a position and a size, both in points, and the
+natural size beside them is the drawable's own rather than the one it was
+scaled to, so it is not read.
+"""
+
 SF_LIST_STYLE = f"{{{SF_NAMESPACE}}}liststyle"
 
 SF_LIST_LABEL_TYPE = f"{{{SF_NAMESPACE}}}list-label-typeinfo"
@@ -131,6 +152,27 @@ SF_ATTR_LIST_STYLE = f"{{{SF_NAMESPACE}}}list-style"
 An ``sf:liststyle`` holds one ``sf:list-label-typeinfo`` per nesting level, and
 a paragraph joins the list by naming the style and its own ``sf:list-level``,
 which counts from one.
+"""
+
+SF_ATTR_PARENT_IDENT = f"{{{SF_NAMESPACE}}}parent-ident"
+
+SF_LIST_STYLE_PROPERTY = f"{{{SF_NAMESPACE}}}listStyle"
+
+SF_LIST_STYLE_REF = f"{{{SF_NAMESPACE}}}liststyle-ref"
+"""How a paragraph style hands a list style down to the paragraphs using it.
+
+Pages names the list style on the paragraph itself, but Keynote leaves it to
+the theme: a bulleted paragraph names an empty style whose ``sf:parent-ident``
+leads, sometimes through several more, to the one carrying the list style in
+its property map. Without following that chain a Keynote '09 deck loses every
+bullet it has.
+"""
+
+MAX_STYLE_INHERITANCE = 8
+"""How far to follow ``sf:parent-ident`` before giving up.
+
+A real chain is two or three long. The bound is what keeps a document whose
+styles inherit from each other in a circle from looping forever.
 """
 
 SF_LABEL_TYPE_NONE = "none"
@@ -165,6 +207,9 @@ SF_PROPERTY_LABELS = {
 
 SFA_ATTR_ID = f"{{{SFA_NAMESPACE}}}ID"
 """The identifier iWork '09 gives an element it may refer back to elsewhere."""
+
+SFA_ATTR_IDREF = f"{{{SFA_NAMESPACE}}}IDREF"
+"""The identifier one iWork '09 element refers to another by."""
 
 
 def parse_index(
@@ -283,6 +328,45 @@ def legacy_picture(media: Element, archive: zipfile.ZipFile) -> Picture | None:
             _log.debug("iWork image data member %s is missing", path)
             return Picture(None, path)
     return None
+
+
+def legacy_geometry(element: Element) -> Geometry | None:
+    """Read where an iWork '09 drawable sits, from its ``sf:geometry``.
+
+    Args:
+        element: The drawable to read.
+
+    Returns:
+        The geometry, or None when the drawable carries none — which is what
+        an element that merely refers to a positioned one looks like.
+    """
+    geometry = next(iter(element.iter(SF_GEOMETRY)), None)
+    if geometry is None:
+        return None
+
+    position = next(iter(geometry.iter(SF_POSITION)), None)
+    if position is None:
+        return None
+    left = float_attr(position, SFA_ATTR_X)
+    top = float_attr(position, SFA_ATTR_Y)
+    if left is None or top is None:
+        return None
+
+    size = next(iter(geometry.iter(SF_SIZE)), None)
+    width = float_attr(size, SFA_ATTR_W) if size is not None else None
+    height = float_attr(size, SFA_ATTR_H) if size is not None else None
+    return Geometry(left, top, width or 0.0, height or 0.0)
+
+
+def float_attr(element: Element, name: str) -> float | None:
+    """Read a measurement attribute, tolerating absent or malformed values."""
+    raw = element.get(name)
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
 
 
 def sf_attr(element: Element, name: str) -> str | None:
@@ -441,25 +525,86 @@ def legacy_list_styles(root: Element) -> dict[str, ListStyle]:
     return styles
 
 
+def legacy_inherited_lists(root: Element) -> dict[str, str]:
+    """Map each paragraph style to the list style it ends up carrying.
+
+    A style that does not carry one inherits whatever its parent carries, so
+    the chains are walked once here and flattened into a single lookup rather
+    than followed again for every paragraph.
+
+    Args:
+        root: The parsed index root element.
+
+    Returns:
+        The identifier of the list style in force, keyed by every name the
+        paragraph style using it answers to.
+    """
+    styles: dict[str, Element] = {}
+    for element in root.iter(SF_PARAGRAPH_STYLE):
+        for key in (element.get(SF_ATTR_IDENT), element.get(SFA_ATTR_ID)):
+            if key:
+                styles.setdefault(key, element)
+
+    resolved: dict[str, str] = {}
+    for key, element in styles.items():
+        current: Element | None = element
+        for _ in range(MAX_STYLE_INHERITANCE):
+            if current is None:
+                break
+            named = own_list_style(current)
+            if named is not None:
+                resolved[key] = named
+                break
+            parent = current.get(SF_ATTR_PARENT_IDENT)
+            current = styles.get(parent) if parent else None
+    return resolved
+
+
+def own_list_style(style: Element) -> str | None:
+    """Read the list style one paragraph style names, ignoring what it inherits."""
+    for named in style.iter(SF_LIST_STYLE_PROPERTY):
+        for reference in named.iter(SF_LIST_STYLE_REF):
+            identifier = reference.get(SFA_ATTR_IDREF)
+            if identifier:
+                return identifier
+    return None
+
+
 def legacy_list_label(
-    paragraph: Element, list_styles: dict[str, ListStyle]
+    paragraph: Element,
+    list_styles: dict[str, ListStyle],
+    inherited: dict[str, str] | None = None,
 ) -> ListLabel | None:
     """Return how an '09 paragraph is labelled as a list item, if it is one.
 
     Args:
         paragraph: An ``sf:p`` element.
         list_styles: The document's list styles, keyed by identifier.
+        inherited: The list style each paragraph style ends up carrying, for the
+            apps that leave it off the paragraph. None means only what the
+            paragraph names itself is considered.
 
     Returns:
-        The label, or None when the paragraph names no list style or the style
-        leaves its level unlabelled.
+        The label, or None when the paragraph reaches no list style or the style
+        leaves its rung unlabelled.
     """
-    style = list_styles.get(paragraph.get(SF_ATTR_LIST_STYLE) or "")
+    named = paragraph.get(SF_ATTR_LIST_STYLE)
+    if named is None and inherited is not None:
+        named = inherited.get(paragraph.get(SF_ATTR_STYLE) or "")
+
+    style = list_styles.get(named or "")
     if style is None:
         return None
-    # sf:list-level counts from one, unlike the depth the IWA reader works in.
-    level = int_attr(paragraph, SF_ATTR_LIST_LEVEL) or 1
-    return style.label(max(level - 1, 0))
+
+    # sf:list-level is the rung of the style's ladder, counted from the
+    # unlabelled one ordinary body text sits on; a paragraph that names no level
+    # is on that rung. Docling counts nesting from the first labelled rung
+    # instead, so the depth is one less.
+    rung = int_attr(paragraph, SF_ATTR_LIST_LEVEL) or 0
+    label = style.label(rung)
+    if label is None:
+        return None
+    return label._replace(depth=max(rung - 1, 0))
 
 
 def legacy_formatting(style: Element) -> Formatting | None:

@@ -23,7 +23,6 @@ from docling_core.types.doc import DocItemLabel
 from docling.backend.iwork.archives import (
     SHAPE_STORAGE_FIELD,
     TSWP_STORAGE_ARCHIVE,
-    Geometry,
     IWAReader,
     drawable_geometry,
     iwa_reference_field,
@@ -32,13 +31,14 @@ from docling.backend.iwork.archives import (
     read_point,
     safe_fields,
 )
-from docling.backend.iwork.content import Block, Comment, Paragraph
+from docling.backend.iwork.content import Block, Comment, Geometry, Paragraph
 from docling.backend.iwork.iwa import IWAObject
 from docling.backend.iwork.keynote_content import (
     DEFAULT_SLIDE_HEIGHT,
     DEFAULT_SLIDE_WIDTH,
     Presentation,
     Slide,
+    reading_order,
 )
 from docling.exceptions import DocumentLoadError
 
@@ -140,21 +140,6 @@ NOTE_TEXT_FIELD = 1
 COMMENT_STORAGE_FIELD = 2
 """Field of a comment shape referencing its ``TSD.CommentStorageArchive``."""
 
-SLIDE_ROW_TOLERANCE = 3.6
-"""How far apart two drawables' top edges may be and still share a row, in points.
-
-0.05 inch, the same band the PowerPoint backend groups shapes into: small enough
-that two lines of a slide stay in separate rows, wide enough that an icon and
-the label beside it do not.
-"""
-
-UNPLACED = 1e9
-"""Where a drawable with no readable geometry sorts, in points.
-
-Larger than any slide, so such a drawable falls to the end of the slide while
-keeping its stored position relative to the others there.
-"""
-
 
 def read_content(
     index: zipfile.ZipFile,
@@ -215,56 +200,6 @@ def slide_size(show: IWAObject) -> tuple[float, float]:
     if size is None or size[0] <= 0 or size[1] <= 0:
         return DEFAULT_SLIDE_WIDTH, DEFAULT_SLIDE_HEIGHT
     return size
-
-
-def reading_order(placed: list[tuple[int, Geometry | None]]) -> list[int]:
-    """Order a slide's drawables the way they are read: down, then across.
-
-    Keynote stores them in the order they were stacked, which is the order they
-    are drawn in rather than the order they are read in, so a text box added
-    after the one above it still comes second. Sorting by position fixes that,
-    and keeps a heading next to the body it introduces.
-
-    Drawables whose top edges are within :data:`SLIDE_ROW_TOLERANCE` of the one
-    before them share a row and are ordered left to right within it. Adjacency
-    is measured against the previous drawable rather than the row's first, so a
-    band of shapes that drift downwards stays one row.
-
-    Args:
-        placed: Each drawable's identifier and where it sits, in stored order.
-
-    Returns:
-        The identifiers, in reading order.
-    """
-    entries = [
-        (
-            geometry.top if geometry is not None else UNPLACED,
-            geometry.left if geometry is not None else UNPLACED,
-            position,
-            identifier,
-        )
-        for position, (identifier, geometry) in enumerate(placed)
-    ]
-    entries.sort(key=lambda entry: (entry[0], entry[2]))
-
-    ordered: list[int] = []
-    row: list[tuple[float, float, int, int]] = []
-    previous: float | None = None
-
-    def flush() -> None:
-        ordered.extend(
-            entry[3] for entry in sorted(row, key=lambda entry: (entry[1], entry[2]))
-        )
-
-    for entry in entries:
-        if previous is not None and entry[0] - previous > SLIDE_ROW_TOLERANCE:
-            flush()
-            row = []
-        row.append(entry)
-        previous = entry[0]
-
-    flush()
-    return ordered
 
 
 def titled(block: Block, label: DocItemLabel) -> Block:
@@ -330,11 +265,13 @@ class KeynoteReader(IWAReader):
         title = iwa_reference_field(slide.payload, SLIDE_TITLE_FIELD)
         number = iwa_reference_field(slide.payload, SLIDE_NUMBER_FIELD)
 
+        placed = self._placed(slide, number)
         blocks: list[Block] = []
         comments: list[Comment] = []
-        for identifier in reading_order(self._placed(slide, number)):
-            placed, said = self._blocks(identifier, title=identifier == title)
-            blocks.extend(placed)
+        for position in reading_order([geometry for _, geometry in placed]):
+            identifier = placed[position][0]
+            found, said = self._blocks(identifier, title=identifier == title)
+            blocks.extend(found)
             comments.extend(said)
 
         return Slide(blocks=blocks, notes=self._notes(slide), comments=comments)
