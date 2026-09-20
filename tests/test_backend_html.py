@@ -228,6 +228,35 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+def test_table_tfoot_rows_are_kept():
+    """Regression: <tfoot> is a standard table section, but only thead/tbody
+    were unwrapped before scanning rows. Footer totals then stayed nested
+    inside <tfoot> and were dropped from the grid.
+    """
+    src = (
+        b"<table>"
+        b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
+        b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>"
+        b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 3
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["Item", "Amount"],
+        ["Widgets", "10"],
+        ["Total", "10"],
+    ]
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
