@@ -30,6 +30,11 @@ from docling_core.types.doc.items.text import ListItem
 from PIL import Image as PILImage
 
 from docling.backend.iwork import iwa
+from docling.backend.iwork.archives import (
+    iwa_formatting,
+    iwa_list_style,
+    iwa_style_name,
+)
 from docling.backend.iwork.content import label_for_style
 from docling.backend.iwork.iwa import (
     IWAObject,
@@ -37,12 +42,7 @@ from docling.backend.iwork.iwa import (
     iter_objects,
     read_fields,
 )
-from docling.backend.iwork.pages_iwa import (
-    iwa_formatting,
-    iwa_list_style,
-    iwa_style_name,
-)
-from docling.backend.iwork.pages_xml import legacy_formatting
+from docling.backend.iwork.legacy import legacy_formatting
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
