@@ -4,7 +4,7 @@ For the Apache Tika project
 
 # Slide 1
 
-Some random text for the sake of testability.
+- Some random text for the sake of testability.
 
 # Slide 3
 

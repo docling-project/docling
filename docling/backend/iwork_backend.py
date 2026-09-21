@@ -149,6 +149,22 @@ def _open_container(
         ) from exc
 
 
+def _is_nested_index(name: str) -> bool:
+    """Report whether a member is the index of a flattened package.
+
+    Keynote puts it at the root of the one directory it flattens the package
+    into, so anything deeper is something else that happens to be called
+    ``Index.zip`` — a zipped index the author dropped into the deck, say.
+
+    Args:
+        name: An archive member's name.
+
+    Returns:
+        Whether it is where the index of a flattened package would be.
+    """
+    return name.endswith(_NESTED_INDEX_MEMBER) and name.count("/") <= 1
+
+
 def _readable_members(
     archive: zipfile.ZipFile,
     options: IWorkBackendOptions,
@@ -380,7 +396,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
 
         nested = next(
-            (name for name in sorted(names) if name.endswith(_NESTED_INDEX_MEMBER)),
+            (name for name in sorted(names) if _is_nested_index(name)),
             None,
         )
         if nested is not None:
@@ -411,12 +427,17 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             archive: The open ``.key`` container.
             member: The name of its ``Index.zip`` member.
 
+        Everything the index holds is inside the inner archive, so it is held to
+        the same limits as a container whose index was not nested — the stored
+        size of the ``Index.zip`` member says nothing about what is in it, and a
+        2 KiB one can expand to hundreds of megabytes.
+
         Returns:
             Everything the presentation holds.
 
         Raises:
-            DocumentLoadError: If the inner archive is larger, or holds more
-                members, than this is willing to read.
+            DocumentLoadError: If either archive is larger, holds more members,
+                or is more encrypted than this is willing to read.
         """
         size = archive.getinfo(member).file_size
         if size > self.options.max_file_bytes:
@@ -426,13 +447,9 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
 
         with zipfile.ZipFile(BytesIO(archive.read(member))) as index:
-            infos = index.infolist()
-            if len(infos) > self.options.max_member_count:
-                raise DocumentLoadError(
-                    f"Keynote archive member {member} has {len(infos)} members, "
-                    f"exceeding the max_member_count limit of "
-                    f"{self.options.max_member_count}."
-                )
+            infos = _readable_members(
+                index, self.options, _KEYNOTE_KIND, self.document_hash
+            )
             return keynote_iwa.read_content(
                 index,
                 infos,

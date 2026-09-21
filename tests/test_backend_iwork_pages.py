@@ -696,9 +696,10 @@ def test_iwa_list_styles_decode_to_their_real_labels():
     not by its nesting depth: Pages leaves a style in force over plain paragraphs
     too and marks them with the "None" style. Check that against the styles the
     fixture's template actually defines."""
+    objects = _iwa_objects(PAGES_2013)
     by_name = {
-        iwa_style_name(obj.payload): iwa_list_style(obj.payload)
-        for obj in _iwa_objects(PAGES_2013).values()
+        iwa_style_name(obj.payload): iwa_list_style(obj.payload, objects)
+        for obj in objects.values()
         if obj.message_type == 2023
     }
 

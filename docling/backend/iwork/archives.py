@@ -140,7 +140,22 @@ STORAGE_TEXT_FIELD = 3
 """Field of ``TSWP.StorageArchive`` holding the text itself."""
 
 STYLE_SUPER_FIELD = 1
-"""Field of ``TSWP.ParagraphStyleArchive`` holding its ``TSS.StyleArchive`` super."""
+"""Field of a ``TSWP`` style archive holding its ``TSS.StyleArchive`` super."""
+
+STYLE_PARENT_FIELD = 3
+"""Field of ``TSS.StyleArchive`` referencing the style it inherits from.
+
+A style that sets a property leaves the rest to its parent, so a chain of
+these is how a theme hands anything down. It is the 2013 spelling of the
+``sf:parent-ident`` an iWork '09 style carries.
+"""
+
+MAX_STYLE_INHERITANCE = 8
+"""How far to follow a style's parent before giving up.
+
+A real chain is two or three long. The bound is what keeps a document whose
+styles inherit from each other in a circle from looping forever.
+"""
 
 STYLE_NAME_FIELD = 1
 """Field of ``TSS.StyleArchive`` holding the style's human-facing name."""
@@ -484,7 +499,7 @@ def iwa_storage_runs(
             STORAGE_LIST_STYLE_FIELD,
             objects,
             TSWP_LIST_STYLE,
-            iwa_list_style,
+            lambda payload: iwa_list_style(payload, objects),
         ),
         depths=iwa_depth_runs(fields),
         links=iwa_object_runs(
@@ -571,20 +586,47 @@ def iwa_link(payload: bytes) -> str | None:
     return url.decode("utf-8", errors="replace").strip() or None
 
 
-def iwa_list_style(payload: bytes) -> ListStyle:
-    """Read a ``TSWP.ListStyleArchive`` as its per-depth label ladder."""
-    fields = safe_fields(payload)
-    label_types = tuple(
-        value
-        for value in fields.get(LIST_LABEL_TYPES_FIELD, [])
-        if isinstance(value, int)
-    )
-    strings = tuple(
-        value.decode("utf-8", errors="replace")
-        for value in fields.get(LIST_STRINGS_FIELD, [])
-        if isinstance(value, bytes)
-    )
-    return ListStyle(label_types, strings)
+def iwa_list_style(payload: bytes, objects: dict[int, IWAObject]) -> ListStyle:
+    """Read a ``TSWP.ListStyleArchive`` as its per-depth label ladder.
+
+    A style that carries no ladder of its own inherits the one its parent
+    carries, so the chain is followed until a ladder turns up. Keynote relies on
+    that: it leaves the ladder on the theme's style and gives the text a style
+    holding nothing but a parent, so without the chain a deck loses every bullet
+    it draws. It is the same indirection iWork '09 spells as ``sf:parent-ident``.
+
+    Args:
+        payload: The encoded ``TSWP.ListStyleArchive``.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The ladder in force, which is empty when the chain carries none.
+    """
+    for _ in range(MAX_STYLE_INHERITANCE):
+        fields = safe_fields(payload)
+        label_types = tuple(
+            value
+            for value in fields.get(LIST_LABEL_TYPES_FIELD, [])
+            if isinstance(value, int)
+        )
+        if label_types:
+            strings = tuple(
+                value.decode("utf-8", errors="replace")
+                for value in fields.get(LIST_STRINGS_FIELD, [])
+                if isinstance(value, bytes)
+            )
+            return ListStyle(label_types, strings)
+
+        super_message = fields.get(STYLE_SUPER_FIELD, [None])[0]
+        if not isinstance(super_message, bytes):
+            break
+        parent = iwa_reference_field(super_message, STYLE_PARENT_FIELD)
+        inherited = objects.get(parent) if parent is not None else None
+        if inherited is None or inherited.message_type != TSWP_LIST_STYLE:
+            break
+        payload = inherited.payload
+
+    return ListStyle((), ())
 
 
 def iwa_formatting(payload: bytes) -> Formatting | None:

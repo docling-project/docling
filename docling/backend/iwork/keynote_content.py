@@ -46,11 +46,14 @@ class Slide(NamedTuple):
     Presenter notes and comments are kept apart from ``blocks`` rather than
     appended to it: neither is shown when the deck is presented, and both belong
     to the slide as a whole rather than to a position on it.
+
+    None of the three is given a default: a mutable one would be shared by every
+    slide that took it, and both readers fill all three anyway.
     """
 
     blocks: list[Placed]
-    notes: list[Paragraph] = []
-    comments: list[Comment] = []
+    notes: list[Paragraph]
+    comments: list[Comment]
 
 
 class Presentation(NamedTuple):

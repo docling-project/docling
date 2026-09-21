@@ -200,6 +200,49 @@ def test_bullets_become_list_items():
 
 
 @pytest.mark.parametrize("source", _SHARED_DECK, ids=lambda path: path.name)
+def test_a_theme_inherited_bullet_is_found_in_either_container(source: Path):
+    """Both generations hand the ladder down rather than copying it onto the
+    style the text names, and both have to be followed to the end.
+
+    The 2013 container spells the chain as a parent reference on the style's
+    ``TSS`` super, the '09 one as ``sf:parent-ident``. Reading only the style in
+    force finds an empty ladder in both and drops the bullet — which is what the
+    2013 reader used to do, while the '09 reader kept it.
+    """
+    doc = _backend(source).convert()
+
+    items = [item.text for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+    assert _BODY_SENTENCE in items
+
+
+def test_the_two_generations_disagree_only_where_their_themes_do():
+    """The remaining difference between the two fixtures is in the documents.
+
+    Slide 1's subtitle is a list item in the '09 file and plain text in the 2013
+    one, because the themes differ rather than the readers: the 2013 style chain
+    ends at a ladder that labels no rung at all, so Keynote draws no bullet
+    there, while the '09 chain ends at one whose first rung is a bullet. Pinned
+    so that the difference is not mistaken later for the reader bug it looks
+    like.
+    """
+    subtitle = "For the Apache Tika project"
+
+    modern = _backend(KEYNOTE_2013).convert()
+    legacy = _backend(KEYNOTE_IWORK09).convert()
+
+    def labelled(doc) -> str:
+        item = next(
+            item
+            for item, _ in doc.iterate_items()
+            if isinstance(item, TextItem) and item.text == subtitle
+        )
+        return type(item).__name__
+
+    assert labelled(modern) == "TextItem"
+    assert labelled(legacy) == "ListItem"
+
+
+@pytest.mark.parametrize("source", _SHARED_DECK, ids=lambda path: path.name)
 def test_a_table_on_a_slide_is_read(source: Path):
     """A slide's table is the same TST archive, and the same sf:tabular-model,
     that a Pages document embeds — including the cell it leaves empty."""
@@ -383,6 +426,75 @@ def _construct(
         path,
         options,
     )
+
+
+def _nested_key(
+    tmp_path: Path, members: dict[str, bytes], *, encrypted: bool = False
+) -> Path:
+    """Build a ``.key`` in the layout Keynote 2018 and later write.
+
+    The index is a ZIP inside the container, which is what makes it worth
+    testing separately from the flat one: the stored size of that member says
+    nothing about what the archive inside it holds.
+
+    Args:
+        tmp_path: Where to write the container.
+        members: The inner archive's members and their contents.
+        encrypted: Whether to mark the inner members as encrypted.
+
+    Returns:
+        The path of the container.
+    """
+    inner = BytesIO()
+    with zipfile.ZipFile(inner, "w", zipfile.ZIP_DEFLATED) as index:
+        for name, payload in members.items():
+            index.writestr(name, payload)
+    raw = _flagged_as_encrypted(inner.getvalue()) if encrypted else inner.getvalue()
+
+    path = tmp_path / "nested.key"
+    with zipfile.ZipFile(path, "w") as container:
+        container.writestr("Presentation.key/Index.zip", raw)
+    return path
+
+
+def _flagged_as_encrypted(raw: bytes) -> bytes:
+    """Set the ZIP encryption flag on every member of an archive.
+
+    ``zipfile`` recomputes the general-purpose flags as it writes, so the bit
+    has to be set afterwards — in the local header and in the central directory
+    alike, since both are read back.
+    """
+    patched = bytearray(raw)
+    for signature, offset in ((b"PK\x03\x04", 6), (b"PK\x01\x02", 8)):
+        at = patched.find(signature)
+        while at != -1:
+            patched[at + offset] |= 0x1
+            at = patched.find(signature, at + 1)
+    return bytes(patched)
+
+
+def test_a_nested_index_is_held_to_the_total_size_limit(tmp_path: Path):
+    """Everything a nested-index presentation holds is inside the inner archive,
+    so bounding only the outer one bounds nothing: a container of a few KiB can
+    expand to hundreds of megabytes, and the reader keeps every payload it
+    decodes."""
+    deck = _nested_key(
+        tmp_path, {f"Index/Slide-{n}.iwa": b"\0" * (1 << 20) for n in range(8)}
+    )
+    assert deck.stat().st_size < 100 * 1024, "the container should be small"
+
+    with pytest.raises(DocumentLoadError, match="max_total_bytes"):
+        _construct(deck, IWorkBackendOptions(max_total_bytes=1024 * 1024))
+
+
+def test_an_encrypted_nested_index_is_reported_as_password_protected(tmp_path: Path):
+    """The advice to remove the password is the same whichever layout the
+    container uses, so the encryption scan has to reach the inner archive too —
+    otherwise this surfaces as a decompression failure instead."""
+    deck = _nested_key(tmp_path, {"Index/Document.iwa": b"\0" * 64}, encrypted=True)
+
+    with pytest.raises(DocumentLoadError, match="password-protected"):
+        _construct(deck)
 
 
 def test_a_zip_that_is_not_a_presentation_is_refused(tmp_path: Path):
