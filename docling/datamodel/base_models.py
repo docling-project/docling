@@ -103,6 +103,7 @@ class InputFormat(str, Enum):
     PPTX = "pptx"
     PPT = "ppt"
     HTML = "html"
+    MHTML = "mhtml"
     IMAGE = "image"
     PDF = "pdf"
     ASCIIDOC = "asciidoc"
@@ -129,6 +130,7 @@ class InputFormat(str, Enum):
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
     EBCDIC = "ebcdic"
+    AFP = "afp"
 
 
 class OutputFormat(str, Enum):
@@ -153,8 +155,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
+    InputFormat.MD: ["md", "markdown", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
+    InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
@@ -179,6 +182,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
+    InputFormat.AFP: ["afp"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -204,6 +208,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.ms-powerpoint",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
+    InputFormat.MHTML: ["application/x-mimearchive", "multipart/related"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
     InputFormat.XML_DOCLANG: ["application/xml"],
@@ -271,6 +276,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/x-iwork-pages-sffpages",
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
+    InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -547,6 +553,9 @@ class Page(BaseModel):
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
+    # Some reasoning-style servers (e.g. LM Studio serving chandra-ocr-2) leave
+    # content empty and place the actual answer in reasoning_content.
+    reasoning_content: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
 
 

@@ -36,7 +36,27 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
-class AsciiDocBackendOptions(BaseBackendOptions):
+class TextBackendOptions(BaseBackendOptions):
+    """Options common to the backends that decode a whole file as plain text."""
+
+    encoding: Optional[str] = Field(
+        None,
+        description=(
+            "Character encoding of the document, as a Python codec name such as "
+            '"shift_jis" or "koi8-r". When set, the file is decoded with it and '
+            "nothing is guessed. When unset, a byte-order mark is honoured, then "
+            "UTF-8 is tried, then cp1252; anything else raises."
+        ),
+    )
+
+
+class CsvBackendOptions(TextBackendOptions):
+    """Options specific to the CSV backend."""
+
+    kind: Literal["csv"] = Field("csv", exclude=True, repr=False)
+
+
+class AsciiDocBackendOptions(TextBackendOptions):
     """Options specific to the AsciiDoc backend."""
 
     kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
@@ -155,7 +175,7 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
 
 
-class MarkdownBackendOptions(BaseBackendOptions):
+class MarkdownBackendOptions(TextBackendOptions):
     """Options specific to the Markdown backend."""
 
     kind: Literal["md"] = Field("md", exclude=True, repr=False)
@@ -711,6 +731,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         AsciiDocBackendOptions,
+        CsvBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,

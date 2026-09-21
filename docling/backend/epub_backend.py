@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import posixpath
 import re
 import shutil
 import tempfile
@@ -114,9 +115,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self._extract_metadata(opf_root)
 
             # Get the base directory for content files
-            opf_dir = str(Path(opf_path).parent)
-            if opf_dir == ".":
-                opf_dir = ""
+            opf_dir = posixpath.dirname(opf_path)
 
             # Extract spine (reading order)
             ns_opf = {"opf": "http://www.idpf.org/2007/opf"}
@@ -142,10 +141,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 if idref and idref in manifest_map:
                     href = manifest_map[idref]
                     # Construct full path
-                    if opf_dir:
-                        full_path = f"{opf_dir}/{href}"
-                    else:
-                        full_path = href
+                    full_path = posixpath.normpath(posixpath.join(opf_dir, href))
                     self.content_files.append(full_path)
 
             _log.debug(f"Content files in reading order: {self.content_files}")

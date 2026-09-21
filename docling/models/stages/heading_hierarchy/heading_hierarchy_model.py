@@ -75,12 +75,15 @@ _KW_ARTICLE = re.compile(
     r"^(article|section|clause|schedule|annex|appendix|rule)\b", re.IGNORECASE
 )
 _SECTION_SYMBOL = re.compile(r"^§+\s*\d")  # § 1 / §§ 1.2
-# Dotted decimal outline (1.1, 1.1.1, ...), terminated by space/end/punctuation.
-_DOTTED = re.compile(r"^(\d+(?:\.\d+)+)(?:[.)\]\s]|$)")
-# Single Arabic index (1. / 2)).
-_ARABIC = re.compile(r"^(\d+)[.)]")
-# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV.
-_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*[).]")
+_SEP = r"(?:[)\]]|[:\-\u2013\u2014](?=\s|$))"
+# Dotted decimal outline (1.1, 1.1.1, ...), terminated by punctuation/space/end.
+_DOTTED = re.compile(r"^\(?\s*(\d+(?:\.\d+)+)(?:[.)\]\s]|[:\-\u2013\u2014](?=\s|$)|$)")
+# Single Arabic index (1. / 1) / (1) / 1: / 1 -).
+_ARABIC = re.compile(r"^\(?\s*(\d+)\s*(?:\.(?!\d)|" + _SEP + r")")
+# A bare index is only accepted with document-wide sequence evidence.
+_BARE_ARABIC = re.compile(r"^(\d+)\s+\S")
+# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV. / A: / A -
+_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*(?:\.|" + _SEP + r")")
 
 
 @dataclass
@@ -183,6 +186,39 @@ def _family_rank(family: str, order: list[str]) -> int:
         return len(order)  # unknown scheme -> lowest priority
 
 
+def _resolve_bare_arabic(
+    headings: list[SectionHeaderItem], markers: list[_Marker | None]
+) -> None:
+    """Accept bare Arabic indices in consecutive runs starting at 1, with at least two entries.
+
+    A leading number alone may be a year or quantity. Require a chapter sequence before treating
+    it as numbering, allowing explicit Arabic markers to provide evidence too. Dotted sections
+    and unnumbered headings may intervene. A gap such as ``1 Intro``, ``2 Methods``, ``4 Results``
+    ends the run, leaving the bare ``4`` unrecognized. A 1-based run of incidental headings, such
+    as ``1 January``, ``2 February`` or ``1 kg``, ``2 kg``, can still be misclassified.
+    """
+    sequence: list[int] = []
+    for i, heading in enumerate(headings):
+        marker = markers[i]
+        if marker is not None and marker.family != "arabic":
+            continue
+        text = heading.text.strip()
+        match = _ARABIC.match(text) if marker is not None else _BARE_ARABIC.match(text)
+        if match is None:
+            continue
+        number = int(match.group(1))
+        if number == 1:
+            sequence = [i]
+        elif sequence and number == len(sequence) + 1:
+            sequence.append(i)
+            # Confirm the first entry when 2 arrives, then only the newly extended pair.
+            for index in sequence[-2:]:
+                if markers[index] is None:
+                    markers[index] = _Marker(family="arabic")
+        else:
+            sequence = []
+
+
 def _infer_from_numbering(
     headings: list[SectionHeaderItem], options: HeadingHierarchyOptions
 ) -> dict[int, int]:
@@ -190,6 +226,7 @@ def _infer_from_numbering(
     order = options.numbering_schemes or _DEFAULT_FAMILY_ORDER
     markers = [_parse_marker(h.text) for h in headings]
     _resolve_ambiguous(markers)
+    _resolve_bare_arabic(headings, markers)
 
     keys: dict[int, tuple[int, int]] = {}
     for i, m in enumerate(markers):
@@ -346,9 +383,9 @@ _LEADING_MARKER = re.compile(
     r"(?:part|title|book|chapter|article|section|clause|schedule|annex|appendix|rule)"
     r"\b[\s.:]*[0-9ivxlcdm]*"
     r"|§+\s*[0-9.]+"
-    r"|\(?[0-9]+(?:\.[0-9]+)*[).]?"
-    r"|\(?[A-Za-z]{1,2}[).]"
-    r")[\s.:)\-]*",
+    r"|\(?[0-9]+(?:\.[0-9]+)*[.)\]]?"
+    r"|\(?[A-Za-z]{1,2}(?:[.)\]]|(?=\s*[:\-\u2013\u2014]))"
+    r")[\s.:)\-\u2013\u2014]*",
     re.IGNORECASE,
 )
 

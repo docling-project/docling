@@ -35,6 +35,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
+    ChartExtractionVlmEngineOptions,
 )
 from docling.datamodel.extraction_options import (
     NU_EXTRACT_2B_TRANSFORMERS,
@@ -1192,6 +1193,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GOT_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
@@ -1219,6 +1221,14 @@ PictureDescriptionVlmEngineOptions.register_preset(stage_model_specs.PICTURE_DES
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
 
+# Register ChartExtraction presets
+# NOTE: CHART_EXTRACTION_GRANITE_VISION_V4 is already registered at import time
+# in chart_extraction_options.py; the call here is idempotent (skipped when already
+# registered). CHART_EXTRACTION_GRANITE_VISION (V1) has been removed.
+ChartExtractionVlmEngineOptions.register_preset(
+    stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4
+)
+
 
 # =============================================================================
 # MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
@@ -1245,6 +1255,12 @@ _default_picture_classification_options = DocumentPictureClassifierOptions.from_
 _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 """Default code/formula options using codeformulav2 preset with AUTO_INLINE runtime."""
 
+# Default ChartExtractionVlmEngineOptions using granite_vision_v4 preset
+_default_chart_extraction_options = ChartExtractionVlmEngineOptions.from_preset(
+    "granite_vision_v4"
+)
+"""Default chart extraction options using granite_vision_v4 preset with Transformers runtime."""
+
 
 # Define an enum for the backend options
 class PdfBackend(str, Enum):
@@ -1257,23 +1273,20 @@ class PdfBackend(str, Enum):
     Attributes:
         PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and
             reliable for basic text extraction.
-        DOCLING_PARSE: Docling Parse backend providing enhanced layout
-            analysis, structure preservation, and advanced table detection.
-            Single-threaded; use `THREADED_DOCLING_PARSE` unless serialized
-            page parsing is required.
+        DOCLING_PARSE: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
         THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
             concurrent page parsing in the standard PDF pipeline. This is the
             default and recommended backend for most use cases.
-        DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
-        DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
-        DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V1: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
+        DLPARSE_V2: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
+        DLPARSE_V4: Deprecated. Maps to `THREADED_DOCLING_PARSE`.
     """
 
     PYPDFIUM2 = "pypdfium2"
-    DOCLING_PARSE = "docling_parse"
-    THREADED_DOCLING_PARSE = "threaded_docling_parse"
+    THREADED_DOCLING_PARSE = "docling_parse"  # we use `docling_parse` as a short hand for the `threaded_docling_parse` (pointing to DoclingThreadedPdfParser). We do not support the single threaded DoclingPdfParser (the original `docling_parse`) from docling-parse!
 
-    # Deprecated - these map to DOCLING_PARSE
+    # Deprecated - these map to THREADED_DOCLING_PARSE
+    DOCLING_PARSE = "_docling_parse"  # deprecated (added _ to name to signal this)
     DLPARSE_V1 = "dlparse_v1"  # deprecated
     DLPARSE_V2 = "dlparse_v2"  # deprecated
     DLPARSE_V4 = "dlparse_v4"  # deprecated
@@ -1294,14 +1307,16 @@ def normalize_pdf_backend(backend: PdfBackend) -> PdfBackend:
     import warnings
 
     deprecated_mapping = {
-        PdfBackend.DLPARSE_V1: PdfBackend.DOCLING_PARSE,
-        PdfBackend.DLPARSE_V2: PdfBackend.DOCLING_PARSE,
-        PdfBackend.DLPARSE_V4: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DOCLING_PARSE: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V1: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V2: PdfBackend.THREADED_DOCLING_PARSE,
+        PdfBackend.DLPARSE_V4: PdfBackend.THREADED_DOCLING_PARSE,
     }
 
     if backend in deprecated_mapping:
         warnings.warn(
-            f"PdfBackend.{backend.name} was previously deprecated and removed in this docling version. Using PdfBackend.DOCLING_PARSE instead. ",
+            f"PdfBackend.{backend.name} is deprecated; using "
+            "PdfBackend.THREADED_DOCLING_PARSE instead.",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -1468,14 +1483,16 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = False
     chart_extraction_options: Annotated[
-        ChartExtractionModelOptions,
+        ChartExtractionVlmEngineOptions,
         Field(
             description=(
-                "Configuration for the chart extraction model, including which model variant to use "
-                "and which output formats to generate (CSV, code, summary)."
+                "Configuration for the chart extraction stage. "
+                "Use ChartExtractionVlmEngineOptions.from_preset('granite_vision_v4') "
+                "(default) or from_preset('granite_vision') for the V1 model. "
+                "Controls which output formats are generated (chart2csv, chart2summary, chart2code)."
             )
         ),
-    ] = ChartExtractionModelOptions()
+    ] = _default_chart_extraction_options
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):

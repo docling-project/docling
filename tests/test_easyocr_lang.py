@@ -164,6 +164,42 @@ def test_easyocr_downloader_supports_gen1_and_gen2_models(
     assert (tmp_path / "japanese_g2.pth").is_file()
 
 
+@pytest.mark.parametrize(("force", "expected_downloads"), [(False, 1), (True, 2)])
+def test_easyocr_downloader_skips_existing_models_unless_forced(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    force: bool,
+    expected_downloads: int,
+) -> None:
+    downloaded: list[str] = []
+
+    def fake_download_url_with_progress(url: str, *, progress: bool) -> BytesIO:
+        del progress
+        downloaded.append(url)
+        archive = BytesIO()
+        with zipfile.ZipFile(archive, "w") as zip_file:
+            zip_file.writestr("arabic.pth", b"weights")
+        archive.seek(0)
+        return archive
+
+    monkeypatch.setattr(
+        easyocr_model,
+        "download_url_with_progress",
+        fake_download_url_with_progress,
+    )
+
+    for _ in range(2):
+        EasyOcrModel.download_models(
+            detection_models=[],
+            recognition_models=["arabic_g1"],
+            local_dir=tmp_path,
+            force=force,
+        )
+
+    assert len(downloaded) == expected_downloads
+    assert (tmp_path / "arabic.pth").is_file()
+
+
 def test_easyocr_downloader_ignores_unknown_internal_model_names(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

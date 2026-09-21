@@ -19,6 +19,7 @@ Below you can find a listing of all supported input and output formats.
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
 | HTML, XHTML | |
+| MHTML, MHT | MIME HTML archives |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |
 | WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
@@ -26,6 +27,7 @@ Below you can find a listing of all supported input and output formats.
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
+| AFP | IBM Advanced Function Presentation / MO:DCA |
 
 Schema-specific support:
 
