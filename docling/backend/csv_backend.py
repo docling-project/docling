@@ -35,12 +35,19 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
     mid-quote; retrying with a sample that closes the quote recovers those.
     `read_sample` is only called on that fallback path.
 
+    The sniffer only turns on `doublequote` when its sample happens to contain a
+    doubled quote, which the header rarely does, so it is always turned on here:
+    `""` inside a quoted field is an escaped quote (RFC 4180, and what Excel and
+    the csv module write).
+
     Raises csv.Error if neither can be detected.
     """
     try:
-        return csv.Sniffer().sniff(head, _DELIMITERS)
+        dialect = csv.Sniffer().sniff(head, _DELIMITERS)
     except csv.Error:
-        return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
+        dialect = csv.Sniffer().sniff(read_sample(), _DELIMITERS)
+    dialect.doublequote = True
+    return dialect
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):

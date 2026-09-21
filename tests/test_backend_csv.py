@@ -108,6 +108,33 @@ def test_quoted_newline_in_first_field():
     assert table.data.table_cells[0].text == "line one\nstill line one"
 
 
+@pytest.mark.parametrize(
+    "csv_bytes",
+    [
+        b'id,quote\n1,"He said ""no"" twice"\n',
+        b'id;quote\n1;"He said ""no"" twice"\n',
+        b'"id","quote"\n"1","He said ""no"" twice"\n',
+        # Sniffed from the fallback sample; the doubled quote is past its end.
+        b'"id\nnumber";quote\n' + b"1;x\n" * 1100 + b'2;"He said ""no"" twice"\n',
+    ],
+    ids=["comma", "semicolon", "quoted-header", "fallback-sample"],
+)
+def test_doubled_quote_is_an_escaped_quote(csv_bytes):
+    """A doubled quote inside a quoted field is one literal quote (RFC 4180).
+
+    The sniffer only sets doublequote when its sample already contains one,
+    and the sample is usually just the header, so `""` in the data rows was
+    read as a closing quote and the rest of the field kept stray quotes.
+    """
+    conv_result = get_converter().convert(
+        DocumentStream(name="quotes.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    table = conv_result.document.tables[0]
+    assert table.data.num_cols == 2
+    assert table.data.table_cells[-1].text == 'He said "no" twice'
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(
