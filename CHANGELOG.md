@@ -1,3 +1,30 @@
+## [v2.129.0](https://github.com/docling-project/docling/releases/tag/v2.129.0) - 2026-09-18
+
+### Feature
+
+* Refactor chart extraction with generic engine options ([#4246](https://github.com/docling-project/docling/issues/4246)) ([`0e6c2ca`](https://github.com/docling-project/docling/commit/0e6c2ca3324a9691d528b9f5bb8d2b21b0380814))
+* Allow ambient credentials for S3 ([#4212](https://github.com/docling-project/docling/issues/4212)) ([`e689393`](https://github.com/docling-project/docling/commit/e6893934792920bcca6528ea1a5a76071a5340a5))
+
+### Fix
+
+* More improvements for chandra ocr parsing ([#4277](https://github.com/docling-project/docling/issues/4277)) ([`a83926c`](https://github.com/docling-project/docling/commit/a83926cfbecdf6568ee083797cab2d5626eee7a4))
+* **asciidoc:** Recognise a rowspan-only cell specifier ([#4290](https://github.com/docling-project/docling/issues/4290)) ([`815f34a`](https://github.com/docling-project/docling/commit/815f34ab665851e080f7a518ebedde553f3d150d))
+* **html:** Default a zero colspan or rowspan to 1 in HTML tables ([#4287](https://github.com/docling-project/docling/issues/4287)) ([`6cb036c`](https://github.com/docling-project/docling/commit/6cb036c9d79a432a662688c63ef64637f879c498))
+* **csv:** Wrap strict quote errors as DocumentLoadError ([#4260](https://github.com/docling-project/docling/issues/4260)) ([`ddf05ff`](https://github.com/docling-project/docling/commit/ddf05ff894192ef0d13822d8875a144a1cd89c40))
+* **heading-hierarchy:** Support colon, dash, bracket and parenthesized numbering markers ([#4204](https://github.com/docling-project/docling/issues/4204)) ([`3b5f61c`](https://github.com/docling-project/docling/commit/3b5f61c0c520250d581173336148a2c1ca876386))
+* **epub:** Resolve manifest hrefs that step out of the package directory ([#4261](https://github.com/docling-project/docling/issues/4261)) ([`2b6a7ff`](https://github.com/docling-project/docling/commit/2b6a7ffd5049cc01c40cf2302ed7d46e892d3434))
+* **backend:** Decode text documents that are not UTF-8 ([#4202](https://github.com/docling-project/docling/issues/4202)) ([`cea4b45`](https://github.com/docling-project/docling/commit/cea4b4500c0277684c98697ead406838081060c6))
+* **picture-description:** Propagate token usage from vlm engine output ([#4250](https://github.com/docling-project/docling/issues/4250)) ([`629440e`](https://github.com/docling-project/docling/commit/629440ee795fda854a9f9667ca8c54b0013a5ad6))
+* **email:** Normalise CRLF and lone CR in message bodies ([#4248](https://github.com/docling-project/docling/issues/4248)) ([`1ceca30`](https://github.com/docling-project/docling/commit/1ceca3073e499dcc9da2dc802ac1f18bce672978))
+* **pptx:** Keep charts nested in a group when isolating for rendering ([#4232](https://github.com/docling-project/docling/issues/4232)) ([`e80fa80`](https://github.com/docling-project/docling/commit/e80fa8054f52520119605cb111af86f82ee854e2))
+* **cache:** Fall back safely when serialize_as_any detects false circular reference ([#4240](https://github.com/docling-project/docling/issues/4240)) ([`d4fa979`](https://github.com/docling-project/docling/commit/d4fa979af44a878700f8576eaba7e27dd9330005))
+* Recognize bare Arabic chapter numbering ([#4179](https://github.com/docling-project/docling/issues/4179)) ([`b5cfca0`](https://github.com/docling-project/docling/commit/b5cfca0d206913f7d105a636e36b6a1fe269faeb))
+
+### Documentation
+
+* Fix notebook links that resolve above docs/ ([#4196](https://github.com/docling-project/docling/issues/4196)) ([`52137a1`](https://github.com/docling-project/docling/commit/52137a1f9718045ee4d3a7f3ee2d771960791895))
+* Fix the API-reference relative paths in the confidence scores guide ([#4195](https://github.com/docling-project/docling/issues/4195)) ([`56a041a`](https://github.com/docling-project/docling/commit/56a041a05c9288a2e21f6701cbf3ab7cd1aaedc4))
+
 ## [v2.128.0](https://github.com/docling-project/docling/releases/tag/v2.128.0) - 2026-09-16
 
 ### Feature

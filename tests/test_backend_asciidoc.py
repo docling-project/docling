@@ -46,6 +46,28 @@ def test_list_dedent_to_base_does_not_crash() -> None:
     assert [item.text for item in doc.texts] == ["a", "b"]
 
 
+def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
+    # AsciiDoc writes a span as [colspan][.rowspan] followed by "+" or "*", and
+    # either number may be omitted, so ".2+" is a rowspan on its own. The cell
+    # specifier pattern required a leading digit, so _is_table_line rejected the
+    # line, the block loop read that as the end of the table, and the row after
+    # it leaked into the document as literal text.
+    src = b"|===\n|A |B\n.2+|tall |x\n|y\n|===\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="rowspan.asciidoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert doc.tables, "the table was dropped entirely"
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (2, 2)
+    assert [cell.text for cell in table.data.table_cells] == ["A", "B", "tall", "x"]
+    assert [item.text for item in doc.texts] == []
+
+
 def test_auto_numbered_list_keeps_items_and_following_text() -> None:
     source = b"""= Installation Guide
 

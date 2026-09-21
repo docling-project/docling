@@ -35,6 +35,7 @@ from docling_core.types.doc import (
     TableData,
     TableItem,
     TabularChartMetaField,
+    TextItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from lxml import etree
@@ -190,6 +191,9 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
     r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
 )
 """Matches Strict OOXML namespace/relationship URIs."""
+
+_MAX_HEADING_LEVEL: Final[int] = 9
+"""OOXML headings are 1-9. Values outside that range are clamped."""
 
 _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
     {
@@ -789,13 +793,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The list group to use (either reused or newly created).
         """
         if self._can_reuse_list_group(numid, parent):
-            # When reusing a list group, remove any empty text item that was added
-            # between the last list item and this one (from closing the list)
-            if doc.texts and len(doc.texts) > 0:
-                last_text = doc.texts[-1]
-                if not last_text.text or not last_text.text.strip():
-                    doc.delete_items(node_items=[last_text])
-            return self.last_list_group
+            # Reuse only if nothing but empty paragraphs (added when the list was
+            # closed) follows the cached group in its parent. Otherwise the new
+            # items would be placed before the intervening content, e.g. a table.
+            container = parent if parent is not None else doc.body
+            trailing_empty: list[TextItem] = []
+            for ref in reversed(container.children):
+                item = ref.resolve(doc)
+                if isinstance(item, TextItem) and not item.text.strip():
+                    trailing_empty.append(item)
+                    continue
+                if item.self_ref == self.last_list_group.self_ref:
+                    if trailing_empty:
+                        doc.delete_items(node_items=trailing_empty)
+                    return self.last_list_group
+                break
 
         list_gr = doc.add_list_group(
             name="list",
@@ -1372,9 +1384,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if parts[1].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[0], None)
-            # Ensure heading level is at least 1 (e.g., custom "Heading 0" styles)
-            if isinstance(label_level, int) and label_level < 1:
-                label_level = 1
+            # OOXML headings are 1-9. Custom names like Heading 0 or Heading 111
+            # are clamped into that range.
+            if isinstance(label_level, int):
+                label_level = min(max(1, label_level), _MAX_HEADING_LEVEL)
             return label_str, label_level
 
         return style_label, None
@@ -2517,8 +2530,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
-            # Defense in depth: ensure level is at least 1
-            curr_level = max(1, curr_level)
+            # Defense in depth: OOXML headings are 1-9.
+            curr_level = min(max(1, curr_level), _MAX_HEADING_LEVEL)
             current_level = curr_level
             parent_level = curr_level - 1
             add_level = curr_level

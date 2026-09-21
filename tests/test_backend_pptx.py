@@ -968,3 +968,44 @@ def test_paragraph_provenance_spans_its_own_text():
                 f"{item.self_ref} ({item.label}) spans {prov.charspan} "
                 f"but its text is {len(item.text)} characters"
             )
+
+
+def test_pptx_shape_bbox_is_not_vertically_mirrored(tmp_path: Path):
+    """python-pptx reports positions from the slide's top-left, y growing down.
+
+    Tagging those coordinates BOTTOMLEFT does not convert them. A consumer that
+    un-flips a BOTTOMLEFT box, which ``BoundingBox.to_top_left_origin`` does by
+    computing ``page_height - t``, then mirrors every box that is not centred
+    vertically onto the wrong half of the slide.
+    """
+    from docling_core.types.doc import CoordOrigin
+    from pptx import Presentation
+    from pptx.util import Emu
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(100000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near top"
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(6000000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near bottom"
+
+    pptx_path = tmp_path / "vertical_order.pptx"
+    prs.save(pptx_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
+    doc = converter.convert(pptx_path, raises_on_error=True).document
+
+    tops = {
+        item.text: item.prov[0].bbox
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.prov
+    }
+
+    assert set(tops) == {"Near top", "Near bottom"}
+    for text, bbox in tops.items():
+        assert bbox.coord_origin == CoordOrigin.TOPLEFT, text
+        assert bbox.t < bbox.b, f"{text}: top edge must sit above the bottom edge"
+
+    assert tops["Near top"].t < tops["Near bottom"].t

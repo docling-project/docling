@@ -71,10 +71,20 @@ def _structured_field(
     )
 
 
-def _trn(text: str, encoding: str = "cp500", chained: bool = False) -> bytes:
+def _trn(
+    text: str,
+    encoding: str = "cp500",
+    chained: bool = False,
+    chain_next: bool = False,
+) -> bytes:
+    """Encode a TRN control sequence.
+
+    `chained` omits X'2BD3' because the previous sequence had an odd function
+    type; `chain_next` uses the odd type so that the next sequence is chained.
+    """
     encoded = text.encode(encoding)
     introducer = b"" if chained else b"\x2b\xd3"
-    function_type = 0xDB if chained else 0xDA
+    function_type = 0xDB if chain_next else 0xDA
     return introducer + bytes((len(encoded) + 2, function_type)) + encoded
 
 
@@ -307,9 +317,30 @@ def test_ptoca_rejects_truncated_or_invalid_sequences(data: bytes, message: str)
 
 
 def test_ptoca_extracts_chained_trn_and_filters_control_characters():
-    data = _trn("First") + _trn("\u0000Second", chained=True) + b"\x00"
+    data = _trn("First", chain_next=True) + _trn("\u0000Second", chained=True) + b"\x00"
 
     assert _extract_ptoca_text(data, "cp500") == "FirstSecond"
+
+
+def test_ptoca_chain_ends_with_an_even_function_type():
+    """PTOCA: the sequence after an odd function type is chained, whatever its
+    own type; an even type ends the chain. A chained Begin Line (X'D9') is
+    therefore followed by an unprefixed TRN with the even type X'DA'."""
+    data = (
+        b"\x2b\xd3\x02\xd9"  # BLN, chains the next sequence
+        + _trn("Hello", chained=True)  # X'DA': last sequence of the chain
+        + _trn("World")
+    )
+
+    assert _extract_ptoca_text(data, "cp500") == "HelloWorld"
+
+
+def test_ptoca_code_points_after_an_unchained_sequence_are_not_a_chain():
+    """Graphic code points may follow an even function type; an odd second byte
+    (cp500 "i" is X'89') must not be read as a chained control sequence."""
+    data = _trn("A") + "Hi".encode("cp500") + _trn("B")
+
+    assert _extract_ptoca_text(data, "cp500") == "AB"
 
 
 def test_begin_page_before_end_page_is_rejected():

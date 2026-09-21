@@ -155,7 +155,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
+    InputFormat.MD: ["md", "markdown", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],

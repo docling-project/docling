@@ -605,6 +605,7 @@ def test_comments_extraction(documents):
         ("Heading 2", "Heading", 2),
         ("Heading 9", "Heading", 9),
         ("Heading 0", "Heading", 1),  # Custom style - level 0 should be clamped to 1
+        ("Heading 111", "Heading", 9),  # Above schema max; clamp to OOXML heading 9
         ("1 Heading", "Heading", 1),  # Number before text
         ("0 Heading", "Heading", 1),  # Zero before text should be clamped to 1
         ("Normal", "Normal", None),  # Non-heading style
@@ -630,6 +631,25 @@ def test_get_heading_and_level(docx_paths, style_label, expected_label, expected
     assert level == expected_level, (
         f"Expected level {expected_level} for '{style_label}', got {level}"
     )
+
+
+def test_heading_style_above_schema_max_converts(tmp_path):
+    """A Heading 111 style converts at heading level 9 instead of aborting."""
+    document = Document()
+    document.styles.add_style("Heading 111", WD_STYLE_TYPE.PARAGRAPH)
+    document.add_paragraph("Deep heading", style="Heading 111")
+    path = tmp_path / "heading-111.docx"
+    document.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(path)
+    exported = result.document.export_to_markdown()
+    assert "Deep heading" in exported
+    headers = [
+        item for item in result.document.texts if isinstance(item, SectionHeaderItem)
+    ]
+    assert len(headers) == 1
+    assert headers[0].level == 9
+    assert headers[0].text == "Deep heading"
 
 
 def test_get_outline_level_from_style():

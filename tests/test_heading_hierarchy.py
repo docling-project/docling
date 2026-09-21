@@ -27,6 +27,7 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
     _infer_from_numbering,
     _parse_marker,
+    _strip_marker,
 )
 
 
@@ -174,6 +175,48 @@ def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None
     assert _parse_marker("ABSTRACT") is None
+    assert _parse_marker("2024 Annual Financial Report") is None
+    assert _parse_marker("2024-2025 Budget") is None
+    assert _parse_marker("2024\u201325 Outlook") is None
+    assert _parse_marker("10-K Filing") is None
+    assert _parse_marker("3-D Printing") is None
+    assert _parse_marker("1-Year Results") is None
+    assert _parse_marker("3:00 PM Session") is None
+    assert _parse_marker("2:1 Aspect Ratio") is None
+    assert _parse_marker("K-means Clustering") is None
+    assert _parse_marker("T-cell Biology") is None
+    assert _parse_marker("E-commerce") is None
+    assert _parse_marker("Y-axis") is None
+    assert _parse_marker("X-ray Imaging") is None
+    assert _parse_marker("1.5-fold increase") is None
+
+
+def test_numbering_delimiter_variants():
+    # Supports colon, dash, brackets, and parenthesized Arabic numerals.
+    assert _parse_marker("1 - Scope").family == "arabic"
+    assert _parse_marker("1: Scope").family == "arabic"
+    assert _parse_marker("1] Scope").family == "arabic"
+    assert _parse_marker("(1) Scope").family == "arabic"
+    assert _parse_marker("1.1: Details").family == "dotted"
+    assert _parse_marker("1.1: Details").depth == 2
+    assert _parse_marker("1.1 - Details").family == "dotted"
+    assert _parse_marker("(1.1) Details").family == "dotted"
+    assert _parse_marker("A - Appendix").family == "alpha_u"
+    assert _parse_marker("A: Appendix").family == "alpha_u"
+    assert _parse_marker("A.1 Proofs").family == "alpha_u"
+    assert _parse_marker("I.1 Scope").family == "roman_u"
+
+    # Preserves correct hierarchical depth when dotted headings use colons
+    levels = _levels(["1. Introduction", "1.1: Background", "1.1.1: Details"])
+    assert levels == {0: 1, 1: 2, 2: 3}
+
+    # Stripping leading markers stays in sync for brackets, colons, and dashes
+    assert _strip_marker("1] Scope").strip() == "Scope"
+    assert _strip_marker("(1) Scope").strip() == "Scope"
+    assert _strip_marker("1 - Scope").strip() == "Scope"
+    assert _strip_marker("1: Scope").strip() == "Scope"
+    assert _strip_marker("1.1: Details").strip() == "Details"
+    assert _strip_marker("A - Appendix").strip() == "Appendix"
 
 
 def test_custom_numbering_scheme_order():

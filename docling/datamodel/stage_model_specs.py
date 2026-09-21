@@ -689,19 +689,21 @@ class StagePresetMixin:
             else:
                 engine_options = AutoInlineVlmEngineOptions()
 
-        # Create instance with preset values
-        # Type ignore because cls is the concrete options class, not the mixin
-        instance = cls(  # type: ignore[call-arg]
+        # Build a merged dict of preset values + caller overrides, then construct
+        # a single validated instance so that model_validators (e.g. "at least one
+        # output") run against the final merged state rather than the pre-override
+        # state.
+        preset_data: dict = dict(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
             **preset.stage_options,
         )
+        preset_data.update(overrides)
 
-        # Apply overrides
-        for key, value in overrides.items():
-            setattr(instance, key, value)
+        # Type ignore because cls is the concrete options class, not the mixin
+        instance = cls(**preset_data)  # type: ignore[call-arg]
 
         return instance
 
@@ -1856,4 +1858,78 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.VLLM,
+)
+
+# -----------------------------------------------------------------------------
+# CHART_EXTRACTION PRESETS
+# -----------------------------------------------------------------------------
+
+CHART_EXTRACTION_GRANITE_VISION = StageModelPreset(
+    preset_id="granite_vision",
+    name="Granite-Vision-3.3-2B-Chart2CSV",
+    description="IBM Granite Vision chart extraction model (3.3-2B preview, CSV output only)",
+    model_spec=VlmModelSpec(
+        name="Granite-Vision-3.3-2B-chart2csv-preview",
+        default_repo_id="ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
+        revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67",
+        prompt="Convert the information in this chart into a data table in CSV format.",
+        response_format=ResponseFormat.PLAINTEXT,
+        trust_remote_code=True,
+        supported_engines={VlmEngineType.TRANSFORMERS},
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.TRANSFORMERS,
+    stage_options={"output_format": "granite_vision_charts"},
+)
+
+CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
+    preset_id="granite_vision_v4",
+    name="Granite-Vision-4.1-4B",
+    description="IBM Granite Vision 4.1-4B chart extraction model (CSV, code, and summary output)",
+    model_spec=VlmModelSpec(
+        name="Granite-Vision-4.1-4B",
+        default_repo_id="ibm-granite/granite-vision-4.1-4b",
+        revision="dd48e97503de471803850df70843cf9eb5da8712",
+        # The active prompt tokens (<chart2csv>, <chart2summary>, <chart2code>) are
+        # assembled at call time from ChartExtractionVlmEngineOptions; this is the
+        # default used when no options override is present.
+        prompt="<chart2csv>",
+        response_format=ResponseFormat.PLAINTEXT,
+        trust_remote_code=True,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.API_LMSTUDIO,
+            VlmEngineType.API_OLLAMA,
+            VlmEngineType.API_OPENAI,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.TRANSFORMERS,
+    stage_options={"output_format": "granite_vision_charts"},
 )

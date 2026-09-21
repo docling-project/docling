@@ -16,7 +16,6 @@ from tempfile import mkdtemp
 from typing import Annotated, Any, Callable, Final, cast
 from zipfile import ZipFile
 
-import pypdfium2
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -59,6 +58,16 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# pypdfium2 ships with the PDF extras, not with format-xlsx, and is only reached
+# through the LibreOffice converter below. `get_docx_to_pdf_converter` returns
+# None when it is missing, so the rendering paths already degrade to "no image";
+# this guard only keeps the module itself importable.
+# See https://github.com/docling-project/docling/issues/3613.
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+except ImportError:  # pragma: no cover - import-time guard
+    pass
 
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
@@ -1092,10 +1101,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # The 'visited_cells' returned to the caller MUST strictly be the ones
-        # that contain data/merges, so the main loop doesn't re-scan them.
-        # However, to avoid overlapping tables, we should mark the whole bbox?
-        # Standard behavior: Mark the specific connected cells we found.
+        # The extracted table is the full rectangular bounding box, including
+        # gaps and disconnected non-empty cells inside that rectangle. Mark the
+        # same rectangle as visited so those cells are not scanned again and
+        # emitted as duplicate fragment tables.
+        visited_cells = {
+            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
+        }
+
         return (
             ExcelTable(
                 anchor=(min_c, min_r),
@@ -1103,7 +1116,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 num_cols=max_c + 1 - min_c,
                 data=data,
             ),
-            table_cells,
+            visited_cells,
         )
 
     @staticmethod
@@ -1139,7 +1152,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         converts the input file to PDF at the given output path.
 
         Returns:
-            A converter callable, or None when LibreOffice is not available.
+            A converter callable, or None when LibreOffice or pypdfium2 is not
+            available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.xlsx_to_pdf_converter_init:
             return self.xlsx_to_pdf_converter
