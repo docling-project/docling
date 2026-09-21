@@ -14,7 +14,9 @@ from pydantic import BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     ConversionStatus,
-    VlmPredictionToken,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
     VlmStopReason,
 )
 from docling.datamodel.extraction import (
@@ -22,6 +24,7 @@ from docling.datamodel.extraction import (
     ExtractionTarget,
     ExtractionTemplate,
     PageScope,
+    VlmInferenceMetadata,
 )
 from docling.datamodel.extraction_options import GRANITE_VISION_4_1_SPEC
 from docling.datamodel.service import ExtractionDocumentResult, ExtractionTaskResult
@@ -67,6 +70,16 @@ def request(*, storage=False):
     )
 
 
+def _item_error(message, page_no=None):
+    return ErrorItem(
+        component_type=DoclingComponentType.MODEL,
+        module_name="ExtractionVlmPipeline",
+        error_message=message,
+        category=FailureCategory.INFERENCE_FAILURE,
+        page_no=page_no,
+    )
+
+
 def response():
     return ExtractDocumentResponse(
         documents=[
@@ -81,22 +94,25 @@ def response():
                         extracted_data={"invoice": "INV-42", "total": 4.2},
                         raw_text='{"invoice":"INV-42","total":4.2}',
                         validation_status="passed",
-                        generated_tokens=[VlmPredictionToken(token=42, logprob=-0.2)],
-                        generation_time=0.4,
-                        num_tokens=12,
-                        usage={"completion_tokens": 12},
-                        stop_reason=VlmStopReason.END_OF_SEQUENCE,
+                        inference_metadata=VlmInferenceMetadata(
+                            generation_time=0.4,
+                            num_tokens=12,
+                            usage={"completion_tokens": 12},
+                            stop_reason=VlmStopReason.END_OF_SEQUENCE,
+                        ),
                     ),
                     ExtractionItem(
                         scope={"kind": "document"},
                         raw_text='{"total":"bad"}',
                         validation_status="failed",
-                        errors=["Schema validation at $.total: not a number"],
+                        errors=[
+                            _item_error("Schema validation at $.total: not a number")
+                        ],
                     ),
                     ExtractionItem(
                         scope=PageScope(page_no=2),
                         validation_status="not_run",
-                        errors=["Inference failed"],
+                        errors=[_item_error("Inference failed", page_no=2)],
                     ),
                 ],
             )

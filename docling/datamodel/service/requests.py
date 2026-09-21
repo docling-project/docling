@@ -97,6 +97,19 @@ KnownBatchSourceRequestItem = Annotated[
     Field(discriminator="kind"),
 ]
 
+# Extraction additionally accepts ad-hoc inline file uploads; batch convert does
+# not (see ExtractSourcesRequest and
+# test_batch_convert_sources_request_rejects_file_sources).
+KnownExtractSourceRequestItem = Annotated[
+    FileSourceRequest
+    | AnyHttpSourceRequest
+    | S3SourceRequest
+    | AzureBlobSourceRequest
+    | GoogleCloudStorageSourceRequest
+    | GoogleDriveSourceRequest,
+    Field(discriminator="kind"),
+]
+
 
 class GenericSourceRequest(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -104,12 +117,11 @@ class GenericSourceRequest(BaseModel):
     kind: str = Field(min_length=1)
 
 
+# Superset (extract union) so a "file" dict is coerced to FileSourceRequest; the
+# per-request outer union then decides whether "file" is an accepted tag.
 _KNOWN_BATCH_SOURCE_MODELS = {
     source_type.model_fields["kind"].default: source_type
-    for source_type in (
-        *get_args(get_args(KnownBatchSourceRequestItem)[0]),
-        FileSourceRequest,
-    )
+    for source_type in get_args(get_args(KnownExtractSourceRequestItem)[0])
 }
 _KNOWN_BATCH_SOURCE_TYPES = tuple(_KNOWN_BATCH_SOURCE_MODELS.values())
 
@@ -136,6 +148,11 @@ BatchSourceRequestItem = Annotated[
     BeforeValidator(_validate_batch_source),
 ]
 BatchSourceRequestInput: TypeAlias = BatchSourceRequestItem | Mapping[str, Any]
+
+ExtractSourceRequestItem = Annotated[
+    KnownExtractSourceRequestItem | GenericSourceRequest,
+    BeforeValidator(_validate_batch_source),
+]
 
 SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")
@@ -246,7 +263,7 @@ class ExtractSourcesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     options: ExtractDocumentsOptions
-    sources: list[BatchSourceRequestItem] = Field(min_length=1)
+    sources: list[ExtractSourceRequestItem] = Field(min_length=1)
     target: ExtractTargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 

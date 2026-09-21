@@ -309,9 +309,6 @@ def test_main_inline_constructor_and_image_wrapper(style):
         InlineVlmOptions,
         ResponseFormat,
     )
-    from docling.models.extraction.nuextract_transformers_model import (
-        NuExtractTransformersModel,
-    )
     from docling.models.extraction.prompt_utils import _PreparedTarget
 
     inline = InlineVlmOptions(
@@ -350,8 +347,9 @@ def test_main_inline_constructor_and_image_wrapper(style):
     else:
         assert [target.prompt for target in targets] == ["final one", "final two"]
         assert targets[0].processor_kwargs == {"do_pad": True, "size": 12}
+    # main's default (no style) resolves to the NuExtract preparation.
     assert (
-        NuExtractTransformersModel(
+        TransformersExtractionModel(
             False, None, AcceleratorOptions(), inline
         ).model_spec.preparation
         == "nuextract"

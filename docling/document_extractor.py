@@ -293,7 +293,7 @@ class DocumentExtractor:
                         else "Document"
                     )
                     error_messages.extend(
-                        f"{scope}: {message}" for message in item.errors
+                        f"{scope}: {error.error_message}" for error in item.errors
                     )
                 error_details = (
                     f" Errors: {'; '.join(error_messages)}" if error_messages else ""

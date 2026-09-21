@@ -33,6 +33,7 @@ from docling.datamodel.extraction import (
     ImageContentItem,
     PageScope,
     TextContentItem,
+    VlmInferenceMetadata,
 )
 from docling.datamodel.extraction_options import ChannelSelection, ExtractionVlmOptions
 from docling.datamodel.pipeline_options import (
@@ -406,13 +407,22 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             if image is not None and owned_image:
                 image.close()
 
-    @staticmethod
+    def _item_error(self, scope: ExtractionScope, message: str) -> ErrorItem:
+        """A scoped item-level failure; page_no carries the scope for free."""
+        return ErrorItem(
+            component_type=DoclingComponentType.MODEL,
+            module_name=self.__class__.__name__,
+            error_message=message,
+            category=FailureCategory.INFERENCE_FAILURE,
+            page_no=scope.page_no if isinstance(scope, PageScope) else None,
+        )
+
     def _failed_item(
-        scope: ExtractionScope, target: _PreparedTarget, message: str
+        self, scope: ExtractionScope, target: _PreparedTarget, message: str
     ) -> ExtractionItem:
         return ExtractionItem(
             scope=scope,
-            errors=[message],
+            errors=[self._item_error(scope, message)],
             validation_status="not_run"
             if target.validator is not None
             else "not_requested",
@@ -437,17 +447,18 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         item = ExtractionItem(
             scope=scope,
             raw_text=prediction.text,
-            generated_tokens=prediction.generated_tokens,
-            generation_time=prediction.generation_time,
-            num_tokens=prediction.num_tokens,
-            usage=prediction.usage,
-            stop_reason=prediction.stop_reason,
+            inference_metadata=VlmInferenceMetadata(
+                generation_time=prediction.generation_time,
+                num_tokens=prediction.num_tokens,
+                usage=prediction.usage,
+                stop_reason=prediction.stop_reason,
+            ),
             validation_status="not_run"
             if target.validator is not None
             else "not_requested",
         )
         if inference_error is not None:
-            item.errors.append(inference_error)
+            item.errors.append(self._item_error(scope, inference_error))
             return item
         try:
             data = json.loads(
@@ -457,20 +468,28 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             if not isinstance(data, dict):
                 raise ValueError("Model returned JSON that is not an object")
         except ValueError as exc:
-            item.errors.append(f"Model returned invalid JSON: {exc}")
+            item.errors.append(
+                self._item_error(scope, f"Model returned invalid JSON: {exc}")
+            )
             return item
         if prediction.stop_reason == VlmStopReason.CONTENT_FILTERED:
-            item.errors.append("Model output was filtered by the API provider")
+            item.errors.append(
+                self._item_error(scope, "Model output was filtered by the API provider")
+            )
             return item
         if target.validator is not None:
             try:
                 errors = list(target.validator.iter_errors(data))
             except Exception as exc:
-                item.errors.append(f"Schema validation could not run: {exc}")
+                item.errors.append(
+                    self._item_error(scope, f"Schema validation could not run: {exc}")
+                )
                 return item
             item.validation_status = "failed" if errors else "passed"
             item.errors.extend(
-                f"Schema validation at {error.json_path}: {error.message}"
+                self._item_error(
+                    scope, f"Schema validation at {error.json_path}: {error.message}"
+                )
                 for error in errors
             )
             if errors:
@@ -487,7 +506,11 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             return ConversionStatus.FAILURE
         if ext_res.errors or any(
             item.errors
-            or item.stop_reason in {VlmStopReason.LENGTH, VlmStopReason.STOP_SEQUENCE}
+            or (
+                item.inference_metadata is not None
+                and item.inference_metadata.stop_reason
+                in {VlmStopReason.LENGTH, VlmStopReason.STOP_SEQUENCE}
+            )
             for item in ext_res.items
         ):
             return ConversionStatus.PARTIAL_SUCCESS

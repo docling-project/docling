@@ -421,6 +421,21 @@ def test_extract_request_separates_guidance_from_storage() -> None:
         )
 
 
+def test_extract_request_accepts_inline_file_sources() -> None:
+    # Extraction accepts ad-hoc file uploads that batch convert rejects.
+    request = ExtractSourcesRequest.model_validate(
+        {
+            "options": {
+                "target": {"template": {"format": "example_json", "value": {"a": 1}}}
+            },
+            "sources": [
+                {"kind": "file", "base64_string": "ZmFrZQ==", "filename": "report.pdf"}
+            ],
+        }
+    )
+    assert request.sources[0].kind == "file"
+
+
 def test_task_failure_result_roundtrip() -> None:
     failure = PublicFailureInfo(
         category=FailureCategory.INTERNAL,

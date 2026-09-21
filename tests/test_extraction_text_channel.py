@@ -284,5 +284,7 @@ def test_api_failure_makes_text_extraction_fail(
         ),
     )
 
-    assert result.items[0].errors == ["service unavailable"]
+    assert [error.error_message for error in result.items[0].errors] == [
+        "service unavailable"
+    ]
     assert pipeline._determine_status(result) == ConversionStatus.FAILURE

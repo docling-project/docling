@@ -157,8 +157,11 @@ def test_absolute_pages_are_independent_for_every_channel(
             assert f"Page {n} total" in content[-1].text
             assert f"Page {5 - n} total" not in content[-1].text
         assert item.validation_status == "passed"
-        assert item.num_tokens == 7 and item.usage == {"completion_tokens": 7}
-        assert item.stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert (
+            item.inference_metadata.num_tokens == 7
+            and item.inference_metadata.usage == {"completion_tokens": 7}
+        )
+        assert item.inference_metadata.stop_reason == VlmStopReason.END_OF_SEQUENCE
         assert "image" not in item.model_dump_json()
 
 
@@ -406,7 +409,8 @@ def test_unattributed_text_fails_known_pages_before_inference(
     assert result.status == ConversionStatus.FAILURE
     assert [item.scope.page_no for item in result.items] == [2, 3]
     assert all(
-        "page attribution" in item.errors[0] and item.validation_status == "not_run"
+        "page attribution" in item.errors[0].error_message
+        and item.validation_status == "not_run"
         for item in result.items
     )
     assert calls == []
@@ -450,7 +454,7 @@ def test_missing_page_image_is_scoped_partial_failure(tmp_path, monkeypatch):
     assert len(calls) == 1
     assert result.items[1].scope == PageScope(page_no=3)
     assert result.items[1].validation_status == "not_run"
-    assert "no restored image" in result.items[1].errors[0]
+    assert "no restored image" in result.items[1].errors[0].error_message
 
 
 @pytest.mark.parametrize(
@@ -487,11 +491,14 @@ def test_parse_schema_and_inference_failures_keep_raw_metadata(
         ConversionStatus.SUCCESS if error is None else ConversionStatus.FAILURE
     )
     if error:
-        assert error in item.errors[0]
+        assert error in item.errors[0].error_message
         assert item.extracted_data is None
     if isinstance(answer, str):
         assert item.raw_text == answer
-        assert item.num_tokens == 7 and item.usage == {"completion_tokens": 7}
+        assert (
+            item.inference_metadata.num_tokens == 7
+            and item.inference_metadata.usage == {"completion_tokens": 7}
+        )
 
 
 @pytest.mark.parametrize(
@@ -508,7 +515,7 @@ def test_incomplete_stop_is_not_success(tmp_path, monkeypatch, stop):
         if stop == VlmStopReason.CONTENT_FILTERED
         else ConversionStatus.PARTIAL_SUCCESS
     )
-    assert result.items[0].stop_reason == stop
+    assert result.items[0].inference_metadata.stop_reason == stop
     assert result.items[0].raw_text == '{"total": 42}'
 
 
@@ -601,8 +608,12 @@ def test_normalization_and_cached_call_isolation(tmp_path, monkeypatch):
     first.output_schema["properties"]["total"]["description"] = "Caller mutation"
     assert all(result.status == ConversionStatus.SUCCESS for result in results)
     assert len(normalizations) == 1
+    # The target's structure reaches every call through the native template
+    # (not a schema dump in instructions), and its instructions carry guidance.
     assert all(
-        "Final total" in call["chat_template_kwargs"]["instructions"] for call in calls
+        json.loads(call["chat_template_kwargs"]["template"])
+        == {"total": "number", "note": "string"}
+        for call in calls
     )
     second = ExtractionTarget(
         output_schema=before["output_schema"], instructions="Second call"
@@ -745,7 +756,7 @@ def test_remaining_timeout_reaches_api_and_unprocessed_pages_are_kept(
     assert result.items[0].extracted_data == {"total": 42}
     assert result.items[1].scope == PageScope(page_no=3)
     assert result.items[1].validation_status == "not_run"
-    assert "timeout" in result.items[1].errors[0]
+    assert "timeout" in result.items[1].errors[0].error_message
     assert result.errors[0].category.value == "timeout"
 
 
@@ -839,15 +850,15 @@ def test_existing_local_models_through_completed_sdk(
         assert result.status == ConversionStatus.FAILURE
         assert all(item.validation_status == "not_run" for item in result.items)
         message = "context limit" if failure == "context" else failure
-        assert all(message in item.errors[0] for item in result.items)
+        assert all(message in item.errors[0].error_message for item in result.items)
     else:
         assert result.status == ConversionStatus.SUCCESS
         assert all(
             item.extracted_data == {"total": 42}
             and item.validation_status == "passed"
-            and item.num_tokens == 2
-            and item.generation_time >= 0
-            and item.stop_reason == VlmStopReason.END_OF_SEQUENCE
+            and item.inference_metadata.num_tokens == 2
+            and item.inference_metadata.generation_time >= 0
+            and item.inference_metadata.stop_reason == VlmStopReason.END_OF_SEQUENCE
             for item in result.items
         ), result.items
 
@@ -929,7 +940,7 @@ def test_constrained_sdk_call_still_validates_original_schema(tmp_path, monkeypa
     )
     assert result.status == ConversionStatus.FAILURE
     assert result.items[0].validation_status == "failed"
-    assert "$.total" in result.items[0].errors[0]
+    assert "$.total" in result.items[0].errors[0].error_message
     assert calls[0]["constraint_schema"] is not None
     assert target.model_dump() == before
 
@@ -963,8 +974,10 @@ def test_schema_runtime_failure_retains_raw_output(tmp_path, monkeypatch):
     item = result.items[0]
     assert result.status == ConversionStatus.FAILURE
     assert item.validation_status == "not_run"
-    assert item.raw_text == '{"total": 42}' and item.num_tokens == 7
-    assert item.errors == ["Schema validation could not run: validator failed"]
+    assert item.raw_text == '{"total": 42}' and item.inference_metadata.num_tokens == 7
+    assert [error.error_message for error in item.errors] == [
+        "Schema validation could not run: validator failed"
+    ]
 
 
 def test_converted_document_page_limit_is_enforced(tmp_path, monkeypatch):

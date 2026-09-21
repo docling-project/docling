@@ -218,7 +218,11 @@ def test_extraction_streams_out_of_order_pages_with_bounded_resources() -> None:
         for page in ext_res.items
         if page.scope.page_no != 41
     )
-    assert ext_res.items[36].errors[0].startswith("Page 41 backend is not valid")
+    assert (
+        ext_res.items[36]
+        .errors[0]
+        .error_message.startswith("Page 41 backend is not valid")
+    )
     assert pipeline._determine_status(ext_res) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
     assert tracker.page_high_water == tracker.image_high_water == 1
@@ -232,7 +236,9 @@ def test_extraction_records_failed_page_by_absolute_number_and_continues() -> No
     )
 
     assert [page.scope.page_no for page in ext_res.items] == [5, 6, 7, 8, 9]
-    assert ext_res.items[2].errors == ["page 7 failed"]
+    assert [error.error_message for error in ext_res.items[2].errors] == [
+        "page 7 failed"
+    ]
     assert pipeline._determine_status(ext_res) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
 
@@ -273,7 +279,11 @@ def test_invalid_json_is_a_failed_extraction() -> None:
         )
     )
 
-    assert ext_res.items[0].errors[0].startswith("Model returned invalid JSON")
+    assert (
+        ext_res.items[0]
+        .errors[0]
+        .error_message.startswith("Model returned invalid JSON")
+    )
     assert pipeline._determine_status(ext_res) == ConversionStatus.FAILURE
 
 
@@ -320,7 +330,9 @@ def test_chunk_generator_close_releases_current_page_and_image() -> None:
 def test_missing_selected_page_is_a_scoped_failure() -> None:
     pipeline, result, tracker = _run_pipeline(page_nos=[1, 3], page_range=(1, 3))
     assert [item.scope.page_no for item in result.items] == [1, 2, 3]
-    assert result.items[1].errors == ["Selected page is missing from backend"]
+    assert [error.error_message for error in result.items[1].errors] == [
+        "Selected page is missing from backend"
+    ]
     assert pipeline._determine_status(result) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
 
@@ -352,7 +364,9 @@ def test_random_page_load_failure_does_not_hide_selected_pages() -> None:
     )
     pipeline._extract_data(result, target="{}")
     assert [item.scope.page_no for item in result.items] == [1, 2, 3]
-    assert result.items[1].errors == ["page loading failed"]
+    assert [error.error_message for error in result.items[1].errors] == [
+        "page loading failed"
+    ]
     assert pipeline._determine_status(result) == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live_pages == tracker.live_images == 0
     assert tracker.page_high_water == tracker.image_high_water == 1
@@ -399,9 +413,9 @@ def test_owned_resources_and_raw_metadata_survive_parse_schema_and_lazy_failures
     assert pipeline._determine_status(result) == ConversionStatus.FAILURE
     assert all(
         item.raw_text == answer
-        and item.num_tokens == 7
-        and item.generation_time == 0.5
-        and item.usage == {"tokens": 7}
+        and item.inference_metadata.num_tokens == 7
+        and item.inference_metadata.generation_time == 0.5
+        and item.inference_metadata.usage == {"tokens": 7}
         and item.validation_status == state
         and item.extracted_data is None
         for item in result.items
@@ -409,4 +423,7 @@ def test_owned_resources_and_raw_metadata_survive_parse_schema_and_lazy_failures
     assert tracker.page_high_water == tracker.image_high_water == 1
     assert tracker.live_pages == tracker.live_images == 0
     if lazy_failure:
-        assert all(item.errors == ["lazy inference failed"] for item in result.items)
+        assert all(
+            [error.error_message for error in item.errors] == ["lazy inference failed"]
+            for item in result.items
+        )

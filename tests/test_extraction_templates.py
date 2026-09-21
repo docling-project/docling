@@ -14,7 +14,13 @@ import pytest
 from PIL import Image
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from docling.datamodel.base_models import InputFormat, VlmStopReason
+from docling.datamodel.base_models import (
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    InputFormat,
+    VlmStopReason,
+)
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
     DocumentExtractionResult,
@@ -25,6 +31,7 @@ from docling.datamodel.extraction import (
     ExtractionTarget,
     ExtractionTemplate,
     PageScope,
+    VlmInferenceMetadata,
 )
 from docling.datamodel.extraction_options import (
     GRANITE_VISION_4_1_SPEC,
@@ -111,7 +118,9 @@ def test_pydantic_shorthand_is_schema_and_matches_wire_validation() -> None:
         "total": "number",
         "tags": ["string"],
     }
-    assert "Postal city" in sdk.chat_template_kwargs["instructions"]
+    # NuExtract structure travels in the template; instructions stay empty with
+    # no caller guidance (the schema and its descriptions are not dumped here).
+    assert sdk.chat_template_kwargs["instructions"] == ""
     for data in [
         {"address": {"city": "Paris"}, "total": 123, "tags": []},
         {"address": {"city": "Paris"}, "total": None},
@@ -400,11 +409,21 @@ def test_item_roundtrip_keeps_scope_outcome_and_prediction_metadata(scope) -> No
         scope=scope,
         extracted_data={"lines": [{"total": 2.3}], "missing": None},
         raw_text='{"total":2.3}',
-        errors=["example error"],
+        errors=[
+            ErrorItem(
+                component_type=DoclingComponentType.MODEL,
+                module_name="ExtractionVlmPipeline",
+                error_message="example error",
+                category=FailureCategory.INFERENCE_FAILURE,
+                page_no=scope.page_no if isinstance(scope, PageScope) else None,
+            )
+        ],
         validation_status="failed",
-        num_tokens=12,
-        usage={"prompt_tokens": 5, "completion_tokens": 12, "total_tokens": 17},
-        stop_reason=VlmStopReason.LENGTH,
+        inference_metadata=VlmInferenceMetadata(
+            num_tokens=12,
+            usage={"prompt_tokens": 5, "completion_tokens": 12, "total_tokens": 17},
+            stop_reason=VlmStopReason.LENGTH,
+        ),
     )
     assert ExtractionItem.model_validate_json(item.model_dump_json()) == item
     wire = json.loads(item.model_dump_json())
@@ -535,6 +554,8 @@ def test_nullable_branch_annotations_keep_native_type_and_validation() -> None:
     )
     prepared = prepare_target(target, NUEXTRACT_2B_SPEC)
     assert json.loads(prepared.chat_template_kwargs["template"]) == {"value": "string"}
-    assert "Missing value" in prepared.chat_template_kwargs["instructions"]
+    # Native template can't express nullability and instructions aren't a schema
+    # dump; the validator remains authoritative for null handling.
+    assert prepared.chat_template_kwargs["instructions"] == ""
     assert prepared.validator.is_valid({"value": None})
     assert not prepared.validator.is_valid({"value": 2})

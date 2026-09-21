@@ -75,19 +75,6 @@ def _prepare_normalized_target(
     validator = schema_validator(schema) if schema is not None else None
     chat_kwargs = _merge_chat_options(model_spec.extra_chat_template_kwargs)
     processor_kwargs = deepcopy(model_spec.extra_processor_kwargs)
-    guidance = [_OBJECT_INSTRUCTIONS]
-    if model_spec.prompt:
-        guidance.append(model_spec.prompt)
-    if owned.instructions:
-        guidance.append(owned.instructions)
-    if schema is not None:
-        guidance.extend(
-            [
-                _MISSING_INSTRUCTIONS,
-                "Output contract (JSON Schema Draft 2020-12):\n"
-                + json.dumps(schema, indent=2),
-            ]
-        )
 
     template = owned.template
     if model_spec.preparation == "nuextract":
@@ -103,9 +90,27 @@ def _prepare_normalized_target(
             assert schema is not None  # ExtractionTarget requires schema or template.
             native = _schema_to_nuextract(schema)
         chat_kwargs["template"] = json.dumps(native, indent=2)
-        chat_kwargs["instructions"] = "\n\n".join(guidance)
+        # NuExtract is fine-tuned to emit the template shape; structure and types
+        # travel in `template` and requiredness/nullability in the validator, so
+        # `instructions` stays empty unless the spec or caller adds task guidance.
+        # It is not a home for the JSON Schema or generic JSON-mode boilerplate.
+        directions = [text for text in (model_spec.prompt, owned.instructions) if text]
+        chat_kwargs["instructions"] = "\n\n".join(directions)
         prompt = ""
     else:
+        guidance = [_OBJECT_INSTRUCTIONS]
+        if model_spec.prompt:
+            guidance.append(model_spec.prompt)
+        if owned.instructions:
+            guidance.append(owned.instructions)
+        if schema is not None:
+            guidance.extend(
+                [
+                    _MISSING_INSTRUCTIONS,
+                    "Output contract (JSON Schema Draft 2020-12):\n"
+                    + json.dumps(schema, indent=2),
+                ]
+            )
         if template is not None:
             if template.format != "example_json":
                 raise ValueError(
