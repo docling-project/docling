@@ -84,6 +84,22 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
 
 
+def test_unclosed_table_at_end_keeps_caption() -> None:
+    src = b".End table\n|===\n|A |B"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="unclosed-table.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    assert [caption.resolve(doc).text for caption in doc.tables[0].captions] == [
+        "End table"
+    ]
+
+
 def test_auto_numbered_list_keeps_items_and_following_text() -> None:
     source = b"""= Installation Guide
 

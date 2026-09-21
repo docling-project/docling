@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     ListItem,
+    NodeItem,
     TableCell,
     TableData,
     TextItem,
@@ -136,7 +137,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         in_table = False
 
         text_data: list[str] = []
-        table_data: list[str] = []
+        table_data: list[list[str]] = []
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
@@ -352,12 +353,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             )
             text_data = []
 
-        if in_table and len(table_data) > 0:
-            data = self._populate_table_as_grid(table_data)
-            doc.add_table(data=data, parent=self._get_current_parent(parents))
-
-            in_table = False
-            table_data = []
+        if in_table:
+            self._add_table_if_nonempty(
+                doc, table_data, caption_data, self._get_current_parent(parents)
+            )
 
         return doc
 
@@ -524,7 +523,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return [cell.strip() for cell in cells]
 
     @staticmethod
-    def _add_table_if_nonempty(doc, table_data, caption_data, parent):
+    def _add_table_if_nonempty(
+        doc: DoclingDocument,
+        table_data: list[list[str]],
+        caption_data: list[str],
+        parent: NodeItem | None,
+    ) -> None:
         if not table_data:
             return
 
