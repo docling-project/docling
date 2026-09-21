@@ -136,6 +136,30 @@ def test_latex_text_formatting():
     assert "emphasized" in md
 
 
+def test_latex_inline_macro_around_paragraph_break():
+    """Inline macros next to a paragraph break keep their spacing and paragraph"""
+    latex_content = b"""\\documentclass{article}
+\\begin{document}
+A \\textit{it} text. B \\textbf{bf} more.
+
+C \\emph{em}x and \\textit{it}.
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts] == [
+        "A it text. B bf more.",
+        "C emx and it.",
+    ]
+
+
 def test_latex_marginpar():
     """Test marginpar macro is handled without error"""
     latex_content = b"""

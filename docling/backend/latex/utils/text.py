@@ -74,13 +74,13 @@ class TextHelperMixin:
         if "\n\n" in text:
             parts = text.split("\n\n")
 
-            first_part = parts[0].strip()
-            if first_part:
-                text_buffer.append(first_part)
+            # Keep the leading whitespace: it separates this text from an inline
+            # macro buffered just before it. flush_fn strips the paragraph edges.
+            text_buffer.append(parts[0])
 
             flush_fn()
 
-            for part in parts[1:]:
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -89,6 +89,10 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+
+            # The last part is still open: inline macros that follow belong to
+            # the same paragraph, so buffer it instead of emitting it now.
+            text_buffer.append(parts[-1])
         else:
             text_buffer.append(text)
 
