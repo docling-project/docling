@@ -3,6 +3,7 @@
 
 """Offline SDK/wire and source extraction client contracts."""
 
+import base64
 import json
 import subprocess
 import sys
@@ -37,7 +38,11 @@ from docling.datamodel.service.responses import (
 from docling.models.extraction.prompt_utils import prepare_target
 from docling.service_client import AsyncDoclingServiceClient, DoclingServiceClient
 from docling.service_client.client import RawServiceResult
-from docling.service_client.exceptions import ResponseSchemaMismatchError, ServiceError
+from docling.service_client.exceptions import (
+    ExtractionError,
+    ResponseSchemaMismatchError,
+    ServiceError,
+)
 
 
 class Invoice(BaseModel):
@@ -47,14 +52,14 @@ class Invoice(BaseModel):
 
 def request(*, storage=False):
     return ExtractSourcesRequest(
-        options=ExtractDocumentsOptions(
-            target=ExtractionTarget.from_pydantic(
-                Invoice,
-                template=ExtractionTemplate(
-                    format="example_json", value={"invoice": "INV-42", "total": 4.2}
-                ),
-                instructions="Copy the invoice identifier exactly",
+        extraction_target=ExtractionTarget.from_pydantic(
+            Invoice,
+            template=ExtractionTemplate(
+                format="example_json", value={"invoice": "INV-42", "total": 4.2}
             ),
+            instructions="Copy the invoice identifier exactly",
+        ),
+        options=ExtractDocumentsOptions(
             extraction_preset="granite_vision_4_1",
             input_channels="image",
             page_range=(2, 3),
@@ -134,10 +139,10 @@ def response():
     ],
 )
 def test_sdk_and_wire_validate_original_schema(answer):
-    sdk = request().options.target
+    sdk = request().extraction_target
     wire = ExtractSourcesRequest.model_validate_json(
         request().model_dump_json()
-    ).options.target
+    ).extraction_target
     before = deepcopy(wire.model_dump())
     outcomes = []
     for target in (sdk, wire):
@@ -258,10 +263,31 @@ def transport(storage, *, admission=200, malformed=False):
     return httpx.MockTransport(handle), calls
 
 
+def _submit(client, req):
+    # Unpack a prebuilt request into the friendly submit_extract signature.
+    return client.submit_extract(
+        source=list(req.sources),
+        extraction_target=req.extraction_target,
+        options=req.options,
+        target=req.target,
+        callbacks=req.callbacks,
+    )
+
+
+def _asubmit(client, req):
+    return client.submit_extract(
+        source=list(req.sources),
+        extraction_target=req.extraction_target,
+        options=req.options,
+        target=req.target,
+        callbacks=req.callbacks,
+    )
+
+
 def assert_client(calls, value, original, storage):
     assert calls[0].url.path == "/v1/extract/source/async"
     received = json.loads(calls[0].content)
-    assert received["options"]["target"] == original.options.target.model_dump(
+    assert received["extraction_target"] == original.extraction_target.model_dump(
         mode="json", exclude_none=True
     )
     assert received["target"]["kind"] == ("presigned_url" if storage else "inbody")
@@ -282,10 +308,10 @@ def test_sync_extraction_payload_and_result(storage):
     with DoclingServiceClient(url="https://service.example") as client:
         client._http_client.close()
         client._http_client = httpx.Client(transport=tr)
-        value = client.submit_extract(original).result()
+        value = _submit(client, original).result()
         changed = original.model_copy(deep=True)
         changed.options.output_mode = "schema_constrained"
-        changed.options.target = ExtractionTarget(
+        changed.extraction_target = ExtractionTarget(
             output_schema={
                 "type": "object",
                 "properties": {"account": {"type": "integer"}},
@@ -293,10 +319,10 @@ def test_sync_extraction_payload_and_result(storage):
             template=ExtractionTemplate(format="example_json", value={"account": 17}),
             instructions="Copy account only",
         )
-        client.submit_extract(changed)
-        assert json.loads(calls[-1].content)["options"][
-            "target"
-        ] == changed.options.target.model_dump(mode="json", exclude_none=True)
+        _submit(client, changed)
+        assert json.loads(calls[-1].content)[
+            "extraction_target"
+        ] == changed.extraction_target.model_dump(mode="json", exclude_none=True)
         assert (
             json.loads(calls[-1].content)["options"]["output_mode"]
             == "schema_constrained"
@@ -316,10 +342,10 @@ async def test_async_extraction_payload_and_result(storage):
     async with AsyncDoclingServiceClient(url="https://service.example") as client:
         await client._async_client.aclose()
         client._async_client = httpx.AsyncClient(transport=tr)
-        value = await (await client.submit_extract(original)).result()
+        value = await (await _asubmit(client, original)).result()
         changed = original.model_copy(deep=True)
         changed.options.output_mode = "schema_constrained"
-        changed.options.target = ExtractionTarget(
+        changed.extraction_target = ExtractionTarget(
             output_schema={
                 "type": "object",
                 "properties": {"account": {"type": "integer"}},
@@ -327,10 +353,10 @@ async def test_async_extraction_payload_and_result(storage):
             template=ExtractionTemplate(format="example_json", value={"account": 17}),
             instructions="Copy account only",
         )
-        await client.submit_extract(changed)
-        assert json.loads(calls[-1].content)["options"][
-            "target"
-        ] == changed.options.target.model_dump(mode="json", exclude_none=True)
+        await _asubmit(client, changed)
+        assert json.loads(calls[-1].content)[
+            "extraction_target"
+        ] == changed.extraction_target.model_dump(mode="json", exclude_none=True)
         assert (
             json.loads(calls[-1].content)["options"]["output_mode"]
             == "schema_constrained"
@@ -351,7 +377,7 @@ def test_client_admission_and_result_schema_errors(admission, malformed, excepti
         client._http_client.close()
         client._http_client = httpx.Client(transport=tr)
         with pytest.raises(exception):
-            client.submit_extract(request()).result()
+            _submit(client, request()).result()
 
 
 def test_service_contract_imports_with_slim_dependencies():
@@ -366,8 +392,9 @@ sys.meta_path.insert(0, Block())
 from docling.datamodel.service import ExtractDocumentsOptions, ExtractSourcesRequest, ExtractionDocumentResult, ExtractionTaskResult
 from docling.service_client import DoclingServiceClient, AsyncDoclingServiceClient
 from docling.datamodel.extraction import ExtractionItem
-options = ExtractDocumentsOptions(target={'template': {'format': 'example_json', 'value': {'invoice': 'INV-42'}}})
-assert options.target.template.value['invoice'] == 'INV-42'
+req = ExtractSourcesRequest(extraction_target={'template': {'format': 'example_json', 'value': {'invoice': 'INV-42'}}}, sources=[{'kind': 'http', 'url': 'https://example.com/r.pdf'}])
+assert req.extraction_target.template.value['invoice'] == 'INV-42'
+assert req.options == ExtractDocumentsOptions()
 assert ExtractionDocumentResult.model_fields['items'].annotation == list[ExtractionItem]
 """
     result = subprocess.run(
@@ -398,7 +425,7 @@ def test_storage_credentials_are_not_redacted_on_submission():
     with DoclingServiceClient(url="https://service.example") as client:
         client._http_client.close()
         client._http_client = httpx.Client(transport=tr)
-        client.submit_extract(original)
+        _submit(client, original)
     assert (
         json.loads(calls[0].content)["target"]["credentials"]["client_secret"]
         == "caller-secret"
@@ -406,3 +433,114 @@ def test_storage_credentials_are_not_redacted_on_submission():
     assert (
         original.target.credentials.client_secret.get_secret_value() == "caller-secret"
     )
+
+
+def _doc(status=ConversionStatus.SUCCESS, source_index=0, filename="report.pdf"):
+    return ExtractionDocumentResult(
+        source_index=source_index,
+        source_uri=f"file://{filename}",
+        filename=filename,
+        status=status,
+        items=[],
+    )
+
+
+def _result_transport(documents):
+    calls = []
+
+    def handle(req):
+        calls.append(req)
+        if req.method == "POST":
+            return httpx.Response(
+                200,
+                json={
+                    "task_id": "extract-1",
+                    "task_type": "extract",
+                    "task_status": "success",
+                },
+            )
+        payload = ExtractDocumentResponse(
+            num_converted=len(documents),
+            num_succeeded=sum(
+                d.status in (ConversionStatus.SUCCESS, ConversionStatus.PARTIAL_SUCCESS)
+                for d in documents
+            ),
+            num_failed=sum(d.status == ConversionStatus.FAILURE for d in documents),
+            processing_time=0.1,
+            documents=documents,
+        )
+        return httpx.Response(200, json=payload.model_dump(mode="json"))
+
+    return httpx.MockTransport(handle), calls
+
+
+def _extract_client(documents):
+    tr, calls = _result_transport(documents)
+    client = DoclingServiceClient(url="https://service.example")
+    client._http_client.close()
+    client._http_client = httpx.Client(transport=tr)
+    return client, calls
+
+
+TARGET = ExtractionTarget(
+    template=ExtractionTemplate(format="example_json", value={"invoice": "INV-1"})
+)
+
+
+def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
+    pdf = tmp_path / "report.pdf"
+    pdf.write_bytes(b"%PDF-1.4 fake")
+    client, calls = _extract_client([_doc()])
+    with client:
+        document = client.extract(pdf, TARGET)
+    assert document.filename == "report.pdf"
+    # Local files ride inline as a base64 file source, not multipart.
+    source = json.loads(calls[0].content)["sources"][0]
+    assert source["kind"] == "file"
+    assert base64.b64decode(source["base64_string"]) == b"%PDF-1.4 fake"
+    assert json.loads(calls[0].content)["target"]["kind"] == "inbody"
+
+
+def test_extract_raises_on_connector_fan_out():
+    client, _ = _extract_client([_doc(source_index=0), _doc(source_index=1)])
+    with client, pytest.raises(ExtractionError, match="expanded to 2"):
+        client.extract("https://example.com/report.pdf", TARGET)
+
+
+def test_extract_failure_status_respects_raises_on_error():
+    client, _ = _extract_client([_doc(status=ConversionStatus.FAILURE)])
+    with client:
+        with pytest.raises(ExtractionError):
+            client.extract("https://example.com/report.pdf", TARGET)
+    client, _ = _extract_client([_doc(status=ConversionStatus.FAILURE)])
+    with client:
+        document = client.extract(
+            "https://example.com/report.pdf", TARGET, raises_on_error=False
+        )
+    assert document.status == ConversionStatus.FAILURE
+
+
+def test_extract_all_flattens_documents():
+    docs = [_doc(source_index=0), _doc(source_index=1, filename="b.pdf")]
+    client, _ = _extract_client(docs)
+    with client:
+        results = list(
+            client.extract_all(
+                ["https://example.com/a.pdf", "https://example.com/b.pdf"], TARGET
+            )
+        )
+    assert [d.filename for d in results] == ["report.pdf", "b.pdf"]
+
+
+@pytest.mark.anyio
+async def test_async_extract_and_extract_all():
+    tr, _ = _result_transport([_doc(filename="b.pdf")])
+    async with AsyncDoclingServiceClient(url="https://service.example") as client:
+        await client._async_client.aclose()
+        client._async_client = httpx.AsyncClient(transport=tr)
+        document = await client.extract("https://example.com/b.pdf", TARGET)
+        assert document.filename == "b.pdf"
+        results = [
+            d async for d in client.extract_all(["https://example.com/b.pdf"], TARGET)
+        ]
+    assert [d.filename for d in results] == ["b.pdf"]

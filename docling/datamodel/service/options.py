@@ -21,14 +21,13 @@ from typing_extensions import Self
 
 from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.extraction import ExtractionTarget
+
+# Import new engine system (available in docling>=2.73.0)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.extraction_options import (
     ChannelSelection,
     ExtractionVlmOptions,
 )
-
-# Import new engine system (available in docling>=2.73.0)
-from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     HeadingHierarchyOptions,
@@ -1205,15 +1204,17 @@ class ConvertDocumentsOptions(BaseModel):
 
 
 class ExtractDocumentsOptions(BaseModel):
-    """Call-local extraction guidance and operator-gated model configuration.
+    """Operator-gated model configuration for extraction.
 
-    ``target`` describes extraction output; the request's top-level ``target``
-    selects the destination for the resulting artifacts.
+    Purely operational: model selection, decode mode, input channel, and page
+    range. The extraction contract (what to extract) lives on
+    ``ExtractSourcesRequest.extraction_target``, and the request's top-level
+    ``target`` selects the destination for the resulting artifacts. Every field
+    defaults, so ``ExtractDocumentsOptions()`` is a valid "use server defaults".
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    target: ExtractionTarget
     output_mode: Literal["prompt_only", "schema_constrained"] = "prompt_only"
 
     extraction_preset: Annotated[

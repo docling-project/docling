@@ -16,6 +16,7 @@ from pydantic import (
 )
 from typing_extensions import TypeVar
 
+from docling.datamodel.extraction import ExtractionTarget
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
 from docling.datamodel.service.options import (
@@ -255,15 +256,18 @@ ExtractTargetRequest = Annotated[
 class ExtractSourcesRequest(BaseModel):
     """Batch-capable request for asynchronous source extraction.
 
-    ``sources`` accepts both individual and expandable connector sources.
-    ``options.target`` supplies extraction guidance; ``target`` selects one
-    in-body or storage destination.
+    ``extraction_target`` is the contract (what to extract: output schema and/or
+    guidance). ``sources`` accepts both individual and expandable connector
+    sources. ``options`` is purely operational (model selection, decode mode,
+    input channel, page range) and defaults to server defaults. ``target``
+    selects one in-body or storage destination.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    options: ExtractDocumentsOptions
+    extraction_target: ExtractionTarget
     sources: list[ExtractSourceRequestItem] = Field(min_length=1)
+    options: ExtractDocumentsOptions = ExtractDocumentsOptions()
     target: ExtractTargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 

@@ -83,6 +83,7 @@ Extras compose — combine them with commas:
   extraction needs `extract-core` plus the relevant format extra and an explicit
   API engine; local extraction also needs `models-vlm-inline`.
 - `service-client` imports extraction wire targets/items and sync/async clients
-  without `extract-core` or local model packages. Submit `ExtractSourcesRequest`
-  with `options.target` guidance and a separate top-level storage `target` using
-  `submit_extract(request)`. Matching downstream Jobkit/Serve contracts are required.
+  without `extract-core` or local model packages. Call `extract` / `extract_all`
+  (in-body) or `submit_extract` (job/storage/callbacks), passing an
+  `extraction_target` contract plus operational `options` and a separate top-level
+  storage `target`. Matching downstream Jobkit/Serve contracts are required.

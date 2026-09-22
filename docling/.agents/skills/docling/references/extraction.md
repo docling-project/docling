@@ -106,13 +106,17 @@ bounded and released as the pipeline advances.
 
 ## Service wire contract
 
-`ExtractSourcesRequest(options=ExtractDocumentsOptions(target=target), sources=[...])`
-uses `options.target` for extraction guidance. Its top-level `target` independently
-selects an in-body or artifact-storage destination. Options also carry model
-selection, channel, absolute `page_range`, and `output_mode`. No Python classes,
-validators, grouping fields, or public chunks are accepted over the wire.
+`ExtractSourcesRequest(extraction_target=target, sources=[...], options=..., target=...)`
+carries the extraction contract on the top-level `extraction_target` field. The
+top-level `target` independently selects an in-body or artifact-storage
+destination. `options` (`ExtractDocumentsOptions`) is purely operational — model
+selection, channel, absolute `page_range`, and `output_mode` — and every field
+defaults. No Python classes, validators, grouping fields, or public chunks are
+accepted over the wire.
 
-Sync and async clients expose `submit_extract(request)`. The endpoint is
+Sync and async clients expose `extract` / `extract_all` (in-body convenience) and
+`submit_extract` (job handle, storage targets, callbacks); all take unpacked
+`source, extraction_target, options=..., target=...` arguments. The endpoint is
 `/v1/extract/source/async`; the returned job supports polling/watching/result
 retrieval. In-body results are `ExtractDocumentResponse.documents`, containing
 JSON-safe `ExtractionDocumentResult`s with `source_index`, `source_uri`,

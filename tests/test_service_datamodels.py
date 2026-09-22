@@ -407,10 +407,11 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
 def test_extract_request_separates_guidance_from_storage() -> None:
     target = {"template": {"format": "example_json", "value": {"invoice": "INV-42"}}}
     request = ExtractSourcesRequest(
-        options=ExtractDocumentsOptions(target=target),
+        extraction_target=target,
         sources=[{"kind": "http", "url": "https://example.com/report.pdf"}],
     )
-    assert request.options.target.template.value == {"invoice": "INV-42"}
+    assert request.extraction_target.template.value == {"invoice": "INV-42"}
+    assert request.options == ExtractDocumentsOptions()
     assert request.target.kind == "inbody"
     assert (
         ExtractSourcesRequest.model_validate_json(request.model_dump_json()) == request
@@ -425,8 +426,8 @@ def test_extract_request_accepts_inline_file_sources() -> None:
     # Extraction accepts ad-hoc file uploads that batch convert rejects.
     request = ExtractSourcesRequest.model_validate(
         {
-            "options": {
-                "target": {"template": {"format": "example_json", "value": {"a": 1}}}
+            "extraction_target": {
+                "template": {"format": "example_json", "value": {"a": 1}}
             },
             "sources": [
                 {"kind": "file", "base64_string": "ZmFrZQ==", "filename": "report.pdf"}

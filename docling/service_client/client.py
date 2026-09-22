@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import ipaddress
 import json
 import logging
@@ -32,7 +33,14 @@ from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
-from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    SecretBytes,
+    SecretStr,
+    TypeAdapter,
+    ValidationError,
+)
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
@@ -46,20 +54,27 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
+from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
 )
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
+    ExtractDocumentsOptions,
 )
 from docling.datamodel.service.requests import (
+    AnyHttpSourceRequest,
     BatchConvertSourcesRequest,
     BatchSourceRequestInput,
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourceRequestItem,
     ExtractSourcesRequest,
+    ExtractTargetRequest,
+    FileSourceRequest,
     GenericTargetRequest,
     HttpSourceRequest,
 )
@@ -69,6 +84,7 @@ from docling.datamodel.service.responses import (
     ConvertDocumentResponse,
     DocumentArtifactItem,
     ExtractDocumentResponse,
+    ExtractionDocumentResult,
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
@@ -90,6 +106,7 @@ from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
     ArtifactDownloadError,
     ConversionError,
+    ExtractionError,
     ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
@@ -338,6 +355,83 @@ class _BaseDoclingServiceClient:
         return self._restore_secret_values(
             request.model_dump(mode="python", exclude_none=True),
             request.model_dump(mode="json", exclude_none=True),
+        )
+
+    def _coerce_extract_sources(
+        self,
+        source: SourceType
+        | ExtractSourceRequestItem
+        | Iterable[SourceType | ExtractSourceRequestItem],
+    ) -> list[ExtractSourceRequestItem]:
+        if isinstance(source, (str, Path, DocumentStream, BaseModel)):
+            singles: list[Any] = [source]
+        elif isinstance(source, Iterable):
+            singles = list(source)
+        else:
+            singles = [source]
+        return [self._source_to_extract_item(item) for item in singles]
+
+    def _source_to_extract_item(
+        self, source: SourceType | ExtractSourceRequestItem
+    ) -> ExtractSourceRequestItem:
+        if isinstance(source, (str, Path, DocumentStream, HttpSourceRequest)):
+            normalized = self._normalize_source(source)
+            if isinstance(normalized, HttpSourceRequest):
+                return AnyHttpSourceRequest(
+                    url=str(normalized.url), headers=normalized.headers
+                )
+            # ponytail: whole-file base64 into memory — the extract endpoint is
+            # source/JSON only, no multipart streaming exists server-side. Fine
+            # for typical docs; revisit if large-file extraction becomes a case.
+            if isinstance(normalized, Path):
+                data = normalized.read_bytes()
+                filename = normalized.name
+            else:  # DocumentStream
+                normalized.stream.seek(0)
+                data = normalized.stream.read()
+                filename = normalized.name
+            return FileSourceRequest(
+                base64_string=base64.b64encode(data).decode("ascii"),
+                filename=filename,
+            )
+        if isinstance(source, BaseModel):
+            # Prebuilt connector / file / http source item.
+            return source  # type: ignore[return-value]
+        raise TypeError(f"Unsupported extraction source: {type(source)!r}")
+
+    @staticmethod
+    def _as_extract_response(
+        response: ExtractDocumentResponse | RawServiceResult,
+    ) -> ExtractDocumentResponse:
+        if not isinstance(response, ExtractDocumentResponse):
+            raise ExtractionError(
+                "In-body extraction result expected but the server returned a "
+                "storage result; use submit_extract() for storage targets."
+            )
+        return response
+
+    def _single_extraction_document(
+        self, response: ExtractDocumentResponse | RawServiceResult
+    ) -> ExtractionDocumentResult:
+        documents = self._as_extract_response(response).documents
+        if len(documents) != 1:
+            raise ExtractionError(
+                f"extract() expected a single document but the source expanded to "
+                f"{len(documents)}; use extract_all() for connector sources."
+            )
+        return documents[0]
+
+    @staticmethod
+    def _extraction_failure_message(document: ExtractionDocumentResult) -> str:
+        if document.errors:
+            messages = "; ".join(item.error_message for item in document.errors)
+            return (
+                f"Extraction failed for {document.filename} with status "
+                f"{document.status.value}. Errors: {messages}"
+            )
+        return (
+            f"Extraction failed for {document.filename} with status "
+            f"{document.status.value}."
         )
 
     def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
@@ -1124,14 +1218,88 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             request_headers=headers,
         )
 
+    def extract(
+        self,
+        source: SourceType | ExtractSourceRequestItem,
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        headers: dict[str, str] | None = None,
+        raises_on_error: bool = True,
+    ) -> ExtractionDocumentResult:
+        """Extract structured data from a single source, in-body.
+
+        ``extraction_target`` is the contract (output schema and/or guidance);
+        ``options`` is operational (model preset, decode mode, channel, page
+        range). Returns the one document's result. A connector source that
+        expands to several documents raises ``ExtractionError`` — use
+        ``extract_all`` for those.
+        """
+        job = self.submit_extract(
+            source=source,
+            extraction_target=extraction_target,
+            options=options,
+            target=InBodyTarget(),
+            headers=headers,
+        )
+        response = job.result(timeout=self._job_timeout)
+        document = self._single_extraction_document(response)
+        if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
+            raise ExtractionError(self._extraction_failure_message(document))
+        return document
+
+    def extract_all(
+        self,
+        source: Iterable[SourceType | ExtractSourceRequestItem],
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Iterator[ExtractionDocumentResult]:
+        """Extract from many sources, in-body, flattening connector fan-out.
+
+        Yields one ``ExtractionDocumentResult`` per expanded document. Per-source
+        failures surface as a failed ``status`` on the yielded result rather than
+        raising, so callers can process partial batches.
+        """
+        job = self.submit_extract(
+            source=source,
+            extraction_target=extraction_target,
+            options=options,
+            target=InBodyTarget(),
+            headers=headers,
+        )
+        response = job.result(timeout=self._job_timeout)
+        yield from self._as_extract_response(response).documents
+
     def submit_extract(
-        self, request: ExtractSourcesRequest
+        self,
+        source: SourceType
+        | ExtractSourceRequestItem
+        | Iterable[SourceType | ExtractSourceRequestItem],
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        target: ExtractTargetRequest | None = None,
+        headers: dict[str, str] | None = None,
+        callbacks: list[CallbackSpec] | None = None,
     ) -> ConversionJob[ExtractDocumentResponse | RawServiceResult]:
-        """Submit source extraction; storage destinations return their raw response."""
+        """Submit source extraction as a job; storage targets return raw results.
+
+        Mirrors ``submit``/``submit_batch``: friendly unpacked arguments rather
+        than a prebuilt request. ``source`` accepts one item or an iterable of
+        files, URLs, streams, or prebuilt connector source items. ``target``
+        defaults to ``InBodyTarget``; storage targets yield a ``RawServiceResult``.
+        """
+        request = ExtractSourcesRequest(
+            extraction_target=extraction_target,
+            sources=self._coerce_extract_sources(source),
+            options=options if options is not None else ExtractDocumentsOptions(),
+            target=InBodyTarget() if target is None else target,
+            callbacks=callbacks or [],
+        )
         response = self._request_with_retry(
             method="POST",
             path="/v1/extract/source/async",
             json=self._serialize_extract_request(request),
+            headers=headers,
         )
         if response.status_code != 200:
             self._raise_for_generic_http_error(

@@ -107,34 +107,54 @@ Batch sources and targets (S3, presigned URLs, plugin sources) are exposed as
 ## Source extraction
 
 Extraction requires the matching explicit-target Jobkit/Serve implementation.
-It uses the existing source endpoint and job status/result APIs:
+The high-level `extract` / `extract_all` mirror `convert` / `convert_all`: pass a
+source and an `ExtractionTarget` (the contract — what to extract), get parsed
+results back in-body.
 
 ```python
 from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
-from docling.datamodel.service import ExtractDocumentsOptions, ExtractSourcesRequest
-from docling.service_client import DoclingServiceClient
+from docling.service_client import DoclingServiceClient, ExtractDocumentsOptions
 
-request = ExtractSourcesRequest(
-    options=ExtractDocumentsOptions(
-        target=ExtractionTarget(template=ExtractionTemplate(
-            format="nuextract", value={"invoice": "string", "total": "number"}
-        )),
-    ),
-    sources=[{"kind": "http", "url": "https://example.com/invoice.pdf"}],
-)
+target = ExtractionTarget(template=ExtractionTemplate(
+    format="nuextract", value={"invoice": "string", "total": "number"}
+))
 with DoclingServiceClient(url="https://docling.example.com") as client:
-    result = client.submit_extract(request).result()
-    for document in result.documents:
-        for item in document.items:
-            print(document.source_uri, item.scope, item.extracted_data, item.errors)
+    # Single source -> one document result.
+    document = client.extract("https://example.com/invoice.pdf", target)
+    for item in document.items:
+        print(document.source_uri, item.scope, item.extracted_data, item.errors)
+
+    # Many sources (and connector fan-out) -> flattened iterator.
+    for document in client.extract_all(["a.pdf", "b.pdf"], target):
+        print(document.filename, document.status)
 ```
 
-`AsyncDoclingServiceClient.submit_extract(request)` is the async equivalent.
-`options.target` carries caller guidance; request-level `target` chooses the
-in-body or storage destination. In-body extraction returns typed document/item
-wire envelopes. Storage destinations return `RawServiceResult` with the response
-bytes/content type; retain the existing artifact handling for those destinations.
-See [extraction.md](extraction.md) for templates, validation, model/channel limits,
+`extraction_target` is the contract; `options` (`ExtractDocumentsOptions`) is
+purely operational — model preset, `output_mode`, `input_channels`, `page_range`
+— and defaults to server defaults, e.g.
+`client.extract(src, target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
+
+`extract` raises `ExtractionError` if the source expands to several documents
+(use `extract_all`) or if the document fails and `raises_on_error=True`.
+`AsyncDoclingServiceClient` exposes the same `extract` / `extract_all`.
+
+For storage destinations, callbacks, or a job handle, use `submit_extract`, which
+takes the same unpacked arguments plus `target` (the destination) and returns a
+`ConversionJob`:
+
+```python
+from docling.service_client import PresignedUrlTarget
+
+job = client.submit_extract(
+    ["s3://bucket/prefix/"], target, target=PresignedUrlTarget()
+)
+raw = job.result()  # RawServiceResult for storage targets; ExtractDocumentResponse in-body
+```
+
+In-body extraction returns typed document/item wire envelopes. Storage
+destinations return `RawServiceResult` with the response bytes/content type;
+retain the existing artifact handling for those destinations. See
+[extraction.md](extraction.md) for templates, validation, model/channel limits,
 and the separate live-verification status.
 
 ## CLI equivalent

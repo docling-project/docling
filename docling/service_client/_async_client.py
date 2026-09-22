@@ -36,12 +36,15 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
+from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
 )
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
+    ExtractDocumentsOptions,
 )
 from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
@@ -49,13 +52,16 @@ from docling.datamodel.service.requests import (
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourceRequestItem,
     ExtractSourcesRequest,
+    ExtractTargetRequest,
     HttpSourceRequest,
 )
 from docling.datamodel.service.responses import (
     ChunkDocumentResponse,
     ConvertDocumentResponse,
     ExtractDocumentResponse,
+    ExtractionDocumentResult,
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
@@ -72,6 +78,7 @@ from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.client import (
     DEFAULT_MAX_CONCURRENCY,
+    SUCCESS_CONVERSION_STATUSES,
     BatchSubmitTarget,
     ChunkerKind,
     ConversionItem,
@@ -86,6 +93,7 @@ from docling.service_client.client import (
 )
 from docling.service_client.exceptions import (
     ConversionError,
+    ExtractionError,
     ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
@@ -396,14 +404,80 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             initial_status=initial_status,
         )
 
+    async def extract(
+        self,
+        source: SourceType | ExtractSourceRequestItem,
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        headers: dict[str, str] | None = None,
+        raises_on_error: bool = True,
+    ) -> ExtractionDocumentResult:
+        """Extract structured data from a single source, in-body.
+
+        Async mirror of ``DoclingServiceClient.extract``.
+        """
+        job = await self.submit_extract(
+            source=source,
+            extraction_target=extraction_target,
+            options=options,
+            target=InBodyTarget(),
+            headers=headers,
+        )
+        response = await job.result(timeout=self._job_timeout)
+        document = self._single_extraction_document(response)
+        if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
+            raise ExtractionError(self._extraction_failure_message(document))
+        return document
+
+    async def extract_all(
+        self,
+        source: Iterable[SourceType | ExtractSourceRequestItem],
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> AsyncIterator[ExtractionDocumentResult]:
+        """Extract from many sources, in-body, flattening connector fan-out.
+
+        Async mirror of ``DoclingServiceClient.extract_all``.
+        """
+        job = await self.submit_extract(
+            source=source,
+            extraction_target=extraction_target,
+            options=options,
+            target=InBodyTarget(),
+            headers=headers,
+        )
+        response = await job.result(timeout=self._job_timeout)
+        for document in self._as_extract_response(response).documents:
+            yield document
+
     async def submit_extract(
-        self, request: ExtractSourcesRequest
+        self,
+        source: SourceType
+        | ExtractSourceRequestItem
+        | Iterable[SourceType | ExtractSourceRequestItem],
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None = None,
+        target: ExtractTargetRequest | None = None,
+        headers: dict[str, str] | None = None,
+        callbacks: list[CallbackSpec] | None = None,
     ) -> AsyncConversionJob[ExtractDocumentResponse | RawServiceResult]:
-        """Submit source extraction; storage destinations return their raw response."""
+        """Submit source extraction as a job; storage targets return raw results.
+
+        Async mirror of ``DoclingServiceClient.submit_extract``.
+        """
+        request = ExtractSourcesRequest(
+            extraction_target=extraction_target,
+            sources=self._coerce_extract_sources(source),
+            options=options if options is not None else ExtractDocumentsOptions(),
+            target=InBodyTarget() if target is None else target,
+            callbacks=callbacks or [],
+        )
         response = await self._request_with_retry(
             method="POST",
             path="/v1/extract/source/async",
             json=self._serialize_extract_request(request),
+            headers=headers,
         )
         if response.status_code != 200:
             self._raise_for_generic_http_error(
