@@ -7,6 +7,9 @@
 # in the layout-aware pipeline).
 DOCLING_BASE_PAGE_PROMPT = "Convert this page to docling."
 
+# Full-page conversion prompt for Granite for Docling models that emit doclang.
+DOCLANG_PAGE_PROMPT = "<doclang>"
+
 CHANDRA_ALLOWED_TAGS = (
     "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "
     "'p', 'th', 'div', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'ul', 'ol', 'li', "

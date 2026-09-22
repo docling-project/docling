@@ -148,6 +148,14 @@ class VlmEngineInput(BaseModel):
 
     image: Image = Field(description="PIL Image to process")
     prompt: str = Field(description="Text prompt for the model")
+    response_prefix: str | None = Field(
+        default=None,
+        description=(
+            "Text the model's reply is forced to start with. The model continues "
+            "from it, and the returned text includes it. Engines that cannot "
+            "prefill the reply ignore it."
+        ),
+    )
     temperature: float = Field(
         default=0.0, description="Sampling temperature for generation"
     )

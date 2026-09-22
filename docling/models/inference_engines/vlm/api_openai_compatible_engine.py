@@ -170,6 +170,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     headers=self.options.headers,
                     generation_stoppers=custom_stoppers,
                     timeout=self.options.timeout,
+                    response_prefix=input_data.response_prefix,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -184,6 +185,7 @@ class ApiVlmEngine(BaseVlmEngine):
                     prompt=input_data.prompt,
                     headers=self.options.headers,
                     timeout=self.options.timeout,
+                    response_prefix=input_data.response_prefix,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -192,6 +194,13 @@ class ApiVlmEngine(BaseVlmEngine):
                 error = api_response.error
 
             generation_time = time.time() - request_start_time
+
+            # The server returns only the continuation of a prefilled reply. A
+            # failed request has no stop reason and stays empty, so callers can
+            # tell it from a reply the model ended right after the prefix.
+            request_completed = bool(generated_text) or stop_reason != "unspecified"
+            if input_data.response_prefix and request_completed:
+                generated_text = input_data.response_prefix + generated_text
 
             return VlmEngineOutput(
                 text=generated_text,

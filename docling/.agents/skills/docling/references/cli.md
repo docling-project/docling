@@ -73,6 +73,7 @@ Audio and video files use `--asr-model` without `--pipeline`.
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --vlm-model granite_docling --output /tmp/
+docling report.pdf --vlm-model granite_for_docling_500m --output /tmp/
 docling report.pdf --vlm-model smoldocling --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
