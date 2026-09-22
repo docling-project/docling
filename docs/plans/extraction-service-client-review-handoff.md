@@ -298,6 +298,16 @@ Christoph before any change.**
 
 ### 7. Minor
 
+**Status: done.** `max_file_size=` on `extract` / `extract_all` (SKIPPED before
+the read, `_preflight_extract_size`); async `submit_extract` builds the request
+in `asyncio.to_thread`; shared `_build_extract_request` and
+`_extract_submission_status` (which logs the submission, source count only);
+both plans updated. Side catch:
+`test_polymorphic_option_fields_are_serialized_as_any` broke in `d4083dec`,
+which made `ExtractionVlmModelSpec` a subclass of `VlmModelSpec`; the three
+`model_spec: VlmModelSpec` fields in `pipeline_options.py` are now
+`SerializeAsAny`.
+
 - **No file-size check.** There is no size check before the whole-file base64
   read in `_source_to_extract_item`. `convert` has `max_file_size` plus
   `_preflight_limits`. Consider an optional `max_file_size` on `extract` /

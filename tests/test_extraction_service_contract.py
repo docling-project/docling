@@ -652,3 +652,29 @@ async def test_async_extract_and_extract_all():
             d async for d in client.extract_all(["https://example.com/b.pdf"], TARGET)
         ]
     assert [d.input.file.name for d in results] == ["b.pdf"]
+
+
+@pytest.mark.anyio
+async def test_oversized_local_file_is_skipped_before_upload(tmp_path):
+    big = tmp_path / "big.pdf"
+    big.write_bytes(b"%PDF-1.4" + b"0" * 100)
+    tr, calls = _result_transport([_doc(filename="b.pdf")])
+    async with AsyncDoclingServiceClient(url="https://service.example") as client:
+        await client._async_client.aclose()
+        client._async_client = httpx.AsyncClient(transport=tr)
+        with pytest.raises(ExtractionError, match="max_file_size"):
+            await client.extract(big, TARGET, max_file_size=10)
+        results = [
+            d
+            async for d in client.extract_all(
+                [big, "https://example.com/b.pdf"], TARGET, max_file_size=10
+            )
+        ]
+    assert {d.input.file.name: d.status for d in results} == {
+        "big.pdf": ConversionStatus.SKIPPED,
+        "b.pdf": ConversionStatus.SUCCESS,
+    }
+    # Only the URL source was submitted; the big file was never uploaded.
+    assert [
+        json.loads(c.content)["sources"][0]["kind"] for c in calls if c.method == "POST"
+    ] == ["http"]

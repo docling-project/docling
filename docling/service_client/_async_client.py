@@ -414,6 +414,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
+        max_file_size: int | None = None,
         raises_on_error: bool = True,
     ) -> DocumentExtractionResult:
         """Extract structured data from a single source, in-body.
@@ -422,17 +423,21 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         """
         self._check_single_extract_source(source)
         options = self._with_extract_page_range(options, page_range)
-        job = await self.submit_extract(
-            source=source,
-            extraction_target=target,
-            options=options,
-            target=InBodyTarget(),
-            headers=headers,
+        document = self._preflight_extract_size(
+            source, max_file_size, options.page_range
         )
-        response = await job.result(timeout=self._job_timeout)
-        document = self._from_wire_extraction(
-            self._single_extraction_document(response), options.page_range
-        )
+        if document is None:
+            job = await self.submit_extract(
+                source=source,
+                extraction_target=target,
+                options=options,
+                target=InBodyTarget(),
+                headers=headers,
+            )
+            response = await job.result(timeout=self._job_timeout)
+            document = self._from_wire_extraction(
+                self._single_extraction_document(response), options.page_range
+            )
         if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
             raise ExtractionError(self._extraction_failure_message(document))
         return document
@@ -444,6 +449,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
+        max_file_size: int | None = None,
         max_concurrency: int | None = None,
     ) -> AsyncIterator[DocumentExtractionResult]:
         """Extract from many sources, in-body, one job per source.
@@ -458,7 +464,12 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             _idx: int,
             item: SourceType | ExtractSourceRequestInput,
             async_client: httpx.AsyncClient,
-        ) -> list[ExtractionDocumentResult]:
+        ) -> list[DocumentExtractionResult]:
+            skipped = self._preflight_extract_size(
+                item, max_file_size, options.page_range
+            )
+            if skipped is not None:
+                return [skipped]
             job = await self.submit_extract(
                 source=item,
                 extraction_target=target,
@@ -477,7 +488,10 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 )
                 await job.poll()
             response = await job.result(timeout=self._job_timeout)
-            return self._as_extract_response(response).documents
+            return [
+                self._from_wire_extraction(document, options.page_range)
+                for document in self._as_extract_response(response).documents
+            ]
 
         async for _idx, item, outcome in _run_bounded(
             items=source,
@@ -489,7 +503,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 yield self._failed_extraction_result(item, outcome, options.page_range)
                 continue
             for document in outcome:
-                yield self._from_wire_extraction(document, options.page_range)
+                yield document
 
     async def submit_extract(
         self,
@@ -506,12 +520,14 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
         Async mirror of ``DoclingServiceClient.submit_extract``.
         """
-        request = ExtractSourcesRequest(
-            extraction_target=extraction_target,
-            sources=self._coerce_extract_sources(source),
-            options=options if options is not None else ExtractDocumentsOptions(),
-            target=InBodyTarget() if target is None else target,
-            callbacks=callbacks or [],
+        # Off the event loop: local files are read and base64-encoded here.
+        request = await asyncio.to_thread(
+            self._build_extract_request,
+            source,
+            extraction_target,
+            options,
+            target,
+            callbacks,
         )
         response = await self._request_with_retry(
             method="POST",
@@ -519,11 +535,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             json=self._serialize_extract_request(request),
             headers=headers,
         )
-        if response.status_code != 200:
-            self._raise_for_generic_http_error(
-                response, "Extraction task submission failed."
-            )
-        initial_status = TaskStatusResponse.model_validate_json(response.text)
+        initial_status = self._extract_submission_status(request, response)
         return AsyncConversionJob(
             task_id=initial_status.task_id,
             submitted_at=datetime.now(tz=timezone.utc),

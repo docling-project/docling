@@ -139,8 +139,9 @@ operational — model preset, `output_mode`, `input_channels`, `page_range` — 
 defaults to server defaults, e.g.
 `client.extract(src, target=target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
 The top-level `page_range=` argument overrides `options.page_range`, as in
-`convert`. `max_num_pages` / `max_file_size` are not supported; the server
-applies its own limits. `output_mode="schema_constrained"` requires
+`convert`. `max_file_size=` (bytes) makes an oversized local file come back
+`SKIPPED` before it is read or uploaded. `max_num_pages` is not supported; the
+server applies its own limits. `output_mode="schema_constrained"` requires
 `target.output_schema` and is rejected before submission otherwise.
 
 `extract` takes one file, URL, stream, `FileSourceRequest` or

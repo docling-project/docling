@@ -262,10 +262,11 @@ Decided and built on `cau/extraction-api-service-models`:
   prebuilt connector items pass through. Exports + skill docs + `extract.py`
   example updated; tests added and green.
 
-**Downstream still required (not done here).** C1 changes the wire model that
-`docling-jobkit` and `docling-serve` (both on `cau/extract-endpoint`) consume via
-`options.target`. Threading `extraction_target` from request → task → worker is
-not a one-liner; it touches:
+**Downstream (done 2026-09-22).** serve `367f3d2` reads
+`request.extraction_target`, and jobkit `e75bb73` threads it through task →
+orchestrators → worker. C1 changed the wire model that `docling-jobkit` and
+`docling-serve` (both on `cau/extract-endpoint`) consumed via `options.target`.
+The change touched:
 
 - `docling-serve`: `policy.py` (`request.options.target` → `request.extraction_target`),
   `app.py` `_enqueue_extract` (pass `extract_target=request.extraction_target`).
@@ -275,8 +276,7 @@ not a one-liner; it touches:
   (`extract_documents(..., extraction_target=...)`; `resolve_extraction_model`
   needs no change — it never read `target`).
 
-These belong on `cau/extract-endpoint` alongside a docling version bump, so they
-ship as a coordinated follow-up.
+They ship on `cau/extract-endpoint` alongside the docling pin bump.
 
 ## Open decisions
 

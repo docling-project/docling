@@ -368,6 +368,73 @@ class _BaseDoclingServiceClient:
             request.model_dump(mode="json", exclude_none=True),
         )
 
+    def _build_extract_request(
+        self,
+        source: SourceType
+        | ExtractSourceRequestInput
+        | Iterable[SourceType | ExtractSourceRequestInput],
+        extraction_target: ExtractionTarget,
+        options: ExtractDocumentsOptions | None,
+        target: ExtractTargetRequest | None,
+        callbacks: list[CallbackSpec] | None,
+    ) -> ExtractSourcesRequest:
+        return ExtractSourcesRequest(
+            extraction_target=extraction_target,
+            sources=self._coerce_extract_sources(source),
+            options=options if options is not None else ExtractDocumentsOptions(),
+            target=InBodyTarget() if target is None else target,
+            callbacks=callbacks or [],
+        )
+
+    def _extract_submission_status(
+        self, request: ExtractSourcesRequest, response: httpx.Response
+    ) -> TaskStatusResponse:
+        if response.status_code != 200:
+            self._raise_for_generic_http_error(
+                response, "Extraction task submission failed."
+            )
+        status = TaskStatusResponse.model_validate_json(response.text)
+        # Source count only: connector items can carry credentials.
+        logger.info(
+            "Submitted extract task for sources=%d task_id=%s status=%s position=%s",
+            len(request.sources),
+            status.task_id,
+            status.task_status,
+            status.task_position,
+        )
+        return status
+
+    def _preflight_extract_size(
+        self, source: object, max_file_size: int | None, page_range: PageRange
+    ) -> DocumentExtractionResult | None:
+        """Return a SKIPPED result for a local file over ``max_file_size``.
+
+        Runs before the whole-file base64 read, like ``_preflight_limits`` for
+        convert. Only local paths and streams have a known size.
+        """
+        if max_file_size is None or not isinstance(source, (str, Path, DocumentStream)):
+            return None
+        descriptor = self._describe_source(source)
+        if descriptor.file_size is None or descriptor.file_size <= max_file_size:
+            return None
+        return self._local_extraction_result(
+            filename=descriptor.source_name,
+            page_range=page_range,
+            status=ConversionStatus.SKIPPED,
+            errors=[
+                ErrorItem(
+                    component_type=DoclingComponentType.USER_INPUT,
+                    module_name="docling.service_client",
+                    error_message=(
+                        f"Input size {descriptor.file_size} exceeds max_file_size "
+                        f"limit {max_file_size} bytes."
+                    ),
+                    category=FailureCategory.POLICY,
+                )
+            ],
+            items=[],
+        )
+
     def _coerce_extract_sources(
         self,
         source: SourceType
@@ -1320,6 +1387,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
+        max_file_size: int | None = None,
         raises_on_error: bool = True,
     ) -> DocumentExtractionResult:
         """Extract structured data from a single source, in-body.
@@ -1327,23 +1395,28 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         ``target`` is the contract (output schema and/or guidance), as in
         ``DocumentExtractor.extract``; ``options`` is operational (model preset,
         decode mode, channel, page range). ``page_range`` overrides
-        ``options.page_range``. Returns the local ``DocumentExtractionResult``.
-        Iterables and connector sources raise ``TypeError`` before submission —
-        use ``extract_all`` for those.
+        ``options.page_range``. A local file over ``max_file_size`` bytes is
+        ``SKIPPED`` without being read or submitted. Returns the local
+        ``DocumentExtractionResult``. Iterables and connector sources raise
+        ``TypeError`` before submission — use ``extract_all`` for those.
         """
         self._check_single_extract_source(source)
         options = self._with_extract_page_range(options, page_range)
-        job = self.submit_extract(
-            source=source,
-            extraction_target=target,
-            options=options,
-            target=InBodyTarget(),
-            headers=headers,
+        document = self._preflight_extract_size(
+            source, max_file_size, options.page_range
         )
-        response = job.result(timeout=self._job_timeout)
-        document = self._from_wire_extraction(
-            self._single_extraction_document(response), options.page_range
-        )
+        if document is None:
+            job = self.submit_extract(
+                source=source,
+                extraction_target=target,
+                options=options,
+                target=InBodyTarget(),
+                headers=headers,
+            )
+            response = job.result(timeout=self._job_timeout)
+            document = self._from_wire_extraction(
+                self._single_extraction_document(response), options.page_range
+            )
         if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
             raise ExtractionError(self._extraction_failure_message(document))
         return document
@@ -1355,6 +1428,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
         page_range: PageRange | None = None,
+        max_file_size: int | None = None,
         max_concurrency: int | None = None,
     ) -> Iterator[DocumentExtractionResult]:
         """Extract from many sources, in-body, one job per source.
@@ -1363,7 +1437,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         documents as the job completes (completion order, not input order), as
         ``convert_all`` does. A connector source yields all of its documents. A
         source whose job fails yields one ``FAILURE`` result instead of ending
-        the iteration.
+        the iteration; a local file over ``max_file_size`` yields ``SKIPPED``.
         """
         self._ensure_sync_bridge_allowed()
         max_in_flight = self._effective_concurrency(max_concurrency)
@@ -1377,6 +1451,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                     options=options,
                     headers=headers,
                     page_range=page_range,
+                    max_file_size=max_file_size,
                     max_concurrency=max_in_flight,
                 ):
                     yield document
@@ -1403,12 +1478,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         ``PresignedUrlTarget`` yields ``PresignedUrlConvertResponse`` and
         storage targets yield ``PresignedUrlConvertDocumentResponse``.
         """
-        request = ExtractSourcesRequest(
-            extraction_target=extraction_target,
-            sources=self._coerce_extract_sources(source),
-            options=options if options is not None else ExtractDocumentsOptions(),
-            target=InBodyTarget() if target is None else target,
-            callbacks=callbacks or [],
+        request = self._build_extract_request(
+            source, extraction_target, options, target, callbacks
         )
         response = self._request_with_retry(
             method="POST",
@@ -1416,11 +1487,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             json=self._serialize_extract_request(request),
             headers=headers,
         )
-        if response.status_code != 200:
-            self._raise_for_generic_http_error(
-                response, "Extraction task submission failed."
-            )
-        initial_status = TaskStatusResponse.model_validate_json(response.text)
+        initial_status = self._extract_submission_status(request, response)
         return ConversionJob(
             task_id=initial_status.task_id,
             submitted_at=datetime.now(tz=timezone.utc),

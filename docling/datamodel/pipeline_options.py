@@ -18,6 +18,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    SerializeAsAny,
     computed_field,
     field_validator,
     model_validator,
@@ -1057,7 +1058,7 @@ class PictureDescriptionVlmEngineOptions(
         "picture_description_vlm_engine"
     )
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
     prompt: Annotated[
@@ -1124,7 +1125,7 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         )
     """
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
 
@@ -1160,7 +1161,7 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         options = CodeFormulaVlmOptions.from_preset("granite_docling")
     """
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
 
