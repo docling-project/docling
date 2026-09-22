@@ -441,6 +441,27 @@ def test_extract_request_accepts_inline_file_sources() -> None:
     assert request.sources[0].kind == "file"
 
 
+def test_extract_request_schema_constrained_requires_output_schema() -> None:
+    sources = [{"kind": "http", "url": "https://example.com/report.pdf"}]
+    options = {"output_mode": "schema_constrained"}
+    with pytest.raises(
+        ValidationError, match=r"requires extraction_target\.output_schema"
+    ):
+        ExtractSourcesRequest(
+            extraction_target={
+                "template": {"format": "example_json", "value": {"a": 1}}
+            },
+            sources=sources,
+            options=options,
+        )
+    request = ExtractSourcesRequest(
+        extraction_target={"output_schema": {"type": "object"}},
+        sources=sources,
+        options=options,
+    )
+    assert request.options.output_mode == "schema_constrained"
+
+
 def test_task_failure_result_roundtrip() -> None:
     failure = PublicFailureInfo(
         category=FailureCategory.INTERNAL,

@@ -53,7 +53,11 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
-from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.extraction import (
+    DocumentExtractionResult,
+    ExtractionItem,
+    ExtractionTarget,
+)
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
@@ -441,9 +445,50 @@ class _BaseDoclingServiceClient:
         return documents[0]
 
     @staticmethod
-    def _failed_extraction_document(
-        source_index: int, source: object, exc: BaseException
-    ) -> ExtractionDocumentResult:
+    def _with_extract_page_range(
+        options: ExtractDocumentsOptions | None, page_range: PageRange | None
+    ) -> ExtractDocumentsOptions:
+        options = options if options is not None else ExtractDocumentsOptions()
+        if page_range is None:
+            return options
+        return options.model_copy(update={"page_range": page_range})
+
+    def _local_extraction_result(
+        self,
+        filename: str,
+        page_range: PageRange,
+        status: ConversionStatus,
+        errors: list[ErrorItem],
+        items: list[ExtractionItem],
+    ) -> DocumentExtractionResult:
+        # Same shape as the local DocumentExtractor, like convert() rebuilds a
+        # ConversionResult; the wire source_index/source_uri are dropped.
+        return DocumentExtractionResult(
+            input=self._build_input_document(
+                source_name=filename,
+                input_format=self._guess_input_format(filename),
+                file_size=None,
+                limits=DocumentLimits(page_range=page_range),
+            ),
+            status=status,
+            errors=errors,
+            items=items,
+        )
+
+    def _from_wire_extraction(
+        self, document: ExtractionDocumentResult, page_range: PageRange
+    ) -> DocumentExtractionResult:
+        return self._local_extraction_result(
+            filename=document.filename,
+            page_range=page_range,
+            status=document.status,
+            errors=document.errors,
+            items=document.items,
+        )
+
+    def _failed_extraction_result(
+        self, source: object, exc: BaseException, page_range: PageRange
+    ) -> DocumentExtractionResult:
         if isinstance(source, AnyHttpSourceRequest):
             uri = str(source.url)
         elif isinstance(source, FileSourceRequest):
@@ -455,10 +500,9 @@ class _BaseDoclingServiceClient:
         else:
             # Connector items can carry credentials; name the type only.
             uri = type(source).__name__
-        return ExtractionDocumentResult(
-            source_index=source_index,
-            source_uri=uri,
+        return self._local_extraction_result(
             filename=PurePath(urlparse(uri).path).name or uri,
+            page_range=page_range,
             status=ConversionStatus.FAILURE,
             errors=[
                 ErrorItem(
@@ -468,20 +512,19 @@ class _BaseDoclingServiceClient:
                     category=FailureCategory.UNKNOWN,
                 )
             ],
+            items=[],
         )
 
     @staticmethod
-    def _extraction_failure_message(document: ExtractionDocumentResult) -> str:
+    def _extraction_failure_message(document: DocumentExtractionResult) -> str:
+        filename = document.input.file.name
         if document.errors:
             messages = "; ".join(item.error_message for item in document.errors)
             return (
-                f"Extraction failed for {document.filename} with status "
+                f"Extraction failed for {filename} with status "
                 f"{document.status.value}. Errors: {messages}"
             )
-        return (
-            f"Extraction failed for {document.filename} with status "
-            f"{document.status.value}."
-        )
+        return f"Extraction failed for {filename} with status {document.status.value}."
 
     def _restore_secret_values(self, raw: Any, dumped: Any) -> Any:
         if isinstance(raw, (SecretStr, SecretBytes)):
@@ -1273,29 +1316,34 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def extract(
         self,
         source: SingleExtractSource,
-        extraction_target: ExtractionTarget,
+        target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        page_range: PageRange | None = None,
         raises_on_error: bool = True,
-    ) -> ExtractionDocumentResult:
+    ) -> DocumentExtractionResult:
         """Extract structured data from a single source, in-body.
 
-        ``extraction_target`` is the contract (output schema and/or guidance);
-        ``options`` is operational (model preset, decode mode, channel, page
-        range). Returns the one document's result. Iterables and connector
-        sources raise ``TypeError`` before submission — use ``extract_all`` for
-        those.
+        ``target`` is the contract (output schema and/or guidance), as in
+        ``DocumentExtractor.extract``; ``options`` is operational (model preset,
+        decode mode, channel, page range). ``page_range`` overrides
+        ``options.page_range``. Returns the local ``DocumentExtractionResult``.
+        Iterables and connector sources raise ``TypeError`` before submission —
+        use ``extract_all`` for those.
         """
         self._check_single_extract_source(source)
+        options = self._with_extract_page_range(options, page_range)
         job = self.submit_extract(
             source=source,
-            extraction_target=extraction_target,
+            extraction_target=target,
             options=options,
             target=InBodyTarget(),
             headers=headers,
         )
         response = job.result(timeout=self._job_timeout)
-        document = self._single_extraction_document(response)
+        document = self._from_wire_extraction(
+            self._single_extraction_document(response), options.page_range
+        )
         if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
             raise ExtractionError(self._extraction_failure_message(document))
         return document
@@ -1303,30 +1351,32 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def extract_all(
         self,
         source: Iterable[SourceType | ExtractSourceRequestInput],
-        extraction_target: ExtractionTarget,
+        target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        page_range: PageRange | None = None,
         max_concurrency: int | None = None,
-    ) -> Iterator[ExtractionDocumentResult]:
+    ) -> Iterator[DocumentExtractionResult]:
         """Extract from many sources, in-body, one job per source.
 
         Runs at most ``max_concurrency`` jobs at a time and yields each job's
-        documents as the job completes (completion order, not input order).
-        ``source_index`` is the caller's input index; a connector source yields
-        all of its documents under its index. A source whose job fails yields one
-        ``FAILURE`` result instead of ending the iteration.
+        documents as the job completes (completion order, not input order), as
+        ``convert_all`` does. A connector source yields all of its documents. A
+        source whose job fails yields one ``FAILURE`` result instead of ending
+        the iteration.
         """
         self._ensure_sync_bridge_allowed()
         max_in_flight = self._effective_concurrency(max_concurrency)
 
-        async def run() -> AsyncGenerator[ExtractionDocumentResult, None]:
+        async def run() -> AsyncGenerator[DocumentExtractionResult, None]:
             # Fan out on the native async client, like convert_all().
             async with self._build_async_service_client() as async_client:
                 async for document in async_client.extract_all(
                     source=source,
-                    extraction_target=extraction_target,
+                    target=target,
                     options=options,
                     headers=headers,
+                    page_range=page_range,
                     max_concurrency=max_in_flight,
                 ):
                     yield document

@@ -18,9 +18,11 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     ErrorItem,
     FailureCategory,
+    InputFormat,
     VlmStopReason,
 )
 from docling.datamodel.extraction import (
+    DocumentExtractionResult,
     ExtractionItem,
     ExtractionTarget,
     ExtractionTemplate,
@@ -495,8 +497,12 @@ def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
     pdf.write_bytes(b"%PDF-1.4 fake")
     client, calls = _extract_client([_doc()])
     with client:
-        document = client.extract(pdf, TARGET)
-    assert document.filename == "report.pdf"
+        document = client.extract(pdf, target=TARGET, page_range=(2, 3))
+    # Same result type as the local DocumentExtractor.
+    assert isinstance(document, DocumentExtractionResult)
+    assert document.input.file.name == "report.pdf"
+    assert document.input.format == InputFormat.PDF
+    assert json.loads(calls[0].content)["options"]["page_range"] == [2, 3]
     # Local files ride inline as a base64 file source, not multipart.
     source = json.loads(calls[0].content)["sources"][0]
     assert source["kind"] == "file"
@@ -626,12 +632,12 @@ def test_extract_all_runs_one_job_per_source(monkeypatch):
         )
 
     assert len([c for c in calls if c.method == "POST"]) == 5
-    by_index = {d.source_index: d for d in results}
-    assert sorted(by_index) == [0, 1, 2, 3, 4]
-    assert [by_index[i].filename for i in range(5)] == names
-    assert by_index[2].status == ConversionStatus.FAILURE
-    assert by_index[2].source_uri == "https://example.com/bad.pdf"
-    assert all(by_index[i].status == ConversionStatus.SUCCESS for i in (0, 1, 3, 4))
+    by_name = {d.input.file.name: d for d in results}
+    assert sorted(by_name) == sorted(names)
+    assert by_name["bad.pdf"].status == ConversionStatus.FAILURE
+    assert all(
+        by_name[n].status == ConversionStatus.SUCCESS for n in names if n != "bad.pdf"
+    )
 
 
 @pytest.mark.anyio
@@ -641,8 +647,8 @@ async def test_async_extract_and_extract_all():
         await client._async_client.aclose()
         client._async_client = httpx.AsyncClient(transport=tr)
         document = await client.extract("https://example.com/b.pdf", TARGET)
-        assert document.filename == "b.pdf"
+        assert document.input.file.name == "b.pdf"
         results = [
             d async for d in client.extract_all(["https://example.com/b.pdf"], TARGET)
         ]
-    assert [d.filename for d in results] == ["b.pdf"]
+    assert [d.input.file.name for d in results] == ["b.pdf"]

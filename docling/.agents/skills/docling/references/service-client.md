@@ -109,9 +109,11 @@ endpoint; nothing unpacks them.
 ## Source extraction
 
 Extraction requires the matching explicit-target Jobkit/Serve implementation.
-The high-level `extract` / `extract_all` mirror `convert` / `convert_all`: pass a
-source and an `ExtractionTarget` (the contract — what to extract), get parsed
-results back in-body.
+The high-level `extract` / `extract_all` mirror `convert` / `convert_all` and the
+local `DocumentExtractor`: pass a source and `target=` (an `ExtractionTarget`, the
+contract — what to extract), get the local `DocumentExtractionResult` back. Like
+`ConversionResult` from `convert`, its `input` is a lightweight `InputDocument`
+(filename and guessed format only).
 
 ```python
 from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
@@ -122,20 +124,24 @@ target = ExtractionTarget(template=ExtractionTemplate(
 ))
 with DoclingServiceClient(url="https://docling.example.com") as client:
     # Single source -> one document result.
-    document = client.extract("https://example.com/invoice.pdf", target)
+    document = client.extract("https://example.com/invoice.pdf", target=target)
     for item in document.items:
-        print(document.source_uri, item.scope, item.extracted_data, item.errors)
+        print(document.input.file.name, item.scope, item.extracted_data, item.errors)
 
     # Many sources (and connector fan-out) -> one job per source, bounded
     # concurrency, documents yielded as each job completes.
-    for document in client.extract_all(["a.pdf", "b.pdf"], target):
-        print(document.source_index, document.filename, document.status)
+    for document in client.extract_all(["a.pdf", "b.pdf"], target=target):
+        print(document.input.file.name, document.status)
 ```
 
-`extraction_target` is the contract; `options` (`ExtractDocumentsOptions`) is
-purely operational — model preset, `output_mode`, `input_channels`, `page_range`
-— and defaults to server defaults, e.g.
-`client.extract(src, target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
+`target` is the contract; `options` (`ExtractDocumentsOptions`) is purely
+operational — model preset, `output_mode`, `input_channels`, `page_range` — and
+defaults to server defaults, e.g.
+`client.extract(src, target=target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
+The top-level `page_range=` argument overrides `options.page_range`, as in
+`convert`. `max_num_pages` / `max_file_size` are not supported; the server
+applies its own limits. `output_mode="schema_constrained"` requires
+`target.output_schema` and is rejected before submission otherwise.
 
 `extract` takes one file, URL, stream, `FileSourceRequest` or
 `AnyHttpSourceRequest`; iterables and connector sources raise `TypeError` before
@@ -145,15 +151,17 @@ job returns more than one document or if the document fails and
 
 `extract_all` runs one job per input source, at most `max_concurrency` at a time
 (defaults to the client's `max_concurrency`), so it stays under serve's
-`max_sources_per_request`. Results come in completion order; `source_index` is
-the caller's input index (a connector source yields all its documents under its
-index). A source whose job fails yields one `FAILURE` result with the error and
-does not stop the iterator.
+`max_sources_per_request`. Results come in completion order, like `convert_all`;
+match them by `input.file.name` (a connector source yields all its documents). A
+source whose job fails yields one `FAILURE` result with the error and does not
+stop the iterator.
 `AsyncDoclingServiceClient` exposes the same `extract` / `extract_all`.
 
-For storage destinations, callbacks, or a job handle, use `submit_extract`, which
-takes the same unpacked arguments plus `target` (the destination) and returns a
-`ConversionJob`. Like `submit_batch`, it also accepts dict sources
+For storage destinations, callbacks, or a job handle, use `submit_extract`. It
+mirrors the wire request (`ExtractSourcesRequest`): the contract is
+`extraction_target=` and `target=` is the destination, as in `submit`. It returns
+a `ConversionJob` whose in-body result is the wire `ExtractDocumentResponse`
+(`ExtractionDocumentResult`s with `source_index`, `source_uri`, `filename`). Like `submit_batch`, it also accepts dict sources
 (`ExtractSourceRequestInput`, e.g. `{"kind": "s3", ...}` or a plugin connector
 kind):
 

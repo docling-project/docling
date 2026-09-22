@@ -13,8 +13,9 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
 )
-from typing_extensions import TypeVar
+from typing_extensions import Self, TypeVar
 
 from docling.datamodel.extraction import ExtractionTarget
 from docling.datamodel.service.callbacks import CallbackSpec
@@ -283,6 +284,21 @@ class ExtractSourcesRequest(BaseModel):
     options: ExtractDocumentsOptions = ExtractDocumentsOptions()
     target: ExtractTargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
+
+    @model_validator(mode="after")
+    def _schema_constrained_needs_schema(self) -> Self:
+        # Fail at submission (client ValueError / serve 422) instead of in the
+        # worker. The engine check (vLLM API only) needs the resolved preset and
+        # stays server-side.
+        if (
+            self.options.output_mode == "schema_constrained"
+            and self.extraction_target.output_schema is None
+        ):
+            raise ValueError(
+                "output_mode='schema_constrained' requires "
+                "extraction_target.output_schema."
+            )
+        return self
 
 
 ## Source chunking requests

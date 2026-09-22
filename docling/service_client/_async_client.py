@@ -36,7 +36,7 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
-from docling.datamodel.extraction import ExtractionTarget
+from docling.datamodel.extraction import DocumentExtractionResult, ExtractionTarget
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
@@ -410,25 +410,29 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def extract(
         self,
         source: SingleExtractSource,
-        extraction_target: ExtractionTarget,
+        target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        page_range: PageRange | None = None,
         raises_on_error: bool = True,
-    ) -> ExtractionDocumentResult:
+    ) -> DocumentExtractionResult:
         """Extract structured data from a single source, in-body.
 
         Async mirror of ``DoclingServiceClient.extract``.
         """
         self._check_single_extract_source(source)
+        options = self._with_extract_page_range(options, page_range)
         job = await self.submit_extract(
             source=source,
-            extraction_target=extraction_target,
+            extraction_target=target,
             options=options,
             target=InBodyTarget(),
             headers=headers,
         )
         response = await job.result(timeout=self._job_timeout)
-        document = self._single_extraction_document(response)
+        document = self._from_wire_extraction(
+            self._single_extraction_document(response), options.page_range
+        )
         if raises_on_error and document.status not in SUCCESS_CONVERSION_STATUSES:
             raise ExtractionError(self._extraction_failure_message(document))
         return document
@@ -436,17 +440,19 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def extract_all(
         self,
         source: Iterable[SourceType | ExtractSourceRequestInput],
-        extraction_target: ExtractionTarget,
+        target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        page_range: PageRange | None = None,
         max_concurrency: int | None = None,
-    ) -> AsyncIterator[ExtractionDocumentResult]:
+    ) -> AsyncIterator[DocumentExtractionResult]:
         """Extract from many sources, in-body, one job per source.
 
         Async mirror of ``DoclingServiceClient.extract_all``.
         """
         assert self._async_client is not None, "client not open — use async with"
         max_in_flight = self._effective_concurrency(max_concurrency)
+        options = self._with_extract_page_range(options, page_range)
 
         async def process_one(
             _idx: int,
@@ -455,7 +461,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         ) -> list[ExtractionDocumentResult]:
             job = await self.submit_extract(
                 source=item,
-                extraction_target=extraction_target,
+                extraction_target=target,
                 options=options,
                 target=InBodyTarget(),
                 headers=headers,
@@ -473,18 +479,17 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             response = await job.result(timeout=self._job_timeout)
             return self._as_extract_response(response).documents
 
-        async for idx, item, outcome in _run_bounded(
+        async for _idx, item, outcome in _run_bounded(
             items=source,
             process_one=process_one,
             async_client=self._async_client,
             max_in_flight=max_in_flight,
         ):
             if isinstance(outcome, BaseException):
-                yield self._failed_extraction_document(idx, item, outcome)
+                yield self._failed_extraction_result(item, outcome, options.page_range)
                 continue
-            # The server numbers sources per request (always 0 here).
             for document in outcome:
-                yield document.model_copy(update={"source_index": idx})
+                yield self._from_wire_extraction(document, options.page_range)
 
     async def submit_extract(
         self,

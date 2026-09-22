@@ -236,6 +236,9 @@ Reproduced with `_coerce_extract_sources` (before this fix):
 
 ### 5. `schema_constrained` without `output_schema` fails only in the worker
 
+**Status: done.** Validator `_schema_constrained_needs_schema` on
+`ExtractSourcesRequest`; test in `tests/test_service_datamodels.py`.
+
 **Problem.** `ExtractDocumentsOptions(output_mode="schema_constrained")` with an
 `ExtractionTarget` that has only a template is accepted by the client and by
 serve. It then fails at execution time
@@ -251,6 +254,27 @@ part of the check (vLLM API only) depends on the preset the server resolves, so
 it stays server-side.
 
 ### 6. Parity with local extraction: decide, then document
+
+**Status: done. Decided 2026-09-22 (Christoph), overriding the recommendation
+below:**
+- `extract()` / `extract_all()` return the local `DocumentExtractionResult`,
+  built with `_build_input_document` the way `convert()` builds
+  `ConversionResult` (filename + format guessed from it). The two models carry
+  the same payload (status, errors, items) and differ only in identity
+  (`InputDocument` vs `source_index` / `source_uri` / `filename`), so returning
+  the wire type made two near-identical names public. `source_index` /
+  `source_uri` are dropped there; `extract_all` results match by
+  `input.file.name`, as `convert_all`. `submit_extract` keeps the wire
+  `ExtractDocumentResponse`.
+- `extract()` / `extract_all()` take the contract as `target=`, like the local
+  extractor. `submit_extract` keeps the wire names (`extraction_target=` contract,
+  `target=` destination), as `submit(target=)` and `ExtractSourcesRequest`.
+- Top-level `page_range=` on `extract()` / `extract_all()` overrides
+  `options.page_range` (jobkit honors it). `max_num_pages` / `max_file_size` are
+  not added: they would need new `ExtractDocumentsOptions` fields; the server
+  applies its own `max_num_pages` / `max_file_size`.
+
+Original analysis:
 
 `convert()` returns the local `ConversionResult`, so the service client can
 replace the local converter. `extract()` differs from local

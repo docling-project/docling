@@ -114,13 +114,18 @@ selection, channel, absolute `page_range`, and `output_mode` — and every field
 defaults. No Python classes, validators, grouping fields, or public chunks are
 accepted over the wire.
 
-Sync and async clients expose `extract` / `extract_all` (in-body convenience) and
-`submit_extract` (job handle, storage targets, callbacks); all take unpacked
-`source, extraction_target, options=..., target=...` arguments. The endpoint is
-`/v1/extract/source/async`; the returned job supports polling/watching/result
-retrieval. In-body results are `ExtractDocumentResponse.documents`, containing
-JSON-safe `ExtractionDocumentResult`s with `source_index`, `source_uri`,
-`filename`, `status`, `errors`, and canonical `items`. Presigned and storage
+`output_mode="schema_constrained"` without `extraction_target.output_schema` is
+rejected by request validation (client `ValidationError`, serve 422).
+
+Sync and async clients expose `extract` / `extract_all` (in-body convenience,
+same `target=` argument and `DocumentExtractionResult` as the local
+`DocumentExtractor`) and `submit_extract` (job handle, storage targets,
+callbacks), which mirrors the wire request: `source, extraction_target,
+options=..., target=<destination>`. The endpoint is `/v1/extract/source/async`;
+the returned job supports polling/watching/result retrieval. `submit_extract`
+in-body results are `ExtractDocumentResponse.documents`, containing JSON-safe
+`ExtractionDocumentResult`s with `source_index`, `source_uri`, `filename`,
+`status`, `errors`, and canonical `items`. Presigned and storage
 destinations return `PresignedUrlConvertResponse` /
 `PresignedUrlConvertDocumentResponse`, as for `submit`. `extract_all` runs one job
 per source with bounded concurrency. Runtime backends are never serialized.

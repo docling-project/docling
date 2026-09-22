@@ -4,6 +4,7 @@
 """Client SDK for interacting with docling-serve."""
 
 from docling.datamodel.extraction import (
+    DocumentExtractionResult,
     ExtractionTarget,
     ExtractionTemplate,
 )
@@ -72,6 +73,7 @@ __all__ = [
     "ConversionJob",
     "DoclingServiceClient",
     "DoclingServiceClientError",
+    "DocumentExtractionResult",
     "ExtractDocumentResponse",
     "ExtractDocumentsOptions",
     "ExtractSourceRequestInput",
