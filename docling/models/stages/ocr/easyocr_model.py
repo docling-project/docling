@@ -336,14 +336,12 @@ class EasyOcrModel(BaseOcrModel):
                                     "ignore", message=".*pin_memory.*MPS.*"
                                 )
 
-                            # Leave the argument absent for the default so existing
-                            # EasyOCR versions and configurations behave as before.
-                            readtext_kwargs = (
-                                {"canvas_size": self.options.canvas_size}
-                                if self.options.canvas_size is not None
-                                else {}
-                            )
-                            result = self.reader.readtext(im, **readtext_kwargs)
+                            if self.options.canvas_size is None:
+                                result = self.reader.readtext(im)
+                            else:
+                                result = self.reader.readtext(
+                                    im, canvas_size=self.options.canvas_size
+                                )
 
                         del high_res_image
                         del im
