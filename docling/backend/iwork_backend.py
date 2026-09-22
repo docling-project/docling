@@ -423,21 +423,21 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         data, under the same prefix the inner archive was found at, so both are
         passed to the reader.
 
-        Args:
-            archive: The open ``.key`` container.
-            member: The name of its ``Index.zip`` member.
-
         Everything the index holds is inside the inner archive, so it is held to
         the same limits as a container whose index was not nested — the stored
         size of the ``Index.zip`` member says nothing about what is in it, and a
         2 KiB one can expand to hundreds of megabytes.
 
+        Args:
+            archive: The open ``.key`` container.
+            member: The name of its ``Index.zip`` member.
+
         Returns:
             Everything the presentation holds.
 
         Raises:
-            DocumentLoadError: If either archive is larger, holds more members,
-                or is more encrypted than this is willing to read.
+            DocumentLoadError: If either archive is larger or holds more
+                members than this is willing to read, or is password-protected.
         """
         size = archive.getinfo(member).file_size
         if size > self.options.max_file_bytes:

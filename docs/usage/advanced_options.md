@@ -220,8 +220,23 @@ extra layers explicitly (this applies to any `DoclingDocument`, not just these):
 from docling_core.types.doc import ContentLayer
 from docling.document_converter import DocumentConverter
 
-doc = DocumentConverter().convert("deck.key").document
-print(doc.export_to_markdown(included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}))
+converter = DocumentConverter()
+
+# Pages: headers, footers and footnotes are furniture, comments are notes.
+report = converter.convert("report.pages").document
+print(report.export_to_markdown(
+    included_content_layers={
+        ContentLayer.BODY,
+        ContentLayer.FURNITURE,
+        ContentLayer.NOTES,
+    }
+))
+
+# Keynote: the presenter notes and comments of each slide are notes.
+deck = converter.convert("deck.key").document
+print(deck.export_to_markdown(
+    included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+))
 ```
 
 The container is untrusted input, so size limits apply. They can be tuned with

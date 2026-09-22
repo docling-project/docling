@@ -70,8 +70,6 @@ SF_ANNOTATION = f"{{{SF_NAMESPACE}}}annotation"
 SF_ANNOTATION_FIELD = f"{{{SF_NAMESPACE}}}annotation-field"
 
 SF_ATTR_TARGET = f"{{{SF_NAMESPACE}}}target"
-
-
 """The iWork '09 vocabulary for comments.
 
 An ``sf:annotation`` names the ``sf:annotation-field`` it targets, and that
