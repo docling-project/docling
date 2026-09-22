@@ -103,6 +103,8 @@ response = client.chunk(source="report.pdf", chunker=ChunkerKind.HYBRID)
 Batch sources and targets (S3, presigned URLs, plugin sources) are exposed as
 `BatchSourceRequestInput` / `BatchTargetRequestInput`, `S3Target`,
 `PresignedUrlTarget`, etc. from `docling.service_client`.
+ZIP archives (`.zip` URLs or file names) are rejected as input sources on every
+endpoint; nothing unpacks them.
 
 ## Source extraction
 
@@ -138,8 +140,8 @@ purely operational — model preset, `output_mode`, `input_channels`, `page_rang
 `extract` takes one file, URL, stream, `FileSourceRequest` or
 `AnyHttpSourceRequest`; iterables and connector sources raise `TypeError` before
 anything is submitted (use `extract_all`). It raises `ExtractionError` if the
-source still expands server-side (for example an archive) or if the document
-fails and `raises_on_error=True`.
+job returns more than one document or if the document fails and
+`raises_on_error=True`.
 
 `extract_all` runs one job per input source, at most `max_concurrency` at a time
 (defaults to the client's `max_concurrency`), so it stays under serve's
@@ -151,7 +153,9 @@ does not stop the iterator.
 
 For storage destinations, callbacks, or a job handle, use `submit_extract`, which
 takes the same unpacked arguments plus `target` (the destination) and returns a
-`ConversionJob`:
+`ConversionJob`. Like `submit_batch`, it also accepts dict sources
+(`ExtractSourceRequestInput`, e.g. `{"kind": "s3", ...}` or a plugin connector
+kind):
 
 ```python
 from docling.service_client import PresignedUrlTarget

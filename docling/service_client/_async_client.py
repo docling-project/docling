@@ -52,6 +52,7 @@ from docling.datamodel.service.requests import (
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourceRequestInput,
     ExtractSourceRequestItem,
     ExtractSourcesRequest,
     ExtractTargetRequest,
@@ -434,7 +435,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def extract_all(
         self,
-        source: Iterable[SourceType | ExtractSourceRequestItem],
+        source: Iterable[SourceType | ExtractSourceRequestInput],
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -449,7 +450,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
         async def process_one(
             _idx: int,
-            item: SourceType | ExtractSourceRequestItem,
+            item: SourceType | ExtractSourceRequestInput,
             async_client: httpx.AsyncClient,
         ) -> list[ExtractionDocumentResult]:
             job = await self.submit_extract(
@@ -488,8 +489,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     async def submit_extract(
         self,
         source: SourceType
-        | ExtractSourceRequestItem
-        | Iterable[SourceType | ExtractSourceRequestItem],
+        | ExtractSourceRequestInput
+        | Iterable[SourceType | ExtractSourceRequestInput],
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         target: ExtractTargetRequest | None = None,

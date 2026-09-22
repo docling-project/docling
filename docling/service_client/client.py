@@ -18,7 +18,7 @@ import tempfile
 import time
 import warnings
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Iterator, Sequence
+from collections.abc import AsyncGenerator, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -34,7 +34,6 @@ from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
 from pydantic import (
-    AnyHttpUrl,
     BaseModel,
     SecretBytes,
     SecretStr,
@@ -71,6 +70,7 @@ from docling.datamodel.service.requests import (
     BatchTargetRequest,
     BatchTargetRequestInput,
     ConvertDocumentsRequest,
+    ExtractSourceRequestInput,
     ExtractSourceRequestItem,
     ExtractSourcesRequest,
     ExtractTargetRequest,
@@ -367,10 +367,11 @@ class _BaseDoclingServiceClient:
     def _coerce_extract_sources(
         self,
         source: SourceType
-        | ExtractSourceRequestItem
-        | Iterable[SourceType | ExtractSourceRequestItem],
-    ) -> list[ExtractSourceRequestItem]:
-        if isinstance(source, (str, Path, DocumentStream, BaseModel)):
+        | ExtractSourceRequestInput
+        | Iterable[SourceType | ExtractSourceRequestInput],
+    ) -> list[ExtractSourceRequestInput]:
+        # A Mapping is one source ({"kind": ...}), like in submit_batch().
+        if isinstance(source, (str, Path, DocumentStream, BaseModel, Mapping)):
             singles: list[Any] = [source]
         elif isinstance(source, Iterable):
             singles = list(source)
@@ -379,8 +380,8 @@ class _BaseDoclingServiceClient:
         return [self._source_to_extract_item(item) for item in singles]
 
     def _source_to_extract_item(
-        self, source: SourceType | ExtractSourceRequestItem
-    ) -> ExtractSourceRequestItem:
+        self, source: SourceType | ExtractSourceRequestInput
+    ) -> ExtractSourceRequestInput:
         if isinstance(source, (str, Path, DocumentStream, HttpSourceRequest)):
             normalized = self._normalize_source(source)
             if isinstance(normalized, HttpSourceRequest):
@@ -401,8 +402,9 @@ class _BaseDoclingServiceClient:
                 base64_string=base64.b64encode(data).decode("ascii"),
                 filename=filename,
             )
-        if isinstance(source, BaseModel):
-            # Prebuilt connector / file / http source item.
+        if isinstance(source, (BaseModel, Mapping)):
+            # Prebuilt connector / file / http source item, or its dict form;
+            # ExtractSourcesRequest validation coerces dicts by "kind".
             return source  # type: ignore[return-value]
         raise TypeError(f"Unsupported extraction source: {type(source)!r}")
 
@@ -430,7 +432,7 @@ class _BaseDoclingServiceClient:
         self, response: ExtractJobResult
     ) -> ExtractionDocumentResult:
         documents = self._as_extract_response(response).documents
-        # A ZIP URL can still expand server-side after the pre-submit check.
+        # Defensive: extract() only submits non-expandable sources.
         if len(documents) != 1:
             raise ExtractionError(
                 f"extract() expected a single document but the source expanded to "
@@ -678,17 +680,15 @@ class _BaseDoclingServiceClient:
     ) -> Path | HttpSourceRequest | DocumentStream:
         if isinstance(source, (Path, HttpSourceRequest, DocumentStream)):
             return source
-        try:
-            http_url = TypeAdapter(AnyHttpUrl).validate_python(source)
-            return HttpSourceRequest(url=str(http_url), headers={})
-        except ValidationError:
-            if "://" in source:
-                scheme = source.split("://", 1)[0].lower()
-                if scheme not in ("http", "https"):
-                    raise ValueError(
-                        f"Unsupported URL scheme: '{scheme}'. Only http:// and https:// are supported."
-                    )
+        if "://" not in source:
             return TypeAdapter(Path).validate_python(source)
+        scheme = source.split("://", 1)[0].lower()
+        if scheme not in ("http", "https"):
+            raise ValueError(
+                f"Unsupported URL scheme: '{scheme}'. Only http:// and https:// are supported."
+            )
+        # Let URL validation errors (e.g. ZIP archives) surface as-is.
+        return HttpSourceRequest(url=source, headers={})
 
     @staticmethod
     def _validate_concurrency(value: int, *, name: str) -> int:
@@ -1302,7 +1302,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def extract_all(
         self,
-        source: Iterable[SourceType | ExtractSourceRequestItem],
+        source: Iterable[SourceType | ExtractSourceRequestInput],
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -1336,8 +1336,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
     def submit_extract(
         self,
         source: SourceType
-        | ExtractSourceRequestItem
-        | Iterable[SourceType | ExtractSourceRequestItem],
+        | ExtractSourceRequestInput
+        | Iterable[SourceType | ExtractSourceRequestInput],
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         target: ExtractTargetRequest | None = None,

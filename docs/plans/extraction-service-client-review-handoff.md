@@ -153,40 +153,86 @@ discarded with an error. `convert()` only accepts `SourceType`.
   `FileSourceRequest`, or `AnyHttpSourceRequest`.
 - Raise `TypeError` / `ValueError` before submission for iterables and connector
   items, and point the message at `extract_all`.
-- Keep the post-hoc length check as a guard (for example, a ZIP URL can still
-  expand server-side).
+- Keep the post-hoc length check as a defensive guard. (Correction: the original
+  example, "a ZIP URL can still expand server-side", is wrong. Nothing unpacks
+  ZIP input; see finding 4.)
 - Update the type hints on both clients.
 
-### 4. Source conversion bugs
+### 4. ZIP inputs are not rejected consistently, and dicts give confusing errors
 
-Reproduced with `_coerce_extract_sources`:
+**Status: done.** docling changes are uncommitted in this worktree; jobkit
+`tests/test_connector_factory.py` is edited but uncommitted on `cau/extract-endpoint`.
+
+**Corrected 2026-09-22.** The first version of this finding assumed extraction
+supports ZIP URLs. It does not, and no endpoint does. The serve plans
+(`plan_batch_convert_endpoint.md` §2, `plan_E_batch_endpoint.md`) assumed a ZIP
+URL "can silently expand to many documents" and deliberately allowed ZIP URLs
+on batch via `AnyHttpSourceRequest`. That expansion was never built: a local
+check converting a ZIP of two PDFs with `DocumentConverter` gives one `SKIPPED`
+result with format `None`. The docling tests
+`test_any_http_source_request_allows_zip_urls` and
+`test_batch_convert_sources_request_allows_zip_http_urls` encoded that plan and
+are replaced.
+
+**Facts.**
+- Nothing in docling, jobkit, or serve unpacks a ZIP archive as input. jobkit's
+  `HttpSourceProcessor` handles both `FileSourceRequest` and
+  `AnyHttpSourceRequest` with `is_expandable() -> False`. It passes the URL or
+  the file bytes straight to the converter. Docling's format detection only
+  looks inside a ZIP for office containers (docx/xlsx/pptx/pages/epub), so a
+  plain `bundle.zip` gets no format and fails in the worker after queueing
+  (`tests/test_backend_dclx.py::test_dclx_not_guessed_without_dclx_extension`
+  shows `archive.zip` → `None`).
+- The only ZIP guard is `HttpSourceRequest.reject_zip_url` (convert, #3519).
+  `AnyHttpSourceRequest` (batch convert, extract) and `FileSourceRequest` (all
+  endpoints) have none. Serve's `validate_extract_request` allowed-formats check
+  does not catch it either, because `.zip` is not in `FormatToExtensions`.
+- Dict sources (`{"kind": "sharepoint", ...}`) come from #3841 (`4d825450`).
+  They let `submit_batch` reach connectors that have no typed model in docling
+  (jobkit's box, sharepoint, filenet, databricks_volumes, and plugins), through
+  `GenericSourceRequest` and `Mapping` in `BatchSourceRequestInput`. The extract
+  wire model (`ExtractSourceRequestItem`) accepts `GenericSourceRequest` the same
+  way, and that stays. The extraction client never supported plain dicts. The
+  errors below are just what happens when a dict falls through the code.
+
+Reproduced with `_coerce_extract_sources` (before this fix):
 
 | Input | Result |
 |---|---|
-| `"https://example.com/bundle.zip"` | `FileNotFoundError: 'https:/example.com/bundle.zip'` |
+| `"https://example.com/bundle.zip"` | `FileNotFoundError: 'https:/example.com/bundle.zip'` (convert gets the same) |
 | `{"kind": "s3", ...}` (single dict) | `FileNotFoundError: 'kind'` (the dict is iterated as its keys) |
 | `[{"kind": "s3", ...}]` | `TypeError: Unsupported extraction source` |
 
-**Root causes.**
-- **ZIP URL:** `_normalize_source` (client.py:629) builds an `HttpSourceRequest`,
-  whose validator rejects `.zip` URLs. The `ValidationError` is caught and the
-  string falls through to `Path`. Extraction accepts ZIP URLs through
-  `AnyHttpSourceRequest`, so a supported input is blocked. `convert` gets the
-  same misleading error message.
-- **Dicts:** `_coerce_extract_sources` treats any `Iterable` as a list of
-  sources, and `_source_to_extract_item` has no `Mapping` branch. `submit_batch`
-  accepts `Mapping` sources (`BatchSourceRequestInput`).
-
 **Fix.**
-- In `_normalize_source`, only fall back to `Path` when the string is not an
-  http(s) URL. If it is one, let the ZIP rejection (or any other URL validation
-  error) propagate for convert.
-- Give extraction its own URL path that builds `AnyHttpSourceRequest` directly
-  from the string, so ZIP URLs work there.
-- In `_coerce_extract_sources`, treat `Mapping` as a single item. In
-  `_source_to_extract_item`, pass `Mapping` through and let
-  `ExtractSourcesRequest` validation (`_validate_batch_source`) coerce it.
-- Add a regression test for each row of the table.
+- **ZIP guard in the shared models (decided).** Move `reject_zip_url` from
+  `HttpSourceRequest` to `AnyHttpSourceRequest`, and add a matching `.zip`
+  filename check on `FileSourceRequest`. Check the extension, not the contents,
+  because office formats are ZIPs by magic bytes. `HttpSourceRequest` then only
+  keeps its docstring. Use one message for both, for example "ZIP archives are
+  not accepted as input sources". Serve then returns 422 at submission, and the
+  client fails before sending.
+- **`_normalize_source`.** Only fall back to `Path` when the string has no
+  `http://` / `https://` scheme. For an http(s) string, let the
+  `ValidationError` (ZIP or otherwise) propagate. This fixes row 1 for convert
+  and extract.
+- **Dicts (decided: same as `submit_batch`).** `submit_extract` (and through it
+  `extract_all`) accepts dict sources. `_coerce_extract_sources` treats a
+  `Mapping` as one source, `_source_to_extract_item` passes it through, and
+  `ExtractSourcesRequest` validation (`_validate_batch_source`) coerces it by
+  `kind`. The new alias `ExtractSourceRequestInput`
+  (`ExtractSourceRequestItem | Mapping[str, Any]`) mirrors
+  `BatchSourceRequestInput`. `extract()` still takes only one non-expandable
+  source (finding 3).
+- Replace the stale comment at client.py:433 ("A ZIP URL can still expand
+  server-side…"). The post-hoc check is now only a defensive guard.
+- **Downstream.** Update jobkit
+  `tests/test_connector_factory.py::test_registry_validates_filenet_and_http_canonical_models`.
+  It validates `{"kind": "http", "url": ".../archive.zip"}` as
+  `AnyHttpSourceRequest`, which will now raise, so change the URL to a non-ZIP
+  one. Serve and jobkit pick the guard up after relocking the docling pin.
+- **Tests.** One per table row, plus `FileSourceRequest(filename="x.zip")` and
+  `AnyHttpSourceRequest(url=".../x.zip")` rejected in the model tests. Check that
+  `x.docx` still validates.
 
 ### 5. `schema_constrained` without `output_schema` fails only in the worker
 
@@ -248,8 +294,8 @@ Christoph before any change.**
 
 ## Suggested order
 
-1. **Finding 4:** the `_normalize_source` fix (shared with convert, small, removes
-   a misleading error everywhere), plus `Mapping` handling.
+1. **Finding 4:** the shared-model ZIP guard, the `_normalize_source` fix (shared
+   with convert), and a clear rejection of dicts.
 2. **Finding 5:** the validator (one model change, and serve benefits too).
 3. **Finding 3:** restrict `extract()` sources.
 4. **Finding 2:** typed results for storage and presigned targets.
@@ -258,8 +304,9 @@ Christoph before any change.**
 6. **Finding 6:** decide, then update docs.
 7. **Finding 7:** minor cleanups.
 
-No wire change is needed except finding 5, which adds a validator on a shared
-model. Serve picks it up after the docling pin is relocked on
+Findings 4 (ZIP guard on `AnyHttpSourceRequest` / `FileSourceRequest`) and 5
+(validator on `ExtractSourcesRequest`) change shared models. No other finding
+changes the wire contract. Serve picks it up after the docling pin is relocked on
 `cau/extract-endpoint`.
 
 ## Conventions for the follow-up session

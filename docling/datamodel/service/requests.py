@@ -45,24 +45,36 @@ from docling.datamodel.service.targets import (
 ## Sources
 
 
+# Nothing unpacks ZIP archives as input, so reject them at submission instead of
+# failing format detection in the worker. Checked by name only: office formats
+# (docx, xlsx, ...) are ZIP containers too.
+_ZIP_REJECTED = "ZIP archives are not accepted as input sources"
+
+
 class FileSourceRequest(FileSource):
     kind: Literal["file"] = "file"
+
+    @field_validator("filename")
+    @classmethod
+    def reject_zip_filename(cls, value: str) -> str:
+        if value.lower().endswith(".zip"):
+            raise ValueError(_ZIP_REJECTED)
+        return value
 
 
 class AnyHttpSourceRequest(HttpSource):
     kind: Literal["http"] = "http"
 
-
-class HttpSourceRequest(AnyHttpSourceRequest):
-    """HTTP source for convert endpoints — rejects ZIP URLs."""
-
     @field_validator("url")
     @classmethod
     def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
-        path = str(value).lower().split("?", maxsplit=1)[0]
-        if path.endswith(".zip"):
-            raise ValueError("ZIP URLs are not accepted on the convert endpoint")
+        if (value.path or "").lower().endswith(".zip"):
+            raise ValueError(_ZIP_REJECTED)
         return value
+
+
+class HttpSourceRequest(AnyHttpSourceRequest):
+    """HTTP source for convert endpoints."""
 
 
 class S3SourceRequest(S3Coordinates):
@@ -154,6 +166,7 @@ ExtractSourceRequestItem = Annotated[
     KnownExtractSourceRequestItem | GenericSourceRequest,
     BeforeValidator(_validate_batch_source),
 ]
+ExtractSourceRequestInput: TypeAlias = ExtractSourceRequestItem | Mapping[str, Any]
 
 SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")

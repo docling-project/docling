@@ -529,6 +529,42 @@ def test_extract_rejects_expandable_sources_before_submission(source):
     assert calls == []
 
 
+S3_DICT = {
+    "kind": "s3",
+    "endpoint": "s3.example.com",
+    "access_key": "key",
+    "secret_key": "secret",
+    "bucket": "docs",
+}
+
+
+@pytest.mark.parametrize("dict_sources", [S3_DICT, [S3_DICT, S3_DICT]])
+def test_submit_extract_accepts_dict_sources_like_submit_batch(dict_sources):
+    client, calls = _extract_client([_doc()])
+    with client:
+        client.submit_extract(dict_sources, TARGET)
+    sent = json.loads(calls[0].content)["sources"]
+    expected = dict_sources if isinstance(dict_sources, list) else [dict_sources]
+    assert [(item["kind"], item["bucket"]) for item in sent] == [
+        ("s3", "docs") for _ in expected
+    ]
+    assert sent[0]["secret_key"] == "secret"
+
+
+def test_zip_sources_are_rejected_before_submission(tmp_path):
+    archive = tmp_path / "bundle.zip"
+    archive.write_bytes(b"PK\x03\x04")
+    client, calls = _extract_client([_doc()])
+    with client:
+        for source in ("https://example.com/bundle.zip", archive):
+            with pytest.raises(ValidationError, match="ZIP archives"):
+                client.submit_extract(source, TARGET)
+        # convert() shares the URL path; it used to fail as a missing local file.
+        with pytest.raises(ValidationError, match="ZIP archives"):
+            client.convert("https://example.com/bundle.zip")
+    assert calls == []
+
+
 def test_extract_failure_status_respects_raises_on_error():
     client, _ = _extract_client([_doc(status=ConversionStatus.FAILURE)])
     with client:

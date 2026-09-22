@@ -12,6 +12,7 @@ from docling.datamodel.service.requests import (
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
     ExtractSourcesRequest,
+    FileSourceRequest,
     GenericSourceRequest,
     GenericTargetRequest,
     GoogleCloudStorageSourceRequest,
@@ -109,15 +110,29 @@ def test_s3_coordinates_credential_schema_is_optional_string(
         assert "Optional" in field_schema["description"]
 
 
-def test_http_source_request_rejects_zip_urls() -> None:
-    with pytest.raises(ValidationError, match="ZIP URLs are not accepted"):
-        HttpSourceRequest(url="https://example.com/report.zip")
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: HttpSourceRequest(url="https://example.com/report.ZIP?sig=1"),
+        lambda: AnyHttpSourceRequest(url="https://example.com/report.zip"),
+        lambda: FileSourceRequest(filename="report.zip", base64_string=""),
+        lambda: BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/r.zip"}],
+                "target": {"kind": "presigned_url"},
+            }
+        ),
+    ],
+)
+def test_source_requests_reject_zip_archives(build) -> None:
+    # Nothing unpacks ZIP input; docling would skip it with no format.
+    with pytest.raises(ValidationError, match="ZIP archives are not accepted"):
+        build()
 
 
-def test_any_http_source_request_allows_zip_urls() -> None:
-    request = AnyHttpSourceRequest(url="https://example.com/report.zip")
-
-    assert str(request.url) == "https://example.com/report.zip"
+def test_source_requests_accept_office_zip_containers() -> None:
+    assert FileSourceRequest(filename="report.docx", base64_string="").filename
+    assert AnyHttpSourceRequest(url="https://example.com/report.xlsx").url
 
 
 def test_convert_sources_request_rejects_s3_sources() -> None:
@@ -135,17 +150,6 @@ def test_convert_sources_request_rejects_s3_sources() -> None:
                 ]
             }
         )
-
-
-def test_batch_convert_sources_request_allows_zip_http_urls() -> None:
-    request = BatchConvertSourcesRequest.model_validate(
-        {
-            "sources": [{"kind": "http", "url": "https://example.com/report.zip"}],
-            "target": {"kind": "presigned_url"},
-        }
-    )
-
-    assert str(request.sources[0].url) == "https://example.com/report.zip"
 
 
 def test_batch_convert_sources_request_preserves_generic_source() -> None:
