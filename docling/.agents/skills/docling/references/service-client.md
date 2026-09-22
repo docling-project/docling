@@ -124,9 +124,10 @@ with DoclingServiceClient(url="https://docling.example.com") as client:
     for item in document.items:
         print(document.source_uri, item.scope, item.extracted_data, item.errors)
 
-    # Many sources (and connector fan-out) -> flattened iterator.
+    # Many sources (and connector fan-out) -> one job per source, bounded
+    # concurrency, documents yielded as each job completes.
     for document in client.extract_all(["a.pdf", "b.pdf"], target):
-        print(document.filename, document.status)
+        print(document.source_index, document.filename, document.status)
 ```
 
 `extraction_target` is the contract; `options` (`ExtractDocumentsOptions`) is
@@ -134,8 +135,18 @@ purely operational — model preset, `output_mode`, `input_channels`, `page_rang
 — and defaults to server defaults, e.g.
 `client.extract(src, target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
 
-`extract` raises `ExtractionError` if the source expands to several documents
-(use `extract_all`) or if the document fails and `raises_on_error=True`.
+`extract` takes one file, URL, stream, `FileSourceRequest` or
+`AnyHttpSourceRequest`; iterables and connector sources raise `TypeError` before
+anything is submitted (use `extract_all`). It raises `ExtractionError` if the
+source still expands server-side (for example an archive) or if the document
+fails and `raises_on_error=True`.
+
+`extract_all` runs one job per input source, at most `max_concurrency` at a time
+(defaults to the client's `max_concurrency`), so it stays under serve's
+`max_sources_per_request`. Results come in completion order; `source_index` is
+the caller's input index (a connector source yields all its documents under its
+index). A source whose job fails yields one `FAILURE` result with the error and
+does not stop the iterator.
 `AsyncDoclingServiceClient` exposes the same `extract` / `extract_all`.
 
 For storage destinations, callbacks, or a job handle, use `submit_extract`, which
@@ -146,14 +157,15 @@ takes the same unpacked arguments plus `target` (the destination) and returns a
 from docling.service_client import PresignedUrlTarget
 
 job = client.submit_extract(
-    ["s3://bucket/prefix/"], target, target=PresignedUrlTarget()
+    ["https://example.com/a.pdf"], target, target=PresignedUrlTarget()
 )
-raw = job.result()  # RawServiceResult for storage targets; ExtractDocumentResponse in-body
+result = job.result()  # PresignedUrlConvertResponse
 ```
 
-In-body extraction returns typed document/item wire envelopes. Storage
-destinations return `RawServiceResult` with the response bytes/content type;
-retain the existing artifact handling for those destinations. See
+`job.result()` is typed like `submit`: in-body gives `ExtractDocumentResponse`,
+`PresignedUrlTarget` gives `PresignedUrlConvertResponse` (artifact URLs), and
+S3/Azure/GCS/Google Drive targets give `PresignedUrlConvertDocumentResponse`
+(counts only). See
 [extraction.md](extraction.md) for templates, validation, model/channel limits,
 and the separate live-verification status.
 

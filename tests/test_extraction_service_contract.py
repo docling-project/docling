@@ -30,14 +30,15 @@ from docling.datamodel.extraction import (
 from docling.datamodel.extraction_options import GRANITE_VISION_4_1_SPEC
 from docling.datamodel.service import ExtractionDocumentResult, ExtractionTaskResult
 from docling.datamodel.service.options import ExtractDocumentsOptions
-from docling.datamodel.service.requests import ExtractSourcesRequest
+from docling.datamodel.service.requests import ExtractSourcesRequest, S3SourceRequest
 from docling.datamodel.service.responses import (
     DoclingTaskResult,
     ExtractDocumentResponse,
+    PresignedUrlConvertDocumentResponse,
+    PresignedUrlConvertResponse,
 )
 from docling.models.extraction.prompt_utils import prepare_target
 from docling.service_client import AsyncDoclingServiceClient, DoclingServiceClient
-from docling.service_client.client import RawServiceResult
 from docling.service_client.exceptions import (
     ExtractionError,
     ResponseSchemaMismatchError,
@@ -254,6 +255,7 @@ def transport(storage, *, admission=200, malformed=False):
                     "num_succeeded": 1,
                     "num_failed": 0,
                     "processing_time": 0.1,
+                    "documents": [],
                 }
                 if storage
                 else response().model_dump(mode="json")
@@ -294,10 +296,10 @@ def assert_client(calls, value, original, storage):
     assert received["options"]["page_range"] == [2, 3]
     assert received["sources"][0]["headers"]["Authorization"] == "secret"
     if storage:
-        assert value.content_type == "application/json"
+        assert isinstance(value, PresignedUrlConvertResponse)
+        assert value.num_succeeded == 1
     else:
         assert value == response()
-    assert isinstance(value, RawServiceResult if storage else ExtractDocumentResponse)
 
 
 @pytest.mark.parametrize("storage", [False, True])
@@ -425,7 +427,8 @@ def test_storage_credentials_are_not_redacted_on_submission():
     with DoclingServiceClient(url="https://service.example") as client:
         client._http_client.close()
         client._http_client = httpx.Client(transport=tr)
-        _submit(client, original)
+        value = _submit(client, original).result()
+    assert type(value) is PresignedUrlConvertDocumentResponse
     assert (
         json.loads(calls[0].content)["target"]["credentials"]["client_secret"]
         == "caller-secret"
@@ -501,10 +504,29 @@ def test_extract_returns_single_document_and_uploads_file_inline(tmp_path):
     assert json.loads(calls[0].content)["target"]["kind"] == "inbody"
 
 
-def test_extract_raises_on_connector_fan_out():
+def test_extract_raises_when_source_expands_server_side():
     client, _ = _extract_client([_doc(source_index=0), _doc(source_index=1)])
     with client, pytest.raises(ExtractionError, match="expanded to 2"):
         client.extract("https://example.com/report.pdf", TARGET)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        ["https://example.com/a.pdf"],
+        S3SourceRequest(
+            endpoint="s3.example.com",
+            access_key="key",
+            secret_key="secret",
+            bucket="docs",
+        ),
+    ],
+)
+def test_extract_rejects_expandable_sources_before_submission(source):
+    client, calls = _extract_client([_doc()])
+    with client, pytest.raises(TypeError, match="extract_all"):
+        client.extract(source, TARGET)
+    assert calls == []
 
 
 def test_extract_failure_status_respects_raises_on_error():
@@ -520,16 +542,60 @@ def test_extract_failure_status_respects_raises_on_error():
     assert document.status == ConversionStatus.FAILURE
 
 
-def test_extract_all_flattens_documents():
-    docs = [_doc(source_index=0), _doc(source_index=1, filename="b.pdf")]
-    client, _ = _extract_client(docs)
-    with client:
+def test_extract_all_runs_one_job_per_source(monkeypatch):
+    # Serve rejects more than 3 sources per request by default; one source is
+    # rejected on its own to check that a failed job does not end the iterator.
+    calls = []
+
+    def handle(req):
+        calls.append(req)
+        if req.method == "POST":
+            sources = json.loads(req.content)["sources"]
+            if len(sources) > 3 or sources[0]["url"].endswith("bad.pdf"):
+                return httpx.Response(422, json={"detail": "rejected"})
+            return httpx.Response(
+                200,
+                json={
+                    "task_id": sources[0]["url"].rsplit("/", 1)[-1],
+                    "task_type": "extract",
+                    "task_status": "success",
+                },
+            )
+        name = req.url.path.rsplit("/", 1)[-1]
+        payload = ExtractDocumentResponse(
+            num_converted=1,
+            num_succeeded=1,
+            num_failed=0,
+            processing_time=0.1,
+            documents=[_doc(filename=name)],
+        )
+        return httpx.Response(200, json=payload.model_dump(mode="json"))
+
+    real_async_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_async_client(
+            transport=httpx.MockTransport(handle), **kwargs
+        ),
+    )
+    names = ["a.pdf", "b.pdf", "bad.pdf", "c.pdf", "d.pdf"]
+    with DoclingServiceClient(url="https://service.example") as client:
         results = list(
             client.extract_all(
-                ["https://example.com/a.pdf", "https://example.com/b.pdf"], TARGET
+                [f"https://example.com/{name}" for name in names],
+                TARGET,
+                max_concurrency=2,
             )
         )
-    assert [d.filename for d in results] == ["report.pdf", "b.pdf"]
+
+    assert len([c for c in calls if c.method == "POST"]) == 5
+    by_index = {d.source_index: d for d in results}
+    assert sorted(by_index) == [0, 1, 2, 3, 4]
+    assert [by_index[i].filename for i in range(5)] == names
+    assert by_index[2].status == ConversionStatus.FAILURE
+    assert by_index[2].source_uri == "https://example.com/bad.pdf"
+    assert all(by_index[i].status == ConversionStatus.SUCCESS for i in (0, 1, 3, 4))
 
 
 @pytest.mark.anyio

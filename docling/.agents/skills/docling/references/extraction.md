@@ -120,8 +120,10 @@ Sync and async clients expose `extract` / `extract_all` (in-body convenience) an
 `/v1/extract/source/async`; the returned job supports polling/watching/result
 retrieval. In-body results are `ExtractDocumentResponse.documents`, containing
 JSON-safe `ExtractionDocumentResult`s with `source_index`, `source_uri`,
-`filename`, `status`, `errors`, and canonical `items`. Storage destinations retain
-their raw response through `RawServiceResult`. Runtime backends are never serialized.
+`filename`, `status`, `errors`, and canonical `items`. Presigned and storage
+destinations return `PresignedUrlConvertResponse` /
+`PresignedUrlConvertDocumentResponse`, as for `submit`. `extract_all` runs one job
+per source with bounded concurrency. Runtime backends are never serialized.
 Deployment requires matching Jobkit/Serve contracts; their migration follows this
 Docling stage. See [service-client.md](service-client.md).
 

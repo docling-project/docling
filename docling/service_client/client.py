@@ -135,6 +135,13 @@ StorageTarget: TypeAlias = (
 )
 SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | StorageTarget
 BatchSubmitTarget: TypeAlias = BatchTargetRequestInput
+# extract() takes only sources that cannot expand into many documents.
+SingleExtractSource: TypeAlias = SourceType | FileSourceRequest | AnyHttpSourceRequest
+ExtractJobResult: TypeAlias = (
+    ExtractDocumentResponse
+    | PresignedUrlConvertResponse
+    | PresignedUrlConvertDocumentResponse
+)
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -400,9 +407,18 @@ class _BaseDoclingServiceClient:
         raise TypeError(f"Unsupported extraction source: {type(source)!r}")
 
     @staticmethod
-    def _as_extract_response(
-        response: ExtractDocumentResponse | RawServiceResult,
-    ) -> ExtractDocumentResponse:
+    def _check_single_extract_source(source: object) -> None:
+        if not isinstance(
+            source, (str, Path, DocumentStream, FileSourceRequest, AnyHttpSourceRequest)
+        ):
+            raise TypeError(
+                "extract() takes one file, URL, stream, FileSourceRequest or "
+                f"AnyHttpSourceRequest, got {type(source).__name__}; use "
+                "extract_all() for several sources or connector sources."
+            )
+
+    @staticmethod
+    def _as_extract_response(response: ExtractJobResult) -> ExtractDocumentResponse:
         if not isinstance(response, ExtractDocumentResponse):
             raise ExtractionError(
                 "In-body extraction result expected but the server returned a "
@@ -411,15 +427,46 @@ class _BaseDoclingServiceClient:
         return response
 
     def _single_extraction_document(
-        self, response: ExtractDocumentResponse | RawServiceResult
+        self, response: ExtractJobResult
     ) -> ExtractionDocumentResult:
         documents = self._as_extract_response(response).documents
+        # A ZIP URL can still expand server-side after the pre-submit check.
         if len(documents) != 1:
             raise ExtractionError(
                 f"extract() expected a single document but the source expanded to "
-                f"{len(documents)}; use extract_all() for connector sources."
+                f"{len(documents)}; use extract_all() for archive sources."
             )
         return documents[0]
+
+    @staticmethod
+    def _failed_extraction_document(
+        source_index: int, source: object, exc: BaseException
+    ) -> ExtractionDocumentResult:
+        if isinstance(source, AnyHttpSourceRequest):
+            uri = str(source.url)
+        elif isinstance(source, FileSourceRequest):
+            uri = source.filename
+        elif isinstance(source, DocumentStream):
+            uri = source.name
+        elif isinstance(source, (str, Path)):
+            uri = str(source)
+        else:
+            # Connector items can carry credentials; name the type only.
+            uri = type(source).__name__
+        return ExtractionDocumentResult(
+            source_index=source_index,
+            source_uri=uri,
+            filename=PurePath(urlparse(uri).path).name or uri,
+            status=ConversionStatus.FAILURE,
+            errors=[
+                ErrorItem(
+                    component_type=DoclingComponentType.USER_INPUT,
+                    module_name="docling.service_client",
+                    error_message=str(exc),
+                    category=FailureCategory.UNKNOWN,
+                )
+            ],
+        )
 
     @staticmethod
     def _extraction_failure_message(document: ExtractionDocumentResult) -> str:
@@ -650,6 +697,11 @@ class _BaseDoclingServiceClient:
                 f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
             )
         return value
+
+    def _effective_concurrency(self, override: int | None) -> int:
+        if override is None:
+            return self._max_concurrency
+        return self._validate_concurrency(override, name="max_concurrency")
 
     @staticmethod
     def _normalize_exception(exc: BaseException) -> Exception:
@@ -1220,7 +1272,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def extract(
         self,
-        source: SourceType | ExtractSourceRequestItem,
+        source: SingleExtractSource,
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -1230,10 +1282,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
         ``extraction_target`` is the contract (output schema and/or guidance);
         ``options`` is operational (model preset, decode mode, channel, page
-        range). Returns the one document's result. A connector source that
-        expands to several documents raises ``ExtractionError`` — use
-        ``extract_all`` for those.
+        range). Returns the one document's result. Iterables and connector
+        sources raise ``TypeError`` before submission — use ``extract_all`` for
+        those.
         """
+        self._check_single_extract_source(source)
         job = self.submit_extract(
             source=source,
             extraction_target=extraction_target,
@@ -1253,22 +1306,32 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        max_concurrency: int | None = None,
     ) -> Iterator[ExtractionDocumentResult]:
-        """Extract from many sources, in-body, flattening connector fan-out.
+        """Extract from many sources, in-body, one job per source.
 
-        Yields one ``ExtractionDocumentResult`` per expanded document. Per-source
-        failures surface as a failed ``status`` on the yielded result rather than
-        raising, so callers can process partial batches.
+        Runs at most ``max_concurrency`` jobs at a time and yields each job's
+        documents as the job completes (completion order, not input order).
+        ``source_index`` is the caller's input index; a connector source yields
+        all of its documents under its index. A source whose job fails yields one
+        ``FAILURE`` result instead of ending the iteration.
         """
-        job = self.submit_extract(
-            source=source,
-            extraction_target=extraction_target,
-            options=options,
-            target=InBodyTarget(),
-            headers=headers,
-        )
-        response = job.result(timeout=self._job_timeout)
-        yield from self._as_extract_response(response).documents
+        self._ensure_sync_bridge_allowed()
+        max_in_flight = self._effective_concurrency(max_concurrency)
+
+        async def run() -> AsyncGenerator[ExtractionDocumentResult, None]:
+            # Fan out on the native async client, like convert_all().
+            async with self._build_async_service_client() as async_client:
+                async for document in async_client.extract_all(
+                    source=source,
+                    extraction_target=extraction_target,
+                    options=options,
+                    headers=headers,
+                    max_concurrency=max_in_flight,
+                ):
+                    yield document
+
+        return self._iterate_async_generator_sync(run())
 
     def submit_extract(
         self,
@@ -1280,13 +1343,15 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         target: ExtractTargetRequest | None = None,
         headers: dict[str, str] | None = None,
         callbacks: list[CallbackSpec] | None = None,
-    ) -> ConversionJob[ExtractDocumentResponse | RawServiceResult]:
-        """Submit source extraction as a job; storage targets return raw results.
+    ) -> ConversionJob[ExtractJobResult]:
+        """Submit source extraction as a job.
 
         Mirrors ``submit``/``submit_batch``: friendly unpacked arguments rather
         than a prebuilt request. ``source`` accepts one item or an iterable of
         files, URLs, streams, or prebuilt connector source items. ``target``
-        defaults to ``InBodyTarget``; storage targets yield a ``RawServiceResult``.
+        defaults to ``InBodyTarget`` (``ExtractDocumentResponse``);
+        ``PresignedUrlTarget`` yields ``PresignedUrlConvertResponse`` and
+        storage targets yield ``PresignedUrlConvertDocumentResponse``.
         """
         request = ExtractSourcesRequest(
             extraction_target=extraction_target,
@@ -1306,22 +1371,6 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 response, "Extraction task submission failed."
             )
         initial_status = TaskStatusResponse.model_validate_json(response.text)
-        inbody = isinstance(request.target, InBodyTarget)
-
-        def fetch_result(
-            task_id: str, last_status: TaskStatusResponse | None
-        ) -> ExtractDocumentResponse | RawServiceResult:
-            response = self._fetch_result_response(
-                task_id=task_id,
-                last_status=last_status,
-                error_message=f"Fetching extraction result for task {task_id} failed.",
-            )
-            if inbody:
-                return self._parse_result_model_response(
-                    response, ExtractDocumentResponse
-                )
-            return self._decode_raw_result(response)
-
         return ConversionJob(
             task_id=initial_status.task_id,
             submitted_at=datetime.now(tz=timezone.utc),
@@ -1329,7 +1378,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                 poll=self._poll_task_status,
                 watch=self._watch_task_updates,
                 wait=self._wait_for_terminal_status,
-                fetch_result=fetch_result,
+                fetch_result=self._make_extract_fetch_result_handler(request.target),
             ),
             initial_status=initial_status,
         )
@@ -1668,6 +1717,13 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             limits=limits,
         )
 
+    def _make_extract_fetch_result_handler(self, target: ExtractTargetRequest) -> Any:
+        if isinstance(target, PresignedUrlTarget):
+            return self._fetch_presigned_result
+        if _is_storage_target(target):
+            return self._fetch_presigned_document_result
+        return self._fetch_extract_result
+
     def _submit_batch_conversion_job(
         self,
         sources: Sequence[BatchSourceRequestInput],
@@ -1780,6 +1836,18 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             error_message=f"Fetching result for task {task_id} failed.",
         )
         return self._parse_result_model_response(response, ConvertDocumentResponse)
+
+    def _fetch_extract_result(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+    ) -> ExtractDocumentResponse:
+        response = self._fetch_result_response(
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching extraction result for task {task_id} failed.",
+        )
+        return self._parse_result_model_response(response, ExtractDocumentResponse)
 
     def _fetch_raw_result(
         self,
@@ -2336,11 +2404,6 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                     loop.close()
 
         return iterator()
-
-    def _effective_concurrency(self, override: int | None) -> int:
-        if override is None:
-            return self._max_concurrency
-        return self._validate_concurrency(override, name="max_concurrency")
 
     def _build_async_service_client(self) -> AsyncDoclingServiceClient:
         """Construct an async client mirroring this client's configuration.

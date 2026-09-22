@@ -68,10 +68,11 @@ def main() -> None:
         )
         print("\nwith preset:", document.filename, document.status.value)
 
-        # Many sources (and connector fan-out) flatten into one iterator.
+        # Many sources: one job per source, at most `max_concurrency` at a time,
+        # yielded as each job completes. `source_index` maps back to MANY.
         print("\nextract_all():")
-        for document in client.extract_all(MANY, TARGET):
-            print(" ", document.filename, document.status.value)
+        for document in client.extract_all(MANY, TARGET, max_concurrency=4):
+            print(" ", document.source_index, document.filename, document.status.value)
 
 
 if __name__ == "__main__":

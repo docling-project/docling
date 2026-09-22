@@ -82,7 +82,9 @@ from docling.service_client.client import (
     BatchSubmitTarget,
     ChunkerKind,
     ConversionItem,
+    ExtractJobResult,
     RawServiceResult,
+    SingleExtractSource,
     SourceType,
     StatusWatcherKind,
     SubmitTarget,
@@ -406,7 +408,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
     async def extract(
         self,
-        source: SourceType | ExtractSourceRequestItem,
+        source: SingleExtractSource,
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
@@ -416,6 +418,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
 
         Async mirror of ``DoclingServiceClient.extract``.
         """
+        self._check_single_extract_source(source)
         job = await self.submit_extract(
             source=source,
             extraction_target=extraction_target,
@@ -435,21 +438,52 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         extraction_target: ExtractionTarget,
         options: ExtractDocumentsOptions | None = None,
         headers: dict[str, str] | None = None,
+        max_concurrency: int | None = None,
     ) -> AsyncIterator[ExtractionDocumentResult]:
-        """Extract from many sources, in-body, flattening connector fan-out.
+        """Extract from many sources, in-body, one job per source.
 
         Async mirror of ``DoclingServiceClient.extract_all``.
         """
-        job = await self.submit_extract(
-            source=source,
-            extraction_target=extraction_target,
-            options=options,
-            target=InBodyTarget(),
-            headers=headers,
-        )
-        response = await job.result(timeout=self._job_timeout)
-        for document in self._as_extract_response(response).documents:
-            yield document
+        assert self._async_client is not None, "client not open — use async with"
+        max_in_flight = self._effective_concurrency(max_concurrency)
+
+        async def process_one(
+            _idx: int,
+            item: SourceType | ExtractSourceRequestItem,
+            async_client: httpx.AsyncClient,
+        ) -> list[ExtractionDocumentResult]:
+            job = await self.submit_extract(
+                source=item,
+                extraction_target=extraction_target,
+                options=options,
+                target=InBodyTarget(),
+                headers=headers,
+            )
+            if not job.done:
+                # Same websocket cap as submit_and_retrieve_each(); poll() then
+                # records the terminal status so result() only fetches.
+                await self._wait_for_terminal_status_for_submit_and_retrieve_many(
+                    task_id=job.task_id,
+                    timeout=self._job_timeout,
+                    async_client=async_client,
+                    max_in_flight=max_in_flight,
+                )
+                await job.poll()
+            response = await job.result(timeout=self._job_timeout)
+            return self._as_extract_response(response).documents
+
+        async for idx, item, outcome in _run_bounded(
+            items=source,
+            process_one=process_one,
+            async_client=self._async_client,
+            max_in_flight=max_in_flight,
+        ):
+            if isinstance(outcome, BaseException):
+                yield self._failed_extraction_document(idx, item, outcome)
+                continue
+            # The server numbers sources per request (always 0 here).
+            for document in outcome:
+                yield document.model_copy(update={"source_index": idx})
 
     async def submit_extract(
         self,
@@ -461,8 +495,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         target: ExtractTargetRequest | None = None,
         headers: dict[str, str] | None = None,
         callbacks: list[CallbackSpec] | None = None,
-    ) -> AsyncConversionJob[ExtractDocumentResponse | RawServiceResult]:
-        """Submit source extraction as a job; storage targets return raw results.
+    ) -> AsyncConversionJob[ExtractJobResult]:
+        """Submit source extraction as a job.
 
         Async mirror of ``DoclingServiceClient.submit_extract``.
         """
@@ -484,23 +518,6 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 response, "Extraction task submission failed."
             )
         initial_status = TaskStatusResponse.model_validate_json(response.text)
-        inbody = isinstance(request.target, InBodyTarget)
-
-        async def fetch_result(
-            task_id: str, last_status: TaskStatusResponse | None
-        ) -> ExtractDocumentResponse | RawServiceResult:
-            response = await self._fetch_result_response(
-                async_client=self._async_client,
-                task_id=task_id,
-                last_status=last_status,
-                error_message=f"Fetching extraction result for task {task_id} failed.",
-            )
-            if inbody:
-                return self._parse_result_model_response(
-                    response, ExtractDocumentResponse
-                )
-            return self._decode_raw_result(response)
-
         return AsyncConversionJob(
             task_id=initial_status.task_id,
             submitted_at=datetime.now(tz=timezone.utc),
@@ -508,7 +525,9 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 poll=self._poll_task_status,
                 watch=lambda tid, t: self._status_watcher().iter_updates(tid, t),
                 wait=lambda tid, t: self._status_watcher().wait_for_terminal(tid, t),
-                fetch_result=fetch_result,
+                fetch_result=self._make_extract_fetch_result_handler(
+                    request.target, self._async_client
+                ),
             ),
             initial_status=initial_status,
         )
@@ -729,6 +748,29 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         if self._status_watcher_kind == StatusWatcherKind.POLLING:
             return self._polling_watcher
         return self._ws_watcher
+
+    def _make_extract_fetch_result_handler(
+        self,
+        target: ExtractTargetRequest,
+        async_client: httpx.AsyncClient,
+    ) -> Any:
+        if isinstance(target, PresignedUrlTarget):
+            return lambda task_id, last_status: self._fetch_presigned_result(
+                task_id=task_id,
+                last_status=last_status,
+                async_client=async_client,
+            )
+        if _is_storage_target(target):
+            return lambda task_id, last_status: self._fetch_presigned_document_result(
+                task_id=task_id,
+                last_status=last_status,
+                async_client=async_client,
+            )
+        return lambda task_id, last_status: self._fetch_extract_result(
+            task_id=task_id,
+            last_status=last_status,
+            async_client=async_client,
+        )
 
     def _make_convert_fetch_result_handler(
         self,
@@ -1140,6 +1182,20 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             response,
             PresignedUrlConvertDocumentResponse,
         )
+
+    async def _fetch_extract_result(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+        async_client: httpx.AsyncClient,
+    ) -> ExtractDocumentResponse:
+        response = await self._fetch_result_response(
+            async_client=async_client,
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching extraction result for task {task_id} failed.",
+        )
+        return self._parse_result_model_response(response, ExtractDocumentResponse)
 
     async def _fetch_chunk_result(
         self,
