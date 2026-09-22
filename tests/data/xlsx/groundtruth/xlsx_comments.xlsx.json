@@ -94,6 +94,9 @@
       "children": [
         {
           "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
         }
       ],
       "content_layer": "notes",
@@ -107,7 +110,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/4"
         }
       ],
       "content_layer": "notes",
@@ -149,11 +152,23 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
+      "orig": "[author: Jane Smith (JS), time: 2026-06-18T17:12:37.410]: Minimum number of saltwater ducks",
+      "text": "[author: Jane Smith (JS), time: 2026-06-18T17:12:37.410]: Minimum number of saltwater ducks"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
       "orig": "[author: Marcus Sterling (MS), time: 2026-06-18T17:15:52.310]: I never thought it would be so low",
       "text": "[author: Marcus Sterling (MS), time: 2026-06-18T17:15:52.310]: I never thought it would be so low"
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -339,6 +354,9 @@
         },
         {
           "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
         }
       ],
       "captions": [],

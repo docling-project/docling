@@ -183,6 +183,18 @@ def test_comment_cell_coordinates(documents) -> None:
     )
 
 
+def test_threaded_comment_keeps_root_and_replies(documents) -> None:
+    """Test that a comment thread keeps its root comment and replies in order."""
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    thread = next(g for g in doc.groups if g.name.endswith("-F7"))
+    texts = [child.resolve(doc).text for child in thread.children]
+
+    assert len(texts) == 2
+    assert "Minimum number of saltwater ducks" in texts[0]
+    assert "I never thought it would be so low" in texts[1]
+
+
 def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
     for gt_path, doc in documents:
         # xlsx_emf.xlsx contains EMF images that require LibreOffice to render.
@@ -676,7 +688,7 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
         (1, 3)
     ] * 10
-    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
+    assert comment_map[(3, 3)] == [("Codex", "Synthetic note", None)]
 
 
 def test_split_leading_section_label_helper() -> None:

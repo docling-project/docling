@@ -358,17 +358,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     def _parse_threaded_comments(
         self, sheet_name: str
-    ) -> dict[str, tuple[str, str, datetime | None]]:
+    ) -> dict[str, list[tuple[str, str, datetime | None]]]:
         """Parse threaded comments from Excel XML for a specific sheet.
 
-        Returns a dict mapping cell coordinates to (author, text, timestamp) tuples.
+        Returns a dict mapping cell coordinates to the (author, text, timestamp)
+        tuples of the thread, in document order: the root comment, then replies.
         Only works when path_or_stream is a Path (not BytesIO).
 
         Security Note:
             Uses secure XML parser configuration to prevent XXE attacks and validates
             ZIP file paths to prevent zip-slip attacks.
         """
-        threaded_comments: dict[str, tuple[str, str, datetime | None]] = {}
+        threaded_comments: dict[str, list[tuple[str, str, datetime | None]]] = {}
 
         # Only extract from Path objects (BytesIO is consumed by load_workbook)
         if not isinstance(self.path_or_stream, Path):
@@ -451,7 +452,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                                         f"Could not parse timestamp '{timestamp_str}': {e}"
                                     )
 
-                            threaded_comments[cell_ref] = (author, text, timestamp)
+                            threaded_comments.setdefault(cell_ref, []).append(
+                                (author, text, timestamp)
+                            )
 
                 except Exception as e:
                     _log.debug(f"Could not parse {threaded_file}: {e}")
@@ -752,21 +755,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
 
             # Extract comments and link them to cells
-            for (row, col), (author, raw_text, timestamp) in comment_map.items():
-                metadata_parts = []
-                if author:
-                    metadata_parts.append(f"author: {author}")
-                if timestamp:
-                    timestamp_str = timestamp.isoformat(timespec="milliseconds")
-                    metadata_parts.append(f"time: {timestamp_str}")
-
-                if metadata_parts and raw_text:
-                    full_text = f"[{', '.join(metadata_parts)}]: {raw_text}"
-                elif metadata_parts:
-                    full_text = f"[{', '.join(metadata_parts)}]"
-                else:
-                    full_text = raw_text
-
+            for (row, col), thread in comment_map.items():
                 cell_item = self._find_cell_item(doc, page_no, row, col)
                 targets = [cell_item] if cell_item else None
 
@@ -775,11 +764,26 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     name=f"comment-{sheet.title}-{sheet.cell(row=row + 1, column=col + 1).coordinate}",
                     content_layer=ContentLayer.NOTES,
                 )
-                doc.add_comment(
-                    text=full_text,
-                    targets=targets,
-                    parent=comment_group,
-                )
+                for author, raw_text, timestamp in thread:
+                    metadata_parts = []
+                    if author:
+                        metadata_parts.append(f"author: {author}")
+                    if timestamp:
+                        timestamp_str = timestamp.isoformat(timespec="milliseconds")
+                        metadata_parts.append(f"time: {timestamp_str}")
+
+                    if metadata_parts and raw_text:
+                        full_text = f"[{', '.join(metadata_parts)}]: {raw_text}"
+                    elif metadata_parts:
+                        full_text = f"[{', '.join(metadata_parts)}]"
+                    else:
+                        full_text = raw_text
+
+                    doc.add_comment(
+                        text=full_text,
+                        targets=targets,
+                        parent=comment_group,
+                    )
 
                 if not targets:
                     _log.debug(
@@ -893,7 +897,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_data_tables(
         self, sheet: Worksheet
     ) -> tuple[
-        list[ExcelTable], dict[tuple[int, int], tuple[str, str, datetime | None]]
+        list[ExcelTable],
+        dict[tuple[int, int], list[tuple[str, str, datetime | None]]],
     ]:
         """Find all compact rectangular data tables in an Excel worksheet.
 
@@ -905,14 +910,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A tuple containing:
                 - A list of ExcelTable objects representing the data tables
-                - A dict mapping (row, col) to (author, comment_text, timestamp) for cells with comments
+                - A dict mapping (row, col) to the (author, comment_text, timestamp)
+                  tuples of the comment thread on that cell
         """
         merged_cell_index = _MergedCellIndex(sheet)
         bounds = self._find_true_data_bounds(sheet, merged_cell_index)
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
-            tuple[int, int], tuple[str, str, datetime | None]
+            tuple[int, int], list[tuple[str, str, datetime | None]]
         ] = {}  # Collect comments
 
         # Parse threaded comments from XML (Excel 365+ format with proper author names and timestamps)
@@ -939,17 +945,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     timestamp = None
 
                     # Check if this is a threaded comment with better data in XML
-                    cell_coord = cell.coordinate
-                    if cell_coord in threaded_comments:
-                        author, raw_text, timestamp = threaded_comments[cell_coord]
-                    elif author.startswith("tc={") and "[Threaded comment]" in raw_text:
-                        # Fallback: extract from openpyxl's text if XML parsing failed
-                        if "Comment:\n" in raw_text:
-                            raw_text = raw_text.split("Comment:\n", 1)[1].strip()
-                        author = "Threaded comment"
+                    thread = threaded_comments.get(cell.coordinate)
+                    if thread is None:
+                        if (
+                            author.startswith("tc={")
+                            and "[Threaded comment]" in raw_text
+                        ):
+                            # Fallback: extract from openpyxl's text if XML parsing failed
+                            if "Comment:\n" in raw_text:
+                                raw_text = raw_text.split("Comment:\n", 1)[1].strip()
+                            author = "Threaded comment"
+                        thread = [(author, raw_text, timestamp)]
 
-                    if raw_text:
-                        comment_map[(ri, rj)] = (author, raw_text, timestamp)
+                    thread = [entry for entry in thread if entry[1]]
+                    if thread:
+                        comment_map[(ri, rj)] = thread
 
                 if cell.value is None or (ri, rj) in visited:
                     continue
