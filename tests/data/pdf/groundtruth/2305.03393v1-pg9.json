@@ -152,12 +152,12 @@
           },
           "charspan": [
             0,
-            32
+            30
           ]
         }
       ],
-      "orig": "5.1 Hyper Parameter Optimization",
-      "text": "5.1 Hyper Parameter Optimization",
+      "orig": "5.1 HyperParameterOptimization",
+      "text": "5.1 HyperParameterOptimization",
       "level": 1
     },
     {
@@ -234,12 +234,12 @@
           },
           "charspan": [
             0,
-            24
+            23
           ]
         }
       ],
-      "orig": "5.2 Quantitative Results",
-      "text": "5.2 Quantitative Results",
+      "orig": "5.2 QuantitativeResults",
+      "text": "5.2 QuantitativeResults",
       "level": 1
     },
     {
@@ -1100,26 +1100,6 @@
             "bbox": {
               "l": 362.09,
               "t": 445.54,
-              "r": 386.25,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.942 0.931",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 394.62,
-              "t": 445.54,
               "r": 418.78,
               "b": 468.16,
               "coord_origin": "TOPLEFT"
@@ -1130,7 +1110,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 6,
             "end_col_offset_idx": 7,
-            "text": "0.857 0.824",
+            "text": "0.9420.857 0.824",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1151,6 +1131,26 @@
             "start_col_offset_idx": 7,
             "end_col_offset_idx": 8,
             "text": "1.22 2",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 363.68,
+              "t": 459.78,
+              "r": 384.67,
+              "b": 468.16,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 5,
+            "end_col_offset_idx": 6,
+            "text": "0.931",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -2074,9 +2074,9 @@
             },
             {
               "bbox": {
-                "l": 362.09,
-                "t": 445.54,
-                "r": 386.25,
+                "l": 363.68,
+                "t": 459.78,
+                "r": 384.67,
                 "b": 468.16,
                 "coord_origin": "TOPLEFT"
               },
@@ -2086,7 +2086,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "0.942 0.931",
+              "text": "0.931",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2094,7 +2094,7 @@
             },
             {
               "bbox": {
-                "l": 394.62,
+                "l": 362.09,
                 "t": 445.54,
                 "r": 418.78,
                 "b": 468.16,
@@ -2106,7 +2106,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "0.857 0.824",
+              "text": "0.9420.857 0.824",
               "column_header": false,
               "row_header": false,
               "row_section": false,
