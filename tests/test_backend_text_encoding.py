@@ -221,3 +221,35 @@ def test_file_route_still_matches_text_mode_open(raw_endings, tmp_path):
 
     with open(path, encoding="utf-8-sig") as handle:
         assert decode_text(path) == handle.read()
+
+
+@pytest.mark.parametrize("raw_endings", ["\r\n", "\r", "\n"])
+def test_stream_route_matches_the_file_route(raw_endings, tmp_path):
+    """The stream route has to translate line endings as the file route does.
+
+    A stream was decoded straight from its bytes, so a CR survived into the
+    backends and the same document converted differently depending on which
+    way it was handed to the converter.
+    """
+    raw = f"# T{raw_endings}{raw_endings}{ACCENTED}{raw_endings}".encode()
+    path = tmp_path / "doc.md"
+    path.write_bytes(raw)
+
+    assert decode_text(BytesIO(raw)) == decode_text(path)
+
+
+def test_crlf_csv_keeps_a_quoted_field_spanning_lines_in_one_cell(tmp_path):
+    """A quoted CSV field spanning lines must not become extra table rows.
+
+    ``csv.reader`` ends the record at a CR it was never given a chance to
+    translate, so a CRLF file whose quoted field spans lines yielded a
+    correct table from disk and a taller, wrongly split one from a stream.
+    """
+    raw = b'note,kind\r\n"first line\r\nsecond line",plain\r\n'
+
+    stream_export, file_export = _export_both_routes(
+        InputFormat.CSV, "csv", raw, tmp_path
+    )
+
+    assert stream_export == file_export
+    assert "first line second line" in stream_export
