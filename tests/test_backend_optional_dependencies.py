@@ -32,6 +32,7 @@ _TEX_SAMPLE = (
 )
 _JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
 _USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
+_PDF_SAMPLE = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
 
 
 def _run_with_blocked_module(
@@ -59,6 +60,8 @@ def _run_with_blocked_module(
         "openpyxl",
         "pylatexenc",
         "bs4",
+        "pypdfium2",
+        "docling_parse",
     ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
@@ -157,6 +160,14 @@ def test_converter_constructs_without_optional_backend_dependency(
             "XML_USPTO",
             "format-xml-uspto",
         ),
+        (
+            "docling_parse",
+            "docling.backend.docling_parse_backend",
+            "ThreadedDoclingParseDocumentBackend",
+            _PDF_SAMPLE,
+            "PDF",
+            "format-pdf-docling",
+        ),
     ],
 )
 def test_backend_reports_missing_dependency_with_install_hint(
@@ -219,6 +230,85 @@ def test_docling_parse_backend_operates_without_pypdfium2() -> None:
     result = _run_with_blocked_module("pypdfium2", body)
 
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("backend_import", "backend_class", "sample", "fmt"),
+    [
+        (
+            "docling.backend.msexcel_backend",
+            "MsExcelDocumentBackend",
+            _XLSX_SAMPLE,
+            "XLSX",
+        ),
+        (
+            "docling.backend.msword_backend",
+            "MsWordDocumentBackend",
+            _DOCX_SAMPLE,
+            "DOCX",
+        ),
+        (
+            "docling.backend.mspowerpoint_backend",
+            "MsPowerpointDocumentBackend",
+            _PPTX_SAMPLE,
+            "PPTX",
+        ),
+        (
+            "docling.backend.latex_backend",
+            "LatexDocumentBackend",
+            _TEX_SAMPLE,
+            "LATEX",
+        ),
+    ],
+)
+def test_office_and_latex_backends_convert_without_pypdfium2(
+    backend_import: str,
+    backend_class: str,
+    sample: Path,
+    fmt: str,
+) -> None:
+    # pypdfium2 ships with the PDF extras, and these backends need it only to
+    # rasterize embedded charts and EMF/WMF pictures. Text, tables, and chart
+    # data must still convert without it, the way they do when LibreOffice is
+    # absent.
+    body = (
+        "from pathlib import Path\n"
+        f"from {backend_import} import {backend_class}\n"
+        "from docling.datamodel.base_models import InputFormat\n"
+        "from docling.datamodel.document import InputDocument\n"
+        f"path = Path({str(sample)!r})\n"
+        "in_doc = InputDocument(path_or_stream=path, "
+        f"format=InputFormat.{fmt}, backend={backend_class})\n"
+        "doc = in_doc._backend.convert()\n"
+        "assert doc.texts or doc.tables\n"
+    )
+
+    result = _run_with_blocked_module("pypdfium2", body)
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_powerpoint_uses_shared_pypdfium2_guard() -> None:
+    # PowerPoint used to gate the shared converter factory behind its own
+    # pypdfium2 import. On slim installs that bypassed the factory entirely, so
+    # users never saw its actionable install hint. Multiple backend instances
+    # must now reach the shared guard while the warning is still emitted once.
+    body = (
+        "import logging\n"
+        "from docling.backend.mspowerpoint_backend import "
+        "MsPowerpointDocumentBackend\n"
+        "logging.basicConfig(level=logging.WARNING, format='%(message)s')\n"
+        "for _ in range(3):\n"
+        "    backend = object.__new__(MsPowerpointDocumentBackend)\n"
+        "    backend.pptx_to_pdf_converter = None\n"
+        "    backend.pptx_to_pdf_converter_init = False\n"
+        "    assert backend._get_libreoffice_converter() is None\n"
+    )
+
+    result = _run_with_blocked_module("pypdfium2", body)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.count("format-pdf-pypdfium2") == 1, result.stderr
 
 
 def test_converter_constructs_without_chart_extraction_dependency() -> None:

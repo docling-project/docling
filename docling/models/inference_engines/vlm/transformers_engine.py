@@ -51,6 +51,7 @@ from docling.models.utils.generation_utils import (
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -59,6 +60,7 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+_EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -259,6 +261,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
         if is_dots_model:
             attn_implementation = "sdpa"
+
+        if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
+            attn_implementation = "eager"
 
         dtype_arg_name = (
             "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
@@ -507,7 +512,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Remove padding
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+            decoded_texts = strip_trailing_token(decoded_texts, pad_token)
 
         pad_token_id = getattr(tokenizer, "pad_token_id", None)
         if pad_token_id is None:
@@ -529,8 +534,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         if self.strip_stop_strings and first_input.stop_strings:
-            from docling.utils.vlm_utils import strip_stop_strings
-
             decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs

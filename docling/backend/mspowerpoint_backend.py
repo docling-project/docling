@@ -38,7 +38,11 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.docx.drawingml.utils import convert_to_modern_format
+from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
+    crop_whitespace,
+    get_docx_to_pdf_converter,
+)
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -59,20 +63,13 @@ try:  # pragma: no cover - import-time guard
 except ImportError as e:  # pragma: no cover - import-time guard
     _PPTX_IMPORT_ERROR = e
 
-# Chart image rendering is opt-in and relies on pypdfium2 plus the shared
-# DrawingML/LibreOffice helpers, which live behind the PDF extra rather than
-# format-pptx. Guard them separately so a slim PPTX install still parses text,
-# tables, and chart data; only render_chart_images needs these.
-_CHART_RENDER_AVAILABLE: bool = False
+# pypdfium2 ships with the PDF extras, not with format-pptx, and is only reached
+# after `get_docx_to_pdf_converter` returns a converter. That shared factory
+# returns None when pypdfium2 is missing, so the rendering paths already degrade
+# to "no image"; this guard only keeps the module itself importable.
+# See https://github.com/docling-project/docling/issues/3613.
 try:  # pragma: no cover - import-time guard
     import pypdfium2
-
-    from docling.backend.docx.drawingml.utils import (
-        crop_whitespace,
-        get_docx_to_pdf_converter,
-    )
-
-    _CHART_RENDER_AVAILABLE = True
 except ImportError:  # pragma: no cover - import-time guard
     pass
 
@@ -283,7 +280,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             width = slide_size.width
             height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
-        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.BOTTOMLEFT)
+        # python-pptx reports left and top as EMU from the slide's top-left, with
+        # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
+        # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
+        # l, b, r, t for that origin, so the top edge lands in b and the bottom
+        # edge in t, and a consumer calling to_top_left_origin then computes
+        # page_height - t and mirrors the box. html_backend and msexcel_backend
+        # tag their own top-left coordinates TOPLEFT for the same reason.
+        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.TOPLEFT)
         prov = ProvenanceItem(
             page_no=slide_ind + 1, charspan=[0, len(text)], bbox=shape_bbox
         )
@@ -1200,14 +1204,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """Lazily initialize and return a LibreOffice converter callable.
 
         The converter accepts ``(input_path, output_path)`` and converts the
-        input file to PDF. Returns None when LibreOffice is not available.
+        input file to PDF.
+
+        Returns:
+            A converter callable, or None when LibreOffice or pypdfium2 is not
+            available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.pptx_to_pdf_converter_init:
             return self.pptx_to_pdf_converter
 
         self.pptx_to_pdf_converter_init = True
-        if _CHART_RENDER_AVAILABLE:
-            self.pptx_to_pdf_converter = get_docx_to_pdf_converter()
+        self.pptx_to_pdf_converter = get_docx_to_pdf_converter()
         if self.pptx_to_pdf_converter is None:
             _log.debug("LibreOffice not found — PPTX charts will not be rendered.")
         return self.pptx_to_pdf_converter

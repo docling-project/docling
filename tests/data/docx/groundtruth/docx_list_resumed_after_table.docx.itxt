@@ -1,0 +1,14 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: List interrupted by a table
+      item-3 at level 3: text: Introductory paragraph.
+      item-4 at level 3: list: group list
+        item-5 at level 4: list_item: First item before the table
+        item-6 at level 4: list_item: Second item before the table
+      item-7 at level 3: text: 
+      item-8 at level 3: table with [2x2]
+      item-9 at level 3: list: group list
+        item-10 at level 4: list_item: Item after the table
+        item-11 at level 4: list_item: Another item after the table
+    item-12 at level 2: section_header: Next section
+      item-13 at level 3: text: Paragraph that closes the document.
