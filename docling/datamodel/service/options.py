@@ -1223,10 +1223,11 @@ class ExtractDocumentsOptions(BaseModel):
             default=None,
             description=(
                 "Preset ID naming a registered extraction model. Validated "
-                "against the operator's allow-list; the operator default is used "
-                "when unset."
+                'against the operator\'s allow-list. Use "default" for the '
+                "operator-controlled default (also used when unset), or a "
+                'specific preset such as "nuextract_2b".'
             ),
-            examples=["nuextract_2b", "granite_vision_4_1"],
+            examples=["default", "nuextract_2b", "granite_vision_4_1"],
         ),
     ] = None
 
