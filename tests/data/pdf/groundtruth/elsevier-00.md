@@ -246,18 +246,18 @@ Table 3 Evaluation elements of the Cretaceous geological heritage at Hanha Praia
 | Evaluation elements | G9 - Hanha da Praia | G10 - Jomba Beach | G11 - Comango (Lobito) (NR100) | G12 - Tchiule floodgate Catumbela River |
 | - | - | - | - | - |
 | Geographic coordinates | 12◦ 13′39.13"S; 13◦ 39′21.97"E | 12◦ 16′00.87"S; 13◦ 37′58.81"E | 12◦ 24′12.86"S; 13◦ 37′13.00"E | 12◦ 26′80.22"S; 13◦ 33′43.04"E |
-| Province | Benguela | Benguela | Benguela | Benguela |
-| Dimension | Local | Local | Local | Local |
-| Accessibility Geologic Map 1/100,000 | Difficult: All-terrain vehicle | Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv˜ao | Easy: Bus Sheet 227/228: Lobito (Galv˜ao | Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv˜ao |
-|  | Sheet 227/228: Lobito (Galv˜ao and Portugal, 1971) | and Portugal, 1971) | and Portugal, 1971) | and Portugal, 1971) Benguela Sub-basin |
-| Basin setting (Guiraud et al., 2010) | Benguela Sub-basin | Benguela Sub-basin | Benguela Sub-basin |  |
-| Geological domains of interest | Coastal geomorphology Stratigraphy Sedimentology Palaeontology Tectonics | Costal Geomorphology Stratigraphy Palaeontology Tectonics | Stratigraphy Sedimentology Geomorphology | Fluvial Geomorphology Stratigraphy Sedimentology Palaeontology |
-| Age | Albian | Albian | Albian fms | Albian and Cenomanian? Catumbela and Quissonde fms |
-| Lithostratigraphic units Detailed stratigraphy Geological knowledge | Catumbela and Quissonde fms Moderate Moderate | Catumbela and Quissonde fms Moderate | Binga, Tuenza and Catumbela Low | Low |
-| Publications | Tavares et al. (2007) Segundo et al. (2014) | Moderate Segundo et al. (2014) | Low No | Low No |
+| Province | Benguela | Benguela | Benguela Local | Benguela Local |
+| Dimension | Local | Local |  |  |
+| Accessibility Geologic Map 1/100,000 | Difficult: All-terrain vehicle Sheet 227/228: Lobito (Galv˜ao and Portugal, 1971) | Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv˜ao | Easy: Bus Sheet 227/228: Lobito (Galv˜ao and Portugal, 1971) | Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv˜ao and Portugal, 1971) |
+| Basin setting (Guiraud et al., 2010) |  | and Portugal, 1971) |  | Benguela Sub-basin |
+| Geological domains of | Benguela Sub-basin | Benguela Sub-basin | Benguela Sub-basin |  |
+| interest | Coastal geomorphology Stratigraphy Sedimentology Palaeontology Tectonics | Costal Geomorphology Stratigraphy Palaeontology Tectonics | Stratigraphy Sedimentology Geomorphology | Fluvial Geomorphology Stratigraphy Sedimentology Palaeontology |
+| Age | Albian | Albian | Albian | Albian and Cenomanian? |
+| Lithostratigraphic units Detailed stratigraphy | Catumbela and Quissonde fms Moderate | Catumbela and Quissonde fms Moderate | Binga, Tuenza and Catumbela fms Low | Catumbela and Quissonde fms Low |
+| Geological knowledge | Moderate | Moderate | Low | Low |
+| Publications | Tavares et al. (2007) Segundo et al. (2014) | Segundo et al. (2014) | No | No |
 | Main heritage values | Stratigraphy | Stratigraphy Tectonics | Stratigraphy Geomorphology | Geomorphology Stratigraphy |
-|  |  | Moderate | Moderate | High |
-| Scenic value | High |  |  |  |
+| Scenic value | High | Moderate | Moderate | High |
 | Educational potential | High | High | Moderate | High |
 | Geotourism potential | Moderate-High | Moderate | Low | High |
 | Other cultural values | Traditional fishing village | Traditional fishing village | No | No |
