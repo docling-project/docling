@@ -961,9 +961,13 @@ def test_jats_element_citation_empty_name_parts_are_omitted():
         "<article-title>Empty name parts</article-title>"
         "</element-citation></ref></ref-list>"
     )
-    markdown = doc.export_to_markdown()
-    assert "Empty name parts" in markdown
-    assert not markdown.lstrip().startswith(",")
+    citations = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(citations) == 1
+    assert citations[0].text == "Empty name parts. "
 
 
 def test_jats_element_citation_given_names_only():
@@ -1098,6 +1102,5 @@ def test_jats_empty_article_title_does_not_crash():
         "<title-group><article-title></article-title></title-group>"
     )
     exported = doc.export_to_markdown()
-    # Empty title is an H1 with no text. On unmodified main this is "" because
-    # AttributeError aborts metadata parsing and convert() returns an empty doc.
+    # Empty title is serialized as an H1 with no text.
     assert exported == "# "
