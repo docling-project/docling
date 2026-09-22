@@ -1394,6 +1394,7 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
             "top_p": 0.01,
             "repetition_penalty": 1.0,
             "no_repeat_ngram_size": 20,
+            "skip_special_tokens": False,
         },
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
@@ -1417,16 +1418,22 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
                 params={
                     "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
                     "max_tokens": 4096,
+                    "skip_special_tokens": False,
                 }
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={
                     "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
                     "max_tokens": 4096,
+                    "skip_special_tokens": False,
                 }
             ),
             VlmEngineType.API_LMSTUDIO: ApiModelConfig(
-                params={"model": "mineru2.5-pro-2604-1.2b", "max_tokens": 4096}
+                params={
+                    "model": "mineru2.5-pro-2604-1.2b",
+                    "max_tokens": 4096,
+                    "skip_special_tokens": False,
+                }
             ),
         },
     ),

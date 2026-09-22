@@ -76,13 +76,21 @@ def test_mineru2_pro_preset_and_engine_configs() -> None:
     assert mlx_config.repo_id == "carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16"
     assert mlx_config.extra_config["mlx_tied_word_embeddings"] is True
 
+    assert spec.extra_generation_config["skip_special_tokens"] is False
+    assert spec.get_api_params(VlmEngineType.API) == {
+        "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+        "max_tokens": 4096,
+        "skip_special_tokens": False,
+    }
     assert spec.get_api_params(VlmEngineType.API_OPENAI) == {
         "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
         "max_tokens": 4096,
+        "skip_special_tokens": False,
     }
     assert spec.get_api_params(VlmEngineType.API_LMSTUDIO) == {
         "model": "mineru2.5-pro-2604-1.2b",
         "max_tokens": 4096,
+        "skip_special_tokens": False,
     }
 
 
@@ -315,6 +323,11 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
         "\nText Recognition:",
         "\nText Recognition:",
     ]
+    assert all(
+        engine_input.extra_generation_config["skip_special_tokens"] is False
+        for batch in model.engine.batches
+        for engine_input in batch
+    )
 
     first_response = pages[0].predictions.vlm_response
     second_response = pages[1].predictions.vlm_response
