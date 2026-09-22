@@ -901,9 +901,7 @@ def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
     predictor = ReadingOrderPredictor()
 
     empty_gap_state = _ReadingOrderPredictorState()
-    predictor._init_l2r_map(
-        [left, right], empty_gap_state, vertical_separators=None
-    )
+    predictor._init_l2r_map([left, right], empty_gap_state, vertical_separators=None)
     assert empty_gap_state.l2r_map == {0: 1}
 
     occupied_gap_state = _ReadingOrderPredictorState()

@@ -69,10 +69,7 @@ ReadingOrderNode = PageElement | SeparatorElement
 
 
 def _is_horizontal_separator(element: ReadingOrderNode) -> bool:
-    return (
-        isinstance(element, SeparatorElement)
-        and element.orientation == "horizontal"
-    )
+    return isinstance(element, SeparatorElement) and element.orientation == "horizontal"
 
 
 _MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM = 0.08
