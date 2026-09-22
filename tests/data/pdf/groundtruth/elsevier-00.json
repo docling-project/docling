@@ -33,6 +33,9 @@
         "$ref": "#/groups/0"
       },
       {
+        "$ref": "#/pictures/1"
+      },
+      {
         "$ref": "#/texts/4"
       },
       {
@@ -70,9 +73,6 @@
       },
       {
         "$ref": "#/texts/25"
-      },
-      {
-        "$ref": "#/pictures/1"
       },
       {
         "$ref": "#/texts/26"
@@ -114,10 +114,10 @@
         "$ref": "#/texts/38"
       },
       {
-        "$ref": "#/texts/39"
+        "$ref": "#/pictures/2"
       },
       {
-        "$ref": "#/pictures/2"
+        "$ref": "#/texts/40"
       },
       {
         "$ref": "#/texts/41"
@@ -129,10 +129,10 @@
         "$ref": "#/texts/43"
       },
       {
-        "$ref": "#/texts/44"
+        "$ref": "#/pictures/3"
       },
       {
-        "$ref": "#/pictures/3"
+        "$ref": "#/texts/45"
       },
       {
         "$ref": "#/texts/46"
@@ -162,10 +162,10 @@
         "$ref": "#/texts/54"
       },
       {
-        "$ref": "#/texts/55"
+        "$ref": "#/pictures/4"
       },
       {
-        "$ref": "#/pictures/4"
+        "$ref": "#/texts/56"
       },
       {
         "$ref": "#/texts/57"
@@ -174,10 +174,10 @@
         "$ref": "#/texts/58"
       },
       {
-        "$ref": "#/texts/59"
+        "$ref": "#/pictures/5"
       },
       {
-        "$ref": "#/pictures/5"
+        "$ref": "#/texts/60"
       },
       {
         "$ref": "#/texts/61"
@@ -204,10 +204,10 @@
         "$ref": "#/texts/68"
       },
       {
-        "$ref": "#/texts/69"
+        "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/tables/0"
+        "$ref": "#/texts/70"
       },
       {
         "$ref": "#/texts/71"
@@ -264,10 +264,10 @@
         "$ref": "#/texts/88"
       },
       {
-        "$ref": "#/texts/89"
+        "$ref": "#/pictures/6"
       },
       {
-        "$ref": "#/pictures/6"
+        "$ref": "#/texts/90"
       },
       {
         "$ref": "#/texts/91"
@@ -276,10 +276,10 @@
         "$ref": "#/texts/92"
       },
       {
-        "$ref": "#/texts/93"
+        "$ref": "#/pictures/7"
       },
       {
-        "$ref": "#/pictures/7"
+        "$ref": "#/texts/94"
       },
       {
         "$ref": "#/texts/95"
@@ -288,10 +288,10 @@
         "$ref": "#/texts/96"
       },
       {
-        "$ref": "#/texts/97"
+        "$ref": "#/pictures/8"
       },
       {
-        "$ref": "#/pictures/8"
+        "$ref": "#/texts/98"
       },
       {
         "$ref": "#/texts/99"
@@ -318,10 +318,10 @@
         "$ref": "#/texts/106"
       },
       {
-        "$ref": "#/texts/107"
+        "$ref": "#/tables/1"
       },
       {
-        "$ref": "#/tables/1"
+        "$ref": "#/texts/108"
       },
       {
         "$ref": "#/texts/109"
@@ -399,10 +399,10 @@
         "$ref": "#/texts/133"
       },
       {
-        "$ref": "#/texts/134"
+        "$ref": "#/tables/2"
       },
       {
-        "$ref": "#/tables/2"
+        "$ref": "#/texts/135"
       },
       {
         "$ref": "#/texts/136"
@@ -480,10 +480,10 @@
         "$ref": "#/texts/160"
       },
       {
-        "$ref": "#/texts/161"
+        "$ref": "#/tables/3"
       },
       {
-        "$ref": "#/tables/3"
+        "$ref": "#/texts/161"
       },
       {
         "$ref": "#/texts/162"
@@ -495,10 +495,10 @@
         "$ref": "#/texts/164"
       },
       {
-        "$ref": "#/texts/165"
+        "$ref": "#/pictures/9"
       },
       {
-        "$ref": "#/pictures/9"
+        "$ref": "#/texts/166"
       },
       {
         "$ref": "#/texts/167"
@@ -507,10 +507,10 @@
         "$ref": "#/texts/168"
       },
       {
-        "$ref": "#/texts/169"
+        "$ref": "#/pictures/10"
       },
       {
-        "$ref": "#/pictures/10"
+        "$ref": "#/texts/170"
       },
       {
         "$ref": "#/texts/171"
@@ -621,10 +621,10 @@
         "$ref": "#/texts/206"
       },
       {
-        "$ref": "#/texts/207"
+        "$ref": "#/groups/2"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/243"
       },
       {
         "$ref": "#/texts/244"
@@ -633,25 +633,22 @@
         "$ref": "#/texts/245"
       },
       {
-        "$ref": "#/texts/246"
-      },
-      {
         "$ref": "#/groups/3"
       },
       {
-        "$ref": "#/texts/248"
+        "$ref": "#/texts/247"
       },
       {
         "$ref": "#/groups/4"
       },
       {
-        "$ref": "#/texts/276"
+        "$ref": "#/texts/275"
       },
       {
         "$ref": "#/groups/5"
       },
       {
-        "$ref": "#/texts/283"
+        "$ref": "#/texts/282"
       }
     ],
     "content_layer": "body",
@@ -720,6 +717,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/207"
+        },
         {
           "$ref": "#/texts/208"
         },
@@ -824,9 +824,6 @@
         },
         {
           "$ref": "#/texts/242"
-        },
-        {
-          "$ref": "#/texts/243"
         }
       ],
       "content_layer": "body",
@@ -840,7 +837,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/247"
+          "$ref": "#/texts/246"
         }
       ],
       "content_layer": "body",
@@ -853,6 +850,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/248"
+        },
         {
           "$ref": "#/texts/249"
         },
@@ -930,9 +930,6 @@
         },
         {
           "$ref": "#/texts/274"
-        },
-        {
-          "$ref": "#/texts/275"
         }
       ],
       "content_layer": "body",
@@ -945,6 +942,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/276"
+        },
         {
           "$ref": "#/texts/277"
         },
@@ -959,9 +959,6 @@
         },
         {
           "$ref": "#/texts/281"
-        },
-        {
-          "$ref": "#/texts/282"
         }
       ],
       "content_layer": "body",
@@ -1520,61 +1517,6 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 37.59,
-            "t": 237.62,
-            "r": 97.84,
-            "b": 230.31,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            15
-          ]
-        }
-      ],
-      "orig": "1. Introduction",
-      "text": "1. Introduction",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 37.59,
-            "t": 216.7,
-            "r": 288.69,
-            "b": 146.63,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            482
-          ]
-        }
-      ],
-      "orig": "In the twenty-first century, geological and stratigraphic knowledge remains extremely limited in several regions of the world, particularly in areas characterised by complex geological histories and challenging socio-environmental contexts. This lack of knowledge has multiple causes, including political instability and social development, limited access to remote and coastal areas, the absence of sustained scientific and educational programs, and geological complexity requiring",
-      "text": "In the twenty-first century, geological and stratigraphic knowledge remains extremely limited in several regions of the world, particularly in areas characterised by complex geological histories and challenging socio-environmental contexts. This lack of knowledge has multiple causes, including political instability and social development, limited access to remote and coastal areas, the absence of sustained scientific and educational programs, and geological complexity requiring"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
             "l": 202.0,
             "t": 439.63,
             "r": 258.71,
@@ -1592,7 +1534,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -1619,7 +1561,35 @@
       "text": "Large portions of the Angolan western margin remain poorly accessible and insufficiently studied, resulting in limited geological knowledge despite their high scientific potential. This study focuses on the Lower Cretaceous coastal sector between Binga Waterfalls and the lower Catumbela River (Benguela Sub-basin), where excep\u00ad tionally well-exposed outcrops record key stages in the stratigraphic and palaeoenvironmental evolution of the South Atlantic margin. Based on detailed fieldwork integrating stratigraphic, sedimentological, and palae\u00ad ontological analyses, this work presents the first inventory and characterisation of twelve geosites identified for their geological heritage value. The studied outcrops display remarkable stratigraphic continuity, facies di\u00ad versity, fossil content, and geomorphological expression. Several previously undocumented sections are here proposed as reference outcrops for the Lower Cretaceous of the Benguela Sub-basin, contributing to regional stratigraphic correlations within the South Atlantic domain. The geoheritage assessment follows internationally recognised frameworks and considers scientific value, representativeness, integrity, and rarity, together with educational relevance and geotourism potential. The sites also exhibit high landscape value, expressed by extensive coastal cliffs, well-preserved stratigraphic architectures, and fossil-rich carbonate deposits. The results highlight the dual significance of these outcrops as key geological archives and geoheritage assets. This inventory provides a baseline for future geological research along the Angolan margin and supports the integration of geoheritage into geoconservation, land-use planning, and sustainable geotourism strategies."
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 37.59,
+            "t": 237.62,
+            "r": 97.84,
+            "b": 230.31,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
+      "orig": "1. Introduction",
+      "text": "1. Introduction",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -1630,6 +1600,20 @@
         {
           "page_no": 1,
           "bbox": {
+            "l": 37.59,
+            "t": 216.7,
+            "r": 288.69,
+            "b": 146.63,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            482
+          ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
             "l": 306.59,
             "t": 237.62,
             "r": 557.68,
@@ -1637,16 +1621,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            416
+            483,
+            899
           ]
         }
       ],
-      "orig": "substantial logistical, technical, and financial resources. The case addressed in this study, focusing on the sedimentary geology of the western coast of Angola, specifically the Mesozoic onshore infill of the southernmost sector of the Kwanza Basin, including the Benguela Subbasin (e.g., Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010), illustrates the cumulative impact of these constraints.",
-      "text": "substantial logistical, technical, and financial resources. The case addressed in this study, focusing on the sedimentary geology of the western coast of Angola, specifically the Mesozoic onshore infill of the southernmost sector of the Kwanza Basin, including the Benguela Subbasin (e.g., Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010), illustrates the cumulative impact of these constraints."
+      "orig": "In the twenty-first century, geological and stratigraphic knowledge remains extremely limited in several regions of the world, particularly in areas characterised by complex geological histories and challenging socio-environmental contexts. This lack of knowledge has multiple causes, including political instability and social development, limited access to remote and coastal areas, the absence of sustained scientific and educational programs, and geological complexity requiring substantial logistical, technical, and financial resources. The case addressed in this study, focusing on the sedimentary geology of the western coast of Angola, specifically the Mesozoic onshore infill of the southernmost sector of the Kwanza Basin, including the Benguela Subbasin (e.g., Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010), illustrates the cumulative impact of these constraints.",
+      "text": "In the twenty-first century, geological and stratigraphic knowledge remains extremely limited in several regions of the world, particularly in areas characterised by complex geological histories and challenging socio-environmental contexts. This lack of knowledge has multiple causes, including political instability and social development, limited access to remote and coastal areas, the absence of sustained scientific and educational programs, and geological complexity requiring substantial logistical, technical, and financial resources. The case addressed in this study, focusing on the sedimentary geology of the western coast of Angola, specifically the Mesozoic onshore infill of the southernmost sector of the Kwanza Basin, including the Benguela Subbasin (e.g., Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010), illustrates the cumulative impact of these constraints."
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -1687,7 +1671,7 @@
       "text": "The western margin of Angola preserves an exceptional geological record of the Lower Cretaceous, which is directly related to the opening of the South Atlantic Ocean and the steped seafloor divergence of Africa and South America. The onshore sectors of the Kwanza Basin, including the Benguela Sub-basin, expose a diverse and relatively well-preserved succession of siliciclastic, evaporitic, and carbonate deposits that document key stages of the basin evolution, culminating in a long-term marine transgression and the consequent palaeoenvironmental changes that occurred during the Early Cretaceous (e.g., Brognon and Verrier, 1966; Buta-Neto et al., 2006; Quesne et al., 2009; Guiraud et al., 2010). Within the broader history of geological research on the sedi\u00ad mentary infill of the Angolan coast (Masse and Laurent, 2016), two main periods can be identified as having made the most significant contri\u00ad bution to the current understanding of its Cretaceous stratigraphy. The first corresponds to the final decades of the Portuguese colonial period, prior to 1975, and includes a series of monographs and scattered papers, many of them with a strong palaeontological focus, culminating in the production of four geological maps at a scale of 1:100,000 between the former city of Novo Redondo (now Sumbe) and that of Lobito (Lap\u02dcao and Pereira, 1971; Peres and Moreira, 1970; Galv\u02dcao and Silva, 1972; Lap\u02dcao and Sim\u02dcoes, 1972). Given the scarcity of geological mapping available in Angola at the time, this effort represents a remarkable achievement, albeit at a relatively coarse cartographic resolution. The second major period of research was marked by a project led by Total, resulting in several doctoral theses and peer-reviewed publications focusing on the stratigraphy, palaeontology, and tectono-sedimentary evolution of the Benguela Sub-basin. These studies have significantly advanced our knowledge of the basin's sedimentary fill and regional geological context (e.g., Buta-Neto et al., 2006; Tavares et al., 2007; Quesne et al., 2009; Guiraud et al., 2010). Additional contributions range from the pioneering works of Neto (1961, 1970) and Brognon and Verrier (1966) to more recent palaeontological investigations (e.g., Rodrigues et al., 2024), including an overview of the Palaeontology of Angola (Mateus et al., 2019). Nevertheless, despite these significant advances, knowledge of the entire sedimentary succession remains very limited from stratigraphic and sedimentological perspectives, particu\u00ad larly when considering the full extent of the record. Many of the out\u00ad crops associated with these successions remain poorly studied. Published geoheritage studies in Angola remain scarce and are largely restricted to a limited number of local or thematic contributions (e.g., Henriques et al., 2013; Lopes et al., 2019, 2024). Consequently, no comprehensive inventory or regional-scale assessment addressing the geoheritage significance of the Lower Cretaceous sedimentary record of the Angolan western margin has yet been undertaken. Large portions of the Angolan western margin are characterised by difficult access, limited road infrastructure, and a historical scarcity of systematic geological research, particularly in onshore areas. Consequently, the current level of scientific knowledge, heritage recognition, and public awareness of this geological record remains disproportionately low when compared to its intrinsic value and international significance. Nevertheless, several outcrops display exceptional stratigraphic conti\u00ad nuity, facies diversity, abundant fossil content, and strong geomorpho\u00ad logical expression, conferring them considerable geoheritage value. These sites provide key insights into sedimentary processes, palae\u00ad oenvironmental evolution, and palaeogeographic reconstructions of the Early Cretaceous South Atlantic margin, thereby fulfilling the main criteria commonly applied in geoheritage assessment (e.g., Gray, 2013; Brilha, 2016; Reynard and Brilha, 2018). In this regard, the Lower Cretaceous of Angola closely matches the international assessment criteria established by the IUGS-UNESCO guidelines for UNESCO Global Geoparks, particularly concerning the scientific significance of geolog\u00ad ical heritage (IUGS, 2023). Their relevance is especially evident in terms of stratigraphy, sedimentology, palaeontology, and geomorphology, which together record fundamental stages in the early evolution of the South Atlantic margin."
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -1714,7 +1698,7 @@
       "text": "*Corresponding author. Universidade de Coimbra, Faculdade de Ci\u02c6encias e Tecnologia, Departamento de Ci\u02c6encias da Terra, Portugal. E-mail address: lduarte@dct.uc.pt(L.V. Duarte)."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -1742,7 +1726,7 @@
       "hyperlink": "https://doi.org/10.1016/j.jafrearsci.2026.106357"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/body"
       },
@@ -1769,7 +1753,7 @@
       "text": "Received 29 May 2026; Received in revised form 6 September 2026; Accepted 7 September 2026"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -1796,7 +1780,7 @@
       "text": "1464-343X/\u00a9 2026 The Authors. Published by Elsevier Ltd. This is an open access article under the CC BY license ( http://creativecommons.org/licenses/by/4.0/ )."
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/body"
       },
@@ -1823,7 +1807,7 @@
       "text": "Available online 8 September 2026"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/body"
       },
@@ -1850,7 +1834,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/body"
       },
@@ -1877,7 +1861,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/body"
       },
@@ -1904,7 +1888,7 @@
       "text": "In addition to their scientific value, many of these potential geosites present high aesthetic and landscape value, often expressed through extensive coastal cliffs, well-defined stratigraphic architectures, and fossil-rich carbonate successions (Duarte et al., 2014; Duarte, 2019,"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/body"
       },
@@ -1931,7 +1915,7 @@
       "text": "2020). These attributes significantly enhance their potential for educa\u00ad tional use and geotourism development. Although currently underutil\u00ad ised, these sites represent important resources for higher education, public dissemination of geoscientific knowledge, and sustainable geo\u00ad tourism (e.g., Hose, 2012; Brilha, 2016; Dowling and Newsome, 2018; Reynard and Brilha, 2018). Their integration into geoconservation policies, territorial planning frameworks, and sustainable development strategies may significantly enhance both their scientific and socio-economic value (e.g., Gordon, 2018; Reynard and Brilha, 2018; Gordon et al., 2021)."
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/body"
       },
@@ -1958,7 +1942,7 @@
       "text": "This paper results from a series of studies conducted along the Angolan coast, mainly in the onshore sector of the Benguela Sub-basin, since 2011. These studies aimed to improve the understanding of the sedimentary geology of the Lower Cretaceous carbonate units exposed along the coastal strip between the provinces of Cuanza Sul and Ben\u00ad guela. This research led to several unpublished master's theses, pre\u00ad liminary stratigraphic studies, and contributions focused specifically on geological heritage and scientific dissemination (Segundo, 2011; Duarte et al., 2014; Segundo et al., 2014; Gon\u00e7alves, 2015; Guia, 2016; Duarte, 2019, 2020). Using an integrated methodological approach that com\u00ad bines stratigraphic, sedimentological, palaeontological, geomorpholog\u00ad ical, and structural analyses, supported by detailed fieldwork in areas that are often difficult to access, this study presents the first systematic inventory and geological characterisation of the Lower Cretaceous geoheritage of the Angolan coast, following internationally recognised geoheritage frameworks and criteria (e.g., Duarte, 2004; Brilha, 2016, 2018; Duarte et al., 2017; Reynard and Brilha, 2018). The principal objective is to identify, document, and geologically characterise the most representative Lower Cretaceous geosites along the Angolan coast, focusing on the sector between two iconic locations: Binga Waterfalls and the Catumbela River, near the town of Catumbela (Fig. 1). Beyond the geological inventory itself, and bearing in mind Angola's need for robust foundations in spatial planning, education, and sustainable ter\u00ad ritorial development, this paper also provides a preliminary qualitative assessment of the educational relevance, scenic value, and geotourism potential of the selected geosites. Recognising, inventorying, and valuing these Early Cretaceous geosites constitutes a fundamental step towards bridging the gap between their high geoheritage potential and the current low level of knowledge, while simultaneously contributing to geoconservation, education, and sustainable development along the western margin of Angola."
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/body"
       },
@@ -1986,7 +1970,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/body"
       },
@@ -2027,7 +2011,7 @@
       "text": "The study area, located along the onshore of the western margin of Angola, encompasses the southern end of the Kwanza Basin, including the Benguela Sub-basin (e.g., Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010; Merino et al., 2019). The western margin of Angola and the conjugate Brazilian basins formed part of the South Atlantic marginal system. This system developed during the breakup of Gondwana and the subsequent opening of the South Atlantic Ocean in the Early Cretaceous, accompanied by significant palaeogeographic changes as rifting evolved from continental extension to fully marine conditions (e.g., Chaboureau et al., 2013; Heine et al., 2013; P\u00b4erez-D\u00edaz and Eagles, 2017). The geotectonic evolution of these basins began in the Late Jurassic-Early Cretaceous interval with a prolonged phase of continental rifting, followed by a period characterised by extensive evaporite deposition during the Aptian. These evaporites play a funda\u00ad mental role in the structural architecture of the basins by controlling halokinesis and the compartmentalisation of post-rift units, including lateral facies variations and the distribution of lithostratigraphic units (e.g., Brognon and Verrier, 1966; Hudec and Jackson, 2002; Guiraud et al., 2010). The Benguela Sub-basin forms the southern sector of the Kwanza Basin system sensu lato. Despite sharing a similar evolutionary history with the remaining Kwanza Basin, the Benguela Sub-basin ex\u00ad hibits distinct sedimentary and structural characteristics, reflecting differences in margin width, sedimentary fill, and the influence of diverse pre-existing basement structures. The Mesozoic succession in the Benguela Sub-basin is dominated by siliciclastic and carbonate units dating from the Early Cretaceous. These units are widely exposed along the coastal zone between Cuanza Sul and Benguela provinces. Unlike most of the Kwanza Basin, these exposures provide an exceptional operational setting available for field-based sedimentological analysis and stratigraphic correlation. Focusing on the Lower Cretaceous units, the Angolan coast preserves a succession composed of the Cuvo, Sal Massivo, Binga, Tuenza, Catumbela, and Quissonde formations (e.g., Tavares et al., 2007; Quesne et al., 2009; Guiraud et al., 2010; Segundo et al., 2014) (Fig. 2). Their cartographic distribution generally follows an east-to-west arrangement, exhibiting clear facies variations and interfingering from south to north, which are evident in the published 1:100,000 geological maps (e.g., Galv\u02dcao and Portugal, 1971; Lap\u02dcao and Galv\u02dcao, 1971, 1972). Although the lithostratigraphic terminology dif\u00ad fers across maps, equivalence with the nomenclature conventionally used for the Benguela Sub-basin and the Kwanza Basin is straightfor\u00ad ward (Fig. 2)."
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/body"
       },
@@ -2054,7 +2038,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -2081,7 +2065,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -2108,7 +2092,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -2135,7 +2119,7 @@
       "text": "Fig. 1. Study area in western Angola. A. Location of the 12 geosites (base map from Google Earth). B. Simplified geological map of the study area showing the locations of 11 geosites, G2 to G12 (adapted from Sheet 4 of the Geological Map of Angola, 1:1,000,000; Ara\u00fajo et al., 1988). Key: 1. Fault; 2. Neoarchean (?) - Palaeoproterozoic ('Metamorphic Complex'); 3. Palaeoproterozoic ('Igneous Complex'); 4. Undifferentiated Cretaceous formations; 5. Cretaceous basalts; 6. Neogene. For infra-Cretaceous units, see Merino et al., 2019)."
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -2190,7 +2174,7 @@
       "text": "The basal unit of the Benguela Sub-basin, the Cuvo Formation, rests unconformably on the Precambrian basement ('Complexo de Base', Basal Complex, in Galv\u02dcao and Silva, 1972) and crops out in the more marginal and eastern parts of the sub-basin, being particularly well-developed in its southernmost sector. Over its basal unconformity, the Cuvo Formation consists of a siliciclastic succession, which is markedly conglomeratic at the bottom ('Ci' in Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972). The top of this unit, considered pre-Barremian in age, locally contains a paralic carbonate succession in the northern sector of the Benguela Sub-basin. Overlying this basal infill, there is an evaporitic unit, defined in the literature as the Massive Salt Formation ('Sal Massivo'), which is predominantly composed of gypsum-rich lithologies. According to geological maps ('Apc 1' in Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972), this unit exhibits substantial vertical and lateral variability, with sections of the sub-basin where it is absent (Fig. 2). Above the evaporitic unit lies the Binga Formation, which contains the lowermost marine carbonates of the basin, apparently dated to the late Aptian. It records the early devel\u00ad opment of a carbonate ramp that persisted throughout the Cretaceous. The Binga Formation is characterised by a dominance of limestones, marls, and siltstones, sometimes with shallow benthic fauna represen\u00ad tatives, and exhibiting pronounced facies and thickness variations across the sub-basin (Brognon and Verrier, 1966; Quesne et al., 2009; Guiraud et al., 2010; based on in situ observations). This is followed by the Tuenza Formation, dated to the basal Albian, which is a highly hetero\u00ad geneous unit from a facies perspective, consisting of contrasting silici\u00ad clastic and mixed sequences interbedded with carbonate levels, including oncolitic horizons (as observed in situ). Depositional envi\u00ad ronments were dominated by deltaic sequences, occasionally reddish in colour (a key cartographic marker), grading into more marginal, marine-influenced environments (Buta-Neto et al., 2006; Quesne et al., 2009; Guiraud et al., 2010). Overlying the Tuenza Formation, there is a thick carbonate succession represented by the Catumbela and Quis\u00ad sonde formations, which are both dated to the Albian. The Catumbela Formation is entirely carbonate and dominated by subcrystalline lime\u00ad stones. It is locally interbedded with clastic layers, oolitic beds, and dolomites and contains an abundance of marine invertebrate fossils. This unit typifies a shallow, high-energy marine platform environment, producing a well-defined landscape morphology and making it easily identifiable cartographically. Laterally, the top of these deposits are equivalent to those of the Quissonde Formation, an extremely fossilif\u00ad erous marl-limestone succession containing ammonoids, bivalves, gas\u00ad tropods, and echinoids (Tavares et al., 2007) (Fig. 2). The Quissonde Formation displays diverse facies that are typical of open-platform, middle to outer shelf marine sub-environments, marking the end of the Early Cretaceous in the study area and representing the transgressive peak of the sub-basin fill (Segundo et al., 2014)."
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -2217,7 +2201,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -2244,7 +2228,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -2271,7 +2255,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -2298,7 +2282,7 @@
       "text": "Fig. 2. Stratigraphic setting of the studied area. A. Lithostratigraphic chart of the Kwanza Basin, including the Benguela Sub-basin (adapted from Guiraud et al., 2010): red indicates hiatuses; blue highlights the stratigraphic formations studied in this work, including a new geometric stratigraphic distribution of the Tuenza, Catumbela, and Quissonde formations; B-D. Equivalences between the lithostratigraphic framework adapted from Guiraud et al. (2010)and the lithos\u00ad tratigraphic nomenclatures adopted in sheets 184 - Novo Redondo (Lap\u02dcao and Galv\u02dcao, 1972), 206 - Egito Praia (Lap\u02dcao and Galv\u02dcao, 1971), and 227/228 - Lobito (Galv\u02dcao and Portugal, 1971) of the Geological Map of Angola at the 1:100,000 scale."
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/body"
       },
@@ -2325,7 +2309,7 @@
       "text": "In contrast to the central and northern parts of the Kwanza Basin, the post-Albian sedimentary units are largely absent; Cenomanian deposits exist, but they are extremely restricted in the onshore southern Benguela Sub-basin (see cited geological maps). These comprise siliciclastic and conglomeratic units, such as the Sousa Beach Conglomerates (Lap\u02dcao and Galv\u02dcao, 1971; Egito-Praia map) and the Binge Conglomerates (Galv\u02dcao and Silva, 1972; Lobito map), which are equivalent to the Cabo Ledo Formation carbonates in the northern sector of the study area (='Ce-Tu' in Lap\u02dcao and Galv\u02dcao, 1972) and in the central and northern parts of the Kwanza Basin (Guiraud et al., 2010; Rodrigues et al., 2024). Early Cretaceous units, particularly the Quissonde Formation, are locally overlain by marly sediments of the Teba Formation (Guiraud et al., 2010) and, more broadly, by Quaternary deposits."
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -2366,7 +2350,7 @@
       "text": "Regarding the geological mapping of the study area, in addition to the three 1:100,000 geological map sheets mentioned above, particular emphasis is placed on the information from Sheets 1 and 4 of the Geological Map of Angola (1:1,000,000) (Ara\u00fajo et al., 1988)."
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -2394,7 +2378,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -2421,7 +2405,7 @@
       "text": "The present study covers a large area of the Angolan coastal region, including parts of the Cuanza Sul and Benguela provinces, and spanning approximately 2300 km 2 . Its geological significance is strongly linked to the Lower Cretaceous infill of the Benguela Sub-basin and, to a lesser extent, to the southernmost part of the Sumbe region, which provides the regional geological framework for the study area (Fig. 1). Many of the investigated localities are remote and located primarily along the coastline, where accessibility is often difficult. Consequently, this in\u00ad ventory and evaluation are primarily based on extensive fieldwork, undertaken over several campaigns. The field investigations were guided by geological maps of Novo Redondo (Lap\u02dcao and Galv\u02dcao, 1972), Egito Praia (Lap\u02dcao and Galv\u02dcao, 1971), and Lobito (Galv\u02dcao and Portugal,"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -2448,7 +2432,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -2475,7 +2459,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -2502,7 +2486,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -2529,7 +2513,7 @@
       "text": "1971), complemented by GPS-based site location, photographic docu\u00ad mentation, and detailed geological observations."
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -2556,7 +2540,7 @@
       "text": "The geological investigation focused on stratigraphy, sedimentology, facies analysis, and palaeontology, as well as geomorphology and structural geology. Particular emphasis was placed on documenting stratigraphic architecture, facies distribution, depositional sequences, fossil content, and palaeoenvironmental evolution. These observations provide the geological basis for the ongoing reconstruction of the Early Cretaceous evolution of the western Angolan margin and, simulta\u00ad neously, allow the identification of representative, well-preserved, and scientifically significant outcrops that faithfully record the sedimentary evolution of the basin."
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/body"
       },
@@ -2611,7 +2595,7 @@
       "text": "The geoheritage inventory and assessment followed the methodo\u00ad logical framework proposed by Brilha (2016). After evaluating several dozen potential localities, the principal geosites of regional and supra-regional significance were selected based on the criteria of representativeness, integrity, rarity/singularity, and scientific impor\u00ad tance. In applying these criteria, particular emphasis was placed on the geological representativeness and scientific significance of the localities, as established through direct stratigraphic, sedimentological, palae\u00ad ontological, geomorphological, and structural observations. Rar\u00ad ity/singularity and the degree of preservation were also considered in the selection process. Overall, the four criteria were considered jointly in selecting the localities that best reflected the geological diversity and geoheritage significance of the Lower Cretaceous record within the study area. This methodology was adapted for the Angolan context, where access is often limited and scientific knowledge of the area's geological potential remains low. Considering the current state of geological knowledge in the study area, where many of the proposed geosites remain poorly investigated and documented, the Brilha framework was applied qualitatively rather than through a semi-quantitative scoring system. This approach is consistent with the inventory-oriented objectives of the present study and establishes the scientific basis for future quantitative assessments as geological knowledge of the selected geosites becomes more comprehensive. In addition to their geological and scientific value, the selected geosites were also evaluated regarding their educational and geotourism po\u00ad tential, recognising that educational use is currently directed primarily towards higher education. Landscape and cultural attributes, directly related to geotourism, were likewise considered, following recommen\u00ad dations in the specialised literature (e.g., Gray, 2013; Brilha, 2016; Dowling and Newsome, 2018; Reynard and Brilha, 2018). This inte\u00ad grated approach provides a comprehensive inventory of the Lower Cretaceous geoheritage of the Angolan coast while establishing a robust foundation for future geoconservation, education, and sustainable geo\u00ad tourism initiatives."
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -2638,7 +2622,7 @@
       "text": "Fig. 3.General overview of the 12 geosites (G1-G12): A. G1 - The Binga Waterfalls, exhibiting the rebound of the Cuvo/Keve River, resulting from the interaction between Archean crystalline rocks and the sedimentary rocks at the Cretaceous base of the Kwanza Basin infill; B. G2 - The Cambongo River, located immediately adjacent to the Sassa Caves; C. G3 - The Quicombo Gorge area, highlighting the morphological contrast between the Cretaceous carbonate succession and the Quaternary depression; D. G4 - Cabe\u00e7a da Baleia Beach, showing a small cape formed at the contact between the Catumbela and Quissonde formations; E. G5 - Sandy-conglomeratic cliffs of the Sousa Formation at Sousa Beach; F. G6 - Scenic view illustrating the contact between the Catumbela and Quissonde formations at Tapado Beach; G. G7 - Carbonate cliffs of the Quissonde Formation in the Egito Praia area; H. G8 - Carbonate cliffs of the Quissonde Formation at Binge Beach; I. G9 - The coastal area of Hanha da Praia, with the mouth of the Cubal River; J. G10 - Tectonic boundary between the Catumbela and Quissonde formations at Jomba Beach; K. G11 - Predominantly siliciclastic succession of the Tuenza Formation at Comango (Lobito); L. G12 - Folded carbonate cliffs on the right bank of the Catumbela River (downstream of the Tchiule Floodgate)."
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -2665,7 +2649,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -2692,7 +2676,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -2719,7 +2703,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -2746,7 +2730,7 @@
       "text": "Fig. 3. (continued)."
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -2774,7 +2758,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -2815,7 +2799,7 @@
       "text": "As previously mentioned, within the framework of the inventory of the geological value of the Lower Cretaceous along the Angolan Coast, between Binga Waterfalls and the lower Catumbela River, twelve places of top geological interest (geosites) have been identified (Figs. 1 and 3; Tables I-III). These sites were individualised and consolidated based on their scientific (geological) and educational significance, as well as their geotourism potential, which is closely associated with the scenic value of the locations. The identified geosites are Binga Waterfalls, Sassa Caves, Quicombo Gorge, Cabe\u00e7a da Baleia, Sousa Bay, Tapado Beach, Egito Praia, Binge Beach, Hanha da Praia, Jomba Beach, Comango, and the Chiule floodgate (Catumbela River) (Figs. 1 and 3). Many other locations were observed and identified throughout the study area that show partial geological interest. The entire analysed area is of public domain and currently lacks any formal protection. The most significant results of this evaluation are characterised and summarised in Tables I-III"
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
       },
@@ -2843,7 +2827,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/body"
       },
@@ -2870,7 +2854,7 @@
       "text": "This geosite is very easy to access, as it is located next to a paved secondary road that connects National Road 100, north of the city of Sumbe, to Gabela (Figs. 1 and 3A; Table I)."
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },
@@ -2897,7 +2881,7 @@
       "text": "Geological importance: The Binga Waterfalls occur along the Keve (Cuvo) River and constitute a site of high geomorphological value, resulting from a pronounced morphological break caused by a marked lithological contrast between crystalline rocks, mainly migmatites of the 'Complexo de Base' (Archean?), and the basal Cretaceous sedimentary units of the Kwanza Basin. This is one of the best locations in Angola for observing the geomorphological contrast along the eastern margin of the Mesozoic basin and the basement cratonic areas of the country. This specific site is not covered by a published geological map at a scale of 1:100,000 (the only one among the selected sites lacking such coverage). However, the boundary can be traced using the adjacent Sheet 185 - Vila Nova do Seles (Peres and Moreira, 1970; Peres et al., 1970)."
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/body"
       },
@@ -2924,7 +2908,7 @@
       "text": "Favoured by this local morphological step, it is possible to observe throughout this eastern portion of the basin the lithostratigraphic suc\u00ad cession originally defined by Brognon and Verrier (1966) and later revisited (though not formally established) by Guiraud et al. (2010). To the west of the Binga Waterfalls, the complete Aptian-Albian sedimen\u00ad tary succession is exposed, beginning at its base with the siliciclastics"
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/body"
       },
@@ -2951,7 +2935,7 @@
       "text": "6"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/body"
       },
@@ -2978,7 +2962,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/body"
       },
@@ -3005,7 +2989,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/tables/0"
       },
@@ -3032,7 +3016,7 @@
       "text": "Table 1 Evaluation elements of the Cretaceous geological heritage at Binga Falls, Sassa Caves, Quicombo Gorge, and Cabe\u00e7a da Baleia proposed geosites."
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/body"
       },
@@ -3059,7 +3043,7 @@
       "text": "(basal conglomerates) and the carbonate unit of Barremian(?)-Aptian(?) age, known as the Cuvo Formation (Fig. 4A-B). Following the Keve River margins, which feature particularly iconic wandering meanders in this area, and the secondary road connecting to National Road 100, the Binga (a particularly thick unit in this part of the basin), Tuenza, and Catumbela formations can be observed."
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/body"
       },
@@ -3086,7 +3070,7 @@
       "text": "Educational potential: Although no detailed studies on the geology and stratigraphy of the eastern sector of the Kwanza Basin are currently available, the road running parallel to the Keve River provides an excellent natural laboratory for observing a transect with the main Lower Cretaceous units of the basin, clearly illustrating their large lithological and structural characteristics, as well as their fossiliferous content."
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/body"
       },
@@ -3113,7 +3097,7 @@
       "text": "Scenic value and geotourism potential: Both are considered high, due to the landscape's strong scenic impact and the fact that the site is already a popular tourist destination for Angolans, as illustrated in Fig. 5A. In fact, the Binga Waterfalls were already selected as one of the 27 sites of Angola put out to tender to select the Seven Natural Wonders of Angola (SMNA, 2013). In addition to its natural beauty, the site in\u00ad cludes the remains of an old bridge from the colonial period, which further enhances its geotourism appeal."
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/body"
       },
@@ -3141,7 +3125,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/body"
       },
@@ -3168,7 +3152,7 @@
       "text": "Located approximately 3 km southeast of the city of Sumbe, access to these caves requires a final pedestrian approach that involves some difficulty (Figs. 1 and 3B; Table I)."
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/body"
       },
@@ -3209,7 +3193,7 @@
       "text": "Geological importance: This area preserves one of the best karst records in Angola. The Sassa Caves have developed within an extensive carbonate massif consisting of limestones and dolostones of the Tuenza and Catumbela formations, corresponding to the middle and upper Albian (='Alb2a' in Lap\u02dcao and Galv\u02dcao, 1972). These carbonate units, locally containing minor siliciclastic input and strongly tectonised, also exhibit pronounced lateral facies variations. The landscape is charac\u00ad terised by pronounced morphological differentiation, including lime\u00ad stone ridges forming prominent escarpments (Fig. 3B). Some caves (including the Cave of God) have developed in close association with the Cambongo River, within a narrow and deeply incised valley. Owing to the rugged orography, the stratigraphy of the area is difficult to observe and interpret, a challenge already reflected in the 1:100,000 geological map (Lap\u02dcao and Galv\u02dcao, 1972)."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/body"
       },
@@ -3236,7 +3220,7 @@
       "text": "Educational potential: This site offers excellent opportunities for learning about karst geomorphology in the field, including surface geoforms such as dolines and lapies, speleothems, groundwater circu\u00ad lation and resurgences."
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/body"
       },
@@ -3263,7 +3247,7 @@
       "text": "Scenic value and geotourism potential: Both are considered high to very high, due to the site's clear uniqueness within the regional context, as it contains the only known caves in the entire carbonate massif (Fig. 5B). Like the previous geosite, the Sassa Caves were included in the restricted list of places that gave rise to the Seven Natural Wonders of Angola (SMNA, 2013). The caves are part of a geological setting with high geomorphological and landscape value."
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/body"
       },
@@ -3291,7 +3275,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/body"
       },
@@ -3318,7 +3302,7 @@
       "text": "This is an exceptionally easily accessible geosite, located close to National Road 100, 14 km south of Sumbe city (Figs. 1 and 3C; Table I)."
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/body"
       },
@@ -3345,7 +3329,7 @@
       "text": "Geological importance: The site holds significant geomorpholog\u00ad ical value, highlighted by the striking gorge of the Cubal-Quicombo River, which is flanked by limestone cliffs of the Catumbela Formation (='Alb2a'; Lap\u02dcao and Galv\u02dcao, 1972). These cliffs are responsible for the thick carbonate succession observed at the site, composed of dozens of predominantly carbonate layers (Fig. 5C). However, the level of detailed geological and stratigraphic knowledge is extremely low, with infor\u00ad mation being restricted to that presented on sheet 184 - Novo Redondo of the 1:100,000 geological map (Lap\u02dcao and Galv\u02dcao, 1972). According to this map, the Catumbela Formation is overlain by the 'Ce-Tu' unit, that is, the Cabo Ledo Formation. This geometric relationship is of high stratigraphic relevance and requires further investigation, especially given the absence of the Quissonde Formation in this sector."
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
@@ -3386,7 +3370,7 @@
       "text": "Educational potential: The site is valuable for its geomorphological attributes. In addition to the gorge landscape itself, formed by Pleisto\u00ad cene fluvial incision, it is possible to observe the geomorphological contrast between the Catumbela Formation (to the east) and the Qua\u00ad ternary terrace, as evidenced in the cartography, which results from a significant fault with neotectonic activity (Fig. 3C). However, the limited existing stratigraphic and sedimentological knowledge, along with the characteristics of the outcrop, which shows no apparent stratonomic variations in a sub-horizontal succession, restrict the scope of educational activities that can be carried out here."
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/body"
       },
@@ -3413,7 +3397,7 @@
       "text": "7"
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/body"
       },
@@ -3440,7 +3424,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/84",
       "parent": {
         "$ref": "#/body"
       },
@@ -3467,7 +3451,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/body"
       },
@@ -3494,7 +3478,7 @@
       "text": "Scenic value and geotourism potential: This is undeniably one of the most scenic locations along National Road 100, between Luanda and Lobito, making it a must-stop for any nature lover (Figs. 3Cand 5C). Its high geomorphological value is further enhanced by the CubalQuicombo River, which forms a gorge that is visually striking and appealing to the general public."
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/86",
       "parent": {
         "$ref": "#/body"
       },
@@ -3522,7 +3506,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/87",
       "parent": {
         "$ref": "#/body"
       },
@@ -3549,7 +3533,7 @@
       "text": "This geosite covers a large sandy coastal strip, with somewhat difficult access from National Road 100 due to the final portion of the path, which can only be traversed with an all-terrain vehicle (Figs. 1 and 3D; Table I)."
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/body"
       },
@@ -3604,7 +3588,7 @@
       "text": "Geological importance: Although much of the area is dominated by a marl-limestone succession of the Quissonde Formation, as shown on sheet 206 - Egito Praia (='Alb3' in Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971), the site's uniqueness is marked by a basaltic sill that intersects a small part of the highly fractured Catumbela Formation limestone. The hardness of both rock types has formed a small cape, which intriguingly gives the place its name, and restricts observations during high tide (Figs. 3Dand 4C). This basaltic unit is likely contem\u00ad poraneous with the large basaltic patch mapped in the region and referred to in Fig. 1B as the Cretaceous Basalts (see also Lap\u02dcao and Galv\u02dcao, 1971). In a recent paper, these basalts were dated to ~101-99 Ma (late Albian) based on 40 Ar/ 39 Ar geochronology. These ages are supported by ammonite biostratigraphy from overlying sedi\u00ad ments (Jerram et al., 2019). Perhaps due to their limited cartographic expression, these two units (Alb2/Catumbela Formation and the basaltic units) are not labelled on the geological map. Further south, at the beginning of the large cove providing access to the next geosite (Sousa Bay), the Teba Formation outcrops (see Fig. 2), consisting of a marl-rich succession that is apparently abundant in ammonites and is dated to the Senonian (='CS' unit in Lap\u02dcao and Galv\u02dcao, 1971). Additionally, several Pleistocene raised beach deposits are also present in the cliff front, with an archaeological site characterised by an interesting lithic industry of coloured cherts."
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -3631,7 +3615,7 @@
       "text": "Fig. 4. Some relevant and singular stratigraphic, sedimentological, and palaeontological features of the Lower Cretaceous recorded in the geosites: A. Coarse sili\u00ad ciclastic deposits lying at the base of the Cuvo Formation (G1); B. Carbonate succession of the uppermost part of the Cuvo Formation (G1); C. Metamorphosed limestones as effect of a basaltic intrusion in the Catumbela Formation (G4); D. Occurrence of heteromorphic ammonites in the Quissonde Formation (G4); E. Bioclastic-dominated facies (grainstone) at the top of the Catumbela Formation (G7); F. Fossiliferous facies (ammonites and gastropods) at the base of the Quissonde Formation (G7); G. Singular synsedimentary deformation structure evidenced by folds and bending of the layers, indicating gravitational instability (G7); H. Tha\u00ad lassinoides ichnofossil recorded in the basal subunit of the Quissonde Formation (G7); I. Erosional transition between the Quissonde and Binge Conglomerate for\u00ad mations (G8); J. Synsedimentary deformation structures immediately below a package of nodular marl-limestone alternations in the Quissonde Formation (G9); K. Debris flow composed of a chaotic accumulation of carbonate blocks (including large reworked ammonites) recorded in the Quissonde Formation (G9); L. Chondrites ichnofossil recorded in the basal subunit of the Quissonde Formation (G9); M. Examples of the high quality preservation of the ammonite record in the marllimestone alternations of the Quissonde Formation (G9); N. The Catumbela-Quissonde Formation transition, marked by an onlap at Jomba Beach (southern sec\u00ad tion) (G10); O. Particular aspect of the transition between the third and fourth subunits of the Quissonde Formation at Jomba Beach (see also Segundo et al., 2014) (G10); P. Detail of oncolitic facies at the top of the Tuenza Formation observed at Comango (G11)."
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/body"
       },
@@ -3658,7 +3642,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/body"
       },
@@ -3685,7 +3669,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/body"
       },
@@ -3712,7 +3696,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/93",
       "parent": {
         "$ref": "#/pictures/7"
       },
@@ -3739,7 +3723,7 @@
       "text": "Fig. 4. (continued)."
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/body"
       },
@@ -3766,7 +3750,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/95",
       "parent": {
         "$ref": "#/body"
       },
@@ -3793,7 +3777,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/body"
       },
@@ -3820,7 +3804,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/pictures/8"
       },
@@ -3847,7 +3831,7 @@
       "text": "Fig. 5.Aesthetic value and high geotourism potential of selected geosites. A. The striking Binga Waterfalls (G1) along the Keve River form a remarkable geotouristic landmark, marking the eastern boundary of the Kwanza Basin. These cascades reflect a pronounced morphological contrast between the Precambrian igne\u00ad ous-metamorphic basement and the overlying basal Cretaceous sediments; B. The Sassa Caves (G2), the only known example of endokarst geomorphology of this type in the region, representing a site of high geotourism potential; C. The iconic gorge of the Quicombo River (G3), near its mouth, where the river channel flows through sedimentary sequences spanning from the Albian to the Cenomanian (view from National Road 100); D. The scenic Tapado Beach (G6) along the coast near the Cuanza Sul-Benguela provincial boundary; E. The Balombo River, bordered by a palm grove and framed by the iconic karst relief of the Catumbela Formation, highlighting the site's high geotourism potential at Egito Praia (G7); F. The riverbanks of the Catumbela River, carved into the limestone of the Catumbela Formation, Tchiule floodgate (G12)."
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/body"
       },
@@ -3874,7 +3858,7 @@
       "text": "Educational potential: The site offers notable value for learning in stratigraphy, due to the variety of lithostratigraphic units present, beginning with the basaltic volcanic body and its geometric relation\u00ad ships as it intrudes an older unit (Catumbela Formation). Equally sig\u00ad nificant are the palaeontological aspects, such as the presence of heteromorphic ammonite specimens (Fig. 4D)."
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/99",
       "parent": {
         "$ref": "#/body"
       },
@@ -3901,7 +3885,7 @@
       "text": "Scenic value and geotourism potential: The site resembles many other coastal areas; however, the presence of the basaltic unit is highly unusual within the studied coastal zone. Despite this uniqueness, the site has limited geotourism appeal, primarily due to difficult access."
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/body"
       },
@@ -3929,7 +3913,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/101",
       "parent": {
         "$ref": "#/body"
       },
@@ -3970,7 +3954,7 @@
       "text": "Located approximately 5 km southeast of the previous geosite, this bay is characterised by similarly restricted access, which can only be achieved using an all-terrain vehicle (Figs. 1 and 3E; Table II)."
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/body"
       },
@@ -3997,7 +3981,7 @@
       "text": "Geological importance: This site is a reference locality for the lithostratigraphy of the Angolan sedimentary margin and it is histori\u00ad cally defined as the type locality of the Praia do Sousa Conglomerate unit, as established on sheet 206 (Egito Praia) of the Geological Map of Angola (Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971) (Fig. 3E). This predominantly siliciclastic unit, strongly conglomeratic in nature, is dated to the Cenomanian and rests on an erosional discontinuity over the Quissonde Formation (='Alb3' in Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971). Beyond the significance of this unit, which is bet\u00ad ter developed and more extensively exposed elsewhere in the basin (see other geosites), the overlying Cenomanian succession is particularly well expressed at this locality. It represents one of the most complete and significant Cenomanian successions observed in the study area, dis\u00ad playing sedimentological features of exceptional relevance."
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/body"
       },
@@ -4024,7 +4008,7 @@
       "text": "Educational potential: Despite the challenging access conditions and the outcrop's location within a fishing village, the diversity of sedimentological features provides high potential for conducting fieldbased educational activities, particularly in sedimentology."
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/body"
       },
@@ -4051,7 +4035,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/body"
       },
@@ -4078,7 +4062,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/body"
       },
@@ -4105,7 +4089,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/108",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -4132,7 +4116,7 @@
       "text": "Table 2 Evaluation elements of the Cretaceous geological heritage at Sousa Bay, Tapado Beach, Egito Praia and Binge Beach proposed geosites."
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/body"
       },
@@ -4159,7 +4143,7 @@
       "text": "Scenic value and geotourism potential: While the site does not exhibit high scenic value or strong geotourism appeal, it is nonetheless a distinctive and charismatic location, as the geological outcrop is located in a traditional fishing village, conferring a certain iconographic and cultural value."
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/body"
       },
@@ -4187,7 +4171,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/body"
       },
@@ -4214,7 +4198,7 @@
       "text": "Located in the extreme north of the Benguela Province, this proposed geosite is very difficult to access, even by all-terrain vehicle (Figs. 1 and 3F; Table II)."
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/body"
       },
@@ -4241,7 +4225,7 @@
       "text": "Geological importance: This site displays the stratigraphic contact between the Catumbela and Quissonde formations (='Alb2' and 'Alb3' in Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971) in a unique geomorphological context, characterised by limestone cliffs and the mouth of the Tapado River. Observations regarding the Quissonde Formation are restricted to its basal portion."
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/body"
       },
@@ -4268,7 +4252,7 @@
       "text": "Educational potential: It is considered relatively low, given the limited diversity of geological attributes and the challenging access conditions."
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/body"
       },
@@ -4295,7 +4279,7 @@
       "text": "Scenic value and geotourism potential: It is in this domain that one of the most aesthetically remarkable locations along the analysed stands out, combining coastal and karst geomorphology with the mouth of the Tapado River, which forms a small lagoon, alongside a small village nestled in the area (Figs. 3F and 5D). If it weren't for the extremely difficult access, this would be a place of high geotourism potential."
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/body"
       },
@@ -4323,7 +4307,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/body"
       },
@@ -4350,7 +4334,7 @@
       "text": "Located along the alluvial plain and sandy shoals of the Balombo River mouth, this site is not easily accessible due to the long distance and the poor conditions of the local roads from National Road 100. Never\u00ad theless, it can be reached by small buses. This geosite displays the greatest diversity of geological and geomorphological features in the study area, particularly the two high cliffs that flank the Balombo River mouth, as well as much of the riverbank extending up to 5 km upstream"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/body"
       },
@@ -4377,7 +4361,7 @@
       "text": "(Egito Praia 1 and 2; Figs. 1 and 3G; Table II)."
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/body"
       },
@@ -4404,7 +4388,7 @@
       "text": "Geological importance: This site represents one of the main refer\u00ad ence localities for the Cretaceous sedimentary geology in the Benguela Sub-basin. Two prominent cliffs of marl-limestone beds of Albian age belonging to the Quissonde Formation (Egito Praia 1 in Fig. 1; 'Alb3' in Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971) are exposed here. These cliffs are cut by the mouth of the Balombo River, which together form one of the most important and continuous sections of this unit available in the entire sub-basin. The stratigraphic succession can be subdivided into three subunits (Segundo et al., 2014; in progress). On the northern bank, one of the largest vertical cliffs along the coastal sector under analysis clearly exposes the transition to the underlying Catumbela Formation (Fig. 4E). Both cliffs exhibit outstanding strati\u00ad graphic, sedimentological, and palaeontological features of the Quis\u00ad sonde Formation, including large-scale synsedimentary deformation structures (Fig. 4F and G) and an exceptionally abundant and diverse fossil assemblage. This assemblage includes ammonoids, bivalves, gas\u00ad tropods, echinoids, and marine invertebrate trace fossils (Fig. 4F and H). Upstream from the mouth, the route along the Balombo River exposes the complete Aptian-Albian succession, comprising the Massive Salt, Binga, and Tuenza formations, in addition to the two formations mentioned above (='Apc1', 'Apc2', 'Alb1lg' and 'Alb2', respectively; see Lap\u02dcao and Galv\u02dcao, 1971; Lap\u02dcao and Pereira, 1971). Part of this route exhibits high geomorphological value and is characterised by cuesta-\u00ad type landforms with steep escarpments, which have been developed in slightly inclined bedded limestones of the Catumbela Formation (Fig. 5E)."
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/body"
       },
@@ -4431,7 +4415,7 @@
       "text": "Educational potential: It is very high, considering the exceptional diversity and representativeness of the stratigraphic, sedimentological, palaeontological, tectonic, and geomorphological attributes described above. This place has previously been used for training activities pro\u00ad moted by higher education institutes in Benguela."
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/body"
       },
@@ -4458,7 +4442,7 @@
       "text": "Scenic value and geotourism potential: Both scenic value and geotourism potential are clearly very high. The combination of the striking coastal and karst geomorphology with the riverine landscape, which is responsible for the designation of the area as the 'Egypt of Angola', confers outstanding aesthetic value on the site (Fig. 3Gand"
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/body"
       },
@@ -4485,7 +4469,7 @@
       "text": "11"
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/body"
       },
@@ -4512,7 +4496,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/body"
       },
@@ -4539,7 +4523,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/body"
       },
@@ -4566,7 +4550,7 @@
       "text": "5E). For this reason, like the previous geosites of the Binga Waterfalls and the Sassa Caves, this site was included in the restricted list of places that gave rise to the Seven Natural Wonders of Angola (SMNA, 2013). Additional historical significance is provided by the built heritage, including the old S\u02dcao Sebasti\u02dcao Fortress, overlooking the southern cliff, and the former slave yard. These attributes further enhance the geo\u00ad tourism potential of this geosite."
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/body"
       },
@@ -4594,7 +4578,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/body"
       },
@@ -4621,7 +4605,7 @@
       "text": "It is a remote coastal site that is extraordinarily difficult to access, even with the use of an all-terrain vehicle (Figs. 1and 3H; Table II)."
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/body"
       },
@@ -4648,7 +4632,7 @@
       "text": "Geological significance: This site is a reference locality for the Lower Cretaceous lithostratigraphy of the Benguela Sub-basin. Histori\u00ad cally, it was defined as the type locality of the Binge Conglomerate unit, as established on sheets 227/228 (Lobito) of the Geological Map of Angola at a scale of 1:100,000 (Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972). The unit is predominantly siliciclastic, comprising se\u00ad quences of interbedded sandstones and conglomerates, and rests on an erosional discontinuity over the Quissonde Formation (='Alb3' in Galv\u02dcao and Portugal, 1971) (Fig. 4I). This last unit is characterised by marl-limestone alternations with an abundant fossil content, which is typical of this unit in other localities within the basin. These strati\u00ad graphic and sedimentological features were recently highlighted, albeit in a still preliminary manner, by Segundo et al. (2014). As at site G5 (Sousa Beach), this locality is of critical importance in defining the upper boundary of the Quissonde Formation, as well in understanding its geometric relationship with the overlying Cenomanian san\u00ad dy-conglomeratic unit. Among its various facies and palaeontological attributes, the Quissonde Formation is particularly notable for preser\u00ad ving significant evidence of exceptional synsedimentary deformation structures."
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/body"
       },
@@ -4689,7 +4673,7 @@
       "text": "Educational potential: Several attributes of the sedimentary suc\u00ad cession exposed at Binge are particularly evident from stratigraphic and sedimentological perspectives. Notably, the erosional contact between the two formations (Fig. 4I) and the well-preserved synsedimentary deformation structures within the Quissonde Formation (as seen in the previous geosite) are of high didactic value, given their rarity in the global sedimentary record. However, difficult access conditions severely limit the feasibility of educational or field-based activities at this site."
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/body"
       },
@@ -4716,7 +4700,7 @@
       "text": "Scenic value and geotourism potential: Although the site is located along the coast and forms a visually attractive bay where a small village has developed, its heritage value remains largely restricted to scientific interest, with limited potential for geotourism (Table II)."
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/body"
       },
@@ -4744,7 +4728,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/body"
       },
@@ -4771,7 +4755,7 @@
       "text": "This geosite occupies a broad sandy coastal strip flanked by lime\u00ad stone cliffs and intersected by the mouth of the Cubal da Hanha River. It is located approximately 25 km from Lobito, although access is some\u00ad what difficult, as the final segment of the route can only be traversed by an all-terrain vehicle (Figs. 1and 3I; Table III)."
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/body"
       },
@@ -4798,7 +4782,7 @@
       "text": "Geological importance: This site represents one of the main refer\u00ad ence locations for the Quissonde Formation, as documented by Segundo et al. (2014)(='Alb3' in Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972), with a well-dated succession through ammonites (Tavares, 2006; Tavares et al., 2007). Owing to the local physiography associated with the course of the Cubal da Hanha River, two main sections can be defined at this site, which partially repeat the stratigraphic succession of the formation. In the northern sector, the underlying Catumbela For\u00ad mation is exposed, although only through a faulted contact. The po\u00ad tential for stratigraphic and sedimentological observation is outstanding, as is the paleontological record, particularly of ammonoids and trace fossils (Thalassinoides and Chondrites) (Fig. 4J-M). Segundo et al. (2014)identified four distinct subunits, one of which displays an exceptional record of facies and synsedimentary deformation structures. Structural features are also clearly visible, including normal faults and folds (Fig. 4J)."
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/body"
       },
@@ -4825,7 +4809,7 @@
       "text": "Educational potential: This site offers excellent learning opportu\u00ad nities in nearly all domains of sedimentary geology, including sedi\u00ad mentology, palaeontology, stratigraphy, tectonics, and coastal geomorphology, complemented by the sedimentary dynamics associ\u00ad ated with the Cubal da Hanha River."
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/body"
       },
@@ -4866,7 +4850,7 @@
       "text": "Scenic value and geotourism potential: The site displays high geomorphological value, owing to the striking natural scenery at the mouth of the Cubal da Hanha River, where a broad coastal plain cuts through two limestone cliffs of high aesthetic appeal (Fig. 3I). Given these characteristics, the geotourism potential is inherently high, but it is currently constrained by difficult access conditions."
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -4893,7 +4877,7 @@
       "text": "Table 3 Evaluation elements of the Cretaceous geological heritage at Hanha Praia, Jomba Beach, Comango (Lobito), and Tchiule foodgate (Catumbela River) proposed geosites."
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/body"
       },
@@ -4920,7 +4904,7 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/body"
       },
@@ -4947,7 +4931,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/body"
       },
@@ -4974,7 +4958,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/body"
       },
@@ -5002,7 +4986,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/body"
       },
@@ -5029,7 +5013,7 @@
       "text": "The site occupies a small sandy coastal strip flanked by limestone cliffs, located approximately 15 km from Lobito. Access is moderately difficult, as the final section of the route can only be traversed by an allterrain vehicle (Figs. 1 and 3J; Table III)."
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/body"
       },
@@ -5056,7 +5040,7 @@
       "text": "Geological importance: The geosite's significance is primarily defined by its geomorphological value, combining beach and cliff fea\u00ad tures, as well as several stratigraphic and structural characteristics that bring the Catumbela and Quissonde formations into contact to the south, east, and north (Figs. 3Jand 4N). Stratigraphically, the site is dominated by marl-limestone alternations of the Quissonde Formation, which, according to the recent studies of Segundo (2011)and Segundo et al. (2014), comprise several subunits that are laterally equivalent to those observed at the previous two geosites (Praia do Binge and Hanha da Praia) (Fig. 4O). At this site, the palaeontological richness, in terms of both abundance and diversity of ammonoids, echinoids and trace fossils, is a key factor in establishing the geosite's importance for geological heritage. In addition to its stratigraphic, palaeontological, and sedi\u00ad mentological significance, notable structural features are present, including a major fault (Fig. 3J) that, within the regional cartographic context, juxtaposes the Catumbela and Quissonde formations. In addi\u00ad tion to the studies by Segundo (2011)and Segundo et al. (2014), this site is also documented in sheets 227-228 of the Lobito Geological Map (1:100,000) (='Alb2' and 'Alb3', respectively, in Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972)."
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/body"
       },
@@ -5083,7 +5067,7 @@
       "text": "Educational potential: Due to its diverse attributes, the site has strong potential for educational activities across nearly all domains of sedimentary geology (stratigraphy, sedimentology and palaeontology) and tectonics."
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/body"
       },
@@ -5110,7 +5094,7 @@
       "text": "Scenic value and geotourism potential: The geological setting, which exposes the contact between the two Albian carbonate units, contributes to an interesting geomorphological landscape, com\u00ad plemented by a flora dominated by baobab trees. However, the site's geotourism potential is considered moderate, primarily due to limited accessibility."
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/body"
       },
@@ -5138,7 +5122,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/body"
       },
@@ -5165,7 +5149,7 @@
       "text": "This geosite is very easy to access, but somewhat limited, as it is located on the slopes of the National Road 100, at the eastern end of Lobito city (Figs. 1 and 3k; Table III)."
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/body"
       },
@@ -5192,7 +5176,7 @@
       "text": "Geological importance: It is very relevant, since it is one of the few places in the studied area with an outcrop, in which it is possible to observe, in detail, the stratigraphic succession underlying the Catumbela Formation, specifically the Tuenza Formation and the upper part of the Binga Formation (='Alb1lg' and 'Apc2', respectively, in Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972). There is no publication on the subject, except for the area being covered by the sheet 227-228 of the Lobito Geological Map at a scale of 1:100,000 (Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972), where the road cut shows the facio\u00ad logical variability of the Tuenza Formation. Here, it is predominantly siliciclastics, consisting of conglomerates and sandstones, ranging in colour from red to whitish, which alternate with very singular carbonate levels displaying oncolitic facies (Fig. 4P)."
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/body"
       },
@@ -5219,7 +5203,7 @@
       "text": "Educational potential: Despite the scientific importance of the site, for the reasons explained above, its educational potential, specifically for carrying out training activities, is limited because it is located on the slopes of a narrow and heavily trafficked national road. Regardless, the importance of stratigraphic and sedimentological analyses is significant."
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/body"
       },
@@ -5246,7 +5230,7 @@
       "text": "Scenic value and geotourism potential: This site is part of an important geomorphological framework, dominated by a relief created by the limestones of the Catumbela Formation, which forms an extensive cuesta with a stepped rock face that is clearly visible in the landscape. However, the geosite is readily apparent to have no geotourist value."
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/body"
       },
@@ -5274,7 +5258,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/body"
       },
@@ -5301,7 +5285,7 @@
       "text": "This geosite provides a representative view of the landscape sur\u00ad rounding the Catumbela River, at the Tchiule floodgate, located approximately 5 km from the city of Catumbela, and accessible via a path along its left bank (Figs. 1 and 3L; Table III)."
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/body"
       },
@@ -5328,7 +5312,7 @@
       "text": "Geological importance: The lower course of the Catumbela River displays a marked geomorphological contrast, forming a transitional zone between the inland plateau, where the river incises the Archean crystalline basement rock, and the basal portion of the sedimentary infill of the Benguela Sub-basin, and the coastal and deltaic plain extending along the Lobito-Benguela corridor. This coastal plain, of late Quater\u00ad nary age, developed mainly through erosional processes affecting the relatively softer marly rocks of the Quissonde Formation, which are also incised by the Catumbela River (='Alb3' in sheets 227-228 of the Lobito Geological Map at a scale of 1:100,000; Galv\u02dcao and Portugal, 1971; Galv\u02dcao and Silva, 1972). The youngest relief forms are associ\u00ad ated with the strongly carbonate-dominated succession that character\u00ad ises the Catumbela Formation (='Alb2'). An excellent exposure in this area likely gave its name to this lithostratigraphic unit, dated to the Albian (Figs. 2 and 5F). Along the coastal cliffs, particularly on the northern bank of the river, large-scale folding is clearly visible in the landscape, corroborating the structural features represented in the published geological maps (Fig. 3L)."
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/body"
       },
@@ -5355,7 +5339,7 @@
       "text": "Educational potential: Taking into account the geological features of the outcrop, this place is relevant in terms of both large-scale geo\u00ad morphology and stratigraphy. Detailed observations cannot be made."
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/body"
       },
@@ -5382,7 +5366,7 @@
       "text": "Scenic value and geotourism potential: This is an impressive place from a scenic point of view, which makes it a must-visit for any nature lover (Figs. 3Land 5F). For this reason, the geotourism potential can be considered high, with improved access conditions."
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/body"
       },
@@ -5410,7 +5394,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/body"
       },
@@ -5438,7 +5422,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/body"
       },
@@ -5465,7 +5449,7 @@
       "text": "The 12 geosites identified in this study were selected during multiple field campaigns based on a set of evaluation criteria (Tables I and III; Figs. 3-5). These criteria are primarily grounded in scientific and educational parameters, including stratigraphic, sedimentological, palaeontological, and geomorphological aspects (see, for example, Duarte, 2004; Duarte et al., 2017; these works applied to an analogous sedimentary record, but from the well-known Lower Jurassic of Portugal). In studies focused on geological heritage, the criteria pro\u00ad posed by Brilha (2016)(see also Lima et al., 2010), the representative\u00ad ness, integrity, rarity/singularity, and scientific knowledge of the sites, stand out as fundamental parameters. Based on the previous analysis (Tables I-III) and the assessment presented in Table IV, it is evident that the most negative aspect of this evaluation is the low level of scientific knowledge, both for individual geosites and for the Cretaceous infill of the southernmost sector of the Kwanza Basin, including the Benguela Sub-basin. This limitation largely reflects the scarcity of research and published detailed studies."
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/body"
       },
@@ -5506,7 +5490,7 @@
       "text": "Addressing this gap, one of the main objectives of the present study is to demonstrate the scientific relevance of the selected sites, as well as their educational value and geotouristic relevance. All proposed geosites are representative of distinctive geological features within the Lower Cretaceous stratigraphic framework of the Angolan margin, although their relative significance varies, as discussed below. The study area has a very low population density and therefore experiences minimal Qualitative assessment of the geosites based on their attributes of representativeness, integrity, rarity/singularity, and scientific knowledge (following Brilha, 2016): H. High; M. Moderate; L. Low."
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/body"
       },
@@ -5533,7 +5517,7 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/body"
       },
@@ -5560,7 +5544,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/body"
       },
@@ -5587,7 +5571,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/body"
       },
@@ -5614,7 +5598,7 @@
       "text": "Table 4"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/body"
       },
@@ -5641,7 +5625,7 @@
       "text": "anthropogenic impact. Nevertheless, some geosites, particularly those located along the coast, are affected by landslides and erosional pro\u00ad cesses (e.g., Tavares et al., 2014). However, these processes do not significantly compromise the integrity of the geosites. High rar\u00ad ity/singularity is considered an intrinsic attribute of most geosites, as although they often correspond to the same geological units, the strat\u00ad igraphic, sedimentological, palaeontological, and geomorphological record of each geosite is unique (Table IV)."
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/body"
       },
@@ -5668,7 +5652,7 @@
       "text": "A further relevant aspect common to all sites, as well as to the study area as a whole, is the absence of any formal protection status. Angola does possess a legal framework for nature conservation, notably Law No. 8/20 of 16 April 2020, which established the National System of Envi\u00ad ronmental Conservation Areas, as well as a network of protected areas including national parks, reserves, and natural monuments (Republic of Angola, 2020). However, despite the existence of a national legal framework for environmental conservation, geological heritage and geodiversity remain only marginally represented within formal conser\u00ad vation and territorial management strategies, which continue to focus predominantly on biological and ecological resources. With a few ex\u00ad ceptions in other regions of Angola (e.g., Henriques et al., 2013; Lopes et al., 2019, 2024), geoheritage studies remain fragmented and geographically restricted. This is reflected in the absence of geosite in\u00ad ventories and mapping, the limited integration of geology into land planning, and conservation policies, and the underdeveloped educa\u00ad tional and geotourism initiatives. The present study represents an important step toward addressing these shortcomings."
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/body"
       },
@@ -5696,7 +5680,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/body"
       },
@@ -5737,7 +5721,7 @@
       "text": "Although none of the 12 geosites can be considered to have truly global significance, all represent unique aspects of the Lower Cretaceous stratigraphy of the study area that cannot be observed elsewhere within the Angolan basins. Most of the geosites are located within the Quis\u00ad sonde Formation, not only because it exhibits the most extensive and well-exposed outcrops, with greater stratigraphic continuity (see 'Alb3' in the three 1:100,000-scale maps cited above; Fig. 2), but also because it displays the greatest diversity of geological attributes, with emphasis on lithological, sedimentological, and palaeontological features (see G4G5 and G7-G10; Fig. 6). Despite the overall scarcity of scientific publi\u00ad cations, this unit is comparatively the best known of the Cretaceous succession and shows the highest potential for further research in sedi\u00ad mentary geology (e.g., Tavares, 2006; Tavares et al., 2007; Segundo et al., 2014; Tavares et al., 2014; ongoing work; Fig. 7). Among the analysed geosites, G7 - Egito Praia and G9 - Hanha da Praia (north and south sections) stand out as key references for the stratigraphy of the Quissonde Formation and, consequently, for the middle-upper Albian at the scale of the Angolan margin and at level of South America context (SARS in Fig. 6). Their ammonite content provides strong potential for intra-basin correlation, as demonstrated by Tavares et al. (2007)and Meister et al. (2011) (see also, Haas, 1942; Cooper, 1972, 1982; Collignon, 1978; Cooper and Kennedy, 1979). Within the broader South Atlantic Albian context, the biostratigraphic significance of sedimentary basins is uneven and should be evaluated in terms of fossil record quality and stratigraphic resolution. The Sergipe-Alagoas Basin is widely regarded as the most complete in terms of Albian stratigraphic knowledge, constituting a key reference for integrating sedimentolog\u00ad ical, palaeoenvironmental, and biostratigraphic data (e.g., Fauth et al., 2021; Luft-Souza et al., 2022). However, such stratigraphic complete\u00ad ness does not necessarily imply the best ammonite record. Other basins, such as the Kwanza and the Gabon basins, and more recently the Kri\u00ad bi-Campo Basin in Cameroon (Menkem et al., 2025), contribute to the regional palaeobiogeographic framework. However, their ammonite records remain comparatively less well resolved, largely due to the limited availability of high-quality exposures. In this context, while the Sergipe-Alagoas Basin remains the primary reference for stratigraphic resolution, the Benguela Sub-basin should be highlighted as a key reference for Albian ammonites in the South Atlantic, owing both to the quality of the already described faunas (e.g., Tavares et al., 2007; Meister et al., 2011; Arai, 2014) and to the remarkable scientific po\u00ad tential of its outcrops."
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -5764,7 +5748,7 @@
       "text": "Fig. 6. Stratigraphic distribution of the successions recorded in the geosites of greatest scientific value. SARS - South America reference section."
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/body"
       },
@@ -5791,7 +5775,7 @@
       "text": "14"
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/body"
       },
@@ -5818,7 +5802,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/body"
       },
@@ -5845,7 +5829,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/pictures/10"
       },
@@ -5872,7 +5856,7 @@
       "text": "Fig. 7. Example of one of the few published stratigraphic records from the studied region. Correlation between the detailed stratigraphic sections of the Quissonde Formation observed at G8 - Binge Beach, G9 - Hanha da Praia (southern section), and G10 - Jomba Beach (northern sction) (adapted from Segundo et al., 2014). In addition to representing continuous sections, where the four subunits of the Quissonde Formation can be partially observed, the figure also highlights the importance of ammonite biostratigraphic correlation based on the data of Tavares (2006)and Tavares et al. (2007)(H8 to H17). Stratigraphic positions of selected sedimen\u00ad tological and palaeontological features presented in Figs. 3 and 4."
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/body"
       },
@@ -5899,7 +5883,7 @@
       "text": "15"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/body"
       },
@@ -5926,7 +5910,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/body"
       },
@@ -5953,7 +5937,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/body"
       },
@@ -5980,7 +5964,7 @@
       "text": "The significance of the Benguela Sub-basin lies not only in the ma\u00ad terial already studied but, above all, in the exceptional quality and continuity of its exposures and the lateral persistence of facies, as has been demonstrated in this study. The excellent exposure of Albian suc\u00ad cessions allows for the detailed observation of lithostratigraphic re\u00ad lationships, the lateral continuity of units, and the distribution of fossiliferous levels, providing optimal conditions for the refinement of integrated biozonation (Fig. 7). From this perspective, the Benguela Subbasin is not only one of the South Atlantic basins with the most prom\u00ad ising ammonite records but also one with the greatest potential to advance stratigraphic knowledge of the Albian through integrated biostratigraphic and chemostratigraphic approaches. Moreover, within the geological history of the Mesozoic Angolan margin, and among the various proposed geosites, G4 - Cabe\u00e7a da Baleia clearly stands out due to the significant occurrence of basalts intruding the Catumbela For\u00ad mation (Fig. 4C). An age of ~101-99 Ma (late Albian), firmly con\u00ad strained by ammonite assemblages from the overlying Quissonde Formation, indicates that this activity occurred in a submarine setting and postdates the Paran\u00b4a-Etendeka event (Dodd et al., 2015; Jerram et al., 2019). It represents a later magmatic phase linked to the pro\u00ad gressive opening of the South Atlantic. However, this event dated at Cabe\u00e7a da Baleia, south of Sumbe, represents the oldest Mesozoic magmatic episode identified along the Angolan margin, namely when compared with other volcanic records in the south of Benguela and Namibe areas (see Jerram et al., 2019)."
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/body"
       },
@@ -6007,7 +5991,7 @@
       "text": "Of the remaining five geosites (G1-G3, G6 and G11-G12), only G1 and G11 display clear scientific relevance, particularly concerning stratigraphy and sedimentology (Fig. 6). G1 is significant due to its re\u00ad cord of the basal Cretaceous infill along the Angolan margin, where the Cuvo Formation unconformably overlies Archean crystalline units of the hinterland basement, extending beyond the coarse siliciclastic compo\u00ad nent (Fig. 4A-B). G11 is noteworthy for its well-exposed succession of the Tuenza Formation, which appears to have a comparable occurrence only in the Dombe Grande area, in the southernmost sector of the Benguela Sub-basin, as described by Quesne et al. (2009)."
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/body"
       },
@@ -6035,7 +6019,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/body"
       },
@@ -6062,7 +6046,7 @@
       "text": "Given that geosites in the study area remain insufficiently valued from a scientific perspective, largely due to limited scientific output, itself a consequence of the absence of research projects and the logistical constraints previously outlined, the present study aims to partially address this gap. It also highlights sedimentary features of particular relevance, with clear educational value, especially for the training of geologists in the field of sedimentary geology. Noteworthy aspects of stratigraphy, sedimentology, and palaeontology are identified across the twelve geosites, many of which have not previously been documented in the scientific literature."
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/body"
       },
@@ -6103,7 +6087,7 @@
       "text": "Stratigraphy and sedimentology: In addition to the biostrati\u00ad graphic considerations discussed above, particularly the importance of the Albian for global-scale correlations, and taking into account the lithostratigraphic framework presented in Fig. 2, this study focuses on records from the Cuvo (G1), Tuenza (G11), Catumbela (G2, G3, G4, G6, G7, G9-G12), Quissonde (G4-G10), and Binge-Sousa Conglomerates (G5 and G8) formations. These units are well represented across the geosites, where it is possible to distinguish key lithological, sedimen\u00ad tological, stratonomical, and sequence-stratigraphic features, as well as their lithostratigraphic contacts, particularly those framing the Quis\u00ad sonde Formation (Figs. 3-7). From a sedimentological perspective, several sites display features that are unique within the Angolan Lower Cretaceous record (Fig. 2). These include: (i) the faciological charac\u00ad teristics of the Cuvo Formation (pre-salt), which can be seen to the west of G1, representing a unit of major importance for understanding the basal sedimentary context of the South Atlantic early opening, which has been studied predominantly through subsurface data (e.g., Brognon and Verrier, 1966; Brownfield and Charpentier, 2006); (ii) the Tuenza Formation, at G11, the unique geosite in the study area where an almost complete succession of this unit is exposed (Fig. 3k), dominated by sil\u00ad iciclastic sedimentation with subordinated carbonate intercalations (Fig. 4P); (iii) the Catumbela Formation, wherever exposed, is charac\u00ad terised by a strong carbonate and bioclastic composition, with a domi\u00ad nant grainstone facies, typical of a shallow, inner shelf, carbonate platform environment; iv) the overlying Quissonde Formation, observed in most geosites, shows the greatest differentiation and the most sig\u00ad nificant expression in the lithostratigraphic and sedimentological re\u00ad cord. It comprises four subunits, as proposed in the preliminary stratigraphic and sedimentological analysis of Segundo et al. (2014) (Fig. 7). Among its features, the second subunit is particularly note\u00ad worthy, displaying interesting megastructures typical of slope deposits. The succession exhibits characteristics typical of upper to mid-slope settings, including slumps and large syn-sedimentary deformation structures, evidencing partial layer continuity, and indicating gravita\u00ad tional instability proximal to the source area (Fig. 4G and J). Moreover, this subunit of the Quissonde Formation includes outstanding debris flow deposits as illustrated in Fig. 4k. These examples, of seismic origin, not previously reported, much less discussed, in the literature, are an exceptional record in the context of sedimentological analyses of marine slope deposits (work in progress)."
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/body"
       },
@@ -6130,7 +6114,7 @@
       "text": "Palaeontology: The Lower Cretaceous of the Benguela Sub-basin represents one of the most significant palaeontological records in Angola. Indeed, the Cretaceous corresponds to the interval with the greatest fossil diversity in the country, accounting for over 80% of the known taxa, with a predominance of marine invertebrates, particularly molluscs (Mateus et al., 2019). As previously highlighted, the Albian ammonite record is particularly important due to its biostratigraphic significance (Tavares et al., 2007; Meister et al., 2011). In addition to this group, the Cretaceous succession of the Benguela Sub-basin includes numerous macrofossil assemblages, confirmed by our observations, comprising bivalves, gastropods, echinoids, and, more rarely, belem\u00ad nites, reflecting palaeoecological and palaeoenvironmental variability within the marine record."
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/body"
       },
@@ -6157,7 +6141,7 @@
       "text": "Most of the geosites described in this study, particularly G4, G7 and G9-G10, constitute exceptional natural laboratories for educational ac\u00ad tivities in the domain of palaeontology at different academic levels, given the high abundance and diversity of fossils, as well as the presence of highly fossiliferous horizons (Fig. 6). Concerning ammonites, the occurrence of heteromorphic forms is especially noteworthy; these are characterised by irregular, non-planispiral coiling geometries, which are not always preserved in the sedimentary record (Fig. 4C). In terms of trace fossils, several occurrences of Thalassinoides (Fig. 4H), clearly the most abundant, are observed, along with Chondrites (Fig. 4L), Rhizo\u00ad corallium, and Diplocraterium. These ichnological features are particu\u00ad larly significant within the Angolan geological context. When associated with outcrops displaying the degree of stratigraphic continuity observed across the studied geosites, they highlight the exceptional potential of these locations for the development of outdoor educational activities in palaeontology."
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/body"
       },
@@ -6184,7 +6168,7 @@
       "text": "16"
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/body"
       },
@@ -6211,7 +6195,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/body"
       },
@@ -6238,7 +6222,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/body"
       },
@@ -6266,7 +6250,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/body"
       },
@@ -6293,7 +6277,7 @@
       "text": "Geotourism, understood as a form of tourism based on the valor\u00ad isation of geological and geomorphological heritage, has increasingly been recognised as a relevant component of sustainable tourism, simultaneously promoting conservation, education, and local develop\u00ad ment (e.g., Hose, 2012; Dowling and Newsome, 2018). In Angola, despite its high geological and scenic potential, the development of geotourism remains rather incipient. The Angolan territory displays significant geodiversity and a rich geological history (e.g., Carvalho, 1961; Antunes, 1964; Neto, 1964; Ara\u00fajo and Guimar\u02dcaes, 1992), particularly in terms of geomorphological features of high scenic value, as evidenced by the Seven Natural Wonders of Angola initiative (SMNA, 2013; see also Duarte et al., 2014). Notwithstanding this potential geotourism in Angola faces several structural constraints. Among the most significant are the scarcity of systematic geosite inventories, the limited integration between geoconservation and spatial planning, and the insufficient scientific and institutional recognition of geological heritage. Within this national context, several contributions have been made in the Humpata Plateau, which is widely recognised for its geomorphological and landscape value and, consequently, its tourism potential, particularly in areas such as the Tundavala Gorge and the Serra da Leba (e.g., Henriques et al., 2013; Duarte et al., 2014; Lopes et al., 2019, 2024). Additional work has also been conducted in Northern Lunda in collaboration with the Dundo Regional Museum (Tshibango-Andr\u00b4e et al., 2025a, 2025b)."
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/body"
       },
@@ -6320,7 +6304,7 @@
       "text": "Based on these criteria, Duarte et al. (2014), in a preliminary assessment, identified several geosites in southwestern Angola, consid\u00ad ering their tourism relevance and their inclusion in the list of the Seven Natural Wonders of Angola, namely G1 - Binga Falls (Fig. 5A), G2 - Sassa Caves (Fig. 5B), and G7 - Egito Praia (Fig. 5E). These are consistent with the concept of geomorphosites proposed by Reynard (2009, 2021), whose value derives not only from scientific significance, but also from aesthetic, cultural, and territorial dimensions. According to the evalu\u00ad ations presented in Tables I-III, G3 - Quicombo Gorge can also be added to the list of sites with high geotourism potential (Fig. 5C). This selection is primarily characterised by the high geomorphological and scenic value of the sites. G1 - Binga Falls, which marks the eastern boundary of the Mesozoic infill in southwest Angola, already represents a well\u00ad established tourist destination (Table I, Fig. 3Aand 5A), complemented by additional symbolic historical (Portuguese colonial period bridge) and other landscape attributes (Duarte et al., 2014). In this domain, with historical richness, this geosite is only surpassed by the G7 - Egito Praia, due to the presence of the Fortress of S\u02dcao Sebasti\u02dcao do Egito, a nineteenth-century Portuguese symbol of sovereignty, as well as the 'Quintal\u02dcao dos Escravos', where a point of concentration and slave trade was operated before the formal slavery abolition of 1869. These touristic attributes, associated with the landscape, combining a steep coastal setting (Fig. 3G), the Balombo River flanked by a palm grove, and the iconic karst relief of the Catumbela Formation (Fig. 5E), identify this site as having the most significant geotourism potential within the study area. However, its accessibility remains a significant limitation (Table II)."
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/body"
       },
@@ -6347,7 +6331,7 @@
       "text": "The G2 - Sassa Caves represent a unique geotourism site within the region, constituting the only identified example of this type of karst geomorphology. Developed in carbonate rocks, these caves illustrate processes of dissolution and subterranean drainage, providing valuable insights into the local geomorphological evolution. Their rarity, com\u00ad bined with their scientific, educational, and scenic value, makes them highly relevant for promoting geotourism and geoheritage (Fig. 5B). At a lower level of impact, largely constrained by accessibility limitations and weak or non-existent tourism infrastructure in remote areas, are geosites such as G6 - Tapado (Fig. 5D), G8 - Hanha da Praia (Fig. 3I), and G12 - Tchiule Floodgate (Fig. 5F)."
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/body"
       },
@@ -6388,7 +6372,7 @@
       "text": "Despite current constraints, geotourism represents a strategic op\u00ad portunity for Angola, not only for the valorisation of its natural heritage but also for its contribution to sustainable regional development, geo\u00ad scientific education, and the diversification of the tourism sector. The implementation of geoconservation policies, together with the devel\u00ad opment of geosite inventories and appropriate management strategies, is essential to consolidate this emerging sector. This perspective is well established in the geotourism literature, which highlights the role of geoheritage as a driver of sustainable development and community engagement (e.g., Hose, 2012; UNESCO, 2016; Dowling and Newsome, 2018; Gordon et al., 2021). In this context, methodologies for the identification and assessment of geosites, as applied in this study, are recognised as fundamental tools for both conservation and territorial planning (Brilha, 2016; Reynard and Brilha, 2018), particularly in re\u00ad gions that remain difficult to access and are still largely underexplored. In regions characterised by high geodiversity but limited infrastructure and accessibility, geotourism provides a valuable framework for inte\u00ad grating geological heritage into landscape management and regional development strategies. This is particularly relevant in many African contexts, where logistical and infrastructural constraints still persist, where geoheritage resources offer significant potential for education, conservation, and sustainable land-use planning (e.g., UNESCO, 2016; Gordon et al., 2021; Neto and Henriques, 2022)."
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/body"
       },
@@ -6416,7 +6400,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/body"
       },
@@ -6443,7 +6427,7 @@
       "text": "Southwest Africa is characterised by remarkable geodiversity, expressed through a wide range of geomorphological and geological settings. Angola constitutes one of the most diverse territories in this context, encompassing deserts, mountain ranges, coastal cliffs, water\u00ad falls, and karst systems developed across different geological frame\u00ad works and timescales. Despite this diversity, large sectors of the country remain insufficiently studied, particularly in remote onshore areas where restricted accessibility, limited infrastructure, and logistical constraints continue to hinder systematic geological investigation and geoheritage assessment."
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/body"
       },
@@ -6470,7 +6454,7 @@
       "text": "In this context, the present study contributes to the recognition and assessment of the geological heritage of the Angolan western margin through the inventory and characterisation of 12 geosites located be\u00ad tween the Binga Waterfalls and the lower Catumbela River, within the southern Kwanza Basin and Benguela Sub-basin. Several of these sites remain poorly documented and display exceptional geological attri\u00ad butes, particularly regarding stratigraphy, sedimentology, palae\u00ad ontology, and geomorphology, which represent key components of geoheritage significance. Together, these features constitute an outstanding sedimentary archive of the Lower Cretaceous evolution of the South Atlantic. In this regard, the Lower Cretaceous of Angola dis\u00ad plays geological attributes that are consistent with scientific significance criteria emphasised in the IUGS-UNESCO guidelines for UNESCO Global Geoparks."
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/body"
       },
@@ -6497,7 +6481,7 @@
       "text": "The integrated stratigraphic, sedimentological, palaeontological, and geoheritage assessment undertaken in this study demonstrates the high scientific relevance of these sites, particularly for regional strati\u00ad graphic correlations, palaeoenvironmental reconstructions, and the understanding of tectonosedimentary processes associated with the early opening of the South Atlantic Ocean. In addition, the strong landscape expression of many outcrops, especially along the coastal cliffs, enhances their educational and geotouristic potential."
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/body"
       },
@@ -6524,7 +6508,7 @@
       "text": "This work provides an important baseline for future geological and geoheritage studies along the Angolan coast and highlights the need to integrate geoconservation into territorial planning and sustainable development strategies. It may also contribute to future geoheritage initiatives, including, where appropriate, geopark planning, although any such assessment would require consideration of a much broader set of criteria beyond geological significance."
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/body"
       },
@@ -6565,7 +6549,7 @@
       "text": "Given the current uneven state of geological knowledge and the limited published scientific information available for several of the proposed geosites, this study intentionally adopts a qualitative inventory-based approach, rather than a semi-quantitative assessment. A subsequent, more comprehensive assessment should incorporate quantitative approaches to comparatively evaluate the scientific and other geoheritage values of the selected sites, as well as their vulnera\u00ad bility, conservation priorities, and management needs, once additional geological and field-based investigations provide a more robust scien\u00ad tific basis for such analyses."
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/body"
       },
@@ -6592,7 +6576,7 @@
       "text": "17"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/body"
       },
@@ -6619,7 +6603,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/body"
       },
@@ -6646,7 +6630,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/body"
       },
@@ -6673,7 +6657,7 @@
       "text": "The results further reinforce the significance of the Angolan Lower Cretaceous within the broader geoscientific framework of the South Atlantic margins."
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/body"
       },
@@ -6701,7 +6685,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/body"
       },
@@ -6728,7 +6712,7 @@
       "text": "L.V. Duarte: Writing - review & editing, Writing - original draft, Visualization, Validation, Supervision, Resources, Project administra\u00ad tion, Methodology, Investigation, Funding acquisition, Formal analysis, Data curation, Conceptualization. J. Segundo: Writing - review & editing, Methodology, Investigation, Funding acquisition, Data curation. A. Gon\u00e7alves: Writing - review & editing, Methodology, Investigation, Funding acquisition, Data curation. C.F. Rodrigues: Writing - review & editing, Supervision, Methodology, Investigation. P.M. Callapez: Writing - review & editing, Supervision, Methodology, Investigation. P. C. Nsungani: Writing - review & editing, Methodology."
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/body"
       },
@@ -6756,7 +6740,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/body"
       },
@@ -6783,7 +6767,7 @@
       "text": "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/body"
       },
@@ -6811,7 +6795,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/body"
       },
@@ -6838,7 +6822,7 @@
       "text": "This work was supported by national funds through Funda\u00e7\u02dcao para a Ci\u02c6encia e Tecnologia, I. P. (FCT), under the projects UIDB/04292/2020, UIDP/04292/2020, UID/04292/2025 (https://doi.org/10 .54499/UID/04292/2025) granted to the Marine and Environmental Sciences Centre (MARE), and LA/P/0069/2020 (https://doi.org/10.5 4499/LA/P/0069/2020), granted to the Aquatic Research Infrastruc\u00ad ture Network ARNET, and UIDP/00611/2020 (https://doi.org/10.544 99/UIDP/00611/2020) granted to CITEUC. LVD was also supported by IATV - University of Coimbra, and CFR was supported by Funda\u00e7\u02dcao/ Universidade Fernando Pessoa, Porto, Portugal. LVD gratefully ac\u00ad knowledges Ricardo Rodrigo, Marco Cunha, and Isaac Vunge of Geo\u00ad surveys - Consultores em Geof\u00edsica (Angola) for their logistical support during the fieldwork carried out in 2025. The authors also thank the two anonymous reviewers and the Editor for their constructive comments and critical evaluation of the manuscript."
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/body"
       },
@@ -6866,7 +6850,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/body"
       },
@@ -6893,7 +6877,7 @@
       "text": "No data was used for the research described in the article."
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/body"
       },
@@ -6921,7 +6905,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -6951,7 +6935,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -6980,7 +6964,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7010,7 +6994,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7040,7 +7024,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/211",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7070,7 +7054,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/212",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7100,7 +7084,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/213",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7130,7 +7114,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/214",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7160,7 +7144,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/215",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7190,7 +7174,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/216",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7220,7 +7204,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/217",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7250,7 +7234,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/218",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7280,7 +7264,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/219",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7310,7 +7294,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/220",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7340,7 +7324,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7370,7 +7354,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7399,7 +7383,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7428,7 +7412,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/224",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7457,7 +7441,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7486,7 +7470,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7515,7 +7499,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7545,7 +7529,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7575,7 +7559,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7604,7 +7588,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7634,7 +7618,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7664,7 +7648,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7694,7 +7678,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7724,7 +7708,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7753,7 +7737,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7783,7 +7767,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7813,7 +7797,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/237",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7843,7 +7827,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7873,7 +7857,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7903,7 +7887,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7933,7 +7917,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7963,7 +7947,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -7993,7 +7977,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/body"
       },
@@ -8020,7 +8004,7 @@
       "text": "18"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/body"
       },
@@ -8047,7 +8031,7 @@
       "text": "L.V. Duarte et al."
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/body"
       },
@@ -8074,7 +8058,7 @@
       "text": "Journal of African Earth Sciences 245 (2027) 106357"
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -8103,7 +8087,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/body"
       },
@@ -8131,7 +8115,7 @@
       "hyperlink": "https://doi.org/10.1016/j.tecto.2018.07.027"
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8161,7 +8145,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8191,7 +8175,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8221,7 +8205,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8251,7 +8235,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8280,7 +8264,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8310,7 +8294,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8340,7 +8324,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8369,7 +8353,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8399,7 +8383,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8428,7 +8412,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8458,7 +8442,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8487,7 +8471,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8517,7 +8501,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8547,7 +8531,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8577,7 +8561,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8607,7 +8591,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/265",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8637,7 +8621,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8667,7 +8651,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8696,7 +8680,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8726,7 +8710,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8756,7 +8740,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/269",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8785,7 +8769,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/270",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8815,7 +8799,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8845,7 +8829,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8875,7 +8859,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8905,7 +8889,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -8935,7 +8919,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/body"
       },
@@ -8962,7 +8946,7 @@
       "text": "SMNA, 2013. http://7maravilhas.ao/#home. (Accessed 17 November 2013)."
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -8992,7 +8976,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/277",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -9022,7 +9006,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -9052,7 +9036,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -9081,7 +9065,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/280",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -9110,7 +9094,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -9139,7 +9123,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/body"
       },
@@ -9232,7 +9216,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/39"
         }
       ],
       "content_layer": "body",
@@ -9255,7 +9239,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/39"
         }
       ],
       "references": [],
@@ -9269,7 +9253,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/44"
         }
       ],
       "content_layer": "body",
@@ -9292,7 +9276,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/44"
         }
       ],
       "references": [],
@@ -9306,7 +9290,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/56"
+          "$ref": "#/texts/55"
         }
       ],
       "content_layer": "body",
@@ -9329,7 +9313,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/56"
+          "$ref": "#/texts/55"
         }
       ],
       "references": [],
@@ -9343,7 +9327,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/60"
+          "$ref": "#/texts/59"
         }
       ],
       "content_layer": "body",
@@ -9366,7 +9350,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/60"
+          "$ref": "#/texts/59"
         }
       ],
       "references": [],
@@ -9380,7 +9364,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/90"
+          "$ref": "#/texts/89"
         }
       ],
       "content_layer": "body",
@@ -9403,7 +9387,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/90"
+          "$ref": "#/texts/89"
         }
       ],
       "references": [],
@@ -9417,7 +9401,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/94"
+          "$ref": "#/texts/93"
         }
       ],
       "content_layer": "body",
@@ -9440,7 +9424,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/94"
+          "$ref": "#/texts/93"
         }
       ],
       "references": [],
@@ -9454,7 +9438,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/98"
+          "$ref": "#/texts/97"
         }
       ],
       "content_layer": "body",
@@ -9477,7 +9461,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/98"
+          "$ref": "#/texts/97"
         }
       ],
       "references": [],
@@ -9491,7 +9475,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/166"
+          "$ref": "#/texts/165"
         }
       ],
       "content_layer": "body",
@@ -9514,7 +9498,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/166"
+          "$ref": "#/texts/165"
         }
       ],
       "references": [],
@@ -9528,7 +9512,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/170"
+          "$ref": "#/texts/169"
         }
       ],
       "content_layer": "body",
@@ -9551,7 +9535,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/170"
+          "$ref": "#/texts/169"
         }
       ],
       "references": [],
@@ -9567,7 +9551,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/70"
+          "$ref": "#/texts/69"
         }
       ],
       "content_layer": "body",
@@ -9590,7 +9574,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/70"
+          "$ref": "#/texts/69"
         }
       ],
       "references": [],
@@ -13249,7 +13233,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/108"
+          "$ref": "#/texts/107"
         }
       ],
       "content_layer": "body",
@@ -13272,7 +13256,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/108"
+          "$ref": "#/texts/107"
         }
       ],
       "references": [],
@@ -16931,7 +16915,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/135"
+          "$ref": "#/texts/134"
         }
       ],
       "content_layer": "body",
@@ -16954,7 +16938,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/135"
+          "$ref": "#/texts/134"
         }
       ],
       "references": [],

@@ -1335,6 +1335,7 @@ def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     ("extra_args", "expected"),
     [
+        ([], True),
         (["--reading-order-separators"], True),
         (["--no-reading-order-separators"], False),
     ],

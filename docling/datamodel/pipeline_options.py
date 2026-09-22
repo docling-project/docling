@@ -2179,11 +2179,11 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         Field(
             description=(
                 "Use visible horizontal and vertical PDF rules as structural signals "
-                "for rule-based reading order. This experimental option only affects "
-                "PDF backends that expose visible shape geometry."
+                "for rule-based reading order. This only affects PDF backends that "
+                "expose visible shape geometry."
             )
         ),
-    ] = False
+    ] = True
     heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(

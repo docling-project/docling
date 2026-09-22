@@ -927,10 +927,10 @@ def convert(  # noqa: C901
             "--reading-order-separators/--no-reading-order-separators",
             help=(
                 "Use visible horizontal and vertical PDF rules as structural "
-                "signals for reading order. Experimental."
+                "signals for reading order."
             ),
         ),
-    ] = False,
+    ] = True,
     layout_engine: Annotated[
         str,
         typer.Option(

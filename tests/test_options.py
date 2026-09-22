@@ -81,7 +81,6 @@ def test_accelerator_options():
     assert ao3.device == AcceleratorDevice.CUDA
     assert ao4.num_threads == 4
     assert ao4.device == AcceleratorDevice.XPU
-
     # Use envvars (regular + alternative) and default values
     os.environ["OMP_NUM_THREADS"] = "1"
     ao.__init__()
@@ -121,6 +120,10 @@ def test_accelerator_options():
     ao7 = AcceleratorOptions()
     assert ao7.num_threads == 4
     assert ao7.device == AcceleratorDevice.AUTO
+
+
+def test_reading_order_separators_are_enabled_by_default():
+    assert PdfPipelineOptions().use_reading_order_separators
 
 
 def test_kserve_v2_binary_data_deprecated_alias():

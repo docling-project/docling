@@ -60,10 +60,7 @@
         "$ref": "#/pictures/1"
       },
       {
-        "$ref": "#/texts/13"
-      },
-      {
-        "$ref": "#/pictures/2"
+        "$ref": "#/texts/15"
       },
       {
         "$ref": "#/texts/16"
@@ -90,9 +87,6 @@
         "$ref": "#/texts/23"
       },
       {
-        "$ref": "#/pictures/3"
-      },
-      {
         "$ref": "#/texts/24"
       },
       {
@@ -102,7 +96,13 @@
         "$ref": "#/texts/26"
       },
       {
+        "$ref": "#/pictures/2"
+      },
+      {
         "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/pictures/3"
       },
       {
         "$ref": "#/texts/28"
@@ -156,13 +156,10 @@
         "$ref": "#/pictures/6"
       },
       {
-        "$ref": "#/texts/43"
-      },
-      {
         "$ref": "#/texts/44"
       },
       {
-        "$ref": "#/pictures/7"
+        "$ref": "#/texts/45"
       },
       {
         "$ref": "#/texts/46"
@@ -180,16 +177,19 @@
         "$ref": "#/texts/50"
       },
       {
-        "$ref": "#/pictures/8"
-      },
-      {
         "$ref": "#/texts/51"
       },
       {
         "$ref": "#/texts/52"
       },
       {
+        "$ref": "#/pictures/7"
+      },
+      {
         "$ref": "#/texts/53"
+      },
+      {
+        "$ref": "#/pictures/8"
       },
       {
         "$ref": "#/texts/54"
@@ -551,33 +551,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 38.27,
-            "t": 170.36,
-            "r": 152.82,
-            "b": 43.85,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            320
-          ]
-        }
-      ],
-      "orig": "\u00abSeit den ersten Ausgab zen wir die Pendlerzeitu um Menschen unterweg erreichen. Unvergessen die komplett gelbe Ausg zur Lancierung von Rive Gelb. Auch k\u00fcnftig setze mit Rivella und Focuswater auf 20 Minuten als starke Plattform im digitalen Raum.\u00bb Silvan Brauen, Rivella-Co-CEO ben nutung, gs zu bleibt gabe ella en wir",
-      "text": "\u00abSeit den ersten Ausgab zen wir die Pendlerzeitu um Menschen unterweg erreichen. Unvergessen die komplett gelbe Ausg zur Lancierung von Rive Gelb. Auch k\u00fcnftig setze mit Rivella und Focuswater auf 20 Minuten als starke Plattform im digitalen Raum.\u00bb Silvan Brauen, Rivella-Co-CEO ben nutung, gs zu bleibt gabe ella en wir"
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "section_header",
       "prov": [
         {
@@ -600,9 +573,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/pictures/2"
+        "$ref": "#/pictures/1"
       },
       "children": [],
       "content_layer": "body",
@@ -627,9 +600,9 @@
       "text": "20-Minuten-Verleger und Verwaltungsratspr\u00e4sident der TX Group: Pietro Supino."
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/pictures/2"
+        "$ref": "#/pictures/1"
       },
       "children": [],
       "content_layer": "body",
@@ -654,7 +627,7 @@
       "text": "20min/Taddeo Cerletti"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/body"
       },
@@ -681,7 +654,7 @@
       "text": "Z\u00dcRICH Verleger Pietro Supino \u00fcber das Printende, zu Big Tech abfliessende Werbegelder und die SRG."
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -709,7 +682,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/body"
       },
@@ -736,34 +709,7 @@
       "text": "Wehm\u00fctig. Ich habe noch das Bild vor Augen, wie 20 Minuten am Tag der Lancierung in Z\u00fcrich am Bellevue verteilt wurde. Wir waren damals nicht beteiligt. Ichwar skeptisch.Wer h\u00e4tte gedacht, dass 20 Minuten die gr\u00f6sste und wichtigste nationale Medienmarke werden k\u00f6nnte? Die Erfolgsgeschichte von 20 Minuten ist beeindruckend! Tats\u00e4chlich war 20 Minuten eine der rentabelsten Zeitungen Europas. Sp\u00e4ter wurde 20 Minuten auch online zur Nummer 1. Was ist das"
     },
     {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 245.2,
-            "t": 170.36,
-            "r": 342.18,
-            "b": 42.51,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            303
-          ]
-        }
-      ],
-      "orig": "\u00abMein Medienkonsum hat sich bereits stark ins Digitale verlagert. 20 Minuten ist f\u00fcr mich eine praktische t\u00e4gliche Orientierungshilfe: schnell, kostenlos zug\u00e4nglich und thematisch breit genug, um mir einen \u00dcberblick zu geben. Die App f\u00fchlt sich an wie der direkte Draht zur Schweiz.\u00bb Manuela Frey, Model",
-      "text": "\u00abMein Medienkonsum hat sich bereits stark ins Digitale verlagert. 20 Minuten ist f\u00fcr mich eine praktische t\u00e4gliche Orientierungshilfe: schnell, kostenlos zug\u00e4nglich und thematisch breit genug, um mir einen \u00dcberblick zu geben. Die App f\u00fchlt sich an wie der direkte Draht zur Schweiz.\u00bb Manuela Frey, Model"
-    },
-    {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/body"
       },
@@ -791,7 +737,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/body"
       },
@@ -818,7 +764,7 @@
       "text": "20 Minuten wollte den Menschen ein neues Erlebnis bieten: in kurzer Zeit solide informieren und dar\u00fcber hinaus unterhalten. Das Konzept war eine Innovation. Nach der \u00dcbernahme haben wir die Qualit\u00e4t systematisch ausgebaut."
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -845,7 +791,7 @@
       "text": "20 Minuten war in der Vergangenheit oft ein First Mover. Wer-"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/body"
       },
@@ -872,7 +818,7 @@
       "text": "\u00abNach der \u00dcbernahme haben wir die Qualit\u00e4t systematisch ausgebaut.\u00bb"
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -900,7 +846,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -927,7 +873,7 @@
       "text": "20 Minuten ist ein anderes Modell als Abo-Zeitungen. Darum w\u00fcrde ich von 20 Minuten nicht ableiten, was f\u00fcr Abo-Zeitungen gilt. Aber der Trend, dass Print r\u00fcckl\u00e4ufig ist und das Digitale w\u00e4chst, gilt auch f\u00fcr Abo-Zeitungen."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -954,7 +900,7 @@
       "text": "20 Minuten war immer gratis. Damit erreicht es alle Menschen und sozialen Schichten. Zudem berichtet 20 Minuten ideologiefrei \u00fcber politische Themen. Untersch\u00e4tzt man den Beitrag, den 20 Minuten zu einer informiertenGesellschaft leistet?"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -979,6 +925,60 @@
       ],
       "orig": "Man muss unterscheiden: untersch\u00e4tzt vom Publikum oder in einer elit\u00e4ren Betrachtung? Vom Publikum sicher nicht, darum",
       "text": "Man muss unterscheiden: untersch\u00e4tzt vom Publikum oder in einer elit\u00e4ren Betrachtung? Vom Publikum sicher nicht, darum"
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 38.27,
+            "t": 170.36,
+            "r": 152.82,
+            "b": 43.85,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            320
+          ]
+        }
+      ],
+      "orig": "\u00abSeit den ersten Ausgab zen wir die Pendlerzeitu um Menschen unterweg erreichen. Unvergessen die komplett gelbe Ausg zur Lancierung von Rive Gelb. Auch k\u00fcnftig setze mit Rivella und Focuswater auf 20 Minuten als starke Plattform im digitalen Raum.\u00bb Silvan Brauen, Rivella-Co-CEO ben nutung, gs zu bleibt gabe ella en wir",
+      "text": "\u00abSeit den ersten Ausgab zen wir die Pendlerzeitu um Menschen unterweg erreichen. Unvergessen die komplett gelbe Ausg zur Lancierung von Rive Gelb. Auch k\u00fcnftig setze mit Rivella und Focuswater auf 20 Minuten als starke Plattform im digitalen Raum.\u00bb Silvan Brauen, Rivella-Co-CEO ben nutung, gs zu bleibt gabe ella en wir"
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 245.2,
+            "t": 170.36,
+            "r": 342.18,
+            "b": 42.51,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            303
+          ]
+        }
+      ],
+      "orig": "\u00abMein Medienkonsum hat sich bereits stark ins Digitale verlagert. 20 Minuten ist f\u00fcr mich eine praktische t\u00e4gliche Orientierungshilfe: schnell, kostenlos zug\u00e4nglich und thematisch breit genug, um mir einen \u00dcberblick zu geben. Die App f\u00fchlt sich an wie der direkte Draht zur Schweiz.\u00bb Manuela Frey, Model",
+      "text": "\u00abMein Medienkonsum hat sich bereits stark ins Digitale verlagert. 20 Minuten ist f\u00fcr mich eine praktische t\u00e4gliche Orientierungshilfe: schnell, kostenlos zug\u00e4nglich und thematisch breit genug, um mir einen \u00dcberblick zu geben. Die App f\u00fchlt sich an wie der direkte Draht zur Schweiz.\u00bb Manuela Frey, Model"
     },
     {
       "self_ref": "#/texts/28",
@@ -1177,60 +1177,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 690.24,
-            "t": 169.98,
-            "r": 783.43,
-            "b": 62.42,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            218
-          ]
-        }
-      ],
-      "orig": "\u00abIn unseren Pausen r\u00e4umen wird sehr oft 20 Minuten gelesen pr\u00fcfen wir gerade, o den QR-Code f\u00fcr die lineausgabe an den W\u00e4nden aufh\u00e4ngen sollen, damit alle Mitarbeitenden Zugang haben\u00bb. Anna Hug, nft . Hier ob wir e Onn",
-      "text": "\u00abIn unseren Pausen r\u00e4umen wird sehr oft 20 Minuten gelesen pr\u00fcfen wir gerade, o den QR-Code f\u00fcr die lineausgabe an den W\u00e4nden aufh\u00e4ngen sollen, damit alle Mitarbeitenden Zugang haben\u00bb. Anna Hug, nft . Hier ob wir e Onn"
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 690.24,
-            "t": 59.38,
-            "r": 757.97,
-            "b": 42.43,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            27
-          ]
-        }
-      ],
-      "orig": "Co-Gesch\u00e4ftsleiterin Hug AG",
-      "text": "Co-Gesch\u00e4ftsleiterin Hug AG"
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "section_header",
       "prov": [
         {
@@ -1253,7 +1199,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/body"
       },
@@ -1280,7 +1226,7 @@
       "text": "Liegt es nicht auch in der Verantwortung von Schweizer Unternehmen, einen Teil ihres Mediabudgets in unabh\u00e4ngige Schweizer Medien zu investieren?"
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -1307,7 +1253,7 @@
       "text": "Es ist unsere Aufgabe, mit guten Inhalten ein spannendes Publikum zu erreichen und attraktiveWerbem\u00f6glichkeiten zu bieten, sodass Unternehmen gerne bei unsWerbung platzieren. Das ist bei 20 Minuten der"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1334,7 +1280,7 @@
       "text": "Fall und der Trend ist positiv."
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/body"
       },
@@ -1361,7 +1307,7 @@
       "text": "Auch bei TX gab es einen grossen Stellenabbau. Kritiker sind der Meinung: Es braucht eine Quersubventionierung, tiefere Renditeforderungen oder staatliche Subventionierung. Was sagen Sie dazu?"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -1402,7 +1348,7 @@
       "text": "Medien leben davon, dass sie einen Mehrwert f\u00fcr ihr Publikum schaffen. F\u00fcr die Gesellschaft haben Medien einen Wert, wenn sie diese erreichen und ihre Bed\u00fcrfnisse erf\u00fcllen. Dann finden sie auch eine wirtschaftliche Basis und sind unabh\u00e4ngig. Die Unabh\u00e4ngigkeit ist in meinem Credo die wichtigste Ambition. Subventionierte Angebote dienen meistens dem Strukturerhalt und der Verbreitung von Inhalten, die aus Sicht des Publikums verzichtbar sind. Es widerspricht meiner Vorstellung einer freien Gesellschaft, das Medienangebot staatlich vorzugeben. So w\u00fcrde sich die Katze in den eigenen Schwanz beissen."
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -1443,7 +1389,7 @@
       "text": "Geb\u00fchrenfinanzierte Onlineangebote konkurrenzieren primachen. Der Name sagt es. Es gibt keine Notwendigkeit und keine Legitimation, dar\u00fcber hinaus mit Geb\u00fchrengeld Onlineangebote zu schaffen. Das muss in der Konzession geregelt werden. Wenn die Politik es nicht tut und die SRG sich nicht selbst besinnt, riskiert sie, vor dem Volk zu verlieren."
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -1470,9 +1416,9 @@
       "text": "ImM\u00e4rz stimmen wir \u00fcber die SRG-Halbierungsinitiative ab."
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/pictures/7"
+        "$ref": "#/pictures/6"
       },
       "children": [],
       "content_layer": "body",
@@ -1497,7 +1443,7 @@
       "text": "ChefredaktorinPompermitVerlegerSupino. 20min/TaddeoCerletti"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/body"
       },
@@ -1525,7 +1471,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/body"
       },
@@ -1552,34 +1498,7 @@
       "text": "Das Schweizer Radio und Fernsehen SRF wurde geschaffen, um Radio und Fernsehen zu"
     },
     {
-      "self_ref": "#/texts/48",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 888.66,
-            "t": 170.36,
-            "r": 988.05,
-            "b": 42.42,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            266
-          ]
-        }
-      ],
-      "orig": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e",
-      "text": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e"
-    },
-    {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -1607,7 +1526,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -1648,7 +1567,7 @@
       "text": "Die Eidgen\u00f6ssische Wettbewerbskommission hat festgehalten, dass die SRG mit ihrem Onlineangebot das private Medienangebot direkt konkurrenziert. Das ist das Problem. Mir geht es nicht um die Finanzierung, ich stehe der SRG positiv gegen\u00fcber. Aber sie muss sich auf Radio und Fernsehen beschr\u00e4nken. Nat\u00fcrlich auch \u00fcber digitale Verbreitungskan\u00e4le. Daf\u00fcr kann man das Geb\u00fchrengeld sehr gut und sinnvoll einsetzen. Ich denke etwa an Schweizer Filme, an grosse Anl\u00e4sse wie den Eurovision Song Contest, an den Kulturbereich und an Sport\u00fcbertragungen wie das Lauberhornrennen. Wenn die SRG mit demGeb\u00fchrengeld stattdessen Onlinemedien entwickelt und damit die Existenz des privaten Angebots gef\u00e4hrdet, braucht sie die Mittel offenbar nicht f\u00fcr Radio und Fernsehen. Das finde ich schade."
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -1676,7 +1595,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -1703,7 +1622,7 @@
       "text": "Dass 20 Minuten einen gesellschaftlichen Mehrwert schafft: das Publikum gut informiert und unterh\u00e4lt, inspiriert und die Menschen in der Schweiz zusammenbringt. In diesem Sinn weiterhin viel Erfolg!"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -1728,6 +1647,87 @@
       ],
       "orig": "D\u00c9SIR\u00c9E POMPER",
       "text": "D\u00c9SIR\u00c9E POMPER"
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 690.24,
+            "t": 169.98,
+            "r": 783.43,
+            "b": 62.42,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            218
+          ]
+        }
+      ],
+      "orig": "\u00abIn unseren Pausen r\u00e4umen wird sehr oft 20 Minuten gelesen pr\u00fcfen wir gerade, o den QR-Code f\u00fcr die lineausgabe an den W\u00e4nden aufh\u00e4ngen sollen, damit alle Mitarbeitenden Zugang haben\u00bb. Anna Hug, nft . Hier ob wir e Onn",
+      "text": "\u00abIn unseren Pausen r\u00e4umen wird sehr oft 20 Minuten gelesen pr\u00fcfen wir gerade, o den QR-Code f\u00fcr die lineausgabe an den W\u00e4nden aufh\u00e4ngen sollen, damit alle Mitarbeitenden Zugang haben\u00bb. Anna Hug, nft . Hier ob wir e Onn"
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 690.24,
+            "t": 59.38,
+            "r": 757.97,
+            "b": 42.43,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            27
+          ]
+        }
+      ],
+      "orig": "Co-Gesch\u00e4ftsleiterin Hug AG",
+      "text": "Co-Gesch\u00e4ftsleiterin Hug AG"
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 888.66,
+            "t": 170.36,
+            "r": 988.05,
+            "b": 42.42,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            266
+          ]
+        }
+      ],
+      "orig": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e",
+      "text": "\u00abEin pers\u00f6nlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin D\u00e9si Pomper imLive-Talk, mitten in der Gem\u00fcse- und Fr\u00fcchteabteilung unserer Filiale am Limmatplatz.\u00bb Mario Irminger, Migros-CEO ers st ir\u00e9e"
     },
     {
       "self_ref": "#/texts/54",
@@ -1800,17 +1800,24 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 123.38,
-            "t": 178.6,
-            "r": 235.07,
-            "b": 33.54,
+            "l": 255.74,
+            "t": 729.09,
+            "r": 623.65,
+            "b": 453.5,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1829,24 +1836,17 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/14"
-        },
-        {
-          "$ref": "#/texts/15"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "picture",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 255.74,
-            "t": 729.09,
-            "r": 623.65,
-            "b": 453.5,
+            "l": 123.38,
+            "t": 178.6,
+            "r": 235.07,
+            "b": 33.54,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1960,38 +1960,9 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 763.39,
-            "t": 176.83,
-            "r": 873.32,
-            "b": 33.72,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            0
-          ]
-        }
-      ],
-      "captions": [],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/7",
-      "parent": {
-        "$ref": "#/body"
-      },
       "children": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/43"
         }
       ],
       "content_layer": "body",
@@ -2014,9 +1985,38 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/43"
         }
       ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 763.39,
+            "t": 176.83,
+            "r": 873.32,
+            "b": 33.72,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [],
       "references": [],
       "footnotes": [],
       "annotations": []
