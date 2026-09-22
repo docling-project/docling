@@ -177,7 +177,7 @@ doc_converter = DocumentConverter(
 The equivalent CLI option is independent of `--num-threads`:
 
 ```sh
-docling --from pdf --parser-threads 8 FILE
+docling --pipeline native --from pdf --parser-threads 8 FILE
 ```
 
 
