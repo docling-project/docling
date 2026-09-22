@@ -208,6 +208,20 @@ def test_parse_mineru2_merges_text_continuations() -> None:
     ]
 
 
+def test_parse_mineru2_index_is_text() -> None:
+    layout = "<|box_start|>0 0 1000 1000<|box_end|><|ref_start|>index<|ref_end|>"
+
+    document = parse_mineru2(
+        serialize_mineru2_transcript(layout, [(0, "Contents")]),
+        original_page_size=Size(width=100, height=100),
+        page_no=1,
+    )
+
+    assert [(item.label, item.text) for item in document.texts] == [
+        (DocItemLabel.TEXT, "Contents")
+    ]
+
+
 class _MinerU2Engine:
     def __init__(self) -> None:
         self.batches = []
@@ -219,6 +233,8 @@ class _MinerU2Engine:
                 "<|ref_start|>table<|ref_end|><|rotate_up|>"
                 "<|box_start|>0 500 500 1000<|box_end|>"
                 "<|ref_start|>equation<|ref_end|><|rotate_up|>"
+                "<|box_start|>500 500 1000 1000<|box_end|>"
+                "<|ref_start|>text<|ref_end|><|rotate_up|>"
             ),
             (
                 "<|box_start|>0 0 1000 1000<|box_end|>"
@@ -275,7 +291,7 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
         page._default_image_scale = model.options.scale
 
     assert list(model(SimpleNamespace(timings={}), pages)) == pages
-    assert len(model.engine.batches) == 4
+    assert len(model.engine.batches) == 5
     assert [engine_input.prompt for engine_input in model.engine.batches[0]] == [
         MINERU2_LAYOUT_PROMPT,
         MINERU2_LAYOUT_PROMPT,
@@ -285,18 +301,20 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
         "\nText Recognition:",
         "\nText Recognition:",
     ]
-    assert model.engine.batches[2][0].prompt == "\nTable Recognition:"
-    assert model.engine.batches[3][0].prompt == "\nFormula Recognition:"
+    assert model.engine.batches[2][0].prompt == "\nText Recognition:"
+    assert model.engine.batches[3][0].prompt == "\nTable Recognition:"
+    assert model.engine.batches[4][0].prompt == "\nFormula Recognition:"
+    assert all(len(batch) <= len(pages) for batch in model.engine.batches[1:])
     assert model.engine.batches[0][0].extra_generation_config == (
         MINERU2_LAYOUT_GENERATION_CONFIG
     )
     assert model.engine.batches[1][0].extra_generation_config == (
         MINERU2_TEXT_GENERATION_CONFIG
     )
-    assert model.engine.batches[2][0].extra_generation_config == (
+    assert model.engine.batches[3][0].extra_generation_config == (
         MINERU2_TABLE_GENERATION_CONFIG
     )
-    assert model.engine.batches[3][0].extra_generation_config == (
+    assert model.engine.batches[4][0].extra_generation_config == (
         MINERU2_EQUATION_GENERATION_CONFIG
     )
 
@@ -314,9 +332,10 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
         {"region_index": 0, "text": "Text 10"},
         {"region_index": 1, "text": "<fcel>T10<nl>"},
         {"region_index": 2, "text": "E10"},
+        {"region_index": 3, "text": "Text 10"},
     ]
     assert second_transcript["recognition"] == [{"region_index": 0, "text": "Text 20"}]
-    assert first_response.num_tokens == 15
+    assert first_response.num_tokens == 16
     assert second_response.num_tokens == 9
 
 

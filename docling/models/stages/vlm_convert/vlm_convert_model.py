@@ -212,19 +212,23 @@ class VlmConvertModel(BasePageModel):
             [] for _image in images
         ]
         for prompt, group in recognition_groups.items():
-            group_outputs = self.engine.predict_batch(
-                self._build_engine_inputs(
-                    [image for _page_index, _region_index, image in group],
-                    [prompt] * len(group),
-                    mineru2_generation_config(prompt),
+            for offset in range(0, len(group), len(images)):
+                batch = group[offset : offset + len(images)]
+                batch_outputs = self.engine.predict_batch(
+                    self._build_engine_inputs(
+                        [image for _page_index, _region_index, image in batch],
+                        [prompt] * len(batch),
+                        mineru2_generation_config(prompt),
+                    )
                 )
-            )
-            if len(group_outputs) != len(group):
-                raise RuntimeError(
-                    "MinerU2 recognition output count does not match the region count"
-                )
-            for (page_index, region_index, _image), output in zip(group, group_outputs):
-                outputs_by_page[page_index].append((region_index, output))
+                if len(batch_outputs) != len(batch):
+                    raise RuntimeError(
+                        "MinerU2 recognition output count does not match the region count"
+                    )
+                for (page_index, region_index, _image), output in zip(
+                    batch, batch_outputs
+                ):
+                    outputs_by_page[page_index].append((region_index, output))
 
         combined_outputs = []
         for layout_output, indexed_page_outputs in zip(layout_outputs, outputs_by_page):

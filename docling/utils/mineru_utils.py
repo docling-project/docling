@@ -133,7 +133,7 @@ _TEXT_LABELS = {
     "header": DocItemLabel.PAGE_HEADER,
     "image_caption": DocItemLabel.CAPTION,
     "image_footnote": DocItemLabel.FOOTNOTE,
-    "index": DocItemLabel.DOCUMENT_INDEX,
+    "index": DocItemLabel.TEXT,
     "page_footnote": DocItemLabel.FOOTNOTE,
     "page_number": DocItemLabel.PAGE_FOOTER,
     "phonetic": DocItemLabel.TEXT,
