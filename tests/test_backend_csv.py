@@ -135,6 +135,23 @@ def test_doubled_quote_is_an_escaped_quote(csv_bytes):
     assert table.data.table_cells[-1].text == 'He said "no" twice'
 
 
+def test_backslash_escaped_quote_still_converts():
+    """A backslash escape is not RFC 4180, but such files still have to convert.
+
+    MySQL's SELECT ... INTO OUTFILE writes `\\"` by default. Reading doubled
+    quotes as escapes makes those rows malformed, so the row is read unescaped
+    instead of failing the whole document.
+    """
+    csv_bytes = b'id,quote\n1,"He said \\"no\\" twice"\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="backslash.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    table = conv_result.document.tables[0]
+    assert table.data.num_cols == 2
+    assert table.data.table_cells[-1].text.startswith("He said ")
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(

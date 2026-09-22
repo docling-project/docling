@@ -128,10 +128,22 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         try:
             result = csv.reader(self.content, dialect=dialect, strict=True)
             self.csv_data = list(result)
-        except csv.Error as e:
-            raise DocumentLoadError(
-                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
-            ) from e
+        except csv.Error as quote_error:
+            # A backslash-escaped quote (what MySQL's SELECT ... INTO OUTFILE
+            # writes) is malformed once doubled quotes are read as escapes.
+            # Read it the way it was read before instead of losing the whole
+            # document; those cells keep their stray quotes.
+            _log.info(f"Could not parse quotes ({quote_error}), retrying unescaped")
+            self.content.seek(0)
+            try:
+                result = csv.reader(
+                    self.content, dialect=dialect, strict=True, doublequote=False
+                )
+                self.csv_data = list(result)
+            except csv.Error as e:
+                raise DocumentLoadError(
+                    f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+                ) from e
         _log.info(f"Detected {len(self.csv_data)} lines")
 
         # Parse the CSV into a structured document model
