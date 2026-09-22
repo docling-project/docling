@@ -23,6 +23,17 @@ def test_easyocr_canvas_size_must_be_positive(canvas_size: int) -> None:
         EasyOcrOptions(canvas_size=canvas_size)
 
 
+@pytest.mark.parametrize("canvas_size", [None, 4096])
+def test_easyocr_canvas_size_survives_options_round_trip(
+    canvas_size: int | None,
+) -> None:
+    """Settings remain usable when pipeline options are serialized and rebuilt."""
+    options = EasyOcrOptions(canvas_size=canvas_size)
+    restored = EasyOcrOptions.model_validate(options.model_dump())
+
+    assert restored.canvas_size == canvas_size
+
+
 @pytest.mark.parametrize(
     ("canvas_size", "expected_kwargs"),
     [
