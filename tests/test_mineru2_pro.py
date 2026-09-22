@@ -9,7 +9,6 @@ from pathlib import PurePath
 from types import ModuleType, SimpleNamespace
 
 import pytest
-import torch
 from docling_core.types.doc import DocItemLabel, Size
 from PIL import Image
 
@@ -30,17 +29,10 @@ from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
 from docling.models.inference_engines.vlm.base import VlmEngineOutput, VlmEngineType
 from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
-from docling.models.inference_engines.vlm.transformers_engine import (
-    _FrequencyPresencePenaltyLogitsProcessor,
-)
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.mineru_utils import (
-    MINERU2_EQUATION_GENERATION_CONFIG,
-    MINERU2_LAYOUT_GENERATION_CONFIG,
     MINERU2_LAYOUT_PROMPT,
-    MINERU2_TABLE_GENERATION_CONFIG,
-    MINERU2_TEXT_GENERATION_CONFIG,
     MinerU2Region,
     parse_mineru2,
     parse_mineru2_layout,
@@ -60,7 +52,13 @@ def test_mineru2_pro_preset_and_engine_configs() -> None:
     assert spec.default_repo_id == "opendatalab/MinerU2.5-Pro-2604-1.2B"
     assert spec.prompt == MINERU2_LAYOUT_PROMPT
     assert spec.response_format == ResponseFormat.MINERU2
-    assert spec.supported_engines == {VlmEngineType.TRANSFORMERS}
+    assert spec.supported_engines == {
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.MLX,
+        VlmEngineType.API,
+        VlmEngineType.API_OPENAI,
+        VlmEngineType.API_LMSTUDIO,
+    }
 
     transformers_config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
     assert transformers_config.torch_dtype == "bfloat16"
@@ -73,6 +71,19 @@ def test_mineru2_pro_preset_and_engine_configs() -> None:
         transformers_config.extra_config["transformers_prompt_style"]
         == TransformersPromptStyle.CHAT
     )
+
+    mlx_config = spec.get_engine_config(VlmEngineType.MLX)
+    assert mlx_config.repo_id == "carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16"
+    assert mlx_config.extra_config["mlx_tied_word_embeddings"] is True
+
+    assert spec.get_api_params(VlmEngineType.API_OPENAI) == {
+        "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+        "max_tokens": 4096,
+    }
+    assert spec.get_api_params(VlmEngineType.API_LMSTUDIO) == {
+        "model": "mineru2.5-pro-2604-1.2b",
+        "max_tokens": 4096,
+    }
 
 
 def test_parse_mineru2_layout_filters_table_internal_regions() -> None:
@@ -291,7 +302,7 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
         page._default_image_scale = model.options.scale
 
     assert list(model(SimpleNamespace(timings={}), pages)) == pages
-    assert len(model.engine.batches) == 5
+    assert len(model.engine.batches) == 2
     assert [engine_input.prompt for engine_input in model.engine.batches[0]] == [
         MINERU2_LAYOUT_PROMPT,
         MINERU2_LAYOUT_PROMPT,
@@ -299,24 +310,11 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
     assert model.engine.batches[0][0].image.size == (1036, 1036)
     assert [engine_input.prompt for engine_input in model.engine.batches[1]] == [
         "\nText Recognition:",
+        "\nTable Recognition:",
+        "\nFormula Recognition:",
+        "\nText Recognition:",
         "\nText Recognition:",
     ]
-    assert model.engine.batches[2][0].prompt == "\nText Recognition:"
-    assert model.engine.batches[3][0].prompt == "\nTable Recognition:"
-    assert model.engine.batches[4][0].prompt == "\nFormula Recognition:"
-    assert all(len(batch) <= len(pages) for batch in model.engine.batches[1:])
-    assert model.engine.batches[0][0].extra_generation_config == (
-        MINERU2_LAYOUT_GENERATION_CONFIG
-    )
-    assert model.engine.batches[1][0].extra_generation_config == (
-        MINERU2_TEXT_GENERATION_CONFIG
-    )
-    assert model.engine.batches[3][0].extra_generation_config == (
-        MINERU2_TABLE_GENERATION_CONFIG
-    )
-    assert model.engine.batches[4][0].extra_generation_config == (
-        MINERU2_EQUATION_GENERATION_CONFIG
-    )
 
     first_response = pages[0].predictions.vlm_response
     second_response = pages[1].predictions.vlm_response
@@ -337,20 +335,6 @@ def test_vlm_convert_model_runs_mineru2_two_step_batches() -> None:
     assert second_transcript["recognition"] == [{"region_index": 0, "text": "Text 20"}]
     assert first_response.num_tokens == 16
     assert second_response.num_tokens == 9
-
-
-def test_transformers_applies_mineru_recognition_penalties() -> None:
-    processor = _FrequencyPresencePenaltyLogitsProcessor(
-        prompt_length=1, presence_penalty=1.0, frequency_penalty=0.05
-    )
-    scores = processor(
-        torch.tensor([[3, 7, 7, 9]]),
-        torch.zeros((1, 12)),
-    )
-
-    assert scores[0, 3] == 0
-    assert scores[0, 7] == pytest.approx(-1.1)
-    assert scores[0, 9] == pytest.approx(-1.05)
 
 
 def test_mineru_finalization_reports_malformed_nonempty_layout() -> None:

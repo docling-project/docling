@@ -33,9 +33,7 @@ from docling.models.inference_engines.vlm import (
     create_vlm_engine,
 )
 from docling.utils.mineru_utils import (
-    MINERU2_LAYOUT_GENERATION_CONFIG,
     MINERU2_LAYOUT_PROMPT,
-    mineru2_generation_config,
     parse_mineru2_layout,
     prepare_mineru2_crops,
     prepare_mineru2_layout_image,
@@ -141,7 +139,6 @@ class VlmConvertModel(BasePageModel):
         self,
         images: list[PILImage.Image],
         prompts: list[str],
-        generation_config: dict[str, float | int] | None = None,
     ) -> list[VlmEngineInput]:
         """Build a batch of ``VlmEngineInput`` sharing one generation-config template.
 
@@ -155,8 +152,6 @@ class VlmConvertModel(BasePageModel):
         extra_generation_config = model_spec.get_runtime_input_extra_config(
             runtime_engine_type
         )
-        if generation_config is not None:
-            extra_generation_config.update(generation_config)
         return [
             VlmEngineInput(
                 image=image,
@@ -188,9 +183,7 @@ class VlmConvertModel(BasePageModel):
         """Run MinerU2 layout detection followed by region recognition."""
         layout_images = [prepare_mineru2_layout_image(image) for image in images]
         layout_inputs = self._build_engine_inputs(
-            layout_images,
-            [MINERU2_LAYOUT_PROMPT] * len(layout_images),
-            MINERU2_LAYOUT_GENERATION_CONFIG,
+            layout_images, [MINERU2_LAYOUT_PROMPT] * len(layout_images)
         )
         layout_outputs = self.engine.predict_batch(layout_inputs)
         if len(layout_outputs) != len(images):
@@ -201,34 +194,34 @@ class VlmConvertModel(BasePageModel):
         regions_by_page = [
             parse_mineru2_layout(output.text) for output in layout_outputs
         ]
-        recognition_groups: dict[str, list[tuple[int, int, PILImage.Image]]] = {}
+        crop_images: list[PILImage.Image] = []
+        crop_prompts: list[str] = []
+        crop_targets: list[tuple[int, int]] = []
         for page_index, (image, regions) in enumerate(zip(images, regions_by_page)):
             for crop in prepare_mineru2_crops(image, regions):
-                recognition_groups.setdefault(crop.prompt, []).append(
-                    (page_index, crop.region_index, crop.image)
-                )
+                crop_images.append(crop.image)
+                crop_prompts.append(crop.prompt)
+                crop_targets.append((page_index, crop.region_index))
+
+        recognition_outputs = (
+            self.engine.predict_batch(
+                self._build_engine_inputs(crop_images, crop_prompts)
+            )
+            if crop_images
+            else []
+        )
+        if len(recognition_outputs) != len(crop_targets):
+            raise RuntimeError(
+                "MinerU2 recognition output count does not match the region count"
+            )
 
         outputs_by_page: list[list[tuple[int, VlmEngineOutput]]] = [
             [] for _image in images
         ]
-        for prompt, group in recognition_groups.items():
-            for offset in range(0, len(group), len(images)):
-                batch = group[offset : offset + len(images)]
-                batch_outputs = self.engine.predict_batch(
-                    self._build_engine_inputs(
-                        [image for _page_index, _region_index, image in batch],
-                        [prompt] * len(batch),
-                        mineru2_generation_config(prompt),
-                    )
-                )
-                if len(batch_outputs) != len(batch):
-                    raise RuntimeError(
-                        "MinerU2 recognition output count does not match the region count"
-                    )
-                for (page_index, region_index, _image), output in zip(
-                    batch, batch_outputs
-                ):
-                    outputs_by_page[page_index].append((region_index, output))
+        for (page_index, region_index), output in zip(
+            crop_targets, recognition_outputs
+        ):
+            outputs_by_page[page_index].append((region_index, output))
 
         combined_outputs = []
         for layout_output, indexed_page_outputs in zip(layout_outputs, outputs_by_page):

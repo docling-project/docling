@@ -38,37 +38,6 @@ _RECOGNITION_PROMPTS = {
     "table": "\nTable Recognition:",
     "equation": "\nFormula Recognition:",
 }
-_BASE_GENERATION_CONFIG: dict[str, float | int] = {
-    "top_p": 0.01,
-    "top_k": 1,
-    "repetition_penalty": 1.0,
-    "no_repeat_ngram_size": 100,
-}
-MINERU2_LAYOUT_GENERATION_CONFIG = {
-    **_BASE_GENERATION_CONFIG,
-    "presence_penalty": 0.0,
-    "frequency_penalty": 0.0,
-}
-MINERU2_TEXT_GENERATION_CONFIG = {
-    **_BASE_GENERATION_CONFIG,
-    "presence_penalty": 1.0,
-    "frequency_penalty": 0.05,
-}
-MINERU2_TABLE_GENERATION_CONFIG = {
-    **_BASE_GENERATION_CONFIG,
-    "presence_penalty": 1.0,
-    "frequency_penalty": 0.005,
-}
-MINERU2_EQUATION_GENERATION_CONFIG = {
-    **_BASE_GENERATION_CONFIG,
-    "presence_penalty": 1.0,
-    "frequency_penalty": 0.05,
-}
-_RECOGNITION_GENERATION_CONFIGS = {
-    _DEFAULT_RECOGNITION_PROMPT: MINERU2_TEXT_GENERATION_CONFIG,
-    _RECOGNITION_PROMPTS["table"]: MINERU2_TABLE_GENERATION_CONFIG,
-    _RECOGNITION_PROMPTS["equation"]: MINERU2_EQUATION_GENERATION_CONFIG,
-}
 _SKIP_RECOGNITION_TYPES = {
     "chart",
     "equation_block",
@@ -312,11 +281,6 @@ def prepare_mineru2_crops(
             )
         )
     return crops
-
-
-def mineru2_generation_config(prompt: str) -> dict[str, float | int]:
-    """Return the official generation profile for a recognition prompt."""
-    return _RECOGNITION_GENERATION_CONFIGS[prompt].copy()
 
 
 def serialize_mineru2_transcript(
