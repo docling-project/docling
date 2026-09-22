@@ -578,7 +578,7 @@ class StagePresetMixin:
         if preset.preset_id not in cls._presets:
             cls._presets[preset.preset_id] = preset
         else:
-            _log.error(
+            _log.debug(
                 f"Preset '{preset.preset_id}' already registered for {cls.__name__}"
             )
 
@@ -740,7 +740,7 @@ class ObjectDetectionStagePresetMixin:
         if preset.preset_id not in cls._presets:
             cls._presets[preset.preset_id] = preset
         else:
-            _log.error(
+            _log.debug(
                 f"Preset '{preset.preset_id}' already registered for {cls.__name__}"
             )
 
@@ -850,7 +850,7 @@ class ImageClassificationStagePresetMixin:
         if preset.preset_id not in cls._presets:
             cls._presets[preset.preset_id] = preset
         else:
-            _log.error(
+            _log.debug(
                 f"Preset '{preset.preset_id}' already registered for {cls.__name__}"
             )
 
