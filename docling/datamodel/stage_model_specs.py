@@ -1388,6 +1388,7 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
             VlmEngineType.API_LMSTUDIO,
         },
         max_new_tokens=4096,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
         extra_generation_config={
             "top_k": 1,
             "top_p": 0.01,
@@ -1401,6 +1402,9 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    # Layout markers are special tokens, so they must survive decoding;
+                    # strip the end-of-turn tokens explicitly instead.
+                    "transformers_strip_stop_strings": True,
                 },
             ),
             VlmEngineType.MLX: EngineModelConfig(
