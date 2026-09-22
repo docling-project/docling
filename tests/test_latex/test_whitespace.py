@@ -17,23 +17,20 @@ from docling.datamodel.document import InputDocument
     ("body", "expected_paragraphs"),
     [
         (
-            r"A \textit{it} text. B \textbf{bf} more."
-            + "\n\n"
-            + r"C \emph{em}x and \textit{it}.",
+            "A \\textit{it} text. B \\textbf{bf} more.\n\n"
+            "C \\emph{em}x and \\textit{it}.",
             ["A it text. B bf more.", "C emx and it."],
         ),
         (
-            r"Some background with \textbf{bold} and \textit{italic} text.",
+            "Some background with \\textbf{bold} and \\textit{italic} text.",
             ["Some background with bold and italic text."],
         ),
         (
-            r"A \textbf{bold}\textit{italic} text.",
+            "A \\textbf{bold}\\textit{italic} text.",
             ["A bolditalic text."],
         ),
         (
-            "First.\n\n"
-            + r"Second \textit{emphasis} continues."
-            + "\n\nThird.",
+            "First.\n\nSecond \\textit{emphasis} continues.\n\nThird.",
             ["First.", "Second emphasis continues.", "Third."],
         ),
     ],
@@ -41,16 +38,9 @@ from docling.datamodel.document import InputDocument
 def test_latex_preserves_whitespace_across_paragraphs_and_macros(
     body: str, expected_paragraphs: list[str]
 ) -> None:
-    source = (
-        r"\documentclass{article}"
-        + "\n"
-        + r"\begin{document}"
-        + "\n"
-        + body
-        + "\n"
-        + r"\end{document}"
-        + "\n"
-    ).encode("utf-8")
+    header = "\\documentclass{article}\n\\begin{document}\n"
+    footer = "\n\\end{document}\n"
+    source = (header + body + footer).encode("utf-8")
     in_doc = InputDocument(
         path_or_stream=BytesIO(source),
         format=InputFormat.LATEX,
