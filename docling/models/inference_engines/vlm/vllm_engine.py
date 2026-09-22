@@ -87,8 +87,19 @@ class VllmVlmEngine(BaseVlmEngine):
         "quantization",
         # Multimodal limits
         "limit_mm_per_prompt",
+        "mm_processor_kwargs",
         # Execution toggles
         "enforce_eager",
+    }
+
+    # Docling-only extra_config keys that must not be forwarded to LLM().
+    _VLLM_DOCLING_EXTRA_KEYS = {
+        "transformers_model_type",
+        "transformers_prompt_style",
+        "transformers_strip_stop_strings",
+        "extra_generation_config",
+        "extra_processor_kwargs",
+        "torch_dtype",
     }
 
     def __init__(
@@ -201,7 +212,9 @@ class VllmVlmEngine(BaseVlmEngine):
             unknown = sorted(
                 k
                 for k in extra_cfg.keys()
-                if k not in self._VLLM_ENGINE_KEYS and k not in self._VLLM_SAMPLING_KEYS
+                if k not in self._VLLM_ENGINE_KEYS
+                and k not in self._VLLM_SAMPLING_KEYS
+                and k not in self._VLLM_DOCLING_EXTRA_KEYS
             )
             if unknown:
                 _log.warning("Ignoring unknown extra_config keys for vLLM: %s", unknown)
@@ -304,11 +317,22 @@ class VllmVlmEngine(BaseVlmEngine):
                 prompt_style=prompt_style,
                 repo_id=self.model_config.repo_id if self.model_config else None,
             )
+            # Prefill the reply: the model continues from the prefix.
+            if formatted_prompt is not None and input_data.response_prefix:
+                formatted_prompt += input_data.response_prefix
             prompts.append(formatted_prompt)
 
-        # Build vLLM inputs
+        # Build vLLM inputs. extra_processor_kwargs maps to vLLM's
+        # mm_processor_kwargs (e.g. fine_route for GraniteForDocling).
+        mm_kwargs = first_input.extra_generation_config.get(
+            "mm_processor_kwargs"
+        ) or first_input.extra_generation_config.get("extra_processor_kwargs")
         llm_inputs = [
-            {"prompt": p, "multi_modal_data": {"image": im}}
+            {
+                "prompt": p,
+                "multi_modal_data": {"image": im},
+                **({"mm_processor_kwargs": mm_kwargs} if mm_kwargs else {}),
+            }
             for p, im in zip(prompts, images)
         ]
 
@@ -353,6 +377,8 @@ class VllmVlmEngine(BaseVlmEngine):
         results: List[VlmEngineOutput] = []
         for i, output in enumerate(outputs):
             text = output.outputs[0].text if output.outputs else ""
+            if prompts[i] is not None and input_batch[i].response_prefix:
+                text = input_batch[i].response_prefix + text
             stop_reason = (
                 "end_of_sequence" if output.outputs[0].stop_reason else "length"
             )

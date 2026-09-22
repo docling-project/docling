@@ -17,7 +17,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
+from docling.datamodel.vlm_prompts import DOCLANG_PAGE_PROMPT, DOCLING_BASE_PAGE_PROMPT
 
 _log = logging.getLogger(__name__)
 
@@ -76,6 +76,50 @@ GRANITEDOCLING_VLLM_API = ApiVlmOptions(
 GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
+
+
+# Granite for Docling 500M (doclang)
+GRANITE_FOR_DOCLING_500M_TRANSFORMERS = InlineVlmOptions(
+    repo_id="docling-project/granite-for-docling-500m",
+    prompt=DOCLANG_PAGE_PROMPT,
+    response_format=ResponseFormat.DOCLANG,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    trust_remote_code=True,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.XPU,
+    ],
+    extra_generation_config=dict(skip_special_tokens=False),
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doclang>", "<|end_of_text|>"],
+)
+
+GRANITE_FOR_DOCLING_500M_VLLM = GRANITE_FOR_DOCLING_500M_TRANSFORMERS.model_copy(
+    deep=True
+)
+GRANITE_FOR_DOCLING_500M_VLLM.inference_framework = InferenceFramework.VLLM
+
+GRANITE_FOR_DOCLING_500M_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_id,
+        max_tokens=8192,
+        skip_special_tokens=False,
+    ),
+    prompt=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.prompt,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    stop_strings=["</doclang>", "<|end_of_text|>"],
+    response_format=ResponseFormat.DOCLANG,
+)
 
 
 # Granite-Docling 2 stage
@@ -579,6 +623,8 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
+    GRANITE_FOR_DOCLING_500M = "granite_for_docling_500m"
+    GRANITE_FOR_DOCLING_500M_VLLM = "granite_for_docling_500m_vllm"
     NANONETS_OCR2 = "nanonets_ocr2"
     NANONETS_OCR2_VLLM = "nanonets_ocr2_vllm"
     NANONETS_OCR2_LMSTUDIO = "nanonets_ocr2_lmstudio"

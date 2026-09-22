@@ -45,6 +45,7 @@ Docling has three pipeline families for PDFs and images. Choose with `--pipeline
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model granite_for_docling_500m --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```

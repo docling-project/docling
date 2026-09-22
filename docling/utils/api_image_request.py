@@ -170,6 +170,23 @@ def _resolve_usage_response_key(
     return usage_response_key
 
 
+def _apply_response_prefix(
+    messages: list[dict[str, Any]],
+    params: dict[str, Any],
+    response_prefix: str | None,
+) -> None:
+    """Make the server continue a partial assistant turn instead of opening one.
+
+    Uses vLLM's OpenAI-compatible chat extension (`continue_final_message`); the
+    server returns only the continuation, so the caller re-attaches the prefix.
+    """
+    if not response_prefix:
+        return
+    messages.append({"role": "assistant", "content": response_prefix})
+    params.setdefault("add_generation_prompt", False)
+    params.setdefault("continue_final_message", True)
+
+
 def api_image_request(
     image: Image.Image,
     prompt: str,
@@ -179,6 +196,7 @@ def api_image_request(
     *,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    response_prefix: str | None = None,
     **params,
 ) -> ApiImageRequestResult:
     img_io = BytesIO()
@@ -215,6 +233,7 @@ def api_image_request(
                 }
             ]
 
+            _apply_response_prefix(messages, params, response_prefix)
             payload = {
                 "messages": messages,
                 **params,
@@ -279,6 +298,7 @@ def api_image_request_streaming(
     generation_stoppers: list[GenerationStopper] = [],
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    response_prefix: str | None = None,
     **params,
 ) -> ApiImageStreamingRequestResult:
     """
@@ -304,6 +324,7 @@ def api_image_request_streaming(
         }
     ]
 
+    _apply_response_prefix(messages, params, response_prefix)
     payload = {
         "messages": messages,
         "stream": True,  # <-- critical for SSE streaming

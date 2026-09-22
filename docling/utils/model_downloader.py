@@ -12,6 +12,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GRANITE_FOR_DOCLING_500M_TRANSFORMERS,
     GRANITEDOCLING_2STAGE_TRANSFORMERS,
     GRANITEDOCLING_MLX,
     GRANITEDOCLING_TRANSFORMERS,
@@ -65,6 +66,7 @@ def download_models(
     with_granitedocling: bool = False,
     with_granitedocling_mlx: bool = False,
     with_granitedocling_2stage: bool = False,
+    with_granite_for_docling_500m: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
@@ -185,6 +187,16 @@ def download_models(
         download_hf_model(
             repo_id=GRANITEDOCLING_2STAGE_TRANSFORMERS.repo_id,
             local_dir=output_dir / GRANITEDOCLING_2STAGE_TRANSFORMERS.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_granite_for_docling_500m:
+        _log.info("Downloading Granite for Docling 500M model...")
+        download_hf_model(
+            repo_id=GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_id,
+            local_dir=output_dir
+            / GRANITE_FOR_DOCLING_500M_TRANSFORMERS.repo_cache_folder,
             force=force,
             progress=progress,
         )

@@ -377,6 +377,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             else:  # NONE
                 formatted_prompt = None
 
+            # Prefill the reply: the model continues from the prefix.
+            if formatted_prompt is not None and input_data.response_prefix:
+                formatted_prompt += input_data.response_prefix
+
             prompts.append(formatted_prompt)
 
         # Process batch
@@ -536,6 +540,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Create outputs
         outputs = []
         for i, text in enumerate(decoded_texts):
+            if prompts[i] is not None and input_batch[i].response_prefix:
+                text = input_batch[i].response_prefix + text
             outputs.append(
                 VlmEngineOutput(
                     text=text,

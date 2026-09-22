@@ -181,6 +181,8 @@ Model presets (`docling.datamodel.vlm_model_specs`):
 | Preset | Backend | Device | Notes |
 |---|---|---|---|
 | `GRANITEDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Default (CLI `--vlm-model granite_docling`) |
+| `GRANITE_FOR_DOCLING_500M_TRANSFORMERS` | HF Transformers | CPU/GPU | DocLang (CLI `--vlm-model granite_for_docling_500m`) |
+| `GRANITE_FOR_DOCLING_500M_VLLM` | vLLM | GPU | DocLang, in-process vLLM |
 | `SMOLDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Lighter (CLI `--vlm-model smoldocling`) |
 | `GRANITEDOCLING_VLLM` | vLLM | GPU | High-throughput batch |
 | `GRANITEDOCLING_MLX` | MLX | Apple MPS | M-series Macs |

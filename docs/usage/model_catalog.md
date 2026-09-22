@@ -244,6 +244,7 @@ Languages are given as BCP-47 tags for every engine; see
 | Preset ID | Model | Parameters | Transformers | MLX | API (OpenAI-compatible) | vLLM | Output Format |
 |-----------|-------|------------|--------------|-----|-------------------------|------|---------------|
 | `granite_docling` | Granite-Docling-258M | 258M | ✅ | ✅ | Ollama | ❌ | DocTags |
+| `granite_for_docling_500m` | Granite-for-Docling-500M | 494M | ✅ | ❌ | OpenAI-compatible | ✅ | DocLang |
 | `smoldocling` | SmolDocling-256M | 256M | ✅ | ✅ | ❌ | ❌ | DocTags |
 | `deepseek_ocr` | DeepSeek-OCR-3B | 3B | ❌ | ❌ | Ollama<br/>LM Studio | ❌ | Markdown |
 | `granite_vision` | Granite-Vision-3.3-2B | 2B | ✅ | ❌ | Ollama<br/>LM Studio | ✅ | Markdown |
@@ -256,6 +257,8 @@ Languages are given as BCP-47 tags for every engine; see
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
+
+`granite_for_docling_500m` emits [doclang](https://doclang.ai/) from [`docling-project/granite-for-docling-500m`](https://huggingface.co/docling-project/granite-for-docling-500m). Transformers and in-process vLLM need a release that includes the `GraniteForDoclingForConditionalGeneration` architecture (or `trust_remote_code` on the Hub repo). Decode with `skip_special_tokens=False`. Pass `extra_processor_kwargs={"fine_route": True}` (vLLM: `mm_processor_kwargs`) for the 4×-token fine connector on dense pages. No MLX export is published yet.
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 

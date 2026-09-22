@@ -50,7 +50,7 @@ docling convert [OPTIONS] source
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
 | `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
 | `--pipeline` | `legacy`, `standard`, `native`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
-| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
+| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, granite_for_docling_500m, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
 | `--vlm-max-new-tokens` | `integer` |  | Override max_new_tokens for VLM conversion generation. |
 | `--asr-model` | `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native`, `whisper_tiny_en_native`, `whisper_base_en_native`, `whisper_small_en_native`, `whisper_medium_en_native`, `whisper_distil_small_en_native`, `whisper_distil_medium_en_native`, `whisper_distil_large_v3_native`, `whisper_distil_large_v3_5_native`, `whisper_tiny_s2t`, `whisper_tiny_en_s2t`, `whisper_base_s2t`, `whisper_base_en_s2t`, `whisper_small_s2t`, `whisper_small_en_s2t`, `whisper_distil_small_en_s2t`, `whisper_medium_s2t`, `whisper_medium_en_s2t`, `whisper_distil_medium_en_s2t`, `whisper_large_v3_s2t`, `whisper_distil_large_v3_s2t`, `whisper_distil_large_v3_5_s2t`, `whisper_large_v3_turbo_s2t` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
 | `--video-sampling-mode` | `fixed`, `scene` | `fixed` | frame sampling mode. |
@@ -187,14 +187,14 @@ docling-tools models [OPTIONS] COMMAND [ARGS]...
 **Usage**
 
 ```text
-docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformerv2|code_formula|picture_classifier|smolvlm|granitedocling|granitedocling_mlx|smoldocling|smoldocling_mlx|granite_vision|granite_chart_extraction|granite_chart_extraction_v4|rapidocr|easyocr|nemotron_ocr_v2]...
+docling-tools models download [OPTIONS] [MODELS]:[layout|tableformer|tableformerv2|code_formula|picture_classifier|smolvlm|granitedocling|granitedocling_mlx|granite_for_docling_500m|smoldocling|smoldocling_mlx|granite_vision|granite_chart_extraction|granite_chart_extraction_v4|rapidocr|easyocr|nemotron_ocr_v2]...
 ```
 
 **Arguments**
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `MODELS` | `layout`, `tableformer`, `tableformerv2`, `code_formula`, `picture_classifier`, `smolvlm`, `granitedocling`, `granitedocling_mlx`, `smoldocling`, `smoldocling_mlx`, `granite_vision`, `granite_chart_extraction`, `granite_chart_extraction_v4`, `rapidocr`, `easyocr`, `nemotron_ocr_v2` | no | Models to download (default behavior: a predefined set of models will be downloaded). |
+| `MODELS` | `layout`, `tableformer`, `tableformerv2`, `code_formula`, `picture_classifier`, `smolvlm`, `granitedocling`, `granitedocling_mlx`, `granite_for_docling_500m`, `smoldocling`, `smoldocling_mlx`, `granite_vision`, `granite_chart_extraction`, `granite_chart_extraction_v4`, `rapidocr`, `easyocr`, `nemotron_ocr_v2` | no | Models to download (default behavior: a predefined set of models will be downloaded). |
 
 **Options**
 

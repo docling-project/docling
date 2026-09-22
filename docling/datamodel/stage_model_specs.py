@@ -25,6 +25,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
+    DOCLANG_PAGE_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
@@ -964,6 +965,65 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     },
 }
 
+# Shared Granite for Docling 500M spec (doclang-native architecture).
+# Hub ID matches the Transformers model card and vLLM supported_models entry.
+# No MLX export is published yet — omit an MLX engine_override so auto-inline
+# does not try mlx-vlm.
+# Extra processor knobs (Transformers extra_processor_kwargs / vLLM
+# mm_processor_kwargs): fine_route=True uses the 4x-token fine connector when
+# the checkpoint has use_fine_route. Leave it off unless the page is dense or
+# the density router selected the fine path.
+GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE = {
+    "name": "Granite-for-Docling-500M",
+    "default_repo_id": "docling-project/granite-for-docling-500m",
+    "stop_strings": ["</doclang>", "<|end_of_text|>"],
+    "max_new_tokens": 8192,
+    "trust_remote_code": True,
+    "extra_generation_config": {"skip_special_tokens": False},
+    "supported_engines": {
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.VLLM,
+        VlmEngineType.AUTO_INLINE,
+        VlmEngineType.API,
+        VlmEngineType.API_OPENAI,
+    },
+    "engine_overrides": {
+        VlmEngineType.TRANSFORMERS: EngineModelConfig(
+            torch_dtype="bfloat16",
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                "torch_dtype": "bfloat16",
+                "extra_generation_config": {"skip_special_tokens": False},
+            },
+        ),
+        VlmEngineType.VLLM: EngineModelConfig(
+            extra_config={
+                "dtype": "bfloat16",
+                "max_model_len": 32768,
+                "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                "extra_generation_config": {"skip_special_tokens": False},
+            }
+        ),
+    },
+    "api_overrides": {
+        VlmEngineType.API: ApiModelConfig(
+            params={
+                "model": "docling-project/granite-for-docling-500m",
+                "max_tokens": 8192,
+                "skip_special_tokens": False,
+            }
+        ),
+        VlmEngineType.API_OPENAI: ApiModelConfig(
+            params={
+                "model": "docling-project/granite-for-docling-500m",
+                "max_tokens": 8192,
+                "skip_special_tokens": False,
+            }
+        ),
+    },
+}
+
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
 PIXTRAL_MODEL_SPEC_BASE = {
     "name": "Pixtral-12B",
@@ -1129,6 +1189,22 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
         **GRANITE_DOCLING_MODEL_SPEC_BASE,
         prompt=DOCLING_BASE_PAGE_PROMPT,
         response_format=ResponseFormat.DOCTAGS,
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_GRANITE_FOR_DOCLING_500M = StageModelPreset(
+    preset_id="granite_for_docling_500m",
+    name="Granite-for-Docling-500M",
+    description=(
+        "IBM Granite for Docling 500M doclang model for document conversion "
+        "(494M parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        **GRANITE_FOR_DOCLING_500M_MODEL_SPEC_BASE,
+        prompt=DOCLANG_PAGE_PROMPT,
+        response_format=ResponseFormat.DOCLANG,
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,

@@ -105,6 +105,7 @@ nav:
       - "Batch conversion": _generated/examples/batch_convert.md
       - "Multi-format conversion": _generated/examples/run_with_formats.md
       - "VLM pipeline with GraniteDocling": _generated/examples/minimal_vlm_pipeline.md
+      - "VLM pipeline with Granite for Docling 500M": _generated/examples/granite_for_docling_500m.md
       - "VLM pipeline with remote model": _generated/examples/vlm_pipeline_api_model.md
       - "VLM comparison": _generated/examples/compare_vlm_models.md
       - "ASR pipeline with Whisper": _generated/examples/minimal_asr_pipeline.md

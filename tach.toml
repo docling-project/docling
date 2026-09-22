@@ -628,6 +628,8 @@ depends_on = [
   "docling.datamodel",
   "docling.experimental.datamodel",
   "docling.models",
+  "docling.models.inference_engines.vlm",
+  "docling.utils",
 ]
 
 [[modules]]
@@ -638,8 +640,10 @@ depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
   "docling.experimental.datamodel",
+  "docling.experimental.models",
   "docling.models",
   "docling.models.stages.layout",
+  "docling.models.stages.page_preprocessing",
   "docling.models.vlm_pipeline_models",
   "docling.pipeline",
   "docling.pipeline.base_pipeline",

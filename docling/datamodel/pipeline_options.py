@@ -1179,6 +1179,9 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 # Register VlmConvert presets
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SMOLDOCLING)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING)
+VlmConvertOptions.register_preset(
+    stage_model_specs.VLM_CONVERT_GRANITE_FOR_DOCLING_500M
+)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DEEPSEEK_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_VISION)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)
