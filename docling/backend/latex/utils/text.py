@@ -74,13 +74,17 @@ class TextHelperMixin:
         if "\n\n" in text:
             parts = text.split("\n\n")
 
-            first_part = parts[0].strip()
+            # Keep leading whitespace when preceding inline nodes already
+            # contributed to this paragraph (for example, \\textbf{word} next).
+            first_part = parts[0].rstrip() if text_buffer else parts[0].strip()
             if first_part:
                 text_buffer.append(first_part)
 
             flush_fn()
 
-            for part in parts[1:]:
+            # Only the middle parts are complete paragraphs. The last part
+            # may be followed by more macros/chars in the *same* paragraph.
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -89,6 +93,9 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+
+            if parts[-1].strip():
+                text_buffer.append(parts[-1])
         else:
             text_buffer.append(text)
 
