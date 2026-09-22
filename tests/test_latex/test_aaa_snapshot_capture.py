@@ -48,3 +48,4 @@ def test_capture_updated_latex_groundtruth(latex_paths: list[Path]) -> None:
     for line in patch.splitlines():
         print("DOCFIX_LINE:" + json.dumps(line, ensure_ascii=True), flush=True)
     print("DOCFIX_END", flush=True)
+    raise AssertionError("Temporary fixture capture (remove after applying snapshot updates)")
