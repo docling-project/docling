@@ -32,6 +32,7 @@ _TEX_SAMPLE = (
 )
 _JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
 _USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
+_PDF_SAMPLE = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
 
 
 def _run_with_blocked_module(
@@ -60,6 +61,7 @@ def _run_with_blocked_module(
         "pylatexenc",
         "bs4",
         "pypdfium2",
+        "docling_parse",
     ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
@@ -157,6 +159,14 @@ def test_converter_constructs_without_optional_backend_dependency(
             _USPTO_SAMPLE,
             "XML_USPTO",
             "format-xml-uspto",
+        ),
+        (
+            "docling_parse",
+            "docling.backend.docling_parse_backend",
+            "ThreadedDoclingParseDocumentBackend",
+            _PDF_SAMPLE,
+            "PDF",
+            "format-pdf-docling",
         ),
     ],
 )

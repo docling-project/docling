@@ -51,6 +51,7 @@ from docling.models.utils.generation_utils import (
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -511,7 +512,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Remove padding
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+            decoded_texts = strip_trailing_token(decoded_texts, pad_token)
 
         pad_token_id = getattr(tokenizer, "pad_token_id", None)
         if pad_token_id is None:
@@ -533,8 +534,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         if self.strip_stop_strings and first_input.stop_strings:
-            from docling.utils.vlm_utils import strip_stop_strings
-
             decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs

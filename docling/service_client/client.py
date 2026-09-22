@@ -295,7 +295,7 @@ class _BaseDoclingServiceClient:
     ) -> dict[str, Any]:
         return options.model_dump(
             mode="json",
-            exclude_defaults=True,
+            exclude_unset=True,
             exclude_none=True,
         )
 

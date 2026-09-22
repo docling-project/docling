@@ -26,6 +26,20 @@ def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:
     return cleaned
 
 
+def strip_trailing_token(texts: list[str], token: str) -> list[str]:
+    """Remove all trailing occurrences of ``token`` from each text.
+
+    Unlike ``str.rstrip``, which strips any trailing character contained in its
+    argument, this only removes the token as a whole string.
+    """
+    cleaned = []
+    for text in texts:
+        while text.endswith(token):
+            text = text[: -len(token)]
+        cleaned.append(text)
+    return cleaned
+
+
 def compute_qwen2vl_image_size(
     width: int,
     height: int,

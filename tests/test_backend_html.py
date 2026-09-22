@@ -269,6 +269,58 @@ def test_table_inside_figure_is_parsed():
     assert cap_item.label == DocItemLabel.CAPTION
 
 
+def test_table_caption_is_parsed():
+    """Regression: <caption> is the element HTML defines for table captions."""
+    html = (
+        b"<html><body>"
+        b"<table>"
+        b"<caption>Table 1: sales by region</caption>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    assert len(doc.tables[0].captions) == 1
+    cap_item = doc.tables[0].captions[0].resolve(doc)
+    assert cap_item.text == "Table 1: sales by region"
+    assert cap_item.label == DocItemLabel.CAPTION
+    assert "Table 1: sales by region" in doc.export_to_markdown()
+
+
+def test_empty_table_caption_is_skipped():
+    """A whitespace-only <caption> should not produce a caption item."""
+    html = b"<html><body><table><caption>  </caption><tr><td>1</td></tr></table></body></html>"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].captions == []
+    assert doc.texts == []
+
+
 def test_image_inside_figure_is_parsed():
     """Regular HTML figures with images should still be parsed."""
     html = (
