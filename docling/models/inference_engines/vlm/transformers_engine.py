@@ -21,6 +21,8 @@ from transformers import (
     AutoProcessor,
     BitsAndBytesConfig,
     GenerationConfig,
+    LogitsProcessor,
+    LogitsProcessorList,
     PreTrainedModel,
     StoppingCriteriaList,
     StopStringCriteria,
@@ -61,6 +63,35 @@ _log = logging.getLogger(__name__)
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
 _EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
+
+
+class _FrequencyPresencePenaltyLogitsProcessor(LogitsProcessor):
+    """Apply OpenAI-style penalties to generated tokens."""
+
+    def __init__(
+        self, *, prompt_length: int, presence_penalty: float, frequency_penalty: float
+    ) -> None:
+        self.prompt_length = prompt_length
+        self.presence_penalty = presence_penalty
+        self.frequency_penalty = frequency_penalty
+
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor
+    ) -> torch.FloatTensor:
+        generated_ids = input_ids[:, self.prompt_length :]
+        if generated_ids.numel() == 0:
+            return scores
+        counts = torch.zeros_like(scores)
+        counts.scatter_add_(
+            1,
+            generated_ids,
+            torch.ones_like(generated_ids, dtype=scores.dtype),
+        )
+        return (
+            scores
+            - self.frequency_penalty * counts
+            - self.presence_penalty * counts.gt(0)
+        )
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -454,6 +485,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 "transformers_prompt_style",
                 "extra_processor_kwargs",
                 "custom_stopping_criteria",
+                "presence_penalty",
+                "frequency_penalty",
                 "revision",
             }
         }
@@ -480,6 +513,23 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             **inputs,
             "generation_config": merged_generation_config,
         }
+
+        presence_penalty = float(
+            first_input.extra_generation_config.get("presence_penalty", 0)
+        )
+        frequency_penalty = float(
+            first_input.extra_generation_config.get("frequency_penalty", 0)
+        )
+        if presence_penalty or frequency_penalty:
+            gen_kwargs["logits_processor"] = LogitsProcessorList(
+                [
+                    _FrequencyPresencePenaltyLogitsProcessor(
+                        prompt_length=inputs["input_ids"].shape[1],
+                        presence_penalty=presence_penalty,
+                        frequency_penalty=frequency_penalty,
+                    )
+                ]
+            )
 
         if stopping_criteria_list:
             gen_kwargs["stopping_criteria"] = stopping_criteria_list

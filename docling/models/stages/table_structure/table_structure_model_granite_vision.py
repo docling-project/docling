@@ -2,15 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-import re
 import warnings
 from collections.abc import Sequence
-from itertools import groupby
 from pathlib import Path
 from typing import Any, ClassVar, Literal, cast
 
 import torch
-from docling_core.types.doc import DocItemLabel, TableCell
+from docling_core.types.doc import DocItemLabel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -20,124 +18,10 @@ from docling.datamodel.pipeline_options import GraniteVisionTableStructureOption
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.otsl import parse_otsl_output
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
-
-# OTSL tokens that represent content-bearing cells (produce a TableCell)
-_CONTENT_TOKENS = {"fcel", "ecel", "ched", "rhed", "srow"}
-
-# Regex to extract (tag_name, inner_text) from VLM OTSL output.
-# Handles two OTSL serialisation styles:
-#   Closed:  <tag>text</tag>  — used in unit tests and some model outputs
-#   Open:    <tag>text<next>  — used by ibm-granite model (no closing tag)
-# Also handles self-closing tags: <tag/>
-_TAG_RE = re.compile(
-    r"<(?P<tag>[a-z]+)>(?P<text>.*?)</(?P=tag)>"  # <tag>text</tag> (closed form)
-    r"|<(?P<stag>[a-z]+)\s*/>"  # <tag/>  (self-closing)
-    r"|<(?P<otag>[a-z]+)>(?P<otext>[^<]*)",  # <tag>text  (open form; otext may be "")
-    re.DOTALL,
-)
-
-
-def _parse_otsl_output(
-    text: str,
-) -> tuple[list[str], list[TableCell], int, int]:
-    """Parse VLM OTSL text output into structured table data.
-
-    Parameters
-    ----------
-    text:
-        Raw VLM output string, e.g.
-        ``"<ched>Name</ched><ched>Val</ched><nl><fcel>Foo</fcel><fcel>42</fcel><nl>"``
-
-    Returns
-    -------
-    tuple of (otsl_seq, table_cells, num_rows, num_cols)
-        otsl_seq: list of bare tag names, e.g. ["ched", "ched", "nl", "fcel", "fcel", "nl"]
-        table_cells: list of TableCell (bbox always None)
-        num_rows: int
-        num_cols: int
-    """
-    if not text or not text.strip():
-        return [], [], 0, 0
-
-    # Unwrap optional [<otsl>...</otsl>] container produced by the model
-    otsl_match = re.search(r"<otsl>(.*)</otsl>", text, re.DOTALL)
-    if otsl_match:
-        text = otsl_match.group(1)
-
-    # Extract (tag, inner_text) pairs
-    token_pairs: list[tuple[str, str]] = []
-    for m in _TAG_RE.finditer(text):
-        if m.group("tag"):
-            token_pairs.append((m.group("tag"), m.group("text") or ""))
-        elif m.group("stag"):
-            token_pairs.append((m.group("stag"), ""))
-        elif m.group("otag"):
-            token_pairs.append((m.group("otag"), m.group("otext") or ""))
-
-    if not token_pairs:
-        return [], [], 0, 0
-
-    otsl_seq = [tag for tag, _ in token_pairs]
-
-    # Split into rows on "nl" tokens
-    rows: list[list[tuple[str, str]]] = [
-        list(group)
-        for k, group in groupby(token_pairs, lambda x: x[0] == "nl")
-        if not k
-    ]
-
-    if not rows:
-        return otsl_seq, [], 0, 0
-
-    num_rows = len(rows)
-    num_cols = max(len(row) for row in rows)
-
-    # Pad rows to equal width
-    grid: list[list[tuple[str, str]]] = [
-        row + [("", "")] * (num_cols - len(row)) for row in rows
-    ]
-
-    table_cells: list[TableCell] = []
-    for row_idx, row in enumerate(grid):
-        for col_idx, (tag, inner_text) in enumerate(row):
-            if tag not in _CONTENT_TOKENS:
-                continue
-
-            # Detect colspan: count consecutive span-extension tokens to the right
-            colspan = 1
-            for c in range(col_idx + 1, num_cols):
-                if grid[row_idx][c][0] in {"lcel", "xcel"}:
-                    colspan += 1
-                else:
-                    break
-
-            # Detect rowspan: count consecutive span-extension tokens below
-            rowspan = 1
-            for r in range(row_idx + 1, num_rows):
-                if grid[r][col_idx][0] in {"ucel", "xcel"}:
-                    rowspan += 1
-                else:
-                    break
-
-            cell = TableCell(
-                text=inner_text,
-                bbox=None,
-                row_span=rowspan,
-                col_span=colspan,
-                start_row_offset_idx=row_idx,
-                end_row_offset_idx=row_idx + rowspan,
-                start_col_offset_idx=col_idx,
-                end_col_offset_idx=col_idx + colspan,
-                column_header=(tag == "ched"),
-                row_header=(tag == "rhed"),
-                row_section=(tag == "srow"),
-            )
-            table_cells.append(cell)
-
-    return otsl_seq, table_cells, num_rows, num_cols
 
 
 class GraniteVisionTableStructureModel(BaseTableStructureModel):
@@ -322,7 +206,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                         f"GraniteVision table [{cluster.id}] raw output: {raw_text!r}"
                     )
                     try:
-                        otsl_seq, table_cells, num_rows, num_cols = _parse_otsl_output(
+                        otsl_seq, table_cells, num_rows, num_cols = parse_otsl_output(
                             raw_text
                         )
                     except Exception as exc:

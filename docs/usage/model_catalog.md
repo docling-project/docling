@@ -253,7 +253,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
 | `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
-| `mineru2_pro` | MinerU2.5-Pro-2604 | 1.2B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ❌ | Native two-step layout, text, formulas, and OTSL tables |
+| `mineru2_pro` | MinerU2.5-Pro-2604 | 1.2B | ✅ | ❌ | ❌ | ❌ | Native two-step layout, text, formulas, and OTSL tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
@@ -262,11 +262,10 @@ Languages are given as BCP-47 tags for every engine; see
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 
 `mineru2_pro` runs MinerU's native two-step flow: page-level layout detection followed by
-type-specific recognition of the detected region crops. Its Transformers and API configurations
-use the official `opendatalab/MinerU2.5-Pro-2604-1.2B` repository. The MLX override uses the
-community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion because no official
-OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
-are not enabled by this preset.
+type-specific recognition of the detected region crops. Its Transformers configuration uses the
+official `opendatalab/MinerU2.5-Pro-2604-1.2B` repository. Only Transformers is advertised
+because the other engines do not currently honor every task-specific generation setting required
+by the model. Image/chart analysis and cross-page table merging are not enabled by this preset.
 
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 

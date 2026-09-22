@@ -1380,21 +1380,9 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
         default_repo_id="opendatalab/MinerU2.5-Pro-2604-1.2B",
         prompt="\nLayout Detection:",
         response_format=ResponseFormat.MINERU2,
-        supported_engines={
-            VlmEngineType.TRANSFORMERS,
-            VlmEngineType.MLX,
-            VlmEngineType.API,
-            VlmEngineType.API_OPENAI,
-            VlmEngineType.API_LMSTUDIO,
-        },
+        supported_engines={VlmEngineType.TRANSFORMERS},
         max_new_tokens=4096,
         stop_strings=["<|im_end|>", "<|endoftext|>"],
-        extra_generation_config={
-            "top_k": 1,
-            "top_p": 0.01,
-            "repetition_penalty": 1.0,
-            "no_repeat_ngram_size": 20,
-        },
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
@@ -1406,27 +1394,6 @@ VLM_CONVERT_MINERU2_PRO = StageModelPreset(
                     # strip the end-of-turn tokens explicitly instead.
                     "transformers_strip_stop_strings": True,
                 },
-            ),
-            VlmEngineType.MLX: EngineModelConfig(
-                repo_id="carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16",
-                extra_config={"mlx_tied_word_embeddings": True},
-            ),
-        },
-        api_overrides={
-            VlmEngineType.API: ApiModelConfig(
-                params={
-                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
-                    "max_tokens": 4096,
-                }
-            ),
-            VlmEngineType.API_OPENAI: ApiModelConfig(
-                params={
-                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
-                    "max_tokens": 4096,
-                }
-            ),
-            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
-                params={"model": "mineru2.5-pro-2604-1.2b", "max_tokens": 4096}
             ),
         },
     ),

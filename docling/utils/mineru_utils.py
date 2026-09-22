@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import math
 import re
-from dataclasses import asdict, dataclass
-from itertools import groupby
+from dataclasses import dataclass
+from typing import Literal
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -21,10 +20,13 @@ from docling_core.types.doc import (
     ImageRef,
     ProvenanceItem,
     Size,
-    TableCell,
     TableData,
+    TextItem,
 )
 from PIL import Image as PILImage
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+from docling.utils.otsl import parse_otsl_output
 
 _log = logging.getLogger(__name__)
 
@@ -35,6 +37,37 @@ _DEFAULT_RECOGNITION_PROMPT = "\nText Recognition:"
 _RECOGNITION_PROMPTS = {
     "table": "\nTable Recognition:",
     "equation": "\nFormula Recognition:",
+}
+_BASE_GENERATION_CONFIG: dict[str, float | int] = {
+    "top_p": 0.01,
+    "top_k": 1,
+    "repetition_penalty": 1.0,
+    "no_repeat_ngram_size": 100,
+}
+MINERU2_LAYOUT_GENERATION_CONFIG = {
+    **_BASE_GENERATION_CONFIG,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+}
+MINERU2_TEXT_GENERATION_CONFIG = {
+    **_BASE_GENERATION_CONFIG,
+    "presence_penalty": 1.0,
+    "frequency_penalty": 0.05,
+}
+MINERU2_TABLE_GENERATION_CONFIG = {
+    **_BASE_GENERATION_CONFIG,
+    "presence_penalty": 1.0,
+    "frequency_penalty": 0.005,
+}
+MINERU2_EQUATION_GENERATION_CONFIG = {
+    **_BASE_GENERATION_CONFIG,
+    "presence_penalty": 1.0,
+    "frequency_penalty": 0.05,
+}
+_RECOGNITION_GENERATION_CONFIGS = {
+    _DEFAULT_RECOGNITION_PROMPT: MINERU2_TEXT_GENERATION_CONFIG,
+    _RECOGNITION_PROMPTS["table"]: MINERU2_TABLE_GENERATION_CONFIG,
+    _RECOGNITION_PROMPTS["equation"]: MINERU2_EQUATION_GENERATION_CONFIG,
 }
 _SKIP_RECOGNITION_TYPES = {
     "chart",
@@ -109,13 +142,7 @@ _TEXT_LABELS = {
     "table_footnote": DocItemLabel.FOOTNOTE,
     "text": DocItemLabel.TEXT,
 }
-_CONTENT_TOKENS = {"ched", "ecel", "fcel", "rhed", "srow"}
-_OTSL_TAG_PATTERN = re.compile(
-    r"<(?P<tag>[a-z]+)>(?P<text>.*?)</(?P=tag)>"
-    r"|<(?P<stag>[a-z]+)\s*/>"
-    r"|<(?P<otag>[a-z]+)>(?P<otext>[^<]*)",
-    re.DOTALL,
-)
+_CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
 
 @dataclass
@@ -136,6 +163,21 @@ class MinerU2Crop:
     region_index: int
     image: PILImage.Image
     prompt: str
+
+
+class _MinerU2Recognition(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    region_index: int
+    text: str
+
+
+class _MinerU2Transcript(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    version: Literal[1] = 1
+    layout: str
+    recognition: list[_MinerU2Recognition]
 
 
 def _normalize_bbox(
@@ -272,109 +314,29 @@ def prepare_mineru2_crops(
     return crops
 
 
-def serialize_mineru2_regions(regions: list[MinerU2Region]) -> str:
-    """Serialize completed MinerU2 regions for storage in ``VlmPrediction``."""
-    return json.dumps([asdict(region) for region in regions], ensure_ascii=False)
+def mineru2_generation_config(prompt: str) -> dict[str, float | int]:
+    """Return the official generation profile for a recognition prompt."""
+    return _RECOGNITION_GENERATION_CONFIGS[prompt].copy()
 
 
-def _regions_from_json(content: str) -> list[MinerU2Region]:
+def serialize_mineru2_transcript(
+    layout: str, recognition: list[tuple[int, str]]
+) -> str:
+    """Serialize the exact native outputs for one MinerU page."""
+    return _MinerU2Transcript(
+        layout=layout,
+        recognition=[
+            _MinerU2Recognition(region_index=region_index, text=text)
+            for region_index, text in recognition
+        ],
+    ).model_dump_json()
+
+
+def _deserialize_mineru2_transcript(content: str) -> _MinerU2Transcript:
     try:
-        values = json.loads(content)
-    except json.JSONDecodeError as exc:
-        _log.warning("Failed to parse MinerU2 JSON: %s", exc)
-        return []
-    if not isinstance(values, list):
-        _log.warning("Expected MinerU2 JSON array, got %s", type(values).__name__)
-        return []
-
-    regions = []
-    for value in values:
-        if not isinstance(value, dict):
-            continue
-        region_type = value.get("type")
-        bbox = value.get("bbox")
-        if region_type not in _BLOCK_TYPES or not isinstance(bbox, (list, tuple)):
-            continue
-        if len(bbox) != 4:
-            continue
-        try:
-            x1, y1, x2, y2 = (float(coord) for coord in bbox)
-        except (TypeError, ValueError):
-            continue
-        normalized_bbox = (x1, y1, x2, y2)
-        if not (
-            0 <= normalized_bbox[0] < normalized_bbox[2] <= 1
-            and 0 <= normalized_bbox[1] < normalized_bbox[3] <= 1
-        ):
-            continue
-        angle = value.get("angle")
-        if angle not in {None, 0, 90, 180, 270}:
-            angle = None
-        raw_content = value.get("content")
-        regions.append(
-            MinerU2Region(
-                type=region_type,
-                bbox=normalized_bbox,
-                angle=angle,
-                content=raw_content if isinstance(raw_content, str) else None,
-                merge_prev=value.get("merge_prev") is True,
-            )
-        )
-    return regions
-
-
-def _parse_otsl_table(content: str) -> TableData:
-    token_pairs: list[tuple[str, str]] = []
-    for match in _OTSL_TAG_PATTERN.finditer(content):
-        if match.group("tag"):
-            token_pairs.append((match.group("tag"), match.group("text") or ""))
-        elif match.group("stag"):
-            token_pairs.append((match.group("stag"), ""))
-        elif match.group("otag"):
-            token_pairs.append((match.group("otag"), match.group("otext") or ""))
-    rows = [
-        list(group)
-        for is_newline, group in groupby(
-            token_pairs, key=lambda token: token[0] == "nl"
-        )
-        if not is_newline
-    ]
-    if not rows:
-        return TableData(num_rows=0, num_cols=0, table_cells=[])
-
-    num_rows = len(rows)
-    num_cols = max(len(row) for row in rows)
-    grid = [row + [("", "")] * (num_cols - len(row)) for row in rows]
-    cells: list[TableCell] = []
-    for row_index, row in enumerate(grid):
-        for col_index, (tag, text) in enumerate(row):
-            if tag not in _CONTENT_TOKENS:
-                continue
-            col_span = 1
-            for following_col in range(col_index + 1, num_cols):
-                if grid[row_index][following_col][0] not in {"lcel", "xcel"}:
-                    break
-                col_span += 1
-            row_span = 1
-            for following_row in range(row_index + 1, num_rows):
-                if grid[following_row][col_index][0] not in {"ucel", "xcel"}:
-                    break
-                row_span += 1
-            cells.append(
-                TableCell(
-                    text=text.strip(),
-                    row_span=row_span,
-                    col_span=col_span,
-                    start_row_offset_idx=row_index,
-                    end_row_offset_idx=row_index + row_span,
-                    start_col_offset_idx=col_index,
-                    end_col_offset_idx=col_index + col_span,
-                    column_header=tag == "ched",
-                    row_header=tag == "rhed",
-                    row_section=tag == "srow",
-                )
-            )
-    return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+        return _MinerU2Transcript.model_validate_json(content)
+    except ValidationError as exc:
+        raise ValueError(f"malformed transcript envelope: {exc}") from exc
 
 
 def _provenance(
@@ -401,7 +363,22 @@ def parse_mineru2(
     filename: str = "file",
     page_image: PILImage.Image | None = None,
 ) -> DoclingDocument:
-    """Parse serialized MinerU2 regions into a page ``DoclingDocument``."""
+    """Parse a MinerU native-output transcript into a page document."""
+    transcript = _deserialize_mineru2_transcript(content)
+    regions = parse_mineru2_layout(transcript.layout)
+    if transcript.layout.strip() and not regions:
+        raise ValueError("non-empty layout output contained no valid regions")
+
+    seen_region_indices: set[int] = set()
+    for recognition in transcript.recognition:
+        region_index = recognition.region_index
+        if region_index < 0 or region_index >= len(regions):
+            raise ValueError(f"recognition region index {region_index} is out of range")
+        if region_index in seen_region_indices:
+            raise ValueError(f"duplicate recognition region index {region_index}")
+        seen_region_indices.add(region_index)
+        regions[region_index].content = recognition.text
+
     origin = DocumentOrigin(
         filename=filename, mimetype="application/json", binary_hash=0
     )
@@ -420,7 +397,8 @@ def parse_mineru2(
     )
 
     current_list_group = None
-    for region in _regions_from_json(content):
+    previous_text_item: TextItem | None = None
+    for region in regions:
         provenance = _provenance(region, original_page_size, page_no)
         text = (region.content or "").strip()
         if text == "[Non-Text]" and region.type not in {"footer", "header"}:
@@ -448,7 +426,11 @@ def parse_mineru2(
                 prov=provenance,
             )
         elif region.type == "table":
-            document.add_table(data=_parse_otsl_table(text), prov=provenance)
+            _otsl_seq, cells, num_rows, num_cols = parse_otsl_output(text)
+            document.add_table(
+                data=TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells),
+                prov=provenance,
+            )
         elif region.type in {"chart", "image"}:
             document.add_picture(prov=provenance)
         elif region.type == "equation":
@@ -461,10 +443,25 @@ def parse_mineru2(
         elif region.type in {"equation_block", "image_block", "list"}:
             continue
         else:
-            document.add_text(
+            if (
+                region.type == "text"
+                and region.merge_prev
+                and previous_text_item is not None
+            ):
+                separator = "" if _CJK_PATTERN.search(text) else " "
+                start = len(previous_text_item.text) + len(separator)
+                previous_text_item.text += separator + text
+                previous_text_item.orig += separator + (region.content or "")
+                provenance.charspan = (start, start + len(text))
+                previous_text_item.prov.append(provenance)
+                continue
+
+            text_item = document.add_text(
                 label=_TEXT_LABELS.get(region.type, DocItemLabel.TEXT),
                 text="" if text == "[Non-Text]" else text,
                 orig=region.content or "",
                 prov=provenance,
             )
+            if region.type == "text":
+                previous_text_item = text_item
     return document
