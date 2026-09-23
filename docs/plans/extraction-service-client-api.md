@@ -1,5 +1,7 @@
 # Extraction in the Docling Service Client: design + low-level critique
 
+**Status: closed, historical (2026-09-23).** Everything below is implemented: C1–C3 in `19b9638f`, then the review fixes in `809fb75d`..`1d3f63d2` (see [the review handoff](extraction-service-client-review-handoff.md)), downstream in jobkit `e75bb73` and serve `367f3d2`. Some details changed after this proposal: `extract()`/`extract_all()` take the contract as `target=` and return the local `DocumentExtractionResult`, and `extract_all` runs one job per source. The code and the shipped `references/service-client.md` are authoritative, not this document.
+
 Drafted 2026-09-22. Scope: give `DoclingServiceClient` /
 `AsyncDoclingServiceClient` a user-facing extraction API that aligns with how we
 work with conversion, and — per the request — challenge whether the already-built
@@ -278,7 +280,9 @@ The change touched:
 
 They ship on `cau/extract-endpoint` alongside the docling pin bump.
 
-## Open decisions
+## Open decisions (all resolved 2026-09-22)
+
+Resolved: C1 yes, field name `extraction_target`, C2 unpacked. Kept for the record:
 
 - **C1 wire change: yes/no.** Cleanest fix for the fusion + double-target problem,
   cheap now (unreleased), but it is a contract edit spanning serve + jobkit. If

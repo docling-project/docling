@@ -1,6 +1,13 @@
 # Handoff: resolve PR #4218 self-review comments
 
-Status: drafted 2026-09-18, against `cau/extraction-api-service-models` HEAD
+**Status: closed, historical (2026-09-23).** Items 1–5 landed in `0a1e58d7`, with two deviations from the text below:
+
+- Item 2: the NuExtract branch now puts only the spec prompt and the caller's instructions into `instructions`. There is no note about required or nullable fields; the validator alone enforces those.
+- Item 3: the field is `ExtractionItem.inference_metadata`, not `inference`.
+
+Item 6 was **reversed**: `0a1e58d7` removed `NuExtractTransformersModel` entirely. `origin/main` still ships `docling/models/extraction/nuextract_transformers_model.py`, so this is a break of main's import path, which handoff Part II A.5 says to keep. Before merge, either restore the one-class deprecated shim below or record the break in the release notes. This decision is still open.
+
+Originally drafted 2026-09-18, against `cau/extraction-api-service-models` HEAD
 `1117924ad2374a0856b33c06d92813cde6d897f5`. One item (6) already applied at that
 HEAD; the rest are proposals for the implementer to carry out and re-verify
 against the live diff before committing, since the branch continues to move.

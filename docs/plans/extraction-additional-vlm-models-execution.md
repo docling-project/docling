@@ -13,8 +13,7 @@ at `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`; stage 2 at
 `00cd751c682b24d2be9d25c95d9b8770d2d4c93c`; shared followups: Docling
 `bb6ef8b5020ffcb3f90529ad341b7c7456367515`, Jobkit
 `7f641bf7e701d9f1411afc8b6b89e526b57a94fb`.
-Stage 11 remains pending and is not authorized for automatic dispatch; use
-[its continuation](extraction-additional-vlm-models-stage11-resumption.md) only when requested.
+**Stage 11 ran on 2026-09-23 at user request** (see the stage 11 checkpoint at the end): gaps 1–3 closed live, gap 4 recorded as covered by composition, offline suites and the full live matrix pass apart from recorded environment debt, release gates reported. Lift live verification awaits the user's decision. [The continuation](extraction-additional-vlm-models-stage11-resumption.md) was rewritten on 2026-09-23 as a gap-closing pass plus one final verification run. After stage 10 the branches moved on: PR-review reshaping in `0a1e58d7`, the service-client API and C1 contract hoist in `19b9638f`..`1d3f63d2`, Jobkit `e75bb73`..`00c7022` and Serve `cceb6e1`..`0de30b7`. The prompt records the resulting contract and baseline.
 NuExtract3 Transformers/vLLM integration is contract-tested, not live verified;
 the recorded LM Studio deployment is incompatible with caller template delivery.
 No push, publication or production default change is authorized.
@@ -140,7 +139,7 @@ Stages 4–7 implement each documented model contract; live verification is sepa
 | 8 | Docling | Explicit service/client contract and complete Docling docs | G: Docling | Done; signed parent checkpoint recorded |
 | 9 | Jobkit | Target forwarding, cached config, durable items and callbacks | G: Jobkit | Done; signed off |
 | 10 | Serve | Admission/OpenAPI/endpoint migration and authorization | G: Serve | Done; signed off |
-| 11 | All | Exact-source end-to-end verification and final audit | G: closure | Pending |
+| 11 | All | Close remaining gaps, final offline + live verification, report release gates | G: closure | Done 2026-09-23 (uncommitted); release gates open, Lift live pending user decision |
 
 ### 1. Define the contract and prepare targets
 
@@ -299,14 +298,7 @@ tenant/result authorization and endpoint/result serialization regressions.
 
 ### 11. Close the cross-repository gates
 
-Run exact-source end-to-end service jobs with deterministic model boundaries, including
-independent selected pages, unpaginated text, schema failure and partial input.
-Use controlled callback receivers; no real external customer callbacks.
-Verify durable artifacts, source identity, terminal status, callback ordering,
-tenant boundaries and unchanged conversion behavior. Repeat regression/hooks
-against the exact source revisions; retain actual logs/exit codes. Live-model jobs
-are a separate authorized verification pass. Report outstanding deployment gates
-honestly; source delivery completion does not certify unrun deployments.
+Rewritten 2026-09-23; [the continuation](extraction-additional-vlm-models-stage11-resumption.md) is authoritative. The planned offline end-to-end harness is dropped: Jobkit/Serve unit tests and the live SDK matrix (`docling-serve/docs/handoff-extraction-source-target-matrix-2026-09-21.md`) already cover most of it. Sources without pages were added to the matrix on 2026-09-23. Stage 11 now closes the remaining gaps: page range through the service, schema failure through the service, callback order with a local receiver, optional tenant case, and conversion regressions after the shared-model changes. It then runs the offline suites and the live matrix once at the exact heads, and reports the release gates (git branch pins, removed `NuExtractTransformersModel`, NuExtract3 transport claim, deferred stages 6–7). Report outstanding deployment gates honestly; source delivery completion does not certify unrun deployments.
 
 ## Resume protocol and evidence
 
@@ -1242,7 +1234,81 @@ MyPy passed. Serve skipped only the reproduced unrelated documentation generatio
 and lock crash (`SKIP=update-docs-common-parameters,uv-lock`). All three production
 checkouts have clean tracked state; unrelated untracked material remains. No push.
 
-Stage 11 is **pending, not dispatched**, with its self-contained
-[continuation](extraction-additional-vlm-models-stage11-resumption.md).
+Stage 11 was later run on 2026-09-23; see the stage 11 checkpoint below.
 Stages 6–7 remain user-deferred. NuExtract3 Transformers/vLLM and Lift live gates
 remain unrun; the recorded NuExtract3 LM Studio deployment remains incompatible.
+
+## Stage 11 checkpoint — gap closure, final verification and release gates
+
+Ran on 2026-09-23 at the user's request from [the continuation](extraction-additional-vlm-models-stage11-resumption.md). No commits, pushes, dependency changes, Core access, model downloads or external callbacks. The only code change is the untracked Serve script `scripts/local_smoke/extraction_matrix.py`; the tracking changes are this ledger and the untracked Serve matrix handoff. Offline closure plus a live smoke does not certify untested deployments or authorize production enablement.
+
+### Baseline
+
+All three heads matched the prompt: Docling `1d3f63d2761054ed676aba2c045335c386aa1335`, Jobkit `00c7022b596c35f398387ed96f543d00b2a1d65d`, Serve `0de30b7fbe4b51050239ae6187494bb0ccd0927b`. No tracked changes apart from the Docling plan docs. Jobkit and Serve `.venv`s resolve Docling `1d3f63d2` (and Serve Jobkit `00c7022`) per `direct_url.json`. docling-serve was running since 09:09 (before `0de30b7`); it was restarted at 09:51 with the handoff's launch command, and every live run below used the restarted server.
+
+### Gaps
+
+1. **Page range**: `--page-range START-END` added. PDF `2-3`, `file → inbody`: two items with scopes `page_no` 2 then 3 for Granite and NuExtract3 (exit 0 both).
+2. **Schema failure**: `--schema-fail` uses a `prompt_only` schema no answer can satisfy (`title: integer, minimum 1, maximum 0`). A plain `integer` title was tried first and is not enough: Granite reads the schema from its prompt and answered `{"title": 2022}`, which passed. With the unsatisfiable schema every run shows `validation_status: "failed"`, `raw_text` kept, `extracted_data: null`, structured `ErrorItem`s `Schema validation at $.title: ...` and document status **`failure`**. This matches `ExtractionVlmPipeline._determine_status`: no item has `extracted_data`, so the document is `failure`; `partial_success` needs at least one passing item. Passed for Granite and NuExtract3 `file → inbody`, NuExtract3 `file → s3` and Granite `http → presigned`.
+3. **Callback order**: `--callback-url` starts a local receiver and registers it. On a DOCUMENT_COMPLETED it checks that the document's `.extraction.json` is already under the S3 target prefix. S3 → S3 with 3 documents, both models: `set_num_docs(3)`, 3 × `document_completed` (each artifact present), `update_processed`, `task_completed` (exit 0). Observation: Jobkit sends every callback on its own daemon thread (`CallbackInvoker.invoke_callbacks_async`), so arrival order is send order only while the receiver is fast. A first receiver version that did the S3 check before recording the event received `update_processed` ahead of the last `document_completed`. Receivers must not rely on strict arrival order under latency.
+4. **Tenant access**: `owned_task` takes no task type, so no extraction case was added. `task_result` and the status endpoints call `_assert_task_tenant(task, ...)` on the `Task` before fetching or type-dispatching the outcome, so extraction tasks are covered by composition. Extraction enqueue tenant metadata is covered in `tests/test_extraction_admission.py`.
+5. **Conversion after the shared-model changes**: Serve batch/convert admission tests all pass. Of the 12 stage 10 baseline failures, 9 now pass: the 8 batch doubles (updated in `eabfe27`) and the S3 region case; the 2 config-file cases and the OTEL case remain. The Jobkit broad selection passes apart from environment-only MinIO tests. The Docling `test_service_*` suites pass. The stage 8 `test_polymorphic_option_fields_are_serialized_as_any` exclusion now **passes** (`SerializeAsAny` on `VlmModelSpec` fields). The ZIP rejection and `_normalize_source` http changes are covered by the passing service-client and connector suites. In-process real PDF conversion tests are environment-blocked (see below).
+
+### Offline regressions
+
+Logs are under `/tmp/stage11/`. Jobkit and Serve used their own `.venv` without `PYTHONPATH`; Docling used `docling_release/.venv` (Python 3.13.5) with `PYTHONPATH=<docling-second>`. `CI=1 HF_HUB_OFFLINE=1` throughout; `REDIS_URL=redis://localhost:6379/15` kept tests away from the live server's Redis db 0.
+
+| Suite | Command | Result |
+|---|---|---|
+| Docling extraction + service (stage 8 ∪ stage 10 lists, all `test_service_*`, no exclusions) | `pytest -q` over the 20 files | 622 passed, 16 skipped, **7 failed**, exit 1 (`docling-offline.log`) |
+| Docling, the 7 failures in Serve's venv (docling-parse 7.20.0) | `test_interfaces.py test_input_doc.py test_invalid_input.py` | 40 passed, **2 failed** (`cv2`), exit 1 (`docling-parse720-rerun.log`) |
+| Docling `SerializeAsAny` (stage 8 exclusion) | `-k test_polymorphic_option_fields_are_serialized_as_any` | 1 passed |
+| Docling `make validate` | `CI=1 HF_HUB_OFFLINE=1 UV_NO_SYNC=1 make validate` | exit 0; changeset is plan docs only, so code hooks had no files; no hook edits (`docling-validate.log`) |
+| Jobkit broad (stage 9 command and exclusions) | see stage 9 | 673 passed, 5 skipped, 12 deselected, **3 failed**, exit 1 (`jobkit-offline.log`) |
+| Jobkit orchestrators (stage 9 `-k`) | see stage 9 | 3 passed, 1 skipped, 26 deselected, exit 0 (`jobkit-orchestrators.log`) |
+| Serve admission/policy/batch/tenant/convert (stage 10 list with no exclusions, plus `test_tenant_isolation`, `test_page_range`, `test_error_response_sanitation`, `test_results_clear`, `test_file_opts`, `test_fastapi_endpoints`, `test_health_probes`) | `pytest -q --maxfail=0` | 247 passed, **3 failed, 22 errors**, exit 1 (`serve-offline.log`) |
+| Serve tenant + health with harness overrides | `DOCLING_SERVE_LOAD_MODELS_AT_BOOT=false pytest -o asyncio_default_fixture_loop_scope=session -o asyncio_default_test_loop_scope=session tests/test_tenant_isolation.py tests/test_health_probes.py` | 20 passed, exit 0 (`serve-tenant-noboot.log`) |
+| Serve MyPy | `.venv/bin/python -m mypy docling_serve` | 26 files, exit 0 |
+| Serve native hooks | `SKIP=update-docs-common-parameters,uv-lock pre-commit run --files scripts/local_smoke/extraction_matrix.py` | Ruff, MyPy, Vale pass, exit 0; the two skips are the stage 10 proven unrelated hooks |
+
+Every failure is environment or existing harness debt; none involve extraction or the stage 11 changes:
+
+- Docling, 7: the borrowed `docling_release/.venv` has docling-parse **7.19.0**, while the branch requires `>=7.20.0` (merged `ca0ecd41` passes `page_range` to `DoclingThreadedPdfParser.load`). In Serve's venv (7.20.0), 5 pass. The remaining `test_convert_path`/`test_convert_stream` need `cv2` for full conversion; they are the same pair stage 8 excluded. The borrowed venv needs a docling-parse bump before it can be the Docling test environment again.
+- Jobkit, 3: `test_s3_source_processor.py` live-MinIO tests run when `127.0.0.1:9000` answers and expect a pre-seeded `test` bucket. The live stack's MinIO has only `artifacts`, `source` and `target` buckets. At stage 9 MinIO was down, so they were skipped (11 skips then, 5 now).
+- Serve, 3 failed: the stage 10 baseline (`test_nonexistent_config_file_ignored`, `test_invalid_yaml_ignored`, `test_filtered_paths_constant`).
+- Serve, 22 errors: every module with a session-scoped async `app` fixture fails setup with pytest-asyncio 1.4.0 `ScopeMismatch`. The test files and the locked pytest-asyncio 1.4.0 are unchanged since `e9820f6`, and the error happens in the fixture before app code runs. With the session loop-scope overrides, `create_app()` then needs `cv2` at model boot (TableFormer), which Serve's venv lacks. Without model boot, tenant and health pass (row above). `test_results_clear`, `test_file_opts` and `test_fastapi_endpoints` convert real PDFs and stay blocked by the missing `cv2`.
+
+### Live verification
+
+Local stack only: LM Studio `granite-vision-4.1-4b` on 1234, llama-server `numind/NuExtract3-GGUF:Q5_K_M` on 1235, MinIO, Redis, and docling-serve on Ray with `config.yaml`. Runner script: `scripts/local_smoke/extraction_matrix.py` in a loop. Per-run logs and `summary.tsv` (name, exit code, last line) are in `/tmp/stage11/live/`; gap runs are in `/tmp/stage11/gap{1,2,3}-*.log`.
+
+| Run set | Runs | Result |
+|---|---|---|
+| PDF, both models × `file`/`s3`/`http` × `inbody`/`presigned`/`s3` | 18 | 18 exit 0. `s3 → inbody` and **`s3 → presigned` are now rejected with 422** (`... require a storage target with artifact result mode; got target kind 'presigned_url'`) |
+| DOCX, same matrix | 18 | 18 exit 0. NuExtract3 returns one `document`-scoped item; Granite fails with `No channel works ...` as designed; both `s3 → inbody/presigned` are rejected with 422 |
+| Markdown and HTML, `file`/`http` → `inbody`, both models | 8 | 8 exit 0 (Granite: expected channel failure) |
+| Multi-document S3 prefix (3 PDFs), both models × 3 targets | 6 | 6 exit 0. `s3 → s3`: 3/3 succeeded and 3 artifacts; `inbody` and `presigned` rejected with 422 |
+| Encrypted PDF (Granite) | 4 | Non-zero by design for 3 of them; judged on payloads. `s3 → s3` mixed prefix: `num_converted=3, num_succeeded=2, num_failed=1`, stored `2206.01062_pg3.extraction.json` with `status: failure`, `items: []`, `backend_failure`/`user_input`. `s3 → presigned`: rejected with 422 (exit 0). `file → extract()` (the script uses `raises_on_error=False`) and `http → extract_all()`: one `failure` document, no items, and the docling-parse `ErrorItem` |
+| Gap 1 page range 2–3, `file → inbody` | 2 | 2 exit 0 |
+| Gap 2 schema failure (`file → inbody` ×2, `file → s3`, `http → presigned`) | 4 | 4 exit 0, status `failure` |
+| Gap 3 callbacks, S3 → S3 with 3 docs | 2 | 2 exit 0 |
+
+The handoff's earlier `s3 → presigned` acceptance was caused by the stale server process, not by the code; it no longer reproduces.
+
+### Lift
+
+Not run live. A live vLLM run needs weights, a server and the user's authorization; that question is open to the user. Until then Lift stays documented as contract-tested only.
+
+### Release gates (reported, not fixed)
+
+| Gate | Current state |
+|---|---|
+| Git branch sources in Jobkit and Serve `pyproject.toml` `[tool.uv.sources]` | Still branch pins (`cau/extraction-api-service-models`, `cau/extract-endpoint`). Before release, replace them with the first published Docling and Jobkit versions that contain this contract and raise the minimums. |
+| `NuExtractTransformersModel` removed in `0a1e58d7` | Absent at HEAD; `origin/main` still ships `docling/models/extraction/nuextract_transformers_model.py`. Either restore a deprecated shim or record the break in the release notes. |
+| NuExtract3 live evidence | Quantized GGUF (Q5_K_M) through llama-server's generic OpenAI-compatible API, not the pinned revision on Transformers or vLLM. Decide whether llama-server becomes a claimed transport. LM Studio still cannot deliver caller templates for NuExtract3. |
+| Stages 6–7 (Qwen3.5, Gemma) | Still deferred. Only NuExtract 2, Granite Vision, NuExtract3 and Lift are documented. |
+| External handoff in `docling_release` | Still describes the pre-C1 service shape and the kept `NuExtractTransformersModel`. It needs a dated deviations note once that checkout may be edited; not touched here. |
+| Test environments (new) | `docling_release/.venv` has docling-parse 7.19.0 (<7.20.0 required). Serve's venv lacks `cv2`. Serve's session-scoped async fixtures do not work with pytest-asyncio 1.4.0. The Jobkit MinIO tests need a seeded `test` bucket. |
+| Callback arrival order (new) | Callbacks are sent concurrently from per-event threads; order is not guaranteed for slow receivers. Document this or serialize the sends if order is part of the contract. |
+
+Next: the user decides on the Lift live run and on the release gates. Stages 6–7 remain deferred.

@@ -1,5 +1,7 @@
 # Handoff: align docling-jobkit + docling-serve to the C1 extraction contract
 
+**Status: closed, historical.** Nothing left to do here.
+
 Drafted 2026-09-22. **Applied 2026-09-22:** jobkit `e75bb73`, serve `367f3d2`.
 The list below is kept as the record of what changed. It aligns
 `docling-jobkit` and `docling-serve` (both on branch `cau/extract-endpoint`) to
