@@ -30,6 +30,9 @@ _log = logging.getLogger(__name__)
 _POINTS_PER_INCH = 72.0
 _DEFAULT_DPI = (_POINTS_PER_INCH, _POINTS_PER_INCH)
 
+# Pixels are never rendered below native resolution at the default VLM scale 2.0.
+_MAX_DPI = 144.0
+
 
 def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, float]:
     if not isinstance(dpi, tuple) or len(dpi) != 2:
@@ -50,7 +53,15 @@ def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, floa
 
 def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
-    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+    dpi_x, dpi_y = _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+
+    # Cap the DPI to prevent over-shrinked images
+    factor = max(dpi_x, dpi_y) / _MAX_DPI
+    if factor > 1.0:
+        dpi_x /= factor
+        dpi_y /= factor
+
+    return dpi_x, dpi_y
 
 
 def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float]]:
