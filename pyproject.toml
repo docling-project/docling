@@ -150,9 +150,10 @@ format-email = [
   'python-oxmsg>=0.0.2,<0.1.0',
 ]
 
-# Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
-# Index/*.iwa; the Snappy decompressor is implemented in pure Python, so no
-# compiled dependency is needed. iWork '09 documents are plain XML.
+# Apple iWork (.pages, .numbers). Pages 5+ and Numbers 3+ store content as
+# Snappy-framed protobuf in Index/*.iwa; the Snappy decompressor is implemented
+# in pure Python, so no compiled dependency is needed. iWork '09 documents are
+# plain XML.
 format-iwork = [
   'defusedxml>=0.7.1,<0.8.0',
 ]

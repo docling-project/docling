@@ -24,6 +24,7 @@ from docling_core.types.doc import (
     TableData,
 )
 
+from docling.backend.iwork import tables
 from docling.backend.iwork.content import (
     SCRIPTS,
     Block,
@@ -53,17 +54,6 @@ from docling.exceptions import DocumentLoadError
 _log = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-
-
-class CellValues(NamedTuple):
-    """A table's shared value lists, keyed as its cells reference them.
-
-    Cells reference their contents by key rather than holding them, so two cells
-    with the same text share one entry.
-    """
-
-    strings: dict[int, str] = {}
-    rich_text: dict[int, str] = {}
 
 
 MAX_REFERENCE_DEPTH = 4
@@ -134,10 +124,7 @@ STYLE_SUPER_FIELD = 1
 STYLE_NAME_FIELD = 1
 """Field of ``TSS.StyleArchive`` holding the style's human-facing name."""
 
-TST_TABLE_MODEL = 6001
-"""Message type of ``TST.TableModelArchive``, the root of one table."""
-
-TST_TABULAR_INFO = 6000
+tables.TST_TABLE_INFO = 6000
 """Message type of ``TST.TableInfoArchive``, the drawable a table sits in."""
 
 TABULAR_INFO_MODEL_FIELD = 2
@@ -263,121 +250,6 @@ and by ``preferred_file_name`` otherwise.
 """
 
 DATA_MEMBER_PREFIX = "Data/"
-
-TST_TILE = 6002
-"""Message type of ``TST.Tile``, which lays a table's cells out into rows."""
-
-TST_DATA_LIST = 6005
-"""Message type of ``TST.TableDataList``, a table's shared value table.
-
-Cells reference their contents by key rather than holding them, so two cells
-with the same text share a single entry.
-"""
-
-TABLE_ROWS_FIELD = 6
-
-TABLE_COLS_FIELD = 7
-
-TABLE_HEADER_ROWS_FIELD = 9
-
-TABLE_DATA_STORE_FIELD = 4
-"""Fields of ``TST.TableModelArchive``: geometry, header rows, and data store."""
-
-STORE_TILES_FIELD = 3
-
-STORE_STRINGS_FIELD = 4
-
-STORE_RICH_TEXT_FIELD = 17
-"""Fields of a table's data store: its tiles, and its two value lists.
-
-A cell holding plain text references the string list; one holding styled text
-references the rich text list instead, whose entries point at a whole
-``TSWP.StorageArchive``.
-"""
-
-LIST_ENTRIES_FIELD = 3
-
-LIST_SEGMENTS_FIELD = 4
-"""Fields of ``TST.TableDataList``: its entries, and the segments they spill into.
-
-A list long enough to be split keeps its entries in referenced segments instead,
-which have the same entry shape.
-"""
-
-ENTRY_KEY_FIELD = 1
-
-ENTRY_STRING_FIELD = 3
-
-ENTRY_RICH_TEXT_FIELD = 9
-"""Fields of one value list entry: the key cells reference it by, and its value."""
-
-TST_TEXT_REF = 6218
-"""Message type of the indirection a rich text entry points at.
-
-It holds nothing but a reference to the ``TSWP.StorageArchive`` with the text.
-"""
-
-TILE_ROWS_FIELD = 5
-
-ROW_INDEX_FIELD = 1
-
-ROW_STORAGE_FIELD = 3
-
-ROW_OFFSETS_FIELD = 4
-
-ROW_WIDE_STORAGE_FIELD = 6
-
-ROW_WIDE_OFFSETS_FIELD = 7
-
-ROW_WIDE_OFFSETS_FLAG = 8
-"""Fields of ``TST.Tile`` and of one of its rows.
-
-A row holds a packed cell buffer plus one ``int16`` offset per column, where a
-negative offset marks a column with no cell. Pages 5.2 moved both to their own
-fields and started scaling the offsets by four, keeping the older pair in place
-for the benefit of releases that could not read the new one, so the newer pair
-is preferred when it is there.
-"""
-
-CELL_VERSION_LEGACY = 4
-
-CELL_VERSION_CURRENT = 5
-"""Storage versions of a packed cell, in byte 0."""
-
-CELL_TYPE_TEXT = 3
-
-CELL_TYPE_RICH_TEXT = 9
-"""Value types of a packed cell, in byte 1, that carry text."""
-
-CELL_KEY_OFFSET = 16
-"""Where a version 4 cell keeps the key of its string."""
-
-CELL_FLAGS_OFFSET = 8
-
-CELL_VALUES_OFFSET = 12
-"""Where a version 5 cell keeps its flags, and where its values begin.
-
-The flags say which values are present; each one that is takes a fixed width,
-so the position of any of them depends on all the ones before it.
-"""
-
-CELL_FLAG_STRING = 0x8
-
-CELL_FLAG_RICH_TEXT = 0x10
-
-CELL_VALUE_WIDTHS = (
-    (0x1, 16),
-    (0x2, 8),
-    (0x4, 8),
-    (CELL_FLAG_STRING, 4),
-    (CELL_FLAG_RICH_TEXT, 4),
-)
-"""The values a version 5 cell may hold, in the order they are laid out.
-
-A decimal, a double and a duration come first, then the keys of the string and
-the rich text a cell may reference. Nothing after the rich text key is needed,
-so the walk stops there.
-"""
 
 STORAGE_PARAGRAPH_STYLE_FIELD = 5
 """Field of ``TSWP.StorageArchive`` holding the paragraph style run table.
@@ -596,10 +468,10 @@ def iwa_object_runs(
         return []
 
     runs: list[tuple[int, _T | None]] = []
-    for entry in safe_fields(table[0]).get(1, []):
+    for entry in tables.safe_fields(table[0]).get(1, []):
         if not isinstance(entry, bytes):
             continue
-        parsed = safe_fields(entry)
+        parsed = tables.safe_fields(entry)
         index = parsed.get(1, [None])[0]
         if not isinstance(index, int):
             continue
@@ -624,10 +496,10 @@ def iwa_depth_runs(fields: dict[int, list[int | bytes]]) -> list[tuple[int, int]
         return []
 
     runs: list[tuple[int, int]] = []
-    for entry in safe_fields(table[0]).get(1, []):
+    for entry in tables.safe_fields(table[0]).get(1, []):
         if not isinstance(entry, bytes):
             continue
-        parsed = safe_fields(entry)
+        parsed = tables.safe_fields(entry)
         index = parsed.get(1, [None])[0]
         depth = parsed.get(2, [None])[0]
         if isinstance(index, int) and isinstance(depth, int):
@@ -639,7 +511,7 @@ def iwa_depth_runs(fields: dict[int, list[int | bytes]]) -> list[tuple[int, int]
 
 def iwa_link(payload: bytes) -> str | None:
     """Read the address a ``TSWP.LinkFieldArchive`` points at."""
-    url = safe_fields(payload).get(LINK_URL_FIELD, [None])[0]
+    url = tables.safe_fields(payload).get(LINK_URL_FIELD, [None])[0]
     if not isinstance(url, bytes):
         return None
     return url.decode("utf-8", errors="replace").strip() or None
@@ -647,7 +519,7 @@ def iwa_link(payload: bytes) -> str | None:
 
 def iwa_list_style(payload: bytes) -> ListStyle:
     """Read a ``TSWP.ListStyleArchive`` as its per-depth label ladder."""
-    fields = safe_fields(payload)
+    fields = tables.safe_fields(payload)
     label_types = tuple(
         value
         for value in fields.get(LIST_LABEL_TYPES_FIELD, [])
@@ -663,11 +535,11 @@ def iwa_list_style(payload: bytes) -> ListStyle:
 
 def iwa_formatting(payload: bytes) -> Formatting | None:
     """Read a character style's property map as a :class:`Formatting`."""
-    properties = safe_fields(payload).get(STYLE_PROPERTIES_FIELD, [None])[0]
+    properties = tables.safe_fields(payload).get(STYLE_PROPERTIES_FIELD, [None])[0]
     if not isinstance(properties, bytes):
         return None
 
-    decoded = safe_fields(properties)
+    decoded = tables.safe_fields(properties)
     active = {
         label
         for field, label in CHARACTER_PROPERTY_LABELS.items()
@@ -677,261 +549,6 @@ def iwa_formatting(payload: bytes) -> Formatting | None:
     return build_formatting(
         active, SCRIPTS.get(script) if isinstance(script, int) else None
     )
-
-
-def iwa_table(model: IWAObject, objects: dict[int, IWAObject]) -> TableData | None:
-    """Build table data from one ``TST.TableModelArchive``.
-
-    A table keeps its geometry on the model, its cell contents in a shared value
-    list, and the placement of those values in tiles. Cells reference their value
-    by key, so equal values share one entry — which is why the tiles have to be
-    read rather than assuming the value list is already in cell order.
-
-    Args:
-        model: The table's ``TST.TableModelArchive``.
-        objects: Every object in the document, keyed by identifier.
-
-    Returns:
-        The table, or None when nothing readable could be placed in it.
-    """
-    fields = safe_fields(model.payload)
-    num_rows = fields.get(TABLE_ROWS_FIELD, [None])[0]
-    num_cols = fields.get(TABLE_COLS_FIELD, [None])[0]
-    store_raw = fields.get(TABLE_DATA_STORE_FIELD, [None])[0]
-    if not isinstance(num_rows, int) or not isinstance(num_cols, int):
-        return None
-    if not num_rows or not num_cols or not isinstance(store_raw, bytes):
-        return None
-
-    header_rows = fields.get(TABLE_HEADER_ROWS_FIELD, [0])[0]
-    store = safe_fields(store_raw)
-    values = iwa_cell_values(store, objects)
-
-    cells: list[TableCell] = []
-    for tile in iwa_tiles(store, objects):
-        cells.extend(
-            iwa_tile_cells(
-                tile,
-                values,
-                num_cols,
-                header_rows if isinstance(header_rows, int) else 0,
-            )
-        )
-
-    if not cells:
-        return None
-    return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
-
-
-def iwa_cell_values(
-    store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> CellValues:
-    """Read a table's shared value lists, keyed as its cells reference them.
-
-    Args:
-        store: Decoded fields of the table's data store.
-        objects: Every object in the document, keyed by identifier.
-
-    Returns:
-        The plain strings and the rich text, each keyed by cell reference.
-    """
-    return CellValues(
-        strings=iwa_value_list(store, STORE_STRINGS_FIELD, objects, iwa_entry_string),
-        rich_text=iwa_value_list(
-            store,
-            STORE_RICH_TEXT_FIELD,
-            objects,
-            iwa_entry_rich_text,
-        ),
-    )
-
-
-def iwa_value_list(
-    store: dict[int, list[int | bytes]],
-    field: int,
-    objects: dict[int, IWAObject],
-    decode: Callable[[dict[int, list[int | bytes]], dict[int, IWAObject]], str | None],
-) -> dict[int, str]:
-    """Read one ``TST.TableDataList``, following any segments it spills into."""
-    reference = store.get(field, [None])[0]
-    target = read_reference(reference) if isinstance(reference, bytes) else None
-    data_list = objects.get(target) if target is not None else None
-    if data_list is None or data_list.message_type != TST_DATA_LIST:
-        return {}
-
-    payloads = [data_list.payload]
-    for segment in iwa_reference_list(data_list.payload, LIST_SEGMENTS_FIELD):
-        spilled = objects.get(segment)
-        if spilled is not None:
-            payloads.append(spilled.payload)
-
-    values: dict[int, str] = {}
-    for payload in payloads:
-        for entry in safe_fields(payload).get(LIST_ENTRIES_FIELD, []):
-            if not isinstance(entry, bytes):
-                continue
-            parsed = safe_fields(entry)
-            key = parsed.get(ENTRY_KEY_FIELD, [None])[0]
-            value = decode(parsed, objects)
-            if isinstance(key, int) and value is not None:
-                values[key] = value
-    return values
-
-
-def iwa_entry_string(
-    entry: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> str | None:
-    """Read a value list entry that holds its string directly."""
-    value = next(
-        (v for v in entry.get(ENTRY_STRING_FIELD, []) if isinstance(v, bytes)), None
-    )
-    return None if value is None else value.decode("utf-8", errors="replace")
-
-
-def iwa_entry_rich_text(
-    entry: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> str | None:
-    """Read a value list entry that points at a whole text storage."""
-    reference = entry.get(ENTRY_RICH_TEXT_FIELD, [None])[0]
-    target = read_reference(reference) if isinstance(reference, bytes) else None
-    indirection = objects.get(target) if target is not None else None
-    if indirection is None or indirection.message_type != TST_TEXT_REF:
-        return None
-
-    storage_id = iwa_reference_field(indirection.payload, 1)
-    storage = objects.get(storage_id) if storage_id is not None else None
-    if storage is None or storage.message_type != TSWP_STORAGE_ARCHIVE:
-        return None
-    return iwa_storage_text(safe_fields(storage.payload)).strip() or None
-
-
-def iwa_tiles(
-    store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> list[IWAObject]:
-    """Resolve the tiles a table's data store points at."""
-    tiles: list[IWAObject] = []
-    container = store.get(STORE_TILES_FIELD, [None])[0]
-    if not isinstance(container, bytes):
-        return tiles
-
-    for entry in safe_fields(container).get(1, []):
-        if not isinstance(entry, bytes):
-            continue
-        reference = safe_fields(entry).get(2, [None])[0]
-        target = read_reference(reference) if isinstance(reference, bytes) else None
-        tile = objects.get(target) if target is not None else None
-        if tile is not None and tile.message_type == TST_TILE:
-            tiles.append(tile)
-    return tiles
-
-
-def iwa_tile_cells(
-    tile: IWAObject, values: CellValues, num_cols: int, header_rows: int
-) -> list[TableCell]:
-    """Read one tile's cells, placing them by each row's per-column offsets."""
-    cells: list[TableCell] = []
-
-    for row_message in safe_fields(tile.payload).get(TILE_ROWS_FIELD, []):
-        if not isinstance(row_message, bytes):
-            continue
-        row = safe_fields(row_message)
-        row_index = row.get(ROW_INDEX_FIELD, [None])[0]
-        storage = row.get(ROW_WIDE_STORAGE_FIELD, [None])[0]
-        offsets = row.get(ROW_WIDE_OFFSETS_FIELD, [None])[0]
-        scale = 4 if row.get(ROW_WIDE_OFFSETS_FLAG, [0])[0] else 1
-        if not isinstance(storage, bytes) or not isinstance(offsets, bytes):
-            storage = row.get(ROW_STORAGE_FIELD, [None])[0]
-            offsets = row.get(ROW_OFFSETS_FIELD, [None])[0]
-            scale = 1
-        if not isinstance(row_index, int):
-            continue
-        if not isinstance(storage, bytes) or not isinstance(offsets, bytes):
-            continue
-
-        for column in range(min(num_cols, len(offsets) // 2)):
-            start = int.from_bytes(
-                offsets[column * 2 : column * 2 + 2], "little", signed=True
-            )
-            text = iwa_cell_text(storage, start * scale, values)
-            if text is None:
-                continue
-            cells.append(
-                TableCell(
-                    text=text,
-                    start_row_offset_idx=row_index,
-                    end_row_offset_idx=row_index + 1,
-                    start_col_offset_idx=column,
-                    end_col_offset_idx=column + 1,
-                    column_header=row_index < header_rows,
-                )
-            )
-
-    return cells
-
-
-def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
-    """Read one packed cell, or None when there is nothing readable there.
-
-    Only the layouts that carry text are decoded. Any other value type — a
-    number, a date, a formula result — is skipped rather than guessed at from
-    bytes whose meaning has not been established against a real document.
-
-    Args:
-        storage: The row's packed cell buffer.
-        start: Where in the buffer this cell begins.
-        values: The table's shared value lists.
-
-    Returns:
-        The cell's text, or None when it holds none.
-    """
-    if start < 0 or start + CELL_VALUES_OFFSET > len(storage):
-        return None
-
-    version = storage[start]
-    if version == CELL_VERSION_LEGACY:
-        if storage[start + 1] != CELL_TYPE_TEXT:
-            return None
-        key_at = start + CELL_KEY_OFFSET
-        if key_at + 4 > len(storage):
-            return None
-        return values.strings.get(read_uint32(storage, key_at))
-
-    if version != CELL_VERSION_CURRENT:
-        return None
-    if storage[start + 1] not in (CELL_TYPE_TEXT, CELL_TYPE_RICH_TEXT):
-        return None
-
-    flags = read_uint32(storage, start + CELL_FLAGS_OFFSET)
-    offset = start + CELL_VALUES_OFFSET
-    for flag, width in CELL_VALUE_WIDTHS:
-        if not flags & flag:
-            continue
-        if offset + width > len(storage):
-            return None
-        if flag == CELL_FLAG_STRING:
-            return values.strings.get(read_uint32(storage, offset))
-        if flag == CELL_FLAG_RICH_TEXT:
-            return values.rich_text.get(read_uint32(storage, offset))
-        offset += width
-    return None
-
-
-def read_uint32(buffer: bytes, at: int) -> int:
-    """Read a little-endian 32-bit value out of a packed cell buffer."""
-    return int.from_bytes(buffer[at : at + 4], "little")
-
-
-def safe_fields(payload: bytes) -> dict[int, list[int | bytes]]:
-    """Decode a message, treating an unreadable one as empty.
-
-    The table archives carry sub-messages this reader has no need to understand,
-    some of which use wire types the fields it does want never use. Failing the
-    whole document over one of them would be wrong.
-    """
-    try:
-        return read_fields(payload)
-    except DocumentLoadError:
-        return {}
 
 
 class IWAReader:
@@ -1039,7 +656,7 @@ class IWAReader:
             note = self._objects.get(identifier)
             if note is None or note.message_type != TSWP_NOTE:
                 continue
-            text_id = iwa_reference_field(note.payload, NOTE_STORAGE_FIELD)
+            text_id = tables.reference_field(note.payload, NOTE_STORAGE_FIELD)
             paragraphs.extend(self._storage_paragraphs(text_id))
         return paragraphs
 
@@ -1067,7 +684,7 @@ class IWAReader:
             if master is None or master.message_type != TP_PAGE_MASTER:
                 continue
             for field in PAGE_MASTER_HEADER_FOOTER_FIELDS:
-                pair = iwa_reference_field(master.payload, field)
+                pair = tables.reference_field(master.payload, field)
                 bundle = self._objects.get(pair) if pair is not None else None
                 if bundle is None or bundle.message_type != TP_HEADERS_AND_FOOTERS:
                     continue
@@ -1075,7 +692,7 @@ class IWAReader:
                     (HEADERS_FIELD, headers),
                     (FOOTERS_FIELD, footers),
                 ):
-                    for text_id in iwa_reference_list(bundle.payload, source):
+                    for text_id in tables.reference_list(bundle.payload, source):
                         target.extend(self._storage_paragraphs(text_id))
 
         return unique_paragraphs(headers), unique_paragraphs(footers)
@@ -1102,7 +719,7 @@ class IWAReader:
             field = self._objects.get(identifier)
             if field is None or field.message_type != TSWP_COMMENT_FIELD:
                 continue
-            head = iwa_reference_field(field.payload, COMMENT_FIELD_STORAGE_FIELD)
+            head = tables.reference_field(field.payload, COMMENT_FIELD_STORAGE_FIELD)
             comments.extend(
                 Comment(text, str(identifier)) for text in self._thread(head)
             )
@@ -1124,23 +741,25 @@ class IWAReader:
             if comment is None or comment.message_type != TSD_COMMENT_STORAGE:
                 continue
 
-            fields = safe_fields(comment.payload)
+            fields = tables.safe_fields(comment.payload)
             raw = fields.get(COMMENT_TEXT_FIELD, [None])[0]
             if isinstance(raw, bytes):
                 text = raw.decode("utf-8", errors="replace").strip()
                 if text:
                     texts.append(authored(self._author(comment.payload), text))
-            pending.extend(iwa_reference_list(comment.payload, COMMENT_REPLIES_FIELD))
+            pending.extend(
+                tables.reference_list(comment.payload, COMMENT_REPLIES_FIELD)
+            )
 
         return texts
 
     def _author(self, payload: bytes) -> str | None:
         """Read the name of whoever wrote a comment."""
-        identifier = iwa_reference_field(payload, COMMENT_AUTHOR_FIELD)
+        identifier = tables.reference_field(payload, COMMENT_AUTHOR_FIELD)
         author = self._objects.get(identifier) if identifier is not None else None
         if author is None or author.message_type != TSK_ANNOTATION_AUTHOR:
             return None
-        name = safe_fields(author.payload).get(AUTHOR_NAME_FIELD, [None])[0]
+        name = tables.safe_fields(author.payload).get(AUTHOR_NAME_FIELD, [None])[0]
         if not isinstance(name, bytes):
             return None
         return name.decode("utf-8", errors="replace").strip() or None
@@ -1166,23 +785,25 @@ class IWAReader:
             return []
 
         if drawable.message_type == TSWP_DRAWABLE_ATTACHMENT:
-            anchored = iwa_reference_field(drawable.payload, ATTACHMENT_DRAWABLE_FIELD)
+            anchored = tables.reference_field(
+                drawable.payload, ATTACHMENT_DRAWABLE_FIELD
+            )
             return self._drawable_blocks(anchored) if anchored is not None else []
 
         if drawable.message_type == TSD_IMAGE:
             return [self._picture(drawable)]
 
-        if drawable.message_type == TST_TABULAR_INFO:
-            model = iwa_reference_field(drawable.payload, TABULAR_INFO_MODEL_FIELD)
+        if drawable.message_type == tables.TST_TABLE_INFO:
+            model = tables.reference_field(drawable.payload, TABULAR_INFO_MODEL_FIELD)
             table = self._objects.get(model) if model is not None else None
-            if table is None or table.message_type != TST_TABLE_MODEL:
+            if table is None or table.message_type != tables.TST_TABLE_MODEL:
                 return []
-            data = iwa_table(table, self._objects)
+            data = tables.table(table, self._objects)
             return [data] if data is not None else []
 
         if drawable.message_type == TSD_GROUP:
             blocks: list[Block] = []
-            for child in iwa_reference_list(drawable.payload, GROUP_CHILDREN_FIELD):
+            for child in tables.reference_list(drawable.payload, GROUP_CHILDREN_FIELD):
                 blocks.extend(self._drawable_blocks(child))
             return blocks
 
@@ -1198,7 +819,7 @@ class IWAReader:
 
     def _picture(self, image: IWAObject) -> Picture:
         """Read a ``TSD.ImageArchive`` and the container member holding its bytes."""
-        fields = safe_fields(image.payload)
+        fields = tables.safe_fields(image.payload)
         named = ""
         for field in IMAGE_DATA_FIELDS:
             reference = fields.get(field, [None])[0]
@@ -1216,26 +837,6 @@ class IWAReader:
                 # not write into this container, so keep trying the rest.
                 _log.debug("Pages image data member %s is missing", member)
         return Picture(None, named)
-
-
-def iwa_reference_field(payload: bytes, field: int) -> int | None:
-    """Read the object identifier a message's reference field points at."""
-    reference = safe_fields(payload).get(field, [None])[0]
-    if not isinstance(reference, bytes):
-        return None
-    return read_reference(reference)
-
-
-def iwa_reference_list(payload: bytes, field: int) -> list[int]:
-    """Read the object identifiers a message's repeated reference field holds."""
-    identifiers = []
-    for reference in safe_fields(payload).get(field, []):
-        if not isinstance(reference, bytes):
-            continue
-        target = read_reference(reference)
-        if target is not None:
-            identifiers.append(target)
-    return identifiers
 
 
 def iwa_attachment_runs(
@@ -1261,10 +862,10 @@ def iwa_attachment_runs(
         return []
 
     runs: list[tuple[int, int]] = []
-    for entry in safe_fields(table[0]).get(1, []):
+    for entry in tables.safe_fields(table[0]).get(1, []):
         if not isinstance(entry, bytes):
             continue
-        parsed = safe_fields(entry)
+        parsed = tables.safe_fields(entry)
         index = parsed.get(1, [None])[0]
         reference = parsed.get(2, [None])[0]
         if not isinstance(index, int) or not isinstance(reference, bytes):
@@ -1293,10 +894,10 @@ def iwa_data_files(objects: dict[int, IWAObject]) -> dict[int, str]:
         return {}
 
     files: dict[int, str] = {}
-    for entry in safe_fields(metadata.payload).get(PACKAGE_DATAS_FIELD, []):
+    for entry in tables.safe_fields(metadata.payload).get(PACKAGE_DATAS_FIELD, []):
         if not isinstance(entry, bytes):
             continue
-        info = safe_fields(entry)
+        info = tables.safe_fields(entry)
         identifier = info.get(DATA_INFO_IDENTIFIER_FIELD, [None])[0]
         name = info.get(DATA_INFO_NAME_FIELD, [None])[0]
         if not isinstance(name, bytes):
@@ -1323,7 +924,7 @@ def iwa_referenced_ids(payload: bytes, depth: int = 0) -> set[int]:
         return set()
 
     found: set[int] = set()
-    for values in safe_fields(payload).values():
+    for values in tables.safe_fields(payload).values():
         for value in values:
             if not isinstance(value, bytes):
                 continue
