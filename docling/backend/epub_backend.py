@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import codecs
 import logging
+import posixpath
 import re
 import shutil
 import tempfile
@@ -114,9 +116,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self._extract_metadata(opf_root)
 
             # Get the base directory for content files
-            opf_dir = str(Path(opf_path).parent)
-            if opf_dir == ".":
-                opf_dir = ""
+            opf_dir = posixpath.dirname(opf_path)
 
             # Extract spine (reading order)
             ns_opf = {"opf": "http://www.idpf.org/2007/opf"}
@@ -142,10 +142,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 if idref and idref in manifest_map:
                     href = manifest_map[idref]
                     # Construct full path
-                    if opf_dir:
-                        full_path = f"{opf_dir}/{href}"
-                    else:
-                        full_path = href
+                    full_path = posixpath.normpath(posixpath.join(opf_dir, href))
                     self.content_files.append(full_path)
 
             _log.debug(f"Content files in reading order: {self.content_files}")
@@ -303,6 +300,21 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         return fixed_content
 
+    @staticmethod
+    def _decode_content_file(xhtml_data: bytes) -> str:
+        """Decode a content document, honouring a UTF-16 byte order mark.
+
+        Args:
+            xhtml_data: Raw bytes of a content document as stored in the archive
+
+        Returns:
+            The decoded document text
+        """
+        if xhtml_data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+            return xhtml_data.decode("utf-16")
+
+        return xhtml_data.decode("utf-8")
+
     @override
     def is_valid(self) -> bool:
         return self.valid
@@ -397,7 +409,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 # Read the XHTML content
                 xhtml_data = self.epub_zip.read(content_file)
-                xhtml_text = xhtml_data.decode("utf-8")
+                xhtml_text = self._decode_content_file(xhtml_data)
 
                 # Extract the body content from the XHTML
                 # Simple extraction - find content between <body> tags

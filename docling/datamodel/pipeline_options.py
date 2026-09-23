@@ -34,6 +34,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
+    ChartExtractionVlmEngineOptions,
 )
 from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
@@ -1187,6 +1188,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINERU2_PRO)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
@@ -1214,7 +1216,6 @@ PictureDescriptionVlmEngineOptions.register_preset(stage_model_specs.PICTURE_DES
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
 
-
 # =============================================================================
 # MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
 # =============================================================================
@@ -1239,6 +1240,12 @@ _default_picture_classification_options = DocumentPictureClassifierOptions.from_
 # Default CodeFormulaVlmOptions using codeformulav2 preset
 _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 """Default code/formula options using codeformulav2 preset with AUTO_INLINE runtime."""
+
+# Default ChartExtractionVlmEngineOptions using granite_vision_v4 preset
+_default_chart_extraction_options = ChartExtractionVlmEngineOptions.from_preset(
+    "granite_vision_v4"
+)
+"""Default chart extraction options using granite_vision_v4 preset with Transformers runtime."""
 
 
 # Define an enum for the backend options
@@ -1462,14 +1469,16 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = False
     chart_extraction_options: Annotated[
-        ChartExtractionModelOptions,
+        ChartExtractionVlmEngineOptions,
         Field(
             description=(
-                "Configuration for the chart extraction model, including which model variant to use "
-                "and which output formats to generate (CSV, code, summary)."
+                "Configuration for the chart extraction stage. "
+                "Use ChartExtractionVlmEngineOptions.from_preset('granite_vision_v4') "
+                "(default) or from_preset('granite_vision') for the V1 model. "
+                "Controls which output formats are generated (chart2csv, chart2summary, chart2code)."
             )
         ),
-    ] = ChartExtractionModelOptions()
+    ] = _default_chart_extraction_options
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):

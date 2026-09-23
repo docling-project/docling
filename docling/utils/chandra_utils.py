@@ -43,6 +43,8 @@ from docling.utils.code_language import detect_code_language
 
 _log = logging.getLogger(__name__)
 
+_MAX_TABLE_GRID_CELLS = 1000
+
 _LABEL_MAP = {
     "Title": DocItemLabel.TITLE,
     "Section-Header": DocItemLabel.SECTION_HEADER,
@@ -203,6 +205,9 @@ def _table_cells(table: _Element) -> list[tuple[TableCell, _Element]]:
                 rows.extend(
                     (row, child.tag == "thead", group_end) for row in group_rows
                 )
+    if len(rows) > _MAX_TABLE_GRID_CELLS:
+        raise ValueError(f"HTML table exceeds {_MAX_TABLE_GRID_CELLS} grid cells")
+    max_cols = _MAX_TABLE_GRID_CELLS // max(1, len(rows))
     occupied: dict[int, int] = {}
     result = []
     for row_index, (row, in_header, group_end) in enumerate(rows):
@@ -210,19 +215,21 @@ def _table_cells(table: _Element) -> list[tuple[TableCell, _Element]]:
         for node in row.children:
             if not isinstance(node, _Element) or node.tag not in {"td", "th"}:
                 continue
-            colspan = _span(node.attrs.get("colspan", "1"), 1000)
+            colspan = _span(node.attrs.get("colspan", "1"), max_cols + 1)
             remaining_rows = (group_end or len(rows)) - row_index
             rowspan = (
                 remaining_rows
                 if node.attrs.get("rowspan") == "0"
                 else _span(node.attrs.get("rowspan", "1"), remaining_rows)
             )
-            while any(
-                occupied.get(c, 0) > row_index for c in range(col, col + colspan)
-            ):
+            while occupied.get(col, 0) > row_index:
                 col += 1
+            if col + colspan > max_cols:
+                raise ValueError(
+                    f"HTML table exceeds {_MAX_TABLE_GRID_CELLS} grid cells"
+                )
             for c in range(col, col + colspan):
-                occupied[c] = row_index + rowspan
+                occupied[c] = max(occupied.get(c, 0), row_index + rowspan)
             result.append(
                 (
                     TableCell(
@@ -275,6 +282,23 @@ class _Run:
     label: DocItemLabel = DocItemLabel.TEXT
     formatting: Formatting = field(default_factory=Formatting)
     hyperlink: AnyUrl | Path | None = None
+
+
+@dataclass
+class _Provenance:
+    item: ProvenanceItem | None
+    text_owner: bool
+    claimed: bool = False
+
+    def take(self, text: str | None = None) -> ProvenanceItem | None:
+        if self.item is None or self.claimed:
+            return None
+        self.claimed = True
+        return (
+            self.item.model_copy(update={"charspan": (0, len(text))})
+            if text is not None
+            else self.item
+        )
 
 
 def _inline_runs(
@@ -358,18 +382,14 @@ class _ChandraDocumentBuilder:
         )
 
     @staticmethod
-    def _text_prov(prov: ProvenanceItem | None, text: str) -> ProvenanceItem | None:
-        return (
-            prov.model_copy(update={"charspan": (0, len(text))})
-            if prov is not None
-            else None
-        )
+    def _text_prov(prov: _Provenance | None, text: str) -> ProvenanceItem | None:
+        return prov.take(text) if prov is not None and prov.text_owner else None
 
     def _emit_runs(
         self,
         runs: list[_Run],
         parent: NodeItem | None,
-        prov: ProvenanceItem | None,
+        prov: _Provenance | None,
         label: DocItemLabel,
     ) -> None:
         merged: list[_Run] = []
@@ -403,10 +423,12 @@ class _ChandraDocumentBuilder:
         )
         if len(merged) > 1:
             if label != DocItemLabel.TEXT:
-                # The wrapper's location is derived from its inline runs; giving
-                # it its own prov too makes the serializer emit the bbox twice.
                 parent = self.doc.add_text(
-                    label=label, text="", parent=parent, prov=None, content_layer=layer
+                    label=label,
+                    text="",
+                    parent=parent,
+                    prov=self._text_prov(prov, ""),
+                    content_layer=layer,
                 )
             parent = self.doc.add_inline_group(parent=parent, content_layer=layer)
         for run in merged:
@@ -428,14 +450,15 @@ class _ChandraDocumentBuilder:
                     run.formatting if run.formatting != Formatting() else None
                 )
                 parent.hyperlink = run.hyperlink
-                text_prov = self._text_prov(prov, text)
-                parent.prov = [text_prov] if text_prov is not None else []
                 continue
             item = self.doc.add_text(
                 label=run_label,
                 text=text,
                 parent=parent,
-                prov=self._text_prov(prov, text),
+                prov=self._text_prov(
+                    prov if run_label == label else None,
+                    text,
+                ),
                 formatting=run.formatting if run.formatting != Formatting() else None,
                 hyperlink=run.hyperlink,
                 content_layer=layer,
@@ -447,7 +470,7 @@ class _ChandraDocumentBuilder:
         self,
         children: list[_Element | str],
         parent: NodeItem | None = None,
-        prov: ProvenanceItem | None = None,
+        prov: _Provenance | None = None,
         label: DocItemLabel = DocItemLabel.TEXT,
     ) -> None:
         runs: list[_Run] = []
@@ -455,6 +478,7 @@ class _ChandraDocumentBuilder:
             if isinstance(node, str) or (
                 node.tag not in _BLOCK_TAGS | {"img", "chem"}
                 and "data-label" not in node.attrs
+                and "data-bbox" not in node.attrs
                 and not (node.tag == "math" and node.attrs.get("display") == "block")
                 and not any(child.tag in _BLOCK_TAGS for child in node.elements())
             ):
@@ -469,12 +493,24 @@ class _ChandraDocumentBuilder:
         self,
         node: _Element,
         parent: NodeItem | None,
-        prov: ProvenanceItem | None,
+        prov: _Provenance | None,
         label: DocItemLabel,
     ) -> None:
         layout_label = node.attrs.get("data-label")
         if "data-bbox" in node.attrs or layout_label is not None:
-            prov = self._provenance(node)
+            prov = _Provenance(
+                self._provenance(node),
+                text_owner=layout_label
+                not in {
+                    "Table",
+                    "List-Group",
+                    "Figure",
+                    "Image",
+                    "Diagram",
+                    "Chemical-Block",
+                    "Form",
+                },
+            )
             label = _LABEL_MAP.get(layout_label or "", DocItemLabel.TEXT)
         if layout_label in {
             "Figure",
@@ -489,8 +525,8 @@ class _ChandraDocumentBuilder:
             layout_label == "List-Group"
             and not any(child.tag in {"ul", "ol"} for child in node.elements())
         ):
-            self._list(node, parent, prov)
-        elif node.tag == "pre" or (
+            self._list(node, parent)
+        elif node.tag in {"pre", "code"} or (
             layout_label == "Code-Block"
             and not any(child.tag == "pre" for child in node.elements())
         ):
@@ -506,9 +542,18 @@ class _ChandraDocumentBuilder:
             self.doc.add_formula(
                 text=text, parent=parent, prov=self._text_prov(prov, text)
             )
+        elif node.tag not in _BLOCK_TAGS and (
+            "data-bbox" in node.attrs or layout_label is not None
+        ):
+            runs = list(_inline_runs(node))
+            if layout_label is None and len(runs) == 1:
+                label = runs[0].label
+            self._emit_runs(runs, parent, prov, label)
         elif layout_label == "Form" or node.tag == "form":
-            region = self.doc.add_field_region(parent=parent, prov=prov)
-            self.walk(node.children, region, prov)
+            region = self.doc.add_field_region(
+                parent=parent, prov=prov.take() if prov is not None else None
+            )
+            self.walk(node.children, region)
         elif node.tag in {"caption", "figcaption"} or layout_label in {
             "Caption",
             "Footnote",
@@ -541,9 +586,7 @@ class _ChandraDocumentBuilder:
                     if isinstance(item, SectionHeaderItem):
                         item.level = int(node.tag[1])
 
-    def _list(
-        self, node: _Element, parent: NodeItem | None, prov: ProvenanceItem | None
-    ) -> None:
+    def _list(self, node: _Element, parent: NodeItem | None) -> None:
         group = self.doc.add_list_group(parent=parent)
         ordered = node.tag == "ol"
         number = _span(node.attrs.get("start", "1"), 2**31 - 1)
@@ -566,37 +609,41 @@ class _ChandraDocumentBuilder:
             if isinstance(child, str) and not child.strip():
                 continue
             if isinstance(child, _Element) and child.tag in {"ul", "ol"}:
-                self._list(child, group, prov)
+                self._list(child, group)
                 continue
             item = self.doc.add_list_item(
                 text="",
                 enumerated=ordered,
                 marker=f"{number}." if ordered else "",
                 parent=group,
-                prov=prov,
+                prov=None,
             )
             contents = (
                 child.children
                 if isinstance(child, _Element) and child.tag in {"li", "p"}
                 else [child]
             )
-            self.walk(contents, item, prov)
+            self.walk(contents, item)
             number += 1
 
     def _table(
-        self, node: _Element, parent: NodeItem | None, prov: ProvenanceItem | None
+        self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
         parsed = _table_cells(node)
         if not parsed:
             _log.warning("Chandra table contains no cells; preserving its content")
             self.walk(node.children, parent, prov)
             return
-        table = self.doc.add_table(data=_table_data([]), parent=parent, prov=prov)
+        table = self.doc.add_table(
+            data=_table_data([]),
+            parent=parent,
+            prov=prov.take() if prov is not None else None,
+        )
         cells: list[TableCell] = []
         for cell, cell_node in parsed:
             if any(child.tag != "span" for child in cell_node.elements()):
                 group = self.doc.add_group(parent=table)
-                self.walk(cell_node.children, group, prov)
+                self.walk(cell_node.children, group)
                 if group.children:
                     cell = RichTableCell(**cell.model_dump(), ref=group.get_ref())
             cells.append(cell)
@@ -606,12 +653,14 @@ class _ChandraDocumentBuilder:
                 child.tag in {"caption", "figcaption"}
                 or child.attrs.get("data-label") in {"Caption", "Footnote"}
             ):
-                self._block(child, table, prov, DocItemLabel.CAPTION)
+                self._block(child, table, None, DocItemLabel.CAPTION)
 
     def _picture(
-        self, node: _Element, parent: NodeItem | None, prov: ProvenanceItem | None
+        self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
-        picture = self.doc.add_picture(parent=parent, prov=prov)
+        picture = self.doc.add_picture(
+            parent=parent, prov=prov.take() if prov is not None else None
+        )
         images = (
             [node]
             if node.tag == "img"
@@ -653,7 +702,7 @@ class _ChandraDocumentBuilder:
                     and not (child.tag == "chem" and len(chemicals) == 1)
                 )
             ]
-        self.walk(node.children, picture, prov)
+        self.walk(node.children, picture)
 
 
 def parse_chandra_html(
@@ -665,8 +714,9 @@ def parse_chandra_html(
 ) -> DoclingDocument:
     """Map Chandra layout blocks and their HTML contents to document primitives.
 
-    Inner items inherit the block bbox, not invented element coordinates. Bare
-    HTML is recovered without provenance; non-HTML responses raise ValueError.
+    A source bbox is assigned to at most one document item representing that layout
+    block; derived children remain unlocated unless they declare their own bbox.
+    Bare HTML is recovered without provenance; non-HTML responses raise ValueError.
     Caption/footnote links require explicit nesting. Separate layout blocks are
     neither associated nor merged by proximity.
     """

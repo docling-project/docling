@@ -502,6 +502,28 @@ class VlmPipeline(PaginatedPipeline):
             document = self._nemotron_parse_v2_page_document(
                 conv_res, page, predicted_text, page.image
             )
+        elif response_format == ResponseFormat.MINERU2:
+            from docling.utils.mineru_utils import parse_mineru2
+
+            try:
+                document = parse_mineru2(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid MinerU response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
         else:
             raise RuntimeError(f"Unsupported VLM response format {response_format}")
 

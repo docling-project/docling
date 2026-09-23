@@ -136,8 +136,10 @@ More examples on how to connect with the remote inference services can be found 
 
 Use `ResponseFormat.CHANDRA_HTML` with `CHANDRA_OCR_LAYOUT_PROMPT` for Chandra's
 HTML layout blocks. Docling scales each block's `data-bbox` coordinates from
-0–1000 to the source page size. Items inside a block inherit that block's box;
-the model does not provide separate coordinates for each word or table cell.
+0–1000 to the source page size. At most one document item representing an
+annotated block receives its box. Derived children remain unlocated unless their
+source HTML element declares its own `data-bbox`; the model does not provide
+separate coordinates for each word or table cell.
 
 The converter preserves paragraphs, heading levels, nested lists, table spans,
 inline formatting, links, math, and code whitespace. Tables are recognized by

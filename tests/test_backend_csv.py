@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.document_converter import DocumentConverter
 
@@ -145,3 +145,12 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         cells = doc.tables[0].data.table_cells
         assert cells[0].text == "Name"
         assert cells[1].text == "Age"
+
+
+def test_malformed_quoted_csv_is_a_load_error():
+    """An unclosed quote used to escape convert() as csv.Error after sniffing."""
+    conv_result = get_converter().convert(
+        DocumentStream(name="bad.csv", stream=BytesIO(b'"unclosed quote,1,2\n')),
+        raises_on_error=False,
+    )
+    assert conv_result.status == ConversionStatus.FAILURE

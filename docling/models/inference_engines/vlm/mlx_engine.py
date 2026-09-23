@@ -176,9 +176,24 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 f"  3. Or use a different model that exists in your artifacts_path"
             )
 
+        # Some converted checkpoints omit lm_head because it is tied to the token
+        # embeddings, but mlx-vlm may miss a nested tie_word_embeddings setting and
+        # instantiate a separate head. Load those checkpoints non-strictly, then
+        # switch the language model to its embedding-backed output projection.
+        tied_word_embeddings = bool(
+            self.model_config
+            and self.model_config.extra_config.get("mlx_tied_word_embeddings", False)
+        )
+
         # Load the model
         start_time = time.monotonic()
-        self.vlm_model, self.processor = load(artifacts_path)
+        self.vlm_model, self.processor = load(
+            artifacts_path, strict=not tied_word_embeddings
+        )
+        if tied_word_embeddings:
+            language_model = self.vlm_model.language_model
+            language_model.args.tie_word_embeddings = True
+            del language_model.lm_head
         self.config = load_config(artifacts_path)
         load_time = time.monotonic() - start_time
 

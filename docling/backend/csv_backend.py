@@ -7,14 +7,16 @@ import warnings
 from collections.abc import Callable
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final, Set, Union
+from typing import Final, Optional, Set, Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import CsvBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
@@ -44,21 +46,25 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
 class CsvDocumentBackend(DeclarativeDocumentBackend):
     content: StringIO
 
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[CsvBackendOptions] = None,
+    ):
+        if options is None:
+            options = CsvBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
-        # Load content. utf-8-sig drops a leading BOM, which Excel and Google
-        # Sheets both write when exporting "CSV UTF-8"; left in, it becomes part
-        # of the first header cell. It is equivalent to utf-8 when no BOM is
-        # present.
+        # A leading BOM is dropped, which matters here because Excel and Google
+        # Sheets both write one when exporting "CSV UTF-8"; left in, it becomes
+        # part of the first header cell.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.content = StringIO(
-                    self.path_or_stream.getvalue().decode("utf-8-sig")
-                )
-            elif isinstance(self.path_or_stream, Path):
-                self.content = StringIO(self.path_or_stream.read_text("utf-8-sig"))
+            self.content = StringIO(decode_text(path_or_stream, options.encoding))
             self.valid = True
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"CsvDocumentBackend could not load document with hash {self.document_hash}"
@@ -109,10 +115,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        # Parse CSV
+        # Parse CSV. strict=True rejects malformed quotes; that used to escape
+        # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
-        result = csv.reader(self.content, dialect=dialect, strict=True)
-        self.csv_data = list(result)
+        try:
+            result = csv.reader(self.content, dialect=dialect, strict=True)
+            self.csv_data = list(result)
+        except csv.Error as e:
+            raise DocumentLoadError(
+                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+            ) from e
         _log.info(f"Detected {len(self.csv_data)} lines")
 
         # Parse the CSV into a structured document model

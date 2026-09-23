@@ -51,6 +51,11 @@ from docling.models.utils.generation_utils import (
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.granite_vision_utils import (
+    GRANITE_VISION_4_REPO_ID,
+    granite_vision_4_needs_remote_code,
+)
+from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -59,6 +64,7 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+_EAGER_ATTN_REQUIRED_REPO_IDS = {"nvidia/NVIDIA-Nemotron-Parse-2.0"}
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -201,6 +207,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if repo_id in _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS:
             _ensure_dots_flash_attn_import()
 
+        trust_remote_code = self.options.trust_remote_code
+        is_granite_vision_4 = repo_id == GRANITE_VISION_4_REPO_ID
+        if is_granite_vision_4 and not granite_vision_4_needs_remote_code(
+            transformers_version
+        ):
+            trust_remote_code = False
+
         # Download or locate model artifacts using shared utility
         def download_wrapper(repo_id: str, revision: str) -> Path:
             return self.download_models(repo_id, revision=revision)
@@ -235,7 +248,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         self.processor = AutoProcessor.from_pretrained(
             artifacts_path,
-            trust_remote_code=self.options.trust_remote_code,
+            trust_remote_code=trust_remote_code,
             revision=revision,
         )
         tokenizer = self._get_tokenizer()
@@ -251,7 +264,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             )
 
         # Load model
-        attn_implementation = (
+        attn_implementation: Optional[str] = (
             "flash_attention_2"
             if self.device.startswith("cuda")  # type: ignore[union-attr]
             and self.accelerator_options.cuda_use_flash_attention2
@@ -259,6 +272,14 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
         if is_dots_model:
             attn_implementation = "sdpa"
+        elif is_granite_vision_4 and attn_implementation == "sdpa":
+            # The native granite4_vision Q-Former rejects an explicit sdpa
+            # request before transformers 5.13; the transformers default
+            # selects sdpa where the model supports it.
+            attn_implementation = None
+
+        if repo_id in _EAGER_ATTN_REQUIRED_REPO_IDS:
+            attn_implementation = "eager"
 
         dtype_arg_name = (
             "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
@@ -271,7 +292,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             device_map=self.device,
             **{dtype_arg_name: torch_dtype},
             _attn_implementation=attn_implementation,
-            trust_remote_code=self.options.trust_remote_code,
+            trust_remote_code=trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
         )
@@ -507,7 +528,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Remove padding
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+            decoded_texts = strip_trailing_token(decoded_texts, pad_token)
 
         pad_token_id = getattr(tokenizer, "pad_token_id", None)
         if pad_token_id is None:
@@ -529,8 +550,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         if self.strip_stop_strings and first_input.stop_strings:
-            from docling.utils.vlm_utils import strip_stop_strings
-
             decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs
