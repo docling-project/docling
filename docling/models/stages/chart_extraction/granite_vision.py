@@ -290,8 +290,11 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
     """Convert a pandas DataFrame into a ``TableData`` object."""
     table_cells: list[TableCell] = []
 
-    first_row_is_header = len(df) > 0 and all(
-        not _is_numeric(val) for val in df.iloc[0]
+    # Chart series labels can be numbers (for example, years). A text label in
+    # the first column distinguishes a mixed header from an all-numeric data row.
+    first_row_is_header = len(df) > 0 and (
+        all(not _is_numeric(val) for val in df.iloc[0])
+        or (len(df.columns) > 1 and not _is_numeric(df.iloc[0, 0]))
     )
 
     if first_row_is_header:
@@ -327,7 +330,7 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
                     row_span=1,
                     col_span=1,
                     column_header=False,
-                    row_header=not _is_numeric(value),
+                    row_header=col_idx == 0 and not _is_numeric(value),
                     row_section=False,
                     fillable=False,
                 )
