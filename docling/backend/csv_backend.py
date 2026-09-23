@@ -38,9 +38,29 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
     Raises csv.Error if neither can be detected.
     """
     try:
-        return csv.Sniffer().sniff(head, _DELIMITERS)
+        return _with_rfc4180_quoting(csv.Sniffer().sniff(head, _DELIMITERS))
     except csv.Error:
-        return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
+        return _with_rfc4180_quoting(csv.Sniffer().sniff(read_sample(), _DELIMITERS))
+
+
+def _with_rfc4180_quoting(dialect: type[csv.Dialect]) -> type[csv.Dialect]:
+    """Restore doubled-quote escaping on a sniffed dialect.
+
+    `csv.Sniffer` only reports `doublequote=True` when it actually sees a `""`
+    in the sample, and the sample here is usually the header line, which rarely
+    contains one. Together with the `escapechar=None` it also reports, that
+    leaves no way at all to express a literal quote inside a quoted field, so
+    `he said ""hi""` would be read back with its doubling intact. Doubling is
+    what RFC 4180 specifies and what `csv.excel` uses, so prefer it whenever no
+    escape character was detected.
+    """
+    if dialect.escapechar is not None or dialect.doublequote:
+        return dialect
+
+    class _DoubleQuoted(dialect):  # type: ignore[valid-type, misc]
+        doublequote = True
+
+    return _DoubleQuoted
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
