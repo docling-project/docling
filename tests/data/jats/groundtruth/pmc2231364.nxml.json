@@ -43,9 +43,6 @@
         },
         {
           "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
         }
       ],
       "content_layer": "body",
@@ -55,9 +52,12 @@
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/9"
+        "$ref": "#/texts/8"
       },
       "children": [
+        {
+          "$ref": "#/texts/9"
+        },
         {
           "$ref": "#/texts/10"
         },
@@ -69,9 +69,6 @@
         },
         {
           "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
         }
       ],
       "content_layer": "body",
@@ -81,17 +78,17 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/texts/15"
+        "$ref": "#/texts/14"
       },
       "children": [
+        {
+          "$ref": "#/texts/15"
+        },
         {
           "$ref": "#/texts/16"
         },
         {
           "$ref": "#/texts/17"
-        },
-        {
-          "$ref": "#/texts/18"
         }
       ],
       "content_layer": "body",
@@ -113,7 +110,7 @@
           "$ref": "#/texts/2"
         },
         {
-          "$ref": "#/texts/19"
+          "$ref": "#/texts/18"
         }
       ],
       "content_layer": "body",
@@ -144,10 +141,10 @@
           "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/8"
         },
         {
-          "$ref": "#/texts/15"
+          "$ref": "#/texts/14"
         }
       ],
       "content_layer": "body",
@@ -226,8 +223,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in vitro",
-      "text": "in vitro",
+      "orig": "in vitro.",
+      "text": "in vitro.",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -238,18 +235,6 @@
     },
     {
       "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".",
-      "text": "."
-    },
-    {
-      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/texts/2"
       },
@@ -266,7 +251,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -278,6 +263,25 @@
       "text": "To provide us with a comprehensive view of environmental modulation of global gene expression in"
     },
     {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Y. pestis,",
+      "text": "Y. pestis,",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
       "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/groups/1"
@@ -286,15 +290,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Y. pestis",
-      "text": "Y. pestis",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of",
+      "text": "we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of"
     },
     {
       "self_ref": "#/texts/12",
@@ -305,18 +302,6 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of",
-      "text": ", we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of"
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
       "orig": "Y. pestis",
       "text": "Y. pestis",
       "formatting": {
@@ -328,7 +313,7 @@
       }
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -340,7 +325,7 @@
       "text": "were differentially regulated under multiple environmental perturbations. Clustering enabled us to functionally classify co-expressed genes, including some uncharacterized genes. Collections of operons were predicted from the microarray data, and some of these were confirmed by reverse-transcription polymerase chain reaction (RT-PCR). Several regulatory DNA motifs, probably recognized by the regulatory protein Fur, PurR, or Fnr, were predicted from the clustered genes, and a Fur binding site in the corresponding promoter regions was verified by electrophoretic mobility shift assay (EMSA)."
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/texts/2"
       },
@@ -357,7 +342,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -369,7 +354,7 @@
       "text": "The comparative transcriptomics analysis we present here not only benefits our understanding of the molecular determinants of pathogenesis and cellular regulatory circuits in"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -377,8 +362,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Y. pestis",
-      "text": "Y. pestis",
+      "orig": "Y. pestis,",
+      "text": "Y. pestis,",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -388,7 +373,7 @@
       }
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -396,17 +381,17 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", it also serves as a basis for integrating increasing volumes of microarray data using existing methods.",
-      "text": ", it also serves as a basis for integrating increasing volumes of microarray data using existing methods."
+      "orig": "it also serves as a basis for integrating increasing volumes of microarray data using existing methods.",
+      "text": "it also serves as a basis for integrating increasing volumes of microarray data using existing methods."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/20"
+          "$ref": "#/texts/19"
         }
       ],
       "content_layer": "body",
@@ -417,9 +402,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/18"
       },
       "children": [],
       "content_layer": "body",

@@ -80,6 +80,16 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+
+# Punctuation that typographically clings to the *following* run, e.g. the
+# "(" in "(<italic>term</italic>)". Quotes are treated as opening only (never
+# closing) so a quote cannot bounce back and forth between two runs.
+_OPENING_PUNCTUATION: Final[str] = "([{\"'“‘"
+
+# Punctuation that typographically clings to the *preceding* run, e.g. the
+# "." in "<italic>in vitro</italic>." or the ")" in "(CO<sub>2</sub>)".
+_CLOSING_PUNCTUATION: Final[str] = ".,;:!?%)]}”’"
+
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
     ".jpeg",
@@ -787,14 +797,111 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return stripped
 
     @staticmethod
+    def _is_unformatted(formatting: Formatting | None) -> bool:
+        return formatting is None or (
+            not formatting.bold
+            and not formatting.italic
+            and not formatting.underline
+            and not formatting.strikethrough
+            and formatting.script in (None, Script.BASELINE)
+        )
+
+    @staticmethod
+    def _coalesce_no_space_boundaries(
+        segments: list[InlineSegment],
+    ) -> list[InlineSegment]:
+        """Fuse runs across boundaries where the source XML had no whitespace.
+
+        The docling-core serializers join sibling inline text items with a
+        single space, so a run boundary that had no whitespace in the source
+        (e.g. ``<italic>in vitro</italic>.`` or ``CO<sub>2</sub>``) would gain
+        a spurious space on export (``in vitro .``, ``CO 2``). Because
+        boundary whitespace is stripped before serialization, the information
+        "there was no space here" has to be acted on while it is still
+        available, i.e. here.
+
+        At each spaceless boundary, in order:
+
+        1. trailing opening punctuation (``(``, ``[``, quotes, ...) moves
+           forward onto the next run;
+        2. leading closing punctuation (``.``, ``,``, ``)``, ...) moves
+           backward onto the previous run;
+        3. the runs are fused into one, keeping the non-baseline formatting
+           when exactly one of the two runs carries it, otherwise the
+           earlier run's formatting.
+
+        Step 3 trades precise formatting scope for text fidelity: e.g. the
+        ``2`` in ``CO<sub>2</sub>`` keeps its subscript by absorbing the
+        adjacent ``CO``, because the alternative is exporting ``CO 2``.
+        Formula runs and runs with different hyperlink targets are never
+        fused. Punctuation absorbed by steps 1-2 renders identically in
+        every exporter, so those fusions are lossless.
+        """
+        fused: list[InlineSegment] = []
+        for segment in segments:
+            if not segment.text:
+                continue
+            while True:
+                if not fused:
+                    fused.append(segment)
+                    break
+                prev = fused[-1]
+                if (
+                    prev.label == DocItemLabel.FORMULA
+                    or segment.label == DocItemLabel.FORMULA
+                    or prev.hyperlink != segment.hyperlink
+                ):
+                    fused.append(segment)
+                    break
+                if prev.text.endswith(" ") or segment.text.startswith(" "):
+                    fused.append(segment)
+                    break
+                # 1. trailing opening punctuation belongs with the next run.
+                if prev.text[-1] in _OPENING_PUNCTUATION:
+                    if len(prev.text) > 1:
+                        fused[-1] = replace(prev, text=prev.text[:-1])
+                        segment = replace(segment, text=prev.text[-1] + segment.text)
+                    else:
+                        # prev is a lone opening mark: absorb it into segment.
+                        lone = fused.pop()
+                        segment = replace(segment, text=lone.text + segment.text)
+                    continue
+                # 2. leading closing punctuation belongs with the previous run.
+                if segment.text[0] in _CLOSING_PUNCTUATION:
+                    fused[-1] = replace(prev, text=prev.text + segment.text[0])
+                    segment = replace(segment, text=segment.text[1:])
+                    if not segment.text:
+                        break
+                    continue
+                # 3. fuse the runs, preferring non-baseline formatting.
+                if JatsDocumentBackend._is_unformatted(
+                    prev.formatting
+                ) and not JatsDocumentBackend._is_unformatted(segment.formatting):
+                    formatting = segment.formatting
+                else:
+                    formatting = prev.formatting
+                fused[-1] = replace(
+                    prev, text=prev.text + segment.text, formatting=formatting
+                )
+                break
+        return fused
+
+    @staticmethod
     def _flattened_inline_runs(node: etree._Element) -> list[InlineSegment]:
         """Styled inline runs for ``node``, mirroring the historical
         flattened-text behavior of abstracts/footnotes: whitespace normalized,
         boundary whitespace stripped, styling (bold/italic/sub/sup, ...)
-        preserved per run."""
+        preserved per run.
+
+        Runs are additionally fused across boundaries where the source XML
+        had no whitespace (see ``_coalesce_no_space_boundaries``), because
+        the serializers join sibling inline text items with a space.
+        """
         return JatsDocumentBackend._strip_segments(
-            JatsDocumentBackend._normalize_segments(
-                JatsDocumentBackend._walk_inline_formula(node)
+            JatsDocumentBackend._coalesce_no_space_boundaries(
+                JatsDocumentBackend._normalize_segments(
+                    JatsDocumentBackend._walk_inline_formula(node)
+                )
             )
         )
 

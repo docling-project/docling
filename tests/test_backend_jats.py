@@ -257,14 +257,18 @@ def test_jats_plain_abstract_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
+    # Punctuation adjacent to a styled run without source whitespace is
+    # absorbed into that run (the serializers join inline items with a
+    # space, so a standalone "." would export as "details ."). Runs joined
+    # without whitespace in the source (H<sub>2</sub>O, 10<sup>3</sup>) are
+    # fused the same way to keep the exported text byte-identical.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.TEXT, "We study", None),
         (
             DocItemLabel.TEXT,
-            "Homo sapiens",
+            "Homo sapiens,",
             (False, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ",", None),
         (
             DocItemLabel.TEXT,
             "key",
@@ -272,27 +276,86 @@ def test_jats_plain_abstract_styling_is_preserved():
         ),
         (
             DocItemLabel.TEXT,
-            "results",
+            "results,",
             (True, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ", H", None),
-        (DocItemLabel.TEXT, "2", (False, False, False, False, Script.SUB)),
-        (DocItemLabel.TEXT, "O at 10", None),
-        (DocItemLabel.TEXT, "3", (False, False, False, False, Script.SUPER)),
+        (DocItemLabel.TEXT, "H2O at 103", (False, False, False, False, Script.SUB)),
         (DocItemLabel.TEXT, "Pa,", None),
         (
             DocItemLabel.TEXT,
-            "u",
+            "u,",
             (False, False, True, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ",", None),
         (
             DocItemLabel.TEXT,
-            "old",
+            "old.",
             (False, False, False, True, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ".", None),
     ]
+
+
+def test_jats_plain_abstract_styling_keeps_source_spacing():
+    """Styled runs must not gain spaces where the source XML had none.
+
+    The serializers join sibling inline text items with a single space, so
+    emitting ``<italic>in vitro</italic>.`` as two items would export
+    ``in vitro .``. Fusing runs across spaceless boundaries keeps the
+    exported text (modulo styling markers) byte-identical to the source.
+    """
+
+    def abstract_markdown(paragraph: str) -> str:
+        doc = convert_jats_article_meta(
+            f"""
+      <title-group><article-title>Spacing Test</article-title></title-group>
+      <abstract><p>{paragraph}</p></abstract>
+"""
+        )
+        md = doc.export_to_markdown()
+        return md.split("## Abstract", 1)[1].strip()
+
+    def plain_text(markdown: str) -> str:
+        for marker in ("***", "**", "*", "~~", "__", "`"):
+            markdown = markdown.replace(marker, "")
+        return markdown
+
+    cases = [
+        # (source paragraph, expected markdown, expected marker-stripped text)
+        (
+            "conditions <italic>in vitro</italic>.",
+            "conditions *in vitro.*",
+            "conditions in vitro.",
+        ),
+        (
+            "cultures of <italic>Y. pestis</italic>, and <italic>E. coli</italic>.",
+            "cultures of *Y. pestis,* and *E. coli.*",
+            "cultures of Y. pestis, and E. coli.",
+        ),
+        (
+            "CO<sub>2</sub> and (CO<sub>2</sub>e) at 10<sup>3</sup> Pa",
+            "CO2 and (CO2e) at 103 Pa",
+            "CO2 and (CO2e) at 103 Pa",
+        ),
+        (
+            "rate (ECM))<sup>-1</sup>, lactation<sup>-1</sup>.",
+            "rate (ECM))-1, lactation-1.",
+            "rate (ECM))-1, lactation-1.",
+        ),
+        (
+            "(<italic>term</italic>) and [<bold>other</bold>];",
+            "*(term)* and **[other];**",
+            "(term) and [other];",
+        ),
+        # Ragged multi-line source whitespace still collapses normally.
+        (
+            "a  <italic>b\nc</italic>\n   d.",
+            "a *b c* d.",
+            "a b c d.",
+        ),
+    ]
+    for paragraph, expected_md, expected_text in cases:
+        md = abstract_markdown(paragraph)
+        assert md == expected_md, f"{paragraph!r}: got {md!r}"
+        assert plain_text(md) == expected_text, f"{paragraph!r}: got {plain_text(md)!r}"
 
 
 def test_jats_structured_abstract_styling_is_preserved():
@@ -363,6 +426,8 @@ def test_jats_footnote_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
+    # The "." has no whitespace before it in the source, so it is absorbed
+    # into the bold run; a standalone "." item would export as "details .".
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.FOOTNOTE, "1", None),
         (DocItemLabel.FOOTNOTE, "See", None),
@@ -374,10 +439,9 @@ def test_jats_footnote_styling_is_preserved():
         (DocItemLabel.FOOTNOTE, "for", None),
         (
             DocItemLabel.FOOTNOTE,
-            "details",
+            "details.",
             (True, False, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.FOOTNOTE, ".", None),
     ]
 
 
