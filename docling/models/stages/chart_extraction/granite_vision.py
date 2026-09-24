@@ -349,7 +349,11 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
                     row_span=1,
                     col_span=1,
                     column_header=False,
-                    row_header=col_idx == 0 and bool(text.strip()) and not _is_numeric(value),
+                    row_header=(
+                        col_idx == 0
+                        and bool(text.strip())
+                        and not _is_numeric(value)
+                    ),
                     row_section=False,
                     fillable=False,
                 )
