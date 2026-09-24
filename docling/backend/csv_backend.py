@@ -38,29 +38,9 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
     Raises csv.Error if neither can be detected.
     """
     try:
-        return _with_rfc4180_quoting(csv.Sniffer().sniff(head, _DELIMITERS))
+        return csv.Sniffer().sniff(head, _DELIMITERS)
     except csv.Error:
-        return _with_rfc4180_quoting(csv.Sniffer().sniff(read_sample(), _DELIMITERS))
-
-
-def _with_rfc4180_quoting(dialect: type[csv.Dialect]) -> type[csv.Dialect]:
-    """Restore doubled-quote escaping on a sniffed dialect.
-
-    `csv.Sniffer` only reports `doublequote=True` when it actually sees a `""`
-    in the sample, and the sample here is usually the header line, which rarely
-    contains one. Together with the `escapechar=None` it also reports, that
-    leaves no way at all to express a literal quote inside a quoted field, so
-    `he said ""hi""` would be read back with its doubling intact. Doubling is
-    what RFC 4180 specifies and what `csv.excel` uses, so prefer it whenever no
-    escape character was detected.
-    """
-    if dialect.escapechar is not None or dialect.doublequote:
-        return dialect
-
-    class _DoubleQuoted(dialect):  # type: ignore[valid-type, misc]
-        doublequote = True
-
-    return _DoubleQuoted
+        return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
@@ -110,6 +90,12 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
     def convert(self) -> DoclingDocument:
         """
         Parses the CSV data into a structured document model.
+
+        Quoted fields are read with doubled-quote escaping (RFC 4180) unless the
+        sniffer detected an escape character. `csv.Sniffer` only reports
+        `doublequote=True` when it sees a `""` in the sample, which is usually just
+        the header line, so without the override `he said ""hi""` keeps its
+        doubled quotes.
         """
 
         # Detect CSV dialect. The larger sample is only read when the first
@@ -139,7 +125,12 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
         try:
-            result = csv.reader(self.content, dialect=dialect, strict=True)
+            result = csv.reader(
+                self.content,
+                dialect=dialect,
+                doublequote=dialect.escapechar is None,
+                strict=True,
+            )
             self.csv_data = list(result)
         except csv.Error as e:
             raise DocumentLoadError(
