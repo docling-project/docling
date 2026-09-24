@@ -55,7 +55,7 @@ def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
     dpi_x, dpi_y = _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
 
-    # Cap the DPI to prevent over-shrinked images
+    # Cap the DPI to prevent over-shrunk images
     factor = max(dpi_x, dpi_y) / _MAX_DPI
     if factor > 1.0:
         dpi_x /= factor
