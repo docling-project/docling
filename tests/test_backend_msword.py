@@ -1977,3 +1977,112 @@ def test_fragment_only_rel_does_not_crash_backend():
         if isinstance(item, TextItem)
     ]
     assert any("Hello, world!" in t for t in texts)
+
+
+def _docx_with_notes():
+    """Build a minimal DOCX with a real footnote and endnote, each preceded by
+    Word's own separator/continuationSeparator placeholders (present in every
+    Word-authored document, holding no user content).
+
+    ``python-docx`` has no high-level model for footnotes/endnotes, so the
+    ``footnotes.xml``/``endnotes.xml`` parts, their content-type overrides, and
+    the document relationships pointing at them are injected directly, the same
+    way a real Word-authored DOCX is structured.
+    """
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    paragraph = doc.add_paragraph("This is a claim that needs support")
+    run = paragraph.add_run()
+    footnote_ref = OxmlElement("w:footnoteReference")
+    footnote_ref.set(qn("w:id"), "2")
+    run._r.append(footnote_ref)
+    run2 = paragraph.add_run()
+    endnote_ref = OxmlElement("w:endnoteReference")
+    endnote_ref.set(qn("w:id"), "2")
+    run2._r.append(endnote_ref)
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    with zipfile.ZipFile(buf) as src:
+        entries = {name: src.read(name) for name in src.namelist()}
+
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    footnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:footnotes xmlns:w="{w_ns}">
+  <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
+  <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
+  <w:footnote w:id="2"><w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p></w:footnote>
+</w:footnotes>"""
+    endnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:endnotes xmlns:w="{w_ns}">
+  <w:endnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:endnote>
+  <w:endnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:endnote>
+  <w:endnote w:id="2"><w:p><w:r><w:t>An endnote body.</w:t></w:r></w:p></w:endnote>
+</w:endnotes>"""
+    entries["word/footnotes.xml"] = footnotes_xml.encode("utf-8")
+    entries["word/endnotes.xml"] = endnotes_xml.encode("utf-8")
+
+    ct_key = "[Content_Types].xml"
+    content_types = entries[ct_key].decode("utf-8")
+    overrides = (
+        '<Override PartName="/word/footnotes.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>'
+        '<Override PartName="/word/endnotes.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>'
+    )
+    content_types = content_types.replace("</Types>", overrides + "</Types>")
+    entries[ct_key] = content_types.encode("utf-8")
+
+    rels_key = "word/_rels/document.xml.rels"
+    rels_xml = entries[rels_key].decode("utf-8")
+    note_rels = (
+        '<Relationship Id="rIdFootnotes1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" '
+        'Target="footnotes.xml"/>'
+        '<Relationship Id="rIdEndnotes1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes" '
+        'Target="endnotes.xml"/>'
+    )
+    rels_xml = rels_xml.replace("</Relationships>", note_rels + "</Relationships>")
+    entries[rels_key] = rels_xml.encode("utf-8")
+
+    out = BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for name, data in entries.items():
+            dst.writestr(name, data)
+    out.seek(0)
+    return out
+
+
+def test_footnotes_and_endnotes_are_not_dropped():
+    """Footnote/endnote body text must survive conversion.
+
+    Regression test: MsWordDocumentBackend never read the footnotes.xml/
+    endnotes.xml OPC parts, so a footnote/endnote reference's body text was
+    silently dropped - python-docx's Run.text only concatenates <w:t> nodes,
+    and the actual body text lives in a separate part nothing in the backend
+    ever opened. Word's own separator/continuationSeparator placeholders
+    (present in every Word-authored document) must not leak through as
+    empty/placeholder footnote items.
+    """
+    stream = DocumentStream(name="notes.docx", stream=_docx_with_notes())
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert "Smith, J. (2020). Example Study." in footnote_items
+    assert "An endnote body." in footnote_items
+    assert all(text.strip() for text in footnote_items), (
+        "separator/continuationSeparator placeholders must not appear as footnote items"
+    )
+    assert len(footnote_items) == 2, (
+        "expected exactly one real footnote and one real endnote, no placeholders"
+    )
