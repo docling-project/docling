@@ -14,7 +14,10 @@ pytestmark = pytest.mark.ml_ocr
 
 
 def _capture_params(
-    monkeypatch: pytest.MonkeyPatch, options: RapidOcrOptions, artifacts_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    options: RapidOcrOptions,
+    artifacts_path: Path,
+    resolved_device: str = "cpu",
 ) -> dict[str, object]:
     """Build a RapidOcrModel with real rapidocr resolution but faked inference
     and downloading, returning the params dict handed to RapidOCR.
@@ -30,6 +33,10 @@ def _capture_params(
             captured["params"] = params
 
     monkeypatch.setattr(rapidocr, "RapidOCR", FakeRapidOCR)
+    monkeypatch.setattr(
+        "docling.models.stages.ocr.rapid_ocr_model.decide_device",
+        lambda device: resolved_device,
+    )
     monkeypatch.setattr(
         "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
         lambda url, *, progress: BytesIO(b"dummy content"),
@@ -68,16 +75,23 @@ def test_rapidocr_num_threads_propagated_per_engine(
     assert params[engine_key] == 4
 
 
-@pytest.mark.parametrize("backend", ["paddle", "torch"])
+@pytest.mark.parametrize("backend", ["onnxruntime", "paddle", "torch"])
 def test_rapidocr_gpu_device_uses_cuda_ep_cfg_key(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     backend: str,
 ):
-    params = _capture_params(monkeypatch, RapidOcrOptions(backend=backend), tmp_path)
+    params = _capture_params(
+        monkeypatch,
+        RapidOcrOptions(backend=backend),
+        tmp_path,
+        resolved_device="cuda:2",
+    )
     # The GPU device id must use the engine's real key; the legacy top-level
     # `gpu_id` key is not read by RapidOCR (see #3049 for the torch fix).
     assert f"EngineConfig.{backend}.cuda_ep_cfg.device_id" in params
+    assert params[f"EngineConfig.{backend}.cuda_ep_cfg.device_id"] == 2
+    assert params[f"EngineConfig.{backend}.use_cuda"] is True
     assert f"EngineConfig.{backend}.gpu_id" not in params
 
 

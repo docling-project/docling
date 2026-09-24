@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -191,6 +190,7 @@ def test_document_timeout(test_doc_path):
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=PdfPipelineOptions(document_timeout=1),
                 pipeline_cls=LegacyStandardPdfPipeline,
+                backend=PyPdfiumDocumentBackend,
             )
         }
     )
@@ -249,8 +249,8 @@ def test_invalid_input_unreadable_source_with_exception_surfaces_error_details()
 
     with (
         patch.object(
-            docling_parse_backend_module.pdfium,
-            "PdfDocument",
+            docling_parse_backend_module.DoclingThreadedPdfParser,
+            "load",
             side_effect=RuntimeError("bad trailer"),
         ),
         pytest.raises(
@@ -509,7 +509,6 @@ def test_parser_backends(test_doc_path):
     pipeline_options.do_table_structure = False
 
     for backend_t in [
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:
@@ -579,17 +578,13 @@ def test_pipeline_cache_with_chart_extraction():
 
     with (
         patch(
-            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVision"
-        ) as mock_chart_v1,
-        patch(
-            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVisionV4"
-        ) as mock_chart_v4,
+            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionVlmEngineModel"
+        ) as mock_chart,
         patch(
             "docling.pipeline.base_pipeline.DocumentPictureClassifier"
         ) as mock_classifier,
     ):
-        mock_chart_v1.return_value = Mock(enabled=True)
-        mock_chart_v4.return_value = Mock(enabled=True)
+        mock_chart.return_value = Mock(enabled=True)
         mock_classifier.return_value = Mock(enabled=True)
 
         converter = DocumentConverter(

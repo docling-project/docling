@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from docling_core.types.doc import NodeItem
+from docling_core.types.doc import ContentLayer, DocItem, DoclingDocument, NodeItem
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -23,10 +23,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     Page,
 )
-from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
-    ChartExtractionModelOptions,
-)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
@@ -44,6 +41,17 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+
+
+def get_expected_page_nos(conv_res: ConversionResult) -> list[int]:
+    """The 1-based page numbers to convert, clipped to the requested page range."""
+    start_page, end_page = conv_res.input.limits.page_range
+    return list(
+        range(
+            max(1, start_page),
+            min(conv_res.input.page_count, end_page) + 1,
+        )
+    )
 
 
 class BasePipeline(ABC):
@@ -99,6 +107,44 @@ class BasePipeline(ABC):
             self._unload(conv_res)
 
         return conv_res
+
+    @staticmethod
+    def _concatenate_page_documents(
+        page_documents: list[tuple[int, DoclingDocument]],
+    ) -> DoclingDocument:
+        if not page_documents:
+            return DoclingDocument(name="")
+
+        document = DoclingDocument.concatenate(
+            docs=[page_document for _, page_document in page_documents]
+        )
+        page_no_map = {
+            current_page_no: requested_page_no
+            for current_page_no, (requested_page_no, _) in zip(
+                sorted(document.pages), page_documents
+            )
+        }
+        document.pages = {
+            page_no_map[page_no]: page_item
+            for page_no, page_item in document.pages.items()
+        }
+        for page_no, page_item in document.pages.items():
+            page_item.page_no = page_no
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page_no_map[provenance.page_no]
+        return document
+
+    @staticmethod
+    def _release_page_resources(page: Page) -> None:
+        if page._backend is not None:
+            page._backend.unload()
+            page._backend = None
+        page._image_cache = {}
+        page.parsed_page = None
 
     @abstractmethod
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -191,31 +237,17 @@ class ConvertPipeline(BasePipeline):
         # pulling torch+transformers.
         if pipeline_options.do_chart_extraction:
             from docling.models.stages.chart_extraction.granite_vision import (
-                ChartExtractionModelGraniteVision,
-                ChartExtractionModelGraniteVisionV4,
+                ChartExtractionVlmEngineModel,
             )
 
-            self.enrichment_pipe.extend(
-                [
-                    ChartExtractionModelGraniteVision(
-                        enabled=(
-                            pipeline_options.chart_extraction_options.model
-                            == ChartExtractionModelKind.GRANITE_VISION
-                        ),
-                        artifacts_path=self.artifacts_path,
-                        options=pipeline_options.chart_extraction_options,
-                        accelerator_options=pipeline_options.accelerator_options,
-                    ),
-                    ChartExtractionModelGraniteVisionV4(
-                        enabled=(
-                            pipeline_options.chart_extraction_options.model
-                            == ChartExtractionModelKind.GRANITE_VISION_V4
-                        ),
-                        artifacts_path=self.artifacts_path,
-                        options=pipeline_options.chart_extraction_options,
-                        accelerator_options=pipeline_options.accelerator_options,
-                    ),
-                ]
+            self.enrichment_pipe.append(
+                ChartExtractionVlmEngineModel(
+                    enabled=True,
+                    artifacts_path=self.artifacts_path,
+                    options=pipeline_options.chart_extraction_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                    enable_remote_services=pipeline_options.enable_remote_services,
+                )
             )
 
     def _get_picture_description_model(

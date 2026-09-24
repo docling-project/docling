@@ -227,9 +227,13 @@ class TableStructureModel(BaseTableStructureModel):
                     "image": numpy.asarray(page.get_image(scale=self.scale)),
                 }
 
+                # Resolved once per page: the segmented page is the same for
+                # every table on it, and get_cells_in_bbox already walks all of
+                # its cells per call.
+                sp = page._backend.get_segmented_page()
+
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
-                    sp = page._backend.get_segmented_page()
                     if sp is not None:
                         tcells = sp.get_cells_in_bbox(
                             cell_unit=TextCellUnit.WORD,

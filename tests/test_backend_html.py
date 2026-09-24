@@ -12,7 +12,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem, RichTableCell
+from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -187,6 +187,210 @@ def test_table_header_rowspan_without_body_does_not_crash():
 
     assert len(doc.tables) == 1
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
+
+
+def test_table_zero_span_defaults_to_one():
+    # `colspan="0"` and `rowspan="0"` pass the numeric guard in _get_cell_spans,
+    # so the span reaches the grid as 0 and the cell covers no grid position at
+    # all: its text drops out of the table and the cells after it shift into the
+    # place it should have taken.
+    src = b'<table><tr><td colspan="0">A</td><td>B</td></tr></table>'
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_cols == 2
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"]
+    ]
+
+    src = (
+        b'<table><tr><td rowspan="0">A</td><td>B</td></tr>'
+        b"<tr><td>C</td><td>D</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"],
+        ["C", "D"],
+    ]
+
+
+def test_table_inside_figure_is_parsed():
+    """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
+    html = (
+        b"<html><body>"
+        b'<figure class="ltx_table">'
+        b"<table>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"<figcaption>Table 1: demo caption.</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 2
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    # Assert caption is linked to the table
+    assert len(doc.tables[0].captions) == 1
+    cap_ref = doc.tables[0].captions[0]
+    cap_item = cap_ref.resolve(doc)
+    assert cap_item.text == "Table 1: demo caption."
+    assert cap_item.label == DocItemLabel.CAPTION
+
+
+def test_table_caption_is_parsed():
+    """Regression: <caption> is the element HTML defines for table captions."""
+    html = (
+        b"<html><body>"
+        b"<table>"
+        b"<caption>Table 1: sales by region</caption>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    assert len(doc.tables[0].captions) == 1
+    cap_item = doc.tables[0].captions[0].resolve(doc)
+    assert cap_item.text == "Table 1: sales by region"
+    assert cap_item.label == DocItemLabel.CAPTION
+    assert "Table 1: sales by region" in doc.export_to_markdown()
+
+
+def test_empty_table_caption_is_skipped():
+    """A whitespace-only <caption> should not produce a caption item."""
+    html = b"<html><body><table><caption>  </caption><tr><td>1</td></tr></table></body></html>"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].captions == []
+    assert doc.texts == []
+
+
+def test_image_inside_figure_is_parsed():
+    """Regular HTML figures with images should still be parsed."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="x.png" alt="alt"/>'
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+
+    # Assert caption is linked to the picture and no duplicates exist
+    assert len(doc.pictures[0].captions) == 1
+    cap_ref = doc.pictures[0].captions[0]
+    cap_item = cap_ref.resolve(doc)
+    assert cap_item.text == "cap"
+
+    # Ensure exactly one caption item was emitted and linked to the picture
+    caption_items = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert len(caption_items) == 1
+    assert caption_items[0].text == "cap"
+
+
+def test_table_and_image_inside_figure_are_parsed():
+    """A figure containing both an image and a table should preserve both."""
+    html = (
+        b"<html><body>"
+        b"<figure>"
+        b'<img src="a.png" alt="alt"/>'
+        b"<table>"
+        b"<tr><td>x</td></tr>"
+        b"</table>"
+        b"<figcaption>cap</figcaption>"
+        b"</figure>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert len(doc.pictures) == 1
+    assert len(doc.tables) == 1
+
+    assert doc.tables[0].data.num_rows == 1
+    assert doc.tables[0].data.num_cols == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["x"]
+
+    # The image should claim the figcaption
+    assert len(doc.pictures[0].captions) == 1
+    assert doc.pictures[0].captions[0].resolve(doc).text == "cap"
+
+    # The table should NOT have the caption
+    assert len(doc.tables[0].captions) == 0
 
 
 def test_ordered_lists():
@@ -647,9 +851,12 @@ def test_fetch_remote_images(monkeypatch):
             enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
         )
     )
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
+    with (
+        patch(
+            "docling.backend.utils.image_resource_loader.requests.Session.get"
+        ) as mocked_session_get,
+        pytest.warns(UserWarning, match="Could not process an image"),
+    ):
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
         mocked_session_get.assert_called_once()
@@ -689,9 +896,12 @@ def test_fetch_remote_images_with_custom_headers():
     )
 
     converter = _create_html_converter(backend_options)
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
+    with (
+        patch(
+            "docling.backend.utils.image_resource_loader.requests.Session.get"
+        ) as mocked_session_get,
+        pytest.warns(UserWarning, match="Could not process an image"),
+    ):
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert("./tests/data/html/sources/example_01.html")
         headers_arg = mocked_session_get.call_args[1].get("headers", {})

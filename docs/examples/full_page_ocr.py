@@ -39,7 +39,6 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 # Under CI we limit the conversion to a representative page range to keep the
 # example fast; locally the full document is processed.
@@ -73,7 +72,6 @@ def main():
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
-                # pipeline_cls=LegacyStandardPdfPipeline,
             )
         }
     )

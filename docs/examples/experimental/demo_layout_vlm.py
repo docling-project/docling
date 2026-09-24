@@ -13,6 +13,7 @@ from pathlib import Path
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.vlm_model_specs import GRANITEDOCLING_2STAGE_TRANSFORMERS
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
@@ -95,7 +96,7 @@ def demo_threaded_layout_vlm_pipeline(
         vlm_options = openai_compatible_vlm_options(
             model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
             hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
-            prompt="Convert this page to docling.",
+            prompt=DOCLING_BASE_PAGE_PROMPT,
             format=ResponseFormat.DOCTAGS,
             api_key="",
         )
@@ -104,7 +105,7 @@ def demo_threaded_layout_vlm_pipeline(
     # Configure pipeline options
     print("Configuring pipeline options...")
     pipeline_options_layout_aware = ThreadedLayoutVlmPipelineOptions(
-        # VLM configuration - defaults to GRANITEDOCLING_TRANSFORMERS
+        # VLM configuration - defaults to GRANITEDOCLING_2STAGE_TRANSFORMERS
         vlm_options=vlm_options,
         # Layout configuration - defaults to DOCLING_LAYOUT_HERON
         # Batch sizes for parallel processing

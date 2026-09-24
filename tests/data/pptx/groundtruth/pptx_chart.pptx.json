@@ -21,9 +21,6 @@
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/1"
-      },
-      {
         "$ref": "#/groups/1"
       }
     ],
@@ -40,6 +37,9 @@
       "children": [
         {
           "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
         },
         {
           "$ref": "#/pictures/0"
@@ -81,10 +81,10 @@
           "page_no": 1,
           "bbox": {
             "l": 457200.0,
-            "t": 1417638.0,
+            "t": 274638.0,
             "r": 8686800.0,
-            "b": 274638.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 1417638.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -98,12 +98,27 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 914400.0,
+            "t": 1463040.0,
+            "r": 8229600.0,
+            "b": 5852160.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            30
+          ]
+        }
+      ],
       "orig": "Wild Duck Observations by Year",
       "text": "Wild Duck Observations by Year"
     },
@@ -120,10 +135,10 @@
           "page_no": 2,
           "bbox": {
             "l": 457200.0,
-            "t": 1417638.0,
+            "t": 274638.0,
             "r": 8686800.0,
-            "b": 274638.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 1417638.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -569,10 +584,10 @@
           "page_no": 1,
           "bbox": {
             "l": 914400.0,
-            "t": 5852160.0,
+            "t": 1463040.0,
             "r": 8229600.0,
-            "b": 1463040.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 5852160.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -611,10 +626,10 @@
           "page_no": 2,
           "bbox": {
             "l": 914400.0,
-            "t": 5486400.0,
+            "t": 1828800.0,
             "r": 6400800.0,
-            "b": 1828800.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 5486400.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,

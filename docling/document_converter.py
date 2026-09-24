@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import hashlib
 import logging
 import sys
 import threading
@@ -15,22 +14,29 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Type, Union
 
+from docling_core.types.doc.page import TextCellUnit
 from pydantic import ConfigDict, Field, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
 )
+from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.ebcdic_backend import EbcdicDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.iwork.pages_backend import IWorkPagesDocumentBackend
+from docling.backend.iwork_backend import (
+    IWorkKeynoteDocumentBackend,
+    IWorkPagesDocumentBackend,
+)
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -51,17 +57,21 @@ from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
+    AsciiDocBackendOptions,
     BackendOptions,
+    CsvBackendOptions,
     EbcdicBackendOptions,
     EmailBackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
     IWorkBackendOptions,
+    JatsBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
     MsWordBackendOptions,
     PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
     XBRLBackendOptions,
 )
 from docling.datamodel.base_models import (
@@ -81,7 +91,11 @@ from docling.datamodel.document import (
     build_invalid_input_errors,
     get_input_rejection_cause,
 )
-from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
+from docling.datamodel.pipeline_options import (
+    ConvertPipelineOptions,
+    NativePdfPipelineOptions,
+    PipelineOptions,
+)
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -91,9 +105,11 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.pipeline.native_pdf_pipeline import NativePdfPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
+from docling.utils.pipeline_cache import create_pipeline_options_hash
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -125,6 +141,7 @@ class BoxNoteFormatOption(FormatOption):
 class CsvFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
+    backend_options: Optional[CsvBackendOptions] = None
 
 
 class ExcelFormatOption(FormatOption):
@@ -167,6 +184,22 @@ class MarkdownFormatOption(FormatOption):
 class AsciiDocFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = AsciiDocBackend
+    backend_options: AsciiDocBackendOptions | None = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> AsciiDocBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return AsciiDocBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
 
 
 class HTMLFormatOption(FormatOption):
@@ -198,6 +231,7 @@ class PatentUsptoFormatOption(FormatOption):
 class XMLJatsFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
+    backend_options: Optional[JatsBackendOptions] = None
 
 
 class XMLDocLangFormatOption(FormatOption):
@@ -223,7 +257,7 @@ class ImageFormatOption(FormatOption):
 
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
+    backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
 
 
@@ -233,6 +267,48 @@ class IWorkPagesFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
     backend_options: IWorkBackendOptions | None = None
+
+
+class IWorkKeynoteFormatOption(FormatOption):
+    """Format option for Apple Keynote input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkKeynoteDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
+class NativePdfFormatOption(PdfFormatOption):
+    """PDF format option for the model-free `NativePdfPipeline`.
+
+    Defaults to the threaded docling-parse backend, configured from the pipeline
+    options: it parses with `parser_threads` threads, only decodes the embedded
+    bitmaps and only renders page images when the pipeline asks for them.
+    """
+
+    pipeline_cls: Type = NativePdfPipeline
+    backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
+
+    @model_validator(mode="after")
+    def configure_backend_options(self) -> Self:
+        if not isinstance(self.pipeline_options, NativePdfPipelineOptions):
+            return self
+
+        if self.backend_options is None:
+            backend_options = ThreadedDoclingParseBackendOptions(
+                parser_threads=self.pipeline_options.parser_threads,
+                include_bitmap_images=self.pipeline_options.generate_picture_images,
+                render_pages=self.pipeline_options.generate_page_images,
+                render_scale=self.pipeline_options.images_scale,
+            )
+        else:
+            backend_options = self.backend_options.model_copy(deep=True)
+
+        backend_options._materialize_char_cells = (
+            self.pipeline_options.text_cell_unit == TextCellUnit.CHAR
+        )
+        self.backend_options = backend_options
+
+        return self
 
 
 class MetsGbsFormatOption(FormatOption):
@@ -279,6 +355,11 @@ class EbcdicFormatOption(FormatOption):
     backend_options: EbcdicBackendOptions | None = None
 
 
+class AfpFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = AfpDocumentBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -287,6 +368,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLS: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.DOC: WordFormatOption(),
+        InputFormat.RTF: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
         InputFormat.PPT: PowerpointFormatOption(),
         InputFormat.ODT: OdtFormatOption(),
@@ -295,6 +377,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),
+        InputFormat.MHTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
@@ -317,7 +400,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
         InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
+        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
+        InputFormat.AFP: AfpFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
@@ -425,13 +510,6 @@ class DocumentConverter:
         self,
     ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
         return self.initialized_pipelines
-
-    def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
-        """Generate a hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(
-            options_str.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()
 
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format.
@@ -727,7 +805,7 @@ class DocumentConverter:
 
         pipeline_class = fopt.pipeline_cls
         pipeline_options = fopt.pipeline_options
-        options_hash = self._get_pipeline_options_hash(pipeline_options)
+        options_hash = create_pipeline_options_hash(pipeline_options)
 
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)

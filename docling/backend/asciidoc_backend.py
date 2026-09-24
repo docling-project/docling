@@ -3,52 +3,79 @@
 
 import logging
 import re
+from collections.abc import Iterator
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Union
+from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     GroupItem,
     GroupLabel,
     ImageRef,
-    Size,
+    ListItem,
+    NodeItem,
     TableCell,
     TableData,
+    TextItem,
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
-DEFAULT_IMAGE_WIDTH: Final = 128
-DEFAULT_IMAGE_HEIGHT: Final = 128
-
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
-# "^.^h|Header": span (3*, 2+), alignment (<, ^, >, .^), style (a/d/e/h/l/m/s).
-_CELL_SPEC: Final = r"(?:\d+(?:\.\d+)?[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
+# "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
+# (a/d/e/h/l/m/s). AsciiDoc writes the span as [colspan][.rowspan] followed by
+# "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
+# own. Requiring at least one of the two keeps a bare "+" from matching.
+_CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
+
+
+@dataclass(frozen=True)
+class _LiteralBlock:
+    text: str
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[AsciiDocBackendOptions] = None,
+    ):
+        if options is None:
+            options = AsciiDocBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
         self.path_or_stream = path_or_stream
+        self.options: AsciiDocBackendOptions
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+        )
 
+        # A leading BOM is dropped. Kept, it prefixes the first line, so a
+        # document title ("= Title") is no longer recognized as one and the BOM
+        # reaches the output.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
-                self.lines = text_stream.split("\n")
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
-                    self.lines = f.readlines()
+            self.lines = decode_text(self.path_or_stream, options.encoding).split("\n")
             self.valid = True
 
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize AsciiDoc backend for file with hash {self.document_hash}."
@@ -87,17 +114,33 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return doc
 
     def _parse(self, doc: DoclingDocument):
-        """
-        Main function that orchestrates the parsing by yielding components:
-        title, section headers, text, lists, and tables.
+        """Orchestrate parsing and populate `doc` from the source lines.
+
+        Handles titles, section headers, text paragraphs, lists, tables,
+        pictures, literal (code) blocks, and block titles.
+
+        Block titles (AsciiDoc lines that start with `.` immediately
+        followed by text, e.g. `.Procedure`) are treated as follows:
+
+        * FloatingItem targets (picture, table, code block): the block
+          title is created as a `CAPTION`-labelled `TextItem` and
+          attached to the floating item via its `caption` parameter, so it
+          participates in the standard caption relationship.
+        * All other targets (lists, paragraphs, ...): the block title is
+          emitted as a bold `PARAGRAPH` `TextItem` inserted
+          immediately before the element it precedes.  This preserves
+          reading order while acknowledging that non-floating items (e.g.
+          `GroupItem`) have no caption slot.
         """
 
         in_list = False
         in_table = False
 
         text_data: list[str] = []
-        table_data: list[str] = []
+        table_data: list[list[str]] = []
         caption_data: list[str] = []
+        last_list_item: ListItem | None = None
+        list_continuation = False
 
         # parents: dict[int, Union[DocItem, GroupItem, None]] = {}
         parents: dict[int, Union[GroupItem, None]] = {}
@@ -108,8 +151,49 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parents[i] = None
             indents[i] = None
 
-        for line in self.lines:
+        for block in self._iter_blocks(self.lines):
             # line = line.strip()
+            if isinstance(block, _LiteralBlock):
+                in_list, last_list_item, list_continuation = self._close_list_if_needed(
+                    line="<literal-block>",
+                    in_list=in_list,
+                    parents=parents,
+                    last_list_item=last_list_item,
+                    list_continuation=list_continuation,
+                    is_continuation_block=True,
+                )
+                text_data = self._flush_text_data(
+                    doc=doc,
+                    text_data=text_data,
+                    parent=self._get_current_parent(parents),
+                )
+                caption: Optional[TextItem] = None
+                if caption_data:
+                    caption = doc.add_text(
+                        text=" ".join(caption_data),
+                        label=DocItemLabel.CAPTION,
+                    )
+                    caption_data = []
+                doc.add_code(
+                    text=block.text,
+                    caption=caption,
+                    parent=(
+                        last_list_item if in_list else self._get_current_parent(parents)
+                    ),
+                )
+                list_continuation = False
+                continue
+
+            line = block
+            stripped_line = line.strip()
+            in_list, last_list_item, list_continuation = self._close_list_if_needed(
+                line=line,
+                in_list=in_list,
+                parents=parents,
+                last_list_item=last_list_item,
+                list_continuation=list_continuation,
+                is_continuation_block=False,
+            )
 
             # Title
             if self._is_title(line):
@@ -125,8 +209,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_section_header(line)
                 level = item["level"]
 
+                ancestor = next(
+                    (parents[k] for k in range(level - 1, -1, -1) if parents[k]),
+                    None,
+                )
                 parents[level] = doc.add_heading(
-                    text=item["text"], level=item["level"], parent=parents[level - 1]
+                    text=item["text"], level=item["level"], parent=ancestor
                 )
                 for k, v in parents.items():
                     if k > level:
@@ -142,6 +230,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 if not in_list:
                     in_list = True
+                    # GroupItem has no caption slot; emit the pending block
+                    # title as a bold paragraph immediately before the list.
+                    if caption_data:
+                        doc.add_text(
+                            text=" ".join(caption_data),
+                            label=DocItemLabel.PARAGRAPH,
+                            parent=parents[level],
+                            formatting=Formatting(bold=True),
+                        )
+                        caption_data = []
 
                     parents[level + 1] = doc.add_group(
                         parent=parents[level], name="list", label=GroupLabel.LIST
@@ -155,22 +253,26 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     indents[level + 1] = item["indent"]
 
                 elif in_list and item["indent"] < indents[level]:
-                    # print(item["indent"], " => ", indents[level])
                     while level > 0 and item["indent"] < indents[level]:
-                        # print(item["indent"], " => ", indents[level])
+                        # Only pop the current level if there is an outer group
+                        # to fall back to; otherwise keep it as the list root.
+                        if indents[level - 1] is None:
+                            break
                         parents[level] = None
                         indents[level] = None
                         level -= 1
 
-                doc.add_list_item(
-                    item["text"], parent=self._get_current_parent(parents)
+                last_list_item = doc.add_list_item(
+                    item["text"],
+                    enumerated=item["numbered"],
+                    marker=(item["marker"] if item["marker"][:-1].isdigit() else None),
+                    parent=self._get_current_parent(parents),
                 )
+                list_continuation = False
 
-            elif in_list and not self._is_list_item(line):
-                in_list = False
-
-                level = self._get_current_level(parents)
-                parents[level] = None
+            elif in_list and stripped_line == "+":
+                list_continuation = True
+                continue
 
             # Tables
             elif line.strip() == "|===" and not in_table:  # start of table
@@ -183,19 +285,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif in_table and (
                 (not self._is_table_line(line)) or line.strip() == "|==="
             ):  # end of table
-                caption = None
-                if len(caption_data) > 0:
-                    caption = doc.add_text(
-                        text=" ".join(caption_data), label=DocItemLabel.CAPTION
-                    )
-
-                caption_data = []
-
-                data = self._populate_table_as_grid(table_data)
-                doc.add_table(
-                    data=data, parent=self._get_current_parent(parents), caption=caption
+                self._add_table_if_nonempty(
+                    doc, table_data, caption_data, self._get_current_parent(parents)
                 )
-
+                caption_data = []
                 in_table = False
                 table_data = []
 
@@ -211,31 +304,22 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 item = self._parse_picture(line)
 
-                size: Size
-                try:
-                    size = Size(width=int(item["width"]), height=int(item["height"]))
-                except (KeyError, ValueError):
-                    # width/height may be absent or non-numeric (e.g. "50%", "auto")
-                    size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
-
-                uri = None
-                if (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("//")
-                ):
-                    uri = "file:" + item["uri"]
-                elif (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("/")
-                ):
-                    uri = "file:/" + item["uri"]
-                elif "uri" in item and not item["uri"].startswith("http"):
-                    uri = "file://" + item["uri"]
-
-                image = ImageRef(mimetype="image/png", size=size, dpi=70, uri=uri)
-                doc.add_picture(image=image, caption=caption)
+                image: Optional[ImageRef] = None
+                if "uri" in item and self.options.fetch_images:
+                    base_path = (
+                        str(self.options.source_uri)
+                        if self.options.source_uri is not None
+                        else None
+                    )
+                    image = self._image_loader.load_image_ref(item["uri"], base_path)
+                doc.add_picture(
+                    image=image,
+                    caption=caption,
+                    parent=last_list_item
+                    if in_list
+                    else self._get_current_parent(parents),
+                )
+                list_continuation = False
 
             # Caption
             elif self._is_caption(line) and len(caption_data) == 0:
@@ -269,12 +353,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             )
             text_data = []
 
-        if in_table and len(table_data) > 0:
-            data = self._populate_table_as_grid(table_data)
-            doc.add_table(data=data, parent=self._get_current_parent(parents))
-
-            in_table = False
-            table_data = []
+        if in_table:
+            self._add_table_if_nonempty(
+                doc, table_data, caption_data, self._get_current_parent(parents)
+            )
 
         return doc
 
@@ -293,6 +375,65 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 return parents[k - 1]
 
         return None
+
+    @staticmethod
+    def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
+        literal_data: list[str] | None = None
+
+        for line in lines:
+            if line.strip() == "....":
+                if literal_data is None:
+                    literal_data = []
+                else:
+                    yield _LiteralBlock(text="\n".join(literal_data))
+                    literal_data = None
+                continue
+
+            if literal_data is None:
+                yield line
+            else:
+                literal_data.append(line.rstrip("\r\n"))
+
+        if literal_data is not None:
+            yield _LiteralBlock(text="\n".join(literal_data))
+
+    @classmethod
+    def _close_list_if_needed(
+        cls,
+        *,
+        line: str,
+        in_list: bool,
+        parents: dict[int, GroupItem | None],
+        last_list_item: ListItem | None,
+        list_continuation: bool,
+        is_continuation_block: bool,
+    ) -> tuple[bool, ListItem | None, bool]:
+        if (
+            not in_list
+            or cls._is_list_item(line)
+            or line.strip() in {"", "+"}
+            or (list_continuation and (is_continuation_block or cls._is_picture(line)))
+        ):
+            return in_list, last_list_item, list_continuation
+
+        level = cls._get_current_level(parents)
+        parents[level] = None
+        return False, None, False
+
+    @staticmethod
+    def _flush_text_data(
+        *,
+        doc: DoclingDocument,
+        text_data: list[str],
+        parent: GroupItem | None,
+    ) -> list[str]:
+        if len(text_data) > 0:
+            doc.add_text(
+                text=" ".join(text_data),
+                label=DocItemLabel.PARAGRAPH,
+                parent=parent,
+            )
+        return []
 
     #   =========   Title
     @staticmethod
@@ -325,17 +466,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Lists
     @staticmethod
     def _is_list_item(line):
-        return re.match(r"^(\s)*(\*|-|\d+\.|\w+\.) ", line)
+        return re.match(_LIST_ITEM_PATTERN, line)
 
     @staticmethod
     def _parse_list_item(line):
         """Extract the item marker (number or bullet symbol) and the text of the item."""
 
-        match = re.match(r"^(\s*)(\*|-|\d+\.)\s+(.*)", line)
+        match = re.match(_LIST_ITEM_PATTERN, line)
         if match:
             indent = match.group(1)
             marker = match.group(2)  # The list marker (e.g., "*", "-", "1.")
             text = match.group(3)  # The actual text of the list item
+            indent_width = len(indent)
+            if marker.startswith("."):
+                indent_width += len(marker) - 1
 
             if marker == "*" or marker == "-":
                 return {
@@ -343,7 +487,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     "marker": marker,
                     "text": text.strip(),
                     "numbered": False,
-                    "indent": 0 if indent is None else len(indent),
+                    "indent": indent_width,
                 }
             else:
                 return {
@@ -351,7 +495,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     "marker": marker,
                     "text": text.strip(),
                     "numbered": True,
-                    "indent": 0 if indent is None else len(indent),
+                    "indent": indent_width,
                 }
         else:
             # Fallback if no match
@@ -377,6 +521,25 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         cells = line.split("|")[1:]
         # Strip whitespace from each cell (empty cells become empty strings)
         return [cell.strip() for cell in cells]
+
+    @staticmethod
+    def _add_table_if_nonempty(
+        doc: DoclingDocument,
+        table_data: list[list[str]],
+        caption_data: list[str],
+        parent: NodeItem | None,
+    ) -> None:
+        if not table_data:
+            return
+
+        caption = None
+        if caption_data:
+            caption = doc.add_text(
+                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+            )
+
+        data = AsciiDocBackend._populate_table_as_grid(table_data)
+        doc.add_table(data=data, parent=parent, caption=caption)
 
     @staticmethod
     def _populate_table_as_grid(table_data):
@@ -444,7 +607,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Captions
     @staticmethod
     def _is_caption(line):
-        return re.match(r"^\.(.+)", line)
+        return re.match(r"^\.(\S.*)", line)
 
     @staticmethod
     def _parse_caption(line):

@@ -157,6 +157,40 @@ def test_single_schema_decodes_cobol_field_types(employee_layout):
     assert [cell.text for cell in rows[2]] == ["Grace", "9000.00", "123.45", "-2"]
 
 
+@pytest.mark.parametrize(
+    ("field_type", "encode"),
+    [
+        (EbcdicFieldType.PACKED_DECIMAL, _packed),
+        (EbcdicFieldType.ZONED_DECIMAL, _zoned),
+        (
+            EbcdicFieldType.INTEGER,
+            lambda value, size: value.to_bytes(size, "big", signed=True),
+        ),
+    ],
+    ids=lambda value: getattr(value, "value", ""),
+)
+def test_scaled_numbers_keep_fixed_point_notation(field_type, encode):
+    """Values below 1e-6 must not switch to scientific notation (0E-7, 1E-7)."""
+    layout = EbcdicLayout(
+        records=[
+            EbcdicRecordLayout(
+                fields=[EbcdicField(name="rate", size=8, type=field_type, scale=7)]
+            )
+        ]
+    )
+    data = b"".join(encode(value, 8) for value in (0, 1, -3, 12345678))
+
+    result = _convert(data, EbcdicBackendOptions(layout=layout))
+
+    rows = result.document.tables[0].data.grid
+    assert [row[0].text for row in rows[1:]] == [
+        "0.0000000",
+        "0.0000001",
+        "-0.0000003",
+        "1.2345678",
+    ]
+
+
 def test_max_records_stops_early(employee_layout):
     data = _employee("Ada", 1, 1, 1) * 5
 
@@ -256,6 +290,55 @@ def test_multi_schema_layout_requires_a_record_type_field():
                 EbcdicRecordLayout(name="b", selector="B", fields=fields),
             ]
         )
+
+
+def test_record_names_must_be_unique():
+    """Rows are bucketed by record name, so duplicates would merge two schemas.
+
+    `name` defaults to "record", so a two-schema layout that sets only the
+    selectors used to convert cleanly and hand every table both schemas' rows.
+    """
+    fields = [EbcdicField(name="value", size=2)]
+
+    with pytest.raises(ValidationError, match="record names must be unique"):
+        EbcdicLayout(
+            record_type_field=EbcdicField(name="kind", size=1),
+            records=[
+                EbcdicRecordLayout(selector="A", fields=fields),
+                EbcdicRecordLayout(selector="B", fields=fields),
+            ],
+        )
+
+
+def test_record_names_must_be_unique_from_a_layout_file(tmp_path: Path):
+    """A copybook usually arrives as JSON, so the check has to hold on that path."""
+    layout_file = tmp_path / "layout.json"
+    layout_file.write_text(
+        json.dumps(
+            {
+                "record_type_field": {"name": "kind", "size": 1},
+                "records": [
+                    {"selector": "A", "fields": [{"name": "value", "size": 2}]},
+                    {"selector": "B", "fields": [{"name": "value", "size": 2}]},
+                ],
+            }
+        )
+    )
+
+    with pytest.raises(DocumentLoadError, match="Could not read the EBCDIC layout"):
+        _backend(
+            _text("A", 1) + _text("xy", 2),
+            EbcdicBackendOptions(layout_file=layout_file),
+        )
+
+
+def test_a_single_record_keeps_the_default_name():
+    """The default name is only a problem when it collides; one schema is fine."""
+    layout = EbcdicLayout(
+        records=[EbcdicRecordLayout(fields=[EbcdicField(name="v", size=2)])]
+    )
+
+    assert layout.records[0].name == "record"
 
 
 def test_layout_sources_are_mutually_exclusive(employee_layout, tmp_path: Path):

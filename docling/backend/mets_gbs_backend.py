@@ -374,7 +374,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         # _PageFiles), so a page can legitimately have no `image` or `coordOCR` fptr
         # (e.g. a blank/cover page with no OCR layer). Report it as unparseable rather
         # than asserting, so the caller can mark it invalid and skip it, consistent
-        # with how sibling PDF backends (e.g. DoclingParsePageBackend) handle a page
+        # with how sibling PDF page backends handle a page
         # they can't build.
         image_info = self.page_map[page_no].image
         ocr_info = self.page_map[page_no].coordOCR

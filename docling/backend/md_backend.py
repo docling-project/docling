@@ -41,6 +41,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
+from docling.utils.text_decoding import decode_text
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -87,6 +88,7 @@ class _HeadingCreationPayload(BaseModel):
 class _ListItemCreationPayload(BaseModel):
     kind: Literal["list_item"] = "list_item"
     enumerated: bool
+    marker: str = ""
 
 
 _CreationPayload = Annotated[
@@ -98,9 +100,37 @@ _CreationPayload = Annotated[
 ]
 
 
+def _only_plain_line_breaks(children: list) -> bool:
+    """Return True when children consist solely of RawText/Literal runs separated
+    by LineBreak nodes (soft or hard), with at least one break present.
+
+    Such content is fully handled by the pending-line-break merge paths and does
+    not need an inline_group wrapper.  Multiple plain runs without any LineBreak
+    (e.g. `RawText + Literal + RawText` from an escaped character) return False
+    so they still use the regular inline_group path.
+
+    Args:
+        children: Inline child nodes of a marko Paragraph, Heading, or ListItem
+            paragraph to inspect.
+
+    Returns:
+        True if all children are plain-text runs joined only by line breaks,
+        False otherwise.
+    """
+    if not _MARKO_AVAILABLE:
+        return False
+    has_break = any(isinstance(c, marko.inline.LineBreak) for c in children)
+    return has_break and all(
+        isinstance(c, (marko.inline.RawText, marko.inline.Literal))
+        or isinstance(c, marko.inline.LineBreak)
+        for c in children
+    )
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
     _DELIMITER_CELL_RE = re.compile(r":?-+:?")
+    _PIPE_ENTITY = "&#124;"
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -125,6 +155,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
+    def _escape_pipes(text: str) -> str:
+        """Carry a pipe that is cell content rather than a cell delimiter.
+
+        An entity is how the row buffer already spells such a pipe: a source
+        ``&#124;`` survives ``_unescape_except_pipe`` intact and ``_close_table``
+        turns it back into ``|`` once the cells are split. A backslash-escaped
+        pipe has to join it there, because Marko resolves ``\\|`` to a Literal
+        node holding a bare ``|``, which the buffer cannot tell from markup.
+        """
+        return text.replace("|", MarkdownDocumentBackend._PIPE_ENTITY)
+
+    @staticmethod
     def _inline_text(node) -> str:
         """The text of an inline node, its markers dropped.
 
@@ -133,6 +175,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         """
         children = getattr(node, "children", None)
         if isinstance(children, str):
+            # A Literal is a backslash escape, so its pipe is content.
+            if isinstance(node, marko.inline.Literal):
+                return MarkdownDocumentBackend._escape_pipes(children)
             return children
         return "".join(
             MarkdownDocumentBackend._inline_text(child) for child in children or []
@@ -245,30 +290,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.in_pipeless_table = False
         self.md_table_buffer: list[str] = []
+        self._pending_hard_line_break = False
+        self._pending_soft_line_break = False
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
+        # A leading BOM is dropped. Kept, it prefixes the first line, so a
+        # leading "# Title" is parsed as paragraph text and the BOM reaches the
+        # output.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
-                # remove invalid sequences
-                # very long sequences of underscores will lead to unnecessary long processing times.
-                # In any proper Markdown files, underscores have to be escaped,
-                # otherwise they represent emphasis (bold or italic)
-                self.markdown = self._shorten_underscore_sequences(text_stream)
-                self.markdown = self._shorten_leading_dash_sequences(self.markdown)
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
-                    self.markdown = self._shorten_leading_dash_sequences(self.markdown)
+            md_content = decode_text(self.path_or_stream, options.encoding)
+            # remove invalid sequences
+            # very long sequences of underscores will lead to unnecessary long processing times.
+            # In any proper Markdown files, underscores have to be escaped,
+            # otherwise they represent emphasis (bold or italic)
+            self.markdown = self._shorten_underscore_sequences(md_content)
+            self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             self.valid = True
 
             _log.debug(self.markdown)
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
@@ -346,12 +389,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         parent_item: Optional[NodeItem],
         text: str,
         enumerated: bool,
+        marker: str = "",
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
         item = doc.add_list_item(
             text=text,
             enumerated=enumerated,
+            marker=marker,
             parent=parent_item,
             formatting=formatting,
             hyperlink=hyperlink,
@@ -392,12 +437,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         snippet_text: str,
         parent_item: Optional[NodeItem],
         list_ordered_flag_by_ref: dict[str, bool],
+        list_start_by_ref: dict[str, int],
+        list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
         formatting: Optional[Formatting],
         hyperlink: Optional[Union[AnyUrl, Path]],
     ) -> Optional[NodeItem]:
-        """
-        Lazily create list items / headings when we first see their inline content.
+        """Lazily create list items / headings when we first see their inline content.
 
         Important: Marko list items/headings can contain inline nodes that are NOT RawText
         (e.g. CodeSpan, Link). If we only flush on RawText, pending payloads can leak to
@@ -406,22 +452,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         while len(creation_stack) > 0:
             to_create = creation_stack.pop()
             if isinstance(to_create, _ListItemCreationPayload):
-                enumerated = (
-                    list_ordered_flag_by_ref.get(parent_item.self_ref, False)
-                    if parent_item
-                    else False
-                )
                 parent_ref = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
                     text=snippet_text,
-                    enumerated=enumerated,
+                    enumerated=to_create.enumerated,
+                    marker=to_create.marker,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
                     list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_item_counter_by_ref[parent_ref] = (
+                        list_item_counter_by_ref.get(parent_ref, 0) + 1
+                    )
 
             elif isinstance(to_create, _HeadingCreationPayload):
                 # Not keeping as parent_item as logic for correctly tracking
@@ -449,6 +494,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _CreationPayload
         ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
         list_ordered_flag_by_ref: dict[str, bool],
+        list_start_by_ref: dict[str, int],
+        list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
@@ -494,6 +541,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if has_non_empty_list_items:
                 parent_item = doc.add_list_group(name="list", parent=parent_item)
                 list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
+                if element.ordered:
+                    list_start_by_ref[parent_item.self_ref] = element.start
 
         elif (
             isinstance(element, marko.block.ListItem)
@@ -509,12 +558,23 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if parent_item
                 else False
             )
+            parent_ref: Optional[str] = parent_item.self_ref if parent_item else None
+            marker = ""
+            if enumerated and parent_ref is not None:
+                start = list_start_by_ref.get(parent_ref, 1)
+                count = list_item_counter_by_ref.get(parent_ref, 0)
+                marker = f"{start + count}."
             non_list_children: list[marko.element.Element] = [
                 item
                 for item in child.children
                 if not isinstance(item, marko.block.ListItem)
             ]
-            if len(non_list_children) > 1:  # inline group will be created further down
+            # Skip the inline_group path for items whose children are plain text
+            # runs separated by line breaks; the pending-line-break merge paths
+            # will produce a single list_item with the correct joined text.
+            if len(non_list_children) > 1 and not _only_plain_line_breaks(
+                non_list_children
+            ):  # inline group will be created further down
                 parent_ref: Optional[str] = (
                     parent_item.self_ref if parent_item else None
                 )
@@ -523,13 +583,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     parent_item=parent_item,
                     text="",
                     enumerated=enumerated,
+                    marker=marker,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
                     list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_item_counter_by_ref[parent_ref] = (
+                        list_item_counter_by_ref.get(parent_ref, 0) + 1
+                    )
             else:
-                creation_stack.append(_ListItemCreationPayload(enumerated=enumerated))
+                creation_stack.append(
+                    _ListItemCreationPayload(enumerated=enumerated, marker=marker)
+                )
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
@@ -570,13 +636,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(original_text.strip())
+            # A Literal is a backslash escape, so a pipe it holds is content
+            # and not markup: it cannot open a table of its own.
+            is_escape = isinstance(element, marko.inline.Literal)
             is_table_row = bool(snippet_text) and (
                 # A header cell in bold or a link arrives as its own node with
                 # no pipe in it, so once the paragraph is known to be a table,
                 # every piece of it belongs to that table, pipe or not.
                 self.in_pipeless_table
                 or (
-                    "|" in snippet_text
+                    not is_escape
+                    and "|" in snippet_text
                     and (self.in_table or original_text.lstrip().startswith("|"))
                 )
             )
@@ -584,6 +654,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self.in_table = True
             if self.in_table and snippet_text:
                 snippet_text = self._unescape_except_pipe(original_text.strip())
+                if is_escape:
+                    snippet_text = self._escape_pipes(snippet_text)
                 # If we're in a table, keep adding text (for formatted content in cells)
                 if self.md_table_buffer:
                     self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text
@@ -600,18 +672,42 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         snippet_text=snippet_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
                         list_last_item_by_ref=list_last_item_by_ref,
                         formatting=formatting,
                         hyperlink=hyperlink,
                     )
+                    self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
                 else:
-                    doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        parent=parent_item,
-                        text=snippet_text,
-                        formatting=formatting,
-                        hyperlink=hyperlink,
-                    )
+                    if (
+                        self._pending_hard_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += "\n" + snippet_text
+                        doc.texts[-1].orig += "\n" + snippet_text
+                    elif (
+                        self._pending_soft_line_break
+                        and doc.texts
+                        and doc.texts[-1].formatting == formatting
+                        and doc.texts[-1].hyperlink == hyperlink
+                    ):
+                        doc.texts[-1].text += " " + snippet_text
+                        doc.texts[-1].orig += " " + snippet_text
+                    else:
+                        prefix = "\n" if self._pending_hard_line_break else ""
+                        doc.add_text(
+                            label=DocItemLabel.TEXT,
+                            parent=parent_item,
+                            text=prefix + snippet_text,
+                            formatting=formatting,
+                            hyperlink=hyperlink,
+                        )
+                    self._pending_hard_line_break = False
+                    self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
@@ -626,6 +722,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     snippet_text=snippet_text,
                     parent_item=parent_item,
                     list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
                     list_last_item_by_ref=list_last_item_by_ref,
                     formatting=formatting,
                     hyperlink=hyperlink,
@@ -659,6 +757,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if self.in_table:
                 _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
+            elif element.soft:
+                _log.debug("Soft line break")
+                self._pending_soft_line_break = True
+            else:
+                _log.debug("Hard line break")
+                self._pending_hard_line_break = True
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
@@ -689,9 +793,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element
             )
 
+        element_children = getattr(element, "children", [])
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
-            and len(element.children) > 1
+            and len(element_children) > 1
+            and not _only_plain_line_breaks(element_children)
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 
@@ -725,6 +831,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     visited=visited,
                     creation_stack=creation_stack,
                     list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
                     list_last_item_by_ref=list_last_item_by_ref,
                     parent_item=parent_item,
                     formatting=formatting,
@@ -802,6 +910,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 visited=set(),
                 creation_stack=[],
                 list_ordered_flag_by_ref={},
+                list_start_by_ref={},
+                list_item_counter_by_ref={},
                 list_last_item_by_ref={},
             )
             self._close_table(doc=doc)  # handle any last hanging table

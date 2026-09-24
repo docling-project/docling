@@ -225,6 +225,9 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 
 ### OCR Engines
 
+Languages are given as BCP-47 tags for every engine; see
+[OCR engines](../concepts/OCR.md#language-selection).
+
 | OCR Engine | Backend | Language Support | Notes |
 |------------|---------|------------------|-------|
 | Tesseract | CLI or tesserocr | 100+ languages | Most widely used, good accuracy |
@@ -249,12 +252,21 @@ object-detection path — but selecting `DOCLING_LAYOUT_V2` warns and falls back
 | `phi4` | Phi-4-Multimodal | - | ✅ | ❌ | ❌ | ✅ | Markdown |
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
+| `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
+| `mineru2_pro` | MinerU2.5-Pro-2604 | 1.2B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ❌ | Native two-step layout, text, formulas, and OTSL tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
+
+`mineru2_pro` runs MinerU's native two-step flow: page-level layout detection followed by
+type-specific recognition of the detected region crops. Its Transformers and API configurations
+use the official `opendatalab/MinerU2.5-Pro-2604-1.2B` repository. The MLX override uses the
+community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion because no official
+OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
+are not enabled by this preset.
 
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 
@@ -316,8 +328,9 @@ classifier_options = DocumentPictureClassifierOptions.from_preset("document_figu
 ```python
 from docling.datamodel.pipeline_options import TesseractOcrOptions
 
-# Use Tesseract with English and German
-ocr_options = TesseractOcrOptions(lang=["eng", "deu"])
+# Use Tesseract with English and German. Languages are BCP-47 tags;
+# `eng`/`deu` still work and canonicalize to `en-Latn`/`de-Latn`.
+ocr_options = TesseractOcrOptions(lang=["en", "de"])
 ```
 
 ### VLM Convert (Full Page)

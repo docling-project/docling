@@ -10,7 +10,8 @@ import threading
 import time
 import warnings
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from pathlib import Path, PurePath
 from types import MethodType, SimpleNamespace
 
@@ -1496,7 +1497,8 @@ def test_submit_file_forwards_request_headers(tmp_path: Path) -> None:
     assert captured["header_api"] == "base-key"
 
 
-def test_serialize_convert_options_omits_defaults_and_none() -> None:
+def test_serialize_convert_options_omits_unset_and_none() -> None:
+    """Fields not passed by the caller are omitted; explicitly-set None is omitted too."""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         with DoclingServiceClient(url=TEST_BASE_URL) as client:
@@ -1512,6 +1514,27 @@ def test_serialize_convert_options_omits_defaults_and_none() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+def test_serialize_convert_options_includes_explicitly_set_defaults() -> None:
+    """A field explicitly set to its default value must appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # do_chart_extraction defaults to False; setting it explicitly must send it.
+        payload = client._serialize_convert_options(
+            ConvertDocumentsRequestOptions(do_chart_extraction=False)
+        )
+
+    assert "do_chart_extraction" in payload
+    assert payload["do_chart_extraction"] is False
+
+
+def test_serialize_convert_options_omits_unset_fields() -> None:
+    """Fields never passed to the constructor must not appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        payload = client._serialize_convert_options(ConvertDocumentsRequestOptions())
+
+    assert "do_chart_extraction" not in payload
+    assert "do_ocr" not in payload
 
 
 def test_form_encode_options_jsonifies_nested_values() -> None:
@@ -2457,6 +2480,35 @@ def test_429_without_retry_after_header_does_not_retry() -> None:
             )
 
     assert call_count == 1
+
+
+def test_retry_after_http_date_with_unknown_timezone_does_not_crash() -> None:
+    # RFC 7231 mandates GMT, but non-conformant servers/proxies emit dates with
+    # an unknown timezone ("-0000"), which email.utils parses to a naive
+    # datetime. The backoff computation must not raise when mixing that with an
+    # aware "now".
+    response = httpx.Response(
+        503, headers={"Retry-After": "Sun, 06 Nov 1994 08:49:37 -0000"}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert delay == 0.0  # a date in the past clamps to zero
+
+
+def test_retry_after_future_http_date_returns_positive_delay() -> None:
+    future = datetime.now(tz=timezone.utc) + timedelta(seconds=120)
+    response = httpx.Response(
+        503, headers={"Retry-After": format_datetime(future, usegmt=True)}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert 0.0 < delay <= 120.0
 
 
 def test_402_usage_limit_exceeded_raises_explicit_exception() -> None:

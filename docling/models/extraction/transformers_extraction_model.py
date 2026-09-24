@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import importlib.metadata
 import logging
 import sys
 import time
@@ -23,8 +24,13 @@ from docling.models.extraction.prompt_utils import (
     build_granite_vision_inputs,
     build_nuextract_inputs,
 )
+from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.granite_vision_utils import (
+    GRANITE_VISION_4_REPO_ID,
+    granite_vision_4_needs_remote_code,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -67,6 +73,24 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
+            trust_remote_code = vlm_options.trust_remote_code
+            attn_implementation: Optional[str] = (
+                "flash_attention_2"
+                if self.device.startswith("cuda")
+                and accelerator_options.cuda_use_flash_attention2
+                else "sdpa"
+            )
+            if vlm_options.repo_id == GRANITE_VISION_4_REPO_ID:
+                if not granite_vision_4_needs_remote_code(
+                    importlib.metadata.version("transformers")
+                ):
+                    trust_remote_code = False
+                if attn_implementation == "sdpa":
+                    # The native granite4_vision Q-Former rejects an explicit sdpa
+                    # request before transformers 5.13; the transformers default
+                    # selects sdpa where the model supports it.
+                    attn_implementation = None
+
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -80,20 +104,15 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 )
                 self.processor = AutoProcessor.from_pretrained(
                     artifacts_path,
-                    trust_remote_code=vlm_options.trust_remote_code,
+                    trust_remote_code=trust_remote_code,
                     use_fast=True,
                 )
                 self.vlm_model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
                     dtype=vlm_options.torch_dtype or torch.bfloat16,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "sdpa"
-                    ),
-                    trust_remote_code=vlm_options.trust_remote_code,
+                    _attn_implementation=attn_implementation,
+                    trust_remote_code=trust_remote_code,
                 )
 
             if hasattr(self.vlm_model, "merge_lora_adapters"):
@@ -167,21 +186,21 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             )
 
         # Generate
+        tokenizer = getattr(self.processor, "tokenizer", None)
+        generation_config = build_generation_config(
+            self.generation_config,
+            overrides=self.vlm_options.extra_generation_config,
+            max_new_tokens=self.max_new_tokens,
+            use_cache=True,
+            do_sample=self.temperature > 0,
+            temperature=self.temperature if self.temperature > 0 else None,
+            pad_token_id=getattr(tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        )
         gen_kwargs: dict[str, Any] = {
             **processor_inputs,
-            "max_new_tokens": self.max_new_tokens,
+            "generation_config": generation_config,
         }
-        if self.generation_config is not None:
-            gen_kwargs["generation_config"] = self.generation_config
-            gen_kwargs.update(self.vlm_options.extra_generation_config)
-        else:
-            gen_kwargs["use_cache"] = True
-
-        if self.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = self.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         start_time = time.time()
         with torch.inference_mode():

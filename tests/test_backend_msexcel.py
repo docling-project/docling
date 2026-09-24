@@ -836,6 +836,35 @@ def test_edge_cases_merging() -> None:
     )
 
 
+def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> None:
+    """Sparse cells already included in a table bbox must not become extra tables.
+
+    Regression test for #4230. The Note column is disconnected from the rest
+    of the table below the header, but those cells are already included in the
+    rectangular table that spans A1:C4.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["ID", "Name", "Note"])
+    sheet.append([1, "alpha", None])
+    sheet.append([2, None, "foo"])
+    sheet.append([3, None, "bar"])
+
+    file_path = tmp_path / "sparse_sheet.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+
+    texts = [cell.text for cell in table.data.table_cells]
+    assert texts.count("foo") == 1
+    assert texts.count("bar") == 1
+
+
 def test_gap_tolerance_comparison() -> None:
     """Test the effect of gap_tolerance on table detection.
 
@@ -999,3 +1028,27 @@ def test_emf_images_in_xlsx(libreoffice_available):
             f"Page {page_no}: picture (idx {pic_indices}) should come before "
             f"table (idx {tbl_indices}) in document order"
         )
+
+
+def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
+    """A chart caption belongs to the sheet holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced outside its
+    sheet group and carried no provenance.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    picture = doc.pictures[0]
+    sheet = picture.parent.resolve(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.parent.cref == sheet.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {sheet.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in sheet.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))

@@ -1,4 +1,2 @@
-<doctag><text><loc_8><loc_8><loc_371><loc_21>Docling bundles PDF document conversion to</text>
-<text><loc_6><loc_24><loc_370><loc_36>JSON and Markdown in an easy self contained</text>
-<text><loc_8><loc_40><loc_75><loc_52>package</text>
+<doctag><text><loc_59><loc_46><loc_424><loc_90>Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package</text>
 </doctag>

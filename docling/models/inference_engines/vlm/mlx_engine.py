@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Union
 
@@ -15,6 +16,7 @@ from PIL.Image import Image
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
+    check_min_engine_version,
     extract_generation_stoppers,
     preprocess_image_batch,
 )
@@ -22,6 +24,7 @@ from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
+    VlmEngineType,
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
@@ -35,6 +38,31 @@ _log = logging.getLogger(__name__)
 # Global lock for MLX model calls - MLX models are not thread-safe
 # All MLX models share this lock to prevent concurrent MLX operations
 _MLX_GLOBAL_LOCK = threading.Lock()
+
+# mlx-vlm injects enable_thinking=False into processor.apply_chat_template for any
+# processor whose signature accepts **kwargs. Models whose chat template does not
+# reference that variable (e.g. chandra-ocr-2) make transformers>=5.16 log a
+# warning about it. The kwarg only reaches the processor when tokenize=True, and
+# mlx-vlm calls with tokenize=False, so it is inert here -- drop just that record
+# rather than let it imply something went wrong. Remove once mlx-vlm stops
+# passing the kwarg unconditionally.
+_PROCESSOR_KWARGS_WARNING = "have to be in `processor_kwargs` dict"
+
+
+class _ProcessorKwargsWarningFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return _PROCESSOR_KWARGS_WARNING not in record.getMessage()
+
+
+@contextmanager
+def _suppressed_processor_kwargs_warning():
+    logger = logging.getLogger("transformers.processing_utils")
+    log_filter = _ProcessorKwargsWarningFilter()
+    logger.addFilter(log_filter)
+    try:
+        yield
+    finally:
+        logger.removeFilter(log_filter)
 
 
 class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -94,6 +122,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 "to use MLX VLM models on Apple Silicon."
             )
 
+        check_min_engine_version(
+            VlmEngineType.MLX,
+            self.model_config.min_engine_version if self.model_config else None,
+        )
+
         self.apply_chat_template = apply_chat_template  # type: ignore[assignment]
         self.stream_generate = stream_generate  # type: ignore[assignment]
 
@@ -143,11 +176,30 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 f"  3. Or use a different model that exists in your artifacts_path"
             )
 
-        # Load the model
-        self.vlm_model, self.processor = load(artifacts_path)
-        self.config = load_config(artifacts_path)
+        # Some converted checkpoints omit lm_head because it is tied to the token
+        # embeddings, but mlx-vlm may miss a nested tie_word_embeddings setting and
+        # instantiate a separate head. Load those checkpoints non-strictly, then
+        # switch the language model to its embedding-backed output projection.
+        tied_word_embeddings = bool(
+            self.model_config
+            and self.model_config.extra_config.get("mlx_tied_word_embeddings", False)
+        )
 
-        _log.info(f"Loaded MLX model {repo_id} (revision: {revision})")
+        # Load the model
+        start_time = time.monotonic()
+        self.vlm_model, self.processor = load(
+            artifacts_path, strict=not tied_word_embeddings
+        )
+        if tied_word_embeddings:
+            language_model = self.vlm_model.language_model
+            language_model.args.tie_word_embeddings = True
+            del language_model.lm_head
+        self.config = load_config(artifacts_path)
+        load_time = time.monotonic() - start_time
+
+        _log.info(
+            f"Loaded MLX model {repo_id} (revision: {revision}) in {load_time:.2f} sec."
+        )
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs.
@@ -182,6 +234,12 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         outputs: List[VlmEngineOutput] = []
 
+        _log.info(
+            "Running MLX inference on %s image(s) (max_new_tokens=%s)...",
+            len(input_batch),
+            input_batch[0].max_new_tokens,
+        )
+
         # MLX models are not thread-safe - use global lock to serialize access
         with _MLX_GLOBAL_LOCK:
             _log.debug("MLX model: Acquired global lock for thread safety")
@@ -192,9 +250,10 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 image = images[0]
 
                 # Format prompt using MLX's chat template
-                formatted_prompt = self.apply_chat_template(
-                    self.processor, self.config, input_data.prompt, num_images=1
-                )
+                with _suppressed_processor_kwargs_warning():
+                    formatted_prompt = self.apply_chat_template(
+                        self.processor, self.config, input_data.prompt, num_images=1
+                    )
 
                 # Extract custom stopping criteria
                 custom_stoppers = extract_generation_stoppers(
@@ -263,9 +322,13 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
                 generation_time = time.time() - start_time
 
-                _log.debug(
-                    f"MLX generation completed in {generation_time:.2f}s, "
-                    f"stop_reason: {stop_reason}"
+                _log.info(
+                    "MLX generated %s tokens in %.2f sec. (%.2f tok/s, "
+                    "stop_reason: %s)",
+                    num_tokens,
+                    generation_time,
+                    num_tokens / generation_time if generation_time > 0 else 0.0,
+                    stop_reason,
                 )
 
                 # Create output

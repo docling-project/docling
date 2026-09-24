@@ -39,38 +39,24 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 7.52,
-            "t": 585.81,
-            "r": 30.08,
-            "b": 153.6,
+            "l": 74.52,
+            "t": 503.87,
+            "r": 123.0,
+            "b": 70.86,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            42
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 37.33,
-            "t": 585.87,
-            "r": 56.0,
-            "b": 152.86,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            43,
             86
           ]
         },
         {
           "page_no": 1,
           "bbox": {
-            "l": 64.15,
-            "t": 234.29,
-            "r": 84.22,
-            "b": 154.75,
+            "l": 131.15,
+            "t": 152.29,
+            "r": 151.22,
+            "b": 72.75,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

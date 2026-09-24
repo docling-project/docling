@@ -74,13 +74,11 @@ class TextHelperMixin:
         if "\n\n" in text:
             parts = text.split("\n\n")
 
-            first_part = parts[0].strip()
-            if first_part:
-                text_buffer.append(first_part)
+            text_buffer.append(parts[0])
 
             flush_fn()
 
-            for part in parts[1:]:
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -89,6 +87,8 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+
+            text_buffer.append(parts[-1])
         else:
             text_buffer.append(text)
 

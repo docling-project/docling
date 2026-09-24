@@ -23,49 +23,65 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 from docling.utils.profiling import TimeIntervalRecorder
 
 _log = logging.getLogger(__name__)
 
 
+# Nemotron repo/commit
 _NEMOTRON_OCR_REPO_ID = "nvidia/nemotron-ocr-v2"
 _NEMOTRON_OCR_COMMIT = "0e83e83f17943524b90afa6c0fd82ac2bc1a40ca"
 
-_NEMOTRON_OCR_ENGLISH = "english"
-_NEMOTRON_OCR_MULTILINGUAL = "multilingual"
-_NEMOTRON_OCR_ENGLISH_GROUP = ["en", "eng", "english"]
+# The recognizer used when the request does not name a language
+_NEMOTRON_OCR_DEFAULT_LANGUAGE = "english"
 
-# Mappings of nemotron language to the artifacts subdir
-_NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS = {
-    _NEMOTRON_OCR_ENGLISH: "v2_english",
-    _NEMOTRON_OCR_MULTILINGUAL: "v2_multilingual",
+# Canonical tag -> the recognizer trained on it. Also the BCP-47 vocabulary nemotron-OCR advertises
+_NEMOTRON_OCR_TAG_TO_CODE = {
+    "en-Latn": "english",
+    "ja-Jpan": "multilingual",
+    "ko-Kore": "multilingual",
+    "ru-Cyrl": "multilingual",
+    "zh-Hans": "multilingual",
+    "zh-Hant": "multilingual",
+}
+
+# NVIDIA validates only the languages in `_NEMOTRON_OCR_TAG_TO_CODE`
+# Routing these to `english` is best effort
+# The list is the CLDR exemplar alphabet of every Latin-script locale, minus the ones the charset
+# cannot spell (`ca`, `cy`, `hu`, `lt`, `lv`, `mt`, `sk`, `vi`, ...). Regenerate it against a new
+# checkpoint's charset rather than editing it by hand.
+_NEMOTRON_OCR_BEST_EFFORT_TAGS = frozenset(
+    f"{subtag}-Latn"
+    for subtag in """
+    aa af ak an arn asa ast az bal bem bez bm br bs cad cch ceb cgg cho cic co cs da dav
+    de dua dyo ebu es et eu fi fil fo fr frr fur fy ga gaa gd gl gsw guz gv haw hi hr
+    hsb ht ia id ie ig io is it iu jbo jmc jv kaj kam kcg kde kea ki kkj kl kln ksb ksh
+    ku kw kxv la lb lg lij lld lmo ln lu luo luy mer mfe mg mgh mgo mhn mi mic moh ms
+    mus nb nd nds nl nn no nr nso nus ny nyn oc om pap pcm pis pl pms pt qu quc rm rn ro
+    rof rw rwk saq sbp sc scn seh sg sgs shi sid sl sma smj smn sn so sq sr ss ssy st su
+    sv sw szl teo tk tn to tpi tr trv ts tzm uz vec vmw vo vun wa wae wbp wo xh xog yav
+    za zu
+    """.split()
+)
+
+# Mappings of nemotron language to the artifacts subdir. Also nemotron's own native vocabulary
+_NEMOTRON_CODE_TO_ARTIFACT = {
+    "english": "v2_english",
+    "multilingual": "v2_multilingual",
 }
 
 
 def nemotron_ocr_model_dir() -> str:
     return _NEMOTRON_OCR_REPO_ID.replace("/", "--")
-
-
-def resolve_nemotronocr_language(req_languages: list[str] | None) -> str:
-    r"""
-    Map requested languages onto the nemotron-ocr language info
-    """
-    if not req_languages:
-        # Use english by default
-        return _NEMOTRON_OCR_ENGLISH
-
-    # Map request language to nemotron language
-    for language in req_languages:
-        # "en-US" / "en_US" -> "en"
-        normalized = language.strip().lower().replace("_", "-").split("-")[0]
-
-        # Use the multilingual model to cover english and any non-english language
-        if normalized not in _NEMOTRON_OCR_ENGLISH_GROUP:
-            return _NEMOTRON_OCR_MULTILINGUAL
-    return _NEMOTRON_OCR_ENGLISH
 
 
 class NemotronOcrPrediction(TypedDict):
@@ -109,6 +125,8 @@ class _BufferedRect:
 class NemotronOcrModel(BaseOcrModel):
     r"""Wrapper for Nvidia's nemotron-ocr-v2 model"""
 
+    multiple_languages = False
+
     def __init__(
         self,
         enabled: bool,
@@ -124,7 +142,7 @@ class NemotronOcrModel(BaseOcrModel):
         )
         self.options: NemotronOcrOptions
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
-        self.scale = self.options.scale
+        self._scale = self.options.scale
 
         if self.enabled:
             self.validate_runtime(accelerator_options=accelerator_options)
@@ -141,16 +159,59 @@ class NemotronOcrModel(BaseOcrModel):
                     "Python 3.12 and CUDA 13.x."
                 ) from exc
 
-            # Resolve the request language
-            language = resolve_nemotronocr_language(options.lang)
+            # Resolve the request language. An empty `lang` list means "the
+            # engine's own default", which for nemotron-OCR is English.
+            codes = self.resolve_ocr_languages()
+            code = codes[0] if codes else _NEMOTRON_OCR_DEFAULT_LANGUAGE
 
             # Initialize the model
-            model_dir = self._resolve_model_dir(language, artifacts_path=artifacts_path)
+            model_dir = self._resolve_model_dir(code, artifacts_path=artifacts_path)
 
-            self.reader = NemotronOCRV2(
+            self._reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
-                lang=language,
+                lang=code,
             )
+
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        r"""Report the BCP74 and native languages without script whenever it is not needed"""
+        return OcrLanguageSupport(
+            bcp47=[
+                OcrLanguageResolver.canonicalize_bcp47(tag).short_tag()
+                for tag in sorted(
+                    _NEMOTRON_OCR_TAG_TO_CODE.keys() | _NEMOTRON_OCR_BEST_EFFORT_TAGS
+                )
+            ],
+            native=sorted(_NEMOTRON_CODE_TO_ARTIFACT),
+        )
+
+    def map_ocr_language(self, language: OcrLanguage) -> str:
+        if language.is_passthrough():
+            # `english`, `multilingual`: nemotron's own recognizer names.
+            if language.native in _NEMOTRON_CODE_TO_ARTIFACT:
+                return language.native
+        else:
+            tag = language.bcp47()
+            code = _NEMOTRON_OCR_TAG_TO_CODE.get(tag)
+            if code is not None:
+                return code
+            if tag in _NEMOTRON_OCR_BEST_EFFORT_TAGS:
+                _log.warning(
+                    "nemotron-OCR was not trained on %s. Running it on the '%s' "
+                    "recognizer, whose character set covers the alphabet of this "
+                    "language, but whose accuracy on it is untested.",
+                    language.tag(),
+                    _NEMOTRON_OCR_DEFAULT_LANGUAGE,
+                )
+                return _NEMOTRON_OCR_DEFAULT_LANGUAGE
+        raise OcrLanguageNotSupportedError(
+            self._engine_name,
+            language.tag(),
+            supported=self.supported_ocr_languages(),
+            detail=(
+                "nemotron-OCR-v2 ships an English and a multilingual recognizer "
+                "only; write 'multilingual' to run the multilingual one."
+            ),
+        )
 
     @staticmethod
     def _fail_runtime(message: str) -> None:
@@ -192,15 +253,13 @@ class NemotronOcrModel(BaseOcrModel):
             )
 
     def _resolve_model_dir(
-        self, language: str, artifacts_path: Optional[Path]
+        self, code: str, artifacts_path: Optional[Path]
     ) -> Optional[Path]:
         if artifacts_path is None:
             return None
 
         nemotron_lang_dir = (
-            artifacts_path
-            / nemotron_ocr_model_dir()
-            / _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS[language]
+            artifacts_path / nemotron_ocr_model_dir() / _NEMOTRON_CODE_TO_ARTIFACT[code]
         )
         if nemotron_lang_dir.is_dir() and all(
             (nemotron_lang_dir / f).is_file() for f in self._nemotron_checkpoint_files
@@ -252,9 +311,8 @@ class NemotronOcrModel(BaseOcrModel):
         image_height: int,
         scale: float,
     ) -> TextCell:
-        # `nemotron_ocr` returns normalized `left/right` and an inverted
-        # pair `lower/upper`, where `lower` is the top Y and `upper` is the
-        # bottom Y in image coordinates.
+        # `nemotron_ocr` returns normalized `left/right` and an inverted pair `lower/upper`
+        # where `lower` is the top Y and `upper` is the bottom Y in image coordinates.
         left = (prediction["left"] * image_width) / scale + ocr_rect.l
         top = (prediction["lower"] * image_height) / scale + ocr_rect.t
         right = (prediction["right"] * image_width) / scale + ocr_rect.l
@@ -293,7 +351,7 @@ class NemotronOcrModel(BaseOcrModel):
         infer_start = time.monotonic() if profile_inference else 0.0
         batch_predictions = cast(
             Sequence[Sequence[NemotronOcrPrediction]],
-            self.reader(
+            self._reader(
                 image_arrays,
                 merge_level=self.options.merge_level,
             ),
@@ -314,7 +372,7 @@ class NemotronOcrModel(BaseOcrModel):
                     ocr_rect=entry.ocr_rect,
                     image_width=image_width,
                     image_height=image_height,
-                    scale=self.scale,
+                    scale=self._scale,
                 )
                 for index, prediction in enumerate(raw_predictions)
             ]
@@ -386,7 +444,7 @@ class NemotronOcrModel(BaseOcrModel):
             for ocr_rect in valid_rects:
                 recorder.resume()
                 high_res_image = page._backend.get_page_image(
-                    scale=self.scale, cropbox=ocr_rect
+                    scale=self._scale, cropbox=ocr_rect
                 )
                 buffered_rect = _BufferedRect(
                     state=state,

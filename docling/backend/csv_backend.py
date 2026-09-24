@@ -4,33 +4,67 @@
 import csv
 import logging
 import warnings
+from collections.abc import Callable
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Final, Optional, Set, Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import CsvBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
+
+# Characters of the file handed to csv.Sniffer when the first line alone
+# cannot be sniffed.
+_SNIFF_SAMPLE_SIZE: Final[int] = 4096
+_DELIMITERS: Final[str] = ",;\t|:"
+
+
+def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialect]:
+    """Detect the dialect from the first line, falling back to a larger sample.
+
+    The first line is enough for most files and is what the sniffer reads best:
+    it rejects samples whose rows hold different numbers of delimiters. It is
+    not enough when a quoted field spans several lines, because the line is cut
+    mid-quote; retrying with a sample that closes the quote recovers those.
+    `read_sample` is only called on that fallback path.
+
+    Raises csv.Error if neither can be detected.
+    """
+    try:
+        return csv.Sniffer().sniff(head, _DELIMITERS)
+    except csv.Error:
+        return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
     content: StringIO
 
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[CsvBackendOptions] = None,
+    ):
+        if options is None:
+            options = CsvBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
-        # Load content
+        # A leading BOM is dropped, which matters here because Excel and Google
+        # Sheets both write one when exporting "CSV UTF-8"; left in, it becomes
+        # part of the first header cell.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.content = StringIO(self.path_or_stream.getvalue().decode("utf-8"))
-            elif isinstance(self.path_or_stream, Path):
-                self.content = StringIO(self.path_or_stream.read_text("utf-8"))
+            self.content = StringIO(decode_text(path_or_stream, options.encoding))
             self.valid = True
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"CsvDocumentBackend could not load document with hash {self.document_hash}"
@@ -58,11 +92,17 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         Parses the CSV data into a structured document model.
         """
 
-        # Detect CSV dialect
+        # Detect CSV dialect. The larger sample is only read when the first
+        # line fails to sniff.
         head = self.content.readline()
+
+        def read_sample() -> str:
+            self.content.seek(0)
+            return self.content.read(_SNIFF_SAMPLE_SIZE)
+
         try:
-            dialect: type[csv.Dialect] = csv.Sniffer().sniff(head, ",;\t|:")
-            if dialect.delimiter not in {",", ";", "\t", "|", ":"}:
+            dialect: type[csv.Dialect] = _sniff_dialect(head, read_sample)
+            if dialect.delimiter not in _DELIMITERS:
                 raise RuntimeError(
                     f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
                 )
@@ -75,10 +115,21 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        # Parse CSV
+        # Parse CSV. strict=True rejects malformed quotes; that used to escape
+        # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
-        result = csv.reader(self.content, dialect=dialect, strict=True)
-        self.csv_data = list(result)
+        try:
+            result = csv.reader(self.content, dialect=dialect, strict=True)
+            self.csv_data = list(result)
+        except csv.Error as e:
+            raise DocumentLoadError(
+                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+            ) from e
+
+        # csv.reader yields [] for blank lines; ["", ...] for empty-field rows like ",,".
+        # Filtering on truthiness keeps the latter and drops the former.
+        self.csv_data = [row for row in self.csv_data if row]
+
         _log.info(f"Detected {len(self.csv_data)} lines")
 
         # Parse the CSV into a structured document model
