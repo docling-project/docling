@@ -985,6 +985,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Recursively walk the SDT content to catch textboxes, tables, and nested structures
                     _, te = self._walk_linear(sdt_content, doc)
                     added_elements.extend(te)
+            # Custom XML markup wraps paragraphs and tables the same way, with no
+            # content element of its own in between.
+            elif tag_name == "customXml":
+                _, te = self._walk_linear(element, doc)
+                added_elements.extend(te)
             # Check for Image
             elif drawing_blip:
                 pics = self._handle_pictures(drawing_blip, doc)
@@ -1759,7 +1764,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         def _get_children_recursive(node):
             for child in node:
                 tag_name = etree.QName(child).localname
-                if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
+                if tag_name in {
+                    "smartTag",
+                    "customXml",
+                    "ins",
+                    "moveTo",
+                    "fldSimple",
+                    "dir",
+                    "bdo",
+                }:
                     yield from _get_children_recursive(child)
                 else:
                     yield child
