@@ -155,8 +155,4 @@ def decode_text(
         else path_or_stream.read_bytes()
     )
     text = _decode_bytes(raw, encoding)
-    # Paths were read through open() in text mode, which translates line
-    # endings; streams were not, so the same bytes reached the backends with
-    # their CR intact and a quoted CSV field spanning lines split into extra
-    # rows. Translate on both routes, so the route cannot change the document.
     return text.replace("\r\n", "\n").replace("\r", "\n")
