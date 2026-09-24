@@ -220,12 +220,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _unescape_except_pipe(text: str) -> str:
         def replace(match):
             entity = match.group(0)
+            decoded = unescape(entity)
 
-            # entities that represent |
-            if entity in ("&#124;", "&#x7C;", "&vert;"):
+            # Any spelling of | (&#x7c;, &verbar;, ...) stays encoded so it is not
+            # taken for a cell delimiter; _close_table unescapes it after the split.
+            if decoded == "|":
                 return entity
 
-            return unescape(entity)
+            return decoded
 
         return MarkdownDocumentBackend._ENTITY_RE.sub(replace, text)
 
