@@ -887,6 +887,17 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    extract_form_fields: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "If enabled, native PDF form widgets (AcroForm) become fillable field "
+                "values keyed to their printed captions. Standard and legacy pipelines "
+                "with the docling-parse backend only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1334,6 +1345,15 @@ def convert(  # noqa: C901
 
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
+        if (
+            extract_form_fields
+            and pipeline in {ProcessingPipeline.STANDARD, ProcessingPipeline.LEGACY}
+            and OutputFormat.DOCTAGS in to_formats
+        ):
+            # DocTags has no tokens for form fields; the export raises on them.
+            raise typer.BadParameter(
+                "--extract-form-fields cannot be combined with `--to doctags`."
+            )
 
         export_flags = _export_flags_from_formats(to_formats)
 
@@ -1400,6 +1420,7 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                extract_form_fields=extract_form_fields,
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,

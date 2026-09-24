@@ -3,8 +3,11 @@
 
 """Replay saved AcroForm pages and write an inspectable HTML/JSON report.
 
-Run from the repository root:
-    uv run --no-sync python -m scripts.replay_acroform_keying
+Evaluates the shipped keying (docling.models.stages.form_field.keying) on the
+frozen page snapshots against the reviewed ground truth. Run from the
+repository root:
+    uv run --no-sync python -m scripts.replay_acroform_keying \
+        --evidence <dir with snapshots/ and pages/> --fixtures <dir with the PDFs>
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import hashlib
 import html
 import json
 from collections import Counter
+from difflib import SequenceMatcher
 from pathlib import Path
 from time import perf_counter
 from typing import Literal
@@ -23,8 +27,9 @@ import click
 from docling_core.types.doc import BoundingBox
 from pydantic import BaseModel, Field, model_validator
 
-from scripts.acroform_keying import (
+from docling.models.stages.form_field.keying import (
     Assignment,
+    Candidate,
     NativeWidget,
     Snapshot,
     anchors,
@@ -45,6 +50,12 @@ class ExpectedLabel(BaseModel):
         return BoundingBox(l=left, t=top, r=right, b=bottom)
 
 
+class AnnotatedCell(BaseModel):
+    row: int
+    column: int
+    widget_indices: list[int]
+
+
 class Annotation(BaseModel):
     fixture: str
     page: int
@@ -54,6 +65,10 @@ class Annotation(BaseModel):
     relation: str = ""
     group_type: str = ""
     expected_label: ExpectedLabel | None = None
+    # Visually annotated grids: row and column header descriptions (text only).
+    rows: list[str] = Field(default_factory=list)
+    columns: list[str] = Field(default_factory=list)
+    cells: list[AnnotatedCell] = Field(default_factory=list)
 
 
 class FieldReview(BaseModel):
@@ -117,6 +132,9 @@ class Review(BaseModel):
     predicted: str
     expected_bbox: BoundingBox | None = None
     predicted_bbox: BoundingBox | None = None
+    context: str = ""
+    # Informative only: whether the context label matches the reference.
+    context_matches: bool | None = None
     features: dict[str, float] = Field(default_factory=dict)
     reference_disposition: str = "unreviewed"
     reason: str = ""
@@ -130,6 +148,7 @@ class FieldAssociation(BaseModel):
     text: str
     bbox: BoundingBox
     features: dict[str, float]
+    context_text: str = ""
 
 
 class OrderedValue(BaseModel):
@@ -169,6 +188,7 @@ def associations(
             text=assignment.labels[assignment.candidates[c].label].text,
             bbox=assignment.labels[assignment.candidates[c].label].bbox,
             features=assignment.candidates[c].features,
+            context_text=context_text(assignment, assignment.candidates[c]),
         )
         for c in assignment.selected
     ]
@@ -183,6 +203,45 @@ def associations(
         for v in assignment.values
     ]
     return values, fields
+
+
+def context_text(assignment: Assignment, candidate: Candidate | None) -> str:
+    if candidate is None or candidate.context is None:
+        return ""
+    return assignment.labels[candidate.context].text
+
+
+def same_text(expected: str, actual: str) -> bool:
+    """Loose equality for annotated table headers, which are text hints only."""
+
+    def normal(text: str) -> str:
+        kept = "".join(c for c in text.casefold() if c.isalnum() or c.isspace())
+        return " ".join(kept.split())
+
+    return SequenceMatcher(None, normal(expected), normal(actual)).ratio() >= 0.85
+
+
+def context_counts(reviews: list[Review]) -> Counter:
+    """Informative context tallies; the strict score uses the primary key only."""
+    return Counter(
+        {
+            "with context": sum(bool(r.context) for r in reviews),
+            "wrong key, context matches": sum(
+                r.status == "wrong" and bool(r.context_matches) for r in reviews
+            ),
+            "correct key, context also matches": sum(
+                r.status == "correct" and bool(r.context_matches) for r in reviews
+            ),
+            "table context matches column": sum(
+                r.status.startswith("table") and bool(r.context_matches)
+                for r in reviews
+            ),
+            "table context differs from column": sum(
+                r.status.startswith("table") and r.context_matches is False
+                for r in reviews
+            ),
+        }
+    )
 
 
 def label_matches(expected: BoundingBox, actual: BoundingBox) -> bool:
@@ -211,6 +270,14 @@ def evaluate(
         for i in assignment.candidates[c].members
     }
     links = {a.widget_index: a for a in annotations if a.kind == "label_link"}
+    # Annotated grid cells give each table value its row and column headers.
+    grid = {
+        index: (ann.rows[cell.row], ann.columns[cell.column])
+        for ann in annotations
+        if ann.kind == "table_region"
+        for cell in ann.cells
+        for index in cell.widget_indices
+    }
     reviews = []
     for i, value in enumerate(assignment.values):
         ann = links.get(value.native.index)
@@ -221,7 +288,34 @@ def evaluate(
         if reference is not None:
             expected = reference.expected_label
         status = "unreviewed"
-        if not value.scope.eligible:
+        table_reference = ""
+        context = (
+            None
+            if candidate is None or candidate.context is None
+            else assignment.labels[candidate.context]
+        )
+        context_matches = None
+        if (
+            not value.scope.eligible
+            and value.scope.table in snapshot.tables.table_map
+        ):
+            # Keyed from the table's cells; the reference is the annotated row
+            # header (the column header is context), when the grid is annotated.
+            headers = grid.get(value.native.index)
+            if headers is None:
+                status = "table: unreviewed" if label else "table: no key"
+            else:
+                table_reference = " / ".join(headers)
+                if context is not None:
+                    context_matches = same_text(headers[1], context.text)
+                status = (
+                    "table: unassigned"
+                    if label is None
+                    else "table: correct"
+                    if same_text(headers[0], label.text)
+                    else "table: wrong"
+                )
+        elif not value.scope.eligible:
             status = "excluded by table rule"
         elif reference is not None and reference.disposition == "ambiguous":
             status = "ambiguous"
@@ -243,14 +337,19 @@ def evaluate(
                 status = "correct"
             else:
                 status = "wrong"
+            if context is not None and status in ("correct", "wrong"):
+                context_matches = label_matches(expected.box(), context.bbox)
         reviews.append(
             Review(
                 widget_index=value.native.index,
                 status=status,
                 expected=expected.text_hint
                 if expected is not None
-                else {
+                else table_reference
+                or {
                     "excluded by table rule": "Excluded: detected table",
+                    "table: unreviewed": "Detected table, cells not annotated",
+                    "table: no key": "Detected table, cells not annotated",
                     "ambiguous": "Ambiguous — no unique reference pairing",
                     "correct abstention": "No visible label",
                     "wrong: expected no label": "No visible label",
@@ -258,6 +357,8 @@ def evaluate(
                 predicted=label.text if label is not None else "No pairing",
                 expected_bbox=expected.box() if expected is not None else None,
                 predicted_bbox=label.bbox if label is not None else None,
+                context=context_text(assignment, candidate),
+                context_matches=context_matches,
                 features=candidate.features if candidate is not None else {},
                 reference_disposition=reference.disposition
                 if reference is not None
@@ -322,6 +423,11 @@ def page_report(
         "ambiguous": "#8a5a99",
         "correct abstention": "#16814b",
         "wrong: expected no label": "#c32932",
+        "table: correct": "#16814b",
+        "table: wrong": "#c32932",
+        "table: unassigned": "#a26700",
+        "table: unreviewed": "#316bbc",
+        "table: no key": "#737373",
     }
     overlays, options, descriptions = [], [], []
     for value, review in zip(assignment.values, reviews):
@@ -366,7 +472,7 @@ def page_report(
                 "Outside detected forms and tables; native widget remains eligible"
             )
         descriptions.append(
-            f'<section data-index="{index}" hidden><p><b>{html.escape(review.status)}</b></p><p>{html.escape(location)}</p><p>Reference: {html.escape(review.expected)}</p><p>{html.escape(review.reason)}</p><p>Chosen: {html.escape(review.predicted)}</p><p>{group_text}</p><details><summary>Score contributions</summary>{html.escape(feature_text) or "No candidate selected"}</details></section>'
+            f'<section data-index="{index}" hidden><p><b>{html.escape(review.status)}</b></p><p>{html.escape(location)}</p><p>Reference: {html.escape(review.expected)}</p><p>{html.escape(review.reason)}</p><p>Chosen: {html.escape(review.predicted)}</p><p>Context: {html.escape(review.context or "none")}</p><p>{group_text}</p><details><summary>Score contributions</summary>{html.escape(feature_text) or "No candidate selected"}</details></section>'
         )
     first = next(
         (r.widget_index for r in reviews if r.status == "wrong"),
@@ -406,12 +512,21 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--evidence", type=Path, default=root / "output/acroform-keying-review-20260908"
+        "--evidence",
+        type=Path,
+        default=root
+        / "output/acroform-keying-handover-20260916/output/frozen-review-evidence",
+        help="Directory with the frozen snapshots/ and pages/ of the review",
     )
     parser.add_argument(
-        "--out", type=Path, default=root / "output/acroform-keying-prototype"
+        "--out", type=Path, default=root / "output/acroform-keying-replay"
     )
-    parser.add_argument("--fixtures", type=Path)
+    parser.add_argument(
+        "--fixtures",
+        type=Path,
+        default=root / "output/acroform-keying-handover-20260916/fixtures",
+        help="Directory with the fixture PDFs named in the manifest",
+    )
     parser.add_argument("--only", nargs="*", default=[])
     parser.add_argument(
         "--null-cost",
@@ -483,6 +598,7 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     totals: Counter = Counter()
     group_totals: Counter = Counter()
+    context_totals: Counter = Counter()
     pages = []
     for path in snapshots:
         snapshot = Snapshot.model_validate_json(path.read_text(encoding="utf-8"))
@@ -541,6 +657,7 @@ def main() -> None:
         counts = Counter(r.status for r in reviews)
         totals.update(counts)
         group_totals.update(group_counts)
+        context_totals.update(context_counts(reviews))
         slug = f"{path.parent.name}-p{snapshot.page}"
         ordered_values, fields = associations(assignment)
         record = PageResult(
@@ -580,6 +697,7 @@ def main() -> None:
     summary = {
         "links": totals,
         "groups": group_totals,
+        "context": context_totals,
         "pages": pages,
         "reference_coverage": Counter(
             r.disposition for r in field_reviews if (r.fixture, r.page) in supplied
@@ -590,11 +708,11 @@ def main() -> None:
         json.dumps(summary, indent=2), encoding="utf-8"
     )
     rows = "".join(
-        f'<tr><td><a href="{html.escape(p["name"])}.html">{html.escape(p["name"])}</a></td><td>{p["counts"]["correct"]}</td><td>{p["counts"]["wrong"]}</td><td>{p["counts"]["unassigned"]}</td><td>{p["counts"]["correct abstention"]}</td><td>{p["counts"]["wrong: expected no label"]}</td><td>{p["counts"]["ambiguous"]}</td><td>{p["counts"]["excluded by table rule"]}</td></tr>'
+        f'<tr><td><a href="{html.escape(p["name"])}.html">{html.escape(p["name"])}</a></td><td>{p["counts"]["correct"]}</td><td>{p["counts"]["wrong"]}</td><td>{p["counts"]["unassigned"]}</td><td>{p["counts"]["correct abstention"]}</td><td>{p["counts"]["wrong: expected no label"]}</td><td>{p["counts"]["ambiguous"]}</td><td>{p["counts"]["table: correct"]} / {p["counts"]["table: wrong"]} / {p["counts"]["table: unreviewed"] + p["counts"]["table: no key"]}</td><td>{p["counts"]["excluded by table rule"]}</td></tr>'
         for p in pages
     )
     (args.out / "index.html").write_text(
-        f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AcroForm pairing prototype</title><style>body{{font:16px system-ui;margin:24px}}table{{border-collapse:collapse}}td,th{{padding:8px;text-align:left;border-bottom:1px solid #ddd}}a{{color:#2459a6}}</style><h1>AcroForm pairing prototype</h1><p>Every eligible field has been visually reviewed. {totals["excluded by table rule"]} widgets are excluded by detected tables; {totals["ambiguous"]} ambiguous cases are shown separately and not scored.</p><p>Visible labels: {totals["correct"]} spatial matches · {totals["wrong"]} wrong pairings · {totals["unassigned"]} missed labels.<br>No visible label: {totals["correct abstention"]} correctly left unpaired · {totals["wrong: expected no label"]} wrongly assigned a label.</p><p>Open a page to inspect references, predictions, cyan form areas and grey table exclusions. These are frozen Docling detections. A visual grid without a TABLE detection remains eligible. Local-label matching does not certify complete semantic keys; group annotations remain partial. This is a development set, not a held-out test.</p><table><thead><tr><th>Page</th><th>Matched label</th><th>Wrong label</th><th>Missed label</th><th>Correctly no label</th><th>Invented label</th><th>Ambiguous</th><th>Table excluded</th></tr></thead><tbody>{rows}</tbody></table></html>',
+        f'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AcroForm pairing prototype</title><style>body{{font:16px system-ui;margin:24px}}table{{border-collapse:collapse}}td,th{{padding:8px;text-align:left;border-bottom:1px solid #ddd}}a{{color:#2459a6}}</style><h1>AcroForm pairing prototype</h1><p>Every eligible field has been visually reviewed. {totals["excluded by table rule"]} widgets are excluded by detected tables; {totals["ambiguous"]} ambiguous cases are shown separately and not scored.</p><p>Visible labels: {totals["correct"]} spatial matches · {totals["wrong"]} wrong pairings · {totals["unassigned"]} missed labels.<br>No visible label: {totals["correct abstention"]} correctly left unpaired · {totals["wrong: expected no label"]} wrongly assigned a label.</p><p>Open a page to inspect references, predictions, cyan form areas and grey table exclusions. These are frozen Docling detections. A visual grid without a TABLE detection remains eligible. Local-label matching does not certify complete semantic keys; group annotations remain partial. This is a development set, not a held-out test.</p><table><thead><tr><th>Page</th><th>Matched label</th><th>Wrong label</th><th>Missed label</th><th>Correctly no label</th><th>Invented label</th><th>Ambiguous</th><th>Table rows: right / wrong / unreviewed</th><th>Table excluded</th></tr></thead><tbody>{rows}</tbody></table></html>',
         encoding="utf-8",
     )
     click.echo(f"Report: {args.out / 'index.html'}")

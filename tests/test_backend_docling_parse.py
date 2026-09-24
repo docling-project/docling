@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import pypdfium2 as pdfium
 import pytest
 from docling_core.types.doc import CoordOrigin
 from docling_core.types.doc.page import PdfCellRenderingMode
@@ -610,6 +611,7 @@ def test_non_threaded_page_backend_disables_bitmap_byte_materialization() -> Non
         textline_cells = [_FakeCell()]
         char_cells = [_FakeCell()]
         word_cells = [_FakeCell()]
+        widgets: list = []
 
     class _FakePdfDocument:
         def get_page(
@@ -704,6 +706,7 @@ def test_threaded_page_backend_disables_bitmap_materialization() -> None:
         textline_cells = [_FakeCell()]
         char_cells = [_FakeCell()]
         word_cells = [_FakeCell()]
+        widgets: list = []
         bitmap_resources: list[Any] = []
 
     result = _FakeThreadedResult(page_number=4)
@@ -909,3 +912,47 @@ def test_threaded_backend_filters_invisible_text_cells():
         }
     finally:
         doc_backend.unload()
+
+
+def _widget_offsets_from_text(backend_cls: Any, pdf_path: Path) -> list[tuple]:
+    """Each widget's top-left corner relative to the page's first word."""
+    in_doc = InputDocument(
+        path_or_stream=pdf_path, format=InputFormat.PDF, backend=backend_cls
+    )
+    doc_backend = in_doc._backend
+    page_backend = _load_first_page_backend(doc_backend)
+    try:
+        page = page_backend.get_segmented_page()
+        word = next(c for c in page.word_cells if c.text.strip()).rect.to_bounding_box()
+        widgets = [
+            w.rect.to_bounding_box().to_top_left_origin(page.dimension.height)
+            for w in page.widgets
+        ]
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
+    return [(round(b.l - word.l, 2), round(b.t - word.t, 2)) for b in widgets]
+
+
+@pytest.mark.parametrize(
+    "backend_cls",
+    [DoclingParseDocumentBackend, ThreadedDoclingParseDocumentBackend],
+    ids=["docling_parse", "threaded_docling_parse"],
+)
+def test_widgets_move_with_the_text_when_the_crop_box_is_offset(
+    tmp_path: Path, backend_cls: Any
+) -> None:
+    # Text cells are relative to the visible page (crop box); widget rectangles
+    # must be too, or they sit off their captions when the crop box does not
+    # start at the PDF origin.
+    source = Path("tests/data/pdf/sources/acroform_sample.pdf")
+    shifted = tmp_path / "shifted_crop.pdf"
+    pdf = pdfium.PdfDocument(source)
+    left, bottom, right, top = pdf[0].get_mediabox()
+    pdf[0].set_cropbox(left + 20, bottom + 30, right, top)
+    pdf.save(shifted)
+    pdf.close()
+
+    expected = _widget_offsets_from_text(backend_cls, source)
+    assert len(expected) == 4
+    assert _widget_offsets_from_text(backend_cls, shifted) == expected

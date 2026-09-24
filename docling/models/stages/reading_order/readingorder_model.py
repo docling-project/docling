@@ -592,6 +592,10 @@ class ReadingOrderModel:
                                 page_no=element.page_no,
                                 page_height=page_height,
                             )
+                        if item.context_text:
+                            out_doc.add_field_hint(
+                                text=item.context_text, parent=field_item
+                            )
 
                 elif isinstance(element, ContainerElement):
                     group_label = (
@@ -655,7 +659,7 @@ class ReadingOrderModel:
                     if value.checkbox == "selected"
                     else DocItemLabel.CHECKBOX_UNSELECTED
                 ),
-                text=value.checkbox_label,
+                text="",
                 parent=field_value,
             )
         return field_value
@@ -700,6 +704,10 @@ class ReadingOrderModel:
                     parent=field_item,
                     page_no=element.page_no,
                     page_height=page_height,
+                )
+            if element.field_item.context_text:
+                out_doc.add_field_hint(
+                    text=element.field_item.context_text, parent=field_item
                 )
             return field_item, current_list
         if label == DocItemLabel.LIST_ITEM:

@@ -5,7 +5,7 @@ import json
 from pathlib import Path, PurePath
 from unittest.mock import MagicMock
 
-from docling_core.types.doc import BoundingBox, DocItemLabel, Size
+from docling_core.types.doc import BoundingBox, DocItemLabel, Size, TableCell
 from docling_core.types.doc.items.form import FieldItem, FieldValueItem
 from docling_core.types.doc.page import BoundingRectangle, PdfWidget, TextCell
 
@@ -17,6 +17,8 @@ from docling.datamodel.base_models import (
     InputFormat,
     LayoutPrediction,
     Page,
+    Table,
+    TableStructurePrediction,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -314,57 +316,44 @@ def test_suppresses_rendered_duplicate_of_filled_widget() -> None:
     assert inside not in remaining  # contained duplicate dropped
     assert outside in remaining  # coincidental match kept
     assert form.children == []  # child ref pruned so assembly stays consistent
+    # A printed number is never a caption: the value stays keyless.
+    assert page.predictions.field_regions[0].items[0].key_text == ""
 
 
-def _checkbox_cluster(
-    cluster_id: int, bbox: BoundingBox, *, label: str, mark: str
-) -> Cluster:
-    cells = [
-        TextCell(
-            index=0,
-            rect=BoundingRectangle.from_bounding_box(bbox),
-            text=label,
-            orig=label,
-            from_ocr=False,
-        ),
-        TextCell(
-            index=1,
-            rect=BoundingRectangle.from_bounding_box(bbox),
-            text=mark,
-            orig=mark,
-            from_ocr=False,
-        ),
-    ]
-    return Cluster(
-        id=cluster_id,
-        label=DocItemLabel.CHECKBOX_SELECTED,
-        bbox=bbox,
-        cells=cells,
-    )
+def _checkbox_cluster(cluster_id: int, bbox: BoundingBox) -> Cluster:
+    # The layout model's checkbox clusters carry the detected mark, no text.
+    return Cluster(id=cluster_id, label=DocItemLabel.CHECKBOX_SELECTED, bbox=bbox)
 
 
-def test_checkbox_widget_lifts_cluster_label_and_lets_as_override_classifier() -> None:
-    # The widget rect sits inside a CHECKBOX_SELECTED cluster that also absorbed
-    # the option label "4797" and the mark glyph. The cluster's text is lifted
-    # verbatim onto the value and the cluster is promoted out of the plain-text
-    # stream; but /AS ("/Off") -- not the classifier's "selected" -- decides state.
+def test_checkbox_widget_keys_its_option_caption_and_lets_as_override_classifier() -> (
+    None
+):
+    # A /Btn widget with its printed option caption to its right. The layout
+    # model also detected the box as CHECKBOX_SELECTED (a mark glyph), but /AS
+    # ("/Off") -- not the classifier -- decides the state. The caption becomes
+    # the key and leaves the body; the value keeps the widget's own rect.
     widget_bbox = BoundingBox(l=10, t=10, r=18, b=18)
-    cluster_bbox = BoundingBox(l=8, t=8, r=40, b=20)
-    cb_cluster = _checkbox_cluster(2, cluster_bbox, label="4797", mark="✔")
+    caption_bbox = BoundingBox(l=22, t=10, r=80, b=18)
+    caption = _text_cluster(2, caption_bbox, "Married filing jointly")
+    glyph = _checkbox_cluster(3, BoundingBox(l=9, t=9, r=19, b=19))
     widget = _widget(0, widget_bbox, "/Off", field_type="/Btn", appearance_state="/Off")
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=[widget])
-    page.predictions.layout = LayoutPrediction(clusters=[cb_cluster])
+    page.predictions.layout = LayoutPrediction(clusters=[caption, glyph])
     conv_res = _conversion_result(page)
 
     list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
 
-    value = page.predictions.field_regions[0].items[0].values[0]
+    (region,) = page.predictions.field_regions
+    (item,) = region.items
+    (value,) = item.values
+    assert item.key_text == "Married filing jointly"
+    assert item.key_bbox == caption_bbox
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
-    assert value.checkbox_label == "4797 ✔"  # cluster text lifted as-is
-    assert value.bbox == cluster_bbox  # prov wraps the whole cluster, not the widget
-    assert cb_cluster not in page.predictions.layout.clusters  # promoted, not left
+    assert value.bbox == widget_bbox
+    assert caption not in page.predictions.layout.clusters  # promoted to a key
+    assert glyph in page.predictions.layout.clusters  # the mark is no caption
 
 
 def test_pipeline_materializes_format_neutral_fields() -> None:
@@ -453,15 +442,15 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
 
 
 def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
-    # IRS Sch.1 line 7 shape: a sentence inlines a checkbox and a fillable amount.
-    # The layout detects the whole line as one text cluster enclosing both
-    # widgets; a FORM cluster also wraps the page. The smaller text cluster is the
-    # more specific host, so both widgets group under one keyed item -- key = the
-    # paragraph, two values (checkbox + amount) -- not two keyless FORM fields.
+    # IRS Sch.1 line 7 shape: a sentence inlines a checkbox and fillable
+    # amounts. The layout detects the whole line as one text cluster enclosing
+    # the widgets; a FORM cluster also wraps the page. The paragraph keys all
+    # of them as one clause, hosts the item in place (its text is the key) and
+    # stays in the layout -- not three keyless FORM fields.
     paragraph = _text_cluster(
         1,
         BoundingBox(l=10, t=10, r=90, b=20),
-        "check here and enter amount repaid:",
+        "check here and enter amount repaid and interest:",
     )
     page_form = Cluster(
         id=2, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=100)
@@ -469,12 +458,13 @@ def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
     widgets = [
         _widget(
             0,
-            BoundingBox(l=40, t=12, r=44, b=18),
+            BoundingBox(l=30, t=12, r=34, b=18),
             "",
             field_type="/Btn",
             appearance_state="/Off",
         ),
-        _widget(1, BoundingBox(l=70, t=12, r=85, b=18), "1221.00"),
+        _widget(1, BoundingBox(l=55, t=12, r=68, b=18), "1221.00"),
+        _widget(2, BoundingBox(l=74, t=12, r=87, b=18), "12.50"),
     ]
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=widgets)
@@ -492,12 +482,165 @@ def test_widgets_inlined_in_paragraph_group_into_one_keyed_item() -> None:
     assert len(keyed) == 1
     region, item = keyed[0]
     assert region.source_container_id == paragraph.id
-    assert item.key_text == "check here and enter amount repaid:"
+    assert item.key_text == "check here and enter amount repaid and interest:"
     assert item.key_bbox == paragraph.bbox
     assert [(v.text, v.checkbox) for v in item.values] == [
         ("", "unselected"),
         ("1221.00", None),
+        ("12.50", None),
     ]
     # The paragraph stays in the layout -- it is reinterpreted as a field_item in
     # place at materialization, keeping its position in its list/container.
     assert paragraph in page.predictions.layout.clusters
+
+
+def _table_page(*, with_structure: bool) -> tuple[Page, Cluster]:
+    """A two-by-two table whose empty amount cell holds a widget.
+
+    TableFormer cell boxes cover their text, so the widget sits in the row and
+    column bands of the table without being inside any detected cell.
+    """
+
+    def cell(text, bbox, row, col, *, header=False):
+        return TableCell(
+            text=text,
+            bbox=bbox,
+            start_row_offset_idx=row,
+            end_row_offset_idx=row + 1,
+            start_col_offset_idx=col,
+            end_col_offset_idx=col + 1,
+            column_header=header,
+        )
+
+    cells = [
+        cell("Item", BoundingBox(l=2, t=2, r=20, b=8), 0, 0, header=True),
+        cell("Amount", BoundingBox(l=52, t=2, r=70, b=8), 0, 1, header=True),
+        cell("Total income", BoundingBox(l=2, t=22, r=40, b=28), 1, 0),
+        cell("", BoundingBox(l=52, t=22, r=70, b=28), 1, 1),
+    ]
+    table = Cluster(
+        id=1, label=DocItemLabel.TABLE, bbox=BoundingBox(l=0, t=0, r=100, b=40)
+    )
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(
+        widgets=[_widget(0, BoundingBox(l=55, t=20, r=75, b=30), "1,000")]
+    )
+    page.predictions.layout = LayoutPrediction(clusters=[table])
+    if with_structure:
+        page.predictions.tablestructure = TableStructurePrediction(
+            table_map={
+                table.id: Table(
+                    label=table.label,
+                    id=table.id,
+                    page_no=page.page_no,
+                    cluster=table,
+                    otsl_seq=[],
+                    num_rows=2,
+                    num_cols=2,
+                    table_cells=cells,
+                )
+            }
+        )
+    return page, table
+
+
+def test_widget_in_table_cell_keys_row_caption_with_column_header_as_hint(
+    caplog,
+) -> None:
+    page, _ = _table_page(with_structure=True)
+    conv_res = _conversion_result(page)
+
+    with caplog.at_level("WARNING"):
+        list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
+    assert "Form field" not in caplog.text  # the keying ran, not the fallback
+
+    (region,) = page.predictions.field_regions
+    (item,) = region.items
+    assert item.key_text == "Total income"
+    assert item.context_text == "Amount"
+    assert [value.text for value in item.values] == ["1,000"]
+    # The table keeps its cells: nothing is promoted out of the layout.
+    assert [cluster.id for cluster in page.predictions.layout.clusters] == [1]
+
+    page._backend = MagicMock()
+    page._backend.is_valid.return_value = True
+    list(PageAssembleModel(PageAssembleOptions())(conv_res, [page]))
+    assert page.assembled is not None
+    conv_res.assembled = AssembledUnit(
+        elements=page.assembled.elements,
+        body=page.assembled.body,
+        headers=page.assembled.headers,
+    )
+    doc = ReadingOrderModel(ReadingOrderOptions())(conv_res)
+    (field_item,) = doc.field_items
+    children = [child.resolve(doc) for child in field_item.children]
+    assert [child.label for child in children] == [
+        DocItemLabel.FIELD_KEY,
+        DocItemLabel.FIELD_VALUE,
+        DocItemLabel.FIELD_HINT,
+    ]
+    assert [child.text for child in children] == ["Total income", "1,000", "Amount"]
+    assert children[2].prov == []  # the hint names a header, it has no box
+    doc.validate_document()
+
+
+def test_widget_in_table_without_structure_stays_keyless() -> None:
+    # Table keys come from TableFormer cells: without table structure the
+    # widget keeps its value and no free-form caption crosses into the table.
+    page, _ = _table_page(with_structure=False)
+
+    list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    (region,) = page.predictions.field_regions
+    (item,) = region.items
+    assert item.key_text == ""
+    assert item.context_text == ""
+    assert [value.text for value in item.values] == ["1,000"]
+
+
+def test_keying_failure_keeps_values_without_keys(caplog) -> None:
+    # Two widgets sharing one native index is malformed input the keying
+    # rejects. The page must not fail: its values come through unkeyed and the
+    # caption stays in the body.
+    caption = _text_cluster(2, BoundingBox(l=22, t=10, r=80, b=18), "Full name")
+    form = Cluster(
+        id=1, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=60)
+    )
+    widgets = [
+        _widget(0, BoundingBox(l=10, t=10, r=18, b=18), "Ada"),
+        _widget(0, BoundingBox(l=10, t=30, r=18, b=38), "Lovelace"),
+    ]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[form, caption])
+
+    with caplog.at_level("WARNING"):
+        list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    assert "Form field keying failed on page 1" in caplog.text
+    (region,) = page.predictions.field_regions
+    assert region.source_container_id == form.id
+    assert [(item.key_text, item.values[0].text) for item in region.items] == [
+        ("", "Ada"),
+        ("", "Lovelace"),
+    ]
+    assert caption in page.predictions.layout.clusters
+
+
+def test_inline_host_is_not_dropped_as_rendered_duplicate() -> None:
+    # A filled widget whose painted value the layout absorbed into a paragraph
+    # slightly larger than the widget: the paragraph keys the widget and hosts
+    # the item in place, so it must stay in the layout even though its text
+    # equals the value's and most of it sits inside the widget rect.
+    host = _text_cluster(1, BoundingBox(l=10, t=10, r=90, b=20), "Amount 12")
+    widgets = [_widget(0, BoundingBox(l=12, t=11, r=88, b=19), "Amount 12")]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[host])
+
+    list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    (region,) = page.predictions.field_regions
+    assert region.source_container_id == host.id
+    assert region.items[0].key_text == "Amount 12"
+    assert host in page.predictions.layout.clusters

@@ -1,8 +1,24 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import statistics
+"""Native AcroForm widgets keyed to their printed captions.
+
+The stage runs after table structure. For every page with widgets it builds
+the keying snapshot (widgets, layout regions, detected table cells), lets
+``keying.assign`` choose the caption of each value, and turns the result into
+``FieldRegionPrediction``s: one item per association, with the caption as key
+and the column header of a grid as context. Items are placed as the original
+stage placed its values: a paragraph that inlines all of an item's widgets
+hosts the item in place, otherwise the enclosing FORM region does, otherwise a
+page-wide region. Caption text that became a key leaves the body, and text
+blocks that merely re-render a filled value are dropped. A page whose keying
+fails keeps its values, without keys.
+"""
+
+import logging
+from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
 from docling_core.types.doc.page import PdfWidget
@@ -15,97 +31,302 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.models.base_layout_model import TABLE_LABELS, TEXT_ELEM_LABELS
+from docling.models.base_layout_model import PAGE_HEADER_LABELS, TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
+from docling.models.stages.form_field.keying import (
+    Assignment,
+    DetectedTable,
+    Label,
+    NativeWidget,
+    Region,
+    Snapshot,
+    Tables,
+    assign,
+)
 from docling.utils.profiling import TimeRecorder
 
+_log = logging.getLogger(__name__)
 
-def _gap(w: BoundingBox, c: BoundingBox) -> float:
-    """Rectangle edge-gap between a widget and a candidate label.
+# Layout regions whose cells never become labels (same list as keying.inputs).
+NOT_LABELS = {
+    DocItemLabel.FORM,
+    DocItemLabel.KEY_VALUE_REGION,
+    DocItemLabel.TABLE,
+    DocItemLabel.DOCUMENT_INDEX,
+    DocItemLabel.PICTURE,
+}
+# Paragraphs that may host an item in place. Code, and captions or footnotes
+# attached to a table or picture, take reading-order paths that ignore
+# TextElement.field_item.
+INLINE_HOSTS = set(TEXT_ELEM_LABELS) - {
+    DocItemLabel.CODE,
+    DocItemLabel.CAPTION,
+    DocItemLabel.FOOTNOTE,
+    *PAGE_HEADER_LABELS,
+}
 
-    Top-left origin: ``t`` is the upper edge (smaller y), ``b`` the lower. The gap
-    is the direction logic for free -- a label directly left shares a horizontal
-    band (``dy=0``, gap = horizontal spacing); a label above/below shares a
-    vertical band (``dx=0``, gap = vertical spacing); a diagonal distractor has
-    both nonzero and so scores worse. Zero when the rects overlap on both axes.
+
+@dataclass
+class _Unit:
+    """One field item built from one association, or from one unkeyed value."""
+
+    item: FieldItemPrediction
+    positions: list[int]  # indices into Assignment.values
+    consumed: Label | None  # label whose text leaves the body
+
+
+@dataclass
+class _Plan:
+    """Everything the stage writes to a page, computed before any edit."""
+
+    regions: list[FieldRegionPrediction]
+    dropped: set[int]  # clusters whose text became keys
+    hosts: set[int]  # paragraphs that carry an item in place; never dropped
+    values: list[FieldValuePrediction]
+
+
+def _walk(clusters: list[Cluster]) -> dict[int, Cluster]:
+    """Every cluster by id, children included."""
+    found: dict[int, Cluster] = {}
+    pending = list(clusters)
+    while pending:
+        cluster = pending.pop()
+        if cluster.id not in found:
+            found[cluster.id] = cluster
+            pending.extend(cluster.children)
+    return found
+
+
+def _printable(cluster: Cluster) -> set[int]:
+    return {cell.index for cell in cluster.cells if cell.text.strip()}
+
+
+def _rounded(box: BoundingBox) -> tuple[float, ...]:
+    return tuple(round(x, 3) for x in box.as_tuple())
+
+
+def to_snapshot(page: Page) -> Snapshot:
+    """The keying input of a live page, with the meaning of a frozen snapshot."""
+    assert page.size is not None and page.parsed_page is not None
+    assert page.predictions.layout is not None
+    structure = page.predictions.tablestructure
+    return Snapshot(
+        page=page.page_no,
+        size=page.size,
+        widgets=[
+            NativeWidget.model_validate(w.model_dump())
+            for w in page.parsed_page.widgets
+        ],
+        # Copies: committing the plan later edits the live clusters.
+        layout=[
+            Region.model_validate(c.model_dump(mode="json"))
+            for c in page.predictions.layout.clusters
+        ],
+        tables=Tables(
+            table_map={}
+            if structure is None
+            else {
+                table_id: DetectedTable(table_cells=table.table_cells)
+                for table_id, table in structure.table_map.items()
+            }
+        ),
+    )
+
+
+def _atom_sources(
+    assignment: Assignment, page: Page
+) -> tuple[dict[int, tuple[int, int]], set[int]]:
+    """Atom -> (cluster id, cell index), plus clusters that must stay in the body.
+
+    Labels keep no cluster id, but keying.inputs emits a one-cell label with
+    the cell's own box and text for every cell it keeps. A cell the layout put
+    in two clusters leaves both clusters in place ("unsure").
     """
-    dx = max(0.0, w.l - c.r, c.l - w.r)
-    dy = max(0.0, w.t - c.b, c.t - w.b)
-    return dx + dy
+    assert page.size is not None and page.predictions.layout is not None
+    where: dict[tuple[tuple[float, ...], str], set[tuple[int, int]]] = defaultdict(set)
+    for cluster in _walk(page.predictions.layout.clusters).values():
+        if cluster.label in NOT_LABELS:
+            continue
+        for cell in cluster.cells:
+            if text := cell.text.strip():
+                box = cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
+                where[_rounded(box), text].add((cluster.id, cell.index))
+    sources: dict[int, tuple[int, int]] = {}
+    unsure: set[int] = set()
+    for label in assignment.labels:
+        if len(label.atoms) != 1:
+            continue
+        (atom,) = label.atoms
+        found = where[_rounded(label.bbox), label.text]
+        if not found:
+            raise ValueError(
+                f"Page {page.page_no}: label {label.text!r} has no layout cell"
+            )
+        sources[atom] = min(found)
+        if len({cluster_id for cluster_id, _ in found}) > 1:
+            unsure |= {cluster_id for cluster_id, _ in found}
+    return sources, unsure
 
 
-def _precedes(c: BoundingBox, frontier: BoundingBox, row_band: float) -> bool:
-    """True when ``c`` sits in a strictly higher row than ``frontier``.
+def _build_units(
+    assignment: Assignment, values: list[FieldValuePrediction]
+) -> list[_Unit]:
+    """One field item per selected association, plus one per unkeyed value."""
+    units: list[_Unit] = []
+    owned: set[int] = set()
+    for candidate in (assignment.candidates[i] for i in assignment.selected):
+        # A group question stays as ordinary text: each option keeps its own
+        # caption as key.
+        if candidate.kind == "choice_group":
+            continue
+        label = assignment.labels[candidate.label]
+        units.append(
+            _Unit(
+                FieldItemPrediction(
+                    key_text=label.text,
+                    key_bbox=label.bbox,
+                    values=[values[m] for m in candidate.members],
+                    context_text=""
+                    if candidate.context is None
+                    else assignment.labels[candidate.context].text,
+                ),
+                list(candidate.members),
+                # Table-cell labels have no atoms: the table keeps its text.
+                label if label.atoms else None,
+            )
+        )
+        owned.update(candidate.members)
+    units += [
+        _Unit(FieldItemPrediction(values=[value]), [m], None)
+        for m, value in enumerate(values)
+        if m not in owned
+    ]
+    return sorted(units, key=lambda u: min(u.positions))
 
-    The no-crossing guard blocks a later widget from reaching back to a label in
-    an earlier (higher) row -- vertical monotonicity only. It deliberately does
-    *not* gate on left/right within a row: horizontal order is where multi-column
-    forms interleave, and binding a right-side label (e.g. a trailing "RT")
-    otherwise poisons the frontier so every left-side label in the next row is
-    wrongly seen as preceding it. Per-label 1:1 consumption (``used``) handles
-    the same-row case instead. ``row_band`` (a line-height multiple) is how much
-    higher a center must be to count as a previous row.
+
+def _inline_hosts(
+    units: list[_Unit],
+    assignment: Assignment,
+    sources: dict[int, tuple[int, int]],
+    page: Page,
+    unsure: set[int],
+) -> dict[int, Cluster]:
+    """Units whose key is one whole paragraph holding all their widgets.
+
+    Such a paragraph stays in place as a field item (see TextElement.field_item);
+    page assembly attaches one item per paragraph.
     """
-    cy, fy = (c.t + c.b) / 2.0, (frontier.t + frontier.b) / 2.0
-    return cy < fy - row_band
-
-
-def _table_of(bbox: BoundingBox, tables: list[Cluster]) -> int | None:
-    """Id of the smallest table region whose bbox holds ``bbox``'s center, else None.
-
-    The label binding must not cross this boundary. A table body cell's real key is
-    a structural row/column header the layout absorbs into the table (never a
-    free-standing label in the binding pool), so a widget inside a table stays
-    keyless unless a label sits in the *same* table -- a cell carrying its own
-    key+value, e.g. a radio option with its caption. Center-in-rect is robust at
-    cell borders where an edge label's IoS with the table is fragile; smallest
-    enclosing table wins so a nested sub-table beats its wrapper.
-    """
-    cx, cy = (bbox.l + bbox.r) / 2.0, (bbox.t + bbox.b) / 2.0
-    best: tuple[float, int] | None = None
-    for table in tables:
-        tb = table.bbox
+    assert page.predictions.layout is not None
+    top = {c.id: c for c in page.predictions.layout.clusters}
+    users: dict[int, set[int]] = defaultdict(set)
+    for k, unit in enumerate(units):
+        if unit.consumed is not None:
+            for atom in unit.consumed.atoms:
+                users[sources[atom][0]].add(k)
+    hosts: dict[int, Cluster] = {}
+    for k, unit in enumerate(units):
+        if unit.consumed is None:
+            continue
+        clusters = {sources[atom][0] for atom in unit.consumed.atoms}
+        if len(clusters) != 1:
+            continue
+        (cluster_id,) = clusters
+        host = top.get(cluster_id)
         if (
-            tb.l <= cx <= tb.r
-            and tb.t <= cy <= tb.b
-            and (best is None or tb.area() < best[0])
+            host is not None
+            and cluster_id not in unsure
+            and host.label in INLINE_HOSTS
+            and users[cluster_id] == {k}
+            and {sources[atom][1] for atom in unit.consumed.atoms} == _printable(host)
+            and all(
+                assignment.values[m].bbox.intersection_over_self(host.bbox)
+                >= PdfFormFieldModel._FORM_COVERAGE_THRESHOLD
+                for m in unit.positions
+            )
         ):
-            best = (tb.area(), table.id)
-    return best[1] if best else None
+            hosts[k] = host
+    return hosts
 
 
-def _match_labels(
-    widgets: list[tuple[int, BoundingBox]],  # (widget.index, bbox), in index order
-    labels: list[Cluster],  # unconsumed TEXT_ELEM_LABELS clusters
-    cap: float,  # bind only if gap <= cap (text-scale bound, same units as bbox)
-    row_band: float,  # same-row tolerance for the crossing guard
-) -> dict[int, Cluster]:  # widget.index -> bound key cluster
-    """Monotonic order-preserving binding of widgets to label clusters.
+def _place(
+    units: list[_Unit],
+    hosts: dict[int, Cluster],
+    assignment: Assignment,
+    page: Page,
+) -> list[FieldRegionPrediction]:
+    """The three placement routes: inline paragraph, FORM region, page-wide."""
+    assert page.predictions.layout is not None
+    forms = [
+        c for c in page.predictions.layout.clusters if c.label == DocItemLabel.FORM
+    ]
+    regions: list[FieldRegionPrediction] = []
+    by_form: dict[int, list[FieldItemPrediction]] = defaultdict(list)
+    loose: list[FieldItemPrediction] = []
+    for k, unit in enumerate(units):
+        host = hosts.get(k)
+        if host is not None:
+            regions.append(
+                FieldRegionPrediction(
+                    source_container_id=host.id, bbox=host.bbox, items=[unit.item]
+                )
+            )
+            continue
+        first = assignment.values[min(unit.positions)].bbox
+        form = PdfFormFieldModel._match_form(first, forms)
+        (loose if form is None else by_form[form.id]).append(unit.item)
+    boxes = {form.id: form.bbox for form in forms}
+    regions += [
+        FieldRegionPrediction(
+            source_container_id=form_id, bbox=boxes[form_id], items=items
+        )
+        for form_id, items in by_form.items()
+    ]
+    if loose:
+        regions.append(
+            FieldRegionPrediction(
+                bbox=BoundingBox.enclosing_bbox(
+                    [value.bbox for item in loose for value in item.values]
+                ),
+                items=loose,
+            )
+        )
+    return regions
 
-    One forward pass in ``widget.index`` order (proven effectively reading order).
-    Each widget takes the nearest unconsumed label at or after the last binding in
-    reading order, within ``cap``. Minimizing total gap subject to no-crossings
-    *is* "minimize global ordering deviation"; a widget with no label in reach (a
-    standalone tabular field) falls out as a skip. Binding is 1:1 -- a shared
-    header binds one field and the rest stay keyless (a later-phase concern).
+
+def _table_children(page: Page) -> set[int]:
+    """Text blocks inside a structured table: its TableFormer cells show the text."""
+    assert page.predictions.layout is not None
+    return {
+        child.id
+        for cluster in _walk(page.predictions.layout.clusters).values()
+        if cluster.label in {DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX}
+        for child in cluster.children
+    }
+
+
+def _consumed_clusters(
+    units: list[_Unit],
+    sources: dict[int, tuple[int, int]],
+    page: Page,
+    keep: set[int],
+) -> set[int]:
+    """Clusters whose every printable cell became key text.
+
+    A cluster only partly used stays in the body, so its text shows twice.
     """
-    bound: dict[int, Cluster] = {}
-    used: set[int] = set()
-    frontier: BoundingBox | None = None  # last bound label -> no crossing past it
-    for index, w in widgets:
-        best: tuple[float, Cluster] | None = None
-        for c in labels:
-            if c.id in used or (
-                frontier is not None and _precedes(c.bbox, frontier, row_band)
-            ):
-                continue
-            g = _gap(w, c.bbox)
-            if g <= cap and (best is None or g < best[0]):
-                best = (g, c)
-        if best is not None:
-            bound[index], frontier = best[1], best[1].bbox
-            used.add(best[1].id)
-    return bound
+    assert page.predictions.layout is not None
+    clusters = _walk(page.predictions.layout.clusters)
+    used: dict[int, set[int]] = defaultdict(set)
+    for unit in units:
+        if unit.consumed is not None:
+            for atom in unit.consumed.atoms:
+                cluster_id, cell_index = sources[atom]
+                used[cluster_id].add(cell_index)
+    return {
+        cluster_id
+        for cluster_id, cells in used.items()
+        if cluster_id not in keep and cells >= _printable(clusters[cluster_id])
+    }
 
 
 class PdfFormFieldModel(BasePageModel):
@@ -115,33 +336,27 @@ class PdfFormFieldModel(BasePageModel):
     # of it sits inside the widget rect. Guards against deleting ordinary printed
     # text that merely equals a field value by coincidence.
     _DUPLICATE_CONTAINMENT_THRESHOLD = 0.6
-    # A layout CHECKBOX_* cluster is the visual twin of a /Btn widget when this
-    # much of the (small) widget rect sits inside the cluster. The mark glyph the
-    # layout model detects overlaps the widget square only partially and the
-    # cluster also absorbs the neighbouring option label, so the gate is well
-    # below full containment; on f1040s1_filled the real match measures ~0.70.
-    # ponytail: overlap-only heuristic, single filled fixture -- widen the corpus
-    # before tightening. Unselected boxes usually have no overlapping cluster and
-    # fall through to the widget-only path (see docs handoff prereq B.5).
-    _CHECKBOX_OVERLAP_THRESHOLD = 0.5
-    # Bind a keyless widget to a nearby label only when their rectangle edge-gap
-    # is within this many median line-heights -- a text-scale bound, not a page
-    # fraction, so a field with no nearby label stays keyless. Row-band is the
-    # same-row tolerance for the crossing guard. Both are the calibration knobs
-    # the fixtures set; ponytail: 2.0 / 1.5 are the starting points, tune on the
-    # 15-form corpus before trusting them.
-    _LABEL_GAP_CAP_LINES = 2.0
-    _LABEL_ROW_BAND_LINES = 1.5
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
+        if enabled:
+            # The keying's integer program needs scipy.optimize.milp (SciPy
+            # 1.9+). Fail at construction rather than page by page.
+            try:
+                from scipy.optimize import milp
+            except ImportError as error:
+                raise ImportError(
+                    "extract_form_fields requires SciPy 1.9 or later "
+                    "(scipy.optimize.milp)"
+                ) from error
 
     @classmethod
     def _is_skipped(cls, widget: PdfWidget, bbox: BoundingBox) -> bool:
         """Widgets that carry no field value for the document.
 
         A widget of zero height or width is an artifact (Well-Tagged PDF 1.0,
-        8.9.2.4.13). Push buttons trigger actions and hold no value.
+        8.9.2.4.13). Push buttons trigger actions and hold no value. The same
+        rule lives in keying.inputs, so both sides see the same values.
         """
         if bbox.width <= 0 or bbox.height <= 0:
             return True
@@ -183,43 +398,6 @@ class PdfFormFieldModel(BasePageModel):
 
         return FieldValuePrediction(text=source_value, orig=source_value, bbox=bbox)
 
-    @staticmethod
-    def _median_line_height(clusters: list[Cluster]) -> float:
-        """Text scale for the label-gap cap: median label-cluster height.
-
-        Most field labels are a single line, so cluster height is a good line-height
-        proxy without digging into per-cell rects. Zero when there are no labels,
-        which short-circuits the binding pass.
-        """
-        heights = [c.bbox.height for c in clusters if c.bbox.height > 0]
-        return statistics.median(heights) if heights else 0.0
-
-    @classmethod
-    def _cluster_label_text(cls, cluster: Cluster) -> str:
-        """Option label of a checkbox cluster (mark glyph included, if detected)."""
-        return " ".join(
-            cell.text.strip() for cell in cluster.cells if cell.text.strip()
-        )
-
-    @classmethod
-    def _match_checkbox_cluster(
-        cls, widget_bbox: BoundingBox, clusters: list[Cluster]
-    ) -> Cluster | None:
-        """Find the CHECKBOX_* cluster whose detected mark hosts this widget.
-
-        Match on the widget rect sitting inside the cluster (``IoS(widget,
-        cluster)``), not the reverse: the cluster is larger because it absorbs the
-        neighbouring option label, so the widget is the subset.
-        """
-        best: tuple[float, Cluster] | None = None
-        for cluster in clusters:
-            ios = widget_bbox.intersection_over_self(cluster.bbox)
-            if ios > cls._CHECKBOX_OVERLAP_THRESHOLD and (
-                best is None or ios > best[0]
-            ):
-                best = (ios, cluster)
-        return best[1] if best else None
-
     @classmethod
     def _match_form(
         cls, widget_bbox: BoundingBox, forms: list[Cluster]
@@ -241,27 +419,6 @@ class PdfFormFieldModel(BasePageModel):
             ),
         )[1]
 
-    @classmethod
-    def _match_text_container(
-        cls, widget_bbox: BoundingBox, text_clusters: list[Cluster]
-    ) -> Cluster | None:
-        """Smallest text cluster that inlines this widget (the paragraph key).
-
-        Precedence after FORM: a widget with no FORM host may sit inside a text
-        paragraph (e.g. "check here [] and enter amount: 1221.00"). The smallest
-        enclosing cluster is the guard against attaching to a big wrapping block
-        -- it is the whole "is this widget really inlined in this paragraph"
-        decision.
-        """
-        best: tuple[float, Cluster] | None = None
-        for cluster in text_clusters:
-            ios = widget_bbox.intersection_over_self(cluster.bbox)
-            if ios >= cls._FORM_COVERAGE_THRESHOLD and (
-                best is None or cluster.bbox.area() < best[1].bbox.area()
-            ):
-                best = (ios, cluster)
-        return best[1] if best else None
-
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -275,210 +432,128 @@ class PdfFormFieldModel(BasePageModel):
                 continue
 
             with TimeRecorder(conv_res, "form_field"):
-                assert page.size is not None
-                assert page.predictions.layout is not None
-                forms = [
-                    cluster
-                    for cluster in page.predictions.layout.clusters
-                    if cluster.label == DocItemLabel.FORM
-                ]
-                checkbox_clusters = [
-                    cluster
-                    for cluster in page.predictions.layout.clusters
-                    if cluster.label
-                    in {
-                        DocItemLabel.CHECKBOX_SELECTED,
-                        DocItemLabel.CHECKBOX_UNSELECTED,
-                    }
-                ]
-                text_clusters = [
-                    cluster
-                    for cluster in page.predictions.layout.clusters
-                    if cluster.label in TEXT_ELEM_LABELS
-                ]
-                matched_values: dict[int, list[FieldValuePrediction]] = {}
-                matched_forms: dict[int, Cluster] = {}
-                text_values: dict[int, list[FieldValuePrediction]] = {}
-                text_containers: dict[int, Cluster] = {}
-                unmatched_values: list[FieldValuePrediction] = []
-                promoted_cluster_ids: set[int] = set()
-                # (widget.index, value) for keyless widgets, in index order, fed to
-                # the order-preserving label binding after the triage loop.
-                keyless: list[tuple[int, FieldValuePrediction]] = []
-
-                for widget in page.parsed_page.widgets:
-                    bbox = widget.rect.to_bounding_box().to_top_left_origin(
-                        page.size.height
-                    )
-                    if self._is_skipped(widget, bbox):
-                        continue
-                    value = self._normalize_widget(widget, bbox)
-                    if value.checkbox is not None:
-                        # Lift the visual checkbox's option label onto the value
-                        # and take it out of the plain-text stream: state stays
-                        # from /AS (already on value.checkbox), the label rides
-                        # on the nested child. The classifier's own state guess
-                        # is discarded -- /AS is authoritative.
-                        cluster = self._match_checkbox_cluster(bbox, checkbox_clusters)
-                        if cluster is not None:
-                            value.checkbox_label = self._cluster_label_text(cluster)
-                            # The layout cluster encloses both the widget square
-                            # and its option label; take its bbox as the field
-                            # item's prov so the box wraps the whole checkbox, not
-                            # just the tiny widget rect.
-                            value.bbox = cluster.bbox
-                            promoted_cluster_ids.add(cluster.id)
-                    # Precedence: smallest enclosing container wins. A FORM cluster
-                    # usually wraps the whole page, so a widget inlined in a
-                    # paragraph (IRS Sch.1 line 7: "check here [] and enter amount:
-                    # 1221.00") sits inside both the FORM and a much smaller
-                    # list_item -- the paragraph is the more specific host and
-                    # becomes the item's key. Only a strictly-smaller text cluster
-                    # beats the FORM; otherwise the widget stays a keyless FORM
-                    # field, reproducing today's output.
-                    form = self._match_form(bbox, forms)
-                    text_cluster = self._match_text_container(bbox, text_clusters)
-                    if text_cluster is not None and (
-                        form is None or text_cluster.bbox.area() < form.bbox.area()
-                    ):
-                        text_containers[text_cluster.id] = text_cluster
-                        text_values.setdefault(text_cluster.id, []).append(value)
-                        # The paragraph cluster stays in the body: it materializes
-                        # in place as a field_item (key = its text, values = these
-                        # widgets), keeping its position in its list/container.
-                        # page_assemble attaches the item onto the text element.
-                        continue
-                    if form is not None:
-                        matched_forms[form.id] = form
-                        matched_values.setdefault(form.id, []).append(value)
-                    else:
-                        unmatched_values.append(value)
-                    # Value-only so far: a keyless FORM/unmatched widget whose label
-                    # (if any) lives detached in the body. Queue it for the binding
-                    # pass. A matched checkbox already carries its option label (a
-                    # non-empty checkbox_label), so it is not keyless -- leave its
-                    # validated behaviour untouched.
-                    if not value.checkbox_label:
-                        keyless.append((widget.index, value))
-
-                # Order-preserving binding: pair each keyless widget with the
-                # nearest unconsumed body label at or after the last binding in
-                # reading order. text_containers are already keys, so they leave
-                # the candidate pool. Bound labels become field-item keys and drop
-                # from the body, reusing the overlapping-case promotion machinery.
-                label_pool = [c for c in text_clusters if c.id not in text_containers]
-                line_height = self._median_line_height(label_pool)
-                # Binding must not cross a table boundary. A table body cell's real
-                # key is a structural row/column header that the layout absorbs
-                # into the table (never a free-standing label in this pool), so a
-                # widget in a table stays keyless -- unless a label sits in the
-                # SAME table (a cell carrying its own key+value, e.g. rf-1125s
-                # radio options with their captions). Grouping by containing table
-                # removes the mis-bind class where a widget grabs a section header
-                # above the table (italy SEZIONE/QUADRO) or a wrong-column
-                # neighbour (rf-1084s). See docs/acroform-reading-order-keying-handoff.md.
-                tables = [
-                    cluster
-                    for cluster in page.predictions.layout.clusters
-                    if cluster.label in TABLE_LABELS
-                ]
-
-                bound_value_keys: dict[int, Cluster] = {}
-                if keyless and label_pool and line_height > 0:
-                    labels_by_table: dict[int | None, list[Cluster]] = {}
-                    for cluster in label_pool:
-                        labels_by_table.setdefault(
-                            _table_of(cluster.bbox, tables), []
-                        ).append(cluster)
-                    widgets_by_table: dict[
-                        int | None, list[tuple[int, BoundingBox]]
-                    ] = {}
-                    for index, value in keyless:
-                        widgets_by_table.setdefault(
-                            _table_of(value.bbox, tables), []
-                        ).append((index, value.bbox))
-                    bound: dict[int, Cluster] = {}
-                    for table_id, group_widgets in widgets_by_table.items():
-                        group_labels = labels_by_table.get(table_id)
-                        if not group_labels:
-                            continue
-                        bound.update(
-                            _match_labels(
-                                widgets=group_widgets,
-                                labels=group_labels,
-                                cap=self._LABEL_GAP_CAP_LINES * line_height,
-                                row_band=self._LABEL_ROW_BAND_LINES * line_height,
-                            )
-                        )
-                    value_by_index = dict(keyless)
-                    for index, cluster in bound.items():
-                        # Identity map: values are unique, live objects for this
-                        # page, so id() safely tags which item gets the key below.
-                        bound_value_keys[id(value_by_index[index])] = cluster
-                        promoted_cluster_ids.add(cluster.id)
-
-                def _field_item(value: FieldValuePrediction) -> FieldItemPrediction:
-                    cluster = bound_value_keys.get(id(value))
-                    if cluster is None:
-                        return FieldItemPrediction(values=[value])
-                    return FieldItemPrediction(
-                        key_text=self._cluster_label_text(cluster),
-                        key_bbox=cluster.bbox,
-                        values=[value],
-                    )
-
-                regions = [
-                    FieldRegionPrediction(
-                        source_container_id=form_id,
-                        bbox=matched_forms[form_id].bbox,
-                        items=[_field_item(value) for value in values],
-                    )
-                    for form_id, values in matched_values.items()
-                ]
-                # Widgets sharing one enclosing paragraph accumulate into a single
-                # keyed item; the key text/bbox is the paragraph cluster.
-                regions.extend(
-                    FieldRegionPrediction(
-                        source_container_id=cluster_id,
-                        bbox=text_containers[cluster_id].bbox,
-                        items=[
-                            FieldItemPrediction(
-                                key_text=self._cluster_label_text(
-                                    text_containers[cluster_id]
-                                ),
-                                key_bbox=text_containers[cluster_id].bbox,
-                                values=values,
-                            )
-                        ],
-                    )
-                    for cluster_id, values in text_values.items()
-                )
-                if unmatched_values:
-                    regions.append(
-                        FieldRegionPrediction(
-                            bbox=BoundingBox.enclosing_bbox(
-                                [value.bbox for value in unmatched_values]
-                            ),
-                            items=[_field_item(value) for value in unmatched_values],
-                        )
-                    )
-                page.predictions.field_regions = regions
-
-                all_values = (
-                    [value for values in matched_values.values() for value in values]
-                    + [value for values in text_values.values() for value in values]
-                    + unmatched_values
-                )
-                # Promote matched checkbox clusters (now hosted inside a field
-                # item) out of the body before suppressing raster duplicates.
-                self._drop_clusters(page, promoted_cluster_ids)
-                self._suppress_duplicate_text(page, all_values)
+                self._key_page(page)
 
             yield page
 
+    def _key_page(self, page: Page) -> None:
+        """Key the page's widgets; on any failure keep the values without keys.
+
+        A stage exception would mark the page as failed and the document as
+        partially converted, so the widgets' values are worth more than the
+        keys: the fallback plan places them unkeyed, and if even that fails
+        the page passes through untouched.
+        """
+        try:
+            plan = self._plan_page(page)
+        except Exception:
+            _log.warning(
+                "Form field keying failed on page %d; its values are kept without keys",
+                page.page_no,
+                exc_info=True,
+            )
+            try:
+                plan = self._keyless_plan(page)
+            except Exception:
+                _log.warning(
+                    "Form field extraction failed on page %d; page left unchanged",
+                    page.page_no,
+                    exc_info=True,
+                )
+                return
+        self._commit(page, plan)
+
+    def _plan_page(self, page: Page) -> _Plan:
+        """Compute the page's field regions and edits without touching the page."""
+        assert page.size is not None and page.parsed_page is not None
+        assert page.predictions.layout is not None
+        assignment = assign(to_snapshot(page))
+        if assignment.solver_status != "optimal":
+            _log.warning(
+                "Form field keying abstained on page %d (%s); free-form values are "
+                "kept without keys",
+                page.page_no,
+                assignment.solver_status,
+            )
+        widgets = {w.index: w for w in page.parsed_page.widgets}
+        values = [
+            self._normalize_widget(widgets[v.native.index], v.bbox)
+            for v in assignment.values
+        ]
+        sources, unsure = _atom_sources(assignment, page)
+        units = _build_units(assignment, values)
+        hosts = _inline_hosts(units, assignment, sources, page, unsure)
+        regions = _place(units, hosts, assignment, page)
+        host_ids = {host.id for host in hosts.values()}
+        keep = unsure | _table_children(page) | host_ids
+        dropped = _consumed_clusters(units, sources, page, keep)
+        return _Plan(regions, dropped, host_ids, values)
+
+    def _keyless_plan(self, page: Page) -> _Plan:
+        """Every retained widget as an unkeyed value, placed by FORM region."""
+        assert page.size is not None and page.parsed_page is not None
+        assert page.predictions.layout is not None
+        forms = [
+            c for c in page.predictions.layout.clusters if c.label == DocItemLabel.FORM
+        ]
+        by_form: dict[int, list[FieldItemPrediction]] = defaultdict(list)
+        loose: list[FieldItemPrediction] = []
+        values: list[FieldValuePrediction] = []
+        for widget in page.parsed_page.widgets:
+            bbox = widget.rect.to_bounding_box().to_top_left_origin(page.size.height)
+            if self._is_skipped(widget, bbox):
+                continue
+            value = self._normalize_widget(widget, bbox)
+            values.append(value)
+            form = self._match_form(bbox, forms)
+            item = FieldItemPrediction(values=[value])
+            (loose if form is None else by_form[form.id]).append(item)
+        boxes = {form.id: form.bbox for form in forms}
+        regions = [
+            FieldRegionPrediction(
+                source_container_id=form_id, bbox=boxes[form_id], items=items
+            )
+            for form_id, items in by_form.items()
+        ]
+        if loose:
+            regions.append(
+                FieldRegionPrediction(
+                    bbox=BoundingBox.enclosing_bbox(
+                        [value.bbox for item in loose for value in item.values]
+                    ),
+                    items=loose,
+                )
+            )
+        return _Plan(regions, set(), set(), values)
+
+    def _commit(self, page: Page, plan: _Plan) -> None:
+        """Write the plan to the page; restore the layout if that fails."""
+        assert page.predictions.layout is not None
+        layout = page.predictions.layout
+        clusters = list(layout.clusters)
+        children = {cluster.id: cluster.children for cluster in clusters}
+        try:
+            page.predictions.field_regions = plan.regions
+            self._drop_clusters(page, plan.dropped)
+            self._suppress_duplicate_text(page, plan.values, keep=plan.hosts)
+        except Exception:
+            _log.warning(
+                "Form field extraction failed on page %d; page left unchanged",
+                page.page_no,
+                exc_info=True,
+            )
+            page.predictions.field_regions = []
+            for cluster in clusters:
+                cluster.children = children[cluster.id]
+            layout.clusters = clusters
+
     @classmethod
     def _suppress_duplicate_text(
-        cls, page: Page, values: list[FieldValuePrediction]
+        cls,
+        page: Page,
+        values: list[FieldValuePrediction],
+        *,
+        keep: set[int] = frozenset(),  # type: ignore[assignment]
     ) -> None:
         """Drop plain text clusters that merely re-render a native field value.
 
@@ -487,7 +562,8 @@ class PdfFormFieldModel(BasePageModel):
         a duplicate of the widget's native ``/V``. Suppress such a cluster only
         when its text equals a field value's *and* it sits inside that widget's
         rect; the containment gate keeps ordinary printed text that coincidentally
-        matches a value from being deleted.
+        matches a value from being deleted. A paragraph that hosts a field
+        item in place (``keep``) is the item's key, not a duplicate.
 
         ponytail: leaves the ~10% of values the layout model glues onto a
         neighbouring label (value is a substring of a larger line, not an equal
@@ -513,7 +589,7 @@ class PdfFormFieldModel(BasePageModel):
         dropped_ids = {
             cluster.id
             for cluster in page.predictions.layout.clusters
-            if is_duplicate(cluster)
+            if cluster.id not in keep and is_duplicate(cluster)
         }
         cls._drop_clusters(page, dropped_ids)
 
@@ -521,7 +597,7 @@ class PdfFormFieldModel(BasePageModel):
     def _drop_clusters(page: Page, dropped_ids: set[int]) -> None:
         """Remove clusters (and any container child refs to them) from the page.
 
-        Shared by raster-duplicate suppression and checkbox promotion so
+        Shared by raster-duplicate suppression and key promotion so
         reading-order assembly never references a removed cluster.
         """
         if not dropped_ids:

@@ -6,7 +6,7 @@ from the frozen September 8 review snapshot for page 1 of
 
 The source PDF SHA-256 is
 `3239ffa65938d73021792bd6793538fe2a164391644910db6f98c0bc90c18fdd`.
-The snapshot was parsed with `scripts.acroform_keying.Snapshot` and serialized
+The snapshot was parsed with `docling.models.stages.form_field.keying.Snapshot` and serialized
 with defaults omitted. Existing field predictions and timing were discarded.
 No expected associations were inserted into the input.
 

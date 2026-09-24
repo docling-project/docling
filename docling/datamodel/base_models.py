@@ -417,19 +417,19 @@ class FieldValuePrediction(BaseModel):
     # When set, the value is materialized as an empty field value that nests a
     # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
     checkbox: Literal["selected", "unselected"] | None = None
-    # Option label of the matched layout checkbox cluster (e.g. "4797"), placed
-    # on the nested checkbox child. Empty when no cluster matched the widget.
-    checkbox_label: str = ""
 
 
 class FieldItemPrediction(BaseModel):
-    # A keyed item groups several values under one key (e.g. an inline checkbox
-    # and a fillable amount that share a sentence). key_bbox is the prov of the
-    # key -- the enclosing text cluster. Keyless items (key_text == "") carry a
-    # single value and reproduce the flat field_item shape.
+    # A keyed item groups one or more values under one key: the printed caption
+    # the keying chose (a caption, a table cell, or a whole paragraph that
+    # inlines the widgets). key_bbox is the prov of the key. Keyless items
+    # (key_text == "") carry a single value and reproduce the flat field_item
+    # shape. context_text is a secondary, location-less caption -- typically the
+    # column header of a value keyed by its row caption -- emitted as a hint.
     key_text: str = ""
     key_bbox: BoundingBox | None = None
     values: list[FieldValuePrediction] = []
+    context_text: str = ""
 
 
 class FieldRegionPrediction(BaseModel):
