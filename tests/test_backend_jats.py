@@ -56,14 +56,6 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling.datamodel.backend_options import JatsBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
-from docling.datamodel.document import ConversionResult
-from docling.document_converter import (
-    DocumentConverter,
-    FormatOption,
-    XMLJatsFormatOption,
-)
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -73,6 +65,15 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Script
 from PIL import Image
+
+from docling.datamodel.backend_options import JatsBackendOptions
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.document import ConversionResult
+from docling.document_converter import (
+    DocumentConverter,
+    FormatOption,
+    XMLJatsFormatOption,
+)
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -246,28 +247,25 @@ def test_jats_plain_abstract_styling_is_preserved():
     doc = convert_jats_article_meta(
         """
       <title-group><article-title>Abstract Styling Test</article-title></title-group>
-      <abstract>
-        <p>We study <italic>Homo sapiens</italic>, <bold>key <italic>results</italic></bold>,
-        H<sub>2</sub>O at 10<sup>3</sup> Pa, <underline>u</underline>,
-        <strike>old</strike>.</p>
-      </abstract>
+      <abstract><p>We study <italic>Homo sapiens</italic>, <bold>key <italic>results</italic></bold>, H<sub>2</sub>O at 10<sup>3</sup> Pa, <underline>u</underline>, <strike>old</strike>.</p></abstract>
 """
     )
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # Punctuation adjacent to a styled run without source whitespace is
-    # absorbed into that run (the serializers join inline items with a
-    # space, so a standalone "." would export as "details ."). Runs joined
-    # without whitespace in the source (H<sub>2</sub>O, 10<sup>3</sup>) are
-    # fused the same way to keep the exported text byte-identical.
+    # Abstract paragraphs go through the paragraph implementation
+    # (_walk_linear, from #3726): one inline run per styled span, boundary
+    # whitespace stripped per run. Spacing on markdown export is delegated
+    # to the docling-core serializers (docling-core#693); runs are not fused
+    # across spaceless boundaries here.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.TEXT, "We study", None),
         (
             DocItemLabel.TEXT,
-            "Homo sapiens,",
+            "Homo sapiens",
             (False, True, False, False, Script.BASELINE),
         ),
+        (DocItemLabel.TEXT, ",", None),
         (
             DocItemLabel.TEXT,
             "key",
@@ -275,86 +273,121 @@ def test_jats_plain_abstract_styling_is_preserved():
         ),
         (
             DocItemLabel.TEXT,
-            "results,",
+            "results",
             (True, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, "H2O at 103", (False, False, False, False, Script.SUB)),
+        (DocItemLabel.TEXT, ", H", None),
+        (
+            DocItemLabel.TEXT,
+            "2",
+            (False, False, False, False, Script.SUB),
+        ),
+        (DocItemLabel.TEXT, "O at 10", None),
+        (
+            DocItemLabel.TEXT,
+            "3",
+            (False, False, False, False, Script.SUPER),
+        ),
         (DocItemLabel.TEXT, "Pa,", None),
         (
             DocItemLabel.TEXT,
-            "u,",
+            "u",
             (False, False, True, False, Script.BASELINE),
         ),
+        (DocItemLabel.TEXT, ",", None),
         (
             DocItemLabel.TEXT,
-            "old.",
+            "old",
             (False, False, False, True, Script.BASELINE),
         ),
+        (DocItemLabel.TEXT, ".", None),
     ]
 
 
-def test_jats_plain_abstract_styling_keeps_source_spacing():
-    """Styled runs must not gain spaces where the source XML had none.
+def test_jats_abstract_styling_preserves_inline_runs():
+    """Styled spans become their own inline runs; nothing is fused or dropped.
 
-    The serializers join sibling inline text items with a single space, so
-    emitting ``<italic>in vitro</italic>.`` as two items would export
-    ``in vitro .``. Fusing runs across spaceless boundaries keeps the
-    exported text (modulo styling markers) byte-identical to the source.
+    Per the docling-core serializer contract (docling-core#693), spacing on
+    export is the serializers' job: the backend must not fuse runs across
+    spaceless boundaries (``CO<sub>2</sub>`` stays three runs) nor invent
+    whitespace. Markdown export is therefore not asserted here — it is
+    suboptimal until #693 lands and is deliberately out of scope.
     """
 
-    def abstract_markdown(paragraph: str) -> str:
+    def abstract_runs(paragraph: str) -> list:
         doc = convert_jats_article_meta(
             f"""
       <title-group><article-title>Spacing Test</article-title></title-group>
       <abstract><p>{paragraph}</p></abstract>
 """
         )
-        md = doc.export_to_markdown()
-        return md.split("## Abstract", 1)[1].strip()
+        groups = _inline_group_items(doc)
+        assert len(groups) == 1
+        return [_formatting_tuple(item) for item in groups[0]]
 
-    def plain_text(markdown: str) -> str:
-        for marker in ("***", "**", "*", "~~", "__", "`"):
-            markdown = markdown.replace(marker, "")
-        return markdown
+    italic = (False, True, False, False, Script.BASELINE)
+    bold = (True, False, False, False, Script.BASELINE)
+    sub = (False, False, False, False, Script.SUB)
+    sup = (False, False, False, False, Script.SUPER)
+    T = DocItemLabel.TEXT
 
     cases = [
-        # (source paragraph, expected markdown, expected marker-stripped text)
+        # (source paragraph, expected inline runs)
         (
             "conditions <italic>in vitro</italic>.",
-            "conditions *in vitro.*",
-            "conditions in vitro.",
+            [(T, "conditions", None), (T, "in vitro", italic), (T, ".", None)],
         ),
         (
             "cultures of <italic>Y. pestis</italic>, and <italic>E. coli</italic>.",
-            "cultures of *Y. pestis,* and *E. coli.*",
-            "cultures of Y. pestis, and E. coli.",
+            [
+                (T, "cultures of", None),
+                (T, "Y. pestis", italic),
+                (T, ", and", None),
+                (T, "E. coli", italic),
+                (T, ".", None),
+            ],
         ),
         (
             "CO<sub>2</sub> and (CO<sub>2</sub>e) at 10<sup>3</sup> Pa",
-            "CO2 and (CO2e) at 103 Pa",
-            "CO2 and (CO2e) at 103 Pa",
+            [
+                (T, "CO", None),
+                (T, "2", sub),
+                (T, "and (CO", None),
+                (T, "2", sub),
+                (T, "e) at 10", None),
+                (T, "3", sup),
+                (T, "Pa", None),
+            ],
         ),
         (
             "rate (ECM))<sup>-1</sup>, lactation<sup>-1</sup>.",
-            "rate (ECM))-1, lactation-1.",
-            "rate (ECM))-1, lactation-1.",
+            [
+                (T, "rate (ECM))", None),
+                (T, "-1", sup),
+                (T, ", lactation", None),
+                (T, "-1", sup),
+                (T, ".", None),
+            ],
         ),
         (
             "(<italic>term</italic>) and [<bold>other</bold>];",
-            "*(term)* and **[other];**",
-            "(term) and [other];",
+            [
+                (T, "(", None),
+                (T, "term", italic),
+                (T, ") and [", None),
+                (T, "other", bold),
+                (T, "];", None),
+            ],
         ),
-        # Ragged multi-line source whitespace still collapses normally.
+        # Newlines in source XML become spaces; other whitespace is kept
+        # as authored (no collapsing, no stripping of interior blanks).
         (
             "a  <italic>b\nc</italic>\n   d.",
-            "a *b c* d.",
-            "a b c d.",
+            [(T, "a", None), (T, "b c", italic), (T, "d.", None)],
         ),
     ]
-    for paragraph, expected_md, expected_text in cases:
-        md = abstract_markdown(paragraph)
-        assert md == expected_md, f"{paragraph!r}: got {md!r}"
-        assert plain_text(md) == expected_text, f"{paragraph!r}: got {plain_text(md)!r}"
+    for paragraph, expected in cases:
+        assert abstract_runs(paragraph) == expected, f"{paragraph!r}"
 
 
 def test_jats_structured_abstract_styling_is_preserved():
@@ -425,8 +458,9 @@ def test_jats_footnote_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # The "." has no whitespace before it in the source, so it is absorbed
-    # into the bold run; a standalone "." item would export as "details .".
+    # No workaround: the "." after the bold run stays its own inline run,
+    # and the bold scope ends before it. Spacing on export is delegated to
+    # the docling-core serializers (docling-core#693).
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.FOOTNOTE, "1", None),
         (DocItemLabel.FOOTNOTE, "See", None),
@@ -438,9 +472,10 @@ def test_jats_footnote_styling_is_preserved():
         (DocItemLabel.FOOTNOTE, "for", None),
         (
             DocItemLabel.FOOTNOTE,
-            "details.",
+            "details",
             (True, False, False, False, Script.BASELINE),
         ),
+        (DocItemLabel.FOOTNOTE, ".", None),
     ]
 
 

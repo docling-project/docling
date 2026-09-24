@@ -702,8 +702,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Culex,",
-      "text": "Culex,",
+      "orig": "Culex",
+      "text": "Culex",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -721,8 +721,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS.",
-      "text": "treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS."
+      "orig": ", treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS.",
+      "text": ", treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS."
     },
     {
       "self_ref": "#/texts/7",
@@ -762,8 +762,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Culex,",
-      "text": "Culex,",
+      "orig": "Culex",
+      "text": "Culex",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -781,8 +781,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation.",
-      "text": "treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation."
+      "orig": ", treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation.",
+      "text": ", treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation."
     },
     {
       "self_ref": "#/texts/11",

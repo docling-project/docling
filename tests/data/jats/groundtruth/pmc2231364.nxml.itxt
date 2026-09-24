@@ -6,19 +6,20 @@ item-0 at level 0: unspecified: group _root_
         item-5 at level 4: inline: group group
           item-6 at level 5: text: Environmental modulation of gene expression in
           item-7 at level 5: text: Yersinia pestis
-          item-8 at level 5: text: is critical for its life style a ... rown under different stress conditions
-          item-9 at level 5: text: in vitro.
-      item-10 at level 3: section_header: Results
-        item-11 at level 4: inline: group group
-          item-12 at level 5: text: To provide us with a comprehensi ... odulation of global gene expression in
-          item-13 at level 5: text: Y. pestis,
-          item-14 at level 5: text: we have analyzed the gene expres ... s. Almost all known virulence genes of
-          item-15 at level 5: text: Y. pestis
-          item-16 at level 5: text: were differentially regulated un ... ophoretic mobility shift assay (EMSA).
-      item-17 at level 3: section_header: Conclusion
-        item-18 at level 4: inline: group group
-          item-19 at level 5: text: The comparative transcriptomics  ... is and cellular regulatory circuits in
-          item-20 at level 5: text: Y. pestis,
-          item-21 at level 5: text: it also serves as a basis for in ... icroarray data using existing methods.
-    item-22 at level 2: section_header: Introduction
-      item-23 at level 3: text: Yersinia pestis is the causative ...  infectious diseases in human history.
+          item-8 at level 5: text: is               critical for it ... ferent               stress conditions
+          item-9 at level 5: text: in vitro
+          item-10 at level 5: text: .
+      item-11 at level 3: section_header: Results
+        item-12 at level 4: inline: group group
+          item-13 at level 5: text: To provide us with a comprehensi ... lobal gene               expression in
+          item-14 at level 5: text: Y. pestis
+          item-15 at level 5: text: , we have analyzed the gene expr ... s. Almost all known virulence genes of
+          item-16 at level 5: text: Y. pestis
+          item-17 at level 5: text: were               differentiall ... ophoretic mobility shift assay (EMSA).
+      item-18 at level 3: section_header: Conclusion
+        item-19 at level 4: inline: group group
+          item-20 at level 5: text: The comparative transcriptomics  ... r regulatory               circuits in
+          item-21 at level 5: text: Y. pestis
+          item-22 at level 5: text: , it also serves as a basis for  ... icroarray data using existing methods.
+    item-23 at level 2: section_header: Introduction
+      item-24 at level 3: text: Yersinia pestis is the causative ...  infectious diseases in human history.

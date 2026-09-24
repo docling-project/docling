@@ -23,7 +23,6 @@ Security Note:
 from __future__ import annotations
 
 import logging
-import re
 import traceback
 import warnings
 from dataclasses import dataclass, replace
@@ -31,13 +30,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
 
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.html_backend import HTMLDocumentBackend
-from docling.backend.utils.image_resource_loader import ImageResourceLoader
-from docling.datamodel.backend_options import JatsBackendOptions
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -54,6 +46,14 @@ from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
 from pydantic import AnyUrl, ValidationError
 from typing_extensions import TypedDict, override
+
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.datamodel.backend_options import JatsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -79,13 +79,6 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
-
-# Punctuation clinging to the *following* run, e.g. "(" in "(<italic>term</italic>)".
-# Quotes are opening-only (never closing) to avoid bouncing between runs.
-_OPENING_PUNCTUATION: Final[str] = "([{\"'“‘"  # noqa: RUF001
-
-# Punctuation clinging to the *preceding* run, e.g. "." or ")".
-_CLOSING_PUNCTUATION: Final[str] = ".,;:!?%)]}”’"  # noqa: RUF001
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -132,12 +125,16 @@ class AbstractSection(TypedDict):
     """A single titled section inside a structured abstract."""
 
     title: str
-    paragraphs: list[list[InlineSegment]]  # styled inline runs per <p>
+    # The <p> elements; walked with the paragraph implementation
+    # (_walk_linear) at emit time so abstracts share the body-paragraph
+    # styling path instead of a parallel one.
+    paragraphs: list[etree._Element]
 
 
 class Abstract(TypedDict):
     label: str
-    paragraphs: list[list[InlineSegment]]  # plain <p> children, as styled runs
+    # Plain <p> children, as above.
+    paragraphs: list[etree._Element]
     sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
 
@@ -332,19 +329,18 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
         """Parse a single `<sec>` element inside an abstract into an
-        `AbstractSection` with a title and its paragraphs as styled inline
-        segments (preserving bold/italic/sub/sup, ...)."""
+        `AbstractSection` with a title and its `<p>` elements. Styling is
+        applied at emit time via the paragraph implementation."""
         title_nodes = section_node.xpath("title|label")
         title = (
             JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
         )
 
-        paragraphs: list[list[InlineSegment]] = []
-        for child_node in section_node:
-            if child_node.tag == "p":
-                segments = JatsDocumentBackend._flattened_inline_runs(child_node)
-                if segments:
-                    paragraphs.append(segments)
+        paragraphs: list[etree._Element] = [
+            child_node
+            for child_node in section_node
+            if child_node.tag == "p" and "".join(child_node.itertext()).strip()
+        ]
 
         return AbstractSection(title=title, paragraphs=paragraphs)
 
@@ -424,14 +420,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            paragraphs: list[list[InlineSegment]] = []
+            paragraphs: list[etree._Element] = []
             sections: list[AbstractSection] = []
 
             for child_node in abs_node:
                 if child_node.tag == "p":
-                    segments = JatsDocumentBackend._flattened_inline_runs(child_node)
-                    if segments:
-                        paragraphs.append(segments)
+                    if "".join(child_node.itertext()).strip():
+                        paragraphs.append(child_node)
                 elif child_node.tag == "sec":
                     section = JatsDocumentBackend._parse_abstract_section(child_node)
                     if section["paragraphs"]:
@@ -545,9 +540,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.root, text=title, level=self.hlevel + 1
             )
 
-            # Plain (un-sectioned) abstract paragraphs, with inline styling.
-            for segments in paragraphs:
-                JatsDocumentBackend._emit_inline(doc, abstract_heading, segments)
+            # Plain (un-sectioned) abstract paragraphs: walked with the
+            # paragraph implementation (_walk_linear, from #3726) so that
+            # abstracts share the body-paragraph styling path. Inline-group
+            # spacing is left to the docling-core serializers per their
+            # contract (docling-core#693); no spacing workaround here.
+            for paragraph in paragraphs:
+                self._walk_linear(doc, abstract_heading, paragraph)
 
             # Structured abstract: emit each <sec> as a sub-heading with
             # its own paragraph(s) beneath the abstract heading.
@@ -561,8 +560,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     )
                 else:
                     section_parent = abstract_heading
-                for segments in section["paragraphs"]:
-                    JatsDocumentBackend._emit_inline(doc, section_parent, segments)
+                for paragraph in section["paragraphs"]:
+                    self._walk_linear(doc, section_parent, paragraph)
 
         return
 
@@ -767,24 +766,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             return Path(href)
 
     @staticmethod
-    def _normalize_segments(
-        segments: list[InlineSegment],
-    ) -> list[InlineSegment]:
-        """Collapse every internal whitespace run of each segment to one space.
-
-        The flattened abstract/footnote paths historically ran the whole text
-        through ``_normalize_whitespace``; keep that behavior once styling is
-        preserved per run so multi-line source XML does not produce ragged
-        spacing. Boundary whitespace is left for ``_strip_segments``.
-        """
-        normalized: list[InlineSegment] = []
-        for segment in segments:
-            text = re.sub(r"\s+", " ", segment.text)
-            if text:
-                normalized.append(replace(segment, text=text))
-        return normalized
-
-    @staticmethod
     def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
         stripped: list[InlineSegment] = []
         for segment in segments:
@@ -792,103 +773,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if text:
                 stripped.append(replace(segment, text=text))
         return stripped
-
-    @staticmethod
-    def _is_unformatted(formatting: Formatting | None) -> bool:
-        return formatting is None or (
-            not formatting.bold
-            and not formatting.italic
-            and not formatting.underline
-            and not formatting.strikethrough
-            and formatting.script in (None, Script.BASELINE)
-        )
-
-    @staticmethod
-    def _coalesce_no_space_boundaries(
-        segments: list[InlineSegment],
-    ) -> list[InlineSegment]:
-        """Fuse runs across boundaries where the source XML had no whitespace.
-
-        The docling-core serializers join sibling inline text items with a
-        single space, so a spaceless boundary (``<italic>in vitro</italic>.``,
-        ``CO<sub>2</sub>``) would gain a spurious space on export. The "no
-        space here" information must be acted on before boundary whitespace
-        is stripped for serialization, i.e. here.
-
-        At each spaceless boundary, in order: (1) trailing opening
-        punctuation moves forward onto the next run; (2) leading closing
-        punctuation moves backward onto the previous run; (3) the runs fuse
-        into one, keeping the non-baseline formatting when exactly one run
-        carries it, else the earlier run's formatting.
-
-        Step 3 trades formatting scope for text fidelity (the ``2`` in
-        ``CO<sub>2</sub>`` keeps its subscript by absorbing ``CO``; the
-        alternative is exporting ``CO 2``). Formula runs and runs with
-        different hyperlink targets are never fused.
-        """
-        fused: list[InlineSegment] = []
-        for segment in segments:
-            if not segment.text:
-                continue
-            while True:
-                if not fused:
-                    fused.append(segment)
-                    break
-                prev = fused[-1]
-                if (
-                    prev.label == DocItemLabel.FORMULA
-                    or segment.label == DocItemLabel.FORMULA
-                    or prev.hyperlink != segment.hyperlink
-                ):
-                    fused.append(segment)
-                    break
-                if prev.text.endswith(" ") or segment.text.startswith(" "):
-                    fused.append(segment)
-                    break
-                # 1. trailing opening punctuation belongs with the next run.
-                if prev.text[-1] in _OPENING_PUNCTUATION:
-                    if len(prev.text) > 1:
-                        fused[-1] = replace(prev, text=prev.text[:-1])
-                        segment = replace(segment, text=prev.text[-1] + segment.text)
-                    else:
-                        # prev is a lone opening mark: absorb it into segment.
-                        lone = fused.pop()
-                        segment = replace(segment, text=lone.text + segment.text)
-                    continue
-                # 2. leading closing punctuation belongs with the previous run.
-                if segment.text[0] in _CLOSING_PUNCTUATION:
-                    fused[-1] = replace(prev, text=prev.text + segment.text[0])
-                    segment = replace(segment, text=segment.text[1:])
-                    if not segment.text:
-                        break
-                    continue
-                # 3. fuse the runs, preferring non-baseline formatting.
-                if JatsDocumentBackend._is_unformatted(
-                    prev.formatting
-                ) and not JatsDocumentBackend._is_unformatted(segment.formatting):
-                    formatting = segment.formatting
-                else:
-                    formatting = prev.formatting
-                fused[-1] = replace(
-                    prev, text=prev.text + segment.text, formatting=formatting
-                )
-                break
-        return fused
-
-    @staticmethod
-    def _flattened_inline_runs(node: etree._Element) -> list[InlineSegment]:
-        """Styled inline runs for ``node``: whitespace normalized, boundary
-        whitespace stripped, styling (bold/italic/sub/sup, ...) preserved
-        per run. Runs are additionally fused across spaceless boundaries
-        (see ``_coalesce_no_space_boundaries``).
-        """
-        return JatsDocumentBackend._strip_segments(
-            JatsDocumentBackend._coalesce_no_space_boundaries(
-                JatsDocumentBackend._normalize_segments(
-                    JatsDocumentBackend._walk_inline_formula(node)
-                )
-            )
-        )
 
     @staticmethod
     def _walk_inline_formula(
@@ -1307,7 +1191,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
-            segments = JatsDocumentBackend._flattened_inline_runs(fn)
+            # Styled runs via the shared inline walker (#3726); spacing is
+            # left to the docling-core serializers per their contract
+            # (docling-core#693), with no spacing workaround here.
+            segments = JatsDocumentBackend._strip_segments(
+                JatsDocumentBackend._walk_inline_formula(fn)
+            )
             if segments:
                 # Keep the FOOTNOTE label on plain text runs; formulas stay
                 # labeled as formulas.
