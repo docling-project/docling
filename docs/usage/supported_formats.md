@@ -15,6 +15,7 @@ Below you can find a listing of all supported input and output formats.
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
 | Pages | Apple Pages documents (`.pages`), both container generations (Pages 5+ and iWork '09); requires the `format-iwork` extra |
+| Keynote | Apple Keynote presentations (`.key`), every container generation (Keynote 6+, the flattened package Keynote 2018+ writes, and iWork '09); requires the `format-iwork` extra |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |

@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.96.0,<3.0.0',
+  'docling-core>=2.98.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -150,9 +150,10 @@ format-email = [
   'python-oxmsg>=0.0.2,<0.1.0',
 ]
 
-# Apple iWork (.pages). Pages 5+ stores content as Snappy-framed protobuf in
-# Index/*.iwa; the Snappy decompressor is implemented in pure Python, so no
-# compiled dependency is needed. iWork '09 documents are plain XML.
+# Apple iWork (.pages, .key). Pages 5 and Keynote 6 onwards store content as
+# Snappy-framed protobuf in Index/*.iwa; the Snappy decompressor is implemented
+# in pure Python, so no compiled dependency is needed. iWork '09 documents are
+# plain XML.
 format-iwork = [
   'defusedxml>=0.7.1,<0.8.0',
 ]
