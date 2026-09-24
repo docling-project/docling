@@ -37,7 +37,9 @@ def test_chart_csv_table_header_classification(
         if cell.row_header
     } == row_header_coords
     assert all(
-        cell.start_row_offset_idx == 0 for cell in table.table_cells if cell.column_header
+        cell.start_row_offset_idx == 0
+        for cell in table.table_cells
+        if cell.column_header
     )
 
 
