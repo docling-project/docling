@@ -100,6 +100,12 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         the sample, and the sample is usually the header line, which rarely
         contains one. RFC 4180 and `csv.excel` both use doubling, so it is
         the correct default when no explicit escape character is present.
+
+        Files that escape quotes with a backslash (e.g. MySQL `SELECT … INTO
+        OUTFILE`) fail the first parse because `doublequote=True` and
+        `strict=True` together reject a lone `"` that is not doubled. The
+        parse is retried with `doublequote=False` so those files load, with
+        the backslash and surrounding quotes left in the cell value.
         """
         # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
@@ -123,8 +129,6 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        # strict=True turns malformed quotes into csv.Error instead of silently
-        # mis-parsing; doublequote follows from the docstring rationale above.
         self.content.seek(0)
         try:
             result = csv.reader(
@@ -134,10 +138,21 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                 strict=True,
             )
             self.csv_data = list(result)
-        except csv.Error as e:
-            raise DocumentLoadError(
-                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
-            ) from e
+        except csv.Error as quote_error:
+            _log.info(
+                f"Could not parse with doublequote=True ({quote_error}),"
+                " retrying with doublequote=False"
+            )
+            self.content.seek(0)
+            try:
+                result = csv.reader(
+                    self.content, dialect=dialect, doublequote=False, strict=True
+                )
+                self.csv_data = list(result)
+            except csv.Error as e:
+                raise DocumentLoadError(
+                    f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+                ) from e
 
         # csv.reader yields [] for blank lines; ["", ...] for empty-field rows like ",,".
         # Filtering on truthiness keeps the latter and drops the former.
