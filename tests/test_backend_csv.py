@@ -136,6 +136,26 @@ def test_doubled_quotes_with_non_comma_delimiter():
     assert [cell.text for cell in cells] == ["a", "b", 'say "x"', "2"]
 
 
+def test_backslash_escaped_quotes_load_without_error():
+    """A file using backslash-escaped quotes (e.g. MySQL SELECT … INTO OUTFILE) must load.
+
+    The sniffer reports escapechar=None for such files, so the first parse
+    attempt uses doublequote=True and fails on the lone quote. The retry with
+    doublequote=False must succeed; the backslash and surrounding quotes are
+    left in the cell value rather than being unescaped.
+    """
+    csv_bytes = b'id,text\n1,"say \\"hi\\" now"\n2,plain\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="backslash.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert conv_result.status == ConversionStatus.SUCCESS
+    # Cell layout: [id, text, 1, <value>, 2, plain]
+    assert cells[3].text == 'say \\hi\\" now"'
+    assert cells[5].text == "plain"
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(
