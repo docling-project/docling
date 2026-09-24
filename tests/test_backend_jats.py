@@ -56,6 +56,14 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling.datamodel.backend_options import JatsBackendOptions
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.document import ConversionResult
+from docling.document_converter import (
+    DocumentConverter,
+    FormatOption,
+    XMLJatsFormatOption,
+)
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -65,15 +73,6 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Script
 from PIL import Image
-
-from docling.datamodel.backend_options import JatsBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
-from docling.datamodel.document import ConversionResult
-from docling.document_converter import (
-    DocumentConverter,
-    FormatOption,
-    XMLJatsFormatOption,
-)
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export

@@ -31,6 +31,13 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
 
+from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.datamodel.backend_options import JatsBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -47,14 +54,6 @@ from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
 from pydantic import AnyUrl, ValidationError
 from typing_extensions import TypedDict, override
-
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.html_backend import HTMLDocumentBackend
-from docling.backend.utils.image_resource_loader import ImageResourceLoader
-from docling.datamodel.backend_options import JatsBackendOptions
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -81,14 +80,12 @@ DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
 
-# Punctuation that typographically clings to the *following* run, e.g. the
-# "(" in "(<italic>term</italic>)". Quotes are treated as opening only (never
-# closing) so a quote cannot bounce back and forth between two runs.
-_OPENING_PUNCTUATION: Final[str] = "([{\"'“‘"
+# Punctuation clinging to the *following* run, e.g. "(" in "(<italic>term</italic>)".
+# Quotes are opening-only (never closing) to avoid bouncing between runs.
+_OPENING_PUNCTUATION: Final[str] = "([{\"'“‘"  # noqa: RUF001
 
-# Punctuation that typographically clings to the *preceding* run, e.g. the
-# "." in "<italic>in vitro</italic>." or the ")" in "(CO<sub>2</sub>)".
-_CLOSING_PUNCTUATION: Final[str] = ".,;:!?%)]}”’"
+# Punctuation clinging to the *preceding* run, e.g. "." or ")".
+_CLOSING_PUNCTUATION: Final[str] = ".,;:!?%)]}”’"  # noqa: RUF001
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -813,29 +810,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         """Fuse runs across boundaries where the source XML had no whitespace.
 
         The docling-core serializers join sibling inline text items with a
-        single space, so a run boundary that had no whitespace in the source
-        (e.g. ``<italic>in vitro</italic>.`` or ``CO<sub>2</sub>``) would gain
-        a spurious space on export (``in vitro .``, ``CO 2``). Because
-        boundary whitespace is stripped before serialization, the information
-        "there was no space here" has to be acted on while it is still
-        available, i.e. here.
+        single space, so a spaceless boundary (``<italic>in vitro</italic>.``,
+        ``CO<sub>2</sub>``) would gain a spurious space on export. The "no
+        space here" information must be acted on before boundary whitespace
+        is stripped for serialization, i.e. here.
 
-        At each spaceless boundary, in order:
+        At each spaceless boundary, in order: (1) trailing opening
+        punctuation moves forward onto the next run; (2) leading closing
+        punctuation moves backward onto the previous run; (3) the runs fuse
+        into one, keeping the non-baseline formatting when exactly one run
+        carries it, else the earlier run's formatting.
 
-        1. trailing opening punctuation (``(``, ``[``, quotes, ...) moves
-           forward onto the next run;
-        2. leading closing punctuation (``.``, ``,``, ``)``, ...) moves
-           backward onto the previous run;
-        3. the runs are fused into one, keeping the non-baseline formatting
-           when exactly one of the two runs carries it, otherwise the
-           earlier run's formatting.
-
-        Step 3 trades precise formatting scope for text fidelity: e.g. the
-        ``2`` in ``CO<sub>2</sub>`` keeps its subscript by absorbing the
-        adjacent ``CO``, because the alternative is exporting ``CO 2``.
-        Formula runs and runs with different hyperlink targets are never
-        fused. Punctuation absorbed by steps 1-2 renders identically in
-        every exporter, so those fusions are lossless.
+        Step 3 trades formatting scope for text fidelity (the ``2`` in
+        ``CO<sub>2</sub>`` keeps its subscript by absorbing ``CO``; the
+        alternative is exporting ``CO 2``). Formula runs and runs with
+        different hyperlink targets are never fused.
         """
         fused: list[InlineSegment] = []
         for segment in segments:
@@ -888,14 +877,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _flattened_inline_runs(node: etree._Element) -> list[InlineSegment]:
-        """Styled inline runs for ``node``, mirroring the historical
-        flattened-text behavior of abstracts/footnotes: whitespace normalized,
-        boundary whitespace stripped, styling (bold/italic/sub/sup, ...)
-        preserved per run.
-
-        Runs are additionally fused across boundaries where the source XML
-        had no whitespace (see ``_coalesce_no_space_boundaries``), because
-        the serializers join sibling inline text items with a space.
+        """Styled inline runs for ``node``: whitespace normalized, boundary
+        whitespace stripped, styling (bold/italic/sub/sup, ...) preserved
+        per run. Runs are additionally fused across spaceless boundaries
+        (see ``_coalesce_no_space_boundaries``).
         """
         return JatsDocumentBackend._strip_segments(
             JatsDocumentBackend._coalesce_no_space_boundaries(
