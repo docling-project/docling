@@ -23,6 +23,7 @@ Security Note:
 from __future__ import annotations
 
 import logging
+import re
 import traceback
 import warnings
 from dataclasses import dataclass, replace
@@ -124,12 +125,12 @@ class AbstractSection(TypedDict):
     """A single titled section inside a structured abstract."""
 
     title: str
-    paragraphs: list[str]
+    paragraphs: list[list[InlineSegment]]  # styled inline runs per <p>
 
 
 class Abstract(TypedDict):
     label: str
-    content: str  # plain (un-sectioned) paragraphs joined together
+    paragraphs: list[list[InlineSegment]]  # plain <p> children, as styled runs
     sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
 
@@ -324,20 +325,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
         """Parse a single `<sec>` element inside an abstract into an
-        `AbstractSection` with a title and a list of paragraph strings."""
+        `AbstractSection` with a title and its paragraphs as styled inline
+        segments (preserving bold/italic/sub/sup, ...)."""
         title_nodes = section_node.xpath("title|label")
         title = (
             JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
         )
 
-        paragraphs: list[str] = []
+        paragraphs: list[list[InlineSegment]] = []
         for child_node in section_node:
             if child_node.tag == "p":
-                text = JatsDocumentBackend._normalize_whitespace(
-                    JatsDocumentBackend._get_text(child_node)
-                )
-                if text:
-                    paragraphs.append(text)
+                segments = JatsDocumentBackend._flattened_inline_runs(child_node)
+                if segments:
+                    paragraphs.append(segments)
 
         return AbstractSection(title=title, paragraphs=paragraphs)
 
@@ -417,16 +417,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            plain_texts: list[str] = []
+            paragraphs: list[list[InlineSegment]] = []
             sections: list[AbstractSection] = []
 
             for child_node in abs_node:
                 if child_node.tag == "p":
-                    paragraph_text = JatsDocumentBackend._normalize_whitespace(
-                        JatsDocumentBackend._get_text(child_node)
-                    )
-                    if paragraph_text:
-                        plain_texts.append(paragraph_text)
+                    segments = JatsDocumentBackend._flattened_inline_runs(child_node)
+                    if segments:
+                        paragraphs.append(segments)
                 elif child_node.tag == "sec":
                     section = JatsDocumentBackend._parse_abstract_section(child_node)
                     if section["paragraphs"]:
@@ -439,9 +437,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
             abstract: Abstract = Abstract(
                 label=label,
-                content=JatsDocumentBackend._normalize_whitespace(
-                    " ".join(plain_texts)
-                ),
+                paragraphs=paragraphs,
                 sections=sections,
             )
             abs_list.append(abstract)
@@ -531,43 +527,35 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         for abstract in xml_components["abstract"]:
             sections = abstract["sections"]
-            plain_text = abstract["content"]
+            paragraphs = abstract["paragraphs"]
             title = abstract["label"] or DEFAULT_HEADER_ABSTRACT
 
             # Skip empty abstracts.
-            if not plain_text and not sections:
+            if not paragraphs and not sections:
                 continue
 
             abstract_heading = doc.add_heading(
                 parent=self.root, text=title, level=self.hlevel + 1
             )
 
-            if sections:
-                # Structured abstract: emit each <sec> as a sub-heading with
-                # its own paragraph(s) beneath the abstract heading.
-                for section in sections:
-                    section_title = section["title"]
-                    if section_title:
-                        section_parent: NodeItem = doc.add_heading(
-                            parent=abstract_heading,
-                            text=section_title,
-                            level=self.hlevel + 2,
-                        )
-                    else:
-                        section_parent = abstract_heading
-                    for paragraph in section["paragraphs"]:
-                        doc.add_text(
-                            parent=section_parent,
-                            text=paragraph,
-                            label=DocItemLabel.TEXT,
-                        )
-            else:
-                # Plain (un-sectioned) abstract: single text item.
-                doc.add_text(
-                    parent=abstract_heading,
-                    text=plain_text,
-                    label=DocItemLabel.TEXT,
-                )
+            # Plain (un-sectioned) abstract paragraphs, with inline styling.
+            for segments in paragraphs:
+                JatsDocumentBackend._emit_inline(doc, abstract_heading, segments)
+
+            # Structured abstract: emit each <sec> as a sub-heading with
+            # its own paragraph(s) beneath the abstract heading.
+            for section in sections:
+                section_title = section["title"]
+                if section_title:
+                    section_parent: NodeItem = doc.add_heading(
+                        parent=abstract_heading,
+                        text=section_title,
+                        level=self.hlevel + 2,
+                    )
+                else:
+                    section_parent = abstract_heading
+                for segments in section["paragraphs"]:
+                    JatsDocumentBackend._emit_inline(doc, section_parent, segments)
 
         return
 
@@ -772,6 +760,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             return Path(href)
 
     @staticmethod
+    def _normalize_segments(
+        segments: list[InlineSegment],
+    ) -> list[InlineSegment]:
+        """Collapse every internal whitespace run of each segment to one space.
+
+        The flattened abstract/footnote paths historically ran the whole text
+        through ``_normalize_whitespace``; keep that behavior once styling is
+        preserved per run so multi-line source XML does not produce ragged
+        spacing. Boundary whitespace is left for ``_strip_segments``.
+        """
+        normalized: list[InlineSegment] = []
+        for segment in segments:
+            text = re.sub(r"\s+", " ", segment.text)
+            if text:
+                normalized.append(replace(segment, text=text))
+        return normalized
+
+    @staticmethod
     def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
         stripped: list[InlineSegment] = []
         for segment in segments:
@@ -779,6 +785,18 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if text:
                 stripped.append(replace(segment, text=text))
         return stripped
+
+    @staticmethod
+    def _flattened_inline_runs(node: etree._Element) -> list[InlineSegment]:
+        """Styled inline runs for ``node``, mirroring the historical
+        flattened-text behavior of abstracts/footnotes: whitespace normalized,
+        boundary whitespace stripped, styling (bold/italic/sub/sup, ...)
+        preserved per run."""
+        return JatsDocumentBackend._strip_segments(
+            JatsDocumentBackend._normalize_segments(
+                JatsDocumentBackend._walk_inline_formula(node)
+            )
+        )
 
     @staticmethod
     def _walk_inline_formula(
@@ -1195,11 +1213,23 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         node: etree._Element,
     ) -> None:
-        footnotes: list[str] = [
-            JatsDocumentBackend._normalize_whitespace(JatsDocumentBackend._get_text(fn))
-            for fn in node.iterchildren(tag="fn")
-        ]
-        if not footnotes:
+        footnote_segments: list[list[InlineSegment]] = []
+        for fn in node.iterchildren(tag="fn"):
+            segments = JatsDocumentBackend._flattened_inline_runs(fn)
+            if segments:
+                # Keep the FOOTNOTE label on plain text runs; formulas stay
+                # labeled as formulas.
+                footnote_segments.append(
+                    [
+                        (
+                            replace(segment, label=DocItemLabel.FOOTNOTE)
+                            if segment.label == DocItemLabel.TEXT
+                            else segment
+                        )
+                        for segment in segments
+                    ]
+                )
+        if not footnote_segments:
             return
         title = node.xpath("title")
         title_text = (
@@ -1214,14 +1244,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             name="footnotes",
             parent=heading,
         )
-        for item in footnotes:
+        for segments in footnote_segments:
             list_item = doc.add_list_item(parent=footnote_group, text="")
             inline_item = doc.add_inline_group(parent=list_item)
-            doc.add_text(
-                label=DocItemLabel.FOOTNOTE,
-                text=item,
-                parent=inline_item,
-            )
+            for segment in segments:
+                doc.add_text(
+                    label=segment.label,
+                    text=segment.text,
+                    formatting=segment.formatting,
+                    hyperlink=segment.hyperlink,
+                    parent=inline_item,
+                )
 
     def _walk_linear(
         self,

@@ -243,6 +243,144 @@ def test_jats_structured_abstract_sections_are_preserved():
     assert "Methods" in heading_texts
 
 
+def test_jats_plain_abstract_styling_is_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Abstract Styling Test</article-title></title-group>
+      <abstract>
+        <p>We study <italic>Homo sapiens</italic>, <bold>key <italic>results</italic></bold>,
+        H<sub>2</sub>O at 10<sup>3</sup> Pa, <underline>u</underline>,
+        <strike>old</strike>.</p>
+      </abstract>
+"""
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.TEXT, "We study", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ",", None),
+        (
+            DocItemLabel.TEXT,
+            "key",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (
+            DocItemLabel.TEXT,
+            "results",
+            (True, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ", H", None),
+        (DocItemLabel.TEXT, "2", (False, False, False, False, Script.SUB)),
+        (DocItemLabel.TEXT, "O at 10", None),
+        (DocItemLabel.TEXT, "3", (False, False, False, False, Script.SUPER)),
+        (DocItemLabel.TEXT, "Pa,", None),
+        (
+            DocItemLabel.TEXT,
+            "u",
+            (False, False, True, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ",", None),
+        (
+            DocItemLabel.TEXT,
+            "old",
+            (False, False, False, True, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ".", None),
+    ]
+
+
+def test_jats_structured_abstract_styling_is_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Structured Abstract Styling Test</article-title></title-group>
+      <abstract>
+        <sec>
+          <title>Background</title>
+          <p><italic>Bg</italic> text.</p>
+        </sec>
+        <sec>
+          <title>Methods</title>
+          <p><bold>M</bold> text.</p>
+        </sec>
+      </abstract>
+"""
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 2
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (
+            DocItemLabel.TEXT,
+            "Bg",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "text.", None),
+    ]
+    assert [_formatting_tuple(item) for item in groups[1]] == [
+        (
+            DocItemLabel.TEXT,
+            "M",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "text.", None),
+    ]
+
+
+def test_jats_plain_abstract_without_styling_stays_a_single_text_item():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Plain Abstract Test</article-title></title-group>
+      <abstract><p>Plain abstract.</p></abstract>
+"""
+    )
+
+    # no emphasis anywhere → a single TEXT item, no inline group
+    assert _inline_group_items(doc) == []
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == ["Plain abstract."]
+
+
+def test_jats_footnote_styling_is_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Footnote Styling Test</title>
+          <fn-group>
+            <fn id="fn1">
+              <label>1</label>
+              <p>See <italic>ibid</italic> for <bold>details</bold>.</p>
+            </fn>
+          </fn-group>
+        </sec>
+        """
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.FOOTNOTE, "1", None),
+        (DocItemLabel.FOOTNOTE, "See", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "ibid",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.FOOTNOTE, "for", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "details",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.FOOTNOTE, ".", None),
+    ]
+
+
 def test_jats_nested_lists_are_preserved():
     doc = convert_jats_body(
         """
