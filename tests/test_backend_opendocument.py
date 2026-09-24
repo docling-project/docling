@@ -56,6 +56,7 @@ from odfdo import (
     Link,
     List as OdfList,
     ListItem,
+    Note,
     Paragraph,
     Section,
     Spacer,
@@ -593,6 +594,49 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
         "Watch [the example talk](https://example.com/talk) for context."
     )
     assert "example.com/talk" in res.document.model_dump_json()
+
+
+def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
+    """A footnote's body text must not be spliced into the citing sentence, and
+    must not be silently dropped either.
+
+    Regression test: ``_odf_text_runs`` used to have no special case for
+    ``text:note``, so it recursed into the note's citation and body exactly like
+    any other inline span, concatenating an arbitrary-length footnote body
+    straight into the middle of the paragraph that cited it - corrupting the
+    reading-order text rather than merely losing content.
+    """
+    path = tmp_path / "footnote.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Sentence before the marker")
+    paragraph.append(
+        Note(
+            citation="1",
+            body="This is the footnote body text that should not vanish.",
+        )
+    )
+    paragraph.append(Span(" and sentence after the marker."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    body_texts = [
+        item.text for item in res.document.texts if item.label != DocItemLabel.FOOTNOTE
+    ]
+    assert body_texts == [
+        "Sentence before the marker and sentence after the marker."
+    ], "the footnote body must not be spliced into the citing paragraph"
+
+    footnote_texts = [
+        item.text for item in res.document.texts if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_texts == [
+        "This is the footnote body text that should not vanish."
+    ], "the footnote body must be recovered, not silently dropped"
 
 
 @pytest.mark.parametrize(
