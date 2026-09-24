@@ -699,12 +699,23 @@ def test_horizontal_separator_finishes_columns_in_spatial_order() -> None:
             coord_origin=CoordOrigin.BOTTOMLEFT,
         )
 
+    # Bottom-left origin: the three columns share the same vertical span.
+    # Their spatial order (1, 3, 2) differs from their CID order (1, 2, 3).
+    #
+    #          x=40   180 220   360 400   540 560
+    # y=740    +--------------- 0 ---------------+
+    # y=700    +-----------------------------------+
+    # y=650    +-- 1 --+  +-- 3 --+  +-- 2 --+
+    # y=500    +-------+  +-------+  +-------+
+    # y=400    ========== separator =============
+    # y=350    +--------------- 4 ---------------+
+    # y=200    +-----------------------------------+
     elements = [
-        element(0, 40, 700, 560, 740),
-        element(1, 40, 500, 180, 650),
-        element(2, 400, 500, 540, 650),
-        element(3, 220, 500, 360, 650),
-        element(4, 40, 200, 560, 350),
+        element(0, 40, 700, 560, 740),  # cid=0, l=40, r=560, b=700, t=740
+        element(1, 40, 500, 180, 650),  # cid=1, l=40, r=180, b=500, t=650
+        element(2, 400, 500, 540, 650),  # cid=2, l=400, r=540, b=500, t=650
+        element(3, 220, 500, 360, 650),  # cid=3, l=220, r=360, b=500, t=650
+        element(4, 40, 200, 560, 350),  # cid=4, l=40, r=560, b=200, t=350
     ]
     separator = SeparatorElement(
         cid=-1,

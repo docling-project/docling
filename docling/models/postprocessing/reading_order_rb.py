@@ -7,7 +7,7 @@ import math
 import re
 from dataclasses import dataclass, field
 from itertools import islice, takewhile
-from typing import Dict, Iterable, List, Literal, Set, Tuple
+from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
 
 from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
@@ -361,11 +361,15 @@ class ReadingOrderPredictor:
     Rule based reading order for DoclingDocument
     """
 
+    _HORIZONTAL_DILATION_THRESHOLD_NORM: ClassVar[float] = 0.15
+    _VERTICAL_OVERLAP_IOU_THRESHOLD: ClassVar[float] = 0.8
+    _RTREE_QUERY_PADDING: ClassVar[float] = 0.1
+    _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
+    _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
+    _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+
     def __init__(self):
         self.dilated_page_element = True
-
-        # Apply horizontal dilation only if it is less than this page-width normalized threshold
-        self._horizontal_dilation_threshold_norm = 0.15
 
     def predict_reading_order(
         self,
@@ -671,20 +675,16 @@ class ReadingOrderPredictor:
                 if (
                     pelem_i.follows_maintext_order(pelem_j)
                     and pelem_i.is_strictly_left_of(pelem_j)
-                    and pelem_i.overlaps_vertically_with_iou(pelem_j, 0.8)
+                    and pelem_i.overlaps_vertically_with_iou(
+                        pelem_j, self._VERTICAL_OVERLAP_IOU_THRESHOLD
+                    )
                     and not self._has_vertical_separator_between(
                         pelem_i,
                         pelem_j,
                         vertical_separators=vertical_separators,
                     )
-                    and not (
-                        isinstance(pelem_i, PageElement)
-                        and isinstance(pelem_j, PageElement)
-                        and _is_graphic(pelem_i)
-                        and _is_graphic(pelem_j)
-                        and self._has_page_element_between(
-                            page_elems, left_index=i, right_index=j
-                        )
+                    and not self._has_page_element_between(
+                        page_elems, left_index=i, right_index=j
                     )
                 ):
                     state.l2r_map[i] = j
@@ -742,7 +742,12 @@ class ReadingOrderPredictor:
                 if left_partner not in state.up_map[j]:
                     state.up_map[j].append(left_partner)
             # Find elements above current that might precede it in reading order
-            query_bbox = (pelem_j.l - 0.1, pelem_j.t, pelem_j.r + 0.1, float("inf"))
+            query_bbox = (
+                pelem_j.l - self._RTREE_QUERY_PADDING,
+                pelem_j.t,
+                pelem_j.r + self._RTREE_QUERY_PADDING,
+                float("inf"),
+            )
             candidates = list(spatial_idx.intersection(query_bbox))
 
             for i in candidates:
@@ -769,6 +774,36 @@ class ReadingOrderPredictor:
                     state.dn_map[i].append(j)
                     state.up_map[j].append(i)
 
+        # Consecutive text boxes in a column can overlap slightly at their edges.
+        # Keep their source sequence when the strict-above check misses the link.
+        cid_to_index = {
+            element.cid: index
+            for index, element in enumerate(page_elems)
+            if isinstance(element, PageElement)
+        }
+        for i, upper in enumerate(page_elems):
+            if not isinstance(upper, PageElement) or _is_graphic(upper):
+                continue
+            j = cid_to_index.get(upper.cid + 1)
+            if j is None:
+                continue
+            lower = page_elems[j]
+            if not isinstance(lower, PageElement) or _is_graphic(lower):
+                continue
+            tolerance = (
+                upper.page_size.height * self._NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM
+            )
+            if (
+                abs(upper.l - lower.l)
+                < upper.page_size.width * self._LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM
+                and upper.b < lower.t <= upper.b + tolerance
+                and upper.t > lower.t
+                and upper.b > lower.b
+                and j not in state.dn_map[i]
+            ):
+                state.dn_map[i].append(j)
+                state.up_map[j].append(i)
+
     def _has_sequence_interruption(
         self,
         spatial_idx: rtree_index.Index,
@@ -780,8 +815,8 @@ class ReadingOrderPredictor:
     ) -> bool:
         """Check if elements interrupt the reading sequence between i and j."""
         # Query R-tree for elements between i and j
-        x_min = min(pelem_i.l, pelem_j.l) - 1.0
-        x_max = max(pelem_i.r, pelem_j.r) + 1.0
+        x_min = min(pelem_i.l, pelem_j.l) - self._INTERRUPTION_QUERY_PADDING
+        x_max = max(pelem_i.r, pelem_j.r) + self._INTERRUPTION_QUERY_PADDING
         y_min = pelem_j.t
         y_max = pelem_i.b
 
@@ -834,7 +869,7 @@ class ReadingOrderPredictor:
         th = 0.0
         if page_elems:
             page_size = page_elems[0].page_size
-            th = self._horizontal_dilation_threshold_norm * page_size.width
+            th = self._HORIZONTAL_DILATION_THRESHOLD_NORM * page_size.width
 
         for i, pelem_i in enumerate(dilated_page_elems):
             if _is_horizontal_separator(pelem_i):
