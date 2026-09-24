@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import hashlib
+import logging
 from io import BytesIO
 from itertools import islice
 from pathlib import Path
@@ -9,6 +10,23 @@ from typing import List, Union
 
 import requests
 from tqdm import tqdm
+
+from docling.datamodel.settings import settings
+
+_log = logging.getLogger(__name__)
+
+
+def backend_error_message(message: str, exc: BaseException) -> str:
+    """Error text for a failed call to a remote model backend.
+
+    Raw transport errors name internal hosts, ports and peer addresses, and
+    callers surface this text in public error items. The raw error is always
+    logged, and appended only when ``settings.debug.error_details`` is set.
+    """
+    _log.warning("%s: %s", message, exc)
+    if settings.debug.error_details:
+        return f"{message}: {exc}"
+    return message
 
 
 def chunkify(iterator, chunk_size):

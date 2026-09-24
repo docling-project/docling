@@ -41,6 +41,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
+from docling.utils.text_decoding import decode_text
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -129,6 +130,7 @@ def _only_plain_line_breaks(children: list) -> bool:
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
     _DELIMITER_CELL_RE = re.compile(r":?-+:?")
+    _PIPE_ENTITY = "&#124;"
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -153,6 +155,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
+    def _escape_pipes(text: str) -> str:
+        """Carry a pipe that is cell content rather than a cell delimiter.
+
+        An entity is how the row buffer already spells such a pipe: a source
+        ``&#124;`` survives ``_unescape_except_pipe`` intact and ``_close_table``
+        turns it back into ``|`` once the cells are split. A backslash-escaped
+        pipe has to join it there, because Marko resolves ``\\|`` to a Literal
+        node holding a bare ``|``, which the buffer cannot tell from markup.
+        """
+        return text.replace("|", MarkdownDocumentBackend._PIPE_ENTITY)
+
+    @staticmethod
     def _inline_text(node) -> str:
         """The text of an inline node, its markers dropped.
 
@@ -161,6 +175,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         """
         children = getattr(node, "children", None)
         if isinstance(children, str):
+            # A Literal is a backslash escape, so its pipe is content.
+            if isinstance(node, marko.inline.Literal):
+                return MarkdownDocumentBackend._escape_pipes(children)
             return children
         return "".join(
             MarkdownDocumentBackend._inline_text(child) for child in children or []
@@ -278,30 +295,23 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
-        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
-        # output. Equivalent to utf-8 when no BOM is present.
+        # output.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
-                # remove invalid sequences
-                # very long sequences of underscores will lead to unnecessary long processing times.
-                # In any proper Markdown files, underscores have to be escaped,
-                # otherwise they represent emphasis (bold or italic)
-                self.markdown = self._shorten_underscore_sequences(text_stream)
-                self.markdown = self._shorten_leading_dash_sequences(self.markdown)
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8-sig") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
-                    self.markdown = self._shorten_leading_dash_sequences(self.markdown)
+            md_content = decode_text(self.path_or_stream, options.encoding)
+            # remove invalid sequences
+            # very long sequences of underscores will lead to unnecessary long processing times.
+            # In any proper Markdown files, underscores have to be escaped,
+            # otherwise they represent emphasis (bold or italic)
+            self.markdown = self._shorten_underscore_sequences(md_content)
+            self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             self.valid = True
 
             _log.debug(self.markdown)
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
@@ -626,13 +636,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(original_text.strip())
+            # A Literal is a backslash escape, so a pipe it holds is content
+            # and not markup: it cannot open a table of its own.
+            is_escape = isinstance(element, marko.inline.Literal)
             is_table_row = bool(snippet_text) and (
                 # A header cell in bold or a link arrives as its own node with
                 # no pipe in it, so once the paragraph is known to be a table,
                 # every piece of it belongs to that table, pipe or not.
                 self.in_pipeless_table
                 or (
-                    "|" in snippet_text
+                    not is_escape
+                    and "|" in snippet_text
                     and (self.in_table or original_text.lstrip().startswith("|"))
                 )
             )
@@ -640,6 +654,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self.in_table = True
             if self.in_table and snippet_text:
                 snippet_text = self._unescape_except_pipe(original_text.strip())
+                if is_escape:
+                    snippet_text = self._escape_pipes(snippet_text)
                 # If we're in a table, keep adding text (for formatted content in cells)
                 if self.md_table_buffer:
                     self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text

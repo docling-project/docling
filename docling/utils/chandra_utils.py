@@ -1,227 +1,708 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Utilities for parsing chandra-ocr-2 HTML-with-bbox format.
-
-chandra-ocr-2 produces HTML where each layout element is a top-level
-``<div data-bbox="x0 y0 x1 y1" data-label="Label">content</div>``.
-Bboxes are in 0-1000 normalized coordinate space.
-"""
+"""Parse Chandra's HTML dialect, retaining layout provenance and HTML structure."""
 
 from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from typing import Optional, Union
+from pathlib import Path
 
 from docling_core.types.doc import (
     BoundingBox,
+    ContentLayer,
     CoordOrigin,
+    DescriptionMetaField,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     ImageRef,
+    ListItem,
+    MoleculeMetaField,
+    NodeItem,
+    PictureItem,
+    PictureMeta,
     ProvenanceItem,
+    RichTableCell,
+    Script,
+    SectionHeaderItem,
     Size,
     TableCell,
     TableData,
+    TableItem,
 )
 from PIL import Image as PILImage
+from pydantic import AnyUrl, ValidationError
+
+from docling.utils.code_language import detect_code_language
 
 _log = logging.getLogger(__name__)
 
-# Mapping from chandra-ocr-2 layout labels to DocItemLabel.
-# Labels not present in DocItemLabel fall back to TEXT.
-_LABEL_MAP: dict[str, DocItemLabel] = {
-    "Text": DocItemLabel.TEXT,
+_MAX_TABLE_GRID_CELLS = 1000
+
+_LABEL_MAP = {
     "Title": DocItemLabel.TITLE,
     "Section-Header": DocItemLabel.SECTION_HEADER,
-    "Table": DocItemLabel.TABLE,
-    "Figure": DocItemLabel.PICTURE,
-    "Image": DocItemLabel.PICTURE,
     "Caption": DocItemLabel.CAPTION,
     "Footnote": DocItemLabel.FOOTNOTE,
     "Page-Header": DocItemLabel.PAGE_HEADER,
     "Page-Footer": DocItemLabel.PAGE_FOOTER,
-    "List-Group": DocItemLabel.LIST_ITEM,
     "Equation-Block": DocItemLabel.FORMULA,
     "Code-Block": DocItemLabel.CODE,
-    "Form": DocItemLabel.FORM,
-    "Table-Of-Contents": DocItemLabel.TEXT,
-    "Complex-Block": DocItemLabel.TEXT,
-    "Chemical-Block": DocItemLabel.FORMULA,
-    "Diagram": DocItemLabel.PICTURE,
     "Bibliography": DocItemLabel.REFERENCE,
-    "Blank-Page": DocItemLabel.TEXT,
+}
+_VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
+_BLOCK_TAGS = {
+    "div",
+    "p",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "table",
+    "ul",
+    "ol",
+    "li",
+    "pre",
+    "figure",
+    "form",
+    "caption",
+    "figcaption",
+    "hr",
+}
+_FORMAT_TAGS = {
+    "b": "bold",
+    "strong": "bold",
+    "i": "italic",
+    "em": "italic",
+    "u": "underline",
+    "del": "strikethrough",
+    "s": "strikethrough",
 }
 
-# Regex to match top-level divs with data-bbox and data-label (either order).
-# Captures: (all attributes string), (inner content).
-_DIV_PATTERN = re.compile(
-    r"<div\s+([^>]*?)>(.*?)</div>",
-    re.DOTALL,
-)
 
-_BBOX_ATTR = re.compile(r'data-bbox="(\d+\s+\d+\s+\d+\s+\d+)"')
-_LABEL_ATTR = re.compile(r'data-label="([^"]+)"')
+@dataclass
+class _Element:
+    tag: str
+    attrs: dict[str, str] = field(default_factory=dict)
+    children: list[_Element | str] = field(default_factory=list)
 
-# Strip HTML tags from inner content.
-_TAG_RE = re.compile(r"<[^>]+>")
+    def elements(self) -> Iterator[_Element]:
+        for child in self.children:
+            if isinstance(child, _Element):
+                yield child
+                yield from child.elements()
 
-
-def _strip_tags(html: str) -> str:
-    """Remove HTML tags and collapse whitespace."""
-    # Preserve spacing represented by HTML line breaks.
-    html = re.sub(r"<br\s*/?>", " ", html)
-    text = _TAG_RE.sub("", html)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-class _TableHTMLParser(HTMLParser):
-    """Lightweight HTML table parser using stdlib html.parser."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.rows: list[list[dict]] = []  # list of rows, each row is list of cell dicts
-        self._in_row = False
-        self._in_cell = False
-        self._current_cell: dict = {}
-        self._current_row: list[dict] = []
-        self._cell_text_parts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        tag_lower = tag.lower()
-        if tag_lower == "tr":
-            self._in_row = True
-            self._current_row = []
-        elif tag_lower in ("td", "th"):
-            self._in_cell = True
-            attr_dict = dict(attrs)
-            self._current_cell = {
-                "tag": tag_lower,
-                "colspan": int(attr_dict.get("colspan") or "1"),
-                "rowspan": int(attr_dict.get("rowspan") or "1"),
-            }
-            self._cell_text_parts = []
-
-    def handle_endtag(self, tag: str) -> None:
-        tag_lower = tag.lower()
-        if tag_lower in ("td", "th") and self._in_cell:
-            self._current_cell["text"] = " ".join(
-                "".join(self._cell_text_parts).split()
-            ).strip()
-            self._current_row.append(self._current_cell)
-            self._in_cell = False
-        elif tag_lower == "tr" and self._in_row:
-            self.rows.append(self._current_row)
-            self._in_row = False
-
-    def handle_data(self, data: str) -> None:
-        if self._in_cell:
-            self._cell_text_parts.append(data)
+    def text(self) -> str:
+        if self.tag == "br":
+            return "\n"
+        if self.tag == "input":
+            if self.attrs.get("type", "").lower() in {"checkbox", "radio"}:
+                return "☑" if "checked" in self.attrs else "☐"
+            return self.attrs.get("value", "")
+        return "".join(
+            child
+            if isinstance(child, str)
+            else child.text() + ("\n" if child.tag in _BLOCK_TAGS else "")
+            for child in self.children
+        )
 
 
-class _ListHTMLParser(HTMLParser):
-    """Lightweight HTML list parser using stdlib html.parser."""
+class _HTMLTreeParser(HTMLParser):
+    """A tree for the generated dialect; no browser, resource fetching, or CSS inference."""
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.items: list[str] = []
-        self._item_stack: list[list[str]] = []
+    def __init__(self, content: str):
+        super().__init__(convert_charrefs=True)
+        self.root = _Element("root")
+        self.stack = [self.root]
+        self.feed(content)
+        if self.rawdata.strip():
+            _log.warning(
+                "Chandra HTML ends with an incomplete tag; preserving preceding content"
+            )
+        self.close()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() == "li":
-            self._item_stack.append([])
+        # Accept omitted closing tags for adjacent cells, rows, and list items.
+        closes = {
+            "td": ({"td", "th"}, {"tr", "table"}),
+            "th": ({"td", "th"}, {"tr", "table"}),
+            "tr": ({"tr"}, {"table"}),
+            "li": ({"li"}, {"ul", "ol"}),
+            "p": ({"p"}, _BLOCK_TAGS - {"p"}),
+        }
+        if tag in closes:
+            targets, boundaries = closes[tag]
+            for index in range(len(self.stack) - 1, 0, -1):
+                if self.stack[index].tag in targets:
+                    del self.stack[index:]
+                    break
+                if self.stack[index].tag in boundaries:
+                    break
+        node = _Element(tag, {key: value or "" for key, value in attrs})
+        self.stack[-1].children.append(node)
+        if tag not in _VOID_TAGS:
+            self.stack.append(node)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag not in _VOID_TAGS:
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "li" and self._item_stack:
-            parts = self._item_stack.pop()
-            text = " ".join("".join(parts).split()).strip()
-            if text:
-                self.items.append(text)
+        for index in range(len(self.stack) - 1, 0, -1):
+            if self.stack[index].tag == tag:
+                del self.stack[index:]
+                break
 
     def handle_data(self, data: str) -> None:
-        if self._item_stack:
-            self._item_stack[-1].append(data)
+        self.stack[-1].children.append(data)
+
+
+def _span(value: str, maximum: int, default: int = 1) -> int:
+    try:
+        return min(maximum, max(1, int(value)))
+    except ValueError:
+        _log.warning("Invalid Chandra table span %r; using %s", value, default)
+        return default
+
+
+def _table_cells(table: _Element) -> list[tuple[TableCell, _Element]]:
+    rows: list[tuple[_Element, bool, int | None]] = []
+    for child in table.children:
+        if isinstance(child, _Element):
+            if child.tag == "tr":
+                rows.append((child, False, None))
+            elif child.tag in {"thead", "tbody", "tfoot"}:
+                group_rows = [
+                    row
+                    for row in child.children
+                    if isinstance(row, _Element) and row.tag == "tr"
+                ]
+                group_end = len(rows) + len(group_rows)
+                rows.extend(
+                    (row, child.tag == "thead", group_end) for row in group_rows
+                )
+    if len(rows) > _MAX_TABLE_GRID_CELLS:
+        raise ValueError(f"HTML table exceeds {_MAX_TABLE_GRID_CELLS} grid cells")
+    max_cols = _MAX_TABLE_GRID_CELLS // max(1, len(rows))
+    occupied: dict[int, int] = {}
+    result = []
+    for row_index, (row, in_header, group_end) in enumerate(rows):
+        col = 0
+        for node in row.children:
+            if not isinstance(node, _Element) or node.tag not in {"td", "th"}:
+                continue
+            colspan = _span(node.attrs.get("colspan", "1"), max_cols + 1)
+            remaining_rows = (group_end or len(rows)) - row_index
+            rowspan = (
+                remaining_rows
+                if node.attrs.get("rowspan") == "0"
+                else _span(node.attrs.get("rowspan", "1"), remaining_rows)
+            )
+            while occupied.get(col, 0) > row_index:
+                col += 1
+            if col + colspan > max_cols:
+                raise ValueError(
+                    f"HTML table exceeds {_MAX_TABLE_GRID_CELLS} grid cells"
+                )
+            for c in range(col, col + colspan):
+                occupied[c] = max(occupied.get(c, 0), row_index + rowspan)
+            result.append(
+                (
+                    TableCell(
+                        text=" ".join(node.text().split()),
+                        row_span=rowspan,
+                        col_span=colspan,
+                        start_row_offset_idx=row_index,
+                        end_row_offset_idx=row_index + rowspan,
+                        start_col_offset_idx=col,
+                        end_col_offset_idx=col + colspan,
+                        column_header=node.attrs.get("scope") == "col"
+                        or (node.tag == "th" and (in_header or row_index == 0)),
+                        row_header=node.attrs.get("scope") == "row"
+                        or (
+                            node.tag == "th"
+                            and col == 0
+                            and row_index > 0
+                            and not in_header
+                        ),
+                    ),
+                    node,
+                )
+            )
+            col += colspan
+    return result
+
+
+def _table_data(cells: list[TableCell]) -> TableData:
+    return TableData(
+        num_rows=max((cell.end_row_offset_idx for cell in cells), default=0),
+        num_cols=max((cell.end_col_offset_idx for cell in cells), default=0),
+        table_cells=cells,
+    )
 
 
 def _parse_table_html(html_content: str) -> TableData:
-    """Parse HTML table content and create TableData structure."""
-    table_match = re.search(
-        r"<table[^>]*>.*?</table>", html_content, re.DOTALL | re.IGNORECASE
+    """Plain table conversion also used by the DOTS parser."""
+    root = _HTMLTreeParser(html_content).root
+    table = next((node for node in root.elements() if node.tag == "table"), None)
+    return (
+        _table_data([cell for cell, _ in _table_cells(table)])
+        if table is not None
+        else _table_data([])
     )
-    if not table_match:
-        return TableData(num_rows=0, num_cols=0, table_cells=[])
 
-    try:
-        parser = _TableHTMLParser()
-        parser.feed(table_match.group(0))
 
-        rows = parser.rows
-        if not rows:
-            return TableData(num_rows=0, num_cols=0, table_cells=[])
+@dataclass
+class _Run:
+    text: str
+    label: DocItemLabel = DocItemLabel.TEXT
+    formatting: Formatting = field(default_factory=Formatting)
+    hyperlink: AnyUrl | Path | None = None
 
-        num_rows = len(rows)
-        num_cols = 0
-        for row in rows:
-            col_count = sum(cell["colspan"] for cell in row)
-            num_cols = max(num_cols, col_count)
 
-        grid: list[list[Union[None, str]]] = [
-            [None for _ in range(num_cols)] for _ in range(num_rows)
+@dataclass
+class _Provenance:
+    item: ProvenanceItem | None
+    text_owner: bool
+    claimed: bool = False
+
+    def take(self, text: str | None = None) -> ProvenanceItem | None:
+        if self.item is None or self.claimed:
+            return None
+        self.claimed = True
+        return (
+            self.item.model_copy(update={"charspan": (0, len(text))})
+            if text is not None
+            else self.item
+        )
+
+
+def _inline_runs(
+    node: _Element | str,
+    formatting: Formatting | None = None,
+    hyperlink: AnyUrl | Path | None = None,
+) -> Iterator[_Run]:
+    formatting = formatting or Formatting()
+    if isinstance(node, str):
+        yield _Run(
+            re.sub(r"\s+", " ", node), formatting=formatting, hyperlink=hyperlink
+        )
+        return
+    formatting = formatting.model_copy()
+    if node.tag in _FORMAT_TAGS:
+        setattr(formatting, _FORMAT_TAGS[node.tag], True)
+    elif node.tag in {"sup", "sub"}:
+        formatting.script = Script.SUPER if node.tag == "sup" else Script.SUB
+    elif node.tag == "a" and node.attrs.get("href"):
+        href = node.attrs["href"]
+        try:
+            hyperlink = AnyUrl(href) if ":" in href else Path(href)
+        except ValidationError:
+            _log.warning("Ignoring invalid Chandra hyperlink %r", href)
+    label = {"math": DocItemLabel.FORMULA, "code": DocItemLabel.CODE}.get(node.tag)
+    if node.tag == "input":
+        kind = node.attrs.get("type", "text").lower()
+        if kind == "hidden":
+            return
+        label = (
+            (
+                DocItemLabel.CHECKBOX_SELECTED
+                if "checked" in node.attrs
+                else DocItemLabel.CHECKBOX_UNSELECTED
+            )
+            if kind in {"checkbox", "radio"}
+            else DocItemLabel.FIELD_VALUE
+        )
+        text = "" if kind in {"checkbox", "radio"} else node.text()
+        yield _Run(text, label, formatting, hyperlink)
+    elif label is not None:
+        yield _Run(node.text().strip(), label, formatting, hyperlink)
+    elif node.tag == "br":
+        yield _Run("\n", formatting=formatting, hyperlink=hyperlink)
+    elif node.tag not in {"script", "style", "head"}:
+        for child in node.children:
+            yield from _inline_runs(child, formatting, hyperlink)
+
+
+class _ChandraDocumentBuilder:
+    def __init__(self, doc: DoclingDocument, size: Size, page_no: int):
+        self.doc = doc
+        self.size = size
+        self.page_no = page_no
+
+    def _provenance(self, node: _Element) -> ProvenanceItem | None:
+        raw = node.attrs.get("data-bbox", "")
+        try:
+            x0, y0, x1, y1 = (float(c) for c in raw.split())
+        except ValueError:
+            _log.warning(
+                "Missing or invalid Chandra bbox %r; preserving content without coordinates",
+                raw,
+            )
+            return None
+        if not (0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000):
+            _log.warning(
+                "Invalid Chandra bbox %r; preserving content without coordinates", raw
+            )
+            return None
+        return ProvenanceItem(
+            page_no=self.page_no,
+            charspan=(0, 0),
+            bbox=BoundingBox(
+                l=x0 * self.size.width / 1000,
+                t=y0 * self.size.height / 1000,
+                r=x1 * self.size.width / 1000,
+                b=y1 * self.size.height / 1000,
+                coord_origin=CoordOrigin.TOPLEFT,
+            ),
+        )
+
+    @staticmethod
+    def _text_prov(prov: _Provenance | None, text: str) -> ProvenanceItem | None:
+        return prov.take(text) if prov is not None and prov.text_owner else None
+
+    def _emit_runs(
+        self,
+        runs: list[_Run],
+        parent: NodeItem | None,
+        prov: _Provenance | None,
+        label: DocItemLabel,
+    ) -> None:
+        merged: list[_Run] = []
+        for run in runs:
+            if (
+                merged
+                and run.label == merged[-1].label == DocItemLabel.TEXT
+                and run.formatting == merged[-1].formatting
+                and run.hyperlink == merged[-1].hyperlink
+            ):
+                merged[-1].text += run.text
+            else:
+                merged.append(run)
+        merged = [
+            run
+            for run in merged
+            if run.text.strip()
+            or run.label
+            in {
+                DocItemLabel.FIELD_VALUE,
+                DocItemLabel.CHECKBOX_SELECTED,
+                DocItemLabel.CHECKBOX_UNSELECTED,
+            }
         ]
-        table_data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
-
-        for row_idx, row in enumerate(rows):
-            col_idx = 0
-            for cell in row:
-                while col_idx < num_cols and grid[row_idx][col_idx] is not None:
-                    col_idx += 1
-                if col_idx >= num_cols:
-                    break
-
-                text = cell["text"]
-                colspan = cell["colspan"]
-                rowspan = cell["rowspan"]
-                is_header = cell["tag"] == "th"
-
-                for r in range(row_idx, min(row_idx + rowspan, num_rows)):
-                    for c in range(col_idx, min(col_idx + colspan, num_cols)):
-                        grid[r][c] = text
-
-                table_data.table_cells.append(
-                    TableCell(
-                        text=text,
-                        row_span=rowspan,
-                        col_span=colspan,
-                        start_row_offset_idx=row_idx,
-                        end_row_offset_idx=row_idx + rowspan,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + colspan,
-                        column_header=is_header and row_idx == 0,
-                        row_header=is_header and col_idx == 0,
-                    )
+        if not merged:
+            return
+        layer = (
+            ContentLayer.FURNITURE
+            if label in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER}
+            else ContentLayer.BODY
+        )
+        if len(merged) > 1:
+            if label != DocItemLabel.TEXT:
+                parent = self.doc.add_text(
+                    label=label,
+                    text="",
+                    parent=parent,
+                    prov=self._text_prov(prov, ""),
+                    content_layer=layer,
                 )
-                col_idx += colspan
+            parent = self.doc.add_inline_group(parent=parent, content_layer=layer)
+        for run in merged:
+            run_label = (
+                label
+                if run.label == DocItemLabel.TEXT and len(merged) == 1
+                else run.label
+            )
+            text = run.text.strip()
+            if (
+                isinstance(parent, ListItem)
+                and not parent.children
+                and not parent.text
+                and len(merged) == 1
+                and run_label == DocItemLabel.TEXT
+            ):
+                parent.text = parent.orig = text
+                parent.formatting = (
+                    run.formatting if run.formatting != Formatting() else None
+                )
+                parent.hyperlink = run.hyperlink
+                continue
+            item = self.doc.add_text(
+                label=run_label,
+                text=text,
+                parent=parent,
+                prov=self._text_prov(
+                    prov if run_label == label else None,
+                    text,
+                ),
+                formatting=run.formatting if run.formatting != Formatting() else None,
+                hyperlink=run.hyperlink,
+                content_layer=layer,
+            )
+            if run_label == DocItemLabel.FIELD_VALUE:
+                item.kind = "fillable"
 
-        return table_data
+    def walk(
+        self,
+        children: list[_Element | str],
+        parent: NodeItem | None = None,
+        prov: _Provenance | None = None,
+        label: DocItemLabel = DocItemLabel.TEXT,
+    ) -> None:
+        runs: list[_Run] = []
+        for node in children:
+            if isinstance(node, str) or (
+                node.tag not in _BLOCK_TAGS | {"img", "chem"}
+                and "data-label" not in node.attrs
+                and "data-bbox" not in node.attrs
+                and not (node.tag == "math" and node.attrs.get("display") == "block")
+                and not any(child.tag in _BLOCK_TAGS for child in node.elements())
+            ):
+                runs.extend(_inline_runs(node))
+                continue
+            self._emit_runs(runs, parent, prov, label)
+            runs = []
+            self._block(node, parent, prov, label)
+        self._emit_runs(runs, parent, prov, label)
 
-    except Exception as e:
-        _log.warning(f"Failed to parse table HTML: {e}")
-        return TableData(num_rows=0, num_cols=0, table_cells=[])
+    def _block(
+        self,
+        node: _Element,
+        parent: NodeItem | None,
+        prov: _Provenance | None,
+        label: DocItemLabel,
+    ) -> None:
+        layout_label = node.attrs.get("data-label")
+        if "data-bbox" in node.attrs or layout_label is not None:
+            prov = _Provenance(
+                self._provenance(node),
+                text_owner=layout_label
+                not in {
+                    "Table",
+                    "List-Group",
+                    "Figure",
+                    "Image",
+                    "Diagram",
+                    "Chemical-Block",
+                    "Form",
+                },
+            )
+            label = _LABEL_MAP.get(layout_label or "", DocItemLabel.TEXT)
+        if layout_label in {
+            "Figure",
+            "Image",
+            "Diagram",
+            "Chemical-Block",
+        } or node.tag in {"figure", "img", "chem"}:
+            self._picture(node, parent, prov)
+        elif node.tag == "table":
+            self._table(node, parent, prov)
+        elif node.tag in {"ul", "ol"} or (
+            layout_label == "List-Group"
+            and not any(child.tag in {"ul", "ol"} for child in node.elements())
+        ):
+            self._list(node, parent)
+        elif node.tag in {"pre", "code"} or (
+            layout_label == "Code-Block"
+            and not any(child.tag == "pre" for child in node.elements())
+        ):
+            text = node.text().strip("\n\r")
+            self.doc.add_code(
+                text=text,
+                parent=parent,
+                prov=self._text_prov(prov, text),
+                code_language=detect_code_language(text, hint=node.attrs.get("class")),
+            )
+        elif node.tag == "math":
+            text = node.text().strip()
+            self.doc.add_formula(
+                text=text, parent=parent, prov=self._text_prov(prov, text)
+            )
+        elif node.tag not in _BLOCK_TAGS and (
+            "data-bbox" in node.attrs or layout_label is not None
+        ):
+            runs = list(_inline_runs(node))
+            if layout_label is None and len(runs) == 1:
+                label = runs[0].label
+            self._emit_runs(runs, parent, prov, label)
+        elif layout_label == "Form" or node.tag == "form":
+            region = self.doc.add_field_region(
+                parent=parent, prov=prov.take() if prov is not None else None
+            )
+            self.walk(node.children, region)
+        elif node.tag in {"caption", "figcaption"} or layout_label in {
+            "Caption",
+            "Footnote",
+        }:
+            label = (
+                DocItemLabel.FOOTNOTE
+                if layout_label == "Footnote"
+                else DocItemLabel.CAPTION
+            )
+            before = len(self.doc.texts)
+            self.walk(node.children, parent, prov, label)
+            if isinstance(parent, (PictureItem, TableItem)):
+                refs = (
+                    parent.footnotes
+                    if label == DocItemLabel.FOOTNOTE
+                    else parent.captions
+                )
+                refs.extend(
+                    item.get_ref()
+                    for item in self.doc.texts[before:]
+                    if item.label == label
+                )
+        elif node.tag not in {"script", "style", "head", "hr"}:
+            if re.fullmatch(r"h[1-6]", node.tag) and label == DocItemLabel.TEXT:
+                label = DocItemLabel.SECTION_HEADER
+            before = len(self.doc.texts)
+            self.walk(node.children, parent, prov, label)
+            if re.fullmatch(r"h[1-6]", node.tag):
+                for item in self.doc.texts[before:]:
+                    if isinstance(item, SectionHeaderItem):
+                        item.level = int(node.tag[1])
 
+    def _list(self, node: _Element, parent: NodeItem | None) -> None:
+        group = self.doc.add_list_group(parent=parent)
+        ordered = node.tag == "ol"
+        number = _span(node.attrs.get("start", "1"), 2**31 - 1)
+        children = node.children
+        if node.tag not in {"ul", "ol"}:
+            children = []
+            pending = _Element("li")
+            for child in node.children:
+                if isinstance(child, _Element) and child.tag in {"li", "p", "br"}:
+                    if pending.children:
+                        children.append(pending)
+                        pending = _Element("li")
+                    if child.tag != "br":
+                        children.append(child)
+                else:
+                    pending.children.append(child)
+            if pending.text().strip() or any(True for _ in pending.elements()):
+                children.append(pending)
+        for child in children:
+            if isinstance(child, str) and not child.strip():
+                continue
+            if isinstance(child, _Element) and child.tag in {"ul", "ol"}:
+                self._list(child, group)
+                continue
+            item = self.doc.add_list_item(
+                text="",
+                enumerated=ordered,
+                marker=f"{number}." if ordered else "",
+                parent=group,
+                prov=None,
+            )
+            contents = (
+                child.children
+                if isinstance(child, _Element) and child.tag in {"li", "p"}
+                else [child]
+            )
+            self.walk(contents, item)
+            number += 1
 
-def _parse_list_html(html_content: str) -> list[str]:
-    """Parse HTML list content and return list item texts."""
-    try:
-        parser = _ListHTMLParser()
-        parser.feed(html_content)
-        return parser.items
-    except Exception as e:
-        _log.warning(f"Failed to parse list HTML: {e}")
-        return []
+    def _table(
+        self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
+    ) -> None:
+        parsed = _table_cells(node)
+        if not parsed:
+            _log.warning("Chandra table contains no cells; preserving its content")
+            self.walk(node.children, parent, prov)
+            return
+        table = self.doc.add_table(
+            data=_table_data([]),
+            parent=parent,
+            prov=prov.take() if prov is not None else None,
+        )
+        cells: list[TableCell] = []
+        for cell, cell_node in parsed:
+            if any(child.tag != "span" for child in cell_node.elements()):
+                group = self.doc.add_group(parent=table)
+                self.walk(cell_node.children, group)
+                if group.children:
+                    cell = RichTableCell(**cell.model_dump(), ref=group.get_ref())
+            cells.append(cell)
+        table.data = _table_data(cells)
+        for child in node.children:
+            if isinstance(child, _Element) and (
+                child.tag in {"caption", "figcaption"}
+                or child.attrs.get("data-label") in {"Caption", "Footnote"}
+            ):
+                self._block(child, table, None, DocItemLabel.CAPTION)
+
+    def _picture(
+        self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
+    ) -> None:
+        picture = self.doc.add_picture(
+            parent=parent, prov=prov.take() if prov is not None else None
+        )
+        images = (
+            [node]
+            if node.tag == "img"
+            else [child for child in node.elements() if child.tag == "img"]
+        )
+        descriptions = list(
+            dict.fromkeys(
+                image.attrs["alt"] for image in images if image.attrs.get("alt")
+            )
+        )
+        picture.meta = PictureMeta(
+            description=DescriptionMetaField(
+                text="\n".join(descriptions), created_by="chandra"
+            )
+            if descriptions
+            else None
+        )
+        chemicals = (
+            [node]
+            if node.tag == "chem"
+            else [child for child in node.elements() if child.tag == "chem"]
+        )
+        if len(chemicals) == 1:
+            picture.meta.molecule = MoleculeMetaField(
+                smi=chemicals[0].text().strip(), created_by="chandra"
+            )
+        if node.tag == "chem":
+            return
+
+        # The layout bbox describes the whole picture. Its img tags provide
+        # descriptions, not separately located images. Keep structured children.
+        for element in (node, *node.elements()):
+            element.children[:] = [
+                child
+                for child in element.children
+                if isinstance(child, str)
+                or (
+                    child.tag != "img"
+                    and not (child.tag == "chem" and len(chemicals) == 1)
+                )
+            ]
+        self.walk(node.children, picture)
 
 
 def parse_chandra_html(
@@ -231,100 +712,62 @@ def parse_chandra_html(
     filename: str = "file",
     page_image: PILImage.Image | None = None,
 ) -> DoclingDocument:
-    """Parse chandra-ocr-2 HTML output into a DoclingDocument.
+    """Map Chandra layout blocks and their HTML contents to document primitives.
 
-    This parser intentionally covers the common block, list, table, and picture
-    cases first. Some semantic relationships implied by Chandra labels, such as
-    assigning captions to figures/tables and reconstructing nested list
-    hierarchy, are not reconstructed yet.
-
-    Args:
-        content: Raw HTML string from chandra-ocr-2.
-        original_page_size: Physical page dimensions (points).
-        page_no: Page number (1-based).
-        filename: Source filename.
-        page_image: Optional PIL image of the page.
-
-    Returns:
-        DoclingDocument populated with parsed elements.
+    A source bbox is assigned to at most one document item representing that layout
+    block; derived children remain unlocated unless they declare their own bbox.
+    Bare HTML is recovered without provenance; non-HTML responses raise ValueError.
+    Caption/footnote links require explicit nesting. Separate layout blocks are
+    neither associated nor merged by proximity.
     """
-    origin = DocumentOrigin(
-        filename=filename,
-        mimetype="text/html",
-        binary_hash=0,
+    doc = DoclingDocument(
+        name=Path(filename).stem,
+        origin=DocumentOrigin(filename=filename, mimetype="text/html", binary_hash=0),
     )
-    doc = DoclingDocument(name=filename.rsplit(".", 1)[0], origin=origin)
-
-    pg_width = original_page_size.width
-    pg_height = original_page_size.height
-
-    scale_x = pg_width / 1000
-    scale_y = pg_height / 1000
-
-    image_dpi = 72
-    if page_image is not None:
-        image_dpi = int(72 * page_image.width / pg_width)
-
+    dpi = (
+        max(1, round(72 * page_image.width / original_page_size.width))
+        if page_image is not None
+        else 72
+    )
     doc.add_page(
         page_no=page_no,
-        size=Size(width=pg_width, height=pg_height),
-        image=ImageRef.from_pil(image=page_image, dpi=image_dpi)
-        if page_image
+        size=original_page_size,
+        image=ImageRef.from_pil(image=page_image, dpi=dpi)
+        if page_image is not None
         else None,
     )
-
-    if not content or not content.strip():
+    if not content.strip():
         return doc
-
-    for m in _DIV_PATTERN.finditer(content):
-        attrs_str = m.group(1)
-        inner_html = m.group(2)
-
-        bbox_m = _BBOX_ATTR.search(attrs_str)
-        label_m = _LABEL_ATTR.search(attrs_str)
-        if not bbox_m or not label_m:
-            continue
-
-        coords = bbox_m.group(1).split()
-        if len(coords) != 4:
-            continue
-
-        try:
-            x0, y0, x1, y1 = (int(c) for c in coords)
-        except ValueError:
-            continue
-
-        label_str = label_m.group(1)
-
-        bbox = BoundingBox(
-            l=x0 * scale_x,
-            t=y0 * scale_y,
-            r=x1 * scale_x,
-            b=y1 * scale_y,
-            coord_origin=CoordOrigin.TOPLEFT,
+    root = _HTMLTreeParser(content).root
+    builder = _ChandraDocumentBuilder(doc, original_page_size, page_no)
+    blocks = [
+        node
+        for node in root.elements()
+        if "data-label" in node.attrs or "data-bbox" in node.attrs
+    ]
+    if blocks:
+        # Walk each outer layout block once, ignoring deployment reasoning prose.
+        nested = {id(child) for block in blocks for child in block.elements()}
+        for block in blocks:
+            if id(block) not in nested:
+                builder._block(block, None, None, DocItemLabel.TEXT)
+    else:
+        html_nodes = [
+            child
+            for child in root.children
+            if isinstance(child, _Element)
+            and child.tag not in {"script", "style", "head"}
+        ]
+        if not html_nodes:
+            raise ValueError(
+                "Chandra response contains no HTML transcription or layout blocks"
+            )
+        _log.warning(
+            "Chandra response has no layout blocks; recovering HTML without coordinates"
         )
-        prov = ProvenanceItem(page_no=page_no, bbox=bbox, charspan=[0, 0])
-
-        doc_label = _LABEL_MAP.get(label_str, DocItemLabel.TEXT)
-
-        if label_str == "Table":
-            table_data = _parse_table_html(inner_html)
-            doc.add_table(data=table_data, prov=prov)
-        elif label_str == "Form" and "<table" in inner_html.lower():
-            table_data = _parse_table_html(inner_html)
-            doc.add_table(data=table_data, prov=prov)
-        elif label_str == "List-Group":
-            list_group = doc.add_list_group()
-            list_items = _parse_list_html(inner_html) or [_strip_tags(inner_html)]
-            for item_text in list_items:
-                doc.add_list_item(text=item_text, parent=list_group, prov=prov)
-        elif label_str in ("Figure", "Image", "Diagram"):
-            doc.add_picture(prov=prov)
-        elif label_str == "Title":
-            doc.add_title(text=_strip_tags(inner_html), prov=prov)
-        elif label_str == "Section-Header":
-            doc.add_heading(text=_strip_tags(inner_html), prov=prov)
-        else:
-            doc.add_text(label=doc_label, text=_strip_tags(inner_html), prov=prov)
-
+        builder.walk(list(html_nodes))
+    if not (doc.texts or doc.tables or doc.pictures or doc.field_regions) and not any(
+        block.attrs.get("data-label") == "Blank-Page" for block in blocks
+    ):
+        raise ValueError("Chandra HTML contains no document content")
     return doc

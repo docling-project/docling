@@ -13,12 +13,17 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
 )
-from typing_extensions import TypeVar
+from typing_extensions import Self, TypeVar
 
+from docling.datamodel.extraction import ExtractionTarget
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import BaseChunkerOptions
-from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions,
+    ExtractDocumentsOptions,
+)
 from docling.datamodel.service.sources import (
     AzureBlobCoordinates,
     FileSource,
@@ -41,24 +46,36 @@ from docling.datamodel.service.targets import (
 ## Sources
 
 
+# Nothing unpacks ZIP archives as input, so reject them at submission instead of
+# failing format detection in the worker. Checked by name only: office formats
+# (docx, xlsx, ...) are ZIP containers too.
+_ZIP_REJECTED = "ZIP archives are not accepted as input sources"
+
+
 class FileSourceRequest(FileSource):
     kind: Literal["file"] = "file"
+
+    @field_validator("filename")
+    @classmethod
+    def reject_zip_filename(cls, value: str) -> str:
+        if value.lower().endswith(".zip"):
+            raise ValueError(_ZIP_REJECTED)
+        return value
 
 
 class AnyHttpSourceRequest(HttpSource):
     kind: Literal["http"] = "http"
 
-
-class HttpSourceRequest(AnyHttpSourceRequest):
-    """HTTP source for convert endpoints — rejects ZIP URLs."""
-
     @field_validator("url")
     @classmethod
     def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
-        path = str(value).lower().split("?", maxsplit=1)[0]
-        if path.endswith(".zip"):
-            raise ValueError("ZIP URLs are not accepted on the convert endpoint")
+        if (value.path or "").lower().endswith(".zip"):
+            raise ValueError(_ZIP_REJECTED)
         return value
+
+
+class HttpSourceRequest(AnyHttpSourceRequest):
+    """HTTP source for convert endpoints."""
 
 
 class S3SourceRequest(S3Coordinates):
@@ -94,6 +111,19 @@ KnownBatchSourceRequestItem = Annotated[
     Field(discriminator="kind"),
 ]
 
+# Extraction additionally accepts ad-hoc inline file uploads; batch convert does
+# not (see ExtractSourcesRequest and
+# test_batch_convert_sources_request_rejects_file_sources).
+KnownExtractSourceRequestItem = Annotated[
+    FileSourceRequest
+    | AnyHttpSourceRequest
+    | S3SourceRequest
+    | AzureBlobSourceRequest
+    | GoogleCloudStorageSourceRequest
+    | GoogleDriveSourceRequest,
+    Field(discriminator="kind"),
+]
+
 
 class GenericSourceRequest(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -101,12 +131,11 @@ class GenericSourceRequest(BaseModel):
     kind: str = Field(min_length=1)
 
 
+# Superset (extract union) so a "file" dict is coerced to FileSourceRequest; the
+# per-request outer union then decides whether "file" is an accepted tag.
 _KNOWN_BATCH_SOURCE_MODELS = {
     source_type.model_fields["kind"].default: source_type
-    for source_type in (
-        *get_args(get_args(KnownBatchSourceRequestItem)[0]),
-        FileSourceRequest,
-    )
+    for source_type in get_args(get_args(KnownExtractSourceRequestItem)[0])
 }
 _KNOWN_BATCH_SOURCE_TYPES = tuple(_KNOWN_BATCH_SOURCE_MODELS.values())
 
@@ -133,6 +162,12 @@ BatchSourceRequestItem = Annotated[
     BeforeValidator(_validate_batch_source),
 ]
 BatchSourceRequestInput: TypeAlias = BatchSourceRequestItem | Mapping[str, Any]
+
+ExtractSourceRequestItem = Annotated[
+    KnownExtractSourceRequestItem | GenericSourceRequest,
+    BeforeValidator(_validate_batch_source),
+]
+ExtractSourceRequestInput: TypeAlias = ExtractSourceRequestItem | Mapping[str, Any]
 
 SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")
@@ -215,6 +250,56 @@ class ConvertSourcesRequest(BaseModel):
 
 ## Deprecated aliases — will be removed in a future release
 ConvertDocumentsRequest = ConvertSourcesRequest
+
+
+## Extraction requests
+# KnownBatchTargetRequest with InBodyTarget added back: ad-hoc extraction needs
+# the in-body result, unlike convert's batch union. Database targets are excluded
+# (rejected at enqueue in v1 — their contract is chunk-shaped, extraction emits document envelopes).
+ExtractTargetRequest = Annotated[
+    InBodyTarget
+    | S3Target
+    | AzureBlobTarget
+    | GoogleCloudStorageTarget
+    | GoogleDriveTarget
+    | PresignedUrlTarget,
+    Field(discriminator="kind"),
+]
+
+
+class ExtractSourcesRequest(BaseModel):
+    """Batch-capable request for asynchronous source extraction.
+
+    ``extraction_target`` is the contract (what to extract: output schema and/or
+    guidance). ``sources`` accepts both individual and expandable connector
+    sources. ``options`` is purely operational (model selection, decode mode,
+    input channel, page range) and defaults to server defaults. ``target``
+    selects one in-body or storage destination.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    extraction_target: ExtractionTarget
+    sources: list[ExtractSourceRequestItem] = Field(min_length=1)
+    options: ExtractDocumentsOptions = ExtractDocumentsOptions()
+    target: ExtractTargetRequest = InBodyTarget()
+    callbacks: list[CallbackSpec] = []
+
+    @model_validator(mode="after")
+    def _schema_constrained_needs_schema(self) -> Self:
+        # Fail at submission (client ValueError / serve 422) instead of in the
+        # worker. The engine check (vLLM API only) needs the resolved preset and
+        # stays server-side.
+        if (
+            self.options.output_mode == "schema_constrained"
+            and self.extraction_target.output_schema is None
+        ):
+            raise ValueError(
+                "output_mode='schema_constrained' requires "
+                "extraction_target.output_schema."
+            )
+        return self
+
 
 ## Source chunking requests
 

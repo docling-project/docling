@@ -254,6 +254,76 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 2 body." in text
 
 
+def _build_epub_with_parent_relative_href(path: Path) -> Path:
+    """Build a minimal EPUB whose spine steps out of the package directory.
+
+    The package document lives in ``OEBPS/`` while the second content document
+    is stored in a sibling ``Text/`` directory, so its manifest href opens with
+    a parent segment.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/content.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Parent Relative</dc:title></metadata>"
+        "<manifest>"
+        '<item id="c0" href="chapter-0.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        '<item id="c1" href="../Text/chapter-1.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        "</manifest>"
+        '<spine><itemref idref="c0"/><itemref idref="c1"/></spine>'
+        "</package>"
+    )
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/content.opf", opf)
+        for i, name in enumerate(["OEBPS/chapter-0.xhtml", "Text/chapter-1.xhtml"]):
+            z.writestr(
+                name,
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+                f"<p>Chapter {i} body.</p>"
+                "</body></html>",
+            )
+    return path
+
+
+def test_epub_parent_relative_manifest_href_is_read(tmp_path: Path):
+    """A manifest href is resolved against the package document, parents included.
+
+    The archive stores normalised entry names, so a spine document reached
+    through a parent segment is never found and its text is dropped from the
+    converted document while the conversion still reports success.
+    """
+    epub_path = _build_epub_with_parent_relative_href(tmp_path / "parent.epub")
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
+    text = "\n".join(item.text for item in doc.texts)
+
+    assert "Chapter 0 body." in text
+    assert "Chapter 1 body." in text
+
+
 def test_epub_link_fixing():
     """Test that internal EPUB links are properly fixed after content combination."""
     epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")

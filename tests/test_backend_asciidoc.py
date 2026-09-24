@@ -46,6 +46,28 @@ def test_list_dedent_to_base_does_not_crash() -> None:
     assert [item.text for item in doc.texts] == ["a", "b"]
 
 
+def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
+    # AsciiDoc writes a span as [colspan][.rowspan] followed by "+" or "*", and
+    # either number may be omitted, so ".2+" is a rowspan on its own. The cell
+    # specifier pattern required a leading digit, so _is_table_line rejected the
+    # line, the block loop read that as the end of the table, and the row after
+    # it leaked into the document as literal text.
+    src = b"|===\n|A |B\n.2+|tall |x\n|y\n|===\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="rowspan.asciidoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert doc.tables, "the table was dropped entirely"
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (2, 2)
+    assert [cell.text for cell in table.data.table_cells] == ["A", "B", "tall", "x"]
+    assert [item.text for item in doc.texts] == []
+
+
 def test_auto_numbered_list_keeps_items_and_following_text() -> None:
     source = b"""= Installation Guide
 
@@ -106,7 +128,9 @@ After the block.
     assert "After the block." in doc.export_to_markdown()
 
 
-def test_literal_block_flushes_pending_caption() -> None:
+def test_literal_block_attaches_caption_to_code_item() -> None:
+    # A block title before a literal block must be attached as a proper caption
+    # on the CodeItem (FloatingItem), not emitted as a standalone orphan.
     source = b""".Literal example
 ....
 raw literal
@@ -122,10 +146,42 @@ image::next.png[]
     )
     doc = in_doc._backend.convert()
 
-    assert [(item.label, item.text) for item in doc.texts[:2]] == [
-        (DocItemLabel.CAPTION, "Literal example"),
-        (DocItemLabel.CODE, "raw literal"),
-    ]
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert len(code_items) == 1
+    assert code_items[0].text == "raw literal"
+    # The block title must be structurally linked as the code item's caption.
+    assert len(code_items[0].captions) == 1
+    assert code_items[0].captions[0].resolve(doc).text == "Literal example"
+
+
+def test_block_title_before_list_renders_as_bold_paragraph() -> None:
+    # A block title preceding a list (GroupItem) has no caption slot; it must
+    # be emitted as a bold PARAGRAPH immediately before the list.
+    source = b""".Steps
+
+. First step
+. Second step
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    from docling_core.types.doc import Formatting
+
+    non_list_texts = [item for item in doc.texts if not isinstance(item, ListItem)]
+    assert len(non_list_texts) == 1
+    title_item = non_list_texts[0]
+    assert title_item.label == DocItemLabel.PARAGRAPH
+    assert title_item.text == "Steps"
+    assert title_item.formatting == Formatting(bold=True)
+
+    # The block title must appear before the list items in export order.
+    md = doc.export_to_markdown()
+    assert md.index("**Steps**") < md.index("First step")
 
 
 def test_parse_picture() -> None:
@@ -220,6 +276,8 @@ def test_non_numeric_image_dimensions_do_not_crash() -> None:
 def test_local_images_are_embedded_and_missing_images_do_not_break_export(
     tmp_path: Path,
 ) -> None:
+    import pytest
+
     in_path = Path("tests/data/asciidoc/sources/asciidoc_03.asciidoc")
     options = AsciiDocBackendOptions(
         fetch_images=True,
@@ -232,7 +290,8 @@ def test_local_images_are_embedded_and_missing_images_do_not_break_export(
         backend=AsciiDocBackend,
         backend_options=options,
     )
-    doc = in_doc._backend.convert()
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        doc = in_doc._backend.convert()
 
     assert doc.pictures[0].image is not None
     assert doc.pictures[0].image.uri.scheme == "data"

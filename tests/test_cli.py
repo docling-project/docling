@@ -13,6 +13,7 @@ import pytest
 import typer
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from docling.cli.export_utils import (
@@ -33,6 +34,21 @@ runner = CliRunner()
 PNG_BYTES = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
 )
+
+
+def test_convert_help_only_advertises_supported_pdf_backends() -> None:
+    result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
+
+    assert result.exit_code == 0
+    convert_command = get_command(app).commands["convert"]
+    pdf_backend_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "pdf_backend"
+    )
+    assert pdf_backend_option.metavar == "[pypdfium2|docling_parse]"
+    assert "threaded_docling_parse" not in result.stdout
+    assert "dlparse_v1" not in result.stdout
 
 
 def _png_bytes(color: tuple[int, int, int]) -> bytes:
@@ -864,8 +880,8 @@ def test_cli_accepts_threaded_docling_parse_backend(
         (
             "legacy",
             "LegacyStandardPdfPipeline",
-            PdfBackend.DOCLING_PARSE,
-            "DoclingParseDocumentBackend",
+            PdfBackend.THREADED_DOCLING_PARSE,
+            "ThreadedDoclingParseDocumentBackend",
         ),
         (
             "vlm",
@@ -903,7 +919,7 @@ def test_cli_routes_pdf_backend_for_legacy_and_vlm(
             captured["pipeline"] = pdf_option.pipeline_cls.__name__
             captured["pdf_backend"] = pdf_option.backend.__name__
             captured["image_backend"] = image_option.backend.__name__
-            if pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+            if pdf_backend is PdfBackend.THREADED_DOCLING_PARSE:
                 assert isinstance(
                     pdf_option.backend_options, ThreadedDoclingParseBackendOptions
                 )

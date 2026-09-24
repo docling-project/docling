@@ -444,6 +444,85 @@ def test_convert_table_rows_match_header_cell_count():
         assert len(table_data.table_cells) == table_data.num_rows * table_data.num_cols
 
 
+def test_convert_table_cell_with_escaped_pipe():
+    """
+    Regression test:
+    GFM 4.10 example 200: "Include a pipe in a cell's content by escaping it".
+    Marko resolves ``\\|`` to a Literal node holding a bare ``|``, which the
+    table buffer then took for a cell delimiter: the cell was split in two and
+    the row gained a column the header never had.
+    """
+    leading_pipes = """| a\\|b | c |
+| --- | --- |
+| d\\|e | f |
+"""
+    no_leading_pipes = """a\\|b | c
+--- | ---
+d\\|e | f
+"""
+    inside_strong = """| **a\\|b** | c |
+| --- | --- |
+| d\\|e | f |
+"""
+    expected = ["a|b", "c", "d|e", "f"]
+
+    for markdown in (leading_pipes, no_leading_pipes, inside_strong):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        assert len(conv_result.document.tables) == 1
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+
+
+def test_convert_escaped_pipe_in_prose_stays_text():
+    """
+    Regression test:
+    An escaped pipe reaches the backend as a Literal node holding a bare ``|``,
+    which the row detector read as the leading pipe of a table row. A sentence
+    that merely contained ``\\|`` was split into a text item and a spurious
+    one-cell table, and the pipe itself never reached the document.
+
+    The expectation is pinned to ``\\*``, an escape the backend already handles,
+    so that the assertion covers the pipe's own handling without also freezing
+    how inline runs are split into text items.
+    """
+    for template in ("Some sentence with a \\{c} pipe in it.\n", "a \\{c} b\n"):
+        pipe_result = get_converter().convert_string(
+            template.format(c="|"), format=InputFormat.MD
+        )
+        star_result = get_converter().convert_string(
+            template.format(c="*"), format=InputFormat.MD
+        )
+        assert pipe_result.status == ConversionStatus.SUCCESS
+        assert star_result.status == ConversionStatus.SUCCESS
+
+        assert pipe_result.document.tables == []
+        assert [item.text for item in pipe_result.document.texts] == [
+            item.text.replace("*", "|") for item in star_result.document.texts
+        ]
+
+
+def test_convert_table_escaped_pipe_does_not_add_a_column():
+    """
+    The same defect with whitespace around the escaped pipe. Only the cell
+    count is asserted here: the spaces that surround an inline fragment are
+    dropped by a separate defect (#3991), so the cell text is not yet stable.
+    """
+    markdown = """| a \\| b | c |
+| --- | --- |
+| d | f |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_cols == 2
+    assert table_data.num_rows == 2
+    assert len(table_data.table_cells) == 4
+
+
 def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
     """A leading UTF-8 BOM must not survive into the first line.
 

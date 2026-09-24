@@ -112,6 +112,7 @@ class ResponseFormat(str, Enum):
     PLAINTEXT = "plaintext"
     CHANDRA_HTML = "chandra_html"
     DOTS_JSON = "dots_json"
+    NEMOTRON_PARSE_V2 = "nemotron_parse_v2"
 
 
 class InferenceFramework(str, Enum):

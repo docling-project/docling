@@ -15,7 +15,7 @@
 # - Ensure your environment can download model weights (e.g., from Hugging Face).
 #
 # How to run
-# - From the repository root, run: `python docs/examples/minimal_vlm_pipeline_legacy.py`.
+# - From the repository root, run: `python docs/examples/legacy/minimal_vlm_pipeline_legacy.py`.
 # - The script prints the converted Markdown to stdout.
 #
 # Notes

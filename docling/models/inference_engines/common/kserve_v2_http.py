@@ -29,6 +29,7 @@ from docling.models.inference_engines.common.kserve_v2_utils import (
     decode_bytes_tensor,
     encode_bytes_tensor,
 )
+from docling.utils.utils import backend_error_message
 
 _log = logging.getLogger(__name__)
 _INFERENCE_HEADER_CONTENT_LENGTH = "Inference-Header-Content-Length"
@@ -257,15 +258,24 @@ class KserveV2HttpClient:
             return response
         except requests.exceptions.Timeout as exc:
             raise requests.exceptions.Timeout(
-                f"Timeout during {method} request to {url}"
+                backend_error_message(
+                    f"Timeout during {method} request to model {self.model_name}",
+                    exc,
+                )
             ) from exc
         except requests.exceptions.ConnectionError as exc:
             raise requests.exceptions.ConnectionError(
-                f"Failed to connect to {url}"
+                backend_error_message(
+                    f"Failed to connect to model {self.model_name}", exc
+                )
             ) from exc
         except requests.exceptions.HTTPError as exc:
             raise requests.exceptions.HTTPError(
-                f"HTTP error {response.status_code} from {url}: {response.text}"
+                backend_error_message(
+                    f"HTTP error {response.status_code} from model {self.model_name}",
+                    exc,
+                )
+                + f": {response.text}"
             ) from exc
 
     @property

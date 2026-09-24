@@ -5,11 +5,14 @@ import pytest
 from pydantic import ValidationError
 
 from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.service.options import ExtractDocumentsOptions
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     AzureBlobSourceRequest,
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
+    ExtractSourcesRequest,
+    FileSourceRequest,
     GenericSourceRequest,
     GenericTargetRequest,
     GoogleCloudStorageSourceRequest,
@@ -28,6 +31,7 @@ from docling.datamodel.service.responses import (
     TaskFailureResult,
     TaskStatusResponse,
 )
+from docling.datamodel.service.sources import S3Coordinates
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
@@ -37,16 +41,98 @@ from docling.datamodel.service.targets import (
     ZipTarget,
 )
 
+S3_MODEL_TYPES = (S3Coordinates, S3SourceRequest, S3Target)
+FAKE_S3_CREDENTIALS = {
+    "access_key": "fake-access-key-for-testing-only",
+    "secret_key": "fake-secret-key-for-testing-only",
+}
 
-def test_http_source_request_rejects_zip_urls() -> None:
-    with pytest.raises(ValidationError, match="ZIP URLs are not accepted"):
-        HttpSourceRequest(url="https://example.com/report.zip")
+
+def test_s3_source_and_target_inherit_coordinates() -> None:
+    assert issubclass(S3SourceRequest, S3Coordinates)
+    assert issubclass(S3Target, S3Coordinates)
 
 
-def test_any_http_source_request_allows_zip_urls() -> None:
-    request = AnyHttpSourceRequest(url="https://example.com/report.zip")
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_allow_ambient_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(endpoint="s3.example.com", bucket="documents")
 
-    assert str(request.url) == "https://example.com/report.zip"
+    assert coordinates.access_key is None
+    assert coordinates.secret_key is None
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_preserve_explicit_string_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(
+        endpoint="s3.example.com",
+        bucket="documents",
+        **FAKE_S3_CREDENTIALS,
+    )
+
+    assert coordinates.access_key == FAKE_S3_CREDENTIALS["access_key"]
+    assert coordinates.secret_key == FAKE_S3_CREDENTIALS["secret_key"]
+    assert isinstance(coordinates.access_key, str)
+    assert isinstance(coordinates.secret_key, str)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"access_key": "fake-access-key-for-testing-only"},
+        {"secret_key": "fake-secret-key-for-testing-only"},
+    ],
+)
+def test_s3_coordinates_reject_incomplete_explicit_credentials(
+    model_type: type[S3Coordinates], credentials: dict[str, str]
+) -> None:
+    with pytest.raises(ValidationError, match="access_key and secret_key"):
+        model_type(endpoint="s3.example.com", bucket="documents", **credentials)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_credential_schema_is_optional_string(
+    model_type: type[S3Coordinates],
+) -> None:
+    schema = model_type.model_json_schema()
+
+    assert not {"access_key", "secret_key"} & set(schema["required"])
+    for field_name in ("access_key", "secret_key"):
+        field_schema = schema["properties"][field_name]
+        assert {item.get("type") for item in field_schema["anyOf"]} == {
+            "null",
+            "string",
+        }
+        assert "Optional" in field_schema["description"]
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: HttpSourceRequest(url="https://example.com/report.ZIP?sig=1"),
+        lambda: AnyHttpSourceRequest(url="https://example.com/report.zip"),
+        lambda: FileSourceRequest(filename="report.zip", base64_string=""),
+        lambda: BatchConvertSourcesRequest.model_validate(
+            {
+                "sources": [{"kind": "http", "url": "https://example.com/r.zip"}],
+                "target": {"kind": "presigned_url"},
+            }
+        ),
+    ],
+)
+def test_source_requests_reject_zip_archives(build) -> None:
+    # Nothing unpacks ZIP input; docling would skip it with no format.
+    with pytest.raises(ValidationError, match="ZIP archives are not accepted"):
+        build()
+
+
+def test_source_requests_accept_office_zip_containers() -> None:
+    assert FileSourceRequest(filename="report.docx", base64_string="").filename
+    assert AnyHttpSourceRequest(url="https://example.com/report.xlsx").url
 
 
 def test_convert_sources_request_rejects_s3_sources() -> None:
@@ -64,17 +150,6 @@ def test_convert_sources_request_rejects_s3_sources() -> None:
                 ]
             }
         )
-
-
-def test_batch_convert_sources_request_allows_zip_http_urls() -> None:
-    request = BatchConvertSourcesRequest.model_validate(
-        {
-            "sources": [{"kind": "http", "url": "https://example.com/report.zip"}],
-            "target": {"kind": "presigned_url"},
-        }
-    )
-
-    assert str(request.sources[0].url) == "https://example.com/report.zip"
 
 
 def test_batch_convert_sources_request_preserves_generic_source() -> None:
@@ -331,6 +406,60 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     )
 
     assert result.result.kind == "PresignedArtifactResult"
+
+
+def test_extract_request_separates_guidance_from_storage() -> None:
+    target = {"template": {"format": "example_json", "value": {"invoice": "INV-42"}}}
+    request = ExtractSourcesRequest(
+        extraction_target=target,
+        sources=[{"kind": "http", "url": "https://example.com/report.pdf"}],
+    )
+    assert request.extraction_target.template.value == {"invoice": "INV-42"}
+    assert request.options == ExtractDocumentsOptions()
+    assert request.target.kind == "inbody"
+    assert (
+        ExtractSourcesRequest.model_validate_json(request.model_dump_json()) == request
+    )
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        ExtractSourcesRequest.model_validate(
+            {**request.model_dump(), "targets": [{"kind": "inbody"}]}
+        )
+
+
+def test_extract_request_accepts_inline_file_sources() -> None:
+    # Extraction accepts ad-hoc file uploads that batch convert rejects.
+    request = ExtractSourcesRequest.model_validate(
+        {
+            "extraction_target": {
+                "template": {"format": "example_json", "value": {"a": 1}}
+            },
+            "sources": [
+                {"kind": "file", "base64_string": "ZmFrZQ==", "filename": "report.pdf"}
+            ],
+        }
+    )
+    assert request.sources[0].kind == "file"
+
+
+def test_extract_request_schema_constrained_requires_output_schema() -> None:
+    sources = [{"kind": "http", "url": "https://example.com/report.pdf"}]
+    options = {"output_mode": "schema_constrained"}
+    with pytest.raises(
+        ValidationError, match=r"requires extraction_target\.output_schema"
+    ):
+        ExtractSourcesRequest(
+            extraction_target={
+                "template": {"format": "example_json", "value": {"a": 1}}
+            },
+            sources=sources,
+            options=options,
+        )
+    request = ExtractSourcesRequest(
+        extraction_target={"output_schema": {"type": "object"}},
+        sources=sources,
+        options=options,
+    )
+    assert request.options.output_mode == "schema_constrained"
 
 
 def test_task_failure_result_roundtrip() -> None:

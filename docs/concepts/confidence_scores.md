@@ -1,6 +1,6 @@
 ## Introduction
 
-**Confidence grades** were introduced in [v2.34.0](https://github.com/docling-project/docling/releases/tag/v2.34.0) to help users understand how well a conversion performed and guide decisions about post-processing workflows. They are available in the [`confidence`](../../reference/document_converter/#docling.document_converter.ConversionResult.confidence) field of the [`ConversionResult`](../../reference/document_converter/#docling.document_converter.ConversionResult) object returned by the document converter.
+**Confidence grades** were introduced in [v2.34.0](https://github.com/docling-project/docling/releases/tag/v2.34.0) to help users understand how well a conversion performed and guide decisions about post-processing workflows. They are available in the [`confidence`](../reference/document_converter.md#docling.document_converter.ConversionResult.confidence) field of the [`ConversionResult`](../reference/document_converter.md#docling.document_converter.ConversionResult) object returned by the document converter.
 
 ## Purpose
 
@@ -53,7 +53,7 @@ Two aggregate grades provide overall document quality assessment:
 Confidence grades are calculated at two levels:
 
 - **Page-level**: Individual scores and grades for each page, stored in the `pages` field
-- **Document-level**: Overall scores and grades for the entire document, calculated as averages of the page-level grades and stored in fields equally named in the root [`ConfidenceReport`](../../reference/document_converter/#docling.document_converter.ConversionResult.confidence)
+- **Document-level**: Overall scores and grades for the entire document, calculated as averages of the page-level grades and stored in fields equally named in the root [`ConfidenceReport`](../reference/document_converter.md#docling.document_converter.ConversionResult.confidence)
 
 ### Example
 

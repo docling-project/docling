@@ -27,12 +27,17 @@ from docling.datamodel.extraction_options import (
     ExtractionPromptStyle,
     ExtractionVlmOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import TransformersModelType
+from docling.datamodel.pipeline_options_vlm_model import (
+    InlineVlmOptions,
+    TransformersModelType,
+)
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.prompt_utils import (
-    build_granite_vision_inputs,
-    build_nuextract_content_inputs,
+    _PreparedTarget,
+    build_content_inputs,
+    prepare_output_target,
+    prepared_image_prompt,
 )
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
@@ -50,8 +55,19 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         enabled: bool,
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
-        vlm_options: ExtractionVlmOptions,
+        vlm_options: InlineVlmOptions | ExtractionVlmOptions,
+        prompt_style: ExtractionPromptStyle = ExtractionPromptStyle.NUEXTRACT,
     ):
+        self.vlm_options = vlm_options
+        if isinstance(vlm_options, InlineVlmOptions):
+            vlm_options = ExtractionVlmOptions.from_legacy_inline_options(
+                vlm_options, prompt_style
+            )
+        self.output_mode = vlm_options.output_mode
+        if self.output_mode != "prompt_only":
+            raise ValueError(
+                "Transformers extraction does not support schema_constrained output"
+            )
         self.enabled = enabled
         self.model_spec = vlm_options.model_spec
         engine_options = vlm_options.engine_options
@@ -188,49 +204,35 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 )
             templates = prompt
 
-        if self.prompt_style == ExtractionPromptStyle.NUEXTRACT:
-            requests: list[list[ContentItem]] = [
-                [ImageContentItem(image=img)] for img in pil_images
-            ]
-            processor_inputs = build_nuextract_content_inputs(
-                processor=self.processor,
-                requests=requests,
-                templates=templates,
-                device=self.device,
-                extra_processor_kwargs=self.model_spec.extra_processor_kwargs,
-            )
-        else:
-            processor_inputs = build_granite_vision_inputs(
-                processor=self.processor,
-                images=pil_images,
-                prompts=templates,
-                device=self.device,
-            )
-
-        yield from self._generate_and_decode(processor_inputs)
+        requests: list[list[ContentItem]] = [
+            [ImageContentItem(image=img)] for img in pil_images
+        ]
+        targets = [prepared_image_prompt(text, self.model_spec) for text in templates]
+        yield from self._process_prepared(requests, targets)
 
     def process(
         self,
         requests: Iterable[list[ContentItem]],
-        template: str,
+        target: _PreparedTarget,
     ) -> Iterable[VlmPrediction]:
-        """Run NuExtract inference over content-item requests."""
-        if self.prompt_style != ExtractionPromptStyle.NUEXTRACT:
-            raise ValueError(
-                f"process() with content items is only supported for the "
-                f"NuExtract prompt style, not {self.prompt_style.value}."
+        target = prepare_output_target(
+            target, self.output_mode, self.engine_options.engine_type
+        )
+        request_list = [list(req) for req in requests]
+        if request_list:
+            yield from self._process_prepared(
+                request_list, [target] * len(request_list)
             )
 
-        request_list = [list(req) for req in requests]
-        if not request_list:
-            return
-
-        processor_inputs = build_nuextract_content_inputs(
+    def _process_prepared(
+        self, requests: list[list[ContentItem]], targets: list[_PreparedTarget]
+    ) -> Iterable[VlmPrediction]:
+        processor_inputs = build_content_inputs(
             processor=self.processor,
-            requests=request_list,
-            templates=[template] * len(request_list),
+            requests=requests,
+            targets=targets,
+            model_spec=self.model_spec,
             device=self.device,
-            extra_processor_kwargs=self.model_spec.extra_processor_kwargs,
         )
         yield from self._generate_and_decode(processor_inputs)
 

@@ -103,6 +103,84 @@ response = client.chunk(source="report.pdf", chunker=ChunkerKind.HYBRID)
 Batch sources and targets (S3, presigned URLs, plugin sources) are exposed as
 `BatchSourceRequestInput` / `BatchTargetRequestInput`, `S3Target`,
 `PresignedUrlTarget`, etc. from `docling.service_client`.
+ZIP archives (`.zip` URLs or file names) are rejected as input sources on every
+endpoint; nothing unpacks them.
+
+## Source extraction
+
+Extraction requires the matching explicit-target Jobkit/Serve implementation.
+The high-level `extract` / `extract_all` mirror `convert` / `convert_all` and the
+local `DocumentExtractor`: pass a source and `target=` (an `ExtractionTarget`, the
+contract — what to extract), get the local `DocumentExtractionResult` back. Like
+`ConversionResult` from `convert`, its `input` is a lightweight `InputDocument`
+(filename and guessed format only).
+
+```python
+from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+from docling.service_client import DoclingServiceClient, ExtractDocumentsOptions
+
+target = ExtractionTarget(template=ExtractionTemplate(
+    format="nuextract", value={"invoice": "string", "total": "number"}
+))
+with DoclingServiceClient(url="https://docling.example.com") as client:
+    # Single source -> one document result.
+    document = client.extract("https://example.com/invoice.pdf", target=target)
+    for item in document.items:
+        print(document.input.file.name, item.scope, item.extracted_data, item.errors)
+
+    # Many sources (and connector fan-out) -> one job per source, bounded
+    # concurrency, documents yielded as each job completes.
+    for document in client.extract_all(["a.pdf", "b.pdf"], target=target):
+        print(document.input.file.name, document.status)
+```
+
+`target` is the contract; `options` (`ExtractDocumentsOptions`) is purely
+operational — model preset, `output_mode`, `input_channels`, `page_range` — and
+defaults to server defaults, e.g.
+`client.extract(src, target=target, options=ExtractDocumentsOptions(extraction_preset="granite_vision_4_1"))`.
+The top-level `page_range=` argument overrides `options.page_range`, as in
+`convert`. `max_file_size=` (bytes) makes an oversized local file come back
+`SKIPPED` before it is read or uploaded. `max_num_pages` is not supported; the
+server applies its own limits. `output_mode="schema_constrained"` requires
+`target.output_schema` and is rejected before submission otherwise.
+
+`extract` takes one file, URL, stream, `FileSourceRequest` or
+`AnyHttpSourceRequest`; iterables and connector sources raise `TypeError` before
+anything is submitted (use `extract_all`). It raises `ExtractionError` if the
+job returns more than one document or if the document fails and
+`raises_on_error=True`.
+
+`extract_all` runs one job per input source, at most `max_concurrency` at a time
+(defaults to the client's `max_concurrency`), so it stays under serve's
+`max_sources_per_request`. Results come in completion order, like `convert_all`;
+match them by `input.file.name` (a connector source yields all its documents). A
+source whose job fails yields one `FAILURE` result with the error and does not
+stop the iterator.
+`AsyncDoclingServiceClient` exposes the same `extract` / `extract_all`.
+
+For storage destinations, callbacks, or a job handle, use `submit_extract`. It
+mirrors the wire request (`ExtractSourcesRequest`): the contract is
+`extraction_target=` and `target=` is the destination, as in `submit`. It returns
+a `ConversionJob` whose in-body result is the wire `ExtractDocumentResponse`
+(`ExtractionDocumentResult`s with `source_index`, `source_uri`, `filename`). Like `submit_batch`, it also accepts dict sources
+(`ExtractSourceRequestInput`, e.g. `{"kind": "s3", ...}` or a plugin connector
+kind):
+
+```python
+from docling.service_client import PresignedUrlTarget
+
+job = client.submit_extract(
+    ["https://example.com/a.pdf"], target, target=PresignedUrlTarget()
+)
+result = job.result()  # PresignedUrlConvertResponse
+```
+
+`job.result()` is typed like `submit`: in-body gives `ExtractDocumentResponse`,
+`PresignedUrlTarget` gives `PresignedUrlConvertResponse` (artifact URLs), and
+S3/Azure/GCS/Google Drive targets give `PresignedUrlConvertDocumentResponse`
+(counts only). See
+[extraction.md](extraction.md) for templates, validation, model/channel limits,
+and the separate live-verification status.
 
 ## CLI equivalent
 
