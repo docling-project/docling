@@ -21,6 +21,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 from docling.backend.msword_backend import (
+    _CJK_ENUM_FORMATTERS,
     MsWordDocumentBackend,
     _format_enum_counter,
 )
@@ -461,10 +462,25 @@ _EAST_ASIAN_MARKERS: dict[str, tuple[str, ...]] = {
         "一\u3007\u3007\u3007五",
         "一\u3007\u3007\u3007\u3007\u3007",
     ),
-    # Fullwidth digits (ECMA-376; Word identical).
-    "decimalFullWidth": tuple(
-        "".join(chr(0xFF10 + int(char)) for char in str(counter))
-        for counter in _BOUNDARY_COUNTERS
+    # Fullwidth digits U+FF10-U+FF19 (ECMA-376; Word identical).
+    "decimalFullWidth": (
+        "\uff11",
+        "\uff19",
+        "\uff11\uff10",
+        "\uff11\uff11",
+        "\uff11\uff19",
+        "\uff12\uff10",
+        "\uff12\uff11",
+        "\uff19\uff19",
+        "\uff11\uff10\uff10",
+        "\uff11\uff10\uff11",
+        "\uff11\uff11\uff10",
+        "\uff19\uff19\uff19",
+        "\uff11\uff10\uff10\uff10",
+        "\uff11\uff10\uff10\uff11",
+        "\uff11\uff10\uff10\uff10\uff10",
+        "\uff11\uff10\uff10\uff10\uff15",
+        "\uff11\uff10\uff10\uff10\uff10\uff10",
     ),
     # Ten Heavenly Stems, then the decimal string (ECMA-376 example 癸, 11, 12;
     # Word identical).
@@ -531,43 +547,55 @@ _EAST_ASIAN_MARKERS: dict[str, tuple[str, ...]] = {
 }
 
 
+_EXTRA_EAST_ASIAN_CASES: list[tuple[str, int, str]] = [
+    # Zero is a valid w:start value.
+    ("chineseCounting", 0, "\u25cb"),
+    ("chineseCountingThousand", 0, "\u3007"),
+    ("chineseLegalSimplified", 0, "零"),
+    ("japaneseCounting", 0, "\u3007"),
+    ("ideographDigital", 0, "\u3007"),
+    ("decimalFullWidth", 0, "\uff10"),
+    ("ideographTraditional", 0, "0"),
+    ("decimalEnclosedCircle", 0, "0"),
+    # Zero runs inside and across the 万 group.
+    ("chineseCountingThousand", 1010, "一千\u3007一十"),
+    ("chineseCountingThousand", 10101, "一万\u3007一百\u3007一"),
+    ("chineseCountingThousand", 100010, "一十万\u3007一十"),
+    ("chineseCountingThousand", 909090, "九十万\u3007九千\u3007九十"),
+    ("chineseLegalSimplified", 100100, "壹拾萬零壹佰"),
+    ("chineseLegalSimplified", 909090, "玖拾萬零玖仟零玖拾"),
+    ("japaneseCounting", 1100, "千百"),
+    ("japaneseCounting", 11100, "一万一千百"),
+    ("japaneseCounting", 111111, "十一万一千百十一"),
+    # Word renders an empty marker from 1,000,000 ([MS-OI29500] 2.1.548 j).
+    ("chineseCountingThousand", 999999, "九十九万九千九百九十九"),
+    ("chineseCountingThousand", 1000000, ""),
+    ("chineseLegalSimplified", 1000000, ""),
+    ("japaneseCounting", 1000000, ""),
+    ("chineseCounting", 1000000, "一\u25cb\u25cb\u25cb\u25cb\u25cb\u25cb"),
+]
+
+
 @pytest.mark.parametrize(
     ("num_fmt", "counter", "expected"),
     [
-        (num_fmt, counter, expected)
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
         for num_fmt, markers in _EAST_ASIAN_MARKERS.items()
         for counter, expected in zip(_BOUNDARY_COUNTERS, markers, strict=True)
     ]
     + [
-        # Zero is a valid w:start value.
-        ("chineseCounting", 0, "\u25cb"),
-        ("chineseCountingThousand", 0, "\u3007"),
-        ("chineseLegalSimplified", 0, "零"),
-        ("japaneseCounting", 0, "\u3007"),
-        ("ideographDigital", 0, "\u3007"),
-        ("decimalFullWidth", 0, "\uff10"),
-        ("ideographTraditional", 0, "0"),
-        ("decimalEnclosedCircle", 0, "0"),
-        # Zero runs inside and across the 万 group.
-        ("chineseCountingThousand", 1010, "一千\u3007一十"),
-        ("chineseCountingThousand", 10101, "一万\u3007一百\u3007一"),
-        ("chineseCountingThousand", 100010, "一十万\u3007一十"),
-        ("chineseCountingThousand", 909090, "九十万\u3007九千\u3007九十"),
-        ("chineseLegalSimplified", 100100, "壹拾萬零壹佰"),
-        ("chineseLegalSimplified", 909090, "玖拾萬零玖仟零玖拾"),
-        ("japaneseCounting", 1100, "千百"),
-        ("japaneseCounting", 11100, "一万一千百"),
-        ("japaneseCounting", 111111, "十一万一千百十一"),
-        # Word renders an empty marker from 1,000,000 ([MS-OI29500] 2.1.548 j).
-        ("chineseCountingThousand", 999999, "九十九万九千九百九十九"),
-        ("chineseCountingThousand", 1000000, ""),
-        ("chineseLegalSimplified", 1000000, ""),
-        ("japaneseCounting", 1000000, ""),
-        ("chineseCounting", 1000000, "一\u25cb\u25cb\u25cb\u25cb\u25cb\u25cb"),
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, counter, expected in _EXTRA_EAST_ASIAN_CASES
     ],
 )
 def test_format_enum_counter_east_asian_num_fmt(num_fmt, counter, expected):
     assert _format_enum_counter(counter, num_fmt) == expected
+
+
+@pytest.mark.parametrize("num_fmt", sorted(_CJK_ENUM_FORMATTERS))
+def test_east_asian_formatters_keep_negative_values_decimal(num_fmt):
+    """Negative counters fall back to decimal, as in the letter and roman helpers."""
+    assert _CJK_ENUM_FORMATTERS[num_fmt](-12) == "-12"
 
 
 def test_list_markers_follow_east_asian_num_fmt_end_to_end(tmp_path):

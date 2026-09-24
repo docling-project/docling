@@ -278,6 +278,8 @@ _CJK_GROUPED_NUMBER_LIMIT: Final[int] = 1_000_000
 
 def _int_to_positional_marker(value: int, digits: str) -> str:
     """Write each decimal digit of ``value`` with ``digits`` (index 0 is zero)."""
+    if value < 0:
+        return str(value)
     return "".join(digits[int(char)] for char in str(value))
 
 
@@ -331,6 +333,8 @@ def _int_to_chinese_counting_marker(value: int) -> str:
     ECMA-376 gives 0-10 as U+25CB, 一 ... 十 and the pattern 十, 十一, ..., 九十九,
     一○○, 一○一. Word renders the same, including U+25CB (not U+3007) as zero.
     """
+    if value < 0:
+        return str(value)
     if value >= 100 or value == 0:
         return _int_to_positional_marker(value, _CHINESE_COUNTING_POSITIONAL_DIGITS)
     tens, ones = divmod(value, 10)
@@ -351,6 +355,8 @@ def _int_to_chinese_counting_thousand_marker(value: int) -> str:
     example shows 一十 for 10; Word's output is used here because it is what
     document authors see. Values from 1,000,000 render empty, as in Word.
     """
+    if value < 0:
+        return str(value)
     if value == 0:
         return "\u3007"
     if value >= _CJK_GROUPED_NUMBER_LIMIT:
@@ -373,6 +379,8 @@ def _int_to_chinese_legal_marker(value: int) -> str:
     U+842C as rendered by Word ([MS-OI29500] 2.1.548 q), not the U+4E07 of the
     standard. Values from 1,000,000 render empty, as in Word.
     """
+    if value < 0:
+        return str(value)
     if value == 0:
         return "零"
     if value >= _CJK_GROUPED_NUMBER_LIMIT:
@@ -408,6 +416,8 @@ def _int_to_japanese_counting_marker(value: int) -> str:
     without a leading 一, 千 without 一 below 10,000 and 一千 after a 万 group.
     Values from 1,000,000 render empty, as in Word.
     """
+    if value < 0:
+        return str(value)
     if value == 0:
         return "\u3007"
     if value >= _CJK_GROUPED_NUMBER_LIMIT:
@@ -435,8 +445,11 @@ _CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
     "ideographTraditional": lambda value: _int_to_sequence_marker(
         value, _HEAVENLY_STEMS
     ),
-    # Word 16.112 renders 11 as U+620D (戍); ECMA-376 lists U+620C (戌), the
-    # eleventh Earthly Branch, which is used here.
+    # ECMA-376 lists U+620C (戌), the eleventh Earthly Branch; Word 16.112
+    # renders U+620D (戍), the adjacent code point, which reads "garrison" and
+    # breaks the 子丑寅卯 sequence. Unlike the other deviations followed in this
+    # module, this one changes the character a reader sees rather than how a
+    # number is spelled, so the standard is kept here on purpose.
     "ideographZodiac": lambda value: _int_to_sequence_marker(value, _EARTHLY_BRANCHES),
     "japaneseCounting": _int_to_japanese_counting_marker,
     "decimalFullWidth": lambda value: _int_to_positional_marker(
