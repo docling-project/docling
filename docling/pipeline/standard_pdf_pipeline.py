@@ -95,6 +95,7 @@ STAGE_FAILURE_CATEGORY = {
     "ocr": FailureCategory.INFERENCE_FAILURE,
     "layout": FailureCategory.INFERENCE_FAILURE,
     "table": FailureCategory.INFERENCE_FAILURE,
+    "form_field": FailureCategory.INFERENCE_FAILURE,
     "assemble": FailureCategory.INFERENCE_FAILURE,
 }
 
@@ -787,9 +788,10 @@ class StandardPdfPipeline(ConvertPipeline):
         preprocess.add_output_queue(layout.input_queue)  # PDF parsing
         layout.add_output_queue(ocr.input_queue)  # Layout prediction
         ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
-        layout_postprocess.add_output_queue(form_field.input_queue)  # Layout post-proc
-        form_field.add_output_queue(table.input_queue)  # Form fields
-        table.add_output_queue(assemble.input_queue)  # Table model
+        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-proc
+        table.add_output_queue(form_field.input_queue)  # Table model
+        # Form fields key widgets from table cells, so they follow the table model.
+        form_field.add_output_queue(assemble.input_queue)  # Form fields
         assemble.add_output_queue(output_q)  # Assembly
 
         stages = [
@@ -797,8 +799,8 @@ class StandardPdfPipeline(ConvertPipeline):
             ocr,
             layout,
             layout_postprocess,
-            form_field,
             table,
+            form_field,
             assemble,
         ]
         return RunContext(

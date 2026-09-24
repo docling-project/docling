@@ -20,8 +20,9 @@ pytestmark = pytest.mark.ml_pdf_model
 
 SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf"]
 
-# PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
-SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
+# PDFs that are tested separately: test_failed_pages.py (intentionally failing
+# pages) and the AcroForm form-field tests (acroform_sample.pdf).
+SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf", "acroform_sample.pdf"]
 
 
 def get_pdf_paths():

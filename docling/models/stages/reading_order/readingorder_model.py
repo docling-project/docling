@@ -6,6 +6,7 @@ from pathlib import Path
 from statistics import median
 
 from docling_core.types.doc import (
+    BoundingBox,
     CodeItem,
     DocItemLabel,
     DoclingDocument,
@@ -28,11 +29,13 @@ from docling.datamodel.base_models import (
     BasePageElement,
     Cluster,
     ContainerElement,
+    FieldItemPrediction,
     FieldRegionElement,
     FieldValuePrediction,
     FigureElement,
     PageElement,
     Table,
+    TableFieldPrediction,
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
@@ -164,6 +167,14 @@ class ReadingOrderModel:
                 table_item=table_item,
                 pictures_by_cell=pictures_by_cell,
                 doc=out_doc,
+                page_height=out_doc.pages[element.page_no].size.height,
+            )
+        if element.field_cells:
+            self._add_rich_table_fields(
+                table_item=table_item,
+                field_cells=element.field_cells,
+                doc=out_doc,
+                page_no=element.page_no,
                 page_height=out_doc.pages[element.page_no].size.height,
             )
         if element.num_rows == 0 and element.num_cols == 0 and element.cluster.children:
@@ -418,6 +429,106 @@ class ReadingOrderModel:
                 ref=group.get_ref(),
             )
 
+    def _add_rich_table_fields(
+        self,
+        *,
+        table_item: TableItem,
+        field_cells: list[TableFieldPrediction],
+        doc: DoclingDocument,
+        page_no: int,
+        page_height: float,
+    ) -> None:
+        """Put AcroForm field items inside the table cells that hold their widgets.
+
+        Each cell becomes a rich cell pointing to a field region with the cell's
+        items. TableFormer emits no cell for an empty grid position, so such a
+        cell is added. Printed cell text that is neither a key nor a filled value
+        of those items stays, as text ahead of them; a cell already made rich by
+        a picture takes the field region into its group instead.
+        """
+
+        def normalized(text: str) -> str:
+            return "".join(text.split())
+
+        for cell_fields in field_cells:
+            index = next(
+                (
+                    i
+                    for i, cell in enumerate(table_item.data.table_cells)
+                    if cell.start_row_offset_idx == cell_fields.start_row_offset_idx
+                    and cell.start_col_offset_idx == cell_fields.start_col_offset_idx
+                ),
+                None,
+            )
+            existing = None if index is None else table_item.data.table_cells[index]
+            values_bbox = BoundingBox.enclosing_bbox(
+                [value.bbox for item in cell_fields.items for value in item.values]
+            )
+            parent: NodeItem = table_item
+            if isinstance(existing, RichTableCell):
+                parent = existing.ref.resolve(doc)
+            region = doc.add_field_region(
+                prov=ProvenanceItem(
+                    page_no=page_no,
+                    charspan=(0, 0),
+                    bbox=values_bbox.to_bottom_left_origin(page_height),
+                ),
+                parent=parent,
+            )
+            shown = {
+                normalized(text)
+                for item in cell_fields.items
+                for text in (item.key_text, *(value.text for value in item.values))
+            }
+            if (
+                existing is not None
+                and not isinstance(existing, RichTableCell)
+                and existing.text.strip()
+                and normalized(existing.text) not in shown
+            ):
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=existing.text,
+                    prov=None
+                    if existing.bbox is None
+                    else ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, len(existing.text)),
+                        bbox=existing.bbox.to_bottom_left_origin(page_height),
+                    ),
+                    parent=region,
+                )
+            for item in cell_fields.items:
+                self._add_field_item(
+                    item,
+                    out_doc=doc,
+                    parent=region,
+                    page_no=page_no,
+                    page_height=page_height,
+                )
+            if isinstance(existing, RichTableCell):
+                continue
+            if existing is None:
+                rich = RichTableCell(
+                    text="",
+                    bbox=values_bbox,
+                    row_span=cell_fields.end_row_offset_idx
+                    - cell_fields.start_row_offset_idx,
+                    col_span=cell_fields.end_col_offset_idx
+                    - cell_fields.start_col_offset_idx,
+                    start_row_offset_idx=cell_fields.start_row_offset_idx,
+                    end_row_offset_idx=cell_fields.end_row_offset_idx,
+                    start_col_offset_idx=cell_fields.start_col_offset_idx,
+                    end_col_offset_idx=cell_fields.end_col_offset_idx,
+                    ref=region.get_ref(),
+                )
+                doc.add_table_cell(table_item=table_item, cell=rich)
+            else:
+                assert index is not None
+                table_item.data.table_cells[index] = RichTableCell(
+                    **existing.model_dump(exclude={"ref"}), ref=region.get_ref()
+                )
+
     def _readingorder_elements_to_docling_doc(
         self,
         conv_res: ConversionResult,
@@ -571,27 +682,13 @@ class ReadingOrderModel:
                     )
                     materialize_siblings(rel.ref.cref, field_region)
                     for item in element.items:
-                        field_item = out_doc.add_field_item(parent=field_region)
-                        if item.key_text and item.key_bbox is not None:
-                            out_doc.add_field_key(
-                                text=item.key_text,
-                                prov=ProvenanceItem(
-                                    page_no=element.page_no,
-                                    charspan=(0, len(item.key_text)),
-                                    bbox=item.key_bbox.to_bottom_left_origin(
-                                        page_height
-                                    ),
-                                ),
-                                parent=field_item,
-                            )
-                        for value in item.values:
-                            self._add_field_value(
-                                value,
-                                out_doc=out_doc,
-                                parent=field_item,
-                                page_no=element.page_no,
-                                page_height=page_height,
-                            )
+                        self._add_field_item(
+                            item,
+                            out_doc=out_doc,
+                            parent=field_region,
+                            page_no=element.page_no,
+                            page_height=page_height,
+                        )
 
                 elif isinstance(element, ContainerElement):
                     group_label = (
@@ -622,6 +719,37 @@ class ReadingOrderModel:
             hyperlink=elem.hyperlink,
         )
         return new_item
+
+    def _add_field_item(
+        self,
+        item: FieldItemPrediction,
+        *,
+        out_doc: DoclingDocument,
+        parent: NodeItem,
+        page_no: int,
+        page_height: float,
+    ) -> None:
+        field_item = out_doc.add_field_item(parent=parent)
+        if item.key_text and item.key_bbox is not None:
+            out_doc.add_field_key(
+                text=item.key_text,
+                prov=ProvenanceItem(
+                    page_no=page_no,
+                    charspan=(0, len(item.key_text)),
+                    bbox=item.key_bbox.to_bottom_left_origin(page_height),
+                ),
+                parent=field_item,
+            )
+        for value in item.values:
+            self._add_field_value(
+                value,
+                out_doc=out_doc,
+                parent=field_item,
+                page_no=page_no,
+                page_height=page_height,
+            )
+        if item.context_text:
+            out_doc.add_field_hint(text=item.context_text, parent=field_item)
 
     def _add_field_value(
         self,
@@ -655,7 +783,7 @@ class ReadingOrderModel:
                     if value.checkbox == "selected"
                     else DocItemLabel.CHECKBOX_UNSELECTED
                 ),
-                text=value.checkbox_label,
+                text="",
                 parent=field_value,
             )
         return field_value
@@ -700,6 +828,10 @@ class ReadingOrderModel:
                     parent=field_item,
                     page_no=element.page_no,
                     page_height=page_height,
+                )
+            if element.field_item.context_text:
+                out_doc.add_field_hint(
+                    text=element.field_item.context_text, parent=field_item
                 )
             return field_item, current_list
         if label == DocItemLabel.LIST_ITEM:

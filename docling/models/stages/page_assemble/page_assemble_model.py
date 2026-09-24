@@ -252,6 +252,19 @@ class PageAssembleModel(BasePageModel):
                                     cluster=cluster,
                                     page_no=page.page_no,
                                 )
+                            # AcroForm values that sit in this table's cells
+                            # materialize inside those cells (see
+                            # TableFieldPrediction). A copy: the table
+                            # structure prediction stays as TableFormer left it.
+                            field_cells = [
+                                cell
+                                for cell in page.predictions.table_fields
+                                if cell.table_id == cluster.id
+                            ]
+                            if field_cells:
+                                tbl = tbl.model_copy(
+                                    update={"field_cells": field_cells}
+                                )
 
                             elements.append(tbl)
                             body.append(tbl)

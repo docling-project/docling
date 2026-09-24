@@ -417,24 +417,36 @@ class FieldValuePrediction(BaseModel):
     # When set, the value is materialized as an empty field value that nests a
     # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
     checkbox: Literal["selected", "unselected"] | None = None
-    # Option label of the matched layout checkbox cluster (e.g. "4797"), placed
-    # on the nested checkbox child. Empty when no cluster matched the widget.
-    checkbox_label: str = ""
 
 
 class FieldItemPrediction(BaseModel):
-    # A keyed item groups several values under one key (e.g. an inline checkbox
-    # and a fillable amount that share a sentence). key_bbox is the prov of the
-    # key -- the enclosing text cluster. Keyless items (key_text == "") carry a
-    # single value and reproduce the flat field_item shape.
+    # A keyed item groups one or more values under one key: the printed caption
+    # the keying chose (a caption, a table cell, or a whole paragraph that
+    # inlines the widgets). key_bbox is the prov of the key. Keyless items
+    # (key_text == "") carry a single value and reproduce the flat field_item
+    # shape. context_text is a secondary, location-less caption -- typically the
+    # column header of a value keyed by its row caption -- emitted as a hint.
     key_text: str = ""
     key_bbox: BoundingBox | None = None
     values: list[FieldValuePrediction] = []
+    context_text: str = ""
 
 
 class FieldRegionPrediction(BaseModel):
     source_container_id: int | None = None
     bbox: BoundingBox
+    items: list[FieldItemPrediction] = []
+
+
+class TableFieldPrediction(BaseModel):
+    # Field items that live inside one cell of a structured table. The table's
+    # own row and column headers carry the association, so the items only hold
+    # a key printed in that same cell. Offsets follow TableCell's convention.
+    table_id: int  # layout cluster id of the table
+    start_row_offset_idx: int
+    end_row_offset_idx: int
+    start_col_offset_idx: int
+    end_col_offset_idx: int
     items: list[FieldItemPrediction] = []
 
 
@@ -454,6 +466,9 @@ class Table(BasePageElement):
     num_cols: int = 0
     orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
+    # AcroForm field items placed in this table's cells (see TableFieldPrediction);
+    # attached at page assembly, empty unless form fields are extracted.
+    field_cells: list[TableFieldPrediction] = []
 
 
 class TableStructurePrediction(BaseModel):
@@ -501,6 +516,7 @@ class EquationPrediction(BaseModel):
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
     field_regions: list[FieldRegionPrediction] = []
+    table_fields: list[TableFieldPrediction] = []
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None
