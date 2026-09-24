@@ -97,13 +97,18 @@ def test_cli_convert_help():
     result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
     assert result.exit_code == 0
     convert_command = get_command(app).commands["convert"]
+    from_formats_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "from_formats"
+    )
     layout_debug_option = next(
         parameter
         for parameter in convert_command.params
         if parameter.name == "debug_visualize_layout"
     )
     assert "Input formats to" in result.output
-    assert "Defaults to all." in result.output
+    assert "Defaults to all." in from_formats_option.help
     assert "layout clusters" in layout_debug_option.help
     assert "layour" not in result.output
     assert "input_sources" not in result.output
