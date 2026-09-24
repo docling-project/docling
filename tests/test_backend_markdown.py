@@ -692,8 +692,8 @@ def test_standard_ordered_list_still_starts_at_one():
 
 
 def test_convert_table_cell_whitespace_around_inline_emphasis():
-    """Regression test for #4314:
-    Whitespace around inline emphasis inside table cells must not be dropped.
+    """Verify that whitespace around inline emphasis inside table cells is preserved.
+
     Leading space after emphasis, trailing space before emphasis, and space
     between adjacent inline formatting runs must all be preserved.
     """

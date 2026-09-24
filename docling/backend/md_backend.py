@@ -652,7 +652,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
             if is_table_row:
                 self.in_table = True
-            if self.in_table and (snippet_text or original_text):
+            if self.in_table and original_text:
                 table_text = self._unescape_except_pipe(original_text)
                 if is_escape:
                     table_text = self._escape_pipes(table_text)
