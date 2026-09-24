@@ -104,14 +104,21 @@ one can adjust the conversion pipeline and features.
 
 ### Extract native PDF form fields
 
-Set `PdfPipelineOptions(extract_form_fields=True)` to convert native PDF widgets
-into keyless, format-neutral `FieldItem` and fillable `FieldValueItem` objects.
-The docling-parse backend currently supplies this data. Scanned or flattened
-forms and backends without page widgets produce no field items.
+Set `PdfPipelineOptions(extract_form_fields=True)` (CLI: `--extract-form-fields`)
+to convert native PDF widgets (AcroForm) into format-neutral `FieldItem` objects
+with fillable `FieldValueItem` children. Each field is keyed to the printed
+caption that the page geometry assigns to it: the caption inside or beside its
+cell, a whole paragraph that inlines the widget, or, inside a detected table,
+the row caption of the widget's cell with the column header attached as a
+location-less hint. A caption that becomes a key leaves the body text. Keys are
+chosen from layout geometry only; PDF field names are not used as keys.
 
-This option does not infer labels from layout geometry or PDF field names. Raw
-widget metadata is not stored in the `DoclingDocument`; keep parsed pages with
-`generate_parsed_pages=True` when that PDF-specific data is needed.
+The docling-parse backend supplies the widgets. Scanned or flattened forms,
+backends without page widgets and full-page OCR produce no field items; table
+keys need `do_table_structure=True`. Raw widget metadata is not stored in the
+`DoclingDocument`; keep parsed pages with `generate_parsed_pages=True` when
+that PDF-specific data is needed. Field items are not supported by the DocTags
+export.
 
 ### Image resolution and scale
 

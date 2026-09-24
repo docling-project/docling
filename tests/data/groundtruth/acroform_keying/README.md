@@ -182,5 +182,5 @@ by the current replay:
 
 ```bash
 uv run --no-sync python -m scripts.replay_acroform_keying
-uv run --no-sync python -m pytest tests/test_acroform_keying_prototype.py -q
+uv run --no-sync python -m pytest tests/test_acroform_keying.py -q
 ```

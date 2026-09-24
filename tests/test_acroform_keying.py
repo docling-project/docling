@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Behavioral checks for the offline experiment, independent of native models."""
+"""Behavioral checks of the AcroForm keying, independent of native models."""
 
 import json
 from pathlib import Path
@@ -12,7 +12,7 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 pytest.importorskip("scipy", minversion="1.9")
 
-from scripts.acroform_keying import (
+from docling.models.stages.form_field.keying import (
     DetectedTable,
     NativeWidget,
     Region,
@@ -239,6 +239,141 @@ def test_shared_business_number_is_not_split_at_printed_component():
     assert fields == [("composite_field", [0, 1], "Business Number")]
 
 
+def test_detected_table_keys_values_by_row_caption_with_column_context():
+    def cell(row: int, column: int, text: str, bbox: BoundingBox, header=False):
+        return TableCell(
+            bbox=bbox,
+            start_row_offset_idx=row,
+            end_row_offset_idx=row + 1,
+            start_col_offset_idx=column,
+            end_col_offset_idx=column + 1,
+            text=text,
+            column_header=header,
+        )
+
+    # Detected cell boxes cover only their text; the values sit beside the
+    # line codes, not inside any cell box.
+    cells = [
+        cell(0, 1, "From head office", box(120, 40, 190, 50), header=True),
+        cell(0, 2, "From third parties", box(220, 40, 290, 50), header=True),
+        cell(1, 0, "Financial services", box(10, 62, 90, 72)),
+        cell(1, 1, "250", box(120, 62, 135, 72)),
+        cell(1, 2, "251", box(220, 62, 235, 72)),
+        cell(2, 0, "Taxable goods", box(10, 82, 80, 92)),
+        cell(2, 1, "260", box(120, 82, 135, 92)),
+        cell(2, 2, "261", box(220, 82, 235, 92)),
+    ]
+    page = snapshot(
+        [
+            widget(0, box(140, 60, 200, 74)),
+            widget(1, box(240, 60, 300, 74)),
+            widget(2, box(140, 80, 200, 94)),
+            widget(3, box(240, 80, 300, 94)),
+        ],
+        [Region(id=100, label="table", bbox=box(5, 35, 305, 100))],
+        Tables(table_map={100: DetectedTable(table_cells=cells)}),
+    )
+    result = assign(page)
+    keys = {
+        result.values[c.members[0]].native.index: (
+            result.labels[c.label].text,
+            result.labels[c.context].text if c.context is not None else None,
+        )
+        for c in (result.candidates[i] for i in result.selected)
+        if c.kind == "table_cell"
+    }
+    assert keys == {
+        0: ("Financial services", "From head office"),
+        1: ("Financial services", "From third parties"),
+        2: ("Taxable goods", "From head office"),
+        3: ("Taxable goods", "From third parties"),
+    }
+
+
+def test_row_caption_is_shared_by_like_sized_values_but_not_operand_boxes():
+    page = snapshot(
+        [
+            widget(0, box(100, 60, 160, 72)),
+            widget(1, box(170, 60, 190, 72)),
+            widget(2, box(200, 60, 260, 72)),
+        ],
+        [label(1, "Line 5 total", box(10, 61, 80, 71))],
+    )
+    _, fields = chosen(page)
+    assert sorted(fields) == [
+        ("field_key", [0], "Line 5 total"),
+        ("field_key", [2], "Line 5 total"),
+    ]
+
+
+def test_caption_split_per_line_is_joined_but_option_lines_are_not():
+    page = snapshot(
+        [
+            widget(0, box(150, 72, 220, 84)),
+            widget(1, box(12, 221, 20, 229), checkbox=True),
+            widget(2, box(12, 231, 20, 239), checkbox=True),
+        ],
+        [
+            label(1, "Intangible personal", box(10, 60, 100, 68)),
+            label(2, "property and services", box(10, 69, 110, 77)),
+            label(3, "financial services", box(10, 78, 95, 86)),
+            label(4, "a Parent group", box(10, 220, 90, 230)),
+            label(5, "b Brother group", box(10, 230, 95, 240)),
+        ],
+    )
+    _, fields = chosen(page)
+    assert (
+        "field_key",
+        [0],
+        "Intangible personal property and services financial services",
+    ) in fields
+    assert ("option_caption", [1], "a Parent group") in fields
+    assert ("option_caption", [2], "b Brother group") in fields
+
+
+def test_line_split_into_pieces_is_joined_but_neighbouring_cells_are_not():
+    page = snapshot(
+        [
+            widget(0, box(250, 60, 320, 72)),
+            widget(1, box(40, 131, 60, 143)),
+            widget(2, box(66, 131, 86, 143)),
+        ],
+        [
+            label(1, "Manitoba", box(10, 61, 45, 69)),
+            label(2, "tax (line 23)", box(47, 61, 100, 69)),
+            # Sub-captions over their own boxes: separate cells, never one line.
+            label(3, "GIORNO", box(40, 122, 62, 130)),
+            label(4, "MESE", box(66, 122, 84, 130)),
+        ],
+    )
+    _, fields = chosen(page)
+    assert ("field_key", [0], "Manitoba tax (line 23)") in fields
+    assert ("field_key", [1], "GIORNO") in fields
+    assert ("field_key", [2], "MESE") in fields
+
+
+def test_close_call_follows_the_side_of_aligned_sibling_options():
+    # The first option has a slightly closer caption on its left, but its
+    # sibling options below all read their captions on the right.
+    page = snapshot(
+        [
+            widget(0, box(100, 50, 108, 58), checkbox=True),
+            widget(1, box(100, 70, 108, 78), checkbox=True),
+            widget(2, box(100, 90, 108, 98), checkbox=True),
+        ],
+        [
+            label(1, "Applicant", box(50, 50, 98, 58)),
+            label(2, "Type 1A", box(114, 50, 150, 58)),
+            label(3, "Type 1B", box(114, 70, 150, 78)),
+            label(4, "Type 2", box(114, 90, 150, 98)),
+        ],
+    )
+    _, fields = chosen(page)
+    assert ("option_caption", [0], "Type 1A") in fields
+    assert ("option_caption", [1], "Type 1B") in fields
+    assert ("option_caption", [2], "Type 2") in fields
+
+
 def test_duplicate_widget_identity_is_rejected():
     page = snapshot(
         [widget(1, box(10, 10, 20, 20)), widget(1, box(30, 10, 40, 20))], []
@@ -252,8 +387,10 @@ def test_layout_child_repeated_at_top_level_is_not_consumed_twice():
     container = Region(
         id=2, label="form", bbox=box(0, 40, 200, 100), children=[caption]
     )
+    # The second box is not a like-sized sibling, so it may only take "Name"
+    # if the repeated child produced a second copy of the caption.
     page = snapshot(
-        [widget(0, box(50, 60, 80, 70)), widget(1, box(90, 60, 120, 70))],
+        [widget(0, box(50, 60, 80, 70)), widget(1, box(90, 60, 160, 70))],
         [caption, container],
     )
     _, fields = chosen(page)
