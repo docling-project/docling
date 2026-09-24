@@ -7,6 +7,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from PIL import Image
 from requests.adapters import HTTPAdapter
 
@@ -14,6 +15,7 @@ from docling.datamodel.base_models import VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     _make_retry_session,
+    _post_openai_chat_completion,
     api_image_request,
     api_image_request_streaming,
 )
@@ -497,3 +499,83 @@ class TestApiImageRequest:
         assert response.text == "done"
         assert response.num_tokens == 3
         assert response.usage == {"total_tokens": 3}
+
+
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        (requests.ReadTimeout, TimeoutError),
+        (requests.ConnectionError, ConnectionError),
+    ],
+)
+@patch("docling.utils.api_image_request._make_retry_session")
+def test_transport_errors_do_not_leak_backend_host(
+    mock_session_factory, raised, expected
+):
+    host = "vlm-inference-predictor.vlm-inference.svc.cluster.local"
+    mock_session_factory.return_value.__enter__.return_value.post.side_effect = raised(
+        f"HTTPConnectionPool(host='{host}', port=8080): Max retries exceeded"
+    )
+
+    with pytest.raises(expected) as exc_info:
+        _post_openai_chat_completion(
+            payload={},
+            url=f"http://{host}:8080/v1/chat/completions",
+            timeout=1,
+            headers=None,
+            usage_response_key=None,
+            token_extract_key=None,
+        )
+
+    assert host not in str(exc_info.value)
+    assert isinstance(exc_info.value.__cause__, raised)
+
+
+@patch("docling.utils.api_image_request._make_retry_session")
+def test_debug_error_details_appends_raw_transport_error(
+    mock_session_factory, monkeypatch
+):
+    from docling.datamodel.settings import settings
+
+    monkeypatch.setattr(settings.debug, "error_details", True)
+    host = "vlm-inference-predictor.vlm-inference.svc.cluster.local"
+    mock_session_factory.return_value.__enter__.return_value.post.side_effect = (
+        requests.ReadTimeout(f"HTTPConnectionPool(host='{host}', port=8080)")
+    )
+
+    with pytest.raises(TimeoutError, match=host):
+        _post_openai_chat_completion(
+            payload={},
+            url=f"http://{host}:8080/v1/chat/completions",
+            timeout=1,
+            headers=None,
+            usage_response_key=None,
+            token_extract_key=None,
+        )
+
+
+def test_grpc_errors_do_not_leak_backend_address():
+    pytest.importorskip("tritonclient.grpc")
+    import socket
+
+    from docling.models.inference_engines.common.kserve_v2_grpc import (
+        KserveV2GrpcClient,
+    )
+
+    with socket.socket() as sock:  # grab a free port, then leave it closed
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    client = KserveV2GrpcClient(
+        base_url=f"127.0.0.1:{port}",
+        model_name="m",
+        model_version=None,
+        timeout=2,
+        metadata={},
+        use_tls=False,
+        max_message_bytes=1024,
+    )
+
+    with pytest.raises(RuntimeError, match="UNAVAILABLE") as exc_info:
+        client.get_model_metadata()
+
+    assert str(port) not in str(exc_info.value)

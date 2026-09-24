@@ -16,6 +16,7 @@ and both directions of it are exercised here.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from urllib.parse import urlsplit
 
 import numpy as np
 import pytest
@@ -296,16 +297,22 @@ def test_a_timeout_propagates_to_the_caller(kserve):
 
     kserve.service.add_route("POST", r".*/infer", slow)
 
-    with pytest.raises(requests.exceptions.Timeout):
+    with pytest.raises(requests.exceptions.Timeout) as exc_info:
         _infer_once(_client(kserve, timeout=0.1))
+
+    # Public error text must not name the backend address.
+    port = str(urlsplit(kserve.service.base_url).port)
+    assert port not in str(exc_info.value)
 
 
 def test_an_unreachable_server_raises_a_connection_error(kserve):
     base_url = kserve.service.base_url
     kserve.service.stop()
 
-    with pytest.raises(requests.exceptions.ConnectionError):
+    with pytest.raises(requests.exceptions.ConnectionError) as exc_info:
         _client(kserve, base_url=base_url).get_model_metadata()
+
+    assert str(urlsplit(base_url).port) not in str(exc_info.value)
 
 
 def test_close_is_a_no_op_for_transport_parity(kserve):
