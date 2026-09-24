@@ -1188,6 +1188,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINERU2_PRO)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
@@ -1214,15 +1215,6 @@ PictureDescriptionVlmEngineOptions.register_preset(stage_model_specs.PICTURE_DES
 # Register CodeFormula presets
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
-
-# Register ChartExtraction presets
-# NOTE: CHART_EXTRACTION_GRANITE_VISION_V4 is already registered at import time
-# in chart_extraction_options.py; the call here is idempotent (skipped when already
-# registered). CHART_EXTRACTION_GRANITE_VISION (V1) has been removed.
-ChartExtractionVlmEngineOptions.register_preset(
-    stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4
-)
-
 
 # =============================================================================
 # MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM

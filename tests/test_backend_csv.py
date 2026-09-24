@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import warnings
 from io import BytesIO
 from pathlib import Path
 
@@ -198,3 +199,89 @@ def test_malformed_quoted_csv_is_a_load_error():
         raises_on_error=False,
     )
     assert conv_result.status == ConversionStatus.FAILURE
+
+
+def test_blank_lines_do_not_become_empty_rows():
+    """A blank line is not a record, so it must not add a row of empty cells.
+
+    `csv.reader` yields an empty list for a blank line. Those were kept, so a file
+    ending in a newline pair -- which plenty of exporters write -- gained a trailing
+    empty row, and a blank line between records gained one in the middle. The empty
+    row also made the row lengths non-uniform, raising a spurious "Inconsistent
+    column lengths" warning on a perfectly uniform file.
+    """
+    converter = get_converter()
+    cases = {
+        "trailing": b"a,b\n1,2\n\n",
+        "two trailing": b"a,b\n1,2\n\n\n",
+        "trailing crlf": b"a,b\r\n1,2\r\n\r\n",
+        "leading": b"\na,b\n1,2\n",
+    }
+
+    for name, csv_bytes in cases.items():
+        with warnings.catch_warnings():
+            # -- a uniform file must not warn about inconsistent column lengths --
+            warnings.simplefilter("error")
+            doc = converter.convert(
+                DocumentStream(name=f"{name}.csv", stream=BytesIO(csv_bytes)),
+                raises_on_error=True,
+            ).document
+
+        table_data = doc.tables[0].data
+        assert table_data.num_rows == 2, name
+        assert [cell.text for cell in table_data.table_cells] == ["a", "b", "1", "2"], (
+            name
+        )
+
+
+def test_blank_line_between_records_is_dropped():
+    """The records on either side of a blank line stay adjacent."""
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="gap.csv", stream=BytesIO(b"a,b\n1,2\n\n3,4\n")),
+            raises_on_error=True,
+        )
+        .document
+    )
+
+    table_data = doc.tables[0].data
+    assert table_data.num_rows == 3
+    assert [cell.text for cell in table_data.table_cells] == [
+        "a",
+        "b",
+        "1",
+        "2",
+        "3",
+        "4",
+    ]
+
+
+def test_row_of_empty_fields_is_kept():
+    """A line of delimiters is a real record of empty fields, unlike a blank line."""
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="empties.csv", stream=BytesIO(b"a,b\n,\n")),
+            raises_on_error=True,
+        )
+        .document
+    )
+
+    table_data = doc.tables[0].data
+    assert table_data.num_rows == 2
+    assert [cell.text for cell in table_data.table_cells] == ["a", "b", "", ""]
+
+
+def test_file_of_only_blank_lines_is_empty():
+    """Dropping every row must leave an empty document, not an empty table."""
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="blank.csv", stream=BytesIO(b"\n\n\n")),
+            raises_on_error=True,
+        )
+        .document
+    )
+
+    assert len(doc.tables) == 0

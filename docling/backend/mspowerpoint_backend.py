@@ -280,7 +280,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             width = slide_size.width
             height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
-        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.BOTTOMLEFT)
+        # python-pptx reports left and top as EMU from the slide's top-left, with
+        # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
+        # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
+        # l, b, r, t for that origin, so the top edge lands in b and the bottom
+        # edge in t, and a consumer calling to_top_left_origin then computes
+        # page_height - t and mirrors the box. html_backend and msexcel_backend
+        # tag their own top-left coordinates TOPLEFT for the same reason.
+        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.TOPLEFT)
         prov = ProvenanceItem(
             page_no=slide_ind + 1, charspan=[0, len(text)], bbox=shape_bbox
         )

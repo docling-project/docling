@@ -162,15 +162,15 @@ def _extract_ptoca_text(data: bytes, encoding: str) -> str:
     """Extract TRN character strings and BLN line boundaries from PTOCA data."""
     chunks: list[str] = []
     offset = 0
+    chained = False
 
     while offset < len(data):
-        if data.startswith(_CONTROL_SEQUENCE_PREFIX, offset):
-            length_offset = offset + len(_CONTROL_SEQUENCE_PREFIX)
-        elif offset + 2 <= len(data) and data[offset + 1] & 0x01:
-            # A chained sequence omits X'2BD3' and uses the odd function-type
-            # variant. Checking the type byte avoids treating free data as a
-            # chained control sequence.
+        if chained:
+            # An odd function type chains the NEXT control sequence, which
+            # omits X'2BD3'; the chain ends with an even function type.
             length_offset = offset
+        elif data.startswith(_CONTROL_SEQUENCE_PREFIX, offset):
+            length_offset = offset + len(_CONTROL_SEQUENCE_PREFIX)
         else:
             offset += 1
             continue
@@ -193,6 +193,7 @@ def _extract_ptoca_text(data: bytes, encoding: str) -> str:
             )
 
         function_type = data[length_offset + 1]
+        chained = bool(function_type & 0x01)
         parameters = data[length_offset + 2 : end]
         if function_type in _TRN_TYPES:
             chunks.append(parameters.decode(encoding, errors="replace"))

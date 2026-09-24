@@ -7,6 +7,9 @@ The backends themselves live in :mod:`docling.backend.iwork_backend`, alongside
 the other document backends; this package holds what they are built from.
 
 ``iwa`` reads the IWA container that Pages, Numbers and Keynote have used since
-2013. ``content`` models what a Pages document holds, and ``pages_iwa`` and
-``pages_xml`` read the two container generations into that model.
+2013 and ``archives`` the text, table and drawable archives inside it;
+``legacy`` reads the ``sf`` vocabulary the same apps wrote before that. Both are
+shared, because the apps share their engines. ``content`` models what the
+readers produce, and the ``*_iwa`` and ``*_xml`` modules add what one app's own
+namespace puts around it.
 """

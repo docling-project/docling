@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""The content a Pages document holds, however its container spells it.
+"""The content an iWork document holds, however its container spells it.
 
 Both container generations describe the same things — paragraphs made of runs,
 lists, tables, pictures, page furniture, comments — so they are modelled once
-here and read into that model by :mod:`docling.backend.iwork.pages_iwa` and
-:mod:`docling.backend.iwork.pages_xml`. Turning the result into a
+here and read into that model by :mod:`docling.backend.iwork.archives` and
+:mod:`docling.backend.iwork.legacy`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is
 what keeps the two readers from having to agree on anything else.
 """
@@ -99,6 +99,20 @@ class Paragraph(NamedTuple):
     def text(self) -> str:
         """The paragraph's full text, with its runs joined back together."""
         return "".join(run.text for run in self.runs)
+
+
+class Geometry(NamedTuple):
+    """Where a drawable sits on the page it is placed on, in points.
+
+    Both container generations record this, and both record it for the same
+    reason: a drawable is positioned on the page rather than flowing in the
+    text, so where it sits is the only thing that says when it is read.
+    """
+
+    left: float
+    top: float
+    width: float
+    height: float
 
 
 class Picture(NamedTuple):
