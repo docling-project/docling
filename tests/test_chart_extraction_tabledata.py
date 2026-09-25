@@ -45,6 +45,19 @@ def test_chart_csv_table_header_classification(
     )
 
 
+@pytest.mark.parametrize(
+    ("csv_text", "header_texts"),
+    [
+        (",2020,2021\nNorth,1,2\nSouth,3,4", ["", "2020", "2021"]),
+        ("1,,3\n4,5,6\n7,8,9", []),
+    ],
+)
+def test_blank_cells_in_first_row(csv_text: str, header_texts: list[str]) -> None:
+    table = _dataframe_to_tabledata(_extract_csv_to_dataframe(csv_text))
+
+    assert [c.text for c in table.table_cells if c.column_header] == header_texts
+
+
 def test_text_in_data_columns_is_not_a_row_header() -> None:
     csv_text = "Category,Year,Value\nNorth,2024,unknown\nSouth,2025,3"
     table = _dataframe_to_tabledata(_extract_csv_to_dataframe(csv_text))

@@ -5,6 +5,7 @@ import logging
 import re
 from collections.abc import Iterable
 from io import StringIO
+from itertools import pairwise
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
@@ -286,17 +287,24 @@ def _is_numeric(value: object) -> bool:
         return False
 
 
+def _is_blank(value: object) -> bool:
+    return pd.isna(value) or not str(value).strip()  # type: ignore[arg-type]
+
+
 def _is_monotone_integer_row(row: pd.Series) -> bool:
     """Whether a row contains strictly increasing integer labels."""
     values: list[float] = []
-    for value in row:
+    cells = list(row)
+    if cells and _is_blank(cells[0]):
+        cells = cells[1:]
+    for value in cells:
         if not _is_numeric(value):
             return False
         number = float(value)
         if not number.is_integer():
             return False
         values.append(number)
-    return len(values) > 1 and all(a < b for a, b in zip(values, values[1:]))
+    return len(values) > 1 and all(a < b for a, b in pairwise(values))
 
 
 def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
@@ -308,7 +316,7 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
     # numeric-only headers, require increasing integer labels and a body row
     # without that pattern to avoid guessing on ordinary numeric grids.
     first_row_is_header = len(df) > 0 and (
-        any(not _is_numeric(value) for value in df.iloc[0])
+        any(not _is_blank(value) and not _is_numeric(value) for value in df.iloc[0])
         or (
             len(df) > 1
             and _is_monotone_integer_row(df.iloc[0])
@@ -320,7 +328,7 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
         for col_idx, value in enumerate(df.iloc[0]):
             table_cells.append(
                 TableCell(
-                    text=str(value),
+                    text="" if pd.isna(value) else str(value),
                     start_row_offset_idx=0,
                     end_row_offset_idx=1,
                     start_col_offset_idx=col_idx,
@@ -350,9 +358,7 @@ def _dataframe_to_tabledata(df: pd.DataFrame) -> TableData:
                     col_span=1,
                     column_header=False,
                     row_header=(
-                        col_idx == 0
-                        and bool(text.strip())
-                        and not _is_numeric(value)
+                        col_idx == 0 and bool(text.strip()) and not _is_numeric(value)
                     ),
                     row_section=False,
                     fillable=False,
