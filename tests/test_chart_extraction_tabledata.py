@@ -21,6 +21,8 @@ from docling.models.stages.chart_extraction.granite_vision import (
         ("1,2,3\n10,3,4", 3, set()),
         ("1,2,3\n4,5,6", 0, set()),
         ("1,2,3", 0, set()),
+        ("2020,2021,2022\nNorth,12,13", 3, {(1, 0)}),
+        ("1,2.5,3\n4,5,6", 0, set()),
     ],
 )
 def test_chart_csv_table_header_classification(
@@ -55,6 +57,22 @@ def test_text_in_data_columns_is_not_a_row_header() -> None:
     assert cells[1, 2].text == "unknown"
     assert cells[1, 2].row_header is False
     assert cells[2, 0].row_header is True
+
+
+def test_blank_first_column_cells_are_not_row_headers() -> None:
+    df = pd.DataFrame([["Category", "Value"], [None, "unknown"], ["   ", "other"]])
+    table = _dataframe_to_tabledata(df)
+    cells = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.table_cells
+    }
+
+    assert cells[0, 0].column_header is True
+    assert cells[1, 0].text == ""
+    assert cells[1, 0].row_header is False
+    assert cells[2, 0].text == "   "
+    assert cells[2, 0].row_header is False
+    assert cells[1, 1].row_header is False
 
 
 def test_empty_chart_table_has_no_headers() -> None:
