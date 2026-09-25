@@ -64,6 +64,8 @@ try:  # pragma: no cover - import-time guard
     from docx import Document
     from docx.document import Document as DocxDocument
     from docx.enum.style import WD_STYLE_TYPE
+    from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
+    from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
@@ -687,6 +689,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            # Add footnotes and endnotes (their body text lives in a separate part;
+            # the in-body reference is otherwise silently empty, see docstring below)
+            self._add_footnotes_and_endnotes(self.docx_obj, doc)
 
             return doc
         else:
@@ -3903,6 +3908,63 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.content_layer = current_layer
         self.parents = base_parents
         self.level = base_level
+
+    def _add_footnotes_and_endnotes(
+        self, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add footnote and endnote body text to the furniture layer.
+
+        A footnote/endnote reference in the body (``w:footnoteReference``/
+        ``w:endnoteReference``) carries no text of its own - python-docx's
+        ``Run.text`` only concatenates ``w:t`` nodes, so a run containing one of
+        these references contributes an empty string. The actual body text lives
+        in a separate ``word/footnotes.xml``/``word/endnotes.xml`` part that
+        python-docx has no high-level model for (unlike headers/footers); without
+        reading it directly here, that content is silently dropped.
+
+        Each note's body becomes its own ``FOOTNOTE`` item in the furniture layer,
+        the same layer headers/footers use: available to callers, out of the
+        reading order by default. Separator/continuation-separator placeholders
+        (present in every Word-authored document, holding no user content) are
+        skipped.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the footnotes/endnotes to.
+        """
+        skip_types = {"separator", "continuationSeparator", "continuationNotice"}
+        note_parts = {
+            DOCX_RT.FOOTNOTES: "footnote",
+            DOCX_RT.ENDNOTES: "endnote",
+        }
+
+        for reltype, tag_name in note_parts.items():
+            matches = [
+                rel for rel in docx_obj.part.rels.values() if rel.reltype == reltype
+            ]
+            if not matches:
+                continue
+            try:
+                root = docx_parse_xml(matches[0].target_part.blob)
+            except Exception:
+                _log.warning(f"Failed to parse {tag_name}s part")
+                continue
+
+            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                if note.get(f"{_W_NS_CLARK}type") in skip_types:
+                    continue
+                texts = [
+                    text
+                    for p_elm in note.findall(f"{_W_NS_CLARK}p")
+                    if (text := Paragraph(p_elm, docx_obj).text.strip())
+                ]
+                if not texts:
+                    continue
+                doc.add_text(
+                    label=DocItemLabel.FOOTNOTE,
+                    text=" ".join(texts),
+                    content_layer=ContentLayer.FURNITURE,
+                )
 
     def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add document comments (reviewer annotations) and link to annotated items.
