@@ -9,7 +9,7 @@ import posixpath
 import shutil
 import warnings
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -132,6 +132,50 @@ _CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] =
 def _has_unsafe_zip_paths(namelist: list[str]) -> bool:
     """Return True if any ZIP member name is absolute or contains a path traversal."""
     return any(m.startswith("/") or ".." in m for m in namelist)
+
+
+def _order_comment_thread(
+    entries: list[tuple[str | None, str | None, tuple[str, str, datetime | None]]],
+) -> list[tuple[str, str, datetime | None]]:
+    """Order the (id, parentId, comment) entries of one cell as a thread.
+
+    OOXML does not fix the element order of threaded comments, so the thread
+    follows the id/parentId links: each comment comes before its replies, and
+    replies to the same comment are sorted by timestamp, then document order.
+    A comment whose parent is missing is a root. Comments that no root reaches
+    (a parentId cycle) are kept at the end, in document order.
+    """
+
+    def sort_key(index: int) -> tuple[bool, datetime, int]:
+        timestamp = entries[index][2][2]
+        if timestamp is None:
+            return (True, datetime.min, index)
+        if timestamp.tzinfo is not None:
+            timestamp = timestamp.astimezone(timezone.utc).replace(tzinfo=None)
+        return (False, timestamp, index)
+
+    ids = {comment_id for comment_id, _, _ in entries if comment_id}
+    roots: list[int] = []
+    children: dict[str, list[int]] = {}
+    for index, (_, parent_id, _) in enumerate(entries):
+        if parent_id in ids:
+            children.setdefault(parent_id, []).append(index)
+        else:
+            roots.append(index)
+
+    ordered: list[int] = []
+    visited: set[int] = set()
+    stack = sorted(roots, key=sort_key, reverse=True)
+    while stack:
+        index = stack.pop()
+        if index in visited:
+            continue
+        visited.add(index)
+        ordered.append(index)
+        replies = children.get(entries[index][0] or "", [])
+        stack.extend(sorted(replies, key=sort_key, reverse=True))
+    ordered.extend(i for i in range(len(entries)) if i not in visited)
+    return [entries[i][2] for i in ordered]
 
 
 @dataclass
@@ -362,14 +406,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """Parse threaded comments from Excel XML for a specific sheet.
 
         Returns a dict mapping cell coordinates to the (author, text, timestamp)
-        tuples of the thread, in document order: the root comment, then replies.
+        tuples of the thread, ordered by _order_comment_thread.
         Only works when path_or_stream is a Path (not BytesIO).
 
         Security Note:
             Uses secure XML parser configuration to prevent XXE attacks and validates
             ZIP file paths to prevent zip-slip attacks.
         """
-        threaded_comments: dict[str, list[tuple[str, str, datetime | None]]] = {}
+        threaded_comments: dict[
+            str, list[tuple[str | None, str | None, tuple[str, str, datetime | None]]]
+        ] = {}
 
         # Only extract from Path objects (BytesIO is consumed by load_workbook)
         if not isinstance(self.path_or_stream, Path):
@@ -453,7 +499,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                                     )
 
                             threaded_comments.setdefault(cell_ref, []).append(
-                                (author, text, timestamp)
+                                (
+                                    comment.get("id"),
+                                    comment.get("parentId"),
+                                    (author, text, timestamp),
+                                )
                             )
 
                 except Exception as e:
@@ -462,7 +512,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         except Exception as e:
             _log.debug(f"Could not parse threaded comments: {e}")
 
-        return threaded_comments
+        return {
+            cell_ref: _order_comment_thread(entries)
+            for cell_ref, entries in threaded_comments.items()
+        }
 
     @override
     def is_valid(self) -> bool:
