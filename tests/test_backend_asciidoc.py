@@ -84,6 +84,37 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
 
 
+def test_escaped_pipe_stays_inside_its_cell() -> None:
+    # A backslash-escaped pipe is cell content: Asciidoctor partitions cells on
+    # unescaped pipes only and drops the backslash from the output. Splitting on
+    # every "|" cut the cell at the escaped pipe, left the backslash in the text
+    # and gave the row more columns than the header.
+    src = (
+        b"|===\n|Option |Values\n"
+        b"|--format |json\\|yaml\n"
+        b"|--level |debug\\|info\\|warn\n|===\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="escaped-pipe.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Option",
+        "Values",
+        "--format",
+        "json|yaml",
+        "--level",
+        "debug|info|warn",
+    ]
+
+
 def test_unclosed_table_at_end_keeps_caption() -> None:
     src = b".End table\n|===\n|A |B"
     in_doc = InputDocument(
