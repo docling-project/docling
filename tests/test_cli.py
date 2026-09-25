@@ -4,6 +4,7 @@
 import base64
 import json
 import re
+import shutil
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -393,29 +394,46 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
 
 
 def test_cli_directory_skips_office_lock_files(tmp_path):
-    """Excel and PowerPoint write ~$ lock files next to an open workbook or
-    deck. Directory conversion already skipped Word's ~$*.docx files, but not
-    the same lock files for .xlsx/.pptx, so converting a folder while Office
-    was open failed on those unreadable stubs.
-    """
-    from docling.cli.main import _iter_input_paths_from_directory
+    """~$ lock files are excluded regardless of the Office extension.
 
+    With --abort-on-error an unreadable lock stub would fail the whole run.
+    """
+    fixtures = {
+        "notes.docx": "tests/data/docx/sources/Strict.docx",
+        "report.xlsx": "tests/data/xlsx/sources/xlsx_09_section_label_header.xlsx",
+        "slides.pptx": "tests/data/pptx/sources/powerpoint_sample.pptx",
+    }
     source = tmp_path / "office"
     source.mkdir()
-    (source / "report.xlsx").write_bytes(b"real")
-    (source / "~$report.xlsx").write_bytes(b"lock")
-    (source / "slides.pptx").write_bytes(b"real")
-    (source / "~$slides.pptx").write_bytes(b"lock")
-    (source / "notes.docx").write_bytes(b"real")
-    (source / "~$notes.docx").write_bytes(b"lock")
+    for name, fixture in fixtures.items():
+        shutil.copy(fixture, source / name)
+        (source / f"~${name}").write_bytes(b"lock")
+    output = tmp_path / "out"
 
-    found = {
-        path.name
-        for path in _iter_input_paths_from_directory(
-            source, [InputFormat.XLSX, InputFormat.PPTX, InputFormat.DOCX]
-        )
-    }
-    assert found == {"report.xlsx", "slides.pptx", "notes.docx"}
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "docx",
+            "--from",
+            "xlsx",
+            "--from",
+            "pptx",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--abort-on-error",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in output.iterdir()) == [
+        "notes.md",
+        "report.md",
+        "slides.md",
+    ]
 
 
 def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
