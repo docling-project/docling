@@ -59,7 +59,14 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.iwork import keynote_iwa, keynote_xml, pages_iwa, pages_xml
+from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
+from docling.backend.iwork import (
+    chart_image,
+    keynote_iwa,
+    keynote_xml,
+    pages_iwa,
+    pages_xml,
+)
 from docling.backend.iwork.content import (
     Block,
     Chart,
@@ -104,6 +111,16 @@ halves of such a document are read out of two different archives.
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 
 _KEYNOTE_LEGACY_INDEX_MEMBERS = ("index.apxl", "index.apxl.gz")
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Keynote charts as images "
+    "(render_chart_images=True): each chart is rebuilt as an Office chart for "
+    "LibreOffice to draw. Install LibreOffice and make sure `soffice` is on PATH. "
+    "Charts still keep their classification and data."
+)
+
+_ChartRenderer = Callable[[Chart, Geometry | None], ImageRef | None]
+"""Draws a chart, given where it sits, or returns None when it cannot."""
 
 _CHART_LABELS = {
     ChartKind.COLUMN: PictureClassificationLabel.BAR_CHART,
@@ -366,8 +383,10 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         * A chart becomes a picture classified by its kind, carrying the data it
           plots as a table and captioned with its title, as the PowerPoint
           backend gives one. Keynote keeps no picture of a chart, so the
-          picture itself is empty. A value that is a date or a duration rather
-          than a number is left empty, and an iWork '09 chart is not read.
+          picture is empty unless ``render_chart_images`` redraws one from that
+          data, without the original's colours and fonts. A value that is a
+          date or a duration rather than a number is left empty, and an iWork
+          '09 chart is not read.
         * What a master slide draws is left to the master: it belongs to every
           slide using it rather than to any one of them, so it is not repeated.
           A slide that shows nothing of its own therefore yields an empty group.
@@ -521,12 +540,33 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
+        render_chart = self._chart_renderer()
         for index, slide in enumerate(self._presentation.slides):
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
-            _add_slide(doc, slide, group, index + 1)
+            _add_slide(doc, slide, group, index + 1, render_chart)
 
         return doc
+
+    def _chart_renderer(self) -> _ChartRenderer | None:
+        """Return what draws the presentation's charts, if the caller asked for it.
+
+        Returns:
+            A renderer, or None when rendering is off or cannot run here, which
+            is reported once rather than once per chart.
+        """
+        if not self.options.render_chart_images:
+            return None
+        converter = get_docx_to_pdf_converter()
+        if converter is None:
+            _log.warning(_CHART_RENDER_HINT)
+            return None
+
+        def render(chart: Chart, geometry: Geometry | None) -> ImageRef | None:
+            image = chart_image.render_chart(chart, geometry, converter)
+            return ImageRef.from_pil(image=image, dpi=72) if image is not None else None
+
+        return render
 
 
 class _ListStack:
@@ -568,7 +608,11 @@ class _ListStack:
 
 
 def _add_slide(
-    doc: DoclingDocument, slide: Slide, group: NodeItem, page_no: int
+    doc: DoclingDocument,
+    slide: Slide,
+    group: NodeItem,
+    page_no: int,
+    render_chart: _ChartRenderer | None = None,
 ) -> None:
     """Add one slide's contents, its presenter notes and its comments.
 
@@ -577,15 +621,22 @@ def _add_slide(
         slide: The slide to add.
         group: The group standing for the slide.
         page_no: The page the slide is, counted from one.
+        render_chart: Draws the slide's charts, or None to leave them undrawn.
     """
     lists = _ListStack(doc, group)
     for placed in slide.blocks:
+        image = (
+            render_chart(placed.block, placed.geometry)
+            if render_chart is not None and isinstance(placed.block, Chart)
+            else None
+        )
         _add_block(
             doc,
             placed.block,
             lists,
             parent=group,
             prov=_slide_prov(placed.geometry, page_no, _block_text(placed.block)),
+            image=image,
         )
 
     for note in slide.notes:
@@ -679,6 +730,7 @@ def _add_block(
     lists: _ListStack,
     parent: NodeItem | None = None,
     prov: ProvenanceItem | None = None,
+    image: ImageRef | None = None,
 ) -> TextItem | None:
     """Add one block of content, in the order the document lays it out.
 
@@ -688,6 +740,7 @@ def _add_block(
         lists: The list groups currently open.
         parent: The node to add it under, or None for the document root.
         prov: Where the block came from, for the backends that know.
+        image: A picture drawn of a chart, which the document holds none of.
 
     Returns:
         The item a paragraph became, so a comment can be attached to it, or None
@@ -701,7 +754,7 @@ def _add_block(
     if isinstance(block, Picture):
         _add_picture(doc, block, parent, prov)
     elif isinstance(block, Chart):
-        _add_chart(doc, block, parent, prov)
+        _add_chart(doc, block, parent, prov, image)
     else:
         doc.add_table(data=block, parent=parent, prov=prov)
     return None
@@ -739,6 +792,7 @@ def _add_chart(
     chart: Chart,
     parent: NodeItem | None = None,
     prov: ProvenanceItem | None = None,
+    image: ImageRef | None = None,
 ) -> None:
     """Add one chart as a picture classified by its kind and carrying its data.
 
@@ -751,6 +805,7 @@ def _add_chart(
         chart: The chart to add.
         parent: The node to add it under, or None for the document root.
         prov: Where the chart came from, for the backends that know.
+        image: A picture drawn of the chart, or None to leave it undrawn.
     """
     caption = None
     if chart.title:
@@ -765,7 +820,7 @@ def _add_chart(
             ),
         )
 
-    picture = doc.add_picture(caption=caption, parent=parent, prov=prov)
+    picture = doc.add_picture(image=image, caption=caption, parent=parent, prov=prov)
     label = _CHART_LABELS.get(chart.kind, PictureClassificationLabel.OTHER_CHART)
     table = _chart_table(chart)
     picture.meta = PictureMeta(
