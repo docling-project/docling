@@ -31,6 +31,7 @@ from docling.backend.iwork.archives import (
     read_point,
     safe_fields,
 )
+from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
 from docling.backend.iwork.content import Block, Comment, Geometry, Paragraph
 from docling.backend.iwork.iwa import IWAObject
 from docling.backend.iwork.keynote_content import (
@@ -229,7 +230,8 @@ class KeynoteReader(IWAReader):
     Everything on a slide is a drawable the shared reader already understands,
     so what is left here is the walk down to them: the show's slide tree, each
     slide's placeholders, its presenter notes, and the sticky notes its comments
-    are drawn as.
+    are drawn as. Charts are the one drawable read here rather than there, so
+    that only a presentation's are, until another app's are verified too.
     """
 
     def slides(self, show: IWAObject) -> list[Slide]:
@@ -345,6 +347,22 @@ class KeynoteReader(IWAReader):
             titled(block, DocItemLabel.TEXT)
             for block in self._drawable_blocks(identifier)
         ], []
+
+    def _drawable_blocks(self, identifier: int) -> list[Block]:
+        """Read a drawable, reading a chart here and deferring anything else.
+
+        The shared reader descends into groups through this method too, so a
+        chart grouped with other shapes on a slide is found as well.
+        """
+        drawable = self._objects.get(identifier)
+        if drawable is None or drawable.message_type != TSCH_CHART_DRAWABLE:
+            return super()._drawable_blocks(identifier)
+
+        if identifier in self._emitted:
+            return []
+        self._emitted.add(identifier)
+        chart = iwa_chart(drawable, self._objects)
+        return [chart] if chart is not None else []
 
     def _placeholder_blocks(self, placeholder: IWAObject) -> list[Block]:
         """Read the text of one placeholder, through the shape info it wraps."""
