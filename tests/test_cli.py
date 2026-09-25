@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 import typer
+from click.utils import strip_ansi
 from docling_core.types.doc import ImageRefMode
 from PIL import Image
 from typer.main import get_command
@@ -112,7 +113,7 @@ def test_cli_convert_help():
     assert "layout clusters" in layout_debug_option.help
     assert "layour" not in result.output
     assert "input_sources" not in result.output
-    assert "--output-file" in result.output
+    assert "--output-file" in strip_ansi(result.output)
     separator_option = next(
         parameter
         for parameter in convert_command.params
