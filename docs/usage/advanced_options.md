@@ -106,6 +106,8 @@ one can adjust the conversion pipeline and features.
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
 determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+DPI values above 144 are scaled down to 144, keeping the aspect ratio, so that at scale 2
+an image is never rendered below its native resolution.
 Rendering at scale `n` produces `n` pixels per document point.
 
 ### Control PDF table extraction options
