@@ -3,9 +3,9 @@
 
 import logging
 from collections.abc import Iterator
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from zipfile import ZipFile
 
 import pytest
 from docling_core.transforms.serializer.markdown import MarkdownParams
@@ -21,7 +21,6 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
-from lxml import etree
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
@@ -31,6 +30,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -197,34 +197,47 @@ def test_threaded_comment_keeps_root_and_replies(documents) -> None:
     assert "I never thought it would be so low" in texts[1]
 
 
-def test_threaded_comment_order_follows_parent_links(tmp_path: Path) -> None:
-    """Test that a reply stored before its root comment still comes after it."""
-    source = Path("./tests/data/xlsx/sources/xlsx_comments.xlsx")
-    file_path = tmp_path / "xlsx_comments_reply_first.xlsx"
-    with ZipFile(source) as src, ZipFile(file_path, "w") as dst:
-        for item in src.infolist():
-            data = src.read(item)
-            if item.filename == "xl/threadedComments/threadedComment1.xml":
-                root = etree.fromstring(data)
-                root[:] = list(reversed(root))
-                data = etree.tostring(root, xml_declaration=True, encoding="UTF-8")
-            dst.writestr(item, data)
-
-    in_doc = InputDocument(
-        path_or_stream=file_path,
-        format=InputFormat.XLSX,
-        filename=file_path.stem,
-        backend=MsExcelDocumentBackend,
+@pytest.mark.parametrize(
+    ("entries", "expected"),
+    [
+        pytest.param(
+            [("c", "a", 3), ("b", "a", 2), ("a", None, 1)],
+            ["a", "b", "c"],
+            id="reversed-order",
+        ),
+        pytest.param(
+            [("p", "q", 1), ("q", "p", 2), ("a", None, 3)],
+            ["a", "p", "q"],
+            id="cycle",
+        ),
+        pytest.param(
+            [("r", "a", 3), ("a", None, 2), ("o", "gone", 1)],
+            ["o", "a", "r"],
+            id="orphaned-parent",
+        ),
+        pytest.param(
+            [("r2", "b", 4), ("b", None, 2), ("r1", "a", 3), ("a", None, 1)],
+            ["a", "r1", "b", "r2"],
+            id="multi-root",
+        ),
+    ],
+)
+def test_order_comment_thread(
+    entries: list[tuple[str, str | None, int]], expected: list[str]
+) -> None:
+    """Test that each comment comes before its replies, whatever the XML order."""
+    thread = _order_comment_thread(
+        [
+            (
+                comment_id,
+                parent_id,
+                ("Author", comment_id, datetime(2024, 1, 1, 0, minute)),
+            )
+            for comment_id, parent_id, minute in entries
+        ]
     )
-    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
-    doc = backend.convert()
 
-    thread = next(g for g in doc.groups if g.name.endswith("-F7"))
-    texts = [child.resolve(doc).text for child in thread.children]
-
-    assert len(texts) == 2
-    assert "Minimum number of saltwater ducks" in texts[0]
-    assert "I never thought it would be so low" in texts[1]
+    assert [text for _, text, _ in thread] == expected
 
 
 def test_e2e_excel_conversions(documents, libreoffice_available) -> None:

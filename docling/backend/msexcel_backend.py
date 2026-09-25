@@ -405,8 +405,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     ) -> dict[str, list[tuple[str, str, datetime | None]]]:
         """Parse threaded comments from Excel XML for a specific sheet.
 
-        Returns a dict mapping cell coordinates to the (author, text, timestamp)
-        tuples of the thread, ordered by _order_comment_thread.
+        Returns a dict mapping cell coordinates to a list of (author, text, timestamp)
+        tuples for the thread, in parent-before-child order (roots first, then replies
+        ordered by timestamp).
         Only works when path_or_stream is a Path (not BytesIO).
 
         Security Note:
@@ -419,7 +420,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         # Only extract from Path objects (BytesIO is consumed by load_workbook)
         if not isinstance(self.path_or_stream, Path):
-            return threaded_comments
+            return {}
 
         # Namespace for threaded comments XML
         ns = {
@@ -433,7 +434,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             with ZipFile(self.path_or_stream, "r") as zip_file:
                 if _has_unsafe_zip_paths(zip_file.namelist()):
                     _log.warning("Skipping file with unsafe ZIP paths")
-                    return threaded_comments
+                    return {}
 
                 person_map: dict[str, str] = {}
                 try:
@@ -456,7 +457,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     None,
                 )
                 if sheet_num is None:
-                    return threaded_comments
+                    return {}
 
                 threaded_file = f"xl/threadedComments/threadedComment{sheet_num}.xml"
                 try:
