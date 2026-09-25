@@ -276,6 +276,138 @@ def test_rapidocr_backend_lang_rejects_a_malformed_spec(tmp_path):
     assert result.exit_code != 0
 
 
+@pytest.mark.parametrize("model_size", ["tiny", "medium"])
+def test_rapidocr_model_size_is_forwarded_when_rapidocr_is_selected(
+    tmp_path, recorded_download, model_size: str
+):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-model-size",
+            model_size,
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_model_size"] == model_size
+
+
+def test_rapidocr_model_size_defaults_to_small_when_omitted(
+    tmp_path, recorded_download
+):
+    result = runner.invoke(app, ["models", "download", "-o", str(tmp_path), "rapidocr"])
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_model_size"] == "small"
+
+
+def test_rapidocr_model_size_requires_the_rapidocr_model(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-model-size",
+            "tiny",
+            "layout",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "requires the 'rapidocr' model" in _flat(result.output)
+
+
+def test_rapidocr_model_size_rejects_an_invalid_value(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-model-size",
+            "large",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code != 0
+
+
+def test_rapidocr_model_size_rejects_unsupported_combination(tmp_path):
+    """The maintainer's reproduction case: tiny has no Japanese checkpoint."""
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-backend-lang",
+            "onnxruntime:japan",
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "japan" in _flat(result.output)
+    assert "tiny" in _flat(result.output)
+
+
+def test_rapidocr_model_size_validates_the_default_backend_lang_set(
+    tmp_path, recorded_download
+):
+    """No --rapidocr-backend-lang given -> the default pairs are still checked."""
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+
+def test_rapidocr_backend_lang_repeats_while_model_size_stays_scalar(
+    tmp_path, recorded_download
+):
+    result = runner.invoke(
+        app,
+        [
+            "models",
+            "download",
+            "-o",
+            str(tmp_path),
+            "--rapidocr-backend-lang",
+            "onnxruntime:en",
+            "--rapidocr-backend-lang",
+            "torch:ch",
+            "--rapidocr-model-size",
+            "tiny",
+            "rapidocr",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert recorded_download["rapidocr_models"] == ["onnxruntime:en", "torch:ch"]
+    assert recorded_download["rapidocr_model_size"] == "tiny"
+
+
 def test_download_hf_repo_maps_repo_ids_to_local_directories(
     tmp_path, recorded_hf_download
 ):
