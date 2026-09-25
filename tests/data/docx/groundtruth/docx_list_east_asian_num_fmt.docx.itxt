@@ -1,0 +1,29 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: East Asian list numbering
+      item-3 at level 3: text: Articles and clauses numbered wi ...  9 so the list crosses the 十 boundary.
+      item-4 at level 3: list: group list
+        item-5 at level 4: list_item: 合同双方应当按照约定履行各自的义务。
+        item-6 at level 4: list: group list
+          item-7 at level 5: list_item: 甲方应当按期支付价款。
+          item-8 at level 5: list_item: 乙方应当按期交付标的物。
+          item-9 at level 5: list: group list
+            item-10 at level 6: list_item: 交付地点为甲方指定的仓库。
+            item-11 at level 6: list_item: 交付时间为合同生效后三十日内。
+        item-12 at level 4: list_item: 任何一方不得擅自变更或者解除合同。
+        item-13 at level 4: list_item: 本合同自双方签字盖章之日起生效。
+      item-14 at level 3: section_header: Other formats
+        item-15 at level 4: text: chineseLegalSimplified:
+        item-16 at level 4: list: group list
+          item-17 at level 5: list_item: 第一项内容
+          item-18 at level 5: list_item: 第二项内容
+          item-19 at level 5: list_item: 第三项内容
+        item-20 at level 4: text: ideographTraditional:
+        item-21 at level 4: list: group list
+          item-22 at level 5: list_item: 甲项
+          item-23 at level 5: list_item: 乙项
+          item-24 at level 5: list_item: 丙项
+        item-25 at level 4: text: decimalFullWidth:
+        item-26 at level 4: list: group list
+          item-27 at level 5: list_item: 第一行
+          item-28 at level 5: list_item: 第二行
