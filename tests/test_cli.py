@@ -784,6 +784,41 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
     )  # Allow for processing failure
 
 
+def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
+    """GIF files in a directory are picked up and converted like other image formats."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "images"
+    source.mkdir()
+    Image.new("RGB", (1, 1), color=(0, 0, 0)).save(source / "photo.gif", format="GIF")
+    (source / "photo.png").write_bytes(_png_bytes((0, 0, 0)))
+
+    result = runner.invoke(
+        app, [str(source), "--from", "image", "--output", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
+
+
 def test_cli_audio_extensions_coverage():
     """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
