@@ -110,12 +110,11 @@ def test_the_prompt_and_image_are_both_sent_in_the_message(api, endpoint, image)
     assert image_part["image_url"]["url"].startswith("data:image/png;base64,")
 
 
-def test_timeout_is_applied_and_reported_as_an_empty_result(api, endpoint, image):
-    """A read timeout is swallowed rather than raised.
+def test_timeout_is_applied_and_reported_as_an_inference_error(api, endpoint, image):
+    """A read timeout is not raised, but it is not an empty completion either.
 
-    The caller gets an empty result with an unspecified stop reason, which is
-    indistinguishable from a model that genuinely produced nothing. Asserted
-    here as the current contract, not as an endorsement of it.
+    The caller gets an empty result marked INFERENCE_ERROR with the reason, so it
+    can be told apart from a model that genuinely produced nothing (#4009).
     """
     api.delay_seconds = 1.0
 
@@ -124,7 +123,8 @@ def test_timeout_is_applied_and_reported_as_an_empty_result(api, endpoint, image
     elapsed = time.monotonic() - started
 
     assert result.text == ""
-    assert result.stop_reason == VlmStopReason.UNSPECIFIED
+    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
+    assert result.error is not None and "timed out" in result.error
     # It gave up on the configured timeout instead of waiting for the response.
     assert elapsed < 0.9
 
@@ -153,13 +153,18 @@ def test_a_missing_usage_block_leaves_the_token_count_unset(api, endpoint, image
 
 
 @pytest.mark.parametrize("status", [400, 401, 429, 500])
-def test_api_errors_do_not_raise_but_yield_no_text(api, endpoint, image, status):
-    """A failed call is reported as empty output, not an exception."""
+def test_api_errors_do_not_raise_but_are_marked_as_inference_errors(
+    api, endpoint, image, status
+):
+    """A failed call is not an exception, but it is not empty output either:
+    the result carries INFERENCE_ERROR and the provider's status (#4009)."""
     api.fail_status = status
 
     result = api_image_request(image, "describe", endpoint, model="m")
 
     assert result.text == ""
+    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
+    assert result.error is not None and result.error.startswith(f"HTTP {status}")
 
 
 # -- streaming -----------------------------------------------------------
