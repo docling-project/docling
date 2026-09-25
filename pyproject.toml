@@ -97,7 +97,7 @@ format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
 format-pdf-docling = [
-  'docling-parse>=7.20.0,<8.0.0',
+  'docling-parse>=7.21.0,<8.0.0',
 ]
 
 format-pdf = [
@@ -281,7 +281,7 @@ models-vlm-inline = [
 feat-chunking = [
   # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
-  'docling-core[chunking]>=2.96.0,<3.0.0',
+  'docling-core[chunking]>=2.98.0,<3.0.0',
 ]
 
 service-client = [
@@ -333,7 +333,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.96.0,<3.0.0)",
+  "docling-core[chunking] (>=2.98.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.15.12",
