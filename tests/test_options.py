@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,9 +26,12 @@ from docling.datamodel.image_classification_engine_options import (
 )
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
+    GraniteVisionTableStructureOptions,
     NemotronOcrOptions,
     PdfPipelineOptions,
     TableFormerMode,
+    TableStructureOptions,
+    TableStructureV2Options,
     TesseractCliOcrOptions,
 )
 from docling.document_converter import (
@@ -39,6 +43,7 @@ from docling.models.factories import get_ocr_factory
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
+from docling.models.stages.reading_order.readingorder_model import ReadingOrderOptions
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 
@@ -63,6 +68,107 @@ def get_converters_with_table_options():
             )
 
             yield converter
+
+
+class CustomTableStructureOptions(TableStructureOptions):
+    kind: ClassVar[str] = "custom_tableformer"
+
+
+_ORPHANED_TABLE_TEXT_CONFIGURATION_ERROR = (
+    "recover_orphaned_table_text requires do_table_structure=True and "
+    "TableStructureOptions (TableFormer V1) with do_cell_matching=True"
+)
+
+
+@pytest.mark.parametrize(
+    ("table_options", "do_table_structure"),
+    [
+        pytest.param(
+            TableStructureV2Options(),
+            True,
+            id="v2",
+        ),
+        pytest.param(
+            TableStructureOptions(do_cell_matching=False),
+            True,
+            id="v1-matching-disabled",
+        ),
+        pytest.param(
+            GraniteVisionTableStructureOptions(),
+            True,
+            id="granite-vision",
+        ),
+        pytest.param(
+            CustomTableStructureOptions(),
+            True,
+            id="custom-table-options",
+        ),
+        pytest.param(
+            TableStructureOptions(),
+            False,
+            id="table-structure-disabled",
+        ),
+    ],
+)
+def test_reading_order_options_reject_unsupported_table_text_recovery(
+    table_options,
+    do_table_structure,
+):
+    pipeline_options = PdfPipelineOptions(
+        do_table_structure=do_table_structure,
+        table_structure_options=table_options,
+        recover_orphaned_table_text=True,
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        ReadingOrderOptions.from_pdf_pipeline_options(pipeline_options)
+
+    assert str(exc_info.value) == _ORPHANED_TABLE_TEXT_CONFIGURATION_ERROR
+
+
+@pytest.mark.parametrize(
+    ("table_options", "do_table_structure"),
+    [
+        pytest.param(TableStructureV2Options(), True, id="v2"),
+        pytest.param(
+            TableStructureOptions(do_cell_matching=False),
+            True,
+            id="v1-matching-disabled",
+        ),
+        pytest.param(
+            GraniteVisionTableStructureOptions(),
+            True,
+            id="granite-vision",
+        ),
+        pytest.param(CustomTableStructureOptions(), True, id="custom-table-options"),
+        pytest.param(
+            TableStructureOptions(),
+            False,
+            id="table-structure-disabled",
+        ),
+    ],
+)
+def test_reading_order_options_allow_unsupported_table_configuration_when_disabled(
+    table_options,
+    do_table_structure,
+):
+    pipeline_options = PdfPipelineOptions(
+        do_table_structure=do_table_structure,
+        table_structure_options=table_options,
+        recover_orphaned_table_text=False,
+    )
+
+    options = ReadingOrderOptions.from_pdf_pipeline_options(pipeline_options)
+
+    assert options.recover_orphaned_table_text is False
+
+
+def test_reading_order_options_forward_table_text_recovery():
+    pipeline_options = PdfPipelineOptions(recover_orphaned_table_text=True)
+
+    options = ReadingOrderOptions.from_pdf_pipeline_options(pipeline_options)
+
+    assert options.recover_orphaned_table_text is True
 
 
 def test_accelerator_options():
