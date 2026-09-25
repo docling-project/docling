@@ -712,32 +712,43 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
-            self._close_table(doc)
-            _log.debug(" - Code Span: %s", element.children)
-            snippet_text = str(element.children).strip()
-            # If this CodeSpan is the only content of a list item / heading, Marko won't
-            # emit RawText. Flush pending creations here to avoid leaking payloads.
-            if creation_stack and snippet_text:
-                parent_item = self._flush_creation_stack(
-                    doc=doc,
-                    creation_stack=creation_stack,
-                    snippet_text=snippet_text,
-                    parent_item=parent_item,
-                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
-                    list_start_by_ref=list_start_by_ref,
-                    list_item_counter_by_ref=list_item_counter_by_ref,
-                    list_last_item_by_ref=list_last_item_by_ref,
+            snippet_text = str(element.children)
+            if self.in_table:
+                # Keep the span in the current row. Closing the table here used
+                # to split one GFM table into two and drop the text before the
+                # span.
+                cell_text = unescape(snippet_text)
+                if self.md_table_buffer:
+                    self.md_table_buffer[-1] += cell_text
+                else:
+                    self.md_table_buffer.append(cell_text)
+            else:
+                self._close_table(doc)
+                _log.debug(" - Code Span: %s", element.children)
+                snippet_text = snippet_text.strip()
+                # If this CodeSpan is the only content of a list item / heading, Marko won't
+                # emit RawText. Flush pending creations here to avoid leaking payloads.
+                if creation_stack and snippet_text:
+                    parent_item = self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=creation_stack,
+                        snippet_text=snippet_text,
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
+                    # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
+                    return
+                doc.add_code(
+                    parent=parent_item,
+                    text=snippet_text,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
-                # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
-                return
-            doc.add_code(
-                parent=parent_item,
-                text=snippet_text,
-                formatting=formatting,
-                hyperlink=hyperlink,
-            )
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)

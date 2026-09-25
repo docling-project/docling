@@ -238,6 +238,38 @@ def test_code_block_language_detection():
     ]
 
 
+def test_convert_table_keeps_inline_code_spans():
+    """A code span inside a GFM table cell must not close the table.
+
+    CodeSpan used to flush the half-built table, so a cell like
+    ``run `build` now`` split the table in two and dropped the word
+    before the span.
+    """
+    markdown = """| Command | Description |
+| --- | --- |
+| run `build` now | builds it |
+| clean | removes it |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_rows == 3
+    assert table_data.num_cols == 2
+    cells = [cell.text for cell in table_data.table_cells]
+    assert cells[0] == "Command"
+    assert cells[1] == "Description"
+    # Adjacent RawText is still stripped before concatenation, so spaces
+    # around the span may collapse. The span itself must stay in this cell.
+    assert "run" in cells[2]
+    assert "build" in cells[2]
+    assert "now" in cells[2]
+    assert cells[3] == "builds it"
+    assert cells[4] == "clean"
+    assert cells[5] == "removes it"
+
+
 def test_convert_table_has_no_duplicate_cells():
     """
     Regression test:
