@@ -12,6 +12,7 @@ what keeps the two readers from having to agree on anything else.
 """
 
 import re
+from enum import Enum
 from typing import NamedTuple, TypeVar
 
 from docling_core.types.doc import (
@@ -125,6 +126,61 @@ class Picture(NamedTuple):
 
     data: bytes | None
     name: str
+
+
+class ChartKind(Enum):
+    """What a chart draws, whichever app or container generation it came from.
+
+    A 3D chart is read as the flat kind it extrudes: its data, and what that data
+    means, are the same. ``MIXED`` is a chart whose series are drawn in different
+    ways, against one value axis or two, and ``OTHER`` one this does not know.
+    """
+
+    COLUMN = "column"
+    BAR = "bar"
+    LINE = "line"
+    AREA = "area"
+    PIE = "pie"
+    DONUT = "donut"
+    SCATTER = "scatter"
+    BUBBLE = "bubble"
+    RADAR = "radar"
+    MIXED = "mixed"
+    OTHER = "other"
+
+
+class ChartSeries(NamedTuple):
+    """One series of a chart: its name, and its value in each category.
+
+    A value the chart has no number for is None, which is how a gap in a series
+    stays in its place rather than pulling the values after it forwards.
+    """
+
+    name: str
+    values: tuple[float | None, ...]
+
+
+class Chart(NamedTuple):
+    """A chart, and the data it was last drawn from.
+
+    iWork keeps no picture of a chart, only the model the app draws one from, so
+    this is everything there is to recover: the kind of chart, its title, and
+    its data as categories and the series plotted across them.
+
+    A ``stacked`` chart draws its series on top of each other. An
+    ``interactive`` one holds several data sets and shows one at a time, and its
+    series are all of them. A scatter chart with ``shared_x`` takes the x value
+    of every point from its first series, and otherwise pairs its series up, x
+    before y.
+    """
+
+    kind: ChartKind
+    title: str | None
+    categories: tuple[str, ...]
+    series: tuple[ChartSeries, ...]
+    stacked: bool = False
+    interactive: bool = False
+    shared_x: bool = False
 
 
 class StorageRuns(NamedTuple):
