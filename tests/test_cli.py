@@ -784,26 +784,39 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
     )  # Allow for processing failure
 
 
-def test_cli_directory_includes_gif_images(tmp_path):
-    """GIF is a supported image MIME type, but .gif was missing from
-    FormatToExtensions, so directory conversion skipped GIF files.
-    """
-    from docling.cli.main import _iter_input_paths_from_directory, _name_matches_format
-    from docling.datamodel.base_models import FormatToExtensions
+def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
+    """GIF files in a directory are picked up and converted like other image formats."""
+    captured: dict[str, list[Path]] = {}
 
-    assert "gif" in FormatToExtensions[InputFormat.IMAGE]
-    assert _name_matches_format("photo.gif", InputFormat.IMAGE)
-    assert _name_matches_format("photo.GIF", InputFormat.IMAGE)
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = tmp_path / "images"
     source.mkdir()
-    (source / "photo.gif").write_bytes(b"GIF89a")
-    (source / "photo.png").write_bytes(b"png")
-    found = {
-        path.name
-        for path in _iter_input_paths_from_directory(source, [InputFormat.IMAGE])
-    }
-    assert found == {"photo.gif", "photo.png"}
+    Image.new("RGB", (1, 1), color=(0, 0, 0)).save(source / "photo.gif", format="GIF")
+    (source / "photo.png").write_bytes(_png_bytes((0, 0, 0)))
+
+    result = runner.invoke(
+        app, [str(source), "--from", "image", "--output", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
 
 
 def test_cli_audio_extensions_coverage():
