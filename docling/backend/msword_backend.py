@@ -1661,31 +1661,66 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_format_from_run(
         cls, run: Run, paragraph: Paragraph | None = None
     ) -> Formatting | None:
+        """Extract a `Formatting` instance from a python-docx `Run`.
+
+        Bold detection uses a three-step fallback because `run.bold` only
+        reports formatting that is set explicitly on the run or its character
+        style; it returns `None` (not `False`) when the property is inherited:
+
+        1. `run.bold` — reads `<w:b>` via the python-docx API.
+        2. Raw XPath on the run element — catches edge cases where `<w:b>` is
+           present in the XML but not surfaced by python-docx.
+        3. `<w:pPr><w:rPr><w:b>` — paragraph-mark bold, which Word propagates
+           to runs that carry no explicit bold setting of their own.
+        4. Paragraph style chain — walks `base_style` links so that a run in a
+           bold paragraph style is reported as bold even when the run itself
+           carries no `<w:b>`.
+
+        Note:
+            `<w:bCs>` (complex-script bold, the OOXML counterpart of `<w:b>`
+            for Arabic/Hebrew characters) is intentionally excluded from all
+            bold checks. Word also emits `<w:bCs>` as a font-theme artefact
+            alongside `<w:szCs>` and `<w:rFonts cstheme="…">` when applying
+            complex-script font specifications, even when the user has not
+            applied bold formatting. Word writes `<w:b>` even for Arabic text
+            when the user explicitly presses Bold, so `<w:b>` alone is the
+            reliable signal for user-applied bold. The same reasoning applies
+            to `<w:iCs>` (complex-script italic), but the italic path has no
+            XPath fallback so `<w:iCs>` is already ignored by construction.
+            Unlike bold and italic, the remaining properties (`<w:strike>`,
+            `<w:u>`, `<w:vertAlign>`) have no complex-script counterparts in
+            OOXML and are read directly from the python-docx API.
+
+        Args:
+            run: The python-docx run whose formatting should be extracted.
+            paragraph: The paragraph that contains `run`. Required for the
+                paragraph-mark and style-chain bold checks; if `None` those
+                two steps are skipped.
+
+        Returns:
+            A `Formatting` instance populated from the run's properties, or
+            `None` if the run cannot be inspected.
+        """
         is_bold = run.bold
 
         if not is_bold:
             try:
-                # Check the raw XML of the run itself for <w:b> tags
                 if run._element is not None:
-                    b_tags = run._element.xpath(".//w:b | .//w:bCs")
+                    b_tags = run._element.xpath(".//w:b")
                     for b in b_tags:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
 
-                # Check the paragraph's direct formatting properties
                 if not is_bold and run._parent._element is not None:
-                    pPr_b = run._parent._element.xpath(
-                        "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
-                    )
+                    pPr_b = run._parent._element.xpath("./w:pPr/w:rPr/w:b")
                     for b in pPr_b:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
 
-                # Recursively climb the paragraph's Master Style Sheet
                 if (
                     not is_bold
                     and paragraph is not None
@@ -1705,7 +1740,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         is_italic = run.italic or False
         is_strikethrough = run.font.strike or False
-        # Convert any non-None underline value to True
         is_underline = bool(run.underline is not None and run.underline)
         is_sub = run.font.subscript or False
         is_sup = run.font.superscript or False
