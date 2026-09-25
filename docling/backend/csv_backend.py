@@ -104,8 +104,10 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         Files that escape quotes with a backslash (e.g. MySQL `SELECT … INTO
         OUTFILE`) fail the first parse because `doublequote=True` and
         `strict=True` together reject a lone `"` that is not doubled. The
-        parse is retried with `doublequote=False` so those files load, with
-        the backslash and surrounding quotes left in the cell value.
+        parse is retried with `doublequote=False` and `escapechar="\\"` so
+        those files load with quotes correctly unescaped. That retry is only
+        ever reached when the content is already non-RFC-4180, so the
+        backslash interpretation is appropriate.
         """
         # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
@@ -141,12 +143,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         except csv.Error as quote_error:
             _log.info(
                 f"Could not parse with doublequote=True ({quote_error}),"
-                " retrying with doublequote=False"
+                " retrying with doublequote=False and escapechar='\\\\'"
             )
             self.content.seek(0)
             try:
                 result = csv.reader(
-                    self.content, dialect=dialect, doublequote=False, strict=True
+                    self.content,
+                    dialect=dialect,
+                    doublequote=False,
+                    escapechar="\\",
+                    strict=True,
                 )
                 self.csv_data = list(result)
             except csv.Error as e:

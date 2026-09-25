@@ -141,8 +141,7 @@ def test_backslash_escaped_quotes_load_without_error():
 
     The sniffer reports escapechar=None for such files, so the first parse
     attempt uses doublequote=True and fails on the lone quote. The retry with
-    doublequote=False must succeed; the backslash and surrounding quotes are
-    left in the cell value rather than being unescaped.
+    doublequote=False and escapechar='\\\\' must succeed and unescape the quotes.
     """
     csv_bytes = b'id,text\n1,"say \\"hi\\" now"\n2,plain\n'
     conv_result = get_converter().convert(
@@ -152,8 +151,32 @@ def test_backslash_escaped_quotes_load_without_error():
     cells = conv_result.document.tables[0].data.table_cells
     assert conv_result.status == ConversionStatus.SUCCESS
     # Cell layout: [id, text, 1, <value>, 2, plain]
-    assert cells[3].text == 'say \\hi\\" now"'
+    assert cells[3].text == 'say "hi" now'
     assert cells[5].text == "plain"
+
+
+def test_quoted_windows_paths_are_preserved():
+    """Quoted fields containing backslashes (e.g. Windows paths) must not be mangled.
+
+    The retry path uses escapechar='\\\\', but it is only reached when the first
+    strict doublequote pass fails. A file with quoted backslash-only fields and
+    no bare quotes passes the first attempt, so backslashes are never consumed
+    as escape characters.
+    """
+    csv_bytes = b'path,value\n"C:\\Users\\foo",1\n"D:\\data\\file.csv",2\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="winpaths.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert [cell.text for cell in cells] == [
+        "path",
+        "value",
+        "C:\\Users\\foo",
+        "1",
+        "D:\\data\\file.csv",
+        "2",
+    ]
 
 
 def test_empty_csv():
