@@ -260,5 +260,10 @@ TABLE_MACROS_IGNORE = frozenset(
         "hphantom",
         "vphantom",
         "noalign",
+        # longtable repeating header/footer markers are not cell content
+        "endhead",
+        "endfirsthead",
+        "endfoot",
+        "endlastfoot",
     ]
 )

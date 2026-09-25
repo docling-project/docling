@@ -127,6 +127,54 @@ def test_latex_starred_table_and_figure():
     assert len(doc.pictures) >= 1
 
 
+def test_latex_table_wrappers_are_tables():
+    """tabular*, tabularx and longtable are parsed as tables, columns intact."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular*}{\textwidth}{lr}
+    Key & Value \\
+    Left & Right \\
+    \end{tabular*}
+    \begin{tabularx}{\textwidth}{lX}
+    Name & Description \\
+    Alpha & First row \\
+    \end{tabularx}
+    \begin{longtable}[c]{cc}
+    Item & Qty \\
+    \endhead
+    Widgets & 3 \\
+    \end{longtable}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 3
+    # The table parser still appends an empty row for the whitespace after the
+    # final row separator, for every environment; only the rows with content
+    # are compared here.
+    rows = [
+        [
+            [cell.text.strip() for cell in row]
+            for row in table.data.grid
+            if any(cell.text.strip() for cell in row)
+        ]
+        for table in doc.tables
+    ]
+    assert rows == [
+        [["Key", "Value"], ["Left", "Right"]],
+        [["Name", "Description"], ["Alpha", "First row"]],
+        [["Item", "Qty"], ["Widgets", "3"]],
+    ]
+
+
 def test_latex_multicolumn_table():
     """Test \\multicolumn in a tabular environment produces correct column span."""
     latex_content = rb"""
