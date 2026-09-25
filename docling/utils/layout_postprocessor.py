@@ -126,6 +126,23 @@ class LayoutPostprocessor:
     WRAPPER_TYPES = CONTAINER_TYPES.union(TABLE_TYPES)
     SPECIAL_TYPES = WRAPPER_TYPES.union({DocItemLabel.PICTURE})
 
+    # Text-like labels used to decide whether a PICTURE is in fact a spurious box
+    # drawn around plain text (see ``recover_text_in_pictures``). Deliberately
+    # excludes FORMULA/CODE/CHECKBOX so genuine figures containing those are kept.
+    TEXT_LIKE_LABELS = {
+        DocItemLabel.TEXT,
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.PAGE_HEADER,
+        DocItemLabel.PAGE_FOOTER,
+        DocItemLabel.TITLE,
+        DocItemLabel.LIST_ITEM,
+        DocItemLabel.CAPTION,
+        DocItemLabel.FOOTNOTE,
+    }
+    # A PICTURE whose contained text cells cover at least this fraction of its area
+    # (and whose contained clusters are all text-like) is treated as spurious text.
+    PICTURE_TEXT_COVERAGE_THRESHOLD = 0.25
+
     CONFIDENCE_THRESHOLDS = {
         DocItemLabel.CAPTION: 0.5,
         DocItemLabel.FOOTNOTE: 0.5,
@@ -296,8 +313,58 @@ class LayoutPostprocessor:
                 )
             ]
 
+        spurious_picture_ids: set[int] = set()
+        for special in special_clusters:
+            contained = []
+            for cluster in self.regular_clusters:
+                containment = cluster.bbox.intersection_over_self(special.bbox)
+                if containment > 0.8:
+                    contained.append(cluster)
+
+            # Recover text wrongly absorbed into a PICTURE region (issue #3699).
+            # The layout model occasionally tags a banner-style heading inside a
+            # filled box as a PICTURE; absorbing its text as children drops it from
+            # every content layer. When enabled, a PICTURE that only contains
+            # text-like clusters covering a large part of its area is treated as
+            # spurious: it is discarded and its text clusters are left in the
+            # regular set so they serialize normally.
+            if (
+                self.options.recover_text_in_pictures
+                and special.label == DocItemLabel.PICTURE
+                and contained
+                and self._is_text_only_picture(special, contained)
+            ):
+                spurious_picture_ids.add(special.id)
+                continue
+
+            if contained:
+                # Sort contained clusters by minimum cell ID:
+                contained = self._sort_clusters(contained, mode="id")
+                special.children = contained
+
+                # Adjust bbox only for Form and Key-Value-Region, not Table or Picture
+                if special.label in [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]:
+                    special.bbox = BoundingBox(
+                        l=min(c.bbox.l for c in contained),
+                        t=min(c.bbox.t for c in contained),
+                        r=max(c.bbox.r for c in contained),
+                        b=max(c.bbox.b for c in contained),
+                    )
+
+                # Conditionally collect cells from children
+                if not self.options.skip_cell_assignment:
+                    all_cells = []
+                    for child in contained:
+                        all_cells.extend(child.cells)
+                    special.cells = self._deduplicate_cells(all_cells)
+                    special.cells = self._sort_cells(special.cells)
+                else:
+                    special.cells = []
+
         picture_clusters = [
-            c for c in special_clusters if c.label == DocItemLabel.PICTURE
+            c
+            for c in special_clusters
+            if c.label == DocItemLabel.PICTURE and c.id not in spurious_picture_ids
         ]
         picture_clusters = self._remove_overlapping_clusters(
             picture_clusters, "picture"
@@ -330,6 +397,30 @@ class LayoutPostprocessor:
             if cluster.label in self.CONTAINER_TYPES
         ]
 
+    def _is_text_only_picture(self, picture: Cluster, contained: list[Cluster]) -> bool:
+        """Whether a PICTURE is in fact a box drawn around plain text.
+
+        True when every contained cluster is text-like and the contained text
+        cells cover at least ``PICTURE_TEXT_COVERAGE_THRESHOLD`` of the picture's
+        area. Genuine figures (photos, charts, diagrams) have little or no text
+        cell coverage, so they are left untouched.
+        """
+        pic_area = picture.bbox.area()
+        if pic_area <= 0:
+            return False
+
+        if not all(c.label in self.TEXT_LIKE_LABELS for c in contained):
+            return False
+
+        text_area = sum(
+            cell.rect.to_bounding_box().area()
+            for cluster in contained
+            for cell in cluster.cells
+        )
+        return text_area / pic_area >= self.PICTURE_TEXT_COVERAGE_THRESHOLD
+
+    def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
+        """Handle overlaps between regular and wrapper clusters before child assignment.
         nested_clusters = table_clusters + picture_clusters
         for cluster in nested_clusters:
             children = [
