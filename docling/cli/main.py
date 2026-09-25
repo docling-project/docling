@@ -216,33 +216,23 @@ def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
 
 
 # Office writes a ~$ lock file next to an open document. Word, Excel, and
-# PowerPoint all use the same prefix; only the suffix changes.
-_OFFICE_LOCK_SUFFIXES = {
-    ".doc",
-    ".dot",
-    ".docx",
-    ".dotx",
-    ".docm",
-    ".dotm",
-    ".xls",
-    ".xlt",
-    ".xlsx",
-    ".xltx",
-    ".xlsm",
-    ".xltm",
-    ".ppt",
-    ".pot",
-    ".pps",
-    ".pptx",
-    ".potx",
-    ".ppsx",
-    ".pptm",
-    ".potm",
-    ".ppsm",
+# PowerPoint all use the same prefix; the suffixes are those of the Office
+# formats, taken from FormatToExtensions so a new extension there is covered.
+_OFFICE_LOCK_FORMATS = {
+    InputFormat.DOC,
+    InputFormat.DOCX,
+    InputFormat.XLS,
+    InputFormat.XLSX,
+    InputFormat.PPT,
+    InputFormat.PPTX,
 }
 
+_OFFICE_LOCK_SUFFIXES: frozenset[str] = frozenset(
+    f".{ext}" for fmt in _OFFICE_LOCK_FORMATS for ext in FormatToExtensions[fmt]
+)
 
-def _is_temporary_word_file(path: Path) -> bool:
+
+def _is_office_lock_file(path: Path) -> bool:
     return path.name.startswith("~$") and path.suffix.lower() in _OFFICE_LOCK_SUFFIXES
 
 
@@ -255,7 +245,7 @@ def _iter_input_paths_from_directory(
             _name_matches_format(path.name, fmt) for fmt in from_formats
         ):
             continue
-        if _is_temporary_word_file(path):
+        if _is_office_lock_file(path):
             _log.info(f"Ignoring temporary Office file: {path}")
             continue
         if path not in seen_paths:
@@ -1350,7 +1340,7 @@ def convert(  # noqa: C901
                         input_doc_paths.extend(
                             _iter_input_paths_from_directory(local_path, from_formats)
                         )
-                    elif _is_temporary_word_file(local_path):
+                    elif _is_office_lock_file(local_path):
                         _log.info(f"Ignoring temporary Office file: {local_path}")
                     elif _is_html_source(src, from_formats):
                         input_doc_paths.append(local_path)
@@ -1380,7 +1370,7 @@ def convert(  # noqa: C901
                             _iter_input_paths_from_directory(local_path, from_formats)
                         )
                     elif local_path.exists():
-                        if _is_temporary_word_file(local_path):
+                        if _is_office_lock_file(local_path):
                             _log.info(f"Ignoring temporary Office file: {local_path}")
                         else:
                             input_doc_paths.append(local_path)

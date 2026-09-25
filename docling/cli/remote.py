@@ -108,7 +108,7 @@ def _collect_sources(
     # Imported here to reuse the exact source-collection helpers from `convert`.
     from docling.cli.main import (
         _is_http_url,
-        _is_temporary_word_file,
+        _is_office_lock_file,
         _iter_input_paths_from_directory,
         err_console,
     )
@@ -124,7 +124,7 @@ def _collect_sources(
             raise typer.Exit(1)
         if local_path.is_dir():
             sources.extend(_iter_input_paths_from_directory(local_path, from_formats))
-        elif _is_temporary_word_file(local_path):
+        elif _is_office_lock_file(local_path):
             _log.info(f"Ignoring temporary Office file: {local_path}")
         else:
             sources.append(local_path)
