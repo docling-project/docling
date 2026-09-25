@@ -39,8 +39,15 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
+    TableCell,
+    TableData,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import TextItem
@@ -55,6 +62,8 @@ from docling.backend.abstract_backend import (
 from docling.backend.iwork import keynote_iwa, keynote_xml, pages_iwa, pages_xml
 from docling.backend.iwork.content import (
     Block,
+    Chart,
+    ChartKind,
     Comment,
     Content,
     Geometry,
@@ -95,6 +104,22 @@ halves of such a document are read out of two different archives.
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 
 _KEYNOTE_LEGACY_INDEX_MEMBERS = ("index.apxl", "index.apxl.gz")
+
+_CHART_LABELS = {
+    ChartKind.COLUMN: PictureClassificationLabel.BAR_CHART,
+    ChartKind.BAR: PictureClassificationLabel.BAR_CHART,
+    ChartKind.LINE: PictureClassificationLabel.LINE_CHART,
+    ChartKind.PIE: PictureClassificationLabel.PIE_CHART,
+    ChartKind.DONUT: PictureClassificationLabel.PIE_CHART,
+    ChartKind.SCATTER: PictureClassificationLabel.SCATTER_CHART,
+}
+"""How a chart is classified, by its kind; anything else is ``OTHER_CHART``.
+
+The same families the PowerPoint and Excel backends classify into, so a chart
+reads the same whichever of them it came from: column and bar charts, stacked
+or not, are bar charts, a donut is a pie, and area, bubble, radar and mixed
+charts are other charts.
+"""
 
 
 def _open_container(
@@ -338,8 +363,11 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
           result is left empty rather than guessed at.
         * A picture is placed where the slide anchors it, but its caption, its
           cropping and its accessibility description are not read.
-        * A chart is not read. Neither its picture nor the data behind it is
-          recovered, which is where this falls short of the PowerPoint backend.
+        * A chart becomes a picture classified by its kind, carrying the data it
+          plots as a table and captioned with its title, as the PowerPoint
+          backend gives one. Keynote keeps no picture of a chart, so the
+          picture itself is empty. A value that is a date or a duration rather
+          than a number is left empty, and an iWork '09 chart is not read.
         * What a master slide draws is left to the master: it belongs to every
           slide using it rather than to any one of them, so it is not repeated.
           A slide that shows nothing of its own therefore yields an empty group.
@@ -668,10 +696,12 @@ def _add_block(
     if isinstance(block, Paragraph):
         return _add_paragraph(doc, block, lists, parent, prov)
 
-    # A table or a picture ends any list it follows, the same as body text.
+    # A table, a picture or a chart ends any list it follows, like body text.
     lists.close()
     if isinstance(block, Picture):
         _add_picture(doc, block, parent, prov)
+    elif isinstance(block, Chart):
+        _add_chart(doc, block, parent, prov)
     else:
         doc.add_table(data=block, parent=parent, prov=prov)
     return None
@@ -702,6 +732,107 @@ def _add_picture(
             _log.debug("Could not decode iWork image %s: %s", picture.name, exc)
 
     doc.add_picture(image=image, parent=parent, prov=prov)
+
+
+def _add_chart(
+    doc: DoclingDocument,
+    chart: Chart,
+    parent: NodeItem | None = None,
+    prov: ProvenanceItem | None = None,
+) -> None:
+    """Add one chart as a picture classified by its kind and carrying its data.
+
+    This is the shape the PowerPoint backend gives a chart: a picture whose meta
+    holds the chart's classification and its data as a table, captioned with
+    the chart's title when the chart shows one.
+
+    Args:
+        doc: The document being built.
+        chart: The chart to add.
+        parent: The node to add it under, or None for the document root.
+        prov: Where the chart came from, for the backends that know.
+    """
+    caption = None
+    if chart.title:
+        caption = doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=chart.title,
+            parent=parent,
+            prov=(
+                prov.model_copy(update={"charspan": (0, len(chart.title))})
+                if prov is not None
+                else None
+            ),
+        )
+
+    picture = doc.add_picture(caption=caption, parent=parent, prov=prov)
+    label = _CHART_LABELS.get(chart.kind, PictureClassificationLabel.OTHER_CHART)
+    table = _chart_table(chart)
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name=label)]
+        ),
+        tabular_chart=(
+            TabularChartMetaField(chart_data=table) if table is not None else None
+        ),
+    )
+
+
+def _chart_table(chart: Chart) -> TableData | None:
+    """Lay a chart's data out as a table, categories down and series across.
+
+    It is the layout the PowerPoint and Excel backends give a chart's data, so a
+    consumer reads every chart's table the same way::
+
+        | <blank> | <series 0 name> | <series 1 name> | ...
+        | cat_0   | val_0,0         | val_1,0         | ...
+        | cat_1   | val_0,1         | val_1,1         | ...
+
+    Args:
+        chart: The chart whose data to lay out.
+
+    Returns:
+        The table, or None when the chart holds no data.
+    """
+    rows = max([len(chart.categories)] + [len(s.values) for s in chart.series])
+    if not chart.series or rows == 0:
+        return None
+
+    texts = [["", *(series.name for series in chart.series)]]
+    for row in range(rows):
+        category = chart.categories[row] if row < len(chart.categories) else ""
+        values = (s.values[row] if row < len(s.values) else None for s in chart.series)
+        texts.append([category, *map(_chart_value, values)])
+
+    cells = [
+        TableCell(
+            text=text,
+            start_row_offset_idx=row,
+            end_row_offset_idx=row + 1,
+            start_col_offset_idx=col,
+            end_col_offset_idx=col + 1,
+            column_header=row == 0,
+            row_header=row > 0 and col == 0,
+        )
+        for row, line in enumerate(texts)
+        for col, text in enumerate(line)
+    ]
+    return TableData(
+        num_rows=rows + 1, num_cols=len(chart.series) + 1, table_cells=cells
+    )
+
+
+def _chart_value(value: float | None) -> str:
+    """Write a chart value the way the chart's data editor shows it.
+
+    A whole number loses the ``.0`` a float would print with, which is what the
+    PowerPoint backend does too, so ``120`` reads as it was typed.
+    """
+    if value is None:
+        return ""
+    if float(value).is_integer() and abs(value) < 1e15:
+        return str(int(value))
+    return str(value)
 
 
 def _add_paragraph(

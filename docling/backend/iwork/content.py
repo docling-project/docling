@@ -198,7 +198,7 @@ class StorageRuns(NamedTuple):
     links: list[tuple[int, str | None]] = []
 
 
-Block = Paragraph | Picture | TableData
+Block = Paragraph | Picture | TableData | Chart
 """One piece of document content, in the order Pages lays it out."""
 
 
