@@ -88,12 +88,28 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         return {InputFormat.CSV}
 
     def convert(self) -> DoclingDocument:
-        """
-        Parses the CSV data into a structured document model.
-        """
+        """Parse the CSV content into a DoclingDocument.
 
-        # Detect CSV dialect. The larger sample is only read when the first
-        # line fails to sniff.
+        Dialect detection sniffs the first line; a larger sample is only read
+        when that fails (e.g. a quoted field spanning multiple lines cuts the
+        first line mid-quote). If sniffing fails entirely, `csv.excel`
+        (comma delimiter) is used as the fallback.
+
+        `doublequote` is forced to `True` whenever no escape character was
+        detected. `csv.Sniffer` only sets it when it actually sees `""` in
+        the sample, and the sample is usually the header line, which rarely
+        contains one. RFC 4180 and `csv.excel` both use doubling, so it is
+        the correct default when no explicit escape character is present.
+
+        Files that escape quotes with a backslash (e.g. MySQL `SELECT … INTO
+        OUTFILE`) fail the first parse because `doublequote=True` and
+        `strict=True` together reject a lone `"` that is not doubled. The
+        parse is retried with `doublequote=False` and `escapechar="\\"` so
+        those files load with quotes correctly unescaped. That retry is only
+        ever reached when the content is already non-RFC-4180, so the
+        backslash interpretation is appropriate.
+        """
+        # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
 
         def read_sample() -> str:
@@ -109,22 +125,40 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             else:
                 _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
         except csv.Error as e:
-            # Fall back to default commad delimiter (e.g. single-column, insufficient data to detect)
+            # Fall back to comma (e.g. single-column or insufficient data to detect).
             _log.info(
                 f"Could not detect delimiter ({e}), using default comma delimiter"
             )
             dialect = csv.excel
 
-        # Parse CSV. strict=True rejects malformed quotes; that used to escape
-        # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
         try:
-            result = csv.reader(self.content, dialect=dialect, strict=True)
+            result = csv.reader(
+                self.content,
+                dialect=dialect,
+                doublequote=dialect.escapechar is None,
+                strict=True,
+            )
             self.csv_data = list(result)
-        except csv.Error as e:
-            raise DocumentLoadError(
-                f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
-            ) from e
+        except csv.Error as quote_error:
+            _log.info(
+                f"Could not parse with doublequote=True ({quote_error}),"
+                " retrying with doublequote=False and escapechar='\\\\'"
+            )
+            self.content.seek(0)
+            try:
+                result = csv.reader(
+                    self.content,
+                    dialect=dialect,
+                    doublequote=False,
+                    escapechar="\\",
+                    strict=True,
+                )
+                self.csv_data = list(result)
+            except csv.Error as e:
+                raise DocumentLoadError(
+                    f"CsvDocumentBackend could not parse document with hash {self.document_hash}."
+                ) from e
 
         # csv.reader yields [] for blank lines; ["", ...] for empty-field rows like ",,".
         # Filtering on truthiness keeps the latter and drops the former.
