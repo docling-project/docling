@@ -87,6 +87,22 @@ pipeline_options = PdfPipelineOptions(
 )
 ```
 
+Recognition runs one text-line crop at a time, so its input shape changes on nearly
+every call. Docling therefore pins ONNX Runtime's `cudnn_conv_algo_search` to `DEFAULT`
+for this engine: RapidOCR's own default re-searches the convolution algorithms on every
+new shape, which costs far more than the inference it is choosing kernels for. Measured
+on an L4, one 1224x1584 page with `lang=["japan"]`:
+
+| | seconds/page |
+| --- | --- |
+| CPU | 2.7 |
+| CUDA | 1.7 |
+| CUDA, without the pinned search | 11.6 |
+
+If ONNX Runtime cannot load its CUDA execution provider — no `onnxruntime-gpu`, a
+version built against a different CUDA/cuDNN, or a host with no GPU — RapidOCR logs a
+warning and falls back to the CPU provider; conversion still succeeds.
+
 The Torch backend can be enabled instead with:
 
 ```py
