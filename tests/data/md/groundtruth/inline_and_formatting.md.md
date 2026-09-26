@@ -34,3 +34,4 @@ Some *`formatted_code`*
 | foo bar | y |
 | A B | z |
 | italic and bold | w |
+| run build now | code in a cell |
