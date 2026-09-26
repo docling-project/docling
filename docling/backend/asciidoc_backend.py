@@ -195,6 +195,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 is_continuation_block=False,
             )
 
+            # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
+            # "[[some-id]]") are metadata that applies to the block that
+            # follows; they are never body content, so skip them.
+            if re.match(r"^\[\[.+\]\]$", stripped_line) or re.match(
+                r"^\[[^\[\]]*\]$", stripped_line
+            ):
+                continue
+
             # Title
             if self._is_title(line):
                 item = self._parse_title(line)

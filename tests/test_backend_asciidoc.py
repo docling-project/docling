@@ -84,6 +84,29 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
 
 
+def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
+    # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
+    # metadata for whatever follows; they used to leak into the document body
+    # as literal text items.
+    src = (
+        b"[[table-id]]\n"
+        b'[cols="2"]\n'
+        b"|===\n| a | b\n| c | d\n|===\n"
+        b"\n"
+        b"[NOTE]\nThis is a caveat.\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    assert [item.text for item in doc.texts] == ["This is a caveat."]
+
+
 def test_unclosed_table_at_end_keeps_caption() -> None:
     src = b".End table\n|===\n|A |B"
     in_doc = InputDocument(
