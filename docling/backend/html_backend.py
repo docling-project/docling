@@ -485,18 +485,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if isinstance(path_or_stream, BytesIO)
                 else Path(path_or_stream).read_bytes()
             )
+            markup: str | bytes = raw
             if self.input_format == InputFormat.MHTML:
                 if options.render_page:
                     raise DocumentLoadError(
                         "Browser rendering is not supported for MHTML input."
                     )
-                raw, resources, root_location = self._parse_mhtml(
+                markup, resources, root_location = self._parse_mhtml(
                     raw, configured_base_path
                 )
                 self._mhtml_resources = resources
                 self.base_path = root_location or configured_base_path
-            self._raw_html_bytes = raw
-            self.soup = BeautifulSoup(raw, "html.parser")
+            self._raw_html_bytes = (
+                markup.encode("utf-8") if isinstance(markup, str) else markup
+            )
+            self.soup = BeautifulSoup(markup, "html.parser")
         except DocumentLoadError:
             raise
         except Exception as e:
@@ -613,23 +616,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return payload if isinstance(payload, bytes) else b""
 
     @classmethod
-    def _decode_mhtml_html(cls, part: Message) -> bytes:
-        """Decode the transfer encoding and re-encode the HTML payload as UTF-8.
+    def _decode_mhtml_html(cls, part: Message) -> str | bytes:
+        """Decode the transfer encoding and the declared charset of the HTML part.
 
-        Note:
-            Re-encoding to UTF-8 does not strip or update any ``<meta charset>``
-            or ``Content-Type`` meta tags inside the HTML. If the document declares
-            a non-UTF-8 charset internally, BeautifulSoup may attempt to re-decode
-            the already-UTF-8 bytes using that charset, which can produce corrupted
-            text. Stripping the meta charset declaration before passing the bytes to
-            the parser would fix this but is left as a future improvement.
+        A charset declared on the MIME part takes precedence over any
+        ``<meta charset>`` in the page, so the HTML is returned as text and the
+        parser cannot decode it a second time. Without a usable charset the raw
+        bytes are returned for the parser to detect the encoding itself.
         """
         payload = cls._decode_mime_payload(part)
         charset = part.get_content_charset()
         if not charset:
             return payload
         try:
-            return payload.decode(charset, errors="replace").encode("utf-8")
+            return payload.decode(charset, errors="replace")
         except LookupError:
             return payload
 
@@ -797,7 +797,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     def _parse_mhtml(
         cls, raw: bytes, configured_base: str | None
-    ) -> tuple[bytes, dict[str, bytes], str]:
+    ) -> tuple[str | bytes, dict[str, bytes], str]:
         """Parse an MHTML archive and extract the HTML root, image resources, and base URL.
 
         Args:
@@ -806,7 +806,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 ``HTMLBackendOptions.source_uri``), used to resolve local roots.
 
         Returns:
-            A tuple of ``(html_bytes, resources, effective_base)`` where
+            A tuple of ``(html, resources, effective_base)`` where ``html`` is
+            text if the root part declares a charset and raw bytes otherwise,
             ``resources`` maps location keys to raw image bytes and
             ``effective_base`` is the resolved base URL for further reference
             resolution.
@@ -819,15 +820,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             raise ValueError("MHTML input has no MIME Content-Type header.")
 
         related_scope, root_part = cls._find_mhtml_root(message)
-        html_bytes = cls._decode_mhtml_html(root_part)
-        if not html_bytes.strip():
+        html = cls._decode_mhtml_html(root_part)
+        if not html.strip():
             raise ValueError("The MHTML HTML root part is empty.")
 
         root_header = root_part.get("Content-Location")
         root_location = str(root_header).strip() if root_header else None
         effective_base = cls._resolve_mhtml_base(root_location, configured_base)
         resources = cls._collect_mhtml_resources(related_scope, effective_base)
-        return html_bytes, resources, effective_base
+        return html, resources, effective_base
 
     @override
     def convert(self) -> DoclingDocument:
