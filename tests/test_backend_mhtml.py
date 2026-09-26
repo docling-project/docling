@@ -183,12 +183,37 @@ def test_related_without_start_does_not_select_later_html():
     assert result.errors
 
 
-def test_declared_non_utf8_charset_is_decoded():
-    html = "<html><body><p>Привет, мир</p></body></html>".encode("windows-1251")
-    encoded = base64.b64encode(html).decode()
+@pytest.mark.parametrize(
+    "head",
+    [
+        "",
+        '<meta charset="windows-1251">',
+        '<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">',
+    ],
+    ids=["no-meta", "meta-charset", "meta-http-equiv"],
+)
+def test_declared_non_utf8_charset_is_decoded(head: str):
+    html = f"<html><head>{head}</head><body><p>Привет, мир</p></body></html>"
+    encoded = base64.b64encode(html.encode("windows-1251")).decode()
     data = (
         "MIME-Version: 1.0\r\n"
         "Content-Type: text/html; charset=windows-1251\r\n"
+        "Content-Transfer-Encoding: base64\r\n\r\n"
+        f"{encoded}\r\n"
+    ).encode()
+
+    assert "Привет, мир" in _convert_stream(data).export_to_markdown()
+
+
+def test_part_charset_takes_precedence_over_a_different_meta_charset():
+    html = (
+        '<html><head><meta charset="windows-1251"></head>'
+        "<body><p>Привет, мир</p></body></html>"
+    )
+    encoded = base64.b64encode(html.encode("utf-8")).decode()
+    data = (
+        "MIME-Version: 1.0\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
         "Content-Transfer-Encoding: base64\r\n\r\n"
         f"{encoded}\r\n"
     ).encode()
