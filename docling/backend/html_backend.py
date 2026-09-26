@@ -2796,7 +2796,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             current_dt_item = None
             dd_group = None  # Group for multiple <dd> under same <dt>
 
-            children = tag.find_all(["dt", "dd"], recursive=False)
+            # HTML allows wrapping each group of <dt> and <dd> elements in a <div>
+            children = []
+            for child in tag.find_all(["dt", "dd", "div"], recursive=False):
+                if isinstance(child, Tag) and child.name == "div":
+                    children.extend(child.find_all(["dt", "dd"], recursive=False))
+                else:
+                    children.append(child)
 
             for i, child in enumerate(children):
                 if not isinstance(child, Tag):

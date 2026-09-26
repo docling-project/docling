@@ -579,6 +579,14 @@ def test_description_lists():
         )
     )
 
+    # Description list with each dt/dd group wrapped in a div (allowed by the HTML spec)
+    test_set.append(
+        (
+            b"<html><body><dl><div><dt>Weight</dt><dd>1.2 kg</dd></div><div><dt>Color</dt><dd>Black</dd><dd>White</dd></div></dl></body></html>",
+            "- **Weight**\n    - 1.2 kg\n- **Color**\n    - Black\n    - White",
+        )
+    )
+
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
             path_or_stream=BytesIO(pair[0]),
