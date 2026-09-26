@@ -908,16 +908,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         caption_node = node.xpath("caption")
-        caption: str | None
+        caption: str = ""
         if len(caption_node) > 0:
-            caption = ""
             for caption_par in list(caption_node[0]):
                 if caption_par.xpath(".//supplementary-material"):
                     continue
                 caption += JatsDocumentBackend._get_text(caption_par).strip() + " "
             caption = caption.strip()
-        else:
-            caption = None
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
@@ -1178,7 +1175,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            table["label"] = node.xpath("label")[0].text
+            # lxml sets .text to None for an empty element; fall back to "".
+            table["label"] = node.xpath("label")[0].text or ""
 
         try:
             self._add_table(doc, parent, table)

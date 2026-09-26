@@ -1104,3 +1104,31 @@ def test_jats_empty_article_title_does_not_crash():
     exported = doc.export_to_markdown()
     # Empty title is serialized as an H1 with no text.
     assert exported == "# "
+
+
+def _caption_texts(doc: DoclingDocument) -> list[str]:
+    return [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION]
+
+
+def test_jats_labelled_figure_without_a_caption_omits_the_word_none():
+    """A <fig> may carry a <label> and no <caption>, which is legal and common."""
+    doc = convert_jats_body(
+        """<sec><p>Text.</p>
+        <fig id="f1"><label>Figure 1.</label><graphic/></fig>
+        </sec>"""
+    )
+
+    assert _caption_texts(doc) == ["Figure 1."]
+
+
+def test_jats_table_with_an_empty_label_produces_no_caption():
+    """An empty <label/> has .text of None in lxml."""
+    doc = convert_jats_body(
+        """<sec><p>Text.</p>
+        <table-wrap id="t1"><label/>
+          <table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>
+        </table-wrap>
+        </sec>"""
+    )
+
+    assert _caption_texts(doc) == []
