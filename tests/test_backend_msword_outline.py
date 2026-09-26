@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Tests for Word heading detection via the ``w:outlineLvl`` style property.
+"""Tests for Word heading detection via ``w:outlineLvl``.
+
+The level can be carried by the paragraph's style or set directly on the
+paragraph itself; both are covered here.
 
 Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
@@ -22,6 +25,14 @@ def _set_outline_level(style, outline_lvl: int):
     lvl.set(qn("w:val"), str(outline_lvl))
     style.element.get_or_add_pPr().append(lvl)
     return style
+
+
+def _set_paragraph_outline_level(paragraph, outline_lvl: int):
+    """Pin an explicit ``w:outlineLvl`` directly onto an existing paragraph."""
+    lvl = OxmlElement("w:outlineLvl")
+    lvl.set(qn("w:val"), str(outline_lvl))
+    paragraph._p.get_or_add_pPr().append(lvl)
+    return paragraph
 
 
 def _add_style_with_outline_level(doc, style_id: str, name: str, outline_lvl: int):
@@ -133,3 +144,15 @@ def test_heading_style_with_the_body_text_sentinel_falls_back_to_its_name(tmp_pa
     pinned = build(pinned=True)
     assert pinned == build(pinned=False)
     assert pinned.strip().startswith("#")
+
+
+def test_outline_level_on_the_paragraph_is_detected_without_a_heading_style(tmp_path):
+    doc = Document()
+    para = doc.add_paragraph("Larger channel bandwidth")
+    _set_paragraph_outline_level(para, 1)
+    doc.add_paragraph("Body text.")
+
+    markdown = _markdown(doc, tmp_path, "paragraph_level")
+
+    lines = [line for line in markdown.splitlines() if line.strip()]
+    assert lines == ["### Larger channel bandwidth", "Body text."]
