@@ -1977,3 +1977,73 @@ def test_fragment_only_rel_does_not_crash_backend():
         if isinstance(item, TextItem)
     ]
     assert any("Hello, world!" in t for t in texts)
+
+
+def _position_of(value: str, attr: str = "y") -> float | int | None:
+    """Read one position attribute back through _get_paragraph_position."""
+    from lxml import etree
+
+    from docling.backend.msword_backend import MsWordDocumentBackend
+
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+    elem = etree.fromstring(
+        f'<p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+        f' {attr}="{value}"/>'
+    )
+
+    return MsWordDocumentBackend._get_paragraph_position(backend, elem)
+
+
+@pytest.mark.parametrize("attr", ["y", "top", "positionY", "y-position"])
+def test_get_paragraph_position_keeps_a_negative_sign(attr: str):
+    """A drawing anchored above its reference point has a legal negative offset.
+
+    The position feeds the top-to-bottom sort of floating textbox paragraphs, so
+    dropping the sign moves that drawing to the wrong end of the document.
+    """
+    assert _position_of("-45.5", attr=attr) == -45.5
+
+
+def test_get_paragraph_position_still_strips_units():
+    assert _position_of("45.5pt") == 45.5
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [("2e-5", 2.0), ("-2e-5", -2.0), ("1.5e-3in", 1.5)]
+)
+def test_get_paragraph_position_reads_exponent_notation_as_its_mantissa(
+    value: str, expected: float
+):
+    """A value in exponent notation is read, not dropped and not inflated.
+
+    Deleting every character outside the digits, the period and the minus leaves
+    "2-5" for "2e-5", which float() rejects, so the offset was swallowed by the
+    except and the drawing fell back to its source line. Deleting the minus too,
+    as the code did before this branch, leaves "25": an offset a million times
+    too large. Matching the number reads what is written, sign included. Word
+    writes these lengths with a unit suffix rather than an exponent, so this is
+    about the parser staying honest on input it did not expect.
+    """
+    assert _position_of(value) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(".5", 0.5), ("-.5", -0.5)])
+def test_get_paragraph_position_keeps_a_decimal_without_its_leading_zero(
+    value: str, expected: float
+):
+    r"""A decimal written as ".5" keeps its magnitude and its sign.
+
+    This one guards the pattern rather than the fix: `-?\d+(?:\.\d+)?` requires a
+    digit before the period, so it would match the "5" in ".5" and return 5.0,
+    ten times too large and positive for "-.5".
+    """
+    assert _position_of(value) == expected
+
+
+def test_get_paragraph_position_falls_through_a_value_with_no_number():
+    """An attribute like y="auto" holds no offset, so the next hint decides.
+
+    re.search returns None there, and the source line is the documented last
+    resort of this method. A single parsed element is on line 1.
+    """
+    assert _position_of("auto") == 1
