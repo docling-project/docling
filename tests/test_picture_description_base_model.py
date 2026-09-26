@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import threading
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from typing import ClassVar, List, Type
 
@@ -16,7 +18,11 @@ from docling_core.types.doc.base import BoundingBox, Size
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import ItemAndImageEnrichmentElement, VlmStopReason
+from docling.datamodel.base_models import (
+    FailureCategory,
+    ItemAndImageEnrichmentElement,
+    VlmStopReason,
+)
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
@@ -67,6 +73,36 @@ class _UsagePictureDescriptionModel(_ConfiguredPictureDescriptionModel):
                     "total_tokens": 42,
                 },
             )
+
+
+class _FailingPictureDescriptionModel(_ConfiguredPictureDescriptionModel):
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
+        for _image in images:
+            yield ApiImageRequestResult(
+                text="",
+                num_tokens=0,
+                stop_reason=VlmStopReason.INFERENCE_ERROR,
+                error="HTTP 400: Unsupported parameter: temperature",
+            )
+
+
+class _RaisingAfterFailurePictureDescriptionModel(_FailingPictureDescriptionModel):
+    """The first batch fails at the provider, the second raises (a bug or a
+    connection reset the model does not catch)."""
+
+    def __init__(self, options: PictureDescriptionBaseOptions) -> None:
+        super().__init__(options)
+        self.batches = 0
+
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
+        self.batches += 1
+        if self.batches > 1:
+            raise RuntimeError("boom")
+        yield from super()._annotate_images(images)
 
 
 class _BatchRecordingPictureDescriptionModel(_ConfiguredPictureDescriptionModel):
@@ -129,11 +165,103 @@ def test_picture_description_batch_size_controls_pipeline_chunking() -> None:
         document=_make_picture_doc(count=5),
         timings={},
         status="success",
+        errors=[],
     )
 
     pipeline._enrich_document(conv_res)
 
     assert model.batch_sizes == [2, 2, 1]
+
+
+def test_picture_description_failed_request_is_recorded_not_stored() -> None:
+    """A failed API call leaves the picture without a description and hands the
+    failure to the pipeline instead of storing an empty text (#4009)."""
+    model = _FailingPictureDescriptionModel(_TestOptions())
+    doc = _make_picture_doc(count=1)
+    image = Image.new("RGB", (20, 20), "red")
+
+    results = list(
+        model(
+            doc=doc,
+            element_batch=[
+                ItemAndImageEnrichmentElement(item=doc.pictures[0], image=image)
+            ],
+        )
+    )
+
+    assert len(results) == 1
+    assert results[0].meta is None or results[0].meta.description is None
+    errors = model.collect_errors()
+    assert len(errors) == 1
+    assert errors[0].category == FailureCategory.INFERENCE_FAILURE
+    assert "HTTP 400: Unsupported parameter: temperature" in errors[0].error_message
+    assert model.collect_errors() == []
+
+
+def test_pipeline_collects_picture_description_failures_into_conv_res() -> None:
+    pipeline = _PictureDescriptionPipeline(PipelineOptions())
+    pipeline.enrichment_pipe = [_FailingPictureDescriptionModel(_TestOptions())]
+    conv_res = SimpleNamespace(
+        document=_make_picture_doc(count=2),
+        timings={},
+        status="success",
+        errors=[],
+    )
+
+    pipeline._enrich_document(conv_res)
+
+    assert len(conv_res.errors) == 2
+    assert all(
+        error.category == FailureCategory.INFERENCE_FAILURE for error in conv_res.errors
+    )
+
+
+def test_pipeline_collects_failures_even_when_a_later_batch_raises() -> None:
+    """A conversion that raises takes the failures recorded so far with it; they
+    must not surface in the next conversion that runs on the same thread."""
+    pipeline = _PictureDescriptionPipeline(PipelineOptions())
+    model = _RaisingAfterFailurePictureDescriptionModel(_TestOptions(batch_size=1))
+    pipeline.enrichment_pipe = [model]
+    conv_res = SimpleNamespace(
+        document=_make_picture_doc(count=2),
+        timings={},
+        status="success",
+        errors=[],
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        pipeline._enrich_document(conv_res)
+
+    assert len(conv_res.errors) == 1
+    assert model.collect_errors() == []
+
+
+def test_picture_description_failures_are_kept_apart_per_thread() -> None:
+    """Pipelines share their model instances. Two conversions running at the
+    same time (docling-serve's local engine does that) must each collect only
+    their own failures."""
+    model = _FailingPictureDescriptionModel(_TestOptions())
+    image = Image.new("RGB", (20, 20), "red")
+    both_failed = threading.Barrier(2, timeout=5)
+
+    def _convert(count: int) -> int:
+        doc = _make_picture_doc(count=count)
+        list(
+            model(
+                doc=doc,
+                element_batch=[
+                    ItemAndImageEnrichmentElement(item=picture, image=image)
+                    for picture in doc.pictures
+                ],
+            )
+        )
+        both_failed.wait()  # the other conversion has recorded its failures too
+        return len(model.collect_errors())
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        collected = sorted(pool.map(_convert, [1, 3]))
+
+    assert collected == [1, 3]
 
 
 def test_picture_description_stores_usage_payload_on_description_meta() -> None:

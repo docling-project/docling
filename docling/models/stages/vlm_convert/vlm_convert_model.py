@@ -71,6 +71,7 @@ def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
         num_tokens=metadata.get("num_tokens"),
         usage=metadata.get("usage"),
         generated_tokens=generated_tokens,
+        error_message=metadata.get("error"),
     )
 
 

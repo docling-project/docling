@@ -18,6 +18,7 @@ from PIL.Image import Image
 from typing_extensions import TypeVar
 
 from docling.datamodel.base_models import (
+    ErrorItem,
     ItemAndImageEnrichmentElement,
     Page,
     VlmPrediction,
@@ -164,6 +165,18 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
         self, doc: DoclingDocument, element_batch: Iterable[EnrichElementT]
     ) -> Iterable[NodeItem]:
         pass
+
+    def collect_errors(self) -> list[ErrorItem]:
+        """Return the non-fatal errors recorded for the current conversion and forget them.
+
+        Enrichment models receive the document but not the ``ConversionResult``,
+        so a failure that should downgrade the conversion to PARTIAL_SUCCESS is
+        handed back to the pipeline through here; the pipeline calls it once the
+        model has processed all its batches, also when a batch raised. A
+        pipeline that overrides ``_enrich_document`` has to do the same. The
+        default has nothing to report.
+        """
+        return []
 
 
 class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):

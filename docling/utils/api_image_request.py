@@ -49,6 +49,18 @@ def _make_retry_session() -> requests.Session:
     return session
 
 
+def _failed_request(reason: str) -> ApiImageRequestResult:
+    """Result for a request that produced no model output.
+
+    The failure is reported through ``VlmStopReason.INFERENCE_ERROR`` and ``error``
+    instead of an exception, so one failing page does not abort the document;
+    the pipelines turn it into a PARTIAL_SUCCESS with a per-page ErrorItem.
+    """
+    return ApiImageRequestResult(
+        text="", num_tokens=0, stop_reason=VlmStopReason.INFERENCE_ERROR, error=reason
+    )
+
+
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
     if arguments is None:
         return ""
@@ -236,11 +248,15 @@ def api_image_request(
                     r.headers.get("content-type"),
                     _response_preview(r.text),
                 )
-                return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+                return _failed_request(
+                    f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                )
 
             response_payload = _parse_response_json(r)
             if response_payload is None:
-                return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+                return _failed_request(
+                    f"HTTP {r.status_code}: response body was empty or not JSON"
+                )
 
             usage_key = _resolve_usage_response_key(
                 usage_response_key=usage_response_key,
@@ -264,9 +280,9 @@ def api_image_request(
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
-            return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+            return _failed_request(f"{type(e).__name__}: {e}")
     else:
-        return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+        return _failed_request("Could not encode the page image as PNG")
 
 
 def api_image_request_streaming(

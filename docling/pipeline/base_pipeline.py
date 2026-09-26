@@ -166,14 +166,19 @@ class BasePipeline(ABC):
 
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
             for model in self.enrichment_pipe:
-                for element_batch in chunkify(
-                    _prepare_elements(conv_res, model),
-                    model.elements_batch_size,
-                ):
-                    for element in model(
-                        doc=conv_res.document, element_batch=element_batch
-                    ):  # Must exhaust!
-                        pass
+                try:
+                    for element_batch in chunkify(
+                        _prepare_elements(conv_res, model),
+                        model.elements_batch_size,
+                    ):
+                        for element in model(
+                            doc=conv_res.document, element_batch=element_batch
+                        ):  # Must exhaust!
+                            pass
+                finally:
+                    # Also when a batch raised: the failures recorded so far
+                    # belong to this conversion, not to the next one.
+                    conv_res.errors.extend(model.collect_errors())
 
         return conv_res
 
