@@ -480,9 +480,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 "affiliation_names": [],
             }
 
-            # Affiliation names
+            # Affiliation names. @rid is optional and of type IDREFS, so it can
+            # be absent and it can name several affiliations at once.
             affiliation_ids = [
-                a.attrib["rid"] for a in author_node.xpath('xref[@ref-type="aff"]')
+                rid
+                for a in author_node.xpath('xref[@ref-type="aff"]')
+                for rid in (a.get("rid") or "").split()
             ]
             for id in affiliation_ids:
                 if id in affiliation_ids_names:
