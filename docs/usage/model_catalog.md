@@ -352,10 +352,10 @@ options = VlmConvertOptions.from_preset(
 ### Picture Description
 
 ```python
-from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
+from docling.datamodel.pipeline_options import PictureDescriptionVlmEngineOptions
 
 # Use Granite Vision for detailed descriptions
-options = PictureDescriptionVlmOptions.from_preset("granite_vision")
+options = PictureDescriptionVlmEngineOptions.from_preset("granite_vision")
 ```
 
 ### Code & Formula Extraction
