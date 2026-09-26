@@ -388,6 +388,70 @@ class TestApiImageRequest:
         assert "API response body was empty" in caplog.text
         assert "status=200" in caplog.text
 
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_params_set_to_none_are_left_out_of_the_request(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
+        """``None`` opts a parameter out of the request instead of sending JSON
+        ``null``, so an injected default can be dropped by the caller."""
+        post = mock_session_factory.return_value.__enter__.return_value.post
+        post.return_value = mock_response_factory()
+
+        api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+            model="gpt-5",
+            temperature=None,
+            max_tokens=None,
+        )
+
+        body = post.call_args.kwargs["json"]
+        assert body["model"] == "gpt-5"
+        assert "temperature" not in body
+        assert "max_tokens" not in body
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_streaming_params_set_to_none_are_left_out_of_request_and_header(
+        self, mock_session_factory, sample_image
+    ):
+        """The streaming path builds its own payload and an X-Temperature header;
+        both must honour the ``None`` opt-out as well."""
+
+        class _StreamingResponse:
+            ok = True
+            text = ""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def raise_for_status(self):
+                return None
+
+            def iter_lines(self, decode_unicode=True):
+                yield 'data: {"choices": [{"delta": {"content": "ok"}}]}'
+                yield "data: [DONE]"
+
+        post = mock_session_factory.return_value.__enter__.return_value.post
+        post.return_value = _StreamingResponse()
+
+        api_image_request_streaming(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+            model="gpt-5",
+            temperature=None,
+        )
+
+        body = post.call_args.kwargs["json"]
+        assert body["model"] == "gpt-5"
+        assert body["stream"] is True
+        assert "temperature" not in body
+        assert "X-Temperature" not in post.call_args.kwargs["headers"]
+
     def test_retry_session_retries_transient_api_errors(self):
         """Test that remote API calls retry common transient failures."""
         with _make_retry_session() as session:

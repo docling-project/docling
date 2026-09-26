@@ -134,6 +134,34 @@ More examples on how to connect with the remote inference services can be found 
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
 
+### Request parameters
+
+`params` is merged into every chat-completions request on top of the parameters
+Docling adds itself. A key in `params` overrides Docling's value, and a key set to
+`None` is left out of the request altogether. What Docling adds depends on the
+option class:
+
+- `ApiVlmEngineOptions` (the API inference engine, also used by the engine-based
+  picture description): `temperature`, and `max_tokens` when a token limit is
+  configured. A `max_completion_tokens` in `params` replaces `max_tokens`. A
+  non-empty `params` also replaces the API parameters the model spec would
+  otherwise contribute (such as `model`), so name the model in `params` as well.
+- `ApiVlmOptions` (the legacy `ApiVlmModel`): only `temperature`, taken from its
+  `temperature` option.
+
+This is how to use a model that rejects one of the defaults, for example a GPT-5
+deployment on Azure OpenAI, which accepts only its default temperature and
+`max_completion_tokens` instead of `max_tokens`:
+
+```python
+engine_options = ApiVlmEngineOptions(
+    url="https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2025-03-01-preview",
+    headers={"api-key": "<key>"},
+    params={"model": "<deployment>", "temperature": 1, "max_completion_tokens": 1024},
+    # or leave the temperature out entirely: "temperature": None
+)
+```
+
 ## Chandra HTML output
 
 Use `ResponseFormat.CHANDRA_HTML` with `CHANDRA_OCR_LAYOUT_PROMPT` for Chandra's
