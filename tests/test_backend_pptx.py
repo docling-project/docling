@@ -4,6 +4,7 @@
 import logging
 import struct
 import warnings
+import zipfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
@@ -446,6 +447,55 @@ def test_chart_image_rendering(libreoffice_available):
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"
     )
+
+
+def test_area_3d_chart_degrades_instead_of_failing_the_document(tmp_path: Path):
+    """A ``c:area3DChart`` must lose only its data, not the whole presentation.
+
+    python-pptx has no series class for a 3-D area chart, so reading its series
+    raises ``NotImplementedError``. Every other 3-D plot raises earlier, where
+    it is already caught, so this one chart aborted the conversion of the entire
+    deck. It should degrade the way ``c:bar3DChart`` does: a classified picture
+    with no tabular data.
+    """
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart_data = CategoryChartData()
+    chart_data.categories = ["Q1", "Q2"]
+    chart_data.add_series("Revenue", (10.0, 20.0))
+    slide.shapes.add_chart(
+        XL_CHART_TYPE.AREA, Inches(1), Inches(1), Inches(4), Inches(3), chart_data
+    )
+    slide.shapes.add_textbox(
+        Inches(0.2), Inches(0.2), Inches(3), Inches(0.5)
+    ).text_frame.text = "text beside the chart"
+    flat = tmp_path / "area2d.pptx"
+    prs.save(flat)
+
+    # python-pptx cannot write a 3-D area chart, so retag the plot element the
+    # way PowerPoint writes one.
+    source = tmp_path / "area3d.pptx"
+    with (
+        zipfile.ZipFile(flat) as original,
+        zipfile.ZipFile(source, "w", zipfile.ZIP_DEFLATED) as retagged,
+    ):
+        for info in original.infolist():
+            payload = original.read(info.filename)
+            if info.filename == "ppt/charts/chart1.xml":
+                payload = payload.replace(b"c:areaChart", b"c:area3DChart")
+            retagged.writestr(info, payload)
+
+    doc = get_converter().convert(source).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].meta.tabular_chart is None
+    assert "text beside the chart" in doc.export_to_markdown()
 
 
 def _add_bar_chart(shapes):

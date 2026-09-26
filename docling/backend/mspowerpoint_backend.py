@@ -1153,7 +1153,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         caption_text = self._chart_title_text(chart)
         try:
             table_data = self._chart_to_table_data(chart)
-        except (AttributeError, ValueError, KeyError) as exc:
+        except (AttributeError, ValueError, KeyError, NotImplementedError) as exc:
+            # NotImplementedError: python-pptx registers an element class and a
+            # plot class for c:area3DChart but no series class, so reading its
+            # series raises where every other 3-D plot raises earlier and is
+            # already caught above.
             _log.warning("Could not extract chart data: %s", exc)
             table_data = None
 
