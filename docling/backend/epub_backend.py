@@ -282,11 +282,17 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         return re.sub(pattern, replace_image_src, html_content)
 
     def _fix_internal_links(self, html_content: str) -> str:
-        """Fix internal links that reference other XHTML files.
+        """Reduce a link into another content document to its anchor.
 
-        When combining multiple XHTML files into one HTML document, links like
-        'endnotes.xhtml#note-1' need to be converted to '#note-1' since all
-        content is now in a single file.
+        All content documents end up in a single HTML document, so
+        'endnotes.xhtml#note-1' has to become '#note-1': the file it names does
+        not exist on its own any more. The extension varies because a content
+        document is XHTML by its declared manifest media-type,
+        application/xhtml+xml, and not by its file name. So .xhtml, .xht, .htm
+        and .html all occur, and Calibre commonly writes .html.
+
+        An href with a scheme, or a protocol-relative one, is left alone: its
+        fragment belongs to a host and not to this book.
 
         Args:
             html_content: HTML content with potentially broken internal links
@@ -294,13 +300,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        # Pattern to match href attributes that reference another spine content
-        # document, with an anchor. A content document is XHTML by its declared
-        # manifest media-type, not by its file name: .xhtml, .xht, .htm and
-        # .html are all legal for the same type, and Calibre commonly writes
-        # .html.
-        # Examples: href="endnotes.xhtml#note-1" or href="chapter-1.html#section-2"
-        pattern = r'href="([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
+        pattern = r'href="(?!\w+:|//)([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
 
         # Replace with just the anchor part
         fixed_content = re.sub(pattern, r'href="\2"', html_content)

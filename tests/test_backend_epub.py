@@ -22,6 +22,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import TextItem
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -179,11 +180,19 @@ def test_epub_content_combination():
     assert len(total_text) > 100, "Combined content should have substantial text"
 
 
-def _build_epub_with_hrefs(path: Path, hrefs: list[str], names: list[str]) -> Path:
+def _build_epub_with_hrefs(
+    path: Path,
+    hrefs: list[str],
+    names: list[str],
+    bodies: list[str] | None = None,
+) -> Path:
     """Build a minimal EPUB whose manifest hrefs and ZIP entry names differ.
 
     ``hrefs`` are written into the package document, ``names`` are the file
-    names actually stored in the archive, both relative to ``OEBPS/``.
+    names actually stored in the archive, both relative to ``OEBPS/``. Every
+    item is declared ``application/xhtml+xml``, which is what makes it a
+    content document; the file name only varies. ``bodies`` replaces the
+    default body markup of each document, one entry per name.
     """
     container = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -210,18 +219,21 @@ def _build_epub_with_hrefs(path: Path, hrefs: list[str], names: list[str]) -> Pa
         "</package>"
     )
 
+    if bodies is None:
+        bodies = [f"<p>Chapter {i} body.</p>" for i in range(len(names))]
+
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         zi = zipfile.ZipInfo("mimetype")
         zi.compress_type = zipfile.ZIP_STORED
         z.writestr(zi, "application/epub+zip")
         z.writestr("META-INF/container.xml", container)
         z.writestr("OEBPS/content.opf", opf)
-        for i, name in enumerate(names):
+        for name, body in zip(names, bodies, strict=True):
             z.writestr(
                 f"OEBPS/{name}",
                 '<?xml version="1.0" encoding="UTF-8"?>'
                 '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
-                f"<p>Chapter {i} body.</p>"
+                f"{body}"
                 "</body></html>",
             )
     return path
@@ -272,79 +284,40 @@ def test_epub_link_fixing():
     assert len(markdown) > 0, "Markdown export should not be empty"
 
 
-def _build_epub_with_cross_file_link(path: Path, ext: str) -> Path:
-    """Build a two-document EPUB where the first links into the second.
-
-    Both documents are declared ``application/xhtml+xml``, which is what makes
-    them content documents; ``ext`` only changes the file name.
-    """
-    container = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<container version="1.0"'
-        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
-        "<rootfiles>"
-        '<rootfile full-path="OEBPS/content.opf"'
-        ' media-type="application/oebps-package+xml"/>'
-        "</rootfiles></container>"
-    )
-    names = [f"chapter1{ext}", f"chapter2{ext}"]
-    items = "".join(
-        f'<item id="c{i}" href="{name}" media-type="application/xhtml+xml"/>'
-        for i, name in enumerate(names)
-    )
-    itemrefs = "".join(f'<itemref idref="c{i}"/>' for i in range(len(names)))
-    opf = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
-        ' unique-identifier="uid">'
-        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
-        "<dc:title>Cross File Link</dc:title></metadata>"
-        f"<manifest>{items}</manifest>"
-        f"<spine>{itemrefs}</spine>"
-        "</package>"
-    )
-
-    bodies = [
-        '<p>See <a href="chapter2' + ext + '#note1">the note</a>.</p>',
-        '<p id="note1">The note itself.</p>',
-    ]
-
-    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        zi = zipfile.ZipInfo("mimetype")
-        zi.compress_type = zipfile.ZIP_STORED
-        z.writestr(zi, "application/epub+zip")
-        z.writestr("META-INF/container.xml", container)
-        z.writestr("OEBPS/content.opf", opf)
-        for name, body in zip(names, bodies):
-            z.writestr(
-                f"OEBPS/{name}",
-                '<?xml version="1.0" encoding="UTF-8"?>'
-                '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
-                + body
-                + "</body></html>",
-            )
-    return path
-
-
-@pytest.mark.parametrize("ext", [".xhtml", ".html", ".htm", ".xht"])
-def test_epub_internal_link_is_fixed_for_every_content_document_extension(
-    tmp_path: Path, ext: str
+def test_epub_internal_links_are_fixed_for_every_content_document_extension(
+    tmp_path: Path,
 ):
-    """A content document is XHTML by its declared media type, not its name.
+    """A content document is XHTML by its declared media type, not by its name.
 
-    The spine files are merged into one HTML document, so a link into another
-    of them has to lose the file part or it points at a file that no longer
-    exists. Calibre commonly writes ``.html``.
+    The spine documents are merged into one HTML document, so a link into
+    another of them has to lose the file part or it points at a file that no
+    longer exists. All four extensions below are legal for
+    application/xhtml+xml, and Calibre commonly writes .html. One book covers
+    them: each chapter links into the next one, so every extension appears as
+    the target of a cross-file link.
+
+    The absolute URL is here for the opposite reason. Its host must survive,
+    because the fragment belongs to that host and not to this book.
     """
-    epub_path = _build_epub_with_cross_file_link(tmp_path / f"link{ext}.epub", ext)
+    names = ["chapter1.xhtml", "chapter2.html", "chapter3.htm", "chapter4.xht"]
+    absolute = "https://example.com/page.html#about"
+    bodies = [
+        f'<p id="note1">See <a href="{names[1]}#note2">note 2</a>.</p>'
+        f'<p>Read <a href="{absolute}">about</a>.</p>',
+        f'<p id="note2">Note 2. Then <a href="{names[2]}#note3">note 3</a>.</p>',
+        f'<p id="note3">Note 3. Then <a href="{names[3]}#note4">note 4</a>.</p>',
+        f'<p id="note4">Note 4. Back to <a href="{names[0]}#note1">note 1</a>.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "extensions.epub", hrefs=names, names=names, bodies=bodies
+    )
 
-    converter = DocumentConverter(allowed_formats=[InputFormat.EPUB])
-    doc = converter.convert(epub_path, raises_on_error=True).document
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
 
     hyperlinks = [
         str(item.hyperlink)
         for item, _ in doc.iterate_items()
-        if getattr(item, "hyperlink", None) is not None
+        if isinstance(item, TextItem) and item.hyperlink is not None
     ]
 
-    assert hyperlinks == ["#note1"], f"got {hyperlinks}"
+    assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
