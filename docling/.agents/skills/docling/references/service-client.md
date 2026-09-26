@@ -84,11 +84,27 @@ for result in client.convert_all(
 ## Chunk remotely (RAG)
 
 ```python
-from docling.service_client import ChunkerKind
+from docling.datamodel.base_models import OutputFormat
+from docling.datamodel.service.chunking import HybridChunkerOptions
+from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.service.targets import ZipTarget
 
-response = client.chunk(source="report.pdf", chunker=ChunkerKind.HYBRID)
-# ChunkerKind.HYBRID or ChunkerKind.HIERARCHICAL
+job = client.submit(
+    source="report.pdf",
+    options=ConvertDocumentsOptions(
+        to_formats=[OutputFormat.CHUNKS],
+        chunking_options=HybridChunkerOptions(
+            use_markdown_tables=True,
+        ),
+    ),
+    target=ZipTarget(),
+)
+archive = job.result()
 ```
+
+The zip contains a `{document}.chunks.jsonl` file with one chunk per line. Use
+a zip or remote-storage target for chunk output; an inline target returns the
+converted document without the chunk artifact.
 
 ## Async and jobs
 
