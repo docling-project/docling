@@ -1953,17 +1953,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for attr_name in ["y", "top", "positionY", "y-position", "position"]:
                 value = elem.get(attr_name)
                 if value:
-                    try:
-                        # Remove any non-numeric characters (like 'pt', 'px',
-                        # etc.), keeping a leading sign. A shape anchored above
-                        # or left of its reference point carries a legal
-                        # negative offset, and dropping the minus turns it into
-                        # a position further down.
-                        clean_value = re.sub(r"[^0-9.\-]", "", value)
-                        if clean_value:
-                            return float(clean_value)
-                    except (ValueError, TypeError):
-                        pass
+                    # Read the leading number and ignore a unit suffix like
+                    # 'pt' or 'px'. The sign is part of it: a drawing anchored
+                    # above or left of its reference point carries a legal
+                    # negative offset, and dropping the minus turns it into a
+                    # position further down. A value with no number at all
+                    # falls through to the next candidate.
+                    match = re.search(r"-?\d*\.?\d+", value)
+                    if match:
+                        return float(match.group())
 
             # Check for position in transform attribute
             transform = elem.get("transform")
