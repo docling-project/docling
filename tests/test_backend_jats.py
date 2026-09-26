@@ -1059,6 +1059,38 @@ def test_jats_author_affiliations_still_map_from_xref():
     assert "Example University" in md
 
 
+def test_jats_xref_without_rid_does_not_empty_the_document():
+    """@rid is optional, so reading it as a required key lost the whole article.
+
+    The KeyError escaped into the blanket handler in convert(), which returned
+    an empty DoclingDocument and still reported success.
+    """
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name><xref ref-type="aff"/></contrib>""",
+        """<aff id="aff1"><label>1</label><addr-line>Example University</addr-line></aff>""",
+    )
+
+    md = doc.export_to_markdown()
+    assert "Author Variant Test" in md
+    assert "Jane Doe" in md
+
+
+def test_jats_xref_rid_naming_several_affiliations_keeps_them_all():
+    """@rid is of type IDREFS, so one xref can name more than one affiliation."""
+    doc = convert_jats_contribs(
+        """<contrib contrib-type="author"><name><given-names>Jane</given-names>"""
+        """<surname>Doe</surname></name>"""
+        """<xref ref-type="aff" rid="aff1 aff2">1,2</xref></contrib>""",
+        """<aff id="aff1"><label>1</label><addr-line>Example University</addr-line></aff>"""
+        """<aff id="aff2"><label>2</label><addr-line>Second Institute</addr-line></aff>""",
+    )
+
+    md = doc.export_to_markdown()
+    assert "Example University" in md
+    assert "Second Institute" in md
+
+
 def test_e2e_jats_conversions(use_stream=False):
     jats_paths = get_jats_paths()
     converter = get_converter()
