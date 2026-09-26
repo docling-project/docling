@@ -227,23 +227,29 @@ def _build_multi_object_pdf(n_paths: int = 40) -> bytes:
     return out
 
 
-def test_pdfium_object_index_built_once(tmp_path, monkeypatch):
-    """The page-object walk runs once per page even when ``has_content_in`` is
-    called repeatedly (once per layout cluster). Counts the underlying pypdfium2
-    object enumeration."""
+def test_pdfium_object_index_built_once_per_type(tmp_path, monkeypatch):
+    """Each page-object type is walked at most once per page, however often
+    ``has_content_in`` is called (once per layout cluster), and a type nobody asks
+    for is never walked. Records the ``filter`` of every underlying pypdfium2 object
+    enumeration."""
     import pypdfium2 as pdfium
+    import pypdfium2.raw as pdfium_c
 
     pdf_path = tmp_path / "multi_object.pdf"
     pdf_path.write_bytes(_build_multi_object_pdf(40))
 
     original_get_objects = pdfium.PdfPage.get_objects
-    calls = {"n": 0}
+    walks: list = []
 
-    def counting_get_objects(self, *args, **kwargs):
-        calls["n"] += 1
+    def recording_get_objects(self, *args, **kwargs):
+        # ``get_objects`` recurses into form XObjects through this same method;
+        # only the top-level call (no ``form``) counts as a page walk.
+        if kwargs.get("form") is None:
+            filt = args[0] if args else kwargs.get("filter")
+            walks.append(tuple(filt or ()))
         return original_get_objects(self, *args, **kwargs)
 
-    monkeypatch.setattr(pdfium.PdfPage, "get_objects", counting_get_objects)
+    monkeypatch.setattr(pdfium.PdfPage, "get_objects", recording_get_objects)
 
     doc_backend = _get_backend(pdf_path)
     try:
@@ -260,12 +266,21 @@ def test_pdfium_object_index_built_once(tmp_path, monkeypatch):
         for _ in range(5):
             assert page_backend.has_content_in(bbox=content) is True
             assert page_backend.has_content_in(bbox=blank) is False
-        # These reuse the same index too.
+        # These reuse the same lists too.
         list(page_backend.get_bitmap_rects())
         page_backend.get_connected_shape_bounding_boxes()
 
-        assert calls["n"] == 1, (
-            f"page objects were enumerated {calls['n']} times; expected exactly 1"
+        # One walk for paths, one for images; chars were never requested.
+        assert sorted(walks) == sorted(
+            [(pdfium_c.FPDF_PAGEOBJ_PATH,), (pdfium_c.FPDF_PAGEOBJ_IMAGE,)]
+        ), f"page-object walks: {walks}"
+
+        # The first request for chars adds exactly one text walk, and no more after.
+        assert page_backend.has_content_in(bbox=blank, chars=True) is False
+        assert page_backend.has_content_in(bbox=content, chars=True) is True
+        assert walks.count((pdfium_c.FPDF_PAGEOBJ_TEXT,)) == 1, (
+            f"page-object walks: {walks}"
         )
+        assert len(walks) == 3, f"page-object walks: {walks}"
     finally:
         doc_backend.unload()

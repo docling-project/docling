@@ -271,9 +271,11 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             self.valid = False
         self.text_page: Optional[PdfTextPage] = None
         self._seg_page: Optional[SegmentedPdfPage] = None
-        # Page-object bboxes bucketed by FPDF_PAGEOBJ_* type, built lazily once per
-        # page by ``_get_object_index`` and shared by all object-rect queries.
-        self._object_index: Optional[dict[int, List[tuple[BoundingBox, bool]]]] = None
+        # Page-object bboxes keyed by FPDF_PAGEOBJ_* type. Each type's list is built
+        # on its first request by ``_get_object_bucket`` and then shared by every
+        # object-rect query, so a caller that only asks for images never pays for
+        # the text or path objects.
+        self._object_index: dict[int, List[tuple[BoundingBox, bool]]] = {}
 
     def is_valid(self) -> bool:
         return self.valid
@@ -427,49 +429,45 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return merge_horizontal_cells(cells)
 
-    # Page-object types this backend ever queries; walking them together lets a
-    # single traversal serve shapes, bitmaps and chars.
-    _INDEXED_OBJECT_TYPES = (
-        pdfium_c.FPDF_PAGEOBJ_PATH,
-        pdfium_c.FPDF_PAGEOBJ_IMAGE,
-        pdfium_c.FPDF_PAGEOBJ_TEXT,
-    )
+    def _get_object_bucket(self, obj_type: int) -> List[tuple[BoundingBox, bool]]:
+        """Return the bbox list for the page objects of ``obj_type``, building it once.
 
-    def _get_object_index(self) -> dict[int, List[tuple[BoundingBox, bool]]]:
-        """Build (once per page) and return the page-object bbox index.
+        Each list holds ``(bbox, invisible_text)`` pairs, where ``bbox`` is already in
+        the rotated display frame with a top-left origin and ``invisible_text`` flags
+        text objects drawn in a no-ink rendering mode. Only the requested type is
+        walked, so the cost and retained memory of a page scale with the object types
+        a caller actually asks for. Because page rotation and size are fixed for a
+        loaded page, a list is valid for the page's whole lifetime; the memo is cleared
+        in ``_close_native_page``.
 
-        The index maps each queried ``FPDF_PAGEOBJ_*`` type to a list of
-        ``(bbox, invisible_text)`` pairs, where ``bbox`` is already in the rotated
-        display frame with a top-left origin and ``invisible_text`` flags text
-        objects drawn in a no-ink rendering mode. Because page rotation and size are
-        fixed for a loaded page, the index is valid for the page's whole lifetime;
-        it is cleared in ``_close_native_page``.
+        ``pypdfium2_lock`` is not reentrant, so ``get_size`` (which takes the lock
+        itself) runs before the block. The memo is re-checked and written inside the
+        block, so concurrent callers sharing a page backend build each list once.
+        Callers iterate the returned list with the lock released.
 
-        ``pypdfium2_lock`` is not reentrant, so it is held only for the object walk
-        and not while ``get_size`` (which takes the lock itself) runs. Callers
-        iterate the cached lists with the lock released.
+        Args:
+            obj_type: an ``FPDF_PAGEOBJ_*`` constant.
 
         Returns:
-            The object index for this page.
+            The cached ``(bbox, invisible_text)`` list for ``obj_type``.
         """
-        if self._object_index is not None:
-            return self._object_index
+        bucket = self._object_index.get(obj_type)
+        if bucket is not None:
+            return bucket
 
         page_size = self.get_size()  # acquires the lock; must be outside the block
 
-        index: dict[int, List[tuple[BoundingBox, bool]]] = {
-            obj_type: [] for obj_type in self._INDEXED_OBJECT_TYPES
-        }
         with pypdfium2_lock:
+            bucket = self._object_index.get(obj_type)
+            if bucket is not None:
+                return bucket
+
+            bucket = []
             page = self._require_page()
             rotation = page.get_rotation()
-            for obj in page.get_objects(filter=list(self._INDEXED_OBJECT_TYPES)):
-                bucket = index.get(obj.type)
-                if bucket is None:
-                    continue
-
+            for obj in page.get_objects(filter=[obj_type]):
                 invisible = (
-                    obj.type == pdfium_c.FPDF_PAGEOBJ_TEXT
+                    obj_type == pdfium_c.FPDF_PAGEOBJ_TEXT
                     and pdfium_c.FPDFTextObj_GetTextRenderMode(obj.raw)
                     in _INVISIBLE_TEXT_RENDER_MODES
                 )
@@ -485,20 +483,21 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 ).to_top_left_origin(page_height=page_size.height)
                 bucket.append((bbox, invisible))
 
-        self._object_index = index
-        return index
+            self._object_index[obj_type] = bucket
+
+        return bucket
 
     def _object_rects(
         self, obj_type: int, *, skip_invisible_text: bool = False
     ) -> Iterable[BoundingBox]:
         """Yield the bboxes of the page objects of ``obj_type``, in top-left origin.
 
-        Served from the per-page object index (``_get_object_index``), so repeated
+        Served from the per-type list kept by ``_get_object_bucket``, so repeated
         calls do not re-walk the page. With ``skip_invisible_text``, text objects
         drawn in a rendering mode that paints no ink are left out, matching what
         docling-parse does natively.
         """
-        for bbox, invisible in self._get_object_index().get(obj_type, ()):
+        for bbox, invisible in self._get_object_bucket(obj_type):
             if skip_invisible_text and invisible:
                 continue
             yield bbox
@@ -666,7 +665,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         self.text_page = None
         self._ppage = None
         self._seg_page = None
-        self._object_index = None
+        self._object_index = {}
 
 
 class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
