@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 import warnings
@@ -200,6 +201,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             MarkdownDocumentBackend._split_table_row(lines[1])
         )
 
+    # md_table_buffer holds the rows of the table being read, one string per
+    # row, in a form _split_table_row can split on "|" and _close_table decodes
+    # exactly once with unescape(): a RawText is decoded on the way in except
+    # for the pipe entities, so a pipe that is cell content survives the split;
+    # literal text, such as a code span, is entity-encoded on the way in and
+    # its pipes become &#124;.
     @staticmethod
     def _unescape_except_pipe(text: str) -> str:
         def replace(match):
@@ -301,6 +308,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
             ) from e
         return
+
+    @staticmethod
+    def _encode_table_literal(text: str) -> str:
+        """Encode literal text for md_table_buffer: entities are escaped so the
+        decode in _close_table returns the text as written, and a pipe is not
+        a column separator."""
+        return html.escape(text, quote=False).replace("|", "&#124;")
+
+    def _append_table_text(self, text: str) -> None:
+        """Add text to the current row of md_table_buffer."""
+        if self.md_table_buffer:
+            self.md_table_buffer[-1] += text
+        else:
+            self.md_table_buffer.append(text)
 
     def _close_table(self, doc: DoclingDocument):
         self.in_pipeless_table = False
@@ -633,12 +654,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if is_table_row:
                 self.in_table = True
             if self.in_table and snippet_text:
-                snippet_text = self._unescape_except_pipe(original_text.strip())
-                # If we're in a table, keep adding text (for formatted content in cells)
-                if self.md_table_buffer:
-                    self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text
-                else:
-                    self.md_table_buffer.append(snippet_text)
+                # Whitespace is kept: a cell can be several nodes ("run ", a
+                # code span, " now"), and _split_table_row strips the cell once.
+                self._append_table_text(self._unescape_except_pipe(original_text))
             elif snippet_text:
                 # Not in table - close any pending table and process as regular text
                 self._close_table(doc)
@@ -688,19 +706,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
+            _log.debug(" - Code Span: %s", element.children)
             snippet_text = str(element.children)
             if self.in_table:
-                # Keep the span in the current row. Closing the table here used
-                # to split one GFM table into two and drop the text before the
-                # span.
-                cell_text = unescape(snippet_text)
-                if self.md_table_buffer:
-                    self.md_table_buffer[-1] += cell_text
-                else:
-                    self.md_table_buffer.append(cell_text)
+                # A CodeSpan does not delimit cells; keep its content in the
+                # current buffer slot. Its text is literal, so it is encoded for
+                # the one decode in _close_table, and a pipe in it is not a
+                # column separator.
+                self._append_table_text(self._encode_table_literal(snippet_text))
             else:
                 self._close_table(doc)
-                _log.debug(" - Code Span: %s", element.children)
                 snippet_text = snippet_text.strip()
                 # If this CodeSpan is the only content of a list item / heading, Marko won't
                 # emit RawText. Flush pending creations here to avoid leaking payloads.

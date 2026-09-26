@@ -30,3 +30,4 @@ Some *`formatted_code`*
 | Bold Heading | Italic Heading |
 | - | - |
 | data a | data b |
+| run build now | code in a cell |
