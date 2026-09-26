@@ -908,9 +908,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         caption_node = node.xpath("caption")
-        # A <fig> may carry a <label> and no <caption>, which is common for a
-        # numbered but uncaptioned figure. Default to "" rather than None, or
-        # the f-string below renders the four characters None after the label.
         caption: str = ""
         if len(caption_node) > 0:
             for caption_par in list(caption_node[0]):
@@ -1178,8 +1175,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            # An empty <label/> has .text of None in lxml. Keep the "" default
-            # so it does not reach the rendered caption as the text None.
+            # lxml sets .text to None for an empty element; fall back to "".
             table["label"] = node.xpath("label")[0].text or ""
 
         try:

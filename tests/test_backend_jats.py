@@ -1107,9 +1107,7 @@ def test_jats_empty_article_title_does_not_crash():
 
 
 def _caption_texts(doc: DoclingDocument) -> list[str]:
-    return [
-        t.text for t in doc.texts if str(getattr(t, "label", "")).endswith("caption")
-    ]
+    return [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION]
 
 
 def test_jats_labelled_figure_without_a_caption_omits_the_word_none():
