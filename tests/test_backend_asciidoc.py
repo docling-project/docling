@@ -89,6 +89,8 @@ def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
     # metadata for whatever follows; they used to leak into the document body
     # as literal text items.
     src = (
+        b":_mod-docs-content-type: PROCEDURE\n"
+        b":experimental:\n"
         b"[[table-id]]\n"
         b'[cols="2"]\n'
         b"|===\n| a | b\n| c | d\n|===\n"

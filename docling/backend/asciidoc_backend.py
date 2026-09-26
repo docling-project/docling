@@ -198,8 +198,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
             # follows; they are never body content, so skip them.
-            if re.match(r"^\[\[.+\]\]$", stripped_line) or re.match(
-                r"^\[[^\[\]]*\]$", stripped_line
+            if (
+                re.match(r"^\[\[.+\]\]$", stripped_line)
+                or re.match(r"^\[[^\[\]]*\]$", stripped_line)
+                or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
             ):
                 continue
 
