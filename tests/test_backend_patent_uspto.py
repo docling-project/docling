@@ -14,8 +14,9 @@ from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
+from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
@@ -46,6 +47,37 @@ def test_patent_uspto_grant_aps_accepts_crlf_bytesio(tmp_path: Path) -> None:
     stream_document = stream_backend.convert()
     assert len(stream_document.texts) == 75
     assert stream_document.texts[0].text == "Carbocation containing cyanine-type dye"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "pftaps057006474.txt",  # APS text
+        "pg06442728.xml",  # grant v2.5
+        "pa20010031492.xml",  # application v1
+        "ipg07997973.xml",  # ICE v4
+    ],
+)
+def test_patent_uspto_converts_a_stream_source(name: str) -> None:
+    """A stream source must convert to the same document as its path.
+
+    ``InputDocument`` reads a stream to its end to hash it, and the backend read
+    on from wherever the stream happened to be, so the patent came out empty and
+    the document was rejected. That hit every stream source, including a plain
+    string path, which ``DocumentConverter`` turns into a stream.
+    """
+    source = DATA_PATH / name
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    expected = converter.convert(source).document.export_to_markdown()
+
+    from_stream = converter.convert(
+        DocumentStream(name=name, stream=BytesIO(source.read_bytes()))
+    ).document
+    assert from_stream.export_to_markdown() == expected
+
+    from_string_path = converter.convert(str(source)).document
+    assert from_string_path.export_to_markdown() == expected
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:

@@ -122,6 +122,9 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
+                # The stream has already been read to the end to hash it, so
+                # rewind or every line of the patent reads as empty.
+                self.path_or_stream.seek(0)
                 while line := self.path_or_stream.readline().decode("utf-8"):
                     if line.startswith("<!DOCTYPE") or line.rstrip("\r\n") == "PATN":
                         self._set_parser(line)
