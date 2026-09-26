@@ -186,6 +186,34 @@ image::next.png[]
     assert code_items[0].captions[0].resolve(doc).text == "Literal example"
 
 
+def test_listing_block_becomes_a_code_item() -> None:
+    source = b"""Before the block.
+
+.Example
+----
+def f():
+    return 1
+----
+
+After the block.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="listing-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["def f():\n    return 1"]
+    assert code_items[0].captions[0].resolve(doc).text == "Example"
+    paragraphs = [
+        item.text for item in doc.texts if item.label == DocItemLabel.PARAGRAPH
+    ]
+    assert paragraphs == ["Before the block.", "After the block."]
+
+
 def test_block_title_before_list_renders_as_bold_paragraph() -> None:
     # A block title preceding a list (GroupItem) has no caption slot; it must
     # be emitted as a bold PARAGRAPH immediately before the list.

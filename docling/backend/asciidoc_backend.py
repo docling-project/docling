@@ -378,23 +378,26 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
-        literal_data: list[str] | None = None
+        # A literal (....) or listing (----) block is delimited by a line of
+        # four or more of its character and ends at an identical line.
+        delimiter: str | None = None
+        literal_data: list[str] = []
 
         for line in lines:
-            if line.strip() == "....":
-                if literal_data is None:
+            stripped = line.strip()
+            if delimiter is None:
+                if re.fullmatch(r"\.{4,}|-{4,}", stripped):
+                    delimiter = stripped
                     literal_data = []
                 else:
-                    yield _LiteralBlock(text="\n".join(literal_data))
-                    literal_data = None
-                continue
-
-            if literal_data is None:
-                yield line
+                    yield line
+            elif stripped == delimiter:
+                yield _LiteralBlock(text="\n".join(literal_data))
+                delimiter = None
             else:
                 literal_data.append(line.rstrip("\r\n"))
 
-        if literal_data is not None:
+        if delimiter is not None:
             yield _LiteralBlock(text="\n".join(literal_data))
 
     @classmethod
