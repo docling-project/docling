@@ -275,16 +275,22 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 continue
 
             # Tables
-            elif line.strip() == "|===" and not in_table:  # start of table
-                in_table = True
+            elif line.strip() == "|===":  # start or end of table
+                if in_table:
+                    self._add_table_if_nonempty(
+                        doc, table_data, caption_data, self._get_current_parent(parents)
+                    )
+                    caption_data = []
+                    in_table = False
+                    table_data = []
+                else:
+                    in_table = True
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
                 table_data.append(self._parse_table_line(line))
 
-            elif in_table and (
-                (not self._is_table_line(line)) or line.strip() == "|==="
-            ):  # end of table
+            elif in_table and not self._is_table_line(line):  # end of table
                 self._add_table_if_nonempty(
                     doc, table_data, caption_data, self._get_current_parent(parents)
                 )
@@ -510,7 +516,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     #   =========   Tables
     @staticmethod
     def _is_table_line(line):
-        return re.match(rf"^{_CELL_SPEC}\|.*\|", line)
+        # A cell may be the only one on its line: vertical AsciiDoc tables
+        # commonly write one cell per line, so a second "|" is not required.
+        return re.match(rf"^{_CELL_SPEC}\|", line) is not None
 
     @staticmethod
     def _parse_table_line(line):

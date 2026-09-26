@@ -63,13 +63,24 @@ def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
 
     assert doc.tables, "the table was dropped entirely"
     table = doc.tables[0]
-    assert (table.data.num_rows, table.data.num_cols) == (2, 2)
-    assert [cell.text for cell in table.data.table_cells] == ["A", "B", "tall", "x"]
+    # The trailing single-cell row "|y" is kept: cells flow into the grid, so it
+    # lands in row 3, column 1, with the second column left empty.
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "A",
+        "B",
+        "tall",
+        "x",
+        "y",
+    ]
     assert [item.text for item in doc.texts] == []
 
 
 def test_incomplete_table_does_not_emit_an_empty_table() -> None:
-    for row in (b"|3", b"2+|wide"):
+    # A trailing row with fewer cells than the table's column count is kept and
+    # padded with an empty cell (matching how Asciidoctor fills the grid), so no
+    # empty phantom table is emitted and no cell content is lost.
+    for row, first in ((b"|3", "3"), (b"2+|wide", "wide")):
         src = b"|===\n|A |B\n" + row + b"\n|===\n"
         in_doc = InputDocument(
             path_or_stream=BytesIO(src),
@@ -80,8 +91,37 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         doc = in_doc._backend.convert()
 
         assert len(doc.tables) == 1
-        assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (1, 2)
-        assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
+        assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (2, 2)
+        assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+            "A",
+            "B",
+            first,
+        ]
+
+
+def test_single_cell_per_line_table_is_not_truncated() -> None:
+    # Vertical AsciiDoc tables write one cell per line. A single-| line used to
+    # be read as the end of the table: the first such line was silently
+    # dropped, the remaining ones leaked into the document as literal text, and
+    # the closing |=== reopened an empty table that vanished at EOF.
+    src = b"|===\n|Name\n|Age\n|Alice\n|30\n|===\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="vertical-table.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (4, 1)
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Age",
+        "Alice",
+        "30",
+    ]
+    assert [item.text for item in doc.texts] == []
 
 
 def test_unclosed_table_at_end_keeps_caption() -> None:
