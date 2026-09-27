@@ -52,3 +52,27 @@ def test_rgba_image_converted_to_rgb() -> None:
     doc = DoclingDocument(name="test")
     list(model(doc=doc, element_batch=[_make_element("RGBA")]))
     assert model.received_modes == ["RGB"]
+
+
+def test_palette_trns_image_converted_without_warning() -> None:
+    """Palette (P) images with per-entry tRNS must not trigger PIL UserWarning."""
+    import warnings
+
+    img = Image.new("P", (100, 100))
+    img.info["transparency"] = bytes([0] * 256)
+    item = PictureItem(self_ref="#/pictures/0")
+    element = ItemAndImageEnrichmentElement(item=item, image=img)
+
+    model = _RecordingPictureDescriptionModel()
+    doc = DoclingDocument(name="test")
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        list(model(doc=doc, element_batch=[element]))
+        palette_warnings = [
+            x for x in w if "Palette images" in str(x.message)
+        ]
+        assert model.received_modes == ["RGB"]
+        assert len(palette_warnings) == 0, (
+            f"PIL palette transparency warning should not fire: {palette_warnings}"
+        )

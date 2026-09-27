@@ -127,6 +127,10 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
             raise ValueError(f"Unsupported numpy array shape: {image.shape}")
 
     # Ensure RGB mode (handles RGBA, L, P, etc.)
+    # Palette images with per-entry tRNS transparency must go through
+    # RGBA first so putpalettealphas() preserves the alpha channel.
+    if image.mode == "P" and isinstance(image.info.get("transparency"), bytes):
+        image = image.convert("RGBA")
     if image.mode != "RGB":
         image = image.convert("RGB")
 
