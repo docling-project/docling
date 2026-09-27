@@ -154,6 +154,9 @@ class BasePipeline(ABC):
         return conv_res
 
     def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        if any(error.category == FailureCategory.TIMEOUT for error in conv_res.errors):
+            return conv_res
+
         def _prepare_elements(
             conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
         ) -> Iterable[NodeItem]:
