@@ -6,7 +6,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
+from docling_core.types.doc import (
+    CodeItem,
+    CodeLanguageLabel,
+    DocItemLabel,
+    PictureItem,
+)
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -24,6 +29,29 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_docitems, verify_document
 
 pytestmark = pytest.mark.cross_platform
+
+
+def test_nested_single_wrapper_emphasis_stays_one_paragraph():
+    # "**bold *italic* end**" is a paragraph with a single StrongEmphasis child
+    # that itself holds several runs. The text items used to be emitted at body
+    # level (three separate paragraphs on export); they belong to one paragraph.
+    source = "**bold *italic* end**"
+    stream = BytesIO(source.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="nested_emphasis.md",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.body.children) == 1
+    group_ref = doc.body.children[0].cref
+    group = next(g for g in doc.groups if g.self_ref == group_ref)
+    assert group.name == "group"
+
+    exported = doc.export_to_markdown()
+    assert exported.count("\n\n") == 0
 
 
 def test_convert_valid():

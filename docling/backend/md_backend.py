@@ -796,10 +796,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
         element_children = getattr(element, "children", [])
+        # A paragraph whose text runs are wrapped in a single nested inline
+        # element (e.g. "**bold *italic* end**" is one StrongEmphasis child)
+        # also produces several text items, so it needs the inline group too.
+        has_nested_inline_runs = any(
+            isinstance(child.children, list) and len(child.children) > 1
+            for child in element_children
+            if isinstance(child, marko.inline.InlineElement)
+        )
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
             and len(element_children) > 1
             and not _only_plain_line_breaks(element_children)
+        ) or (
+            isinstance(element, marko.block.Paragraph | marko.block.Heading)
+            and len(element_children) == 1
+            and has_nested_inline_runs
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 
