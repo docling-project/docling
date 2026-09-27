@@ -23,7 +23,7 @@ from docling_core.types.doc import (
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
@@ -1076,6 +1076,60 @@ def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
     assert build((2,)) == row
     # Two wrapped cells in the same row, one of them not the first.
     assert build((0, 2)) == row
+
+
+def _table_with_wrapped_rows_and_cells(path: Path) -> None:
+    """Write a 2-column table whose rows and one cell sit inside wrappers.
+
+    Row order: a plain row, a row inside ``w:customXml``, a row inside a
+    content control (``w:sdt``), and a plain row whose second cell is inside
+    ``w:customXml``. Both wrappers are allowed there by the OOXML schema
+    (``EG_ContentRowContent`` and ``EG_ContentCellContent``).
+    """
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+    def cell(text: str) -> str:
+        return (
+            '<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr>'
+            f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p></w:tc>'
+        )
+
+    tbl = parse_xml(
+        f'<w:tbl xmlns:w="{w_ns}">'
+        '<w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>'
+        '<w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>'
+        f"<w:tr>{cell('A1')}{cell('A2')}</w:tr>"
+        f'<w:customXml w:element="Tagged"><w:tr>{cell("B1")}{cell("B2")}</w:tr></w:customXml>'
+        f"<w:sdt><w:sdtPr/><w:sdtContent><w:tr>{cell('C1')}{cell('C2')}</w:tr></w:sdtContent></w:sdt>"
+        f'<w:tr>{cell("D1")}<w:customXml w:element="Tagged">{cell("D2")}</w:customXml></w:tr>'
+        "</w:tbl>"
+    )
+    doc = Document()
+    body = doc.element.body
+    body.insert(len(body) - 1, tbl)
+    doc.save(str(path))
+
+
+def test_table_rows_and_cells_wrapped_in_custom_xml_or_content_control(tmp_path):
+    """Rows under ``w:customXml``/``w:sdt`` and cells under ``w:customXml``.
+
+    ``Table.rows`` only yields direct ``w:tr`` children of ``w:tbl``, so a
+    wrapped row was silently dropped and the table came out with too few
+    rows. A cell wrapped in ``w:customXml`` was dropped in the same way; the
+    ``w:sdt`` cell case was already handled.
+    """
+    path = tmp_path / "wrapped_rows.docx"
+    _table_with_wrapped_rows_and_cells(path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    data = converter.convert(path).document.tables[0].data
+
+    assert data.num_rows == 4
+    assert data.num_cols == 2
+    grid = [[""] * data.num_cols for _ in range(data.num_rows)]
+    for cell in data.table_cells or []:
+        grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text or ""
+    assert grid == [["A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["D1", "D2"]]
 
 
 def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
