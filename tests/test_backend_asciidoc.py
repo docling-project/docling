@@ -127,6 +127,44 @@ def test_listing_block_without_language_stays_code() -> None:
     assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
 
 
+def test_content_block_delimiters_do_not_leak() -> None:
+    # Example (====), sidebar (****), open (--) blocks carry regular content:
+    # the delimiter lines must be consumed, not echoed into the text.
+    src = b"====\nexample content\n====\n\n****\nsidebar text\n****\n\n--\nopen content\n--\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="content_blocks.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert "example content" in texts
+    assert "sidebar text" in texts
+    assert "open content" in texts
+    for leaked in ("====", "****", "--"):
+        assert not any(leaked in text for text in texts)
+
+
+def test_stray_dashes_are_not_swallowed() -> None:
+    # A lone "--" line without a matching closer (e.g. a changelog separator)
+    # must not be treated as an open-block delimiter consuming the document.
+    src = b"before\n--\nafter\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="stray_dashes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    # the content after the stray "--" must survive (joined into one paragraph,
+    # as there was no blank line between the lines)
+    texts = [item.text for item in doc.texts]
+    assert len(texts) == 1 and "before" in texts[0] and "after" in texts[0]
+
+
 def test_unclosed_table_at_end_keeps_caption() -> None:
     src = b".End table\n|===\n|A |B"
     in_doc = InputDocument(

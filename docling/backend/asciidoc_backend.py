@@ -385,6 +385,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return None
 
     _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
+    _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "+++")
+
+    @staticmethod
+    def _has_matching_closer(lines: list[str], open_idx: int, delimiter: str) -> bool:
+        for j in range(open_idx + 1, len(lines)):
+            if lines[j].strip() == delimiter:
+                return True
+        return False
 
     @classmethod
     def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
@@ -419,6 +427,22 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 block_data = []
                 block_delimiter = stripped
                 block_language = None
+                i += 1
+                continue
+
+            if stripped in cls._CONTENT_BLOCK_DELIMITERS and cls._has_matching_closer(
+                lines, i, stripped
+            ):
+                # Example (====), sidebar (****), quote (____), open (--) and
+                # passthrough (+++) blocks carry regular content: consume the
+                # delimiter lines themselves so they do not leak into the
+                # text, and re-emit the inner lines unchanged. The closer look-
+                # ahead keeps stray separator lines (e.g. "--" in a changelog)
+                # from swallowing the rest of the document.
+                i += 1
+                while i < n and lines[i].strip() != stripped:
+                    yield lines[i]
+                    i += 1
                 i += 1
                 continue
 
