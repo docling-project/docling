@@ -206,15 +206,31 @@ See [PDF heading levels](./heading_levels.md) for the signals, their precedence 
 
 ### Apple iWork options
 
-Pages (`.pages`) and Keynote (`.key`) share their options, since they share
-their container.
+Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their options,
+since they share their container. All three need the `format-iwork` extra.
 
-In a Pages document, headers, footers and footnotes go into the `furniture`
-content layer and comments into `notes`. In a Keynote presentation, each slide
-becomes a chapter group holding what is on it, and the presenter notes and
-comments of that slide go into `notes` under it. Either way those layers stay
-out of the reading order by default; to include them in an export, pass the
-extra layers explicitly (this applies to any `DoclingDocument`, not just these):
+#### What each one becomes
+
+A **Pages** document converts to a flow of text, like a Word document: its
+headers, footers and footnotes go into the `furniture` content layer and its
+comments into `notes`.
+
+A **Keynote** presentation converts to one chapter group per slide, holding what
+is on that slide, with the slide's presenter notes and comments in `notes`
+under it.
+
+A **Numbers** spreadsheet converts to one page and one sheet group per sheet,
+the way an Excel or OpenDocument spreadsheet does. The difference is that a
+Numbers sheet is a canvas rather than one big grid: it holds separate tables,
+charts and sticky notes side by side, each positioned in its own right. So each
+table arrives as its own table item — captioned with the name Numbers gives it,
+and carrying its own header rows and columns — and the things on a sheet come out
+in the order they are laid out down the page rather than the order the file
+happens to store them in.
+
+Those `furniture` and `notes` layers stay out of the reading order by default.
+To include them in an export, pass the extra layers explicitly (this applies to
+any `DoclingDocument`, not just these):
 
 ```python
 from docling_core.types.doc import ContentLayer
@@ -237,63 +253,32 @@ deck = converter.convert("deck.key").document
 print(deck.export_to_markdown(
     included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
 ))
+
+# Numbers: the sticky notes on a sheet are notes.
+budget = converter.convert("budget.numbers").document
+print(budget.export_to_markdown(
+    included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+))
 ```
 
-The container is untrusted input, so size limits apply. They can be tuned with
-`IWorkBackendOptions`, which both formats take:
+#### Spreadsheet cells and charts
 
-```python
-from docling.datamodel.backend_options import IWorkBackendOptions
-from docling.datamodel.base_models import InputFormat
-from docling.document_converter import (
-    DocumentConverter,
-    IWorkKeynoteFormatOption,
-    IWorkPagesFormatOption,
-)
+A cell is read as the value it holds, not as the text you happen to see:
+numbers, dates, durations, checkboxes and the results Numbers last computed for
+its formulas all come through. Numbers has stored numbers as decimals since
+2017, so a cell you typed `0.1` into reads back as `0.1` rather than as the
+binary fraction nearest to it.
 
-limits = IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
-doc_converter = DocumentConverter(
-    format_options={
-        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(backend_options=limits),
-        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(backend_options=limits),
-    }
-)
-```
+A chart becomes a picture item carrying the data it plots — categories down the
+first column, one column per series — which is the same shape the Excel backend
+gives a chart. Numbers keeps no image of a chart, but it does keep its own copy
+of the numbers behind it, so a chart still reads correctly even if the table it
+was built from has since been deleted.
 
-### Convert Apple Numbers spreadsheets
+#### Choosing sheets
 
-Apple Numbers (`.numbers`) spreadsheets convert like any other format, and both
-container generations are read (requires the `format-iwork` extra):
-
-```python
-from docling.document_converter import DocumentConverter
-
-doc = DocumentConverter().convert("budget.numbers").document
-print(doc.export_to_markdown())
-```
-
-The output follows the Excel and OpenDocument spreadsheet backends: every sheet
-becomes a page and a sheet group, and every table on it becomes a table item
-carrying the table's header rows and header columns, captioned with the name
-Numbers gives it. Unlike a worksheet, a Numbers sheet is a canvas holding
-separate tables, charts and notes, each with its own frame, so they come out in
-the order they are laid out down the page rather than the order they happen to
-be stored in.
-
-Charts become picture items carrying the data they plot — categories down the
-first column, one column per series — the same shape the Excel backend attaches
-to a chart. Numbers renders no image for a chart, and it caches this data beside
-the chart itself, so a chart still reads correctly when the table it was built
-from has since been deleted. Sticky notes, which is what Numbers calls a sheet's
-comments, become comments in the notes content layer.
-
-Cell values are read as values: numbers, dates, durations, booleans and the
-results Numbers cached for its formulas. Numbers stores a numeric cell as a
-decimal since 2017, so a value written as `0.1` comes out as `0.1` rather than
-as its binary floating point expansion.
-
-Use `sheet_names` to convert only some of the sheets, and `page_range` to narrow
-the selection further:
+`sheet_names` converts only the sheets you name, and `page_range` narrows the
+selection further, since each sheet is a page:
 
 ```python
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -309,20 +294,41 @@ doc_converter = DocumentConverter(
 )
 ```
 
-!!! note "Not yet extracted"
+#### Size limits
 
-    Images and shapes are skipped, and so is a comment attached to a cell rather
-    than to the sheet. A chart's *kind* is not read either — Numbers stores it as
-    an integer whose meaning Apple has never published — so every chart is
-    classified as a chart of unspecified kind. The number format beside a cell is
-    not applied, so a currency or percentage cell reads as the plain number it
-    holds, as it does for Excel and OpenDocument. In a 2013+ document a pop-up
-    menu cell yields the index Numbers stores rather than the label it shows; an
-    iWork '09 document stores the label and it is read. Password-protected
+The container is untrusted input, so size limits apply. They can be tuned with
+`IWorkBackendOptions`, which all three formats take:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import (
+    DocumentConverter,
+    IWorkKeynoteFormatOption,
+    IWorkNumbersFormatOption,
+    IWorkPagesFormatOption,
+)
+
+limits = IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(backend_options=limits),
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(backend_options=limits),
+        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(backend_options=limits),
+    }
+)
+```
+
+!!! note "Not yet extracted from a Numbers spreadsheet"
+
+    Images and shapes are skipped, and so is a comment attached to one cell
+    rather than to the sheet. A chart's *kind* — pie, bar, line — is not read
+    yet, so every chart is labelled simply as a chart. The number format beside
+    a cell is not applied either, so a currency or percentage cell reads as the
+    plain number it holds, exactly as it does for Excel and OpenDocument. A cell
+    driven by a pop-up menu gives the label it shows in an iWork '09 document,
+    but only the menu position in a 2013-or-later one. Password-protected
     documents cannot be read.
-
-The same `IWorkBackendOptions` size limits apply as for Pages, since both formats
-share the container.
 
 ## Impose limits on the document size
 
