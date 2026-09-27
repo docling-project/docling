@@ -30,6 +30,7 @@ from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
 @dataclass(frozen=True)
 class _LiteralBlock:
     text: str
+    language: str | None = None  # set for [source,lang] listing blocks
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -174,8 +176,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         label=DocItemLabel.CAPTION,
                     )
                     caption_data = []
+                code_language = (
+                    detect_code_language(block.text, hint=block.language)
+                    if block.language is not None
+                    else None
+                )
                 doc.add_code(
                     text=block.text,
+                    code_language=code_language,
                     caption=caption,
                     parent=(
                         last_list_item if in_list else self._get_current_parent(parents)
@@ -376,26 +384,57 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return None
 
-    @staticmethod
-    def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
-        literal_data: list[str] | None = None
+    _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
 
-        for line in lines:
-            if line.strip() == "....":
-                if literal_data is None:
-                    literal_data = []
+    @classmethod
+    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+        block_data: list[str] | None = None
+        block_delimiter: str | None = None
+        block_language: str | None = None
+
+        i = 0
+        n = len(lines)
+        while i < n:
+            line = lines[i]
+            stripped = line.strip()
+
+            if block_data is not None:
+                # Inside a delimited block: only the matching closer ends it.
+                if stripped == block_delimiter:
+                    yield _LiteralBlock(
+                        text="\n".join(block_data), language=block_language
+                    )
+                    block_data = None
+                    block_delimiter = None
+                    block_language = None
                 else:
-                    yield _LiteralBlock(text="\n".join(literal_data))
-                    literal_data = None
+                    block_data.append(line.rstrip("\r\n"))
+                i += 1
                 continue
 
-            if literal_data is None:
-                yield line
-            else:
-                literal_data.append(line.rstrip("\r\n"))
+            if stripped in {"....", "----"}:
+                # "...." is a literal block; "----" a listing block. A
+                # "[source,lang]" attribute consumed just before a "----"
+                # labels the listing's language.
+                block_data = []
+                block_delimiter = stripped
+                block_language = None
+                i += 1
+                continue
 
-        if literal_data is not None:
-            yield _LiteralBlock(text="\n".join(literal_data))
+            source_attr = cls._SOURCE_ATTR_RE.match(stripped)
+            if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
+                block_data = []
+                block_delimiter = "----"
+                block_language = source_attr.group(1)
+                i += 2
+                continue
+
+            yield line
+            i += 1
+
+        if block_data is not None:
+            yield _LiteralBlock(text="\n".join(block_data), language=block_language)
 
     @classmethod
     def _close_list_if_needed(

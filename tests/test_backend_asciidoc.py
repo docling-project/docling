@@ -5,7 +5,13 @@ import glob
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import CodeItem, DocItemLabel, ImageRefMode, ListItem
+from docling_core.types.doc import (
+    CodeItem,
+    CodeLanguageLabel,
+    DocItemLabel,
+    ImageRefMode,
+    ListItem,
+)
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
@@ -82,6 +88,43 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         assert len(doc.tables) == 1
         assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (1, 2)
         assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
+
+
+def test_source_listing_block_becomes_code_item() -> None:
+    # "[source,python] / ---- / ... / ----" is a listing block: it must become a
+    # code item carrying the declared language, not a paragraph with the block
+    # markers leaked into the text.
+    src = b"[source,python]\n----\nx = 1\ny = 2\n----\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="listing.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
+    assert len(code_items) == 1
+    assert code_items[0].text == "x = 1\ny = 2"
+    assert code_items[0].code_language == CodeLanguageLabel.PYTHON
+    # no marker or attribute text may leak into the body
+    assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
+
+
+def test_listing_block_without_language_stays_code() -> None:
+    src = b"----\nplain listing\n----\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="listing_no_lang.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
+    assert len(code_items) == 1
+    assert code_items[0].text == "plain listing"
+    assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
 
 
 def test_unclosed_table_at_end_keeps_caption() -> None:
