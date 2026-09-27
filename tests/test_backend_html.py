@@ -1661,3 +1661,46 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_gfm_task_list_renders_checkbox_with_text():
+    # <li><input type=checkbox>text</li> is the canonical GFM task list. The
+    # text belongs to the checkbox item; it used to become a separate list
+    # item, pushing the checkbox onto its own bullet *after* the text.
+    html = (
+        "<ul><li><input type='checkbox' checked>done</li>"
+        "<li><input type='checkbox'>todo</li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert markdown == "- [x] done\n- [ ] todo"
+
+
+def test_task_list_item_keeps_nested_content_list_item():
+    # An <li> holding a checkbox plus real block content still gets its list
+    # item; only the pure checkbox+text form is consumed by the checkbox.
+    html = (
+        "<ul><li><input type='checkbox' checked>done<p>details paragraph</p></li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks_nested.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert "done" in markdown
+    assert "details paragraph" in markdown
+    # the checkbox must not be rendered as an empty extra bullet
+    assert "- [x] \n" not in markdown and "- [x] \r" not in markdown
