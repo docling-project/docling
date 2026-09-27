@@ -214,6 +214,34 @@ After the block.
     assert paragraphs == ["Before the block.", "After the block."]
 
 
+def test_comments_are_not_emitted_as_text() -> None:
+    source = b"""// A line comment.
+Visible.
+
+////
+A block comment
+over two lines.
+////
+
+----
+// Inside a listing this is code.
+x = 1
+----
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [item.text for item in doc.texts] == [
+        "Visible.",
+        "// Inside a listing this is code.\nx = 1",
+    ]
+
+
 def test_block_title_before_list_renders_as_bold_paragraph() -> None:
     # A block title preceding a list (GroupItem) has no caption slot; it must
     # be emitted as a bold PARAGRAPH immediately before the list.
