@@ -1,5 +1,7 @@
 # MAINTAINERS
 
+- Cesar Berrospi Ramis [ceberam](https://github.com/ceberam)
+- Maxim Lysak [maxmnemonic](https://github.com/maxmnemonic)
 - Christoph Auer - [@cau-git](https://github.com/cau-git)
 - Michele Dolfi - [@dolfim-ibm](https://github.com/dolfim-ibm)
 - Panos Vagenas - [@vagenas](https://github.com/vagenas)

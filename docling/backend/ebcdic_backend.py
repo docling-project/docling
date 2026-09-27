@@ -194,7 +194,12 @@ class _RecordParser:
             chunk = body[offset : offset + field.size]
             offset += field.size
             if field.type is not EbcdicFieldType.SKIP:
-                values.append(str(self._decoder.decode(chunk, field)))
+                value = self._decoder.decode(chunk, field)
+                # str() switches a Decimal to scientific notation below 1e-6,
+                # e.g. 0E-7 for a zero with 7 implied decimals.
+                values.append(
+                    format(value, "f") if isinstance(value, Decimal) else str(value)
+                )
         return values
 
 

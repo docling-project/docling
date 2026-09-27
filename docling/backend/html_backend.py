@@ -2998,37 +2998,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not any_image_produced:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
-                    cap_list = self._extract_text_and_hyperlink_recursively(
-                        caption_tag, find_parent_annotation=True
-                    )
-                    cap_anno = cap_list.to_single_text_element()
-                    if cap_anno.text:
-                        cap_text = HTMLDocumentBackend._clean_unicode(
-                            cap_anno.text.strip()
-                        )
-                        cap_prov = self._make_prov(
-                            text=cap_text,
-                            tag=caption_tag,
-                            source_tag_id=cap_anno.source_tag_id,
-                        )
+                    # Emit the caption as a standalone item under the current parent
+                    cap_item = self._emit_caption(caption_tag, doc)
 
-                        # Emit the caption as a standalone item under the current parent
-                        cap_item = doc.add_text(
-                            label=DocItemLabel.CAPTION,
-                            text=cap_text,
-                            orig=cap_anno.text,
-                            content_layer=self.content_layer,
-                            formatting=cap_anno.formatting,
-                            hyperlink=cap_anno.hyperlink,
-                            prov=cap_prov,
-                            parent=self.parents[self.level],
-                        )
-
-                        # Populate the captions list on the TableItem if present
-                        if added_refs:
-                            first_item = added_refs[0].resolve(doc)
-                            if isinstance(first_item, TableItem):
-                                first_item.captions.append(cap_item.get_ref())
+                    # Populate the captions list on the TableItem if present
+                    if cap_item is not None and added_refs:
+                        first_item = added_refs[0].resolve(doc)
+                        if isinstance(first_item, TableItem):
+                            first_item.captions.append(cap_item.get_ref())
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
@@ -3107,11 +3084,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
             table_prov = self._make_prov(text="", tag=tag)
+            # A <table> may carry its own <caption>; keep it non-recursive so that
+            # a nested table does not steal the caption of its ancestor.
+            cap_tag = tag.find("caption", recursive=False)
+            cap_item = (
+                self._emit_caption(cap_tag, doc) if isinstance(cap_tag, Tag) else None
+            )
             docling_table = doc.add_table(
                 data=data_e,
                 parent=self.parents[self.level],
                 prov=table_prov,
                 content_layer=self.content_layer,
+                caption=cap_item,
             )
             added_refs.append(docling_table.get_ref())
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
@@ -4804,6 +4788,34 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 added_refs.extend(self._walk(tag, doc))
         return added_refs
 
+    def _emit_caption(
+        self, caption_tag: Tag, doc: DoclingDocument
+    ) -> Optional[TextItem]:
+        """Emit a caption element (<caption> or <figcaption>) as a text item."""
+        cap_list = self._extract_text_and_hyperlink_recursively(
+            caption_tag, find_parent_annotation=True
+        )
+        cap_anno = cap_list.to_single_text_element()
+        if not cap_anno.text or not cap_anno.text.strip():
+            return None
+
+        cap_text = HTMLDocumentBackend._clean_unicode(cap_anno.text.strip())
+        cap_prov = self._make_prov(
+            text=cap_text,
+            tag=caption_tag,
+            source_tag_id=cap_anno.source_tag_id,
+        )
+        return doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=cap_text,
+            orig=cap_anno.text,
+            content_layer=self.content_layer,
+            formatting=cap_anno.formatting,
+            hyperlink=cap_anno.hyperlink,
+            prov=cap_prov,
+            parent=self.parents[self.level],
+        )
+
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
@@ -5041,7 +5053,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         This function retrieves the 'colspan' and 'rowspan' attributes from a given
         table cell tag.
-        If the attribute does not exist or it is not numeric, it defaults to 1.
+        If the attribute does not exist, is not numeric, or is zero, it defaults to 1.
         """
         raw_spans: tuple[str, str] = (
             str(cell.get("colspan", "1")),
@@ -5052,7 +5064,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if s and s[0].isnumeric():
                 match = re.search(r"\d+", s)
                 if match:
-                    return int(match.group())
+                    # A span of 0 covers no grid position, so the cell drops out
+                    # of the table and the cells after it shift. HTML5 reads
+                    # rowspan="0" as "span to the end of the row group"; falling
+                    # back to 1 keeps the cell without implementing that rule.
+                    return max(int(match.group()), 1)
             return 1
 
         int_spans: tuple[int, int] = (

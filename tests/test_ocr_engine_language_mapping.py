@@ -463,6 +463,53 @@ def test_ocrmac_advertises_only_languages_it_serves() -> None:
     _assert_every_advertised_tag_is_requestable(model)
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
+@pytest.mark.parametrize("recognition", ["accurate", "fast"])
+def test_ocrmac_vision_accepts_every_language_it_advertises(recognition: str) -> None:
+    """Vision's `fast` recognizer ships fewer languages than `accurate`, and
+    ocrmac raises on any language the requested level does not support."""
+    pytest.importorskip("ocrmac")
+    from ocrmac import ocrmac
+    from PIL import Image
+
+    from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
+
+    model = OcrMacModel(
+        enabled=True,
+        artifacts_path=None,
+        options=OcrMacOptions(recognition=recognition),
+        accelerator_options=AcceleratorOptions(),
+    )
+    advertised = model.supported_ocr_languages()
+    codes: list[str] = []
+    for tag in (*_iso_tags(advertised.bcp47), *advertised.native):
+        mapped = model.map_ocr_language(
+            OcrLanguageResolver.canonicalize_ocr_language(tag)
+        )
+        codes.extend([mapped] if isinstance(mapped, str) else mapped)
+
+    ocrmac.OCR(
+        Image.new("RGB", (32, 32), "white"),
+        recognition_level=recognition,
+        language_preference=list(dict.fromkeys(codes)),
+    ).recognize()
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="ocrmac is macOS-only")
+def test_ocrmac_fast_rejects_a_language_only_accurate_serves() -> None:
+    pytest.importorskip("ocrmac")
+    from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
+
+    # Vision recognizes Chinese only at the `accurate` level.
+    with pytest.raises(OcrLanguageNotSupportedError):
+        OcrMacModel(
+            enabled=True,
+            artifacts_path=None,
+            options=OcrMacOptions(recognition="fast", lang=["iso:zh-Hans"]),
+            accelerator_options=AcceleratorOptions(),
+        )
+
+
 # --- auto-engine selection, driven by the language --------------------------
 #
 # `OcrAutoOptions` is the one place where a language tag changes *which engine

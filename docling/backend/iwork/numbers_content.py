@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import NamedTuple
 
-from docling_core.types.doc import BoundingBox
+from docling.backend.iwork.content import Geometry
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 """Instant Numbers counts its dates and times from."""
@@ -38,9 +38,9 @@ class Cell(NamedTuple):
 class Table(NamedTuple):
     """One table on a sheet.
 
-    ``bbox`` is the table's frame on the sheet canvas in points, which is what
-    Numbers positions a table with; it is None when the document does not say
-    where the table sits.
+    ``geometry`` is the table's frame on the sheet canvas in points, which is
+    what Numbers positions a table with; it is None when the document does not
+    say where the table sits.
     """
 
     name: str
@@ -49,7 +49,7 @@ class Table(NamedTuple):
     header_rows: int
     header_cols: int
     cells: list[Cell]
-    bbox: BoundingBox | None
+    geometry: Geometry | None
 
 
 class Chart(NamedTuple):
@@ -60,18 +60,17 @@ class Chart(NamedTuple):
     category and one column per series, with ``values[category][series]`` holding
     the point, or None where that series has none for that category.
 
-    Which *kind* of chart it is — pie, bar, line — is stored as an integer whose
-    meaning Apple has never published, and which differs between the two
-    container generations; even LibreOffice's iWork import filter carries it
-    around without interpreting it. It is therefore not read, and every chart is
-    classified as a chart of unspecified kind.
+    Which *kind* of chart it is — pie, bar, line — is stored as an integer, and
+    the two container generations number them differently. Neither numbering is
+    read here, so every chart is classified as a chart of unspecified kind; what
+    the chart plots is recovered either way, which is what a reader is after.
     """
 
     name: str
     categories: list[str]
     series: list[str]
     values: list[list[Decimal | float | None]]
-    bbox: BoundingBox | None
+    geometry: Geometry | None
 
 
 class Comment(NamedTuple):
@@ -80,7 +79,7 @@ class Comment(NamedTuple):
     text: str
     author: str
     timestamp: datetime | None
-    bbox: BoundingBox | None
+    geometry: Geometry | None
 
 
 class Sheet(NamedTuple):
@@ -96,15 +95,21 @@ Drawable = Table | Chart | Comment
 """Anything a sheet places on its canvas."""
 
 
-def reading_order(drawable: Drawable) -> tuple[float, float]:
+def sheet_order(drawable: Drawable) -> tuple[float, float]:
     """Sort key placing a drawable by where it sits, top row first.
 
-    Numbers keeps a sheet's drawables in z-order, which is the order they were
-    added rather than the order a reader meets them.
+    Numbers keeps a sheet's drawables in z-order — the order they were added,
+    not the order a reader meets them — so a summary added after the register it
+    summarises would otherwise come second.
+
+    A sheet is sorted more simply than a slide is by
+    :func:`~docling.backend.iwork.keynote_content.reading_order`: things on a
+    sheet are laid out down the page, so top edge then left edge is enough, and
+    there is no band of shapes across a row to hold together.
     """
-    if drawable.bbox is None:
+    if drawable.geometry is None:
         return (0.0, 0.0)
-    return (drawable.bbox.t, drawable.bbox.l)
+    return (drawable.geometry.top, drawable.geometry.left)
 
 
 def format_number(value: Decimal | float) -> str:

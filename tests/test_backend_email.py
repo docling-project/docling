@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+from base64 import b64encode
+from email.headerregistry import HeaderRegistry
+from email.utils import getaddresses
 from io import BytesIO
 from pathlib import Path
 
@@ -127,6 +130,262 @@ This is a second paragraph.
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
 
 
+def test_email_backend_quotes_display_names_holding_specials():
+    """A name holding specials is quoted so the list parses back as itself."""
+    raw_email = b"""From: "Doe, John" <john@example.com>
+To: "Smith, Jane" <jane@example.com>, "Roe, Richard" <rich@example.com>
+Subject: Quarterly Report
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Numbers attached.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="specials.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+    to_line = next(text for text in rendered if text.startswith("To: "))
+
+    assert 'From: "Doe, John" <john@example.com>' in rendered
+    assert getaddresses([to_line.removeprefix("To: ")]) == [
+        ("Smith, Jane", "jane@example.com"),
+        ("Roe, Richard", "rich@example.com"),
+    ]
+
+
+def test_email_backend_leaves_plain_display_names_unquoted():
+    """A period or an apostrophe parses back unquoted, so the name is left alone."""
+    raw_email = b"""From: John A. Smith <john@example.com>
+To: O'Brien <obrien@example.com>
+Subject: Plain Names
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Body.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="plain_names.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+
+    assert "From: John A. Smith <john@example.com>" in rendered
+    assert "To: O'Brien <obrien@example.com>" in rendered
+
+
+def test_email_backend_escapes_quotes_inside_display_names():
+    """A quote inside a name is escaped instead of closing the string early."""
+    raw_email = b"""From: "John \\"JD\\" Doe" <jd@example.com>
+To: bob@example.com
+Subject: Embedded Quotes
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Body.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="embedded_quotes.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+    from_line = next(text for text in rendered if text.startswith("From: "))
+
+    assert getaddresses([from_line.removeprefix("From: ")]) == [
+        ('John "JD" Doe', "jd@example.com")
+    ]
+
+
+def test_email_backend_collapses_line_breaks_in_headers():
+    """A crafted name, subject or attachment filename cannot forge a header line.
+
+    Attachment listing is off by default, so the invariant only covers the
+    filename path with it enabled.
+    """
+    raw_email = (
+        b"From: =?utf-8?q?Attacker=0D=0ADate=3A_1999-01-01=0D=0ATo=3A_ceo=40corp?="
+        b" <evil@example.com>\r\n"
+        b"To: real@example.com\r\n"
+        b"Subject: =?utf-8?q?Hi=0D=0AFrom=3A_boss=40corp?=\r\n"
+        b"Date: Tue, 20 May 2026 10:30:00 +0000\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b'Content-Type: multipart/mixed; boundary="BOUNDARY"\r\n'
+        b"\r\n"
+        b"--BOUNDARY\r\n"
+        b'Content-Type: text/plain; charset="utf-8"\r\n'
+        b"\r\n"
+        b"Body.\r\n"
+        b"--BOUNDARY\r\n"
+        b"Content-Type: text/plain\r\n"
+        b"Content-Disposition: attachment;"
+        b' filename="=?utf-8?q?evil=0D=0AFrom=3A_boss=40corp?=.txt"\r\n'
+        b"\r\n"
+        b"payload\r\n"
+        b"--BOUNDARY--\r\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="crlf.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_email),
+        options=EmailBackendOptions(list_attachments=True),
+    )
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+
+    assert not any("\r" in text or "\n" in text for text in rendered)
+    assert (
+        'From: "Attacker Date: 1999-01-01 To: ceo@corp" <evil@example.com>' in rendered
+    )
+    assert "Hi From: boss@corp" in rendered
+    assert "evil From: boss@corp.txt (text/plain)" in rendered
+
+
+def test_email_backend_collapses_non_crlf_line_breaks_in_headers():
+    """Every break ``str.splitlines()`` recognises is collapsed, not only CR/LF."""
+    for break_char in ("\x0b", "\x0c", "\x1c", "\x85", "\u2028"):
+        encoded = b64encode(f"Hi{break_char}From: boss@corp".encode()).decode()
+        raw_email = (
+            b"From: sender@example.com\r\n"
+            b"To: real@example.com\r\n"
+            b"Subject: =?utf-8?b?" + encoded.encode() + b"?=\r\n"
+            b"MIME-Version: 1.0\r\n"
+            b'Content-Type: text/plain; charset="utf-8"\r\n'
+            b"\r\n"
+            b"Body.\r\n"
+        )
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(raw_email),
+            format=InputFormat.EMAIL,
+            filename="breaks.eml",
+            backend=EmailDocumentBackend,
+        )
+        backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+        title = next(
+            item.text
+            for item in backend.convert().texts
+            if isinstance(item, TextItem) and item.label == DocItemLabel.TITLE
+        )
+
+        assert title == "Hi From: boss@corp"
+        assert title.splitlines() == [title]
+
+
+def test_email_backend_unfolds_folded_headers_to_single_spaces():
+    """A folded header renders with one space, not a run of three."""
+    raw_email = (
+        b"From: sender@example.com\r\n"
+        b"To: real@example.com\r\n"
+        b"Subject: A very long subject that is\r\n folded across lines\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b'Content-Type: text/plain; charset="utf-8"\r\n'
+        b"\r\n"
+        b"Body.\r\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="folded.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    title = next(
+        item.text
+        for item in backend.convert().texts
+        if isinstance(item, TextItem) and item.label == DocItemLabel.TITLE
+    )
+
+    assert title == "A very long subject that is folded across lines"
+
+
+def test_email_backend_quotes_display_names_holding_a_backslash():
+    """A Windows-style name is quoted; unquoted the parser loses the address."""
+    raw_email = b"""From: =?utf-8?q?CORP=5Cjsmith?= <jsmith@example.com>
+To: real@example.com
+Subject: Backslash Name
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Body.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="backslash.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+    from_line = next(text for text in rendered if text.startswith("From: "))
+
+    header = HeaderRegistry()("To", from_line.removeprefix("From: "))
+    assert [
+        (address.display_name, address.addr_spec)
+        for group in header.groups
+        for address in group.addresses
+    ] == [("CORP\\jsmith", "jsmith@example.com")]
+
+
+def test_email_backend_keeps_non_ascii_display_names_readable():
+    """A non-ASCII name is quoted when needed but never RFC 2047 re-encoded."""
+    raw_email = b"""From: =?utf-8?b?5byg5LiJ?= <zhang@example.com>
+To: =?utf-8?q?M=C3=BCller=2C_Anna?= <anna@example.com>
+Subject: Non-ASCII Names
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Body.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="non_ascii.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    rendered = [
+        item.text for item in backend.convert().texts if isinstance(item, TextItem)
+    ]
+
+    assert "From: \u5f20\u4e09 <zhang@example.com>" in rendered
+    assert 'To: "M\xfcller, Anna" <anna@example.com>' in rendered
+
+
 def test_email_backend_converts_html_body_to_text_paragraphs():
     raw_email = b"""From: Alice Example <alice@example.com>
 To: Bob Example <bob@example.com>
@@ -149,6 +408,40 @@ Content-Type: text/html; charset="utf-8"
     assert "Hello **Bob** ," in markdown
     assert "This is HTML." in markdown
     assert "<strong>" not in markdown
+
+
+def test_email_backend_normalises_body_line_endings():
+    """A CRLF or lone-CR body leaves no carriage return inside a paragraph."""
+    for terminator in ("\r\n", "\r"):
+        body = (
+            f"First paragraph line one.{terminator}First paragraph line two."
+            f"{terminator}{terminator}Second paragraph.{terminator}"
+        )
+        raw_email = (
+            "From: alice@example.com\r\n"
+            "Subject: Line Endings\r\n"
+            "MIME-Version: 1.0\r\n"
+            'Content-Type: text/plain; charset="utf-8"\r\n'
+            "\r\n" + body
+        ).encode()
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(raw_email),
+            format=InputFormat.EMAIL,
+            filename="line_endings.eml",
+            backend=EmailDocumentBackend,
+        )
+        backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+        text_items = [
+            item for item in backend.convert().texts if isinstance(item, TextItem)
+        ]
+
+        assert [item.text for item in text_items] == [
+            "Line Endings",
+            "From: alice@example.com",
+            "First paragraph line one.\nFirst paragraph line two.",
+            "Second paragraph.",
+        ]
 
 
 def test_convert_msg_backend_from_path():
@@ -282,3 +575,40 @@ def test_msg_document_converter_lists_attachments_via_format_option():
     assert "Attachments" in markdown
     assert "test.txt" in markdown
     assert "report.pdf" in markdown
+
+
+def test_email_falls_back_to_html_when_the_plain_part_is_blank():
+    """A part being present is not the same as a part holding text.
+
+    A multipart/alternative message can carry a whitespace-only text/plain
+    part beside a real text/html one, which many senders generate
+    automatically. Returning the empty result from the plain branch drops the
+    whole body.
+    """
+    from docling.datamodel.document import DocumentStream
+
+    raw = (
+        b"From: Alice <alice@example.com>\r\n"
+        b"To: Bob <bob@example.com>\r\n"
+        b"Subject: Blank Plain Part\r\n"
+        b'Content-Type: multipart/alternative; boundary="B"\r\n'
+        b"\r\n"
+        b"--B\r\n"
+        b"Content-Type: text/plain; charset=utf-8\r\n"
+        b"\r\n"
+        # a single space: present, truthy, and holding no paragraph
+        b" \r\n"
+        b"--B\r\n"
+        b"Content-Type: text/html; charset=utf-8\r\n"
+        b"\r\n"
+        b"<html><body><p>Real content that should appear.</p></body></html>\r\n"
+        b"--B--\r\n"
+    )
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+    doc = converter.convert(
+        DocumentStream(name="blank_plain.eml", stream=BytesIO(raw)),
+        raises_on_error=True,
+    ).document
+
+    assert "Real content that should appear." in doc.export_to_markdown()

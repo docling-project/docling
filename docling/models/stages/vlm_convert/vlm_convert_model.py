@@ -23,6 +23,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.models.base_model import BasePageModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
@@ -30,6 +31,13 @@ from docling.models.inference_engines.vlm import (
     VlmEngineOutput,
     VlmEngineType,
     create_vlm_engine,
+)
+from docling.utils.mineru_utils import (
+    MINERU2_LAYOUT_PROMPT,
+    parse_mineru2_layout,
+    prepare_mineru2_crops,
+    prepare_mineru2_layout_image,
+    serialize_mineru2_transcript,
 )
 from docling.utils.profiling import TimeRecorder
 
@@ -156,6 +164,94 @@ class VlmConvertModel(BasePageModel):
             for image, prompt in zip(images, prompts)
         ]
 
+    @staticmethod
+    def _mineru2_stop_reason(
+        layout_output: VlmEngineOutput,
+        recognition_outputs: list[VlmEngineOutput],
+    ) -> str | None:
+        incomplete_reasons = {
+            VlmStopReason.LENGTH.value,
+            VlmStopReason.CONTENT_FILTERED.value,
+        }
+        outputs = [layout_output, *recognition_outputs]
+        for output in outputs:
+            if output.stop_reason in incomplete_reasons:
+                return output.stop_reason
+        return layout_output.stop_reason
+
+    def _predict_mineru2(self, images: list[PILImage.Image]) -> list[VlmEngineOutput]:
+        """Run MinerU2 layout detection followed by region recognition."""
+        layout_images = [prepare_mineru2_layout_image(image) for image in images]
+        layout_inputs = self._build_engine_inputs(
+            layout_images, [MINERU2_LAYOUT_PROMPT] * len(layout_images)
+        )
+        layout_outputs = self.engine.predict_batch(layout_inputs)
+        if len(layout_outputs) != len(images):
+            raise RuntimeError(
+                "MinerU2 layout output count does not match the input page count"
+            )
+
+        regions_by_page = [
+            parse_mineru2_layout(output.text) for output in layout_outputs
+        ]
+        crop_images: list[PILImage.Image] = []
+        crop_prompts: list[str] = []
+        crop_targets: list[tuple[int, int]] = []
+        for page_index, (image, regions) in enumerate(zip(images, regions_by_page)):
+            for crop in prepare_mineru2_crops(image, regions):
+                crop_images.append(crop.image)
+                crop_prompts.append(crop.prompt)
+                crop_targets.append((page_index, crop.region_index))
+
+        recognition_outputs = (
+            self.engine.predict_batch(
+                self._build_engine_inputs(crop_images, crop_prompts)
+            )
+            if crop_images
+            else []
+        )
+        if len(recognition_outputs) != len(crop_targets):
+            raise RuntimeError(
+                "MinerU2 recognition output count does not match the region count"
+            )
+
+        outputs_by_page: list[list[tuple[int, VlmEngineOutput]]] = [
+            [] for _image in images
+        ]
+        for (page_index, region_index), output in zip(
+            crop_targets, recognition_outputs
+        ):
+            outputs_by_page[page_index].append((region_index, output))
+
+        combined_outputs = []
+        for layout_output, indexed_page_outputs in zip(layout_outputs, outputs_by_page):
+            indexed_page_outputs.sort(key=lambda item: item[0])
+            page_outputs = [output for _region_index, output in indexed_page_outputs]
+            all_outputs = [layout_output, *page_outputs]
+            combined_outputs.append(
+                VlmEngineOutput(
+                    text=serialize_mineru2_transcript(
+                        layout_output.text,
+                        [
+                            (region_index, output.text)
+                            for region_index, output in indexed_page_outputs
+                        ],
+                    ),
+                    stop_reason=self._mineru2_stop_reason(layout_output, page_outputs),
+                    metadata={
+                        "generation_time": sum(
+                            output.metadata.get("generation_time") or 0
+                            for output in all_outputs
+                        ),
+                        "num_tokens": sum(
+                            output.metadata.get("num_tokens") or 0
+                            for output in all_outputs
+                        ),
+                    },
+                )
+            )
+        return combined_outputs
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -212,12 +308,13 @@ class VlmConvertModel(BasePageModel):
             )
 
             try:
-                # Create batch of runtime inputs (shared generation template)
-                engine_inputs = self._build_engine_inputs(images, prompts)
-
                 # Run batch inference
                 batch_start = time.perf_counter()
-                outputs = self.engine.predict_batch(engine_inputs)
+                if self.options.model_spec.response_format == ResponseFormat.MINERU2:
+                    outputs = self._predict_mineru2(images)
+                else:
+                    engine_inputs = self._build_engine_inputs(images, prompts)
+                    outputs = self.engine.predict_batch(engine_inputs)
                 batch_time = time.perf_counter() - batch_start
 
                 # Engines report generated (not prompt) token counts, so this is
@@ -227,7 +324,7 @@ class VlmConvertModel(BasePageModel):
                 )
                 _log.info(
                     "Processed %s page(s): %s tokens in %.2f sec. (%.2f tok/s)",
-                    len(engine_inputs),
+                    len(images),
                     batch_tokens,
                     batch_time,
                     batch_tokens / batch_time if batch_time > 0 else 0.0,

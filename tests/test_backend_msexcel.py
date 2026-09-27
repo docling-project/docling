@@ -836,6 +836,35 @@ def test_edge_cases_merging() -> None:
     )
 
 
+def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> None:
+    """Sparse cells already included in a table bbox must not become extra tables.
+
+    Regression test for #4230. The Note column is disconnected from the rest
+    of the table below the header, but those cells are already included in the
+    rectangular table that spans A1:C4.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["ID", "Name", "Note"])
+    sheet.append([1, "alpha", None])
+    sheet.append([2, None, "foo"])
+    sheet.append([3, None, "bar"])
+
+    file_path = tmp_path / "sparse_sheet.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+
+    texts = [cell.text for cell in table.data.table_cells]
+    assert texts.count("foo") == 1
+    assert texts.count("bar") == 1
+
+
 def test_gap_tolerance_comparison() -> None:
     """Test the effect of gap_tolerance on table detection.
 

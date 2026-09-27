@@ -129,8 +129,10 @@ class InputFormat(str, Enum):
     EPUB = "epub"
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
+    IWORK_KEYNOTE = "iwork_keynote"
     IWORK_NUMBERS = "iwork_numbers"
     EBCDIC = "ebcdic"
+    AFP = "afp"
 
 
 class OutputFormat(str, Enum):
@@ -155,7 +157,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
+    InputFormat.MD: ["md", "markdown", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
@@ -181,8 +183,10 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.IWORK_KEYNOTE: ["key"],
     InputFormat.IWORK_NUMBERS: ["numbers"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
+    InputFormat.AFP: ["afp"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -275,11 +279,16 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.apple.pages",
         "application/x-iwork-pages-sffpages",
     ],
+    InputFormat.IWORK_KEYNOTE: [
+        "application/vnd.apple.keynote",
+        "application/x-iwork-keynote-sffkey",
+    ],
     InputFormat.IWORK_NUMBERS: [
         "application/vnd.apple.numbers",
         "application/x-iwork-numbers-sffnumbers",
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
+    InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -556,6 +565,9 @@ class Page(BaseModel):
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
+    # Some reasoning-style servers (e.g. LM Studio serving chandra-ocr-2) leave
+    # content empty and place the actual answer in reasoning_content.
+    reasoning_content: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
 
 

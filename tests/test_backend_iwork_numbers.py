@@ -35,7 +35,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 
-from docling.backend.iwork import tables
+from docling.backend.iwork import cells
 from docling.backend.iwork.numbers_iwa import render
 from docling.backend.iwork_backend import IWorkNumbersDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -274,8 +274,8 @@ def test_version_5_cell_storage_is_decoded(buffer: str, expected: str | None):
     so the newer layout is pinned against cells captured from documents that do
     use it: a string reference, an exact decimal128, a date and a duration.
     """
-    values = tables.CellValues(strings={14: "YYY_2_1"})
-    decoded = tables.cell(bytes.fromhex(buffer), 0, values)
+    values = cells.CellValues(strings={14: "YYY_2_1"})
+    decoded = cells.iwa_cell(bytes.fromhex(buffer), 0, values)
 
     assert render(decoded) == expected
 
@@ -397,7 +397,7 @@ def test_a_chart_is_captioned_with_its_title():
 
 @BOTH_GENERATIONS
 def test_tables_and_charts_are_interleaved_down_the_sheet(source: Path):
-    """A Numbers sheet is a canvas, so a chart can sit between two tables. The
+    """A Numbers sheet is a canvas, so a chart can sit between two archives. The
     two fixtures place theirs differently, which is the point: the order has to
     come from the document rather than from the kind of thing being placed."""
     doc = _backend(source).convert()

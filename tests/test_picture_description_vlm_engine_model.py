@@ -95,7 +95,7 @@ def test_engine_picture_description_forwards_generation_config(
     images = [Image.new("RGB", (8, 8), "white")]
     outputs = list(model._annotate_images(images))
 
-    assert outputs == ["description 0"]
+    assert [o.text for o in outputs] == ["description 0"]
     sent_input = model.engine.received_inputs[0]
     assert sent_input.max_new_tokens == 1234
     assert sent_input.temperature == 0.42

@@ -144,10 +144,10 @@
           "page_no": 1,
           "bbox": {
             "l": 457200.0,
-            "t": 1417638.0,
+            "t": 274638.0,
             "r": 8686800.0,
-            "b": 274638.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 1417638.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -171,10 +171,10 @@
           "page_no": 1,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -200,10 +200,10 @@
           "page_no": 1,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -229,10 +229,10 @@
           "page_no": 1,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -258,10 +258,10 @@
           "page_no": 2,
           "bbox": {
             "l": 914400.0,
-            "t": 2743200.0,
+            "t": 914400.0,
             "r": 8229600.0,
-            "b": 914400.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 2743200.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -285,10 +285,10 @@
           "page_no": 2,
           "bbox": {
             "l": 914400.0,
-            "t": 2743200.0,
+            "t": 914400.0,
             "r": 8229600.0,
-            "b": 914400.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 2743200.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -312,10 +312,10 @@
           "page_no": 2,
           "bbox": {
             "l": 914400.0,
-            "t": 2743200.0,
+            "t": 914400.0,
             "r": 8229600.0,
-            "b": 914400.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 2743200.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -339,10 +339,10 @@
           "page_no": 2,
           "bbox": {
             "l": 0.0,
-            "t": 6858000.0,
+            "t": 0.0,
             "r": 9144000.0,
-            "b": 0.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6858000.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -366,10 +366,10 @@
           "page_no": 3,
           "bbox": {
             "l": 457200.0,
-            "t": 1417638.0,
+            "t": 274638.0,
             "r": 8686800.0,
-            "b": 274638.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 1417638.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -393,10 +393,10 @@
           "page_no": 3,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -422,10 +422,10 @@
           "page_no": 3,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -451,10 +451,10 @@
           "page_no": 3,
           "bbox": {
             "l": 457200.0,
-            "t": 6126163.0,
+            "t": 1600200.0,
             "r": 8686800.0,
-            "b": 1600200.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,

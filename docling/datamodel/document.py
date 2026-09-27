@@ -616,6 +616,24 @@ class _DummyBackend(AbstractDocumentBackend):
         return super().unload()
 
 
+_OFFICE_OPEN_XML_ROOT = "application/vnd.openxmlformats-officedocument"
+
+_ZIP_SUFFIX_MIMETYPES = {
+    ".xlsx": _OFFICE_OPEN_XML_ROOT + ".spreadsheetml.sheet",
+    ".docx": _OFFICE_OPEN_XML_ROOT + ".wordprocessingml.document",
+    ".pptx": _OFFICE_OPEN_XML_ROOT + ".presentationml.presentation",
+    ".pages": FormatToMimeType[InputFormat.IWORK_PAGES][0],
+    ".numbers": FormatToMimeType[InputFormat.IWORK_NUMBERS][0],
+    ".key": FormatToMimeType[InputFormat.IWORK_KEYNOTE][0],
+}
+"""Formats that are ZIP containers, by the extension that tells them apart.
+
+``filetype`` can only see the ZIP, so a member of this family is identified by
+its name and confirmed no further; anything else that arrives as a ZIP is looked
+at inside instead.
+"""
+
+
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
@@ -779,24 +797,20 @@ class _DocumentConversionInput(BaseModel):
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
                 mime is not None
-                and mime.lower() in {"application/xml", "application/xhtml+xml"}
+                and mime.lower()
+                in {
+                    "application/octet-stream",
+                    "application/xml",
+                    "application/xhtml+xml",
+                }
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
                     content = f.read(1024)
             if mime is not None and mime.lower() == "application/zip":
-                mime_root = "application/vnd.openxmlformats-officedocument"
-                suffix = obj.suffix.lower()
-                if suffix == ".xlsx":
-                    mime = mime_root + ".spreadsheetml.sheet"
-                elif suffix == ".docx":
-                    mime = mime_root + ".wordprocessingml.document"
-                elif suffix == ".pptx":
-                    mime = mime_root + ".presentationml.presentation"
-                elif suffix == ".pages":
-                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
-                elif suffix == ".numbers":
-                    mime = FormatToMimeType[InputFormat.IWORK_NUMBERS][0]
+                named = _ZIP_SUFFIX_MIMETYPES.get(obj.suffix.lower())
+                if named is not None:
+                    mime = named
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -820,18 +834,16 @@ class _DocumentConversionInput(BaseModel):
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext.lower())
             if mime is not None and mime.lower() == "application/zip":
-                objname = obj.name.lower()
-                mime_root = "application/vnd.openxmlformats-officedocument"
-                if objname.endswith(".xlsx"):
-                    mime = mime_root + ".spreadsheetml.sheet"
-                elif objname.endswith(".docx"):
-                    mime = mime_root + ".wordprocessingml.document"
-                elif objname.endswith(".pptx"):
-                    mime = mime_root + ".presentationml.presentation"
-                elif objname.endswith(".pages"):
-                    mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
-                elif objname.endswith(".numbers"):
-                    mime = FormatToMimeType[InputFormat.IWORK_NUMBERS][0]
+                named = next(
+                    (
+                        named
+                        for suffix, named in _ZIP_SUFFIX_MIMETYPES.items()
+                        if obj.name.lower().endswith(suffix)
+                    ),
+                    None,
+                )
+                if named is not None:
+                    mime = named
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -843,6 +855,9 @@ class _DocumentConversionInput(BaseModel):
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
                 mime = detected_mime
 
+        if not mime or mime.lower() == "application/octet-stream":
+            if detected_afp := _DocumentConversionInput._detect_afp(content):
+                mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
@@ -1000,6 +1015,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.BOXNOTE][0]
         elif ext in FormatToExtensions[InputFormat.EBCDIC]:
             mime = FormatToMimeType[InputFormat.EBCDIC][0]
+        elif ext in FormatToExtensions[InputFormat.AFP]:
+            mime = FormatToMimeType[InputFormat.AFP][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
@@ -1033,6 +1050,21 @@ class _DocumentConversionInput(BaseModel):
                 else FormatToMimeType[InputFormat.EMAIL][0]
             )
         return mime
+
+    @staticmethod
+    def _detect_afp(content: bytes) -> Optional[str]:
+        """Detect an AFP MO:DCA structured-field introducer.
+
+        The two-byte length excludes the leading X'5A' carriage-control byte and
+        includes the eight-byte structured-field introducer. Only the header is
+        required here because format sniffing reads a bounded prefix of the file.
+        """
+        if len(content) < 9 or content[0] != 0x5A:
+            return None
+        field_length = int.from_bytes(content[1:3], byteorder="big")
+        if not 8 <= field_length <= 32767 or content[3] != 0xD3:
+            return None
+        return FormatToMimeType[InputFormat.AFP][0]
 
     @staticmethod
     def _detect_html_xhtml(

@@ -76,8 +76,13 @@ def _extract_text_from_tool_arguments(arguments: str | None) -> str:
 
 
 def _extract_generated_text(message: OpenAiChatMessage) -> str:
-    if message.content is not None:
+    if message.content:
         return message.content.strip()
+
+    # Fall back to reasoning_content when content is empty: some OpenAI-compatible
+    # servers (e.g. LM Studio serving chandra-ocr-2) route the whole answer there.
+    if message.reasoning_content:
+        return message.reasoning_content.strip()
 
     for tool_call in message.tool_calls or []:
         function = tool_call.get("function")

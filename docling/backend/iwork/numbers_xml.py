@@ -17,13 +17,23 @@ values it last plotted in a property list of its own rather than inline.
 import logging
 import plistlib
 import zipfile
-import zlib
 from decimal import Decimal
 from xml.etree.ElementTree import Element
 
-import defusedxml.ElementTree as ET
-from docling_core.types.doc import BoundingBox, CoordOrigin
-
+from docling.backend.iwork.legacy import (
+    SF_ATTR_HEADER_ROWS,
+    SF_ATTR_NUMCOLS,
+    SF_ATTR_NUMROWS,
+    SF_CELL_TEXT,
+    SF_DATASOURCE,
+    SF_GRID,
+    SF_TABULAR_MODEL,
+    SFA_ATTR_STRING,
+    float_attr,
+    int_attr,
+    legacy_geometry,
+    parse_index,
+)
 from docling.backend.iwork.numbers_content import (
     Cell,
     Chart,
@@ -33,11 +43,14 @@ from docling.backend.iwork.numbers_content import (
     format_bool,
     format_date,
     format_number,
-    reading_order,
+    sheet_order,
 )
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+NUMBERS_KIND = "Numbers"
+"""What Numbers calls its documents, for the error messages of a shared reader."""
 
 MAX_LEGACY_XML_BYTES = 100 * 1024 * 1024
 """Ceiling on a decompressed ``index.xml.gz``.
@@ -155,7 +168,7 @@ def read_content(
     Raises:
         DocumentLoadError: If the index cannot be decompressed or parsed.
     """
-    root = parse_index(archive, member, max_total_bytes, document_hash)
+    root = parse_index(archive, member, max_total_bytes, document_hash, NUMBERS_KIND)
     shares = read_chart_shares(archive, max_file_bytes)
 
     sheets: list[Sheet] = []
@@ -175,9 +188,9 @@ def read_content(
             for note in workspace.iter(SF_STICKY_NOTE)
             if (comment := read_comment(note)) is not None
         ]
-        tables.sort(key=reading_order)
-        charts.sort(key=reading_order)
-        comments.sort(key=reading_order)
+        tables.sort(key=sheet_order)
+        charts.sort(key=sheet_order)
+        comments.sort(key=sheet_order)
         sheets.append(
             Sheet(
                 name=workspace.get(LS_ATTR_WORKSPACE_NAME) or "",
@@ -187,51 +200,6 @@ def read_content(
             )
         )
     return sheets
-
-
-def parse_index(
-    archive: zipfile.ZipFile, member: str, max_total_bytes: int, document_hash: str
-) -> Element:
-    """Decompress and parse the ``index.xml`` of an iWork '09 document.
-
-    Args:
-        archive: The open ``.numbers`` container.
-        member: The name of its index member.
-        max_total_bytes: The largest index this is willing to decompress to.
-        document_hash: The document's hash, for error messages.
-
-    Returns:
-        The parsed root element.
-
-    Raises:
-        DocumentLoadError: If the member cannot be decompressed or parsed.
-    """
-    raw = archive.read(member)
-    if member.endswith(".gz"):
-        # max_total_bytes only counts the stored size of a gzipped member, so a
-        # small index.xml.gz could otherwise expand without bound. Cap the
-        # output instead of using gzip.decompress, which has no limit.
-        limit = min(MAX_LEGACY_XML_BYTES, max_total_bytes)
-        try:
-            decompressor = zlib.decompressobj(wbits=31)
-            raw = decompressor.decompress(raw, limit)
-            if decompressor.unconsumed_tail:
-                raise DocumentLoadError(
-                    f"'{member}' in Numbers document with hash {document_hash} "
-                    f"expands beyond the {limit} byte limit."
-                )
-        except zlib.error as exc:
-            raise DocumentLoadError(
-                f"Could not decompress '{member}' in Numbers document with hash "
-                f"{document_hash}."
-            ) from exc
-
-    try:
-        return ET.fromstring(raw)
-    except Exception as exc:
-        raise DocumentLoadError(
-            f"Could not parse '{member}' in Numbers document with hash {document_hash}."
-        ) from exc
 
 
 def read_chart_shares(archive: zipfile.ZipFile, max_file_bytes: int) -> dict[str, dict]:
@@ -295,7 +263,7 @@ def read_table(info: Element) -> Table | None:
         header_rows=int_attr(model, SF_ATTR_HEADER_ROWS) or 0,
         header_cols=int_attr(model, SF_ATTR_HEADER_COLS) or 0,
         cells=read_cells(grid, num_rows, num_cols),
-        bbox=frame(info),
+        geometry=legacy_geometry(info),
     )
 
 
@@ -524,7 +492,7 @@ def read_chart(info: Element, shares: dict[str, dict]) -> Chart | None:
         categories=categories,
         series=series,
         values=values,
-        bbox=frame(info),
+        geometry=legacy_geometry(info),
     )
 
 
@@ -558,30 +526,7 @@ def read_comment(note: Element) -> Comment | None:
     )
     if not text:
         return None
-    return Comment(text=text, author="", timestamp=None, bbox=frame(note))
-
-
-def frame(element: Element) -> BoundingBox | None:
-    """Read where a drawable sits on its sheet, in points."""
-    geometry = element.find(SF_GEOMETRY)
-    if geometry is None:
-        return None
-    position = geometry.find(SF_POSITION)
-    size = geometry.find(SF_SIZE)
-    if position is None or size is None:
-        return None
-
-    left = float_attr(position, SFA_ATTR_X) or 0.0
-    top = float_attr(position, SFA_ATTR_Y) or 0.0
-    width = float_attr(size, SFA_ATTR_W) or 0.0
-    height = float_attr(size, SFA_ATTR_H) or 0.0
-    return BoundingBox(
-        l=left,
-        t=top,
-        r=left + width,
-        b=top + height,
-        coord_origin=CoordOrigin.TOPLEFT,
-    )
+    return Comment(text=text, author="", timestamp=None, geometry=legacy_geometry(note))
 
 
 def int_attr(element: Element, name: str) -> int | None:
