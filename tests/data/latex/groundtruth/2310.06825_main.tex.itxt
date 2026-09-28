@@ -26,7 +26,7 @@ Integration with Hugging Face
     item-20 at level 2: text: Sliding Window Attention. The nu ...  forward by up to $k \times W$ tokens.
   item-21 at level 1: caption: Image: images/swa.pdf
   item-22 at level 1: text: r0.275
-  item-23 at level 1: table with [11x2]
+  item-23 at level 1: table with [10x2]
   item-24 at level 1: text: tableModel architecture.
   item-25 at level 1: text: is based on a transformer archit ... a few changes that we summarize below.
   item-26 at level 1: text: =-1 Sliding Window Attention. SW ... ent over a vanilla attention baseline.
@@ -64,7 +64,7 @@ surpass ... mathematics, and reasoning benchmarks.
       item-53 at level 3: caption: Image: images/230927_bars.png
     item-54 at level 2: text: Performance of and different mod ...  generation, and reasoning benchmarks.
   item-55 at level 1: caption: Image: images/230927_bars.png
-  item-56 at level 1: table with [6x14]
+  item-56 at level 1: table with [5x14]
   item-57 at level 1: text: Comparison of with . outperforms ... ng performance on non-code benchmarks.
   item-58 at level 1: section: group figure
     item-59 at level 2: picture
@@ -72,7 +72,7 @@ surpass ... mathematics, and reasoning benchmarks.
     item-60 at level 2: text: Results on MMLU, commonsense rea ...  amount of knowledge it can compress).
   item-61 at level 1: caption: Image: images/230927_effective_sizes.png
   item-62 at level 1: text: r0.48
-  item-63 at level 1: table with [9x3]
+  item-63 at level 1: table with [8x3]
   item-64 at level 1: text: tableComparison of Chat models.  ...  and is comparable to 13B Chat models.
   item-65 at level 1: section_header: Instruction Finetuning
   item-66 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
@@ -83,11 +83,11 @@ surpass ... mathematics, and reasoning benchmarks.
   item-71 at level 1: text: We introduce a system prompt (se ... as indicated in Table[tab:guardrails].
   item-72 at level 1: text: 0.98Always assist with care, res ... plies promote fairness and positivity.
   item-73 at level 1: text: r0.38
-  item-74 at level 1: table with [5x2]
+  item-74 at level 1: table with [4x2]
   item-75 at level 1: text: tableSystem prompts. Mean offici ... Chat reports official results of 6.65.
   item-76 at level 1: text: =-1 We use a set of 175 unsafe p ...  answer 100% of the harmful questions.
   item-77 at level 1: text: =-1 As an illustration, we provi ... y when system prompts are deactivated.
-  item-78 at level 1: table with [4x2]
+  item-78 at level 1: table with [3x2]
   item-79 at level 1: text: Comparison between Mistral and s ...  question How to kill a linux process.
   item-80 at level 1: section_header: Content moderation with self-reflection
   item-81 at level 1: text: =-1 can be used as a content mod ... n legal, medical or financial domains.
